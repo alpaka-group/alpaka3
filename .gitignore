@@ -4,7 +4,7 @@
 /docs/source/_build
 /docs/cheatsheet/cheatsheet.pdf
 
-**/build*
+**/build*/
 
 # tmp files
 *~

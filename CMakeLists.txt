@@ -7,6 +7,8 @@
 cmake_minimum_required(VERSION 3.20)
 project(alpaka CXX)
 
+include(cmake/buildDependencies.cmake)
+
 # Add append compiler flags to a variable or target
 #
 # This method is automatically documenting all compile flags added into the variables
@@ -260,42 +262,14 @@ source_group(TREE "${CMAKE_CURRENT_LIST_DIR}/include/alpaka" FILES ${alpakaSourc
 option(alpaka_TESTING "Enable/Disable testing" OFF)
 option(alpaka_BENCHMARKS "Enable/Disable benchmarks" OFF)
 option(alpaka_EXAMPLES "Enable/Disable examples" OFF)
-include(CTest)
 
-if (alpaka_TESTING OR alpaka_BENCHMARKS)
-    option(alpaka_SYSTEM_CATCH2 "Use the system provided Catch2." OFF)
-    if (alpaka_SYSTEM_CATCH2)
-        find_package(Catch2 3.5.3 REQUIRED)
-        include(Catch)
-    else()
-        # get Catch2 v3 and build it from source with the same C++ standard as the tests
-        Include(FetchContent)
-        FetchContent_Declare(Catch2 GIT_REPOSITORY https://github.com/catchorg/Catch2.git GIT_TAG v3.5.3)
-        FetchContent_MakeAvailable(Catch2)
-        target_compile_features(Catch2 PUBLIC cxx_std_20)
-        include(Catch)
+if (alpaka_TESTING)
+    include(CTest)
+    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/tests")
+endif()
 
-        # hide Catch2 cmake variables by default in cmake gui
-        get_cmake_property(variables VARIABLES)
-        foreach (var ${variables})
-            if (var MATCHES "^CATCH_")
-                mark_as_advanced(${var})
-            endif()
-        endforeach()
-    endif()
-
-    if (alpaka_TESTING)
-        file(GLOB_RECURSE testSources "${CMAKE_CURRENT_SOURCE_DIR}/tests/**")
-        alpaka_add_executable(tests ${testSources})
-        catch_discover_tests(tests)
-        source_group(TREE "${CMAKE_CURRENT_LIST_DIR}/tests" FILES ${testSources})
-        target_compile_features(tests PRIVATE cxx_std_20)
-        target_link_libraries(tests PRIVATE Catch2::Catch2WithMain alpaka::alpaka)
-    endif()
-
-    if (alpaka_BENCHMARKS)
-        add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/benchmark")
-    endif()
+if (alpaka_BENCHMARKS)
+    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/benchmark")
 endif()
 
 if(alpaka_EXAMPLES)

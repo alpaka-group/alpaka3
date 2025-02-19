@@ -1,5 +1,5 @@
 #
-# Copyright 2024 René Widera
+# Copyright 2025 René Widera, Simeon Ehrig
 # SPDX-License-Identifier: ISC
 #
 
@@ -11,5 +11,7 @@ project("alpakaBenchmarks" LANGUAGES CXX)
 ################################################################################
 # Add subdirectories.
 ################################################################################
+
+alpaka_install_catch2()
 
 add_subdirectory("babelstream/")
