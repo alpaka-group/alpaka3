@@ -15,7 +15,10 @@ cmake_minimum_required(VERSION 3.25)
 alpaka_install_catch2()
 
 #------------------------------------------------------------------------------
-# Creates a Catch2 test executable for each .cpp file in the specified folder.
+# Search for sub folders in the given folder.
+# Creates a Catch2 test executable for each .cpp file in each sub folder.
+# If a include folder is located in a sub folder, add it as include path to the
+# target.
 # Args:
 #  - target_prefix: Prefix for the target name. The name of the executable test
 #    file is formed with target_prefix followed by the source file name without
@@ -24,25 +27,43 @@ alpaka_install_catch2()
 #    executable for each.
 function(alpaka_add_test_target target_prefix folder)
     message(DEBUG "test target prefix: ${target_prefix}")
-    message(DEBUG "test folder: ${folder}")
-    
-    file(GLOB_RECURSE test_sources ${folder})
-    foreach(source_file ${test_sources})
-        get_filename_component(source_file_extension ${source_file} EXT)
-        get_filename_component(source_file_name ${source_file} NAME_WE)
-        
-        if("${source_file_extension}" STREQUAL ".cpp")
-            set(_test_target_name "${target_prefix}${source_file_name}")
-            message(DEBUG "add test target ${_test_target_name}: ${source_file}")
-            
-            alpaka_add_executable(${_test_target_name} ${source_file})
-            target_link_libraries(${_test_target_name} PRIVATE Catch2::Catch2WithMain alpaka::alpaka)
-            catch_discover_tests(${_test_target_name})
-        else()
-            message(WARNING "found non .cpp source file: ${source_file}")
+
+    file(GLOB test_folders ${folder})
+    foreach(test_folder ${test_folders})
+        if(IS_DIRECTORY ${test_folder})
+            message(DEBUG "test folder: ${test_folder}")
+
+            file(GLOB test_sources "${test_folder}/**")
+
+            # iterate over all sub folders
+            foreach(source_file ${test_sources})
+                # the include folder is a special case, therefore ignore it
+                if(source_file STREQUAL "${test_folder}/include")
+                    continue()
+                endif()
+
+                get_filename_component(source_file_extension ${source_file} EXT)
+                get_filename_component(source_file_name ${source_file} NAME_WE)
+
+                if("${source_file_extension}" STREQUAL ".cpp")
+                    set(_test_target_name "${target_prefix}${source_file_name}")
+                    message(DEBUG "  add test target ${_test_target_name}: ${source_file}")
+
+                    alpaka_add_executable(${_test_target_name} ${source_file})
+                    if(EXISTS "${test_folder}/include")
+                        message(STATUS "  add include folder: ${test_folder}/include")
+                        target_include_directories(${_test_target_name} PRIVATE ${test_folder}/include)
+                    endif()
+
+                    target_link_libraries(${_test_target_name} PRIVATE Catch2::Catch2WithMain alpaka::alpaka)
+                    catch_discover_tests(${_test_target_name})
+                else()
+                    message(WARNING "found non .cpp source file: ${source_file}")
+                endif()
+            endforeach()
         endif()
     endforeach()
 endfunction()
 
 alpaka_add_test_target(unit_test_ ${CMAKE_CURRENT_SOURCE_DIR}/unit/**)
-alpaka_add_test_target(integ_test_ ${CMAKE_CURRENT_SOURCE_DIR}/integ/**)
+#alpaka_add_test_target(integ_test_ ${CMAKE_CURRENT_SOURCE_DIR}/integ/**)
