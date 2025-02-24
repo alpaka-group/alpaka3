@@ -8,6 +8,7 @@
 #include "alpaka/api/cpu/Queue.hpp"
 #include "alpaka/api/cpu/sysInfo.hpp"
 #include "alpaka/core/Utility.hpp"
+#include "alpaka/core/alignedAlloc.hpp"
 #include "alpaka/internal.hpp"
 #include "alpaka/onHost.hpp"
 #include "alpaka/onHost/Device.hpp"
@@ -128,11 +129,15 @@ namespace alpaka::onHost
         {
             auto operator()(cpu::Device<T_Platform>& device, T_Extents const& extents) const
             {
+                using IdxType = typename T_Extents::type;
+                constexpr uint32_t alignment
+                    = getArchSimdWidth<T_Type>(ALPAKA_TYPEOF(getApi(device)){}) * alignof(T_Type);
                 constexpr auto dim = T_Extents::dim();
                 if constexpr(dim == 1u)
                 {
-                    auto* ptr = new T_Type[extents.x()];
-                    auto deleter = [](T_Type* ptr) { delete[](ptr); };
+                    auto* ptr = reinterpret_cast<T_Type*>(
+                        alpaka::core::alignedAlloc(alignment, extents.x() * sizeof(T_Type)));
+                    auto deleter = [](T_Type* ptr) { alpaka::core::alignedFree(alignment, ptr); };
                     auto pitches = typename T_Extents::UniVec{sizeof(T_Type)};
                     auto data = std::make_shared<
                         onHost::
@@ -146,9 +151,15 @@ namespace alpaka::onHost
                 }
                 else
                 {
-                    auto* ptr = new T_Type[extents.product()];
-                    auto deleter = [](T_Type* ptr) { delete[](ptr); };
-                    auto pitches = mem::calculatePitchesFromExtents<T_Type>(extents);
+                    auto rowExtentInBytes = extents.x() * static_cast<IdxType>(sizeof(T_Type));
+                    auto rowPitchInBytes = core::divCeil(rowExtentInBytes, alignment) * alignment;
+                    auto pitches = mem::calculatePitches<T_Type>(extents, rowPitchInBytes);
+
+                    // product of pitches does contain the size for the first dimension
+                    size_t memSizeInByte = lpCast<size_t>(pitches).product() * extents[0];
+                    auto* ptr = reinterpret_cast<T_Type*>(alpaka::core::alignedAlloc(alignment, memSizeInByte));
+                    auto deleter = [](T_Type* ptr) { alpaka::core::alignedFree(alignment, ptr); };
+
                     auto data = std::make_shared<
                         onHost::
                             Data<Handle<std::decay_t<decltype(device)>>, T_Type, T_Extents, ALPAKA_TYPEOF(pitches)>>(
@@ -190,25 +201,25 @@ namespace alpaka::onHost
             {
                 auto numThreadBlocks = dataBlocking.getThreadSpec().m_numBlocks;
 #if 0
-                using IdxType = typename T_NumBlocks::type;
-                // @todo get this number from device properties
-                static auto const maxBlocks = device.m_properties.m_multiProcessorCount;
+               using IdxType = typename T_NumBlocks::type;
+               // @todo get this number from device properties
+               static auto const maxBlocks = device.m_properties.m_multiProcessorCount;
 
 
-                while(numThreadBlocks.product() > maxBlocks)
-                {
-                    uint32_t maxIdx = 0u;
-                    auto maxValue = numThreadBlocks[0];
-                    for(auto i = 0u; i < T_NumBlocks::dim(); ++i)
-                        if(maxValue < numThreadBlocks[i])
-                        {
-                            maxIdx = i;
-                            maxValue = numThreadBlocks[i];
-                        }
-                    if(numThreadBlocks.product() > maxBlocks)
-                        numThreadBlocks[maxIdx] = core::divCeil(numThreadBlocks[maxIdx], IdxType{2u});
+               while(numThreadBlocks.product() > maxBlocks)
+               {
+                   uint32_t maxIdx = 0u;
+                   auto maxValue = numThreadBlocks[0];
+                   for(auto i = 0u; i < T_NumBlocks::dim(); ++i)
+                       if(maxValue < numThreadBlocks[i])
+                       {
+                           maxIdx = i;
+                           maxValue = numThreadBlocks[i];
+                       }
+                   if(numThreadBlocks.product() > maxBlocks)
+                       numThreadBlocks[maxIdx] = core::divCeil(numThreadBlocks[maxIdx], IdxType{2u});
 
-                }
+               }
 #endif
                 auto const numThreads = Vec<typename T_NumThreads::type, T_NumThreads::dim()>::all(1);
                 return ThreadSpec{numThreadBlocks, numThreads};

@@ -57,4 +57,28 @@ namespace alpaka
         {
         };
     } // namespace unifiedCudaHip::trait
+
+    namespace trait
+    {
+        template<typename T_Type>
+        struct GetArchSimdWidth::Op<T_Type, api::Hip>
+        {
+            constexpr uint32_t operator()(api::Hip const) const
+            {
+                /** vector load/store width in bytes */
+                constexpr std::size_t simdWidthInByte = 16u;
+                return simdWidthInByte / sizeof(T_Type);
+            }
+        };
+
+        template<>
+        struct GetCachelineSize::Op<api::Hip>
+        {
+            constexpr uint32_t operator()(api::Hip const) const
+            {
+                // loading 16 byte per thread will result in optimal memory bandwith
+                return 16u;
+            }
+        };
+    } // namespace trait
 } // namespace alpaka
