@@ -27,9 +27,9 @@ ALPAKA_FN_HOST_ACC auto exactSolution(double const x, double const y, double con
 //! \param dx
 //! \param dy
 //! \param tMax time at simulation end
-template<typename T_Buffer, typename T_Extent>
+template<typename T_MdSpan, typename T_Extent>
 auto validateSolution(
-    T_Buffer const& buffer,
+    T_MdSpan const dataMdSpan,
     T_Extent const& extent,
     double const dx,
     double const dy,
@@ -41,7 +41,12 @@ auto validateSolution(
     {
         for(uint32_t i = 1; i < extent[1] - 1; ++i)
         {
-            auto const error = std::abs(buffer.data()[j * extent[1] + i] - exactSolution(i * dx, j * dy, tMax));
+            auto const error = std::abs(
+                dataMdSpan[alpaka::Vec{
+                    j,
+                    i,
+                }]
+                - exactSolution(i * dx, j * dy, tMax));
             maxError = std::max(maxError, error);
         }
     }
@@ -56,16 +61,19 @@ auto validateSolution(
 //! \param extent extents of the buffer
 //! \param dx
 //! \param dy
-template<typename TBuffer>
-auto initalizeBuffer(TBuffer& buffer, double const dx, double const dy) -> void
+template<typename T_MdSpan>
+auto initalizeBuffer(T_MdSpan dataMdSpan, double const dx, double const dy) -> void
 {
-    auto extents = buffer.getExtents();
+    auto extents = dataMdSpan.getExtents();
     // Apply initial conditions for the test problem
     for(uint32_t j = 0; j < extents[0]; ++j)
     {
         for(uint32_t i = 0; i < extents[1]; ++i)
         {
-            buffer.data()[j * extents[1] + i] = exactSolution(i * dx, j * dy, 0.0);
+            dataMdSpan[alpaka::Vec{
+                j,
+                i,
+            }] = exactSolution(i * dx, j * dy, 0.0);
         }
     }
 }

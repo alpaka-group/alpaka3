@@ -94,7 +94,7 @@ auto example(T_Cfg const& cfg) -> int
     auto const pitchNextAcc{uNextBufAcc.getPitches()};
 
     // Set buffer to initial conditions
-    initalizeBuffer(uBufHost, dx, dy);
+    initalizeBuffer(uBufHost.getMdSpan(), dx, dy);
 
     // Select queue
     Queue dumpQueue = devAcc.makeQueue();
@@ -163,7 +163,7 @@ auto example(T_Cfg const& cfg) -> int
             alpaka::wait(computeQueue);
             alpaka::memcpy(dumpQueue, uBufHost, uCurrBufAcc);
             alpaka::wait(dumpQueue);
-            writeImage(step - 1, uBufHost);
+            writeImage(step - 1, uBufHost.getMdSpan());
         }
 #endif
 
@@ -183,7 +183,7 @@ auto example(T_Cfg const& cfg) -> int
     alpaka::onHost::wait(dumpQueue);
 
     // Validate
-    auto const [resultIsCorrect, maxError] = validateSolution(uBufHost, extent, dx, dy, tMax);
+    auto const [resultIsCorrect, maxError] = validateSolution(uBufHost.getMdSpan(), extent, dx, dy, tMax);
 
     if(resultIsCorrect)
     {
