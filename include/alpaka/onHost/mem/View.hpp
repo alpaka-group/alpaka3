@@ -90,7 +90,11 @@ namespace alpaka::onHost
         auto getMdSpan() const
         {
             auto* ptr = onHost::data(m_data);
-            return alpaka::MdSpan{ptr, m_data->getExtents(), m_data->getPitches()};
+            return makeMdSpan(
+                ptr,
+                m_data->getExtents(),
+                m_data->getPitches(),
+                ALPAKA_TYPEOF(m_data->getAlignment()){});
         }
 
         /** access 1-dimensional data with a scalar index

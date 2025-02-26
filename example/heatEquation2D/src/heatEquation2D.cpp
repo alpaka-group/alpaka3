@@ -160,9 +160,9 @@ auto example(T_Cfg const& cfg) -> int
 #ifdef PNGWRITER_ENABLED
         if((step - 1) % 100 == 0)
         {
-            alpaka::wait(computeQueue);
-            alpaka::memcpy(dumpQueue, uBufHost, uCurrBufAcc);
-            alpaka::wait(dumpQueue);
+            alpaka::onHost::wait(computeQueue);
+            alpaka::onHost::memcpy(dumpQueue, uBufHost, uCurrBufAcc);
+            alpaka::onHost::wait(dumpQueue);
             writeImage(step - 1, uBufHost.getMdSpan());
         }
 #endif

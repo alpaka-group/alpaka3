@@ -171,13 +171,19 @@ namespace alpaka::onHost
 
                 auto deleter = [](T_Type* ptr)
                 { ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::free(ptr)); };
-                auto data = std::make_shared<
-                    onHost::Data<Handle<std::decay_t<decltype(device)>>, T_Type, T_Extents, ALPAKA_TYPEOF(pitches)>>(
-                    device.getSharedPtr(),
-                    ptr,
-                    extents,
-                    pitches,
-                    deleter);
+
+                /** Each CUDA/HIP allocation is aligned to at least 128 byte but typically to 256byte
+                 *
+                 * @todo check if this value can be derived from the device properties
+                 * @todo validate if memory is always aligtne dto 256 byte
+                 */
+                constexpr uint32_t alignment = 128u;
+                auto data = std::make_shared<onHost::Data<
+                    Handle<std::decay_t<decltype(device)>>,
+                    T_Type,
+                    T_Extents,
+                    ALPAKA_TYPEOF(pitches),
+                    Alignment<alignment>>>(device.getSharedPtr(), ptr, extents, pitches, deleter);
                 return onHost::View<std::decay_t<decltype(data)>, T_Extents>(data);
             }
         };

@@ -2,18 +2,48 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
-
 #pragma once
 
 #include "alpaka/CVec.hpp"
 #include "alpaka/Vec.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/mem/Alignment.hpp"
 
 #include <type_traits>
 
 namespace alpaka
 {
-    template<typename T_Type, typename T_Extents, typename T_Pitches>
+    template<
+        typename T_Type,
+        concepts::Vector T_Extents,
+        concepts::Vector T_Pitches,
+        concepts::Alignment T_MemAlignment = Alignment<>>
+    struct MdSpan;
+
+    inline constexpr auto makeMdSpan(
+        auto* pointer,
+        concepts::Vector auto const& extents,
+        concepts::Vector auto const& pitchBytes,
+        concepts::Alignment auto const& memAlignment = Alignment{})
+    {
+        return MdSpan{pointer, extents, pitchBytes.eraseBack(), memAlignment};
+    }
+
+    inline constexpr auto makeMdSpan(
+        auto* pointer,
+        concepts::Vector auto const& extents,
+        concepts::Vector auto const& pitchBytes,
+        concepts::Alignment auto const& memAlignment = Alignment{})
+        requires(ALPAKA_TYPEOF(pitchBytes)::dim() == 1u && ALPAKA_TYPEOF(extents)::dim() == 1u)
+    {
+        return MdSpan{pointer, extents, pitchBytes, memAlignment};
+    }
+
+    template<
+        typename T_Type,
+        concepts::Vector T_Extents,
+        concepts::Vector T_Pitches,
+        concepts::Alignment T_MemAlignment>
     struct MdSpan
     {
         using element_type = T_Type;
@@ -60,16 +90,27 @@ namespace alpaka
          * @param pointer pointer to the memory
          * @param extents number of elements
          * @param pitchBytes pitch in bytes per dimension
+         * @param memAlignmentInByte alignment in bytes (zero will set alignment to element alignment)
          */
-        constexpr MdSpan(element_type* pointer, T_Extents extents, T_Pitches const& pitchBytes)
+        constexpr MdSpan(
+            T_Type* pointer,
+            T_Extents extents,
+            T_Pitches const& pitchBytes,
+            [[maybe_unused]] T_MemAlignment const& memAlignmentInByte = T_MemAlignment{})
+            requires(ALPAKA_TYPEOF(pitchBytes)::dim() + 1u == T_Extents::dim())
             : m_ptr(pointer)
             , m_extent(extents)
-            , m_pitch(pitchBytes.eraseBack())
+            , m_pitch(pitchBytes)
         {
         }
 
         MdSpan(MdSpan const&) = default;
         MdSpan(MdSpan&&) = default;
+
+        static consteval auto getAlignment()
+        {
+            return T_MemAlignment{};
+        }
 
         /** get value at the given index
          *
@@ -115,18 +156,44 @@ namespace alpaka
             return reinterpret_cast<element_type const*>(reinterpret_cast<char const*>(this->m_ptr) + offset);
         }
 
+        constexpr element_type* ptr(concepts::Vector auto const& idx)
+        {
+            /** offset in bytes
+             *
+             * We calculate the complete offset in bytes even if it would be possible to change the x-dimension
+             * with the native element_types pointer, this is reducing the register footprint.
+             */
+            index_type offset = sizeof(element_type) * idx.back();
+            for(uint32_t d = 0u; d < dim() - 1u; ++d)
+            {
+                offset += m_pitch[d] * idx[d];
+            }
+            return reinterpret_cast<element_type*>(reinterpret_cast<char*>(this->m_ptr) + offset);
+        }
+
         element_type* m_ptr;
         T_Extents m_extent;
-        decltype(std::declval<T_Pitches>().eraseBack()) m_pitch;
+        T_Pitches m_pitch;
     };
 
-    template<typename T_Type, typename T_Extents, typename T_Pitches>
-    ALPAKA_FN_HOST_ACC MdSpan(T_Type* pointer, T_Extents const&, T_Pitches const&)
-        -> MdSpan<T_Type, T_Extents, T_Pitches>;
+    template<
+        typename T_Type,
+        concepts::Vector T_Extents,
+        concepts::Vector T_Pitches,
+        concepts::Alignment T_MemAlignment>
+    ALPAKA_FN_HOST_ACC MdSpan(
+        T_Type* pointer,
+        T_Extents const&,
+        T_Pitches const&,
+        [[maybe_unused]] T_MemAlignment const&) -> MdSpan<T_Type, T_Extents, T_Pitches, T_MemAlignment>;
 
-    template<typename T_Type, typename T_Extents, typename T_Pitches>
+    template<
+        typename T_Type,
+        concepts::Vector T_Extents,
+        concepts::Vector T_Pitches,
+        concepts::Alignment T_MemAlignment>
     requires(T_Pitches::dim() == 1u && T_Extents::dim() == 1u)
-    struct MdSpan<T_Type, T_Extents, T_Pitches>
+    struct MdSpan<T_Type, T_Extents, T_Pitches, T_MemAlignment>
     {
         using element_type = T_Type;
         using reference = element_type&;
@@ -172,8 +239,13 @@ namespace alpaka
          * @param pointer pointer to the memory
          * @param extents number of elements
          * @param pitchBytes pitch in bytes per dimension
+         * @param memAlignmentInByte alignment in bytes (zero will set alignment to element alignment)
          */
-        constexpr MdSpan(element_type* pointer, T_Extents const& extents, [[maybe_unused]] T_Pitches const& pitchBytes)
+        constexpr MdSpan(
+            T_Type* pointer,
+            T_Extents const& extents,
+            [[maybe_unused]] T_Pitches const& pitchBytes,
+            [[maybe_unused]] T_MemAlignment const& memAlignmentInByte = T_MemAlignment{})
             : m_ptr(pointer)
             , m_extent(extents)
         {
@@ -181,6 +253,11 @@ namespace alpaka
 
         constexpr MdSpan(element_type* pointer) : m_ptr(pointer)
         {
+        }
+
+        static consteval auto getAlignment()
+        {
+            return T_MemAlignment{};
         }
 
         constexpr MdSpan(MdSpan const&) = default;
@@ -261,7 +338,7 @@ namespace alpaka
         using type = T[T_Extent{}[T_dim]];
     };
 
-    template<typename T_ArrayType>
+    template<typename T_ArrayType, concepts::Alignment T_MemAlignment = Alignment<>>
     struct MdSpanArray
     {
         static_assert(
@@ -269,9 +346,9 @@ namespace alpaka
             "MdSpanArray can only be used if std::is_array_v<T> is true for the given type.");
     };
 
-    template<typename T_ArrayType>
+    template<typename T_ArrayType, concepts::Alignment T_MemAlignment>
     requires(std::is_array_v<T_ArrayType>)
-    struct MdSpanArray<T_ArrayType>
+    struct MdSpanArray<T_ArrayType, T_MemAlignment>
     {
         using extentType = std::extent<T_ArrayType, std::rank_v<T_ArrayType>>;
         using element_type = std::remove_all_extents_t<T_ArrayType>;
@@ -314,15 +391,18 @@ namespace alpaka
         /** Constructor
          *
          * @param pointer pointer to the memory
-         * @param extents number of elements
-         * @param pitchBytes pitch in bytes per dimension
          */
-        constexpr MdSpanArray(T_ArrayType& staticSizedArray) : m_ptr(staticSizedArray)
+        constexpr MdSpanArray(T_ArrayType& staticSizedArray) : m_ptr(&staticSizedArray)
         {
         }
 
         constexpr MdSpanArray(MdSpanArray const&) = default;
         constexpr MdSpanArray(MdSpanArray&&) = default;
+
+        static consteval auto getAlignment()
+        {
+            return T_MemAlignment{};
+        }
 
         /** get value at the given index
          *
@@ -332,22 +412,22 @@ namespace alpaka
          */
         constexpr element_type const& operator[](concepts::Vector auto const& idx) const
         {
-            return ResolveArrayAccess<dim()>{}(m_ptr, idx);
+            return ResolveArrayAccess<dim()>{}(*m_ptr, idx);
         }
 
         constexpr reference operator[](concepts::Vector auto const& idx)
         {
-            return ResolveArrayAccess<dim()>{}(m_ptr, idx);
+            return ResolveArrayAccess<dim()>{}(*m_ptr, idx);
         }
 
         constexpr element_type const& operator[](index_type const& idx) const
         {
-            return m_ptr[idx];
+            return (*m_ptr)[idx];
         }
 
         constexpr reference operator[](index_type const& idx)
         {
-            return m_ptr[idx];
+            return (*m_ptr)[idx];
         }
 
         constexpr bool operator==(MdSpanArray const other) const
@@ -365,6 +445,6 @@ namespace alpaka
         }
 
     protected:
-        T_ArrayType& m_ptr;
+        T_ArrayType* m_ptr;
     };
 } // namespace alpaka

@@ -8,6 +8,7 @@
 #include "alpaka/Vec.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/internal.hpp"
+#include "alpaka/mem/Alignment.hpp"
 #include "alpaka/onHost.hpp"
 #include "alpaka/onHost/Handle.hpp"
 
@@ -57,8 +58,9 @@ namespace alpaka::onHost
         typename T_BaseHandle,
         typename T_Type,
         alpaka::concepts::Vector T_Extents,
-        alpaka::concepts::Vector T_Pitches>
-    struct Data : std::enable_shared_from_this<Data<T_BaseHandle, T_Type, T_Extents, T_Pitches>>
+        alpaka::concepts::Vector T_Pitches,
+        alpaka::concepts::Alignment T_MemAlignment = Alignment<>>
+    struct Data : std::enable_shared_from_this<Data<T_BaseHandle, T_Type, T_Extents, T_Pitches, T_MemAlignment>>
     {
     public:
         Data(
@@ -126,6 +128,11 @@ namespace alpaka::onHost
             return m_data;
         }
 
+        static consteval auto getAlignment()
+        {
+            return T_MemAlignment{};
+        }
+
         friend struct alpaka::internal::GetApi;
     };
 } // namespace alpaka::onHost
@@ -133,8 +140,13 @@ namespace alpaka::onHost
 namespace alpaka::internal
 {
 
-    template<typename T_BaseHandle, typename T_Type, typename T_Extents, typename T_Pitches>
-    struct GetApi::Op<onHost::Data<T_BaseHandle, T_Type, T_Extents, T_Pitches>>
+    template<
+        typename T_BaseHandle,
+        typename T_Type,
+        alpaka::concepts::Vector T_Extents,
+        alpaka::concepts::Vector T_Pitches,
+        concepts::Alignment T_MemAlignmen>
+    struct GetApi::Op<onHost::Data<T_BaseHandle, T_Type, T_Extents, T_Pitches, T_MemAlignmen>>
     {
         decltype(auto) operator()(auto&& data) const
         {

@@ -95,6 +95,7 @@ option(alpaka_API_OMP "Enable the OMP back-end" ON)
 if(alpaka_API_OMP)
     find_package(OpenMP REQUIRED COMPONENTS CXX)
     target_link_libraries(alpaka INTERFACE OpenMP::OpenMP_CXX)
+    message(STATUS "OpenMP found: ${OpenMP_CXX_VERSION}")
 endif()
 
 ## CUDA

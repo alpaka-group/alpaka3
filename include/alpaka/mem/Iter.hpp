@@ -363,6 +363,11 @@ namespace alpaka::onAcc
         {
         }
 
+        constexpr auto size(auto const& acc) const
+        {
+            return getThreadSpace(acc).size();
+        }
+
     private:
         template<typename T_ThreadGroup, typename T_IdxRange>
         friend struct DomainSpec;

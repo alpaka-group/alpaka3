@@ -66,7 +66,7 @@ struct InitKernel
     //! \tparam TAcc The accelerator environment to be executed on.
     //! \tparam T The data type
     //! \param acc The accelerator to be executed on.
-    //! \param a Pointer for vector a
+    //! \param a MdSpan for vector a
     //! \param initialA the value to set all items in the vector a
     //! \param initialB the value to set all items in the vector b
     template<typename TAcc, typename T>
@@ -96,13 +96,18 @@ struct CopyKernel
     //! \tparam TAcc The accelerator environment to be executed on.
     //! \tparam T The data type
     //! \param acc The accelerator to be executed on.
-    //! \param a Pointer for vector a
-    //! \param c Pointer for vector c
-    template<typename TAcc, typename T>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, T const* a, T* c, auto arraySize) const
+    //! \param a MdSpan for vector a
+    //! \param c MdSpan for vector c
+    template<typename TAcc>
+    ALPAKA_FN_ACC void operator()(TAcc const& acc, auto const a, auto c, auto arraySize) const
     {
-        for(auto [index] : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{arraySize}))
-            c[index] = a[index];
+        auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
+        simdGrid.concurrent<64>(
+            acc,
+            alpaka::Vec{arraySize},
+            [](auto const&, auto const in, auto out) constexpr { out = in.load(); },
+            a,
+            c);
     }
 };
 
@@ -113,14 +118,21 @@ struct MultKernel
     //! \tparam TAcc The accelerator environment to be executed on.
     //! \tparam T The data type
     //! \param acc The accelerator to be executed on.
-    //! \param c Pointer for vector c
+    //! \param c MdSpan for vector c
     //! \param b Pointer for result vector b
-    template<typename TAcc, typename T>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, T* b, T* const c, auto arraySize) const
+    template<typename TAcc>
+    ALPAKA_FN_ACC void operator()(TAcc const& acc, auto b, auto const c, auto arraySize) const
     {
+        using T = typename ALPAKA_TYPEOF(b)::element_type;
         T const scalar = static_cast<T>(scalarVal);
-        for(auto [i] : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{arraySize}))
-            b[i] = scalar * c[i];
+
+        auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
+        simdGrid.concurrent<64>(
+            acc,
+            alpaka::Vec{arraySize},
+            [&](auto const&, auto out, auto const& in) constexpr { out = scalar * in.load(); },
+            b,
+            c);
     }
 };
 
@@ -131,14 +143,21 @@ struct AddKernel
     //! \tparam TAcc The accelerator environment to be executed on.
     //! \tparam T The data type
     //! \param acc The accelerator to be executed on.
-    //! \param a Pointer for vector a
-    //! \param b Pointer for vector b
+    //! \param a MdSpan for vector a
+    //! \param b MdSpan for vector b
     //! \param c Pointer for result vector c
-    template<typename TAcc, typename T>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, T const* a, T const* b, T* c, auto arraySize) const
+    template<typename TAcc>
+    ALPAKA_FN_ACC void operator()(TAcc const& acc, auto const a, auto const b, auto c, auto arraySize) const
     {
-        for(auto [i] : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{arraySize}))
-            c[i] = a[i] + b[i];
+        auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
+        simdGrid.concurrent<64>(
+            acc,
+            alpaka::Vec{arraySize},
+            [&](auto const&, auto const& simdA, auto const& simdB, auto simdC) constexpr
+            { simdC = simdA.load() + simdB.load(); },
+            a,
+            b,
+            c);
     }
 };
 
@@ -149,15 +168,23 @@ struct TriadKernel
     //! \tparam TAcc The accelerator environment to be executed on.
     //! \tparam T The data type
     //! \param acc The accelerator to be executed on.
-    //! \param a Pointer for vector a
-    //! \param b Pointer for vector b
+    //! \param a MdSpan for vector a
+    //! \param b MdSpan for vector b
     //! \param c Pointer for result vector c
-    template<typename TAcc, typename T>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, T* a, T const* b, T const* c, auto arraySize) const
+    template<typename TAcc>
+    ALPAKA_FN_ACC void operator()(TAcc const& acc, auto a, auto const b, auto const c, auto arraySize) const
     {
+        using T = typename ALPAKA_TYPEOF(a)::element_type;
         T const scalar = static_cast<T>(scalarVal);
-        for(auto [i] : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{arraySize}))
-            a[i] = b[i] + scalar * c[i];
+
+        auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
+        simdGrid.concurrent<64>(
+            acc,
+            [&](auto const&, auto&& simdA, auto&& simdB, auto&& simdC) constexpr
+            { simdA = simdB.load() + scalar * simdC.load(); },
+            a,
+            b,
+            c);
     }
 };
 
@@ -181,13 +208,14 @@ struct DotKernel
     //! \tparam TAcc The accelerator environment to be executed on.
     //! \tparam T The data type
     //! \param acc The accelerator to be executed on.
-    //! \param a Pointer for vector a
-    //! \param b Pointer for vector b
+    //! \param a MdSpan for vector a
+    //! \param b MdSpan for vector b
     //! \param sum Pointer for result vector consisting sums of blocks
     //! \param arraySize the size of the array
-    template<typename TAcc, typename T>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, T const* a, T const* b, T* sum, auto arraySize) const
+    template<typename TAcc>
+    ALPAKA_FN_ACC void operator()(TAcc const& acc, auto const a, auto const b, auto sum, auto arraySize) const
     {
+        using T = typename ALPAKA_TYPEOF(sum)::element_type;
         auto tbSum = onAcc::declareSharedMdArray<T, uniqueId()>(acc, CVec<uint32_t, blockThreadExtentMain>{});
 #if 1
         auto numFrames = acc[frame::count];
@@ -213,13 +241,17 @@ struct DotKernel
         {
             for(auto elemIdxInFrame : traverseInFrame)
             {
-                for(auto [i] : onAcc::makeIdxMap(
-                        acc,
-                        onAcc::WorkerGroup{frameIdx + elemIdxInFrame, frameDataExtent},
-                        IdxRange{arraySize}))
-                {
-                    tbSum[elemIdxInFrame] += a[i] * b[i];
-                }
+                auto allThreads = onAcc::SimdForEach{onAcc::WorkerGroup{frameIdx + elemIdxInFrame, frameDataExtent}};
+                allThreads.template concurrent<64>(
+                    acc,
+                    alpaka::Vec{arraySize},
+                    [&](auto const&, auto&& simdA, auto&& simdB) constexpr
+                    {
+                        auto tmp = simdA.load() * simdB.load();
+                        tbSum[elemIdxInFrame] += tmp.sum();
+                    },
+                    a,
+                    b);
             }
         }
         // sync is required because we do not know which thread wrote whcih value
@@ -253,7 +285,7 @@ struct DotKernel
                 tbSum[local_i] += tbSum[local_i + offset];
         }
         if(local_i == 0)
-            sum[acc[layer::block].idx().x()] = tbSum[local_i];
+            onAcc::atomicAdd(acc, &sum[0], tbSum[local_i]);
     }
 };
 
@@ -312,8 +344,18 @@ void testKernels(auto cfg)
     auto bufHostOutputB = onHost::allocMirror(devHost, bufAccInputB);
     auto bufHostOutputC = onHost::allocMirror(devHost, bufAccOutputC);
 
-    auto numBlocks = arraySize / static_cast<Idx>(blockThreadExtentMain);
-    auto dataBlocking = onHost::FrameSpec{numBlocks, static_cast<Idx>(blockThreadExtentMain)};
+    /* Each frame will have 64 elements processed by each thread.
+     * The number of frames is calculated based on the array size and the number of elements processed by each thread.
+     *
+     * @todo The value is currently a magic number but should be derived from the SIMD width of the device and a factor
+     * to reflect the instruction level parallelism. This is currently not well abstracted in alpaka and requires that
+     * a kernel can reflect the concurrency bytes used for the `SimdForEach::concurrent()` back to the host, e.g. some
+     * as we use for dynamic shared memory.
+     */
+    constexpr uint32_t elementsPerFrameItem = 64u;
+
+    auto numFrames = core::divCeil(arraySize, static_cast<Idx>(blockThreadExtentMain) * elementsPerFrameItem);
+    auto dataBlocking = onHost::FrameSpec{numFrames, static_cast<Idx>(blockThreadExtentMain)};
 
     // To record runtime data generated while running the kernels
     RuntimeResults runtimeResults;
@@ -354,7 +396,6 @@ void testKernels(auto cfg)
         runtimeResults.addKernelTimingsVec("TriadKernel");
     }
 
-
     // Init kernel
     measureKernelExec(
         [&]()
@@ -392,7 +433,7 @@ void testKernels(auto cfg)
                     queue.enqueue(
                         exec,
                         dataBlocking,
-                        KernelBundle{CopyKernel(), std::data(bufAccInputA), std::data(bufAccOutputC), arraySize});
+                        KernelBundle{CopyKernel(), bufAccInputA.getMdSpan(), bufAccOutputC.getMdSpan(), arraySize});
                 },
                 "CopyKernel");
 
@@ -403,8 +444,8 @@ void testKernels(auto cfg)
                         exec,
                         dataBlocking,
                         MultKernel(),
-                        std::data(bufAccInputB),
-                        std::data(bufAccOutputC),
+                        bufAccInputB.getMdSpan(),
+                        bufAccOutputC.getMdSpan(),
                         arraySize);
                 },
                 "MultKernel");
@@ -418,9 +459,9 @@ void testKernels(auto cfg)
                         dataBlocking,
                         KernelBundle{
                             AddKernel(),
-                            std::data(bufAccInputA),
-                            std::data(bufAccInputB),
-                            std::data(bufAccOutputC),
+                            bufAccInputA.getMdSpan(),
+                            bufAccInputB.getMdSpan(),
+                            bufAccOutputC.getMdSpan(),
                             arraySize});
                 },
                 "AddKernel");
@@ -437,9 +478,9 @@ void testKernels(auto cfg)
                         dataBlocking,
                         KernelBundle{
                             TriadKernel(),
-                            std::data(bufAccInputA),
-                            std::data(bufAccInputB),
-                            std::data(bufAccOutputC),
+                            bufAccInputA.getMdSpan(),
+                            bufAccInputB.getMdSpan(),
+                            bufAccOutputC.getMdSpan(),
                             arraySize});
                 },
                 "TriadKernel");
@@ -450,7 +491,7 @@ void testKernels(auto cfg)
                 = onHost::FrameSpec{static_cast<Idx>(dotGridBlockExtent), static_cast<Idx>(blockThreadExtentMain)};
 
             // Vector of sums of each block
-            auto bufAccSumPerBlock = onHost::alloc<DataType>(devAcc, dataBlockingDot.m_numFrames);
+            auto bufAccSumPerBlock = onHost::alloc<DataType>(devAcc, 1u);
             auto bufHostSumPerBlock = onHost::allocMirror(devHost, bufAccSumPerBlock);
 
 
@@ -458,19 +499,20 @@ void testKernels(auto cfg)
             measureKernelExec(
                 [&]()
                 {
+                    // set initial value of the sum to 0
+                    onHost::memset(queue, bufAccSumPerBlock, 0);
                     queue.enqueue(
                         exec,
                         dataBlockingDot,
                         KernelBundle{
                             DotKernel(), // Dot kernel
-                            std::data(bufAccInputA),
-                            std::data(bufAccInputB),
-                            std::data(bufAccSumPerBlock),
+                            bufAccInputA.getMdSpan(),
+                            bufAccInputB.getMdSpan(),
+                            bufAccSumPerBlock.getMdSpan(),
                             arraySize});
                     onHost::memcpy(queue, bufHostSumPerBlock, bufAccSumPerBlock);
                     onHost::wait(queue);
-                    DataType const* sumPtr = std::data(bufHostSumPerBlock);
-                    resultDot = std::reduce(sumPtr, sumPtr + dataBlockingDot.m_numFrames.x(), DataType{0});
+                    resultDot = bufHostSumPerBlock[0u];
                 },
                 "DotKernel");
 

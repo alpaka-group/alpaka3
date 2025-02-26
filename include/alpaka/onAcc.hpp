@@ -69,7 +69,8 @@ namespace alpaka::onAcc
          * variables.
          */
         constexpr size_t id = T_uniqueId ^ 0x9e37'79b9'7f4a'7c15;
-        return MdSpanArray<CArrayType>{declareSharedVar<CArrayType, id>(acc)};
+        constexpr auto alignment = Alignment<alignof(T)>{};
+        return MdSpanArray<CArrayType, ALPAKA_TYPEOF(alignment)>{declareSharedVar<CArrayType, id>(acc)};
     }
 
     /** Get block shared dynamic memory.
