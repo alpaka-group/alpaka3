@@ -62,7 +62,11 @@ namespace alpaka::onAcc
          * @{
          */
         template<uint32_t T_maxConcurrencyInByte, alpaka::concepts::Alignment T_MemAlignment = AutoAligned>
-        ALPAKA_FN_ACC constexpr void concurrent(auto const& acc, auto&& func, auto&& data0, auto&&... dataN) const
+        ALPAKA_FN_INLINE ALPAKA_FN_ACC constexpr void concurrent(
+            auto const& acc,
+            auto&& func,
+            auto&& data0,
+            auto&&... dataN) const
         {
             concurrent<T_maxConcurrencyInByte, T_MemAlignment>(
                 acc,
@@ -76,7 +80,7 @@ namespace alpaka::onAcc
          * @param extents number of elements to process in each dimension
          */
         template<uint32_t T_maxConcurrencyInByte, alpaka::concepts::Alignment T_MemAlignment = AutoAligned>
-        ALPAKA_FN_ACC constexpr void concurrent(
+        ALPAKA_FN_INLINE ALPAKA_FN_ACC constexpr void concurrent(
             auto const& acc,
             alpaka::concepts::Vector auto extents,
             auto&& func,
@@ -174,7 +178,7 @@ namespace alpaka::onAcc
 
     private:
         template<alpaka::concepts::Alignment T_MemAlignment, uint32_t T_width>
-        static constexpr auto executeDo(auto const& acc, auto& iter, auto&& func, auto&&... data)
+        ALPAKA_FN_INLINE static constexpr auto executeDo(auto const& acc, auto& iter, auto&& func, auto&&... data)
         {
             auto const idx = *iter;
             func(acc, SimdPtr{data, idx, T_MemAlignment{}, CVec<uint32_t, T_width>{}}...);
@@ -192,7 +196,7 @@ namespace alpaka::onAcc
          * iter.end()
          */
         template<alpaka::concepts::Alignment T_MemAlignment, uint32_t T_width, uint32_t... T_repeat>
-        static constexpr void execute(
+        ALPAKA_FN_INLINE static constexpr void execute(
             auto const& acc,
             auto& iter,
             std::integer_sequence<uint32_t, T_repeat...>,
