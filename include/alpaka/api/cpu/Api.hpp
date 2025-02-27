@@ -58,7 +58,7 @@ namespace alpaka
 #if defined(__AVX512BW__) || defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512VL__)
                     64u;
 #elif defined(__riscv_vector)
-                    64u
+                    64u;
 #elif defined(__AVX2__)
                     32u;
 #elif defined(__SSE__) || defined(__SSE2__) || defined(__SSE4_1__) || defined(__SSE4_2__)
