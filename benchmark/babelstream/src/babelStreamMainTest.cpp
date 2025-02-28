@@ -352,7 +352,7 @@ void testKernels(auto cfg)
      * a kernel can reflect the concurrency bytes used for the `SimdForEach::concurrent()` back to the host, e.g. some
      * as we use for dynamic shared memory.
      */
-    constexpr uint32_t elementsPerFrameItem = 64u;
+    constexpr uint32_t elementsPerFrameItem = 16u;
 
     auto numFrames = core::divCeil(arraySize, static_cast<Idx>(blockThreadExtentMain) * elementsPerFrameItem);
     auto dataBlocking = onHost::FrameSpec{numFrames, static_cast<Idx>(blockThreadExtentMain)};
@@ -487,8 +487,14 @@ void testKernels(auto cfg)
         }
         if(kernelsToBeExecuted == KernelsToRun::All)
         {
-            auto dataBlockingDot
-                = onHost::FrameSpec{static_cast<Idx>(dotGridBlockExtent), static_cast<Idx>(blockThreadExtentMain)};
+            constexpr uint32_t elementsPerFrameItem = 16u;
+            auto numFrames = std::max(
+                Idx{1},
+                std::min(
+                    static_cast<Idx>(dotGridBlockExtent),
+                    arraySize / (static_cast<Idx>(blockThreadExtentMain) * elementsPerFrameItem)));
+
+            auto dataBlockingDot = onHost::FrameSpec{numFrames, static_cast<Idx>(blockThreadExtentMain)};
 
             // Vector of sums of each block
             auto bufAccSumPerBlock = onHost::alloc<DataType>(devAcc, 1u);
