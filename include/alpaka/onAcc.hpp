@@ -109,11 +109,30 @@ namespace alpaka::onAcc
         T_IdxLayout idxLayout = T_IdxLayout{})
     {
         return internal::MakeIter::
-            Op<ALPAKA_TYPEOF(acc), ALPAKA_TYPEOF(DomainSpec{workGroup, range}), T_Traverse, T_IdxLayout>{}(
+            Op<void, ALPAKA_TYPEOF(acc), ALPAKA_TYPEOF(DomainSpec{workGroup, range}), T_Traverse, T_IdxLayout>{}(
                 acc,
                 DomainSpec{workGroup, range},
                 traverse,
                 idxLayout);
+    }
+
+    template<
+        typename T_ScalarIdxType,
+        concepts::IdxTraversing T_Traverse = traverse::Flat,
+        concepts::IdxMapping T_IdxLayout = layout::Optimized>
+    ALPAKA_FN_HOST_ACC constexpr auto makeIdxMap(
+        auto const& acc,
+        auto const workGroup,
+        auto const range,
+        T_Traverse traverse = T_Traverse{},
+        T_IdxLayout idxLayout = T_IdxLayout{})
+    {
+        return internal::MakeIter::Op<
+            T_ScalarIdxType,
+            ALPAKA_TYPEOF(acc),
+            ALPAKA_TYPEOF(DomainSpec{workGroup, range}),
+            T_Traverse,
+            T_IdxLayout>{}(acc, DomainSpec{workGroup, range}, traverse, idxLayout);
     }
 
     /** specialization for 1-dimensional ranges
@@ -132,11 +151,34 @@ namespace alpaka::onAcc
         T_IdxLayout idxLayout = T_IdxLayout{}) requires(ALPAKA_TYPEOF(range)::dim() == 1u)
     {
         return internal::MakeIter::
-            Op<ALPAKA_TYPEOF(acc), ALPAKA_TYPEOF(DomainSpec{workGroup, range}), T_Traverse, T_IdxLayout>{}(
+            Op<void, ALPAKA_TYPEOF(acc), ALPAKA_TYPEOF(DomainSpec{workGroup, range}), T_Traverse, T_IdxLayout>{}(
                 acc,
                 DomainSpec{workGroup, range},
                 traverse,
                 idxLayout);
+    }
+
+    /**
+     * @tparam T_ScalarIdxType The type of the indices used within the index container. If `void` the index type will
+     * be derived from the range
+     */
+    template<
+        typename T_ScalarIdxType,
+        concepts::IdxTraversing T_Traverse = traverse::Tiled,
+        concepts::IdxMapping T_IdxLayout = layout::Optimized>
+    ALPAKA_FN_HOST_ACC constexpr auto makeIdxMap(
+        auto const& acc,
+        auto const workGroup,
+        alpaka::concepts::HasStaticDim auto const range,
+        T_Traverse traverse = T_Traverse{},
+        T_IdxLayout idxLayout = T_IdxLayout{}) requires(ALPAKA_TYPEOF(range)::dim() == 1u)
+    {
+        return internal::MakeIter::Op<
+            T_ScalarIdxType,
+            ALPAKA_TYPEOF(acc),
+            ALPAKA_TYPEOF(DomainSpec{workGroup, range}),
+            T_Traverse,
+            T_IdxLayout>{}(acc, DomainSpec{workGroup, range}, traverse, idxLayout);
     }
 
     /**

@@ -86,7 +86,29 @@ namespace alpaka
 
         T_ThreadIdx m_threadIdx;
         T_ThreadCount m_threadCount;
+
+        using type = typename T_ThreadIdx::type;
     };
+
+    namespace internal
+    {
+        template<typename T_To, typename T_ThreadIdx, typename T_ThreadCount>
+        struct PCast::Op<T_To, ThreadSpace<T_ThreadIdx, T_ThreadCount>>
+        {
+            constexpr decltype(auto) operator()(auto&& input) const
+                requires std::convertible_to<typename T_ThreadIdx::type, T_To>
+                         && (!std::same_as<T_To, typename T_ThreadIdx::type>)
+            {
+                return ThreadSpace{pCast<T_To>(input.m_threadIdx), pCast<T_To>(input.m_threadCount)};
+            }
+
+            constexpr decltype(auto) operator()(auto&& input) const
+                requires std::same_as<T_To, typename T_ThreadIdx::type>
+            {
+                return input;
+            }
+        };
+    } // namespace internal
 
     template<std::size_t I, typename T_ThreadIdx, typename T_ThreadCount>
     constexpr auto get(alpaka::ThreadSpace<T_ThreadIdx, T_ThreadCount> const& v) requires(I == 0u)

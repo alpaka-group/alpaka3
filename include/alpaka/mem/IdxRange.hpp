@@ -97,7 +97,28 @@ namespace alpaka
         T_Begin m_begin;
         T_End m_end;
         T_Stride m_stride;
+
+        using type = typename T_Begin::type;
     };
+
+    namespace internal
+    {
+        template<typename T_To, concepts::Vector T_End, concepts::Vector T_Begin, concepts::Vector T_Stride>
+        struct PCast::Op<T_To, IdxRange<T_End, T_Begin, T_Stride>>
+        {
+            constexpr decltype(auto) operator()(auto&& input) const
+                requires std::convertible_to<typename T_End::type, T_To> && (!std::same_as<T_To, typename T_End::type>)
+            {
+                return IdxRange{pCast<T_To>(input.m_begin), pCast<T_To>(input.m_end), pCast<T_To>(input.m_stride)};
+            }
+
+            constexpr decltype(auto) operator()(auto&& input) const requires std::same_as<T_To, typename T_End::type>
+            {
+                return input;
+            }
+        };
+
+    } // namespace internal
 
     template<concepts::VectorOrScalar T_Extent>
     ALPAKA_FN_HOST_ACC IdxRange(T_Extent const&) -> IdxRange<typename trait::getVec_t<T_Extent>::UniVec>;

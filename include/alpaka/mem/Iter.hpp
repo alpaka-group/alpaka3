@@ -255,7 +255,12 @@ namespace alpaka::onAcc
              * ALPAKA_FN_HOST_ACC is required for cuda else __host__ function called from __host__ __device__
              * warning is popping up and generated code is wrong.
              */
-            template<typename T_Acc, typename T_DomainSpec, typename T_Traverse, typename T_IdxMapping>
+            template<
+                typename T_ScalarIdxType,
+                typename T_Acc,
+                typename T_DomainSpec,
+                typename T_Traverse,
+                typename T_IdxMapping>
             struct Op
             {
                 ALPAKA_FN_HOST_ACC constexpr auto operator()(
@@ -268,9 +273,14 @@ namespace alpaka::onAcc
                     auto adjIdxMapping = adjustMapping(acc, acc[object::api]);
                     auto const idxRange = domainSpec.getIdxRange(acc);
                     auto const threadSpace = domainSpec.getThreadSpace(acc);
+
+                    using IdxType = std::conditional_t<
+                        std::is_same_v<void, T_ScalarIdxType>,
+                        typename ALPAKA_TYPEOF(idxRange)::IdxType,
+                        T_ScalarIdxType>;
                     return T_Traverse::make(
-                        idxRange,
-                        threadSpace,
+                        pCast<IdxType>(idxRange),
+                        pCast<IdxType>(threadSpace),
                         adjIdxMapping,
                         iotaCVec<
                             typename ALPAKA_TYPEOF(idxRange.distance())::type,
@@ -285,9 +295,14 @@ namespace alpaka::onAcc
                 {
                     auto const idxRange = domainSpec.getIdxRange(acc);
                     auto const threadSpace = domainSpec.getThreadSpace(acc);
+
+                    using IdxType = std::conditional_t<
+                        std::is_same_v<void, T_ScalarIdxType>,
+                        typename ALPAKA_TYPEOF(idxRange)::IdxType,
+                        T_ScalarIdxType>;
                     return T_Traverse::make(
-                        idxRange,
-                        threadSpace,
+                        pCast<IdxType>(idxRange),
+                        pCast<IdxType>(threadSpace),
                         idxMapping,
                         iotaCVec<
                             typename ALPAKA_TYPEOF(idxRange.distance())::type,
