@@ -33,7 +33,7 @@ TEST_CASE("api creation", "")
             auto numDevices = platform.getDeviceCount();
             for(uint32_t i = 0; i < numDevices; ++i)
             {
-                Device device = platform.makeDevice(0);
+                Device device = platform.makeDevice(i);
                 std::cout << "api=" << platform.getName() << "device=" << device.getName() << std::endl;
             }
 
