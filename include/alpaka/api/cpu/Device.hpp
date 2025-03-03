@@ -145,7 +145,7 @@ namespace alpaka::onHost
                 constexpr uint32_t simdPackBytes
                     = getArchSimdWidth<T_Type>(ALPAKA_TYPEOF(getApi(device)){}) * sizeof(T_Type);
                 constexpr uint32_t bestSimdPackBytes = highestPowerOfTwo(simdPackBytes);
-                constexpr uint32_t alignment = std::max(bestSimdPackBytes, typeAlignmentBytes);
+                constexpr IdxType alignment = std::max(bestSimdPackBytes, typeAlignmentBytes);
 
                 constexpr auto dim = T_Extents::dim();
                 if constexpr(dim == 1u)
@@ -164,12 +164,12 @@ namespace alpaka::onHost
                 }
                 else
                 {
-                    auto rowExtentInBytes = extents.x() * static_cast<IdxType>(sizeof(T_Type));
-                    auto rowPitchInBytes = core::divCeil(rowExtentInBytes, alignment) * alignment;
+                    IdxType rowExtentInBytes = extents.x() * static_cast<IdxType>(sizeof(T_Type));
+                    IdxType rowPitchInBytes = core::divCeil(rowExtentInBytes, alignment) * alignment;
                     auto pitches = mem::calculatePitches<T_Type>(extents, rowPitchInBytes);
 
                     // product of pitches does contain the size for the first dimension
-                    size_t memSizeInByte = lpCast<size_t>(pitches).product() * extents[0];
+                    size_t memSizeInByte = pCast<size_t>(pitches).product() * static_cast<size_t>(extents[0]);
                     auto* ptr = reinterpret_cast<T_Type*>(alpaka::core::alignedAlloc(alignment, memSizeInByte));
                     auto deleter = [](T_Type* ptr) { alpaka::core::alignedFree(alignment, ptr); };
 
@@ -264,7 +264,7 @@ namespace alpaka::onHost
                 // universal vector type that both return produce the same result type.
                 using UniVec = typename ALPAKA_TYPEOF(dataBlocking.getThreadSpec().m_numBlocks)::UniVec;
 
-                if(dataBlocking.getThreadSpec().m_numThreads.product() > 4u)
+                if(dataBlocking.getThreadSpec().m_numThreads.product() > typename UniVec::type{4u})
                 {
                     auto const numThreads = UniVec::all(1);
                     return ThreadSpec{UniVec{dataBlocking.getThreadSpec().m_numBlocks}, numThreads};

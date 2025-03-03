@@ -23,10 +23,10 @@ namespace alpaka::core
 #endif
 
     /// Returns the ceiling of a / b, as integer.
-    template<typename Integral>
+    template<std::integral Integral>
     [[nodiscard]] ALPAKA_FN_HOST_ACC constexpr auto divCeil(Integral a, Integral b) -> Integral
     {
-        return (a + b - 1u) / b;
+        return (a + b - Integral{1}) / b;
     }
 
     /// Computes the nth power of base, in integers.
