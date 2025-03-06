@@ -8,6 +8,7 @@
 #include "alpaka/Vec.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/mem/Alignment.hpp"
+#include "alpaka/mem/DataPitches.hpp"
 
 #include <type_traits>
 
@@ -25,16 +26,6 @@ namespace alpaka
         concepts::Vector auto const& extents,
         concepts::Vector auto const& pitchBytes,
         concepts::Alignment auto const& memAlignment = Alignment{})
-    {
-        return MdSpan{pointer, extents, pitchBytes.eraseBack(), memAlignment};
-    }
-
-    inline constexpr auto makeMdSpan(
-        auto* pointer,
-        concepts::Vector auto const& extents,
-        concepts::Vector auto const& pitchBytes,
-        concepts::Alignment auto const& memAlignment = Alignment{})
-        requires(ALPAKA_TYPEOF(pitchBytes)::dim() == 1u && ALPAKA_TYPEOF(extents)::dim() == 1u)
     {
         return MdSpan{pointer, extents, pitchBytes, memAlignment};
     }
@@ -97,7 +88,6 @@ namespace alpaka
             T_Extents extents,
             T_Pitches const& pitchBytes,
             [[maybe_unused]] T_MemAlignment const& memAlignmentInByte = T_MemAlignment{})
-            requires(ALPAKA_TYPEOF(pitchBytes)::dim() + 1u == T_Extents::dim())
             : m_ptr(pointer)
             , m_extent(extents)
             , m_pitch(pitchBytes)
@@ -130,6 +120,16 @@ namespace alpaka
 
         /** }@ */
 
+        constexpr element_type operator[](std::integral auto const& idx) const requires(dim() == 1u)
+        {
+            return *ptr(Vec{idx});
+        }
+
+        constexpr reference operator[](std::integral auto const& idx) requires(dim() == 1u)
+        {
+            return *ptr(Vec{idx});
+        }
+
         constexpr auto getExtents() const
         {
             return m_extent;
@@ -141,7 +141,7 @@ namespace alpaka
          * @param idx n-dimensional offset
          * @return pointer to value
          */
-        constexpr element_type const* ptr(concepts::Vector auto const& idx) const
+        constexpr element_type const* ptr(concepts::Vector auto const& idx) const requires(dim() >= 2u)
         {
             /** offset in bytes
              *
@@ -156,7 +156,7 @@ namespace alpaka
             return reinterpret_cast<element_type const*>(reinterpret_cast<char const*>(this->m_ptr) + offset);
         }
 
-        constexpr element_type* ptr(concepts::Vector auto const& idx)
+        constexpr element_type* ptr(concepts::Vector auto const& idx) requires(dim() >= 2u)
         {
             /** offset in bytes
              *
@@ -171,139 +171,19 @@ namespace alpaka
             return reinterpret_cast<element_type*>(reinterpret_cast<char*>(this->m_ptr) + offset);
         }
 
+        constexpr element_type* ptr(concepts::Vector auto const& idx) const requires(dim() == 1u)
+        {
+            return this->m_ptr + idx.x();
+        }
+
+        constexpr element_type* ptr(concepts::Vector auto const& idx) requires(dim() == 1u)
+        {
+            return this->m_ptr + idx.x();
+        }
+
         element_type* m_ptr;
         T_Extents m_extent;
-        T_Pitches m_pitch;
-    };
-
-    template<
-        typename T_Type,
-        concepts::Vector T_Extents,
-        concepts::Vector T_Pitches,
-        concepts::Alignment T_MemAlignment>
-    ALPAKA_FN_HOST_ACC MdSpan(
-        T_Type* pointer,
-        T_Extents const&,
-        T_Pitches const&,
-        [[maybe_unused]] T_MemAlignment const&) -> MdSpan<T_Type, T_Extents, T_Pitches, T_MemAlignment>;
-
-    template<
-        typename T_Type,
-        concepts::Vector T_Extents,
-        concepts::Vector T_Pitches,
-        concepts::Alignment T_MemAlignment>
-    requires(T_Pitches::dim() == 1u && T_Extents::dim() == 1u)
-    struct MdSpan<T_Type, T_Extents, T_Pitches, T_MemAlignment>
-    {
-        using element_type = T_Type;
-        using reference = element_type&;
-        using index_type = typename T_Pitches::type;
-
-        static_assert(std::is_convertible_v<index_type, typename T_Extents::type>);
-
-        static consteval uint32_t dim()
-        {
-            return 1u;
-        }
-
-        /** return value the origin pointer is pointing to
-         *
-         * @return value at the current location
-         */
-        constexpr reference operator*()
-        {
-            return *this->m_ptr;
-        }
-
-        /** get origin pointer
-         *
-         * @{
-         */
-        constexpr element_type const* data() const
-        {
-            return this->m_ptr;
-        }
-
-        constexpr element_type* data()
-        {
-            return this->m_ptr;
-        }
-
-        /** @} */
-
-        /*Object must init by copy a valid instance*/
-        constexpr MdSpan() = default;
-
-        /** Constructor
-         *
-         * @param pointer pointer to the memory
-         * @param extents number of elements
-         * @param pitchBytes pitch in bytes per dimension
-         * @param memAlignmentInByte alignment in bytes (zero will set alignment to element alignment)
-         */
-        constexpr MdSpan(
-            T_Type* pointer,
-            T_Extents const& extents,
-            [[maybe_unused]] T_Pitches const& pitchBytes,
-            [[maybe_unused]] T_MemAlignment const& memAlignmentInByte = T_MemAlignment{})
-            : m_ptr(pointer)
-            , m_extent(extents)
-        {
-        }
-
-        constexpr MdSpan(element_type* pointer) : m_ptr(pointer)
-        {
-        }
-
-        static consteval auto getAlignment()
-        {
-            return T_MemAlignment{};
-        }
-
-        constexpr MdSpan(MdSpan const&) = default;
-        constexpr MdSpan(MdSpan&&) = default;
-
-        /** get value at the given index
-         *
-         * @param idx offset relative to the origin pointer
-         * @return reference to the value
-         * @{
-         */
-        constexpr element_type const& operator[](concepts::Vector auto const& idx) const
-        {
-            return *(m_ptr + idx.x());
-        }
-
-        constexpr reference operator[](concepts::Vector auto const& idx)
-        {
-            return *(m_ptr + idx.x());
-        }
-
-        constexpr element_type const& operator[](std::integral auto const& idx) const
-        {
-            return *(m_ptr + idx);
-        }
-
-        constexpr reference operator[](std::integral auto const& idx)
-        {
-            return *(m_ptr + idx);
-        }
-
-        constexpr bool operator==(MdSpan const other) const
-        {
-            return m_ptr == other.m_ptr && m_extent == other.m_extent;
-        }
-
-        /** @} */
-
-        constexpr auto getExtents() const
-        {
-            return m_extent;
-        }
-
-    protected:
-        element_type* m_ptr;
-        T_Extents m_extent;
+        DataPitches<element_type, T_Pitches> m_pitch;
     };
 
     /** access a C array with compile time extents via a runtime md index. */
