@@ -68,7 +68,7 @@ namespace alpaka
             {
                 /** vector load and store width in bytes */
                 constexpr std::size_t simdWidthInByte = 16u;
-                return simdWidthInByte / sizeof(T_Type);
+                return std::max(static_cast<uint32_t>(simdWidthInByte / sizeof(T_Type)), 1u);
             }
         };
 
