@@ -180,6 +180,10 @@ namespace alpaka::onHost
 
     /** copy data byte wise from one to another container
      *
+     * @attention For dest and source the caller should ensure that the memory is valid until the operation is
+     * completed not until the execution handle is given back because alpaka is not extending the life-time until the
+     * operation is finished.
+     *
      * @param queue the copy will be executed after all previous work in this queue is finished
      * @param dest can be a container/view where the data should be written to
      * @param source can be a container/view from which the data will be copied
@@ -212,6 +216,9 @@ namespace alpaka::onHost
      *
      * @param queue memset will be executed after all previous work in this queue is finished
      * @param dest can be a container/view where the data should be written to
+     *             The caller should ensure that the memory is valid until the operation is completed not until the
+     *             execution handle is given back because alpaka is not extending the life-time until the operation is
+     *             finished.
      * @param byteValue value to be written to each byte
      *
      * @{

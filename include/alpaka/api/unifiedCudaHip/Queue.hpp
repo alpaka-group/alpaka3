@@ -274,8 +274,8 @@ namespace alpaka::onHost
         {
             void operator()(
                 unifiedCudaHip::Queue<T_Device>& queue,
-                T_Dest dest,
-                T_Source const source,
+                T_Dest& dest,
+                T_Source const& source,
                 T_Extents const& extents) const
             {
                 using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
@@ -352,7 +352,7 @@ namespace alpaka::onHost
         {
             void operator()(
                 unifiedCudaHip::Queue<T_Device>& queue,
-                T_Dest dest,
+                T_Dest& dest,
                 uint8_t byteValue,
                 T_Extents const& extents) const
             {

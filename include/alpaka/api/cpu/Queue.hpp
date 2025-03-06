@@ -138,38 +138,40 @@ namespace alpaka::onHost
         template<typename T_Device, typename T_Dest, typename T_Source, typename T_Extents>
         struct Memcpy::Op<cpu::Queue<T_Device>, T_Dest, T_Source, T_Extents>
         {
-            void operator()(cpu::Queue<T_Device>& queue, T_Dest dest, T_Source const source, T_Extents const& extents)
-                const
+            void operator()(
+                cpu::Queue<T_Device>& queue,
+                T_Dest& dest,
+                T_Source const& source,
+                T_Extents const& extents) const
             {
                 static_assert(std::is_same_v<ALPAKA_TYPEOF(dest), ALPAKA_TYPEOF(source)>);
                 constexpr auto dim = dest.dim();
+
+                /* Get all required properties outside the lambda function to not extend the life-time of the data.
+                 * The life-time is not extended to have some life-time behaviours with all backends.
+                 */
+                auto* destPtr = alpaka::onHost::data(dest);
+                auto const* srcPtr = alpaka::onHost::data(source);
+
                 if constexpr(dim == 1u)
                 {
                     internal::enqueue(
                         queue,
-                        [extents, l_dest = std::move(dest), l_source = std::move(source)]()
-                        {
-                            std::memcpy(
-                                alpaka::onHost::data(l_dest),
-                                alpaka::onHost::data(l_source),
-                                extents.x() * sizeof(typename T_Dest::type));
-                        });
+                        [extents, destPtr, srcPtr]()
+                        { std::memcpy(destPtr, srcPtr, extents.x() * sizeof(typename T_Dest::type)); });
                 }
-
                 else
                 {
+                    // memcpy is implemented as row wise copy therefore the last dimension is not required
+                    auto destPitchBytesWithoutColumn = dest.getPitches().eraseBack();
+                    auto sourcePitchBytesWithoutColumn = source.getPitches().eraseBack();
                     internal::enqueue(
                         queue,
-                        [extents, l_dest = std::move(dest), l_source = std::move(source)]()
+                        [extents, destPtr, srcPtr, destPitchBytesWithoutColumn, sourcePitchBytesWithoutColumn]()
                         {
                             auto const dstExtentWithoutColumn = extents.eraseBack();
                             if(static_cast<std::size_t>(extents.product()) != 0u)
                             {
-                                auto const destPitchBytesWithoutColumn = l_dest.getPitches().eraseBack();
-                                auto* destPtr = data(l_dest);
-                                auto const sourcePitchBytesWithoutColumn = l_source.getPitches().eraseBack();
-                                auto* sourcePtr = data(l_source);
-
                                 meta::ndLoopIncIdx(
                                     dstExtentWithoutColumn,
                                     [&](auto const& idx)
@@ -177,7 +179,7 @@ namespace alpaka::onHost
                                         std::memcpy(
                                             reinterpret_cast<std::uint8_t*>(destPtr)
                                                 + (idx * destPitchBytesWithoutColumn).sum(),
-                                            reinterpret_cast<std::uint8_t*>(sourcePtr)
+                                            reinterpret_cast<std::uint8_t const*>(srcPtr)
                                                 + (idx * sourcePitchBytesWithoutColumn).sum(),
                                             static_cast<size_t>(extents.back()) * sizeof(typename T_Dest::type));
                                     });
@@ -190,34 +192,31 @@ namespace alpaka::onHost
         template<typename T_Device, typename T_Dest, typename T_Extents>
         struct Memset::Op<cpu::Queue<T_Device>, T_Dest, T_Extents>
         {
-            void operator()(cpu::Queue<T_Device>& queue, T_Dest dest, uint8_t byteValue, T_Extents const& extents)
+            void operator()(cpu::Queue<T_Device>& queue, T_Dest& dest, uint8_t byteValue, T_Extents const& extents)
                 const
             {
                 constexpr auto dim = dest.dim();
+
+                auto* destPtr = alpaka::onHost::data(dest);
+
                 if constexpr(dim == 1u)
                 {
                     internal::enqueue(
                         queue,
-                        [extents, l_dest = std::move(dest), byteValue]() {
-                            std::memset(
-                                alpaka::onHost::data(l_dest),
-                                byteValue,
-                                extents.x() * sizeof(typename T_Dest::type));
-                        });
+                        [extents, destPtr, byteValue]()
+                        { std::memset(destPtr, byteValue, extents.x() * sizeof(typename T_Dest::type)); });
                 }
-
                 else
                 {
+                    // memset is implemented as row wise memset therefore the last dimension is not required
+                    auto destPitchBytesWithoutColumn = dest.getPitches().eraseBack();
                     internal::enqueue(
                         queue,
-                        [extents, l_dest = std::move(dest), byteValue]()
+                        [extents, destPtr, destPitchBytesWithoutColumn, byteValue]()
                         {
                             auto const dstExtentWithoutColumn = extents.eraseBack();
                             if(static_cast<std::size_t>(extents.product()) != 0u)
                             {
-                                auto const destPitchBytesWithoutColumn = l_dest.getPitches().eraseBack();
-                                auto* destPtr = data(l_dest);
-
                                 meta::ndLoopIncIdx(
                                     dstExtentWithoutColumn,
                                     [&](auto const& idx)
