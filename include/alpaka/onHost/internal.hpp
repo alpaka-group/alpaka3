@@ -180,11 +180,11 @@ namespace alpaka::onHost
             {
                 decltype(auto) operator()(auto&& any) const
                 {
-                    return any.data();
+                    return std::data(any);
                 }
             };
 
-            static auto data(auto&& any)
+            static decltype(auto) data(auto&& any)
             {
                 return Op<std::decay_t<decltype(any)>>{}(any);
             }
@@ -227,5 +227,39 @@ namespace alpaka::onHost
                 DeviceProperties operator()(auto const& device) const;
             };
         };
+
+        struct GetExtents
+        {
+            template<typename T_Any>
+            struct Op
+            {
+                decltype(auto) operator()(auto&& any) const
+                {
+                    return any.getExtents();
+                }
+            };
+        };
+
+        inline auto getExtents(auto&& any)
+        {
+            return GetExtents::Op<std::decay_t<decltype(any)>>{}(any);
+        }
+
+        struct GetPitches
+        {
+            template<typename T_Any>
+            struct Op
+            {
+                decltype(auto) operator()(auto&& any) const
+                {
+                    return any.getPitches();
+                }
+            };
+        };
+
+        inline auto getPitches(auto&& any)
+        {
+            return GetPitches::Op<std::decay_t<decltype(any)>>{}(any);
+        }
     } // namespace internal
 } // namespace alpaka::onHost

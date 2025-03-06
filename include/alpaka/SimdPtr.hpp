@@ -33,7 +33,7 @@ namespace alpaka
         alpaka::concepts::CVector T_SimdWidth>
     struct SimdPtr : private T_MdSpan
     {
-        using element_type = typename T_MdSpan::element_type;
+        using value_type = typename T_MdSpan::value_type;
         using IdxType = typename T_IdxType::UniVec;
 
         static consteval uint32_t width()
@@ -56,7 +56,7 @@ namespace alpaka
          */
         constexpr auto operator[](alpaka::concepts::Vector auto const& idx) const
         {
-            constexpr uint32_t valueAlignment = static_cast<uint32_t>(alignof(element_type));
+            constexpr uint32_t valueAlignment = static_cast<uint32_t>(alignof(value_type));
             constexpr auto align = Alignment<valueAlignment>{};
             return SimdPtr<T_MdSpan, T_IdxType, ALPAKA_TYPEOF(align), T_SimdWidth>{
                 static_cast<T_MdSpan>(*this),
@@ -67,7 +67,7 @@ namespace alpaka
 
         constexpr auto operator[](alpaka::concepts::Vector auto const& idx)
         {
-            constexpr uint32_t valueAlignment = static_cast<uint32_t>(alignof(element_type));
+            constexpr uint32_t valueAlignment = static_cast<uint32_t>(alignof(value_type));
             constexpr auto align = Alignment<valueAlignment>{};
             return SimdPtr<T_MdSpan, T_IdxType, ALPAKA_TYPEOF(align), T_SimdWidth>{
                 static_cast<T_MdSpan>(*this),
@@ -97,7 +97,7 @@ namespace alpaka
          */
         static consteval auto getAlignment()
         {
-            using SpanElemType = typename T_MdSpan::element_type;
+            using SpanElemType = typename T_MdSpan::value_type;
             constexpr uint32_t spanAlignment = T_MdSpan::getAlignment().template get<SpanElemType>();
             using MemoryAlignment = std::conditional_t<
                 std::is_same_v<AutoAligned, T_MemAlignment>,
@@ -113,7 +113,7 @@ namespace alpaka
          * @{
          */
         template<typename T_Storage>
-        constexpr void storeTo(Simd<element_type, SimdPtr::width(), T_Storage> const& rhs)
+        constexpr void storeTo(Simd<value_type, SimdPtr::width(), T_Storage> const& rhs)
         {
             auto* ptr = &T_MdSpan::operator[](m_idx);
 
@@ -121,7 +121,7 @@ namespace alpaka
         }
 
         template<typename T_Storage>
-        constexpr SimdPtr& operator=(Simd<element_type, SimdPtr::width(), T_Storage> const& rhs)
+        constexpr SimdPtr& operator=(Simd<value_type, SimdPtr::width(), T_Storage> const& rhs)
         {
             storeTo(rhs);
             return *this;

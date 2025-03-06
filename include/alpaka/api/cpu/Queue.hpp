@@ -144,8 +144,7 @@ namespace alpaka::onHost
                 T_Source const& source,
                 T_Extents const& extents) const
             {
-                static_assert(std::is_same_v<ALPAKA_TYPEOF(dest), ALPAKA_TYPEOF(source)>);
-                constexpr auto dim = dest.dim();
+                constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
 
                 /* Get all required properties outside the lambda function to not extend the life-time of the data.
                  * The life-time is not extended to have some life-time behaviours with all backends.
@@ -157,8 +156,9 @@ namespace alpaka::onHost
                 {
                     internal::enqueue(
                         queue,
-                        [extents, destPtr, srcPtr]()
-                        { std::memcpy(destPtr, srcPtr, extents.x() * sizeof(typename T_Dest::type)); });
+                        [extents, destPtr, srcPtr]() {
+                            std::memcpy(destPtr, srcPtr, extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
+                        });
                 }
                 else
                 {
@@ -181,7 +181,8 @@ namespace alpaka::onHost
                                                 + (idx * destPitchBytesWithoutColumn).sum(),
                                             reinterpret_cast<std::uint8_t const*>(srcPtr)
                                                 + (idx * sourcePitchBytesWithoutColumn).sum(),
-                                            static_cast<size_t>(extents.back()) * sizeof(typename T_Dest::type));
+                                            static_cast<size_t>(extents.back())
+                                                * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
                                     });
                             }
                         });
@@ -195,7 +196,7 @@ namespace alpaka::onHost
             void operator()(cpu::Queue<T_Device>& queue, T_Dest& dest, uint8_t byteValue, T_Extents const& extents)
                 const
             {
-                constexpr auto dim = dest.dim();
+                constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
 
                 auto* destPtr = alpaka::onHost::data(dest);
 
@@ -203,8 +204,12 @@ namespace alpaka::onHost
                 {
                     internal::enqueue(
                         queue,
-                        [extents, destPtr, byteValue]()
-                        { std::memset(destPtr, byteValue, extents.x() * sizeof(typename T_Dest::type)); });
+                        [extents, destPtr, byteValue]() {
+                            std::memset(
+                                destPtr,
+                                byteValue,
+                                extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
+                        });
                 }
                 else
                 {
@@ -225,7 +230,8 @@ namespace alpaka::onHost
                                             reinterpret_cast<std::uint8_t*>(destPtr)
                                                 + (idx * destPitchBytesWithoutColumn).sum(),
                                             byteValue,
-                                            static_cast<size_t>(extents.back()) * sizeof(typename T_Dest::type));
+                                            static_cast<size_t>(extents.back())
+                                                * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
                                     });
                             }
                         });

@@ -27,10 +27,35 @@ namespace alpaka
 
         template<typename T>
         constexpr uint32_t getDim_v = GetDim<T>::value;
+
+        template<typename T>
+        struct GetValueType
+        {
+            using type = typename T::value_type;
+        };
+
+        template<typename T>
+        requires(std::is_fundamental_v<T>)
+        struct GetValueType<T>
+        {
+            using type = T;
+        };
+
+        // resolve handles
+        template<typename T>
+        requires requires() { typename T::element_type; }
+        struct GetValueType<T>
+        {
+            using type = typename GetValueType<typename T::element_type>::type;
+        };
+
+        template<typename T>
+        using GetValueType_t = typename GetValueType<T>::type;
+
     } // namespace trait
 
     template<typename T>
-    consteval uint32_t getDim(T const& any)
+    consteval uint32_t getDim([[maybe_unused]] T const& any)
     {
         return trait::getDim_v<T>;
     }

@@ -86,7 +86,7 @@ namespace alpaka::onHost
             m_deleter(m_data);
         }
 
-        using type = T_Type;
+        using value_type = T_Type;
         using ExtentType = T_Extents;
 
         // private:
@@ -134,6 +134,8 @@ namespace alpaka::onHost
         }
 
         friend struct alpaka::internal::GetApi;
+        friend struct alpaka::onHost::internal::GetExtents;
+        friend struct alpaka::onHost::internal::GetPitches;
     };
 } // namespace alpaka::onHost
 

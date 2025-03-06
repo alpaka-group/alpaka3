@@ -31,4 +31,5 @@
 #include "alpaka/onHost/Platform.hpp"
 #include "alpaka/onHost/Queue.hpp"
 #include "alpaka/onHost/mem/View.hpp"
+#include "alpaka/onHost/mem/stdContainer.hpp"
 #include "alpaka/tag.hpp"

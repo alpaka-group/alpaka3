@@ -123,7 +123,7 @@ struct MultKernel
     template<typename TAcc>
     ALPAKA_FN_ACC void operator()(TAcc const& acc, auto b, auto const c, auto arraySize) const
     {
-        using T = typename ALPAKA_TYPEOF(b)::element_type;
+        using T = trait::GetValueType_t<ALPAKA_TYPEOF(b)>;
         T const scalar = static_cast<T>(scalarVal);
 
         auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
@@ -174,7 +174,7 @@ struct TriadKernel
     template<typename TAcc>
     ALPAKA_FN_ACC void operator()(TAcc const& acc, auto a, auto const b, auto const c, auto arraySize) const
     {
-        using T = typename ALPAKA_TYPEOF(a)::element_type;
+        using T = trait::GetValueType_t<ALPAKA_TYPEOF(a)>;
         T const scalar = static_cast<T>(scalarVal);
 
         auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
@@ -215,7 +215,7 @@ struct DotKernel
     template<typename TAcc>
     ALPAKA_FN_ACC void operator()(TAcc const& acc, auto const a, auto const b, auto sum, auto arraySize) const
     {
-        using T = typename ALPAKA_TYPEOF(sum)::element_type;
+        using T = trait::GetValueType_t<ALPAKA_TYPEOF(sum)>;
         auto tbSum = onAcc::declareSharedMdArray<T, uniqueId()>(acc, CVec<uint32_t, blockThreadExtentMain>{});
 #if 1
         auto numFrames = acc[frame::count];

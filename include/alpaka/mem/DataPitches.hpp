@@ -17,7 +17,7 @@ namespace alpaka
     template<typename T_Type, concepts::Vector T_Pitches>
     struct DataPitches
     {
-        using element_type = T_Type;
+        using value_type = T_Type;
         using index_type = typename T_Pitches::type;
 
         static consteval uint32_t dim()
@@ -27,7 +27,7 @@ namespace alpaka
 
         constexpr DataPitches(T_Pitches const& pitchBytes) : m_pitch(pitchBytes.eraseBack())
         {
-            assert(pitchBytes.back() == sizeof(element_type));
+            assert(pitchBytes.back() == sizeof(value_type));
         }
 
         /*Object must init by copy a valid instance*/
@@ -40,7 +40,7 @@ namespace alpaka
             {
                 result[d] = m_pitch[d];
             }
-            result.back() = static_cast<index_type>(sizeof(element_type));
+            result.back() = static_cast<index_type>(sizeof(value_type));
             return m_pitch;
         }
 
@@ -56,7 +56,7 @@ namespace alpaka
     template<typename T_Type, typename T_IndexType>
     struct DataPitches<T_Type, Vec<T_IndexType, 1u>>
     {
-        using element_type = T_Type;
+        using value_type = T_Type;
         using index_type = T_IndexType;
 
         static consteval uint32_t dim()
@@ -66,7 +66,7 @@ namespace alpaka
 
         constexpr DataPitches([[maybe_unused]] Vec<T_IndexType, 1u> const& pitchBytes)
         {
-            assert(pitchBytes.back() == sizeof(element_type));
+            assert(pitchBytes.back() == sizeof(value_type));
         }
 
         /*Object must init by copy a valid instance*/
@@ -74,7 +74,7 @@ namespace alpaka
 
         constexpr auto getPitches() const
         {
-            return Vec{static_cast<index_type>(sizeof(element_type))};
+            return Vec{static_cast<index_type>(sizeof(value_type))};
         }
     };
 } // namespace alpaka

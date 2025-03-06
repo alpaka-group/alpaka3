@@ -8,9 +8,48 @@
 #include "alpaka/concepts.hpp"
 #include "alpaka/onHost/DeviceProperties.hpp"
 #include "alpaka/onHost/concepts.hpp"
+#include "alpaka/trait.hpp"
 
 namespace alpaka::onHost
 {
+    /** Get extents of an object
+     *
+     * @param any can be a view, a data
+     * @return the extents of the object
+     *
+     * @{
+     */
+    inline decltype(auto) getExtents(auto&& any)
+    {
+        return internal::getExtents(ALPAKA_FORWARD(any));
+    }
+
+    inline decltype(auto) getExtents(alpaka::concepts::HasGet auto&& any)
+    {
+        return internal::getExtents(*any.get());
+    }
+
+    /** @} */
+
+    /** Get the number of elements of an object
+     *
+     * @param any can be a view, a data
+     * @return the number of elements of the object
+     *
+     * @{
+     */
+    inline decltype(auto) getPitches(auto&& any)
+    {
+        return internal::getPitches(ALPAKA_FORWARD(any));
+    }
+
+    inline decltype(auto) getPitches(alpaka::concepts::HasGet auto&& any)
+    {
+        return internal::getPitches(*any.get());
+    }
+
+    /** @} */
+
     /** create a platform to get access to devices */
     inline concepts::PlatformHandle auto makePlatform(alpaka::concepts::Api auto&& api)
     {
@@ -175,7 +214,7 @@ namespace alpaka::onHost
      */
     inline auto allocMirror(auto const& device, auto const& view)
     {
-        return alloc<typename ALPAKA_TYPEOF(view)::type>(device, view.getExtents());
+        return alloc<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(device, getExtents(view));
     }
 
     /** copy data byte wise from one to another container
@@ -192,7 +231,7 @@ namespace alpaka::onHost
      */
     inline void memcpy(concepts::QueueHandle auto& queue, auto& dest, auto const& source)
     {
-        return memcpy(queue, dest, source, dest.getExtents());
+        return memcpy(queue, dest, source, getExtents(dest));
     }
 
     /** @param extents M-dimensional data extents in elements, can be smaller than the container capacity */
@@ -225,7 +264,7 @@ namespace alpaka::onHost
      */
     inline auto memset(concepts::QueueHandle auto& queue, auto& dest, uint8_t byteValue)
     {
-        return memset(queue, dest, byteValue, dest.getExtents());
+        return memset(queue, dest, byteValue, getExtents(dest));
     }
 
     /** @param extents M-dimensional data extents in elements, can be smaller than the container capacity */

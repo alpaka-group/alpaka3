@@ -32,7 +32,7 @@ struct IotaKernelND
 {
     ALPAKA_FN_ACC void operator()(auto const& acc, auto out, auto outSize) const
     {
-        using MemScalarType = typename ALPAKA_TYPEOF(out)::element_type::type;
+        using MemScalarType = typename alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>::type;
         for(auto i : onAcc::makeIdxMap<T_LoopIdxType>(acc, onAcc::worker::threadsInGrid, IdxRange{out.getExtents()}))
         {
             out[i] = pCast<MemScalarType>(i);

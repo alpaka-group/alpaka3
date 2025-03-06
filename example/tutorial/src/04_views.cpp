@@ -33,13 +33,13 @@ int example(auto const deviceApi)
 
     // allocate a buffer of floats in host memory
     uint32_t size = 42;
-    auto host_buffer = alpaka::onHost::alloc<float>(host, size);
-    std::cout << "host memory buffer at " << std::data(host_buffer) << "\n\n";
+    std::vector<float> host_data(size);
+    std::cout << "host vector at " << std::data(host_data) << "\n\n";
 
     // fill the host buffers with values
     for(uint32_t i = 0; i < size; ++i)
     {
-        host_buffer[i] = i;
+        host_data[i] = i;
     }
 
     // use the first device
@@ -61,7 +61,7 @@ int example(auto const deviceApi)
         auto view = alpaka::onHost::View(device_buffer);
 
         // copy the contents of the device buffer to the host buffer
-        alpaka::onHost::memcpy(queue, host_buffer, view);
+        alpaka::onHost::memcpy(queue, host_data, view);
 
         // the device buffer goes out of scope, but the memory is freed only
         // once all enqueued operations have completed
@@ -73,7 +73,7 @@ int example(auto const deviceApi)
     // read the content of the host buffer
     for(uint32_t i = 0; i < size; ++i)
     {
-        std::cout << host_buffer[i] << ' ';
+        std::cout << host_data[i] << ' ';
     }
     std::cout << '\n';
 

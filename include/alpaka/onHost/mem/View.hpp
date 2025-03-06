@@ -60,7 +60,7 @@ namespace alpaka::onHost
             return T_Extents::dim();
         }
 
-        using type = typename T_Datahandle::element_type::type;
+        using value_type = alpaka::trait::GetValueType_t<T_Datahandle>;
         using index_type = typename T_Extents::type;
 
         /** get the number of elements for each dimension */

@@ -37,8 +37,8 @@ namespace alpaka
         concepts::Alignment T_MemAlignment>
     struct MdSpan
     {
-        using element_type = T_Type;
-        using reference = element_type&;
+        using value_type = T_Type;
+        using reference = value_type&;
         using index_type = typename T_Pitches::type;
 
         static_assert(std::is_convertible_v<index_type, typename T_Extents::type>);
@@ -61,12 +61,12 @@ namespace alpaka
          *
          * @{
          */
-        constexpr element_type const* data() const
+        constexpr value_type const* data() const
         {
             return this->m_ptr;
         }
 
-        constexpr element_type* data()
+        constexpr value_type* data()
         {
             return this->m_ptr;
         }
@@ -108,19 +108,19 @@ namespace alpaka
          * @return reference to the value
          * @{
          */
-        constexpr element_type const& operator[](concepts::Vector auto const& idx) const
+        constexpr value_type const& operator[](concepts::Vector auto const& idx) const
         {
             return *ptr(idx);
         }
 
         constexpr reference operator[](concepts::Vector auto const& idx)
         {
-            return *const_cast<element_type*>(ptr(idx));
+            return *const_cast<value_type*>(ptr(idx));
         }
 
         /** }@ */
 
-        constexpr element_type operator[](std::integral auto const& idx) const requires(dim() == 1u)
+        constexpr value_type operator[](std::integral auto const& idx) const requires(dim() == 1u)
         {
             return *ptr(Vec{idx});
         }
@@ -141,49 +141,49 @@ namespace alpaka
          * @param idx n-dimensional offset
          * @return pointer to value
          */
-        constexpr element_type const* ptr(concepts::Vector auto const& idx) const requires(dim() >= 2u)
+        constexpr value_type const* ptr(concepts::Vector auto const& idx) const requires(dim() >= 2u)
         {
             /** offset in bytes
              *
              * We calculate the complete offset in bytes even if it would be possible to change the x-dimension
-             * with the native element_types pointer, this is reducing the register footprint.
+             * with the native value_types pointer, this is reducing the register footprint.
              */
-            index_type offset = sizeof(element_type) * idx.back();
+            index_type offset = sizeof(value_type) * idx.back();
             for(uint32_t d = 0u; d < dim() - 1u; ++d)
             {
                 offset += m_pitch[d] * idx[d];
             }
-            return reinterpret_cast<element_type const*>(reinterpret_cast<char const*>(this->m_ptr) + offset);
+            return reinterpret_cast<value_type const*>(reinterpret_cast<char const*>(this->m_ptr) + offset);
         }
 
-        constexpr element_type* ptr(concepts::Vector auto const& idx) requires(dim() >= 2u)
+        constexpr value_type* ptr(concepts::Vector auto const& idx) requires(dim() >= 2u)
         {
             /** offset in bytes
              *
              * We calculate the complete offset in bytes even if it would be possible to change the x-dimension
-             * with the native element_types pointer, this is reducing the register footprint.
+             * with the native value_types pointer, this is reducing the register footprint.
              */
-            index_type offset = sizeof(element_type) * idx.back();
+            index_type offset = sizeof(value_type) * idx.back();
             for(uint32_t d = 0u; d < dim() - 1u; ++d)
             {
                 offset += m_pitch[d] * idx[d];
             }
-            return reinterpret_cast<element_type*>(reinterpret_cast<char*>(this->m_ptr) + offset);
+            return reinterpret_cast<value_type*>(reinterpret_cast<char*>(this->m_ptr) + offset);
         }
 
-        constexpr element_type* ptr(concepts::Vector auto const& idx) const requires(dim() == 1u)
+        constexpr value_type* ptr(concepts::Vector auto const& idx) const requires(dim() == 1u)
         {
             return this->m_ptr + idx.x();
         }
 
-        constexpr element_type* ptr(concepts::Vector auto const& idx) requires(dim() == 1u)
+        constexpr value_type* ptr(concepts::Vector auto const& idx) requires(dim() == 1u)
         {
             return this->m_ptr + idx.x();
         }
 
-        element_type* m_ptr;
+        value_type* m_ptr;
         T_Extents m_extent;
-        DataPitches<element_type, T_Pitches> m_pitch;
+        DataPitches<value_type, T_Pitches> m_pitch;
     };
 
     /** access a C array with compile time extents via a runtime md index. */
@@ -231,8 +231,8 @@ namespace alpaka
     struct MdSpanArray<T_ArrayType, T_MemAlignment>
     {
         using extentType = std::extent<T_ArrayType, std::rank_v<T_ArrayType>>;
-        using element_type = std::remove_all_extents_t<T_ArrayType>;
-        using reference = element_type&;
+        using value_type = std::remove_all_extents_t<T_ArrayType>;
+        using reference = value_type&;
         using index_type = typename extentType::value_type;
 
         static consteval uint32_t dim()
@@ -253,12 +253,12 @@ namespace alpaka
          *
          * @{
          */
-        constexpr element_type const* data() const
+        constexpr value_type const* data() const
         {
             return this->m_ptr;
         }
 
-        constexpr element_type* data()
+        constexpr value_type* data()
         {
             return this->m_ptr;
         }
@@ -290,7 +290,7 @@ namespace alpaka
          * @return reference to the value
          * @{
          */
-        constexpr element_type const& operator[](concepts::Vector auto const& idx) const
+        constexpr value_type const& operator[](concepts::Vector auto const& idx) const
         {
             return ResolveArrayAccess<dim()>{}(*m_ptr, idx);
         }
@@ -300,7 +300,7 @@ namespace alpaka
             return ResolveArrayAccess<dim()>{}(*m_ptr, idx);
         }
 
-        constexpr element_type const& operator[](index_type const& idx) const
+        constexpr value_type const& operator[](index_type const& idx) const
         {
             return (*m_ptr)[idx];
         }
