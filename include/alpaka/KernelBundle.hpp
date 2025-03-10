@@ -28,8 +28,8 @@ namespace alpaka
         using ArgTuple = std::tuple<remove_restrict_t<std::decay_t<TArgs>>...>;
 
         // Constructor
-        constexpr KernelBundle(KernelFn&& kernelFn, TArgs&&... args)
-            : m_kernelFn(std::forward<TKernelFn>(kernelFn))
+        constexpr KernelBundle(KernelFn kernelFn, TArgs&&... args)
+            : m_kernelFn{std::move(kernelFn)}
             , m_args(std::forward<TArgs>(args)...)
         {
         }
@@ -56,7 +56,7 @@ namespace alpaka
     //! \return Kernel function bundle. An instance of KernelBundle which consists the kernel function object and its
     //! arguments.
     template<typename TKernelFn, typename... TArgs>
-    ALPAKA_FN_HOST KernelBundle(TKernelFn&&, TArgs&&...) -> KernelBundle<TKernelFn, TArgs...>;
+    ALPAKA_FN_HOST KernelBundle(TKernelFn, TArgs&&...) -> KernelBundle<TKernelFn, TArgs...>;
 
     template<typename TKernelBundle, typename TBlocks, typename TThreads>
     struct KernelBundleWithSize
