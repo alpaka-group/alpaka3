@@ -65,7 +65,7 @@ function(checkCompilerCXXSupport language min_cxx_standard)
 
     if(NOT "${language_lower_case}_std_${min_cxx_standard}" IN_LIST CMAKE_${language_upper_case}_COMPILE_FEATURES)
         message(FATAL_ERROR "The ${language_upper_case} compiler does not support C++ ${min_cxx_standard}. \
-        Please upgrade your compiler or use alpaka 2.0 which supports C++20.")
+        Please upgrade your compiler or use alpaka 3.0 which supports C++20.")
     endif()
 endfunction()
 

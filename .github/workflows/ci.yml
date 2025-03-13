@@ -1,0 +1,126 @@
+name: CI Build and Test
+
+on:
+  push:
+    branches: [ dev ]
+  pull_request:
+    branches: [ dev ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  alpaka_cmake_flags: "-Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -DBUILD_TESTING=ON"
+
+jobs:
+  clang-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DoozyX/clang-format-lint-action@v0.16.2
+        with:
+          clangFormatVersion: 16
+          inplace: True
+      - run: |
+          git diff --exit-code > format.patch
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: format.patch
+          path: format.patch
+
+  ci:
+    # Default runner for non-CUDA/HIP tests; overridden for CUDA/HIP
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        config:
+          - { compiler: gcc, version: "13", cuda: "no", hip: "no", container: "ubuntu:24.04" }
+          - { compiler: clang, version: "18", cuda: "no", hip: "no", container: "ubuntu:24.04" }
+          - { compiler: clang, version: "19", cuda: "no", hip: "no", container: "ubuntu:24.04" }
+          - { compiler: nvcc, version: "", cuda: "12.6", hip: "no", container: "nvidia/cuda:12.6.3-devel-ubuntu24.04" }
+          # disabled because of cmake issues: hip can not be found
+          #- { compiler: clang, version: "18", cuda: "no", hip: "6.3", container: "ubuntu:24.04" }
+      fail-fast: false
+
+    # Specify the container to use based on the matrix configuration
+    container:
+      image: ${{ matrix.config.container }}
+
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Install base dependencies
+      - name: Install base dependencies
+        run: |
+          apt-get update
+          apt-get install -y cmake build-essential ninja-build git
+
+      # Install GCC if specified
+      - name: Install GCC
+        if: matrix.config.compiler == 'gcc'
+        run: |
+          apt-get update
+          apt-get install -y gcc-${{ matrix.config.version }} g++-${{ matrix.config.version }}
+          update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${{ matrix.config.version }} 100 \
+                              --slave /usr/bin/g++ g++ /usr/bin/g++-${{ matrix.config.version }}
+
+      # Install Clang if specified
+      - name: Install Clang
+        if: matrix.config.compiler == 'clang'
+        run: |
+          apt-get update
+          apt-get install -y clang-${{ matrix.config.version }}
+          update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${{ matrix.config.version }} 100 \
+                              --slave /usr/bin/clang++ clang++ /usr/bin/clang++-${{ matrix.config.version }}
+          apt install -y libomp-${{ matrix.config.version }}-dev
+
+      # ROCm
+      - name: Install ROCm
+        if: matrix.config.hip != 'no'
+        run: |
+          apt-get update
+          apt-get -y --quiet install wget gnupg2
+          # AMD container keys are outdated and must be updated
+          . /etc/os-release
+          wget -q -O - https://repo.radeon.com/rocm/rocm.gpg.key | apt-key add -
+          echo "deb https://repo.radeon.com/rocm/apt/${{ matrix.config.hip }} ${VERSION_CODENAME} main" | tee -a /etc/apt/sources.list.d/rocm.list
+          apt-get update
+          apt-get install -y rocm-llvm${{ matrix.config.hip }} hip-runtime-amd${{ matrix.config.hip }} rocm-dev${{ matrix.config.hip }} rocm-utils${{ matrix.config.hip }} rocrand-dev${{ matrix.config.hip }} rocminfo${{ matrix.config.hip }} rocm-cmake${{ matrix.config.hip }} rocm-device-libs${{ matrix.config.hip }} rocm-core${{ matrix.config.hip }} rocm-smi-lib${{ matrix.config.hip }}
+          export ROCM_PATH=/opt/rocm
+
+      # Configure CMake with the selected compiler and options
+      - name: Configure CMake
+        run: |
+          mkdir build && cd build
+          if [ "${{ matrix.config.compiler }}" = "gcc" ]; then
+            export CC=gcc-${{ matrix.config.version }}
+            export CXX=g++-${{ matrix.config.version }}
+          elif [ "${{ matrix.config.compiler }}" = "clang" ]; then
+            export CC=clang-${{ matrix.config.version }}
+            export CXX=clang++-${{ matrix.config.version }}
+          fi
+          cmake -G Ninja \
+                -DCMAKE_BUILD_TYPE=Release \
+                ${alpaka_cmake_flags} \
+                ${{ matrix.config.cuda != 'no' && '-Dalpaka_API_CUDA=ON' || '' }} \
+                ${{ matrix.config.hip != 'no' && '-Dalpaka_API_HIP=ON -Dalpaka_API_OMP=OFF' || '' }} \
+                ..
+
+      # Build the project
+      - name: Build
+        run: |
+          cd build
+          pwd
+          ninja
+
+      # Run tests (assuming your project has tests)
+      - name: Run Tests
+        if: matrix.config.cuda == 'no' && matrix.config.hip == 'no'
+        run: |
+          cd build
+          ctest --output-on-failure
