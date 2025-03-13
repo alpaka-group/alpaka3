@@ -125,7 +125,10 @@ namespace alpaka::onHost
     constexpr auto supportedMappings(concepts::DeviceHandle auto deviceHandle)
     {
         return meta::filter(
-            [&](auto executor) constexpr { return isExecutorSupportedBy(executor, deviceHandle); },
+            // we can not use isExecutorSupportedBy() because gcc14 is more strict in the detection which functions can
+            // be evaluated at compile time
+            [&](auto executor) constexpr
+            { return trait::IsMappingSupportedBy::Op<ALPAKA_TYPEOF(executor), ALPAKA_TYPEOF(deviceHandle)>::value; },
             exec::availableMappings);
     }
 

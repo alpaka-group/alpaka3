@@ -13,7 +13,7 @@
 
 namespace alpaka::onHost
 {
-    constexpr auto getExecutors(auto const& api)
+    consteval auto getExecutors(auto const api)
     {
         using PlatformType = decltype(makePlatform(api));
         using DeviceType = decltype(makeDevice(std::declval<PlatformType>(), 0));
@@ -21,19 +21,19 @@ namespace alpaka::onHost
         return autoDeviceMappings{};
     }
 
-    constexpr auto createApiAndExecTuple(auto const& api, auto const& executorTuple)
+    consteval auto createApiAndExecTuple(auto const api, auto const& executorTuple)
     {
         return std::apply(
-            [api](auto... executor) {
+            [api](auto... executor) constexpr {
                 return std::make_tuple(Dict{DictEntry{object::api, api}, DictEntry{object::exec, executor}}...);
             },
             executorTuple);
     }
 
-    constexpr auto allExecutorsAndApis(auto const& usedApis)
+    consteval auto allExecutorsAndApis(auto const usedApis)
     {
         return std::apply(
-            [](auto... api) { return std::tuple_cat(createApiAndExecTuple(api, getExecutors(api))...); },
+            [](auto... api) constexpr { return std::tuple_cat(createApiAndExecTuple(api, getExecutors(api))...); },
             usedApis);
     }
 } // namespace alpaka::onHost

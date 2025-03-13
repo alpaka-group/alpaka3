@@ -38,6 +38,7 @@ jobs:
       matrix:
         config:
           - { compiler: gcc, version: "13", cuda: "no", hip: "no", container: "ubuntu:24.04" }
+          - { compiler: gcc, version: "14", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: clang, version: "18", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: clang, version: "19", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: nvcc, version: "", cuda: "12.6", hip: "no", container: "nvidia/cuda:12.6.3-devel-ubuntu24.04" }

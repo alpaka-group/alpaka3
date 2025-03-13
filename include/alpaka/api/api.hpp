@@ -35,6 +35,6 @@ namespace alpaka
     {
         constexpr auto apis = std::make_tuple(api::cpu, api::cuda, api::hip);
 
-        constexpr auto enabledApis = meta::filter([](auto api) { return isPlatformAvaiable(api); }, apis);
+        constexpr auto enabledApis = meta::filter([](auto api) constexpr { return isPlatformAvaiable(api); }, apis);
     } // namespace onHost
 } // namespace alpaka
