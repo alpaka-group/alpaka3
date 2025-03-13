@@ -158,7 +158,7 @@ if(alpaka_API_HIP)
         find_package(hip REQUIRED)
 
         set(_alpaka_HIP_MIN_VER 6.0)
-        set(_alpaka_HIP_MAX_VER 6.2)
+        set(_alpaka_HIP_MAX_VER 6.3)
 
         checkCompilerCXXSupport(HIP ${alpaka_CXX_STANDARD})
 
