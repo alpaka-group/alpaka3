@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  alpaka_cmake_flags: "-Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -DBUILD_TESTING=ON"
+  alpaka_cmake_flags: "-Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -DBUILD_TESTING=ON -Dalpaka_HEADERCHECKS=ON"
 
 jobs:
   clang-format:
@@ -90,7 +90,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y hiprand-dev rocrand-dev
-          
+
           export ROCM_PATH=/opt/rocm
           export CMAKE_PREFIX_PATH=$ROCM_PATH:$CMAKE_PREFIX_PATH
           export HIP_PLATFORM="amd"
@@ -98,14 +98,14 @@ jobs:
           export HSA_PATH=$ROCM_PATH
           export PATH=${ROCM_PATH}/bin:$PATH
           export PATH=${ROCM_PATH}/llvm/bin:$PATH
-                  
+
           # Export variables to make them globally visible
           echo "ROCM_PATH=${ROCM_PATH}" >> $GITHUB_ENV
           echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}" >> $GITHUB_ENV
           echo "HIP_PLATFORM=${HIP_PLATFORM}" >> $GITHUB_ENV
           echo "HSA_PATH=${HSA_PATH}" >> $GITHUB_ENV
           echo "PATH=${PATH}" >> $GITHUB_ENV
-          
+
           which clang++
           clang++ --version
           hipconfig --platform
@@ -124,7 +124,7 @@ jobs:
           fi
           cmake -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
-                ${alpaka_cmake_flags} \
+                ${alpaka_cmake_flags} -Dalpaka_API_OMP=ON \
                 ${{ matrix.config.cuda != 'no' && '-Dalpaka_API_CUDA=ON' || '' }} \
                 ${{ matrix.config.hip != 'no' && '-DCMAKE_CXX_COMPILER=clang++ -Dalpaka_API_HIP=ON -Dalpaka_API_OMP=OFF \
                    -DCMAKE_HIP_ARCHITECTURES=gfx906 -DAMDGPU_TARGETS=gfx906' || '' }} ..

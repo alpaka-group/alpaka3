@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "alpaka/Simd.hpp"
 #include "alpaka/Vec.hpp"
 #include "alpaka/cast.hpp"
 #include "alpaka/core/util.hpp"

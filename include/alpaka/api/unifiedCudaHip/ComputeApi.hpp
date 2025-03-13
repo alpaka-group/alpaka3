@@ -9,6 +9,8 @@
 #include "alpaka/onAcc/internal.hpp"
 #include "alpaka/tag.hpp"
 
+#include <cstddef>
+
 #if ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP
 
 #    include "alpaka/core/common.hpp"

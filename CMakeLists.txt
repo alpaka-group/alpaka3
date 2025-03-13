@@ -263,6 +263,7 @@ source_group(TREE "${CMAKE_CURRENT_LIST_DIR}/include/alpaka" FILES ${alpakaSourc
 option(alpaka_TESTING "Enable/Disable testing" OFF)
 option(alpaka_BENCHMARKS "Enable/Disable benchmarks" OFF)
 option(alpaka_EXAMPLES "Enable/Disable examples" OFF)
+option(alpaka_HEADERCHECKS "Enable/Disable header check tests" OFF)
 
 if (alpaka_TESTING)
     include(CTest)
@@ -275,6 +276,10 @@ endif()
 
 if(alpaka_EXAMPLES)
     add_subdirectory(example)
+endif()
+
+if(alpaka_HEADERCHECKS)
+    add_subdirectory(headerCheck)
 endif()
 
 option(alpaka_EXEC_CpuSerial "Enable/Disable serial exeexecutor" ON)

@@ -9,11 +9,6 @@
 #if ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP
 #    include "alpaka/api/unifiedCudaHip/Queue.hpp"
 #    include "alpaka/core/UniformCudaHip.hpp"
-#    include "alpaka/internal.hpp"
-#    include "alpaka/onHost.hpp"
-#    include "alpaka/onHost/Device.hpp"
-#    include "alpaka/onHost/Handle.hpp"
-#    include "alpaka/onHost/Queue.hpp"
 #    include "alpaka/onHost/mem/Data.hpp"
 #    include "alpaka/onHost/mem/View.hpp"
 

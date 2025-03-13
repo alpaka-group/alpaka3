@@ -11,12 +11,11 @@
 cmake_minimum_required(VERSION 3.22)
 project(Alpaka2HeaderTest)
 
-
 # Add common functions from alpaka.
 include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/common.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/addExecutable.cmake)
 
-add_subdirectory(.. ${CMAKE_BINARY_DIR}/alpaka)
+set(_TARGET_NAME "headerCheckTest")
 
 ################################################################################
 # Directory of this file.
@@ -25,42 +24,6 @@ set(ALPAKA_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include/alpaka)
 
 # Normalize the path (e.g. remove ../)
 get_filename_component(ALPAKA_ROOT_DIR "${ALPAKA_ROOT_DIR}" ABSOLUTE)
-
-###############################################################################
-# Language Flags
-###############################################################################
-
-# enforce C++20
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_STANDARD 20)
-
-set(_TARGET_NAME "headerCheckTest")
-
-###############################################################################
-# Catch2
-###############################################################################
-
-option(alpaka_SYSTEM_CATCH2 "Use the system provided Catch2." OFF)
-if (alpaka_SYSTEM_CATCH2)
-    find_package(Catch2 3.5.3 REQUIRED)
-    include(Catch)
-else()
-    # get Catch2 v3 and build it from source with the same C++ standard as the tests
-    Include(FetchContent)
-    FetchContent_Declare(Catch2 GIT_REPOSITORY https://github.com/catchorg/Catch2.git GIT_TAG v3.5.3)
-    FetchContent_MakeAvailable(Catch2)
-    target_compile_features(Catch2 PUBLIC cxx_std_20)
-    #include(Catch)
-
-    # hide Catch2 cmake variables by default in cmake gui
-    get_cmake_property(variables VARIABLES)
-    foreach (var ${variables})
-        if (var MATCHES "^CATCH_")
-            mark_as_advanced(${var})
-        endif()
-    endforeach()
-endif()
 
 #---------------------------------------------------------------------------
 # Create source files.

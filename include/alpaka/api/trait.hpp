@@ -5,9 +5,11 @@
 
 #pragma once
 
+#include "alpaka/core/common.hpp"
 #include "alpaka/math/math.hpp"
 
 #include <algorithm>
+#include <cstdint>
 
 namespace alpaka
 {
