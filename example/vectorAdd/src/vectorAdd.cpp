@@ -33,12 +33,15 @@ public:
         using namespace alpaka;
         static_assert(ALPAKA_TYPEOF(numElements)::dim() == 1, "The VectorAddKernel expects 1-dimensional indices!");
 
-        // The uniformElements range for loop takes care automatically of the blocks, threads and elements in the
-        // kernel launch grid.
-        for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{numElements}))
-        {
-            C[i] = A[i] + B[i];
-        }
+        auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
+        simdGrid.concurrent<64>(
+            acc,
+            numElements,
+            [&](auto const&, auto&& simdA, auto&& simdB, auto&& simdC) constexpr
+            { simdC = simdA.load() + simdB.load(); },
+            A,
+            B,
+            C);
     }
 };
 
