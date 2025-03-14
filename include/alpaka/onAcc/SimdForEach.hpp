@@ -180,14 +180,13 @@ namespace alpaka::onAcc
 
     private:
         template<alpaka::concepts::Alignment T_MemAlignment, uint32_t T_width>
-        ALPAKA_FN_INLINE static constexpr auto executeDo(auto const& acc, auto& iter, auto&& func, auto&&... data)
+        ALPAKA_FN_INLINE static constexpr void executeDo(
+            auto const& acc,
+            auto const& dataIdx,
+            auto&& func,
+            auto&&... data)
         {
-            auto const idx = *iter;
-            func(acc, SimdPtr{data, idx, T_MemAlignment{}, CVec<uint32_t, T_width>{}}...);
-            // we do not check if the iterator points to a valid element, the caller must ensure that we can safely
-            // increase the iterator without jumping over iter.end()
-            ++iter;
-            return true;
+            func(acc, SimdPtr{ALPAKA_FORWARD(data), dataIdx, T_MemAlignment{}, CVec<uint32_t, T_width>{}}...);
         }
 
         /** calls the functor and forward the data T_repeat times
@@ -205,9 +204,18 @@ namespace alpaka::onAcc
             auto&& func,
             auto&&... data)
         {
-            ((T_repeat + 1 != 0u
-              && executeDo<T_MemAlignment, T_width>(acc, iter, ALPAKA_FORWARD(func), ALPAKA_FORWARD(data)...)),
-             ...);
+            /* We do not check if the iterator points to a valid element, the caller must ensure that we can safely
+             * increase the iterator without jumping over iter.end().
+             *
+             * The ternary operator is used to allow using the folding expression on iter.
+             */
+            auto ids = std::make_tuple(*(T_repeat + 1 != 0u ? iter++ : iter++)...);
+            std::apply(
+                [&](auto const&... dataIdx) constexpr {
+                    (executeDo<T_MemAlignment, T_width>(acc, dataIdx, ALPAKA_FORWARD(func), ALPAKA_FORWARD(data)...),
+                     ...);
+                },
+                ids);
         }
 
         template<typename T_Type, uint32_t T_maxConcurrencyInByte, uint32_t T_cacheLineInByte>
