@@ -86,3 +86,58 @@ You can benchmark bableStream for different number of elements e.g. with a simpl
 ```bash
 for((i=1;i<10;++i)) ; do  ./benchmark/babelstream/babelstream --array-size=$((33554432 * $i)) --number-runs=100; done
 ```
+
+Coding
+------
+
+### General
+
+All methods and classes in the `alpaka` namespace can be called from the controller thread (named `host`) and from the compute device.
+- `alpaka::onHost` can only be called from `host`.
+- `alpaka::onAcc` can only be called from within a kernel running on the compute device.
+
+Methods starting with `onHost::make` (e.g., `onHost::makeDevice()`) create handles to instances where the copy is only a shallow copy and not a deep copy.  
+Methods starting with `get` (e.g., `onHost::getDeviceProperties(...)`) provide access to properties of an instance.
+
+There are two types of interfaces: a free function interface and an OOP interface for many `host` objects (e.g., `Platform`, `Device`, and `Queue`).  
+If you use the free function interface, `auto platform = onHost::makePlatform(api::cpu)` will return an instance that follows the `concepts::Platform` concept, but it can only be used in free functions.  
+If you use the OOP interface, where you can access members like `platform.getDevice(...)`, you transform the instance into a fixed-typed object with `onHost::Platform platform = onHost::makePlatform(api::cpu)`.
+
+Most free functions that can be called from `host` can be found under [onHost.hpp](include/alpaka/onHost.hpp).  
+Functions callable from within a compute kernel can be found under [onAcc.hpp](include/alpaka/onAcc.hpp).
+
+A central class for M-dimensional extents, offsets, and indices is [Vec](include/alpaka/Vec.hpp).  
+There are two types of index vectors: `Vec`, which supports `constexpr` usage, but when moved around, it stores the information in a runtime instance, and `CVec`, which is a compile-time index vector that stores the indices in the template signature.  
+Passing an instance of `CVec` into a function or kernel will retain the full compile-time knowledge.  
+Performing calculations like addition, subtraction, etc., with a `CVec` will result in losing the full compile-time knowledge, and the results will be of type `Vec`.
+
+`alpaka` is designed so that explicit usage of types is reduced to a minimum.  
+Most objects should be created with factories (e.g., `onHost::makePlatform(api::cpu)`) and using tags (empty C++ structs), such as `api::cpu`, instead of the tag type.
+
+### Host Side Objects
+
+`alpaka` provides APIs that can be used to generate platforms and query devices.  
+The following APIs are available:
+  
+  ```C++
+  api::cpu
+  api::cuda
+  api::hip
+  ```
+
+APIs except `api::cpu` often introduce third-party library dependencies (e.g., CUDA or ROCm).
+You can deactivate these in CMake via `alpaka_API_*`.
+The CMake available API `alpaka_API_OMP` has no corresponding C++ tag and only influences whether OpenMP executors can be used.
+
+Executors describe how compute threads will be executed and mapped to the hierarchy of grids, blocks, and threads.
+They can be controlled in CMake via `alpaka_EXEC_*`.
+Disabling an executor in CMake only changes which executors will be used for examples, tests, and benchmarks.
+For example, if you disable `alpaka_EXEC_CpuSerial` in CMake, you can still enqueue kernels that use the serial executor.
+
+  ```C++
+  queue.enqueue(exec::cpuSerial, Vec{3}, Vec{1}, kernel, 42);
+  ```
+
+An executor is not usable with all device queues. You can check this with `onHost::isExecutorSupportedBy(exec::cpuSerial, device)`.
+
+A good starting point for learning how to use alpaka is the [tutorial example](example/tutorial).
