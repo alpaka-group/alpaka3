@@ -111,7 +111,9 @@ auto example(T_Cfg const& cfg) -> int
         = KernelBundle{kernel, bufAccA.getMdSpan(), bufAccB.getMdSpan(), bufAccC.getMdSpan(), extent};
 
     Vec<size_t, 1u> chunkSize = 256u;
-    auto dataBlocking = onHost::FrameSpec{core::divCeil(extent, chunkSize), chunkSize};
+    // how many elements one worker should compute to ensure vectorization or instruction parallelism
+    constexpr size_t elementsPerWorker = 16u;
+    auto dataBlocking = onHost::FrameSpec{core::divCeil(extent, chunkSize * elementsPerWorker), chunkSize};
 
     // Enqueue the kernel execution task
     {
