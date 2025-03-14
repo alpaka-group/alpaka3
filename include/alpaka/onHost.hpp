@@ -174,12 +174,12 @@ namespace alpaka::onHost
      *
      * @{
      */
-    inline decltype(auto) getApi(auto&& any)
+    inline constexpr decltype(auto) getApi(auto&& any)
     {
         return alpaka::internal::getApi(ALPAKA_FORWARD(any));
     }
 
-    inline decltype(auto) getApi(alpaka::concepts::HasGet auto&& any)
+    inline constexpr decltype(auto) getApi(alpaka::concepts::HasGet auto&& any)
     {
         return alpaka::internal::getApi(*any.get());
     }

@@ -112,8 +112,8 @@ auto example(T_Cfg const& cfg) -> int
     constexpr auto numNodesWithHalo = numNodes + halo;
 
     constexpr IdxVec numChunks{
-        alpaka::core::divCeil(numNodes[0], chunkSize[0]),
-        alpaka::core::divCeil(numNodes[1], chunkSize[1]),
+        alpaka::divCeil(numNodes[0], chunkSize[0]),
+        alpaka::divCeil(numNodes[1], chunkSize[1]),
     };
 
     assert(

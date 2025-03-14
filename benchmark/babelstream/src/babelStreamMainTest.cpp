@@ -102,7 +102,7 @@ struct CopyKernel
     ALPAKA_FN_ACC void operator()(TAcc const& acc, auto const a, auto c, auto arraySize) const
     {
         auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
-        simdGrid.concurrent<64>(
+        simdGrid.concurrent(
             acc,
             alpaka::Vec{arraySize},
             [](auto const&, auto const in, auto out) constexpr { out = in.load(); },
@@ -127,7 +127,7 @@ struct MultKernel
         T const scalar = static_cast<T>(scalarVal);
 
         auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
-        simdGrid.concurrent<64>(
+        simdGrid.concurrent(
             acc,
             alpaka::Vec{arraySize},
             [&](auto const&, auto out, auto const& in) constexpr { out = scalar * in.load(); },
@@ -150,7 +150,7 @@ struct AddKernel
     ALPAKA_FN_ACC void operator()(TAcc const& acc, auto const a, auto const b, auto c, auto arraySize) const
     {
         auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
-        simdGrid.concurrent<64>(
+        simdGrid.concurrent(
             acc,
             alpaka::Vec{arraySize},
             [&](auto const&, auto const& simdA, auto const& simdB, auto simdC) constexpr
@@ -178,7 +178,7 @@ struct TriadKernel
         T const scalar = static_cast<T>(scalarVal);
 
         auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
-        simdGrid.concurrent<64>(
+        simdGrid.concurrent(
             acc,
             [&](auto const&, auto&& simdA, auto&& simdB, auto&& simdC) constexpr
             { simdA = simdB.load() + scalar * simdC.load(); },
@@ -242,7 +242,7 @@ struct DotKernel
             for(auto elemIdxInFrame : traverseInFrame)
             {
                 auto allThreads = onAcc::SimdForEach{onAcc::WorkerGroup{frameIdx + elemIdxInFrame, frameDataExtent}};
-                allThreads.template concurrent<64>(
+                allThreads.concurrent(
                     acc,
                     alpaka::Vec{arraySize},
                     [&](auto const&, auto&& simdA, auto&& simdB) constexpr
@@ -352,9 +352,9 @@ void testKernels(auto cfg)
      * a kernel can reflect the concurrency bytes used for the `SimdForEach::concurrent()` back to the host, e.g. some
      * as we use for dynamic shared memory.
      */
-    constexpr uint32_t elementsPerFrameItem = 16u;
+    uint32_t elementsPerFrameItem = alpaka::getNumElemPerThread<DataType>(alpaka::onHost::getApi(queue));
 
-    auto numFrames = core::divCeil(arraySize, static_cast<Idx>(blockThreadExtentMain) * elementsPerFrameItem);
+    auto numFrames = divExZero(arraySize, static_cast<Idx>(blockThreadExtentMain) * elementsPerFrameItem);
     auto dataBlocking = onHost::FrameSpec{numFrames, static_cast<Idx>(blockThreadExtentMain)};
 
     // To record runtime data generated while running the kernels
@@ -487,12 +487,10 @@ void testKernels(auto cfg)
         }
         if(kernelsToBeExecuted == KernelsToRun::All)
         {
-            constexpr uint32_t elementsPerFrameItem = 16u;
-            auto numFrames = std::max(
-                Idx{1},
-                std::min(
-                    static_cast<Idx>(dotGridBlockExtent),
-                    arraySize / (static_cast<Idx>(blockThreadExtentMain) * elementsPerFrameItem)));
+            uint32_t elementsPerFrameItem = alpaka::getNumElemPerThread<DataType>(alpaka::onHost::getApi(queue));
+            auto numFrames = std::min(
+                static_cast<Idx>(dotGridBlockExtent),
+                alpaka::divExZero(arraySize, (static_cast<Idx>(blockThreadExtentMain) * elementsPerFrameItem)));
 
             auto dataBlockingDot = onHost::FrameSpec{numFrames, static_cast<Idx>(blockThreadExtentMain)};
 

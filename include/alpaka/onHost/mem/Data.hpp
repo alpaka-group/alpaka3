@@ -150,7 +150,7 @@ namespace alpaka::internal
         concepts::Alignment T_MemAlignmen>
     struct GetApi::Op<onHost::Data<T_BaseHandle, T_Type, T_Extents, T_Pitches, T_MemAlignmen>>
     {
-        decltype(auto) operator()(auto&& data) const
+        inline constexpr auto operator()(auto&& data) const
         {
             return onHost::getApi(data.m_base);
         }

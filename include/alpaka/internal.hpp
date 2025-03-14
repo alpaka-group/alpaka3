@@ -45,14 +45,14 @@ namespace alpaka
             template<typename T_Any>
             struct Op
             {
-                decltype(auto) operator()(auto&& any) const
+                inline constexpr auto operator()(auto&& any) const
                 {
                     return any.getApi();
                 }
             };
         };
 
-        inline auto getApi(auto&& any)
+        inline constexpr auto getApi(auto&& any)
         {
             return GetApi::Op<std::decay_t<decltype(any)>>{}(any);
         }

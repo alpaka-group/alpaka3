@@ -165,7 +165,7 @@ namespace alpaka::onHost
                 else
                 {
                     IdxType rowExtentInBytes = extents.x() * static_cast<IdxType>(sizeof(T_Type));
-                    IdxType rowPitchInBytes = core::divCeil(rowExtentInBytes, alignment) * alignment;
+                    IdxType rowPitchInBytes = divCeil(rowExtentInBytes, alignment) * alignment;
                     auto pitches = mem::calculatePitches<T_Type>(extents, rowPitchInBytes);
 
                     // product of pitches does contain the size for the first dimension
@@ -228,7 +228,7 @@ namespace alpaka::onHost
                            maxValue = numThreadBlocks[i];
                        }
                    if(numThreadBlocks.product() > maxBlocks)
-                       numThreadBlocks[maxIdx] = core::divCeil(numThreadBlocks[maxIdx], IdxType{2u});
+                       numThreadBlocks[maxIdx] = divCeil(numThreadBlocks[maxIdx], IdxType{2u});
 
                }
 #endif
@@ -294,7 +294,7 @@ namespace alpaka::internal
     template<typename T_Platform>
     struct GetApi::Op<onHost::cpu::Device<T_Platform>>
     {
-        decltype(auto) operator()(auto&& device) const
+        inline constexpr auto operator()(auto&& device) const
         {
             return onHost::getApi(device.m_platform);
         }

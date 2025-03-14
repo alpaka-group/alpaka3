@@ -36,7 +36,7 @@ namespace alpaka::internal
     template<>
     struct GetApi::Op<onHost::unifiedCudaHip::Platform<ApiHipRt>>
     {
-        decltype(auto) operator()(auto&& platform) const
+        inline constexpr auto operator()(auto&& platform) const
         {
             return api::Hip{};
         }

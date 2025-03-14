@@ -113,7 +113,7 @@ namespace alpaka::internal
     template<>
     struct GetApi::Op<onHost::cpu::Platform>
     {
-        decltype(auto) operator()(auto&& platform) const
+        inline constexpr auto operator()(auto&& platform) const
         {
             return api::Cpu{};
         }

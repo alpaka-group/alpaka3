@@ -5,28 +5,39 @@
 
 #include "alpaka/core/common.hpp"
 
+#include <algorithm>
 #include <type_traits>
 #include <utility>
 
-namespace alpaka::core
+namespace alpaka
 {
-    //! convert any type to a reference type
-    //
-    // This function is equivalent to std::declval() but can be used
-    // within an alpaka accelerator kernel too.
-    // This function can be used only within std::decltype().
+    namespace core
+    {
+        //! convert any type to a reference type
+        //
+        // This function is equivalent to std::declval() but can be used
+        // within an alpaka accelerator kernel too.
+        // This function can be used only within std::decltype().
 #if ALPAKA_LANG_CUDA && ALPAKA_COMP_CLANG_CUDA || ALPAKA_COMP_HIP
-    template<class T>
-    ALPAKA_FN_HOST_ACC std::add_rvalue_reference_t<T> declval();
+        template<class T>
+        ALPAKA_FN_HOST_ACC std::add_rvalue_reference_t<T> declval();
 #else
-    using std::declval;
+        using std::declval;
 #endif
+    } // namespace core
 
     /// Returns the ceiling of a / b, as integer.
     template<std::integral Integral>
     [[nodiscard]] ALPAKA_FN_HOST_ACC constexpr auto divCeil(Integral a, Integral b) -> Integral
     {
         return (a + b - Integral{1}) / b;
+    }
+
+    /// Returns the  max(a / b, 1) as integer.
+    template<std::integral Integral>
+    [[nodiscard]] ALPAKA_FN_HOST_ACC constexpr auto divExZero(Integral a, Integral b) -> Integral
+    {
+        return std::max(a / b, Integral{1});
     }
 
     /// Computes the nth power of base, in integers.
@@ -59,4 +70,4 @@ namespace alpaka::core
         return L;
     }
 
-} // namespace alpaka::core
+} // namespace alpaka

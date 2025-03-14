@@ -7,6 +7,7 @@
 
 #include "alpaka/api/unifiedCudaHip/trait.hpp"
 #include "alpaka/concepts.hpp"
+#include "alpaka/core/Utility.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/onHost/trait.hpp"
 
@@ -67,8 +68,22 @@ namespace alpaka
             constexpr uint32_t operator()(api::Cuda const) const
             {
                 /** vector load and store width in bytes */
-                constexpr std::size_t simdWidthInByte = 16u;
-                return std::max(static_cast<uint32_t>(simdWidthInByte / sizeof(T_Type)), 1u);
+                constexpr size_t simdWidthInByte = 16u;
+                return alpaka::divExZero(simdWidthInByte, sizeof(T_Type));
+            }
+        };
+
+        template<>
+        struct GetNumPipelines::Op<api::Cuda>
+        {
+            constexpr uint32_t operator()(api::Cuda const) const
+            {
+                /* NVIDIA GPUs have two scheduler what we interpreted as pipelines.
+                 * Therefore, the value should normally be 2 but for current tests where the default is used it looks
+                 * like 4 is a better value.
+                 */
+                constexpr uint32_t numPipes = 4u;
+                return numPipes;
             }
         };
 

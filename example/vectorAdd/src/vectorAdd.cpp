@@ -34,7 +34,7 @@ public:
         static_assert(ALPAKA_TYPEOF(numElements)::dim() == 1, "The VectorAddKernel expects 1-dimensional indices!");
 
         auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
-        simdGrid.concurrent<64>(
+        simdGrid.concurrent(
             acc,
             numElements,
             [&](auto const&, auto&& simdA, auto&& simdB, auto&& simdC) constexpr
@@ -112,8 +112,8 @@ auto example(T_Cfg const& cfg) -> int
 
     Vec<size_t, 1u> chunkSize = 256u;
     // how many elements one worker should compute to ensure vectorization or instruction parallelism
-    constexpr size_t elementsPerWorker = 16u;
-    auto dataBlocking = onHost::FrameSpec{core::divCeil(extent, chunkSize * elementsPerWorker), chunkSize};
+    uint32_t elementsPerWorker = alpaka::getNumElemPerThread<Data>(alpaka::onHost::getApi(queue));
+    auto dataBlocking = onHost::FrameSpec{divCeil(extent, chunkSize * elementsPerWorker), chunkSize};
 
     // Enqueue the kernel execution task
     {

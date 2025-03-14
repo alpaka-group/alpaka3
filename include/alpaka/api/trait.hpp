@@ -41,7 +41,22 @@ namespace alpaka
             {
                 consteval uint32_t operator()(T_Api const) const
                 {
-                    static_assert(sizeof(T_Api) && false, "GetArchSimdWidth for the current used API is not defined.");
+                    static_assert(sizeof(T_Api) && false, "Missing definition of GetArchSimdWidth for API.");
+                    return 1u;
+                }
+            };
+        };
+
+        /** Number of commands a CPU can issue at the same time. */
+        struct GetNumPipelines
+        {
+            template<typename T_Api>
+            struct Op
+            {
+                /** @return the return value must be >= 1 */
+                consteval uint32_t operator()(T_Api const) const
+                {
+                    static_assert(sizeof(T_Api) && false, "Missing definition of GetNumPipelines for API.");
                     return 1u;
                 }
             };
@@ -70,6 +85,26 @@ namespace alpaka
     consteval uint32_t getArchSimdWidth(auto const api)
     {
         return trait::GetArchSimdWidth::Op<T_Type, ALPAKA_TYPEOF(api)>{}(api);
+    }
+
+    /** get the number of instruction can be issued in parallel */
+    consteval uint32_t getNumPipelines(auto const api)
+    {
+        return trait::GetNumPipelines::Op<ALPAKA_TYPEOF(api)>{}(api);
+    }
+
+    /**  Get the number of elements to compute per thread.
+     *
+     * This function considers the SIMD width for the corresponding data type and the potential for instruction
+     * parallelism.
+     *
+     * @tparam T_Type The data type used to determine the SIMD width.
+     * @return The minimum number of elements a thread should compute to achieve optimal utilization.
+     */
+    template<typename T_Type>
+    constexpr uint32_t getNumElemPerThread(auto const api)
+    {
+        return getArchSimdWidth<T_Type>(api) * getNumPipelines(api);
     }
 
     /** get the cacheline size in bytes

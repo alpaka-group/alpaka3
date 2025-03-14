@@ -7,6 +7,7 @@
 
 #include "alpaka/api/unifiedCudaHip/trait.hpp"
 #include "alpaka/concepts.hpp"
+#include "alpaka/core/Utility.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/onHost/trait.hpp"
 
@@ -66,8 +67,19 @@ namespace alpaka
             constexpr uint32_t operator()(api::Hip const) const
             {
                 /** vector load/store width in bytes */
-                constexpr std::size_t simdWidthInByte = 16u;
-                return std::max(static_cast<uint32_t>(simdWidthInByte / sizeof(T_Type)), 1u);
+                constexpr size_t simdWidthInByte = 16u;
+                return alpaka::divExZero(simdWidthInByte, sizeof(T_Type));
+            }
+        };
+
+        template<>
+        struct GetNumPipelines::Op<api::Hip>
+        {
+            constexpr uint32_t operator()(api::Hip const) const
+            {
+                /* AMD GPUs SIMD units will be interpreted as pipelines */
+                constexpr uint32_t numPipes = 4u;
+                return numPipes;
             }
         };
 

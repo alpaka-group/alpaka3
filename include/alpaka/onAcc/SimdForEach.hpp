@@ -47,6 +47,48 @@ namespace alpaka::onAcc
          *
          * @attention The number of elements to process is derived from the first MdSpan object.
          *            All other MdSpan objects must have hat least the same number of elements.
+         *            The optimal concurrency is also derived from the first MdSpan.
+         *
+         * @param T_func the functor to be executed
+         * @param T_data0 the first data to be processed
+         * @param T_dataN the remaining data to be processed
+         *
+         * @{
+         */
+        ALPAKA_FN_INLINE ALPAKA_FN_ACC constexpr void concurrent(
+            auto const& acc,
+            auto&& func,
+            auto&& data0,
+            auto&&... dataN) const
+        {
+            concurrent(acc, data0.getExtents(), ALPAKA_FORWARD(func), ALPAKA_FORWARD(data0), ALPAKA_FORWARD(dataN)...);
+        }
+
+        /**
+         * @param extents number of elements to process in each dimension
+         */
+        ALPAKA_FN_INLINE ALPAKA_FN_ACC constexpr void concurrent(
+            auto const& acc,
+            alpaka::concepts::Vector auto extents,
+            auto&& func,
+            auto&& data0,
+            auto&&... dataN) const
+        {
+            using ValueType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data0)>;
+            concurrent<alpaka::getNumElemPerThread<ValueType>(thisApi()) * sizeof(ValueType)>(
+                acc,
+                extents,
+                ALPAKA_FORWARD(func),
+                ALPAKA_FORWARD(data0),
+                ALPAKA_FORWARD(dataN)...);
+        }
+
+        /** @} */
+
+        /** execute the functor concurrently over the given data.
+         *
+         * @attention The number of elements to process is derived from the first MdSpan object.
+         *            All other MdSpan objects must have hat least the same number of elements.
          *
          * @param T_maxConcurrencyInByte
          *    Maximum number of bytes to be used for concurrency.
@@ -88,7 +130,7 @@ namespace alpaka::onAcc
             auto&&... dataN) const
         {
             auto numElements = typename ALPAKA_TYPEOF(extents)::UniVec{extents};
-            using ValueType = ALPAKA_TYPEOF(data0[ALPAKA_TYPEOF(extents)::all(0)]);
+            using ValueType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data0)>;
 
             constexpr uint32_t maxArchSimdWidth = getArchSimdWidth<ValueType>(thisApi());
             constexpr uint32_t cachlineBytes = getCachelineSize(thisApi());
@@ -101,16 +143,17 @@ namespace alpaka::onAcc
                 constexpr uint32_t simdWidthInByte = width * sizeof(ValueType);
                 // number of simd packs fitting into the maxConcurrencyInByte
                 constexpr uint32_t numSimdPacksToUtilizeConcurrency
-                    = std::max(T_maxConcurrencyInByte / simdWidthInByte, 1u);
+                    = alpaka::divExZero(T_maxConcurrencyInByte, simdWidthInByte);
                 // number of simd packs fitting into the cacheline
                 constexpr uint32_t numSimdPacksPerCacheLine = std::max(cachlineBytes / simdWidthInByte, 1u);
                 /* number of simd packs used per functor call
                  * - the number of simd packs per functor call should be a multiple of the number of simd packs per
                  * cacheline
                  */
-                constexpr uint32_t numSimdPacksPerFnCall = std::max(
-                    (numSimdPacksToUtilizeConcurrency / numSimdPacksPerCacheLine) * numSimdPacksPerCacheLine,
-                    1u);
+                constexpr uint32_t numSimdPacksPerFnCall
+                    = alpaka::divExZero(numSimdPacksToUtilizeConcurrency, numSimdPacksPerCacheLine)
+                      * numSimdPacksPerCacheLine;
+
 
                 // we SIMDfy only over the fast moving dimension (columns of memory)
                 auto const wSize = m_workGroup.size(acc).back();
@@ -222,11 +265,7 @@ namespace alpaka::onAcc
         static constexpr auto calcSimdWidth()
         {
             constexpr uint32_t maxSimdBytes = std::min(T_cacheLineInByte, T_maxConcurrencyInByte);
-
-            constexpr uint32_t numElemPerSimd = maxSimdBytes / sizeof(T_Type);
-            constexpr uint32_t simdWidth = std::max(numElemPerSimd, 1u);
-
-            return simdWidth;
+            return alpaka::divExZero(maxSimdBytes, static_cast<uint32_t>(sizeof(T_Type)));
         }
     };
 } // namespace alpaka::onAcc

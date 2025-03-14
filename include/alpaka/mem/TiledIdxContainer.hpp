@@ -261,7 +261,7 @@ namespace alpaka::onAcc
             else if constexpr(std::is_same_v<T_IdxMapperFn, layout::Contigious>)
             {
                 auto extent = m_idxRange.distance();
-                auto numElements = core::divCeil(extent, m_idxRange.m_stride * numThreads);
+                auto numElements = divCeil(extent, m_idxRange.m_stride * numThreads);
                 auto first = threadIdx * numElements * m_idxRange.m_stride;
 
                 return const_iterator(
@@ -284,7 +284,7 @@ namespace alpaka::onAcc
             else if constexpr(std::is_same_v<T_IdxMapperFn, layout::Contigious>)
             {
                 auto extent = m_idxRange.distance();
-                auto numElements = core::divCeil(extent, m_idxRange.m_stride * numThreads);
+                auto numElements = divCeil(extent, m_idxRange.m_stride * numThreads);
                 auto first = threadIdx * numElements * m_idxRange.m_stride;
 
                 return const_iterator_end(m_idxRange.m_begin + extent.min(first + numElements * m_idxRange.m_stride));

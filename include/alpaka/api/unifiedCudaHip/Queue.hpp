@@ -212,7 +212,7 @@ namespace alpaka::internal
     template<typename T_Device>
     struct GetApi::Op<onHost::unifiedCudaHip::Queue<T_Device>>
     {
-        decltype(auto) operator()(auto&& queue) const
+        inline constexpr auto operator()(auto&& queue) const
         {
             return onHost::getApi(queue.m_device);
         }

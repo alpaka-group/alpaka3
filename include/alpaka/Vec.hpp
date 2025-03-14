@@ -845,17 +845,23 @@ namespace alpaka
         };
     } // namespace internal
 
-    namespace core
+    /** @todo the function for intergral values is defined in Utils.hpp
+     * move this to a better place, e.g. math and expose this for the user too
+     */
+    template<concepts::Vector Vector>
+    [[nodiscard]] ALPAKA_FN_HOST_ACC constexpr auto divCeil(Vector a, Vector b) -> Vector
     {
-        /** @todo the function for intergral values is defined in Utils.hpp
-         * move this to a better place, e.g. math and expose this for the user too
-         */
-        template<concepts::Vector Vector>
-        [[nodiscard]] ALPAKA_FN_HOST_ACC constexpr auto divCeil(Vector a, Vector b) -> Vector
-        {
-            return (a + b - Vector::all(1)) / b;
-        }
-    } // namespace core
+        return (a + b - Vector::all(1)) / b;
+    }
+
+    template<concepts::Vector Vector>
+    [[nodiscard]] ALPAKA_FN_HOST_ACC constexpr auto divExZero(Vector a, Vector b) -> Vector
+    {
+        auto tmp = a / b;
+        using ValueType = alpaka::trait::GetValueType_t<Vector>;
+        for(uint32_t d = 0u; d < Vector::dim(); ++d)
+            tmp[d] = std::min(tmp[d], ValueType{1u});
+    }
 }; // namespace alpaka
 
 namespace std

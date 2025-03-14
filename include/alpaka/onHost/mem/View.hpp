@@ -165,7 +165,7 @@ namespace alpaka::internal
     template<typename... T_Args>
     struct GetApi::Op<onHost::View<T_Args...>>
     {
-        decltype(auto) operator()(auto&& buffer) const
+        inline constexpr auto operator()(auto&& buffer) const
         {
             return onHost::getApi(buffer.m_data);
         }

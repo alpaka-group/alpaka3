@@ -6,6 +6,7 @@
 
 #include "alpaka/api/trait.hpp"
 #include "alpaka/concepts.hpp"
+#include "alpaka/core/Utility.hpp"
 #include "alpaka/onHost/trait.hpp"
 
 #include <memory>
@@ -54,7 +55,7 @@ namespace alpaka
         {
             constexpr uint32_t operator()(api::Cpu const) const
             {
-                constexpr uint32_t simdWidthInByte =
+                constexpr size_t simdWidthInByte =
 #if defined(__AVX512BW__) || defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512VL__)
                     64u;
 #elif defined(__riscv_vector)
@@ -73,7 +74,23 @@ namespace alpaka
 #else
                     sizeof(T_Type);
 #endif
-                return std::max(static_cast<uint32_t>(simdWidthInByte / sizeof(T_Type)), 1u);
+                return alpaka::divExZero(simdWidthInByte, sizeof(T_Type));
+            }
+        };
+
+        template<>
+        struct GetNumPipelines::Op<api::Cpu>
+        {
+            constexpr uint32_t operator()(api::Cpu const) const
+            {
+                /* INTEL can issue 4 commands and AMD typically 2, since we can not distinguish between both we use
+                 * the higher value.
+                 * ARM SVE can typically issue 4 commands too.
+                 *
+                 * Therefor we use at the moment as default 4.
+                 */
+                constexpr uint32_t numPipes = 4u;
+                return numPipes;
             }
         };
 
