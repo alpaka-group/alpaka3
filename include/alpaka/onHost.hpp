@@ -56,6 +56,11 @@ namespace alpaka::onHost
         return internal::makePlatform(ALPAKA_FORWARD(api));
     }
 
+    inline std::convertible_to<std::string> auto getStaticName(auto const& any)
+    {
+        return alpaka::internal::GetStaticName::Op<ALPAKA_TYPEOF(any)>{}(any);
+    }
+
     inline std::convertible_to<std::string> auto getStaticName(concepts::StaticNameHandle auto const& any)
     {
         return alpaka::internal::GetStaticName::Op<std::decay_t<decltype(*any.get())>>{}(*any.get());
