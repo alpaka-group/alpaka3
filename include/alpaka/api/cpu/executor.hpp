@@ -9,24 +9,37 @@
 #include "alpaka/tag.hpp"
 
 #include <cassert>
+#include <string>
 #include <tuple>
 
 namespace alpaka::exec
 {
     struct CpuSerial
     {
+        static std::string getName()
+        {
+            return "CpuSerial";
+        }
     };
 
     constexpr CpuSerial cpuSerial;
 
     struct CpuOmpBlocks
     {
+        static std::string getName()
+        {
+            return "CpuOmpBlocks";
+        }
     };
 
     constexpr CpuOmpBlocks cpuOmpBlocks;
 
     struct CpuOmpBlocksAndThreads
     {
+        static std::string getName()
+        {
+            return "CpuOmpBlocksAndThreads";
+        }
     };
 
     constexpr CpuOmpBlocksAndThreads cpuOmpBlocksAndThreads;

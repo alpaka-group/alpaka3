@@ -8,10 +8,16 @@
 #include "alpaka/api/unifiedCudaHip/tag.hpp"
 #include "alpaka/api/unifiedCudaHip/trait.hpp"
 
+#include <string>
+
 namespace alpaka::exec
 {
     struct GpuCuda
     {
+        static std::string getName()
+        {
+            return "GpuCuda";
+        }
     };
 
     constexpr GpuCuda gpuCuda;
