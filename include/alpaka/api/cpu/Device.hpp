@@ -184,6 +184,39 @@ namespace alpaka::onHost
             }
         };
 
+        /** Set number of thread blocks and threads per block to one
+         *
+         * There is no need to emulate blocks if we have only one thread.
+         */
+        template<typename T_Platform, typename T_NumBlocks, typename T_NumThreads, typename T_KernelBundle>
+        struct AdjustThreadSpec::
+            Op<cpu::Device<T_Platform>, exec::CpuSerial, FrameSpec<T_NumBlocks, T_NumThreads>, T_KernelBundle>
+        {
+            auto operator()(
+                cpu::Device<T_Platform> const& device,
+                exec::CpuSerial const& executor,
+                FrameSpec<T_NumBlocks, T_NumThreads> const& dataBlocking,
+                T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
+            {
+                /// @todo add shortcut to create a CVec with equal values
+                auto const allOne
+                    = ALPAKA_TYPEOF(iotaCVec<typename T_NumThreads::type, T_NumThreads::dim()>())::template all<1u>();
+                return ThreadSpec{allOne, allOne};
+            }
+
+            auto operator()(
+                cpu::Device<T_Platform> const& device,
+                exec::CpuSerial const& executor,
+                FrameSpec<T_NumBlocks, T_NumThreads> const& dataBlocking,
+                T_KernelBundle const& kernelBundle) const
+            {
+                /// @todo add shortcut to create a CVec with equal values
+                auto const allOne
+                    = ALPAKA_TYPEOF(iotaCVec<typename T_NumThreads::type, T_NumThreads::dim()>())::template all<1u>();
+                return ThreadSpec{allOne, allOne};
+            }
+        };
+
         template<
             typename T_Platform,
             typename T_Mapping,
