@@ -15,6 +15,7 @@ project("alpakaExamples" LANGUAGES CXX)
 # Add subdirectories.
 ################################################################################
 
+add_subdirectory("grayScaleSimd/")
 add_subdirectory("heatEquation2D/")
 add_subdirectory("vectorAdd/")
 add_subdirectory("tutorial/")
