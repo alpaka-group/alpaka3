@@ -8,6 +8,7 @@
 #include <alpaka/example/executors.hpp>
 
 #include <chrono>
+#include <cstdlib>
 #include <iostream>
 #include <random>
 #include <typeinfo>
@@ -50,14 +51,21 @@ public:
 // selected accelerator only. If you use the example as the starting point for your project, you can rename the
 // example() function to main() and move the accelerator tag to the function body.
 template<typename T_Cfg>
-auto example(T_Cfg const& cfg) -> int
+auto example(T_Cfg const& cfg, size_t numElements) -> int
 {
     using IdxVec = Vec<std::size_t, 1u>;
 
     auto api = cfg[object::api];
     auto exec = cfg[object::exec];
 
-    std::cout << api.getName() << std::endl;
+    // Define problem size
+    IdxVec const extent(numElements);
+
+    // Define the buffer element type
+    using Data = uint32_t;
+
+    std::cout << "Number of elements: " << numElements << std::endl;
+    std::cout << "Element type: " << core::demangledName<Data>() << std::endl;
 
     std::cout << "Using alpaka accelerator: " << core::demangledName(exec) << " for " << api.getName() << std::endl;
 
@@ -67,12 +75,6 @@ auto example(T_Cfg const& cfg) -> int
 
     // Create a queue on the device
     onHost::Queue queue = devAcc.makeQueue();
-
-    // Define the work division
-    IdxVec const extent(123456);
-
-    // Define the buffer element type
-    using Data = std::uint32_t;
 
     // Get the host device for allocating memory on the host.
     onHost::Platform platformHost = onHost::makePlatform(api::cpu);
@@ -164,11 +166,48 @@ auto example(T_Cfg const& cfg) -> int
     }
 }
 
-auto main() -> int
+void help(char* argv[])
 {
+    std::cerr << argv[0] << " [-n  numElements] [-h]" << std::endl;
+}
+
+auto main(int argc, char* argv[]) -> int
+{
+    size_t numElements = 123456;
+
+    int opt;
+    while((opt = getopt(argc, argv, "hn:")) != -1)
+    {
+        switch(opt)
+        {
+        case 'n':
+            try
+            {
+                numElements = std::stoul(optarg, nullptr, 0);
+            }
+            catch(std::invalid_argument const& e)
+            {
+                std::cerr << "Error: invalid argument '" << optarg << "'.\n";
+                return EXIT_FAILURE;
+            }
+            catch(std::out_of_range const& e)
+            {
+                std::cerr << "Error: value '" << optarg << "' out of range for size_t.\n";
+                return EXIT_FAILURE;
+            }
+            break;
+        case 'h':
+            help(argv);
+            exit(EXIT_SUCCESS);
+        default:
+            help(argv);
+            exit(EXIT_FAILURE);
+        }
+    }
+
     using namespace alpaka;
     // Execute the example once for each enabled API and executor.
     return executeForEach(
-        [=](auto const& tag) { return example(tag); },
+        [=](auto const& tag) { return example(tag, numElements); },
         onHost::allExecutorsAndApis(onHost::enabledApis));
 }
