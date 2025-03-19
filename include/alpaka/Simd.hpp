@@ -570,6 +570,8 @@ namespace alpaka
     ALPAKA_VECTOR_BINARY_OP(bool, &&)
     ALPAKA_VECTOR_BINARY_OP(bool, ||)
     ALPAKA_VECTOR_BINARY_OP(T_Type, %)
+    ALPAKA_VECTOR_BINARY_OP(T_Type, <<)
+    ALPAKA_VECTOR_BINARY_OP(T_Type, >>)
 
 #undef ALPAKA_VECTOR_BINARY_OP
 
