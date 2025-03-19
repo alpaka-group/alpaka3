@@ -10,16 +10,17 @@
 #include <string>
 #include <string_view>
 
+/** This type is required to be in the global namespace to avoid invalid offsets during demangling */
+struct AlpakaDemangleReferenceType
+{
+};
+
 namespace alpaka::core
 {
     /// \file
     /// use source_location to derive the demangled type name
     /// based on:
     /// https://www.reddit.com/r/cpp/comments/lfi6jt/finally_a_possibly_portable_way_to_convert_types/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
-
-    struct DummyType
-    {
-    };
 
     template<typename T>
     inline auto EmbedTypeIntoSignature()
@@ -32,10 +33,10 @@ namespace alpaka::core
     {
         static auto name()
         {
-            constexpr size_t testSignatureLength = sizeof("DummyType") - 1;
-            auto const DummySignature = EmbedTypeIntoSignature<DummyType>();
+            constexpr size_t testSignatureLength = sizeof("AlpakaDemangleReferenceType") - 1;
+            auto const DummySignature = EmbedTypeIntoSignature<AlpakaDemangleReferenceType>();
             // count char's until the type name starts
-            auto const startPosition = DummySignature.find("DummyType");
+            auto const startPosition = DummySignature.find("AlpakaDemangleReferenceType");
             // count char's after the type information by removing type name information and pre information
             auto const tailLength = DummySignature.size() - startPosition - testSignatureLength;
             auto const EmbeddingSignature = EmbedTypeIntoSignature<T>();
