@@ -52,6 +52,10 @@ namespace alpaka::onHost
             ~Queue()
             {
                 onHost::internal::Wait::wait(*this);
+                // setDevice is not required because wait() is setting the device
+                ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(
+                    ApiInterface,
+                    ApiInterface::streamDestroy(getNativeHandle()));
             }
 
             Queue(Queue const&) = delete;
