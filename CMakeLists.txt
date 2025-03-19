@@ -267,6 +267,7 @@ option(alpaka_HEADERCHECKS "Enable/Disable header check tests" OFF)
 
 if (alpaka_TESTING)
     include(CTest)
+    enable_testing()
     add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/tests")
 endif()
 
