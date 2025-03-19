@@ -605,8 +605,8 @@ namespace alpaka
 /** binary operators
  * @{
  */
-#define ALPAKA_VECTOR_BINARY_OP(resultScalarType, op)                                                                 \
-    template<typename T_Type, uint32_t T_dim, typename T_Storage, typename T_OtherStorage>                            \
+#define ALPAKA_VECTOR_BINARY_OP(typenameOrConcept, resultScalarType, op)                                              \
+    template<typenameOrConcept T_Type, uint32_t T_dim, typename T_Storage, typename T_OtherStorage>                   \
     constexpr auto operator op(                                                                                       \
         const Vec<T_Type, T_dim, T_Storage>& lhs,                                                                     \
         const Vec<T_Type, T_dim, T_OtherStorage>& rhs)                                                                \
@@ -621,7 +621,7 @@ namespace alpaka
     }                                                                                                                 \
                                                                                                                       \
     template<                                                                                                         \
-        typename T_Type,                                                                                              \
+        typenameOrConcept T_Type,                                                                                     \
         concepts::IsLosslessConvertible<T_Type> T_ValueType,                                                          \
         uint32_t T_dim,                                                                                               \
         typename T_Storage>                                                                                           \
@@ -636,7 +636,7 @@ namespace alpaka
         return result;                                                                                                \
     }                                                                                                                 \
     template<                                                                                                         \
-        typename T_Type,                                                                                              \
+        typenameOrConcept T_Type,                                                                                     \
         concepts::IsLosslessConvertible<T_Type> T_ValueType,                                                          \
         uint32_t T_dim,                                                                                               \
         typename T_Storage>                                                                                           \
@@ -650,15 +650,19 @@ namespace alpaka
             result[i] = lhs op rhs[i];                                                                                \
         return result;                                                                                                \
     }
-    ALPAKA_VECTOR_BINARY_OP(T_Type, +)
-    ALPAKA_VECTOR_BINARY_OP(T_Type, -)
-    ALPAKA_VECTOR_BINARY_OP(T_Type, *)
-    ALPAKA_VECTOR_BINARY_OP(T_Type, /)
-    ALPAKA_VECTOR_BINARY_OP(bool, >=)
-    ALPAKA_VECTOR_BINARY_OP(bool, >)
-    ALPAKA_VECTOR_BINARY_OP(bool, <=)
-    ALPAKA_VECTOR_BINARY_OP(bool, <)
-    ALPAKA_VECTOR_BINARY_OP(T_Type, %)
+    ALPAKA_VECTOR_BINARY_OP(typename, T_Type, +)
+    ALPAKA_VECTOR_BINARY_OP(typename, T_Type, -)
+    ALPAKA_VECTOR_BINARY_OP(typename, T_Type, *)
+    ALPAKA_VECTOR_BINARY_OP(typename, T_Type, /)
+    ALPAKA_VECTOR_BINARY_OP(typename, bool, >=)
+    ALPAKA_VECTOR_BINARY_OP(typename, bool, >)
+    ALPAKA_VECTOR_BINARY_OP(typename, bool, <=)
+    ALPAKA_VECTOR_BINARY_OP(typename, bool, <)
+    ALPAKA_VECTOR_BINARY_OP(typename, bool, &&)
+    ALPAKA_VECTOR_BINARY_OP(typename, bool, ||)
+    ALPAKA_VECTOR_BINARY_OP(std::integral, T_Type, %)
+    ALPAKA_VECTOR_BINARY_OP(std::integral, T_Type, <<)
+    ALPAKA_VECTOR_BINARY_OP(std::integral, T_Type, >>)
 
 #undef ALPAKA_VECTOR_BINARY_OP
 
