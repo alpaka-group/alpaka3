@@ -1,8 +1,13 @@
+/* Copyright 2025 Mehmet Yusufoglu, René Widera
+ * SPDX-License-Identifier: ISC
+ */
+
 #include <alpaka/alpaka.hpp>
 #include <alpaka/example/executeForEach.hpp>
 #include <alpaka/example/executors.hpp>
 
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 #include <random>
 #include <typeinfo>
@@ -18,8 +23,6 @@ constexpr uint32_t scalar32 = 32u;
 class GrayscaleKernel
 {
 public:
-    ALPAKA_NO_HOST_ACC_WARNING
-
     ALPAKA_FN_ACC void operator()(auto const& acc, auto&& argb, auto&& grayscale, auto const numElements) const
     {
         constexpr uint32_t maskFF = 0xFFu;
@@ -30,11 +33,12 @@ public:
             alpaka::Vec{numElements},
             [&](auto const&, auto&& simdARGB, auto&& simdGrayResult) constexpr
             {
+                auto simdPixel = simdARGB.load();
                 // Extract components using bitwise operations
-                auto simdA = simdARGB.load() >> 24u; // Extract alpha channel
-                auto simdR = (simdARGB.load() >> 16u) & maskFF; // Extract red channel
-                auto simdG = (simdARGB.load() >> 8u) & maskFF; // Extract green channel
-                auto simdB = simdARGB.load() & maskFF; // Extract blue channel
+                auto simdA = simdPixel >> 24u; // Extract alpha channel
+                auto simdR = (simdPixel >> 16u) & maskFF; // Extract red channel
+                auto simdG = (simdPixel >> 8u) & maskFF; // Extract green channel
+                auto simdB = simdPixel & maskFF; // Extract blue channel
 
                 // Perform the grayscale calculation
                 auto simdGray = (simdR * scalarR + simdG * scalarG + simdB * scalarB) / scalar32;
@@ -55,8 +59,17 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
     auto api = cfg[object::api];
     auto exec = cfg[object::exec];
 
-    std::cout << api.getName() << std::endl;
+    // Define the buffer element type.
+    // Use uint32_t for packed ARGB values
+    using Data = uint32_t;
+
+    // Number of elements to process
+    IdxVec const extent(numElements);
+
     std::cout << "Using alpaka accelerator: " << core::demangledName(exec) << " for " << api.getName() << std::endl;
+    std::cout << "Number of elements [#]: " << numElements << std::endl;
+    std::cout << "Element type [byte]: " << core::demangledName<Data>() << std::endl;
+    std::cout << "Buffer size [Gbyte]: " << numElements * sizeof(Data) / 1.e9 << std::endl;
 
     // Select a device
     onHost::Platform platform = onHost::makePlatform(api);
@@ -65,11 +78,6 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
     // Create a queue on the device
     onHost::Queue queue = devAcc.makeQueue();
 
-    // Number of elements to process
-    IdxVec const extent(numElements);
-    // Define the buffer element type.
-    // Use uint32_t for packed ARGB values
-    using Data = uint32_t;
     // Get the host device for allocating memory on the host.
     onHost::Platform platformHost = onHost::makePlatform(api::cpu);
     onHost::Device devHost = platformHost.makeDevice(0);
@@ -78,6 +86,7 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
     auto bufHostR = onHost::alloc<uint8_t>(devHost, extent);
     auto bufHostG = onHost::allocMirror(devHost, bufHostR);
     auto bufHostB = onHost::allocMirror(devHost, bufHostR);
+    auto bufHostA = onHost::allocMirror(devHost, bufHostR);
     auto bufHostARGB = onHost::alloc<Data>(devHost, extent);
     auto bufHostScalarRGB = onHost::allocMirror(devHost, bufHostARGB);
 
@@ -90,8 +99,9 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
         bufHostR[i] = dist(eng);
         bufHostG[i] = dist(eng);
         bufHostB[i] = dist(eng);
-        bufHostARGB[i] = (static_cast<Data>(bufHostR[i]) << 16u) | (static_cast<Data>(bufHostG[i]) << 8u)
-                         | static_cast<Data>(bufHostB[i]);
+        bufHostA[i] = dist(eng);
+        bufHostARGB[i] = (static_cast<Data>(bufHostA[i]) << 24u) | (static_cast<Data>(bufHostR[i]) << 16u)
+                         | (static_cast<Data>(bufHostG[i]) << 8u) | static_cast<Data>(bufHostB[i]);
     }
 
     // Allocate device memory buffers for ARGB and scalarRGB
@@ -100,7 +110,9 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
 
     // Copy Host -> Acc
     onHost::memcpy(queue, bufAccARGB, bufHostARGB);
-    onHost::memcpy(queue, bufAccScalarRGB, bufHostScalarRGB);
+
+    // reset device output buffer
+    onHost::memset(queue, bufAccScalarRGB, 0u);
 
     // Instantiate the kernel function object
     GrayscaleKernel kernel;
@@ -121,8 +133,11 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
             KernelBundle{kernel, bufAccARGB.getMdSpan(), bufAccScalarRGB.getMdSpan(), static_cast<size_t>(extent[0])});
         onHost::wait(queue); // Ensure kernel execution completes before proceeding
         auto const endT = std::chrono::high_resolution_clock::now();
-        std::cout << "Time for kernel execution: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-                  << std::endl;
+        double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
+        std::cout << "Time for kernel execution [s]: " << kernelRuntime << std::endl;
+        // size is multiplied by two because we read from one buffer and write to the second buffer
+        std::cout << "Processed [Gbyte/s]: "
+                  << (static_cast<double>(2llu * numElements * sizeof(Data)) / kernelRuntime) / 1.e9 << std::endl;
     }
 
     // Copy back the result
@@ -131,29 +146,32 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
         onHost::memcpy(queue, bufHostScalarRGB, bufAccScalarRGB);
         onHost::wait(queue);
         auto const endT = std::chrono::high_resolution_clock::now();
-        std::cout << "Time for HtoD copy: " << std::chrono::duration<double>(endT - beginT).count() << 's'
+        double copyRuntime = std::chrono::duration<double>(endT - beginT).count();
+        std::cout << "Time for HtoD copy [s]: " << copyRuntime << std::endl;
+        std::cout << "Copied [Gbyte/s]: " << (static_cast<double>(numElements * sizeof(Data)) / copyRuntime) / 1.e9
                   << std::endl;
     }
     // Validate results
     int falseResults = 0;
     static constexpr int MAX_PRINT_FALSE_RESULTS = 20;
-    for(auto i(0u); i < extent; ++i)
+    for(size_t i(0u); i < extent; ++i)
     {
-        Data const& val(bufHostScalarRGB[i]); // Direct indexing for scalarRGB
-        uint8_t computedGray = val & 0xFFu; // Extract grayscale value from one of first 3 bytes. 3 bytes all has gray
-                                            // value. Last one is alpha channel.
+        Data const& computedGray(bufHostScalarRGB[i]); // Direct indexing for scalarRGB
 
-        uint8_t const correctResult = static_cast<uint8_t>(
+        uint32_t const grayValue = static_cast<uint8_t>(
             (scalarR * bufHostR[i] + // Direct indexing for R
              scalarG * bufHostG[i] + // Direct indexing for G
              scalarB * bufHostB[i]) // Direct indexing for B
             / scalar32); // Normalize by scalar32
 
+        Data correctResult = grayValue | (grayValue << 8u) | (grayValue << 16u) | (bufHostA[i] << 24u);
+
         if(computedGray != correctResult)
         {
             if(falseResults < MAX_PRINT_FALSE_RESULTS)
-                std::cerr << "scalarRGB[" << i << "] == " << static_cast<int>(computedGray)
-                          << " != " << static_cast<int>(correctResult) << std::endl;
+                std::cerr << "RGBA[" << i << "] == " << std::hex << computedGray << " != " << correctResult
+                          << std::endl;
+            std::cerr << std::resetiosflags(std::ios_base::fmtflags(0));
             ++falseResults;
         }
     }
@@ -161,6 +179,7 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
     if(falseResults == 0)
     {
         std::cout << "Execution results correct!" << std::endl;
+        std::cout << std::endl;
         return EXIT_SUCCESS;
     }
     else
@@ -168,6 +187,7 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
         std::cout << "Found " << falseResults << " false results, printed no more than " << MAX_PRINT_FALSE_RESULTS
                   << "\n"
                   << "Execution results incorrect!" << std::endl;
+        std::cout << std::endl;
         return EXIT_FAILURE;
     }
 }
