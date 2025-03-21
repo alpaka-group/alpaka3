@@ -281,13 +281,50 @@ struct CompileTimeKernelCompare2D
     }
 };
 
+/** Compile-time test cases for divCeil and divExZero */
+struct CompileTimeKernelDivCeilAndDivExZero
+{
+    ALPAKA_FN_HOST_ACC void operator()() const
+    {
+        using namespace alpaka;
+
+        // Test divCeil with 1D vectors
+        constexpr auto vec1 = Vec{7};
+        constexpr auto vec2 = Vec{3};
+        // (7 + 3 - 1) / 3 = 9 / 3 = 3
+        static_assert(divCeil(vec1, vec2) == Vec{(7 + 3 - 1) / 3});
+
+        // Test divCeil with 3D vectors
+        constexpr auto vec3 = Vec{3, 7, 5};
+        constexpr auto vec4 = Vec{2, 3, 4};
+        // (3 + 2 - 1) / 2 = 4 / 2 = 2
+        // (7 + 3 - 1) / 3 = 9 / 3 = 3
+        // (5 + 4 - 1) / 4 = 8 / 4 = 2
+        static_assert(divCeil(vec3, vec4) == Vec{(3 + 2 - 1) / 2, (7 + 3 - 1) / 3, (5 + 4 - 1) / 4});
+
+        // Test divExZero with 1D vectors
+        constexpr auto vec5 = Vec{7};
+        constexpr auto vec6 = Vec{3};
+        // 7 / 3 = 2 -> clamped to 1
+        static_assert(divExZero(vec5, vec6) == Vec{std::min(7 / 3, 1)});
+
+        // Test divExZero with 3D vectors
+        constexpr auto vec7 = Vec{3, 7, 5};
+        constexpr auto vec8 = Vec{2, 3, 4};
+        // 3 / 2 = 1 -> no clamping needed, already 1
+        // 7 / 3 = 2 -> clamped to 1
+        // 5 / 4 = 1 -> no clamping needed, already 1
+        static_assert(divExZero(vec7, vec8) == Vec{std::min(3 / 2, 1), std::min(7 / 3, 1), std::min(5 / 4, 1)});
+    }
+};
+
 TEST_CASE("vec generic", "[vector]")
 {
     using namespace alpaka;
-
 
     CompileTimeKernel1D{}();
     CompileTimeKernel2D{}();
     CompileTimeKernel3D{}();
     CompileTimeKernelCompare2D{}();
+    CompileTimeKernelDivCeilAndDivExZero{}();
 }
