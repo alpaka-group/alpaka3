@@ -6,7 +6,9 @@
 #include <alpaka/example/executeForEach.hpp>
 #include <alpaka/example/executors.hpp>
 
+#include <algorithm>
 #include <chrono>
+// #include <execution>
 #include <iomanip>
 #include <iostream>
 #include <random>
@@ -23,7 +25,7 @@ constexpr uint32_t scalar32 = 32u;
 class GrayscaleKernel
 {
 public:
-    ALPAKA_FN_ACC void operator()(auto const& acc, auto&& argb, auto&& grayscale, auto const numElements) const
+    ALPAKA_FN_ACC void operator()(auto const& acc, auto&& argb, auto const numElements) const
     {
         constexpr uint32_t maskFF = 0xFFu;
         auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
@@ -31,7 +33,7 @@ public:
         simdGrid.concurrent(
             acc,
             alpaka::Vec{numElements},
-            [&](auto const&, auto&& simdARGB, auto&& simdGrayResult) constexpr
+            [&](auto const&, auto&& simdARGB) constexpr
             {
                 auto simdPixel = simdARGB.load();
                 // Extract components using bitwise operations
@@ -44,113 +46,39 @@ public:
                 auto simdGray = (simdR * scalarR + simdG * scalarG + simdB * scalarB) / scalar32;
 
                 // Reconstruct ARGB value. Write same value to 3 bytes and alpha to the forth byte
-                simdGrayResult = simdGray | (simdGray << 8u) | (simdGray << 16u) | (simdA << 24u);
+                simdARGB = simdGray | (simdGray << 8u) | (simdGray << 16u) | (simdA << 24u);
             },
-            argb,
-            grayscale);
+            argb);
     }
 };
 
-template<typename T_Cfg>
-auto example(T_Cfg const& cfg, size_t numElements) -> int
+struct Pixel
 {
-    using IdxVec = Vec<std::size_t, 1u>;
+    std::uint8_t b, g, r, a;
+};
 
-    auto api = cfg[object::api];
-    auto exec = cfg[object::exec];
+void naiveToGray(auto&& buffer)
+{
+    std::for_each(
+        reinterpret_cast<Pixel*>(alpaka::onHost::data(buffer)),
+        reinterpret_cast<Pixel*>(alpaka::onHost::data(buffer) + alpaka::onHost::getExtents(buffer).x()),
+        [](Pixel& pixel)
+        {
+            const auto gray = (pixel.r * 11 + pixel.g * 16 + pixel.b * 5) / 32;
+            pixel.r = pixel.g = pixel.b = gray;
+        });
+}
 
-    // Define the buffer element type.
-    // Use uint32_t for packed ARGB values
+auto validateResult(
+    auto&& bufHostScalarRGB,
+    auto const& bufHostR,
+    auto const& bufHostG,
+    auto const& bufHostB,
+    auto const& bufHostA,
+    size_t extent)
+{
     using Data = uint32_t;
-
-    // Number of elements to process
-    IdxVec const extent(numElements);
-
-    std::cout << "Using alpaka accelerator: " << core::demangledName(exec) << " for " << api.getName() << std::endl;
-    std::cout << "Number of elements [#]: " << numElements << std::endl;
-    std::cout << "Element type [byte]: " << core::demangledName<Data>() << std::endl;
-    std::cout << "Buffer size [Gbyte]: " << numElements * sizeof(Data) / 1.e9 << std::endl;
-
-    // Select a device
-    onHost::Platform platform = onHost::makePlatform(api);
-    onHost::Device devAcc = platform.makeDevice(0);
-
-    // Create a queue on the device
-    onHost::Queue queue = devAcc.makeQueue();
-
-    // Get the host device for allocating memory on the host.
-    onHost::Platform platformHost = onHost::makePlatform(api::cpu);
-    onHost::Device devHost = platformHost.makeDevice(0);
-
-    // Allocate host memory buffers for R, G, B, and ARGB
-    auto bufHostR = onHost::alloc<uint8_t>(devHost, extent);
-    auto bufHostG = onHost::allocMirror(devHost, bufHostR);
-    auto bufHostB = onHost::allocMirror(devHost, bufHostR);
-    auto bufHostA = onHost::allocMirror(devHost, bufHostR);
-    auto bufHostARGB = onHost::alloc<Data>(devHost, extent);
-    auto bufHostScalarRGB = onHost::allocMirror(devHost, bufHostARGB);
-
-    // Fill input data with random RGB values
-    std::random_device rd{};
-    std::default_random_engine eng{rd()};
-    std::uniform_int_distribution<uint8_t> dist(0, 255);
-    for(auto i(0u); i < extent; ++i)
-    {
-        bufHostR[i] = dist(eng);
-        bufHostG[i] = dist(eng);
-        bufHostB[i] = dist(eng);
-        bufHostA[i] = dist(eng);
-        bufHostARGB[i] = (static_cast<Data>(bufHostA[i]) << 24u) | (static_cast<Data>(bufHostR[i]) << 16u)
-                         | (static_cast<Data>(bufHostG[i]) << 8u) | static_cast<Data>(bufHostB[i]);
-    }
-
-    // Allocate device memory buffers for ARGB and scalarRGB
-    auto bufAccARGB = onHost::allocMirror(devAcc, bufHostARGB);
-    auto bufAccScalarRGB = onHost::allocMirror(devAcc, bufHostScalarRGB);
-
-    // Copy Host -> Acc
-    onHost::memcpy(queue, bufAccARGB, bufHostARGB);
-
-    // reset device output buffer
-    onHost::memset(queue, bufAccScalarRGB, 0u);
-
-    // Instantiate the kernel function object
-    GrayscaleKernel kernel;
-
-    // Define frameExtent
-    Vec<size_t, 1u> frameExtent = 256u;
-    uint32_t elementsPerWorker = alpaka::getNumElemPerThread<Data>(alpaka::onHost::getApi(queue));
-    auto dataBlocking = onHost::FrameSpec{divCeil(extent, frameExtent * elementsPerWorker), frameExtent};
-
-    // Enqueue the kernel execution task
-    {
-        onHost::wait(queue);
-        auto const beginT = std::chrono::high_resolution_clock::now();
-        onHost::enqueue(
-            queue,
-            exec,
-            dataBlocking,
-            KernelBundle{kernel, bufAccARGB.getMdSpan(), bufAccScalarRGB.getMdSpan(), static_cast<size_t>(extent[0])});
-        onHost::wait(queue); // Ensure kernel execution completes before proceeding
-        auto const endT = std::chrono::high_resolution_clock::now();
-        double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
-        std::cout << "Time for kernel execution [s]: " << kernelRuntime << std::endl;
-        // size is multiplied by two because we read from one buffer and write to the second buffer
-        std::cout << "Processed [Gbyte/s]: "
-                  << (static_cast<double>(2llu * numElements * sizeof(Data)) / kernelRuntime) / 1.e9 << std::endl;
-    }
-
-    // Copy back the result
-    {
-        auto beginT = std::chrono::high_resolution_clock::now();
-        onHost::memcpy(queue, bufHostScalarRGB, bufAccScalarRGB);
-        onHost::wait(queue);
-        auto const endT = std::chrono::high_resolution_clock::now();
-        double copyRuntime = std::chrono::duration<double>(endT - beginT).count();
-        std::cout << "Time for HtoD copy [s]: " << copyRuntime << std::endl;
-        std::cout << "Copied [Gbyte/s]: " << (static_cast<double>(numElements * sizeof(Data)) / copyRuntime) / 1.e9
-                  << std::endl;
-    }
+    static_assert(std::is_same_v<uint32_t, Data>);
     // Validate results
     int falseResults = 0;
     static constexpr int MAX_PRINT_FALSE_RESULTS = 20;
@@ -192,9 +120,138 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
     }
 }
 
+template<typename T_Cfg>
+auto example(T_Cfg const& cfg, size_t numElements, bool enableStdForEach) -> int
+{
+    using IdxVec = Vec<std::size_t, 1u>;
+
+    auto api = cfg[object::api];
+    auto exec = cfg[object::exec];
+
+    // Define the buffer element type.
+    // Use uint32_t for packed ARGB values
+    using Data = uint32_t;
+
+    // Number of elements to process
+    IdxVec const extent(numElements);
+
+    std::cout << "Example GrayScale" << std::endl;
+    std::cout << "    Number of elements [#]: " << numElements << std::endl;
+    std::cout << "    Element type [byte]: " << core::demangledName<Data>() << std::endl;
+    std::cout << "    Buffer size [Gbyte]: " << numElements * sizeof(Data) / 1.e9 << std::endl;
+    std::cout << std::endl;
+
+    // Select a device
+    onHost::Platform platform = onHost::makePlatform(api);
+    onHost::Device devAcc = platform.makeDevice(0);
+
+    // Create a queue on the device
+    onHost::Queue queue = devAcc.makeQueue();
+
+    // Get the host device for allocating memory on the host.
+    onHost::Platform platformHost = onHost::makePlatform(api::cpu);
+    onHost::Device devHost = platformHost.makeDevice(0);
+
+    // Allocate host memory buffers for R, G, B, and ARGB
+    auto bufHostR = onHost::alloc<uint8_t>(devHost, extent);
+    auto bufHostG = onHost::allocMirror(devHost, bufHostR);
+    auto bufHostB = onHost::allocMirror(devHost, bufHostR);
+    auto bufHostA = onHost::allocMirror(devHost, bufHostR);
+    auto bufHostARGB = onHost::alloc<Data>(devHost, extent);
+    auto bufHostScalarRGB = onHost::allocMirror(devHost, bufHostARGB);
+
+    // Fill input data with random RGB values
+    std::random_device rd{};
+    std::default_random_engine eng{rd()};
+    std::uniform_int_distribution<uint8_t> dist(0, 255);
+    for(auto i(0u); i < extent; ++i)
+    {
+        bufHostR[i] = dist(eng);
+        bufHostG[i] = dist(eng);
+        bufHostB[i] = dist(eng);
+        bufHostA[i] = dist(eng);
+        bufHostARGB[i] = (static_cast<Data>(bufHostA[i]) << 24u) | (static_cast<Data>(bufHostR[i]) << 16u)
+                         | (static_cast<Data>(bufHostG[i]) << 8u) | static_cast<Data>(bufHostB[i]);
+        bufHostScalarRGB[i] = bufHostARGB[i];
+    }
+
+    // Allocate device memory buffers for ARGB and scalarRGB
+    auto bufAccARGB = onHost::allocMirror(devAcc, bufHostARGB);
+    auto bufAccScalarRGB = onHost::allocMirror(devAcc, bufHostScalarRGB);
+
+    // optionally run for comparison but only if the executor is exec::cpuSerial
+    if(std::is_same_v<ALPAKA_TYPEOF(exec), alpaka::exec::CpuSerial> && enableStdForEach)
+    {
+        std::cout << "Using native CPU std::for_each()" << std::endl;
+        onHost::wait(queue);
+        auto const beginT = std::chrono::high_resolution_clock::now();
+        naiveToGray(bufHostScalarRGB);
+        auto const endT = std::chrono::high_resolution_clock::now();
+        double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
+
+        std::cout << "    Time for kernel execution [s]: " << kernelRuntime << std::endl;
+        // size is multiplied by two because we read and write to the buffer
+        std::cout << "    Processed [Gbyte/s]: "
+                  << (static_cast<double>(2ull * numElements * sizeof(Data)) / kernelRuntime) / 1.e9 << std::endl;
+
+        auto result = validateResult(bufHostScalarRGB, bufHostR, bufHostG, bufHostB, bufHostA, extent.x());
+        if(result != EXIT_SUCCESS)
+            return result;
+    }
+
+    // Copy Host -> Acc
+    onHost::memcpy(queue, bufAccARGB, bufHostARGB);
+
+
+    // Instantiate the kernel function object
+    GrayscaleKernel kernel;
+
+    // Define frameExtent
+    Vec<size_t, 1u> frameExtent = 256u;
+    uint32_t elementsPerWorker = alpaka::getNumElemPerThread<Data>(alpaka::onHost::getApi(queue));
+    auto dataBlocking = onHost::FrameSpec{divCeil(extent, frameExtent * elementsPerWorker), frameExtent};
+
+    // Enqueue the kernel execution task
+    {
+        std::cout << "Using alpaka accelerator: " << core::demangledName(exec) << " for " << api.getName()
+                  << std::endl;
+        onHost::wait(queue);
+        auto const beginT = std::chrono::high_resolution_clock::now();
+        onHost::enqueue(
+            queue,
+            exec,
+            dataBlocking,
+            KernelBundle{kernel, bufAccARGB.getMdSpan(), static_cast<size_t>(extent[0])});
+        onHost::wait(queue); // Ensure kernel execution completes before proceeding
+        auto const endT = std::chrono::high_resolution_clock::now();
+        double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
+        std::cout << "    Time for kernel execution [s]: " << kernelRuntime << std::endl;
+        // size is multiplied by two because we read and write to the buffer
+        std::cout << "    Processed [Gbyte/s]: "
+                  << (static_cast<double>(2llu * numElements * sizeof(Data)) / kernelRuntime) / 1.e9 << std::endl;
+    }
+
+    // Copy back the result
+    {
+        auto beginT = std::chrono::high_resolution_clock::now();
+        onHost::memcpy(queue, bufHostARGB, bufAccARGB);
+        onHost::wait(queue);
+        auto const endT = std::chrono::high_resolution_clock::now();
+        double copyRuntime = std::chrono::duration<double>(endT - beginT).count();
+        std::cout << "    Time for HtoD copy [s]: " << copyRuntime << std::endl;
+        std::cout << "    Copied [Gbyte/s]: " << (static_cast<double>(numElements * sizeof(Data)) / copyRuntime) / 1.e9
+                  << std::endl;
+    }
+
+    return validateResult(bufHostARGB, bufHostR, bufHostG, bufHostB, bufHostA, extent.x());
+}
+
 void help(char* argv[])
 {
-    std::cerr << argv[0] << " [-n  numElements] [-h]" << std::endl;
+    std::cerr << argv[0] << " [OPTIONS]" << std::endl;
+    std::cerr << "  -n  numElements: Number of elements to process. Default: 1024*1024" << std::endl;
+    std::cerr << "  -e: disable execution of the native std::for_each implementation" << std::endl;
+    std::cerr << "  -h: Print this help message" << std::endl;
 }
 
 auto main(int argc, char* argv[]) -> int
@@ -203,7 +260,8 @@ auto main(int argc, char* argv[]) -> int
     size_t numElements = 1024 * 1024;
 
     int opt;
-    while((opt = getopt(argc, argv, "hn:")) != -1)
+    bool enableStdForEach = true;
+    while((opt = getopt(argc, argv, "hn:e")) != -1)
     {
         switch(opt)
         {
@@ -226,6 +284,9 @@ auto main(int argc, char* argv[]) -> int
         case 'h':
             help(argv);
             exit(EXIT_SUCCESS);
+        case 'e':
+            enableStdForEach = false;
+            break;
         default:
             help(argv);
             exit(EXIT_FAILURE);
@@ -235,6 +296,6 @@ auto main(int argc, char* argv[]) -> int
     using namespace alpaka;
     // Execute the example once for each enabled API and executor.
     return executeForEach(
-        [=](auto const& tag) { return example(tag, numElements); },
+        [=](auto const& tag) { return example(tag, numElements, enableStdForEach); },
         onHost::allExecutorsAndApis(onHost::enabledApis));
 }
