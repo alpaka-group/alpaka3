@@ -71,15 +71,5 @@ namespace alpaka::onHost
         {
             return onHost::enqueue(static_cast<Parent>(*this), std::move(executor), blockCfg, std::move(kernelBundle));
         }
-
-        void enqueue(auto const executor, alpaka::concepts::KernelBundleWithSize auto const& kernelBundleWithSize)
-        {
-            return onHost::enqueue(
-                static_cast<Parent>(*this),
-                std::move(executor),
-                kernelBundleWithSize.m_numBlocks,
-                kernelBundleWithSize.m_numThreads,
-                kernelBundleWithSize.m_kernelBundle);
-        }
     };
 } // namespace alpaka::onHost
