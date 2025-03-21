@@ -825,6 +825,13 @@ namespace alpaka
 
         template<typename T>
         using getVec_t = typename GetVec<T>::type;
+
+        template<typename T_Type, uint32_t T_dim, typename T_Storage>
+        struct GetValueType<Vec<T_Type, T_dim, T_Storage>>
+        {
+            using type = T_Type;
+        };
+
     } // namespace trait
 
     template<typename T>
@@ -865,9 +872,11 @@ namespace alpaka
     [[nodiscard]] ALPAKA_FN_HOST_ACC constexpr auto divExZero(Vector a, Vector b) -> Vector
     {
         auto tmp = a / b;
+
         using ValueType = alpaka::trait::GetValueType_t<Vector>;
         for(uint32_t d = 0u; d < Vector::dim(); ++d)
             tmp[d] = std::min(tmp[d], ValueType{1u});
+        return tmp;
     }
 }; // namespace alpaka
 
