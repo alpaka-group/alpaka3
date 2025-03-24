@@ -7,6 +7,12 @@
 cmake_minimum_required(VERSION 3.20)
 project(alpaka CXX)
 
+set(BUILD_TESTING OFF CACHE BOOL "Build the testing tree.")
+include(CTest)
+# Sync alpaka_TESTING internal variable with cache variable BUILD_TESTING. 
+# BUILD_TESTING could be used from cmake command line or ccmake to enable/disable testing.
+set(alpaka_TESTING ${BUILD_TESTING})
+
 include(cmake/buildDependencies.cmake)
 
 # Add append compiler flags to a variable or target
@@ -260,13 +266,11 @@ file(GLOB_RECURSE alpakaSources "${CMAKE_CURRENT_SOURCE_DIR}/include/**")
 add_custom_target("alpakaIde" SOURCES ${alpakaSources})
 source_group(TREE "${CMAKE_CURRENT_LIST_DIR}/include/alpaka" FILES ${alpakaSources})
 
-option(alpaka_TESTING "Enable/Disable testing" OFF)
 option(alpaka_BENCHMARKS "Enable/Disable benchmarks" OFF)
 option(alpaka_EXAMPLES "Enable/Disable examples" OFF)
 option(alpaka_HEADERCHECKS "Enable/Disable header check tests" OFF)
 
 if (alpaka_TESTING)
-    include(CTest)
     enable_testing()
     add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/tests")
 endif()
