@@ -23,28 +23,38 @@ namespace alpaka
     {
     public:
         //! The function object type
-        using KernelFn = TKernelFn;
+        using KernelFn = std::decay_t<TKernelFn>;
         //! Tuple type to encapsulate kernel function argument types and argument values
         using ArgTuple = std::tuple<remove_restrict_t<std::decay_t<TArgs>>...>;
 
         // Constructor
-        constexpr KernelBundle(KernelFn kernelFn, TArgs&&... args)
-            : m_kernelFn{std::move(kernelFn)}
-            , m_args(std::forward<TArgs>(args)...)
+        constexpr KernelBundle(KernelFn const& kernelFn, TArgs const&... args) : m_kernelFn{kernelFn}, m_args(args...)
         {
         }
 
         constexpr KernelBundle(KernelBundle const& b) = default;
+        constexpr KernelBundle& operator=(KernelBundle const&) = default;
 
+        /** allow move assignment and constriction
+         *
+         *  @attention if the functor or the arguments contains non movable types the move operators can be
+         * inaccessible.
+         *
+         *  @{
+         */
         constexpr KernelBundle(KernelBundle&& b) = default;
+        constexpr KernelBundle& operator=(KernelBundle&&) = default;
+
+        /** @} */
 
         constexpr auto operator()(auto const& acc) const
         {
             std::apply([&](auto const&... args) constexpr { m_kernelFn(acc, args...); }, m_args);
         }
 
-        KernelFn const m_kernelFn;
-        ArgTuple const m_args; // Store the argument types without const and reference
+        KernelFn m_kernelFn;
+        // Store the argument types without const and reference
+        ArgTuple m_args;
     };
 
     //! \brief User defined deduction guide with trailing return type. For CTAD during the construction.
@@ -56,5 +66,5 @@ namespace alpaka
     //! \return Kernel function bundle. An instance of KernelBundle which consists the kernel function object and its
     //! arguments.
     template<typename TKernelFn, typename... TArgs>
-    ALPAKA_FN_HOST KernelBundle(TKernelFn, TArgs&&...) -> KernelBundle<TKernelFn, TArgs...>;
+    ALPAKA_FN_HOST KernelBundle(TKernelFn const&, TArgs const&...) -> KernelBundle<TKernelFn, TArgs...>;
 } // namespace alpaka

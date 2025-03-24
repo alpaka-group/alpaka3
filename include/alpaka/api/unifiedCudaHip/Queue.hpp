@@ -182,7 +182,7 @@ namespace alpaka::onHost
                 T_Executor const executor,
                 unifiedCudaHip::Queue<T_Device>& queue,
                 ThreadSpec<T_NumBlocks, T_NumThreads> const& threadBlocking,
-                T_KernelBundle kernelBundle,
+                T_KernelBundle const& kernelBundle,
                 T_Args const&... args) const
             {
                 using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
@@ -241,9 +241,9 @@ namespace alpaka::onHost
                 unifiedCudaHip::Queue<T_Device>& queue,
                 T_Executor const executor,
                 ThreadSpec<T_NumBlocks, T_NumThreads> const& threadBlocking,
-                T_KernelBundle kernelBundle) const
+                T_KernelBundle const& kernelBundle) const
             {
-                unifiedCudaHip::CallKernel{}(executor, queue, threadBlocking, std::move(kernelBundle));
+                unifiedCudaHip::CallKernel{}(executor, queue, threadBlocking, kernelBundle);
             }
         };
 
@@ -260,7 +260,7 @@ namespace alpaka::onHost
                 unifiedCudaHip::Queue<T_Device>& queue,
                 T_Executor const executor,
                 FrameSpec<T_NumFrames, T_FrameExtent> const& frameSpec,
-                T_KernelBundle kernelBundle) const
+                T_KernelBundle const& kernelBundle) const
             {
                 auto threadBlocking
                     = internal::adjustThreadSpec(*queue.m_device.get(), executor, frameSpec, kernelBundle);
@@ -268,7 +268,7 @@ namespace alpaka::onHost
                     executor,
                     queue,
                     threadBlocking,
-                    std::move(kernelBundle),
+                    kernelBundle,
                     frameSpec.m_numFrames,
                     frameSpec.m_frameExtent);
             }

@@ -25,8 +25,9 @@ namespace alpaka::onAcc
         }
 
         constexpr Acc(Acc const&) = delete;
-        constexpr Acc(Acc const&&) = delete;
+        constexpr Acc(Acc&&) = delete;
         constexpr Acc& operator=(Acc const&) = delete;
+        constexpr Acc& operator=(Acc&&) = delete;
 
         template<typename T, size_t T_uniqueId>
         constexpr decltype(auto) declareSharedVar() const

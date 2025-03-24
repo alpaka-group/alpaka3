@@ -57,19 +57,19 @@ namespace alpaka::onHost
             return onHost::wait(static_cast<Parent>(*this));
         }
 
-        void enqueue(auto const executor, auto const& blockCfg, auto&& f, auto&&... args)
+        void enqueue(auto const executor, auto const& blockCfg, auto const& f, auto&&... args)
         {
             return onHost::enqueue(
                 static_cast<Parent>(*this),
                 std::move(executor),
                 blockCfg,
-                std::move(KernelBundle{std::forward<decltype(f)>(f), std::forward<decltype(args)>(args)...}));
+                KernelBundle{f, std::forward<decltype(args)>(args)...});
         }
 
         template<typename TKernelFn, typename... TArgs>
-        void enqueue(auto const executor, auto const& blockCfg, KernelBundle<TKernelFn, TArgs...> kernelBundle)
+        void enqueue(auto const executor, auto const& blockCfg, KernelBundle<TKernelFn, TArgs...> const& kernelBundle)
         {
-            return onHost::enqueue(static_cast<Parent>(*this), std::move(executor), blockCfg, std::move(kernelBundle));
+            return onHost::enqueue(static_cast<Parent>(*this), std::move(executor), blockCfg, kernelBundle);
         }
     };
 } // namespace alpaka::onHost

@@ -134,9 +134,9 @@ namespace alpaka::onHost
         concepts::QueueHandle auto const& queue,
         auto const executor,
         auto const& specification,
-        KernelBundle<TKernelFn, TArgs...> kernelBundle)
+        KernelBundle<TKernelFn, TArgs...> const& kernelBundle)
     {
-        internal::enqueue(*queue.get(), executor, specification, std::move(kernelBundle));
+        internal::enqueue(*queue.get(), executor, specification, kernelBundle);
     }
 
     /** Enqueue a operation which is executed on the host side
@@ -144,11 +144,11 @@ namespace alpaka::onHost
      * @param queue the task will be executed after all previous work in this queue is finished
      * @param task task to be executed on the host side
      */
-    inline void enqueue(concepts::QueueHandle auto const& queue, auto task)
+    inline void enqueue(concepts::QueueHandle auto const& queue, auto const& task)
     {
         return internal::Enqueue::Task<std::decay_t<decltype(*queue.get())>, std::decay_t<decltype(task)>>{}(
             *queue.get(),
-            std::move(task));
+            task);
     }
 
     /** pointer to data

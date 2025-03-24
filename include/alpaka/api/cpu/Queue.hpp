@@ -81,22 +81,25 @@ namespace alpaka::onHost
             void enqueue(
                 auto const executor,
                 ThreadSpec<T_NumBlocks, T_NumThreads> const& threadBlocking,
-                auto kernelBundle)
+                auto const& kernelBundle)
             {
                 m_workerThread.submit(
-                    [=, kernel = std::move(kernelBundle)]()
+                    [=]()
                     {
                         onAcc::Acc acc = makeAcc(executor, threadBlocking);
-                        acc(std::move(kernel));
+                        acc(kernelBundle);
                     });
             }
 
             template<typename T_Mapping, alpaka::concepts::Vector T_NumFrames, alpaka::concepts::Vector T_FrameExtent>
-            void enqueue(T_Mapping const executor, FrameSpec<T_NumFrames, T_FrameExtent> frameSpec, auto kernelBundle)
+            void enqueue(
+                T_Mapping const executor,
+                FrameSpec<T_NumFrames, T_FrameExtent> frameSpec,
+                auto const& kernelBundle)
             {
                 auto threadBlocking = internal::adjustThreadSpec(*m_device.get(), executor, frameSpec, kernelBundle);
                 m_workerThread.submit(
-                    [=, kernel = std::move(kernelBundle)]()
+                    [=]()
                     {
                         auto moreLayer = Dict{
                             DictEntry(frame::count, frameSpec.m_numFrames),
@@ -104,11 +107,11 @@ namespace alpaka::onHost
                             DictEntry(object::api, api::cpu),
                             DictEntry(object::exec, executor)};
                         onAcc::Acc acc = makeAcc(executor, threadBlocking);
-                        acc(std::move(kernel), moreLayer);
+                        acc(kernelBundle, moreLayer);
                     });
             }
 
-            void enqueue(auto task)
+            void enqueue(auto const& task)
             {
                 m_workerThread.submit([task]() { task(); });
             }

@@ -108,25 +108,25 @@ namespace alpaka::onHost
                     T_Queue& queue,
                     T_Mapping const executor,
                     T_BlockCfg const& blockCfg,
-                    T_KernelBundle kernelBundle) const
+                    T_KernelBundle const& kernelBundle) const
                 {
-                    queue.enqueue(executor, blockCfg, std::move(kernelBundle));
+                    queue.enqueue(executor, blockCfg, kernelBundle);
                 }
             };
 
             template<typename T_Queue, typename T_Task>
             struct Task
             {
-                void operator()(T_Queue& queue, T_Task task) const
+                void operator()(T_Queue& queue, T_Task const& task) const
                 {
-                    queue.enqueue(std::move(task));
+                    queue.enqueue(task);
                 }
             };
         };
 
-        inline void enqueue(auto& queue, auto task)
+        inline void enqueue(auto& queue, auto const& task)
         {
-            Enqueue::Task<std::decay_t<decltype(queue)>, std::decay_t<decltype(task)>>{}(queue, std::move(task));
+            Enqueue::Task<std::decay_t<decltype(queue)>, std::decay_t<decltype(task)>>{}(queue, task);
         }
 
         template<typename TKernelFn, typename... TArgs>
@@ -134,13 +134,13 @@ namespace alpaka::onHost
             auto& queue,
             auto const executor,
             auto const& blockCfg,
-            KernelBundle<TKernelFn, TArgs...> kernelBundle)
+            KernelBundle<TKernelFn, TArgs...> const& kernelBundle)
         {
             Enqueue::Kernel<
                 std::decay_t<decltype(queue)>,
                 std::decay_t<decltype(executor)>,
                 std::decay_t<decltype(blockCfg)>,
-                KernelBundle<TKernelFn, TArgs...>>{}(queue, executor, blockCfg, std::move(kernelBundle));
+                KernelBundle<TKernelFn, TArgs...>>{}(queue, executor, blockCfg, kernelBundle);
         }
 
         struct AdjustThreadSpec
