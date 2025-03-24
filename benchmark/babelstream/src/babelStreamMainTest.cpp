@@ -241,6 +241,7 @@ struct DotKernel
         {
             for(auto elemIdxInFrame : traverseInFrame)
             {
+                T tmpValue = T{0};
                 auto allThreads = onAcc::SimdForEach{onAcc::WorkerGroup{frameIdx + elemIdxInFrame, frameDataExtent}};
                 allThreads.concurrent(
                     acc,
@@ -248,10 +249,11 @@ struct DotKernel
                     [&](auto const&, auto&& simdA, auto&& simdB) constexpr
                     {
                         auto tmp = simdA.load() * simdB.load();
-                        tbSum[elemIdxInFrame] += tmp.sum();
+                        tmpValue += tmp.sum();
                     },
                     a,
                     b);
+                tbSum[elemIdxInFrame] += tmpValue;
             }
         }
         // sync is required because we do not know which thread wrote whcih value
