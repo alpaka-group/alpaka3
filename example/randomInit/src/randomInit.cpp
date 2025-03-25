@@ -321,7 +321,6 @@ int example(auto const cfg, size_t numElements)
     std::cout << "\n Host:   " << alpaka::onHost::getName(host) << "\n";
 
     // Require at least one device
-    // require at least one device
     std::size_t n = hostSelector.getDeviceCount();
 
     if(n == 0)
