@@ -21,8 +21,10 @@
 #include "alpaka/trait.hpp"
 
 #include <array>
+#include <bit>
 #include <concepts>
 #include <cstdint>
+#include <functional>
 #include <iostream>
 #include <ranges>
 #include <sstream>
@@ -30,7 +32,18 @@
 
 namespace alpaka
 {
+    namespace detail
+    {
+        template<typename T_ValueType, concepts::Alignment T_Alignment, uint32_t dataSizeInBytes>
+        consteval uint32_t optimalAlignment()
+        {
+            constexpr uint32_t alignment = std::min(T_Alignment::template get<T_ValueType>(), dataSizeInBytes);
+            if constexpr(std::has_single_bit(alignment))
+                return alignment;
 
+            return static_cast<uint32_t>(sizeof(T_ValueType));
+        }
+    } // namespace detail
     template<
         typename T_Type,
         uint32_t T_dim,
@@ -39,7 +52,8 @@ namespace alpaka
     struct Simd;
 
     template<typename T_Type, uint32_t T_dim, concepts::Alignment T_Alignment, typename T_Storage>
-    struct alignas(std::min(T_Alignment::template get<T_Type>(), static_cast<uint32_t>(sizeof(T_Type) * T_dim))) Simd
+    struct alignas(
+        alpaka::detail::optimalAlignment<T_Type, T_Alignment, static_cast<uint32_t>(sizeof(T_Type) * T_dim)>()) Simd
         : private T_Storage
     {
         using Storage = T_Storage;
@@ -348,24 +362,33 @@ namespace alpaka
          *
          * @return product of components
          */
-        constexpr type product() const
+        [[nodiscard]] constexpr type product() const
         {
-            type result = (*this)[0];
-            for(uint32_t i = 1u; i < T_dim; i++)
-                result *= (*this)[i];
-            return result;
+            return reduce<std::multiplies>();
         }
 
         /** Returns sum of all components.
          *
          * @return sum of components
          */
-        constexpr type sum() const
+        [[nodiscard]] constexpr type sum() const
         {
-            type result = (*this)[0];
-            for(uint32_t i = 1u; i < T_dim; i++)
-                result += (*this)[i];
-            return result;
+            return reduce<std::plus>();
+        }
+
+        /** reduce all elements to a single value
+         *
+         * For better numerical stability a tree reduce algorithm is used.
+         *
+         * @tparam BinaryOp binary functor executed to reduce the range
+         *                  The binary operation must be associative.
+         * @return the type of the result depends on the binary functor
+         */
+        template<template<typename> typename BinaryOp = std::plus>
+        [[nodiscard]] constexpr auto reduce() const
+            -> decltype(BinaryOp<type>{}(std::declval<type>(), std::declval<type>()))
+        {
+            return reduce_range<BinaryOp>();
         }
 
         /**
@@ -442,6 +465,32 @@ namespace alpaka
             stream << locale_enclosing_end;
             return stream.str();
         }
+
+    private:
+        /** reduce over a range of elements
+         *
+         * @tparam BinaryOp binary functor executed to reduce the range
+         * @tparam T_start start index
+         * @tparam T_end end index (excluded)
+         * @return the type of the result depends on the binary functor
+         */
+        template<template<typename> typename BinaryOp, uint32_t T_start = 0u, uint32_t T_end = dim()>
+        [[nodiscard]] constexpr auto reduce_range() const
+            -> decltype(BinaryOp<type>{}(std::declval<type>(), std::declval<type>()))
+        {
+            // elements in the range
+            constexpr uint32_t size = T_end - T_start;
+            // single element termination
+            if constexpr(size == 1u)
+            {
+                return (*this)[T_start];
+            }
+            // split range at midpoint
+            constexpr uint32_t mid = T_start + size / 2u;
+
+            // recursively reduce both halves and combine
+            return BinaryOp<type>{}(reduce_range<BinaryOp, T_start, mid>(), reduce_range<BinaryOp, mid, T_end>());
+        }
     };
 
     template<std::size_t I, typename T_Type, uint32_t T_dim, concepts::Alignment T_Alignment, typename T_Storage>
@@ -502,6 +551,14 @@ namespace alpaka
     {
         return s << vec.toString();
     }
+
+    // type deduction guide
+    template<typename T_1, typename... T_Args>
+    ALPAKA_FN_HOST_ACC Simd(T_1, T_Args...) -> Simd<
+        T_1,
+        uint32_t(sizeof...(T_Args) + 1u),
+        Alignment<sizeof(T_1) * uint32_t(sizeof...(T_Args) + 1u)>,
+        ArrayStorage<T_1, uint32_t(sizeof...(T_Args) + 1u)>>;
 
 /** binary operators
  * @{
