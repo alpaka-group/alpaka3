@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "alpaka/core/Common.hpp"
+#include "alpaka/core/common.hpp"
 #include "alpaka/meta/IsArrayOrVector.hpp"
 #include "alpaka/rand/Philox/PhiloxSingle.hpp"
 #include "alpaka/rand/Philox/PhiloxVector.hpp"
@@ -51,6 +51,7 @@ namespace alpaka::rand
         }
 
         // STL UniformRandomBitGenerator concept
+        // See the functions min and max for the range of the generated numbers
         // https://en.cppreference.com/w/cpp/named_req/UniformRandomBitGenerator
         using result_type = std::uint32_t;
 

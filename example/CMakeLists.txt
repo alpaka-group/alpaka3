@@ -17,5 +17,7 @@ project("alpakaExamples" LANGUAGES CXX)
 
 add_subdirectory("grayScale/")
 add_subdirectory("heatEquation2D/")
-add_subdirectory("vectorAdd/")
 add_subdirectory("tutorial/")
+add_subdirectory("randomInit/")
+add_subdirectory("vectorAdd/")
+
