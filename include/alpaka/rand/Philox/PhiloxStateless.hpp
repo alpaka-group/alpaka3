@@ -2,12 +2,13 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
+
 #pragma once
 
+#include "alpaka/Vec.hpp"
 #include "alpaka/core/Unroll.hpp"
 #include "alpaka/rand/Philox/MultiplyAndSplit64to32.hpp"
 #include "alpaka/rand/Philox/PhiloxConstants.hpp"
-#include "alpaka/vec/Vec.hpp"
 
 #include <utility>
 
@@ -60,8 +61,8 @@ namespace alpaka::rand::engine
         static_assert(numberWidth() == 32, "Philox implemented only for 32 bit numbers.");
 
     public:
-        using Counter = alpaka::Vec<alpaka::DimInt<TParams::counterSize>, std::uint32_t>;
-        using Key = alpaka::Vec<alpaka::DimInt<TParams::counterSize / 2>, std::uint32_t>;
+        using Counter = alpaka::Vec<std::uint32_t, TParams::counterSize>;
+        using Key = alpaka::Vec<std::uint32_t, TParams::counterSize / 2>;
         using Constants = PhiloxConstants<TParams>;
 
     protected:
@@ -100,8 +101,12 @@ namespace alpaka::rand::engine
             Key key{key_in};
             Counter counter = singleRound(counter_in, key);
 
-            ALPAKA_UNROLL(numRounds())
-            for(unsigned int n = 0; n < numRounds(); ++n)
+            // Use a constexpr variable to ensure the unroll factor is a compile-time constant
+            static constexpr unsigned rounds = numRounds();
+
+            ALPAKA_UNROLL(rounds)
+
+            for(unsigned int n = 0; n < rounds; ++n)
             {
                 key = bumpKey(key);
                 counter = singleRound(counter, key);

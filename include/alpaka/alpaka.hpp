@@ -55,6 +55,8 @@
 #include "alpaka/onHost/interface.hpp"
 #include "alpaka/onHost/logger/logger.hpp"
 #include "alpaka/onHost/mem/stdContainer.hpp"
+#include "alpaka/rand/RandPhilox.hpp"
+#include "alpaka/rand/Traits.hpp"
 #include "alpaka/tag.hpp"
 #include "alpaka/utility.hpp"
 
