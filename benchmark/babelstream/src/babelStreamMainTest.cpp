@@ -101,7 +101,7 @@ struct CopyKernel
     template<typename TAcc>
     ALPAKA_FN_ACC void operator()(TAcc const& acc, auto const a, auto c, auto arraySize) const
     {
-        auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
+        auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
         simdGrid.concurrent(
             acc,
             alpaka::Vec{arraySize},
@@ -126,7 +126,7 @@ struct MultKernel
         using T = trait::GetValueType_t<ALPAKA_TYPEOF(b)>;
         T const scalar = static_cast<T>(scalarVal);
 
-        auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
+        auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
         simdGrid.concurrent(
             acc,
             alpaka::Vec{arraySize},
@@ -149,7 +149,7 @@ struct AddKernel
     template<typename TAcc>
     ALPAKA_FN_ACC void operator()(TAcc const& acc, auto const a, auto const b, auto c, auto arraySize) const
     {
-        auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
+        auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
         simdGrid.concurrent(
             acc,
             alpaka::Vec{arraySize},
@@ -177,7 +177,7 @@ struct TriadKernel
         using T = trait::GetValueType_t<ALPAKA_TYPEOF(a)>;
         T const scalar = static_cast<T>(scalarVal);
 
-        auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
+        auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
         simdGrid.concurrent(
             acc,
             [&](auto const&, auto&& simdA, auto&& simdB, auto&& simdC) constexpr
@@ -241,19 +241,22 @@ struct DotKernel
         {
             for(auto elemIdxInFrame : traverseInFrame)
             {
-                T tmpValue = T{0};
-                auto allThreads = onAcc::SimdForEach{onAcc::WorkerGroup{frameIdx + elemIdxInFrame, frameDataExtent}};
-                allThreads.concurrent(
+                auto allThreads = onAcc::SimdAlgo{onAcc::WorkerGroup{frameIdx + elemIdxInFrame, frameDataExtent}};
+                auto reducedValue = allThreads.transformReduce(
                     acc,
                     alpaka::Vec{arraySize},
+                    T{0},
+                    std::plus{},
                     [&](auto const&, auto&& simdA, auto&& simdB) constexpr
                     {
                         auto tmp = simdA.load() * simdB.load();
-                        tmpValue += tmp.sum();
+                        // tmpValue += tmp.sum();
+                        return tmp;
                     },
                     a,
                     b);
-                tbSum[elemIdxInFrame] += tmpValue;
+
+                tbSum[elemIdxInFrame] += reducedValue;
             }
         }
         // sync is required because we do not know which thread wrote whcih value
@@ -351,7 +354,7 @@ void testKernels(auto cfg)
      *
      * @todo The value is currently a magic number but should be derived from the SIMD width of the device and a factor
      * to reflect the instruction level parallelism. This is currently not well abstracted in alpaka and requires that
-     * a kernel can reflect the concurrency bytes used for the `SimdForEach::concurrent()` back to the host, e.g. some
+     * a kernel can reflect the concurrency bytes used for the `SimdAlgo::concurrent()` back to the host, e.g. some
      * as we use for dynamic shared memory.
      */
     uint32_t elementsPerFrameItem = alpaka::getNumElemPerThread<DataType>(alpaka::onHost::getApi(queue));

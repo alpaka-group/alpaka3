@@ -24,7 +24,7 @@
 #include "alpaka/onAcc.hpp"
 #include "alpaka/onAcc/Acc.hpp"
 #include "alpaka/onAcc/GlobalMem.hpp"
-#include "alpaka/onAcc/SimdForEach.hpp"
+#include "alpaka/onAcc/SimdAlgo.hpp"
 #include "alpaka/onAcc/atomic.hpp"
 #include "alpaka/onHost.hpp"
 #include "alpaka/onHost/Device.hpp"

@@ -78,11 +78,8 @@ namespace alpaka
         {
             constexpr uint32_t operator()(api::Cuda const) const
             {
-                /* NVIDIA GPUs have two scheduler what we interpreted as pipelines.
-                 * Therefore, the value should normally be 2 but for current tests where the default is used it looks
-                 * like 4 is a better value.
-                 */
-                constexpr uint32_t numPipes = 4u;
+                /* NVIDIA GPUs have two scheduler what we interpreted as pipelines. */
+                constexpr uint32_t numPipes = 2u;
                 return numPipes;
             }
         };

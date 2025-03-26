@@ -34,7 +34,7 @@ public:
         using namespace alpaka;
         static_assert(ALPAKA_TYPEOF(numElements)::dim() == 1, "The VectorAddKernel expects 1-dimensional indices!");
 
-        auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
+        auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
         simdGrid.concurrent(
             acc,
             numElements,

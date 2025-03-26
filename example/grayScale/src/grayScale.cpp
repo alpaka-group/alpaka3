@@ -28,7 +28,7 @@ public:
     ALPAKA_FN_ACC void operator()(auto const& acc, auto&& argb, auto const numElements) const
     {
         constexpr uint32_t maskFF = 0xFFu;
-        auto simdGrid = onAcc::SimdForEach{onAcc::worker::threadsInGrid};
+        auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
 
         simdGrid.concurrent(
             acc,
