@@ -62,6 +62,7 @@ ctest --output-on-failure
 ```bash
 spack load cmake@3.29.1
 spack load hip@6.3.4
+export CXX=clang++
 
 # use -DCMAKE_HIP_ARCHITECTURES=gfx906 to set the GPU architecture
 # for older CMake version sometimes the architecture must be set with -DAMDGPU_TARGETS=gfx906
