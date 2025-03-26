@@ -61,7 +61,7 @@ namespace alpaka
 #elif defined(__riscv_vector)
                     64u;
                 // ARM e.g. nvidia grace hopper
-#elif defined(__ARM_FEATURE_SVE) && defined(__ARM_FEATURE_SVE2_AES) && defined(__ARM_FEATURE_DOTPROD)
+#elif defined(__ARM_FEATURE_SVE) || defined(__ARM_FEATURE_SVE2_AES) || defined(__ARM_FEATURE_DOTPROD)
                     64u;
 #elif defined(__AVX2__)
                     32u;
