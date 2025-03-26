@@ -87,19 +87,19 @@ add_library(alpaka INTERFACE)
 target_include_directories(${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_20)
 
-option(alpaka_API_CUDA "Enable the CUDA GPU back-end" OFF)
-option(alpaka_API_HIP "Enable the HIP GPU back-end" OFF)
-option(alpaka_API_OMP "Enable the OMP back-end" ON)
+option(alpaka_DEP_CUDA "Enable the CUDA as dependency, allows the usage of api::Cuda and exec::GpuCuda." OFF)
+option(alpaka_DEP_HIP "Enable the HIP as dependency, allows the usage of api::Hip and exec::GpuHip" OFF)
+option(alpaka_DEP_OMP "Enable the OMP as dependency, allows the usage of exec::CpuOmpBlocks and exec::OmpBlocksAndThreads" ON)
 
 ## OpenMP
-if(alpaka_API_OMP)
+if(alpaka_DEP_OMP)
     find_package(OpenMP REQUIRED COMPONENTS CXX)
     target_link_libraries(alpaka INTERFACE OpenMP::OpenMP_CXX)
     message(STATUS "OpenMP found: ${OpenMP_CXX_VERSION}")
 endif()
 
 ## CUDA
-if(alpaka_API_CUDA)
+if(alpaka_DEP_CUDA)
     check_language(CUDA)
     alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--expt-relaxed-constexpr>")
 
@@ -134,7 +134,7 @@ if(alpaka_API_CUDA)
     enable_language(CUDA)
     checkCompilerCXXSupport(CUDA ${alpaka_CXX_STANDARD})
 
-    if(alpaka_API_OMP)
+    if(alpaka_DEP_OMP)
         if(NOT MSVC)
             alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler -fopenmp>")
 
@@ -150,7 +150,7 @@ if(alpaka_API_CUDA)
     endif()
 endif()
 
-if(alpaka_API_HIP)
+if(alpaka_DEP_HIP)
     check_language(HIP)
 
     if(CMAKE_HIP_COMPILER)

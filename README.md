@@ -28,7 +28,7 @@ and that alpaka is relative to the build folder available.
 
 ### CMake variable naming and behaviour
 
-- `alpaka_API_*` controls whether a parallelization framework is used and introduces a dependency on third-party libraries.
+- `alpaka_DEP_*` controls whether a parallelization framework is used and introduces a dependency on third-party libraries.
 - `alpaka_EXEC_*` activates or deactivates which execution schemas will be used for examples.
   - Execution schemas can be set to OFF in CMake, but you can still use them within your application code.
   - Similarly, an execution schema can be set to ON, but it may not be usable in the application if the API where the executor can be used is deactivated.
@@ -39,7 +39,7 @@ and that alpaka is relative to the build folder available.
 spack load gcc@14.1.0
 spack load cmake@3.29.1
 
-# -Dalpaka_API_OMP=ON is implicitly set, if the compiler not support OpenMP only serial code will be generated
+# -Dalpaka_DEP_OMP=ON is implicitly set, if the compiler not support OpenMP only serial code will be generated
 cmake ../alpaka -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -DBUILD_TESTING=ON
 make -j
 ctest --output-on-failure
@@ -52,7 +52,7 @@ spack load cmake@3.29.1
 spack load cuda@12.4.0
 
 # use -DCMAKE_CUDA_ARCHITECTURES=80 to set the GPU architecture
-cmake ../alpaka -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_API_OMP=OFF -Dalpaka_API_CUDA=ON -Dalpaka_EXEC_CpuSerial=OFF  
+cmake ../alpaka -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_DEP_OMP=OFF -Dalpaka_DEP_CUDA=ON -Dalpaka_EXEC_CpuSerial=OFF  
 make -j
 ctest --output-on-failure
 ```
@@ -65,7 +65,7 @@ spack load hip@6.3.4
 
 # use -DCMAKE_HIP_ARCHITECTURES=gfx906 to set the GPU architecture
 # for older CMake version sometimes the architecture must be set with -DAMDGPU_TARGETS=gfx906
-cmake ../alpaka -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_API_OMP=OFF -Dalpaka_API_HIP=ON -Dalpaka_EXEC_CpuSerial=OFF
+cmake ../alpaka -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_DEP_OMP=OFF -Dalpaka_DEP_HIP=ON -Dalpaka_EXEC_CpuSerial=OFF
 make -j
 ctest --output-on-failure
 ```
@@ -126,8 +126,7 @@ The following APIs are available:
   ```
 
 APIs except `api::cpu` often introduce third-party library dependencies (e.g., CUDA or ROCm).
-You can deactivate these in CMake via `alpaka_API_*`.
-The CMake available API `alpaka_API_OMP` has no corresponding C++ tag and only influences whether OpenMP executors can be used.
+You can de/activate these in CMake via `alpaka_DEP_*`.
 
 Executors describe how compute threads will be executed and mapped to the hierarchy of grids, blocks, and threads.
 They can be controlled in CMake via `alpaka_EXEC_*`.

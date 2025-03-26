@@ -124,9 +124,9 @@ jobs:
           fi
           cmake -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
-                ${alpaka_cmake_flags} -Dalpaka_API_OMP=ON \
-                ${{ matrix.config.cuda != 'no' && '-Dalpaka_API_CUDA=ON' || '' }} \
-                ${{ matrix.config.hip != 'no' && '-DCMAKE_CXX_COMPILER=clang++ -Dalpaka_API_HIP=ON -Dalpaka_API_OMP=OFF \
+                ${alpaka_cmake_flags} -Dalpaka_DEP_OMP=ON \
+                ${{ matrix.config.cuda != 'no' && '-Dalpaka_DEP_CUDA=ON' || '' }} \
+                ${{ matrix.config.hip != 'no' && '-DCMAKE_CXX_COMPILER=clang++ -Dalpaka_DEP_HIP=ON -Dalpaka_DEP_OMP=OFF \
                    -DCMAKE_HIP_ARCHITECTURES=gfx906 -DAMDGPU_TARGETS=gfx906' || '' }} ..
 
       # Build the project
