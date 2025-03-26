@@ -18,7 +18,7 @@ macro(alpaka_add_library In_Name)
 
     add_library(${In_Name} ${ARGN})
 
-    if(alpaka_API_CUDA)
+    if(alpaka_DEP_CUDA)
         enable_language(CUDA)
         foreach(_file ${ARGN})
             if((${_file} MATCHES "\\.cpp$") OR
@@ -37,7 +37,7 @@ macro(alpaka_add_library In_Name)
         endif()
     endif()
 
-    if(alpaka_ACC_GPU_HIP_ENABLE)
+    if(alpaka_DEP_CUDA)
         enable_language(HIP)
         foreach(_file ${ARGN})
             if((${_file} MATCHES "\\.cpp$") OR

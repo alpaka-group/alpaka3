@@ -17,7 +17,7 @@ macro(alpaka_add_executable In_Name)
 
     add_executable(${In_Name} ${ARGN})
 
-    if(alpaka_API_CUDA)
+    if(alpaka_DEP_CUDA)
         enable_language(CUDA)
         foreach(_file ${ARGN})
             if((${_file} MATCHES "\\.cpp$") OR
@@ -36,7 +36,7 @@ macro(alpaka_add_executable In_Name)
         endif()
     endif()
 
-    if(alpaka_API_HIP)
+    if(alpaka_DEP_HIP)
         enable_language(HIP)
         foreach(_file ${ARGN})
             if((${_file} MATCHES "\\.cpp$") OR
