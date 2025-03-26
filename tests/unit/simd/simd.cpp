@@ -182,15 +182,15 @@ struct CompileTimeKernelReduce
         using namespace alpaka;
 
         constexpr auto s1 = Simd{3, 7, 4};
-        static_assert(14 == s1.reduce());
+        static_assert(14 == s1.reduce(std::plus{}));
         static_assert(14 == s1.sum());
 
         constexpr auto s2 = Simd{1, 2, 3, 4, 5};
-        static_assert(15 == s2.reduce());
+        static_assert(15 == s2.reduce(std::plus{}));
         static_assert(15 == s2.sum());
 
         constexpr auto s3 = Simd{1, 2, 3, 4, 5};
-        static_assert(120 == s3.reduce<std::multiplies>());
+        static_assert(120 == s3.reduce(std::multiplies{}));
         static_assert(120 == s3.product());
     }
 };

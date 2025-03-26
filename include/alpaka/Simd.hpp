@@ -364,7 +364,7 @@ namespace alpaka
          */
         [[nodiscard]] constexpr type product() const
         {
-            return reduce<std::multiplies>();
+            return reduce(std::multiplies{});
         }
 
         /** Returns sum of all components.
@@ -373,7 +373,7 @@ namespace alpaka
          */
         [[nodiscard]] constexpr type sum() const
         {
-            return reduce<std::plus>();
+            return reduce(std::plus{});
         }
 
         /** reduce all elements to a single value
@@ -384,11 +384,10 @@ namespace alpaka
          *                  The binary operation must be associative.
          * @return the type of the result depends on the binary functor
          */
-        template<template<typename> typename BinaryOp = std::plus>
-        [[nodiscard]] constexpr auto reduce() const
-            -> decltype(BinaryOp<type>{}(std::declval<type>(), std::declval<type>()))
+        [[nodiscard]] constexpr auto reduce(auto&& reduceFunc) const
+            -> decltype(reduceFunc(std::declval<type>(), std::declval<type>()))
         {
-            return reduce_range<BinaryOp>();
+            return reduce_range(ALPAKA_FORWARD(reduceFunc));
         }
 
         /**
@@ -474,9 +473,9 @@ namespace alpaka
          * @tparam T_end end index (excluded)
          * @return the type of the result depends on the binary functor
          */
-        template<template<typename> typename BinaryOp, uint32_t T_start = 0u, uint32_t T_end = dim()>
-        [[nodiscard]] constexpr auto reduce_range() const
-            -> decltype(BinaryOp<type>{}(std::declval<type>(), std::declval<type>()))
+        template<uint32_t T_start = 0u, uint32_t T_end = dim()>
+        [[nodiscard]] constexpr auto reduce_range(auto&& reduceFunc) const
+            -> decltype(reduceFunc(std::declval<type>(), std::declval<type>()))
         {
             // elements in the range
             constexpr uint32_t size = T_end - T_start;
@@ -489,7 +488,9 @@ namespace alpaka
             constexpr uint32_t mid = T_start + size / 2u;
 
             // recursively reduce both halves and combine
-            return BinaryOp<type>{}(reduce_range<BinaryOp, T_start, mid>(), reduce_range<BinaryOp, mid, T_end>());
+            return reduceFunc(
+                reduce_range<T_start, mid>(ALPAKA_FORWARD(reduceFunc)),
+                reduce_range<mid, T_end>(ALPAKA_FORWARD(reduceFunc)));
         }
     };
 
