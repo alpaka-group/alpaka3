@@ -54,6 +54,23 @@ namespace alpaka
 
     } // namespace trait
 
+    /** checks if T is a instance of U
+     *
+     * @tparam T full type specialization
+     * @tparam U unspecialized template type
+     *
+     * @return true if T is a specialization of U
+     *
+     * @{
+     */
+    template<typename T, template<typename...> typename U>
+    inline constexpr bool isSpecializationOf_v = std::false_type{};
+
+    template<template<typename...> typename U, typename... Vs>
+    inline constexpr bool isSpecializationOf_v<U<Vs...>, U> = std::true_type{};
+
+    /** @} */
+
     template<typename T>
     consteval uint32_t getDim([[maybe_unused]] T const& any)
     {
