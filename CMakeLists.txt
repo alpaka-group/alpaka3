@@ -272,14 +272,17 @@ if (alpaka_TESTING)
 endif()
 
 if (alpaka_BENCHMARKS)
+    enable_testing()
     add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/benchmark")
 endif()
 
 if(alpaka_EXAMPLES)
+    enable_testing()
     add_subdirectory(example)
 endif()
 
 if(alpaka_HEADERCHECKS)
+    enable_testing()
     add_subdirectory(headerCheck)
 endif()
 
