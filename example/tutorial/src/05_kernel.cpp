@@ -12,7 +12,12 @@
 struct VectorAddKernel
 {
     template<typename TAcc>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, auto const in1, auto const in2, auto out, uint32_t size) const
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc,
+        alpaka::concepts::MdSpan auto const in1,
+        alpaka::concepts::MdSpan auto const in2,
+        alpaka::concepts::MdSpan auto out,
+        uint32_t size) const
     {
         for(auto [index] :
             alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{size}))
@@ -25,7 +30,12 @@ struct VectorAddKernel
 struct VectorAddKernel1D
 {
     template<typename TAcc>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, auto const in1, auto const in2, auto out, Vec1D size) const
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc,
+        alpaka::concepts::MdSpan auto const in1,
+        alpaka::concepts::MdSpan auto const in2,
+        alpaka::concepts::MdSpan auto out,
+        Vec1D size) const
     {
         for(auto ndindex :
             alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{size}))
@@ -38,7 +48,12 @@ struct VectorAddKernel1D
 struct VectorAddKernel3D
 {
     template<typename TAcc>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, auto const in1, auto const in2, auto out, Vec3D size) const
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc,
+        alpaka::concepts::MdSpan auto const in1,
+        alpaka::concepts::MdSpan auto const in2,
+        alpaka::concepts::MdSpan auto out,
+        Vec3D size) const
     {
         for(auto ndindex :
             alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{size}))

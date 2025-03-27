@@ -9,6 +9,7 @@
 #include "alpaka/Vec.hpp"
 #include "alpaka/api/trait.hpp"
 #include "alpaka/core/common.hpp"
+#include "alpaka/mem/concepts.hpp"
 #include "alpaka/onAcc.hpp"
 
 #include <cstdint>
@@ -28,8 +29,8 @@ namespace alpaka::onAcc::internal
             auto const& acc,
             alpaka::concepts::Vector auto extents,
             auto&& func,
-            auto&& data0,
-            auto&&... dataN) const
+            alpaka::concepts::MdSpan auto&& data0,
+            alpaka::concepts::MdSpan auto&&... dataN) const
         {
             auto numElements = typename ALPAKA_TYPEOF(extents)::UniVec{extents};
             using ValueType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data0)>;
@@ -79,7 +80,7 @@ namespace alpaka::onAcc::internal
             auto const& acc,
             auto const& dataIdx,
             auto&& func,
-            auto&&... data)
+            alpaka::concepts::MdSpan auto&&... data)
         {
             func(acc, SimdPtr{ALPAKA_FORWARD(data), dataIdx, T_MemAlignment{}, CVec<uint32_t, T_width>{}}...);
         }
@@ -97,7 +98,7 @@ namespace alpaka::onAcc::internal
             auto& iter,
             std::integer_sequence<uint32_t, T_repeat...>,
             auto&& func,
-            auto&&... data)
+            alpaka::concepts::MdSpan auto&&... data)
         {
             /* We do not check if the iterator points to a valid element, the caller must ensure that we can safely
              * increase the iterator without jumping over iter.end().
@@ -118,8 +119,8 @@ namespace alpaka::onAcc::internal
             auto const& acc,
             alpaka::concepts::Vector auto numElements,
             auto&& func,
-            auto&& data0,
-            auto&&... dataN) const
+            alpaka::concepts::MdSpan auto&& data0,
+            alpaka::concepts::MdSpan auto&&... dataN) const
         {
             using ValueType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data0)>;
             constexpr uint32_t simdWidthInByte = T_simdWidth * sizeof(ValueType);

@@ -79,7 +79,7 @@ void iotaTest(auto cfg, auto const extents, auto frameSize)
     wait(queue);
 
 
-    auto mdSpan = hBuff.getMdSpan();
+    alpaka::concepts::MdSpan auto mdSpan = hBuff.getMdSpan();
 
     meta::ndLoopIncIdx(extents, [&](auto idx) { CHECK(idx == pCast<T_MemIdxType>(mdSpan[idx])); });
 }

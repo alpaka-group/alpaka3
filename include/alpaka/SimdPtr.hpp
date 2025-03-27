@@ -9,6 +9,7 @@
 #include "alpaka/cast.hpp"
 #include "alpaka/core/util.hpp"
 #include "alpaka/mem/Alignment.hpp"
+#include "alpaka/mem/concepts.hpp"
 #include "alpaka/trait.hpp"
 
 #include <array>
@@ -28,7 +29,7 @@ namespace alpaka
      * @tparam T_SimdWidth width of the SIMD pack
      */
     template<
-        typename T_MdSpan,
+        alpaka::concepts::MdSpan T_MdSpan,
         alpaka::concepts::Vector T_IdxType,
         alpaka::concepts::Alignment T_MemAlignment,
         alpaka::concepts::CVector T_SimdWidth>

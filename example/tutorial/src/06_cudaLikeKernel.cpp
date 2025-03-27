@@ -20,7 +20,12 @@
 struct VectorAddKernel1D
 {
     template<typename TAcc>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, auto const in1, auto const in2, auto out, Vec1D size) const
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc,
+        alpaka::concepts::MdSpan auto const in1,
+        alpaka::concepts::MdSpan auto const in2,
+        alpaka::concepts::MdSpan auto out,
+        Vec1D size) const
     {
         auto [threadIndex] = acc[alpaka::layer::thread].idx();
         auto [blockDimension] = acc[alpaka::layer::thread].count();
@@ -41,7 +46,12 @@ struct VectorAddKernel1D
 struct VectorAddKernel3D
 {
     template<typename TAcc>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, auto const in1, auto const in2, auto out, Vec3D size) const
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc,
+        alpaka::concepts::MdSpan auto const in1,
+        alpaka::concepts::MdSpan auto const in2,
+        alpaka::concepts::MdSpan auto out,
+        Vec3D size) const
     {
         auto threadIndexMD = acc[alpaka::layer::thread].idx();
         auto blockDimensionMD = acc[alpaka::layer::thread].count();

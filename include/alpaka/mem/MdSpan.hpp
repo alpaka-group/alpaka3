@@ -332,11 +332,6 @@ namespace alpaka
     namespace trait
     {
         template<typename T>
-        struct IsMdSpan : std::false_type
-        {
-        };
-
-        template<typename T>
         requires(isSpecializationOf_v<std::remove_cvref_t<T>, MdSpan>)
         struct IsMdSpan<T> : std::true_type
         {
@@ -348,17 +343,4 @@ namespace alpaka
         {
         };
     } // namespace trait
-
-    template<typename T>
-    constexpr bool isMdSpan_v = trait::IsMdSpan<T>::value;
-
-    namespace concepts
-    {
-        template<typename T>
-        concept MdSpan = isMdSpan_v<T>;
-
-        template<typename T>
-        concept Reference = std::is_reference_v<T>;
-
-    } // namespace concepts
 } // namespace alpaka

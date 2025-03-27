@@ -28,8 +28,12 @@ public:
     //! \param B The second source vector.
     //! \param C The destination vector.
     //! \param numElements The number of elements.
-    ALPAKA_FN_ACC auto operator()(auto const& acc, auto const A, auto const B, auto C, auto const& numElements) const
-        -> void
+    ALPAKA_FN_ACC auto operator()(
+        auto const& acc,
+        alpaka::concepts::MdSpan auto const A,
+        alpaka::concepts::MdSpan auto const B,
+        alpaka::concepts::MdSpan auto C,
+        auto const& numElements) const -> void
     {
         using namespace alpaka;
         static_assert(ALPAKA_TYPEOF(numElements)::dim() == 1, "The VectorAddKernel expects 1-dimensional indices!");

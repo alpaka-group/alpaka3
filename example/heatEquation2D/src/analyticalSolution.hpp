@@ -61,7 +61,7 @@ auto validateSolution(
 //! \param extent extents of the buffer
 //! \param dx
 //! \param dy
-template<typename T_MdSpan>
+template<alpaka::concepts::MdSpan T_MdSpan>
 auto initalizeBuffer(T_MdSpan dataMdSpan, double const dx, double const dy) -> void
 {
     auto extents = dataMdSpan.getExtents();

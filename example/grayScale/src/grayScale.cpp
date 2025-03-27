@@ -25,7 +25,7 @@ constexpr uint32_t scalar32 = 32u;
 class GrayscaleKernel
 {
 public:
-    ALPAKA_FN_ACC void operator()(auto const& acc, auto&& argb, auto const numElements) const
+    ALPAKA_FN_ACC void operator()(auto const& acc, alpaka::concepts::MdSpan auto&& argb, auto const numElements) const
     {
         constexpr uint32_t maskFF = 0xFFu;
         auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};

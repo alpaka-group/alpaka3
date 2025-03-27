@@ -52,6 +52,12 @@ namespace alpaka
         template<typename T>
         using GetValueType_t = typename GetValueType<T>::type;
 
+        // true for alpaka MdSpan implementations
+        template<typename T>
+        struct IsMdSpan : std::false_type
+        {
+        };
+
     } // namespace trait
 
     /** checks if T is a instance of U
@@ -82,5 +88,8 @@ namespace alpaka
 
     template<typename T_From, typename T_To>
     constexpr bool isConvertible_v = concepts::IsConvertible<T_From, T_To>;
+
+    template<typename T>
+    constexpr bool isMdSpan_v = trait::IsMdSpan<T>::value;
 
 } // namespace alpaka

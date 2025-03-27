@@ -7,6 +7,7 @@
 #include "alpaka/core/config.hpp"
 #include "alpaka/internal.hpp"
 #include "alpaka/mem/MdSpan.hpp"
+#include "alpaka/mem/concepts.hpp"
 #include "alpaka/onHost.hpp"
 #include "alpaka/onHost/Handle.hpp"
 
@@ -87,7 +88,7 @@ namespace alpaka::onHost
             return onHost::data(m_data);
         }
 
-        auto getMdSpan() const
+        alpaka::concepts::MdSpan auto getMdSpan() const
         {
             auto* ptr = onHost::data(m_data);
             return makeMdSpan(

@@ -99,7 +99,11 @@ struct CopyKernel
     //! \param a MdSpan for vector a
     //! \param c MdSpan for vector c
     template<typename TAcc>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, auto const a, auto c, auto arraySize) const
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc,
+        alpaka::concepts::MdSpan auto const a,
+        alpaka::concepts::MdSpan auto c,
+        auto arraySize) const
     {
         auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
         simdGrid.concurrent(
@@ -121,7 +125,11 @@ struct MultKernel
     //! \param c MdSpan for vector c
     //! \param b Pointer for result vector b
     template<typename TAcc>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, auto b, auto const c, auto arraySize) const
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc,
+        alpaka::concepts::MdSpan auto b,
+        alpaka::concepts::MdSpan auto const c,
+        auto arraySize) const
     {
         using T = trait::GetValueType_t<ALPAKA_TYPEOF(b)>;
         T const scalar = static_cast<T>(scalarVal);
@@ -147,7 +155,12 @@ struct AddKernel
     //! \param b MdSpan for vector b
     //! \param c Pointer for result vector c
     template<typename TAcc>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, auto const a, auto const b, auto c, auto arraySize) const
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc,
+        alpaka::concepts::MdSpan auto const a,
+        alpaka::concepts::MdSpan auto const b,
+        auto c,
+        auto arraySize) const
     {
         auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
         simdGrid.concurrent(
@@ -172,7 +185,12 @@ struct TriadKernel
     //! \param b MdSpan for vector b
     //! \param c Pointer for result vector c
     template<typename TAcc>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, auto a, auto const b, auto const c, auto arraySize) const
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc,
+        alpaka::concepts::MdSpan auto a,
+        alpaka::concepts::MdSpan auto const b,
+        alpaka::concepts::MdSpan auto const c,
+        auto arraySize) const
     {
         using T = trait::GetValueType_t<ALPAKA_TYPEOF(a)>;
         T const scalar = static_cast<T>(scalarVal);
@@ -213,7 +231,12 @@ struct DotKernel
     //! \param sum Pointer for result vector consisting sums of blocks
     //! \param arraySize the size of the array
     template<typename TAcc>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, auto const a, auto const b, auto sum, auto arraySize) const
+    ALPAKA_FN_ACC void operator()(
+        TAcc const& acc,
+        alpaka::concepts::MdSpan auto const a,
+        alpaka::concepts::MdSpan auto const b,
+        auto sum,
+        auto arraySize) const
     {
         using T = trait::GetValueType_t<ALPAKA_TYPEOF(sum)>;
         auto tbSum = onAcc::declareSharedMdArray<T, uniqueId()>(acc, CVec<uint32_t, blockThreadExtentMain>{});

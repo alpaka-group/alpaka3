@@ -26,7 +26,7 @@ struct BoundaryKernel
     template<typename TAcc>
     ALPAKA_FN_ACC auto operator()(
         TAcc const& acc,
-        auto uBuf,
+        alpaka::concepts::MdSpan auto uBuf,
         alpaka::concepts::Vector auto const chunkSize,
         alpaka::concepts::Vector auto numNodes,
         uint32_t step,
