@@ -24,7 +24,7 @@ namespace alpaka::onAcc
                 auto const& idxRange,
                 auto const& threadSpace,
                 auto const& idxLayout,
-                concepts::CVector auto const& cSelect)
+                alpaka::concepts::CVector auto const& cSelect)
             {
                 return FlatIdxContainer{idxRange, threadSpace, idxLayout, cSelect};
             }
@@ -44,7 +44,7 @@ namespace alpaka::onAcc
                 auto const& idxRange,
                 auto const& threadSpace,
                 auto const& idxLayout,
-                concepts::CVector auto const& cSelect)
+                alpaka::concepts::CVector auto const& cSelect)
             {
                 return TiledIdxContainer{idxRange, threadSpace, idxLayout, cSelect};
             }

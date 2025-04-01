@@ -58,7 +58,7 @@ namespace alpaka::onAcc
         };
     } // namespace detail
 
-    template<typename T_IdxRange, typename T_ThreadSpace, typename T_IdxMapperFn, concepts::CVector T_CSelect>
+    template<typename T_IdxRange, typename T_ThreadSpace, typename T_IdxMapperFn, alpaka::concepts::CVector T_CSelect>
     class TiledIdxContainer
     {
         void _()
@@ -104,7 +104,7 @@ namespace alpaka::onAcc
                 static_assert(std::forward_iterator<const_iterator_end>);
             }
 
-            ALPAKA_FN_ACC inline const_iterator_end(concepts::Vector auto const& extent)
+            ALPAKA_FN_ACC inline const_iterator_end(alpaka::concepts::Vector auto const& extent)
                 : m_extentSlowDim{extent[T_CSelect{}][0]}
             {
             }
@@ -154,10 +154,10 @@ namespace alpaka::onAcc
             }
 
             constexpr const_iterator(
-                concepts::Vector auto const offset,
-                concepts::Vector auto const first,
-                concepts::Vector auto const extent,
-                concepts::Vector auto const stride)
+                alpaka::concepts::Vector auto const offset,
+                alpaka::concepts::Vector auto const first,
+                alpaka::concepts::Vector auto const extent,
+                alpaka::concepts::Vector auto const stride)
                 : m_current{first + offset}
                 , m_stride{stride[T_CSelect{}]}
                 , m_extent{(extent + offset)[T_CSelect{}]}
@@ -291,7 +291,7 @@ namespace alpaka::onAcc
             }
         }
 
-        ALPAKA_FN_HOST_ACC constexpr auto operator[](concepts::CVector auto const iterDir) const
+        ALPAKA_FN_HOST_ACC constexpr auto operator[](alpaka::concepts::CVector auto const iterDir) const
         {
             return TiledIdxContainer<T_IdxRange, T_ThreadSpace, T_IdxMapperFn, ALPAKA_TYPEOF(iterDir)>(
                 m_idxRange,

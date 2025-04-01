@@ -30,7 +30,10 @@ struct KernelCVecFrameExtents
     {
         alpaka::concepts::CVector auto frameExtent = acc[alpaka::frame::extent];
         // compile will fail if the type is silently cast to non CVec type
-        [[maybe_unused]] alpaka::concepts::CVector auto blockThreadCount = acc[alpaka::layer::thread].count();
+        [[maybe_unused]] alpaka::concepts::CVector auto blockThreadCount
+            = onAcc::getExtentsOf(acc, onAcc::origin::block, onAcc::unit::threads);
+        [[maybe_unused]] alpaka::concepts::CVector auto blockThreadCount2 = acc[alpaka::layer::thread].count();
+        static_assert(blockThreadCount2 == blockThreadCount);
         static_assert(frameExtent.x() == 43u);
         result[0] = frameExtent.x() == 43u;
     }

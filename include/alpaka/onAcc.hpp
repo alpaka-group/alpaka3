@@ -20,6 +20,30 @@
 
 namespace alpaka::onAcc
 {
+    /** get the M-dimensional indices within the origin in the quantity of the selected unit */
+    constexpr alpaka::concepts::Vector auto getIdxWithin(
+        auto const& acc,
+        concepts::Origin auto origin,
+        concepts::Unit auto unit)
+    {
+        return internalCompute::GetIdxWithin::Op<ALPAKA_TYPEOF(acc), ALPAKA_TYPEOF(origin), ALPAKA_TYPEOF(unit)>{}(
+            acc,
+            origin,
+            unit);
+    }
+
+    /** get the M-dimensional extents of an origin in the quantity of the selected unit */
+    constexpr alpaka::concepts::Vector auto getExtentsOf(
+        auto const& acc,
+        concepts::Origin auto origin,
+        concepts::Unit auto unit)
+    {
+        return internalCompute::GetExtentsOf::Op<ALPAKA_TYPEOF(acc), ALPAKA_TYPEOF(origin), ALPAKA_TYPEOF(unit)>{}(
+            acc,
+            origin,
+            unit);
+    }
+
     /** synchronize all threads within a thread block layer */
     constexpr void syncBlockThreads(auto const& acc)
     {

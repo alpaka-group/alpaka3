@@ -27,13 +27,11 @@ struct VectorAddKernel1D
         alpaka::concepts::MdSpan auto out,
         Vec1D size) const
     {
-        auto [threadIndex] = acc[alpaka::layer::thread].idx();
-        auto [blockDimension] = acc[alpaka::layer::thread].count();
-        auto [blockIndex] = acc[alpaka::layer::block].idx();
-        auto [gridDimension] = acc[alpaka::layer::block].count();
+        auto threadIdxInGrid = acc.getIdxWithin(alpaka::onAcc::origin::grid, alpaka::onAcc::unit::threads);
+        auto numThreadsInGrid = acc.getExtentsOf(alpaka::onAcc::origin::grid, alpaka::onAcc::unit::threads);
 
-        auto linearGridThreadIndex = blockDimension * blockIndex + threadIndex;
-        auto linearGridSize = gridDimension * blockDimension;
+        auto linearGridThreadIndex = alpaka::linearize(numThreadsInGrid, threadIdxInGrid);
+        auto linearGridSize = numThreadsInGrid.product();
 
         // grid strided loop
         for(uint32_t i = linearGridThreadIndex; i < size.x(); i += linearGridSize)

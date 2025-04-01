@@ -24,7 +24,7 @@
 namespace alpaka::onAcc
 {
 
-    template<typename T_IdxRange, typename T_ThreadSpace, typename T_IdxMapperFn, concepts::CVector T_CSelect>
+    template<typename T_IdxRange, typename T_ThreadSpace, typename T_IdxMapperFn, alpaka::concepts::CVector T_CSelect>
     class FlatIdxContainer : private T_IdxMapperFn
     {
         void _()
@@ -121,12 +121,12 @@ namespace alpaka::onAcc
             }
 
             constexpr const_iterator(
-                concepts::Vector auto offsetMD,
+                alpaka::concepts::Vector auto offsetMD,
                 IdxType const current,
                 IdxType const stride,
                 IdxType const end,
-                concepts::Vector auto const extentMD,
-                concepts::Vector auto const strideMD)
+                alpaka::concepts::Vector auto const extentMD,
+                alpaka::concepts::Vector auto const strideMD)
                 : m_offsetMD{offsetMD}
                 , m_current{current}
                 , m_end{end}
@@ -260,7 +260,7 @@ namespace alpaka::onAcc
             }
         }
 
-        ALPAKA_FN_HOST_ACC constexpr auto operator[](concepts::CVector auto const iterDir) const
+        ALPAKA_FN_HOST_ACC constexpr auto operator[](alpaka::concepts::CVector auto const iterDir) const
         {
             return FlatIdxContainer<T_IdxRange, T_ThreadSpace, T_IdxMapperFn, ALPAKA_TYPEOF(iterDir)>(
                 m_idxRange,

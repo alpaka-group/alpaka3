@@ -5,7 +5,9 @@
 #pragma once
 
 #include "alpaka/UniqueId.hpp"
+#include "alpaka/Vec.hpp"
 #include "alpaka/core/common.hpp"
+#include "alpaka/onAcc/tag.hpp"
 #include "alpaka/tag.hpp"
 
 namespace alpaka::onAcc
@@ -72,6 +74,100 @@ namespace alpaka::onAcc
             /** Implements a atomic operation */
             template<typename TOp, typename TAtomicImpl, typename T, typename THierarchy, typename TSfinae = void>
             struct Op;
+        };
+
+        /** Get the index of an object within a layer in the selected units*/
+        struct GetIdxWithin
+        {
+            template<typename T_Acc, typename T_Origin, typename T_Unit>
+            struct Op
+            {
+                constexpr alpaka::concepts::Vector auto operator()(T_Acc const& acc, T_Origin origin, T_Unit unit)
+                    const;
+            };
+
+            template<typename T_Acc>
+            struct Op<T_Acc, ALPAKA_TYPEOF(origin::block), ALPAKA_TYPEOF(unit::threads)>
+            {
+                constexpr alpaka::concepts::Vector auto operator()(
+                    T_Acc const& acc,
+                    ALPAKA_TYPEOF(origin::block),
+                    ALPAKA_TYPEOF(unit::threads)) const
+                {
+                    return acc[layer::thread].idx();
+                }
+            };
+
+            template<typename T_Acc>
+            struct Op<T_Acc, ALPAKA_TYPEOF(origin::grid), ALPAKA_TYPEOF(unit::threads)>
+            {
+                constexpr alpaka::concepts::Vector auto operator()(
+                    T_Acc const& acc,
+                    ALPAKA_TYPEOF(origin::grid),
+                    ALPAKA_TYPEOF(unit::threads)) const
+                {
+                    return acc[layer::thread].count() * acc[layer::block].idx() + acc[layer::thread].idx();
+                }
+            };
+
+            template<typename T_Acc>
+            struct Op<T_Acc, ALPAKA_TYPEOF(origin::grid), ALPAKA_TYPEOF(unit::blocks)>
+            {
+                constexpr alpaka::concepts::Vector auto operator()(
+                    T_Acc const& acc,
+                    ALPAKA_TYPEOF(origin::grid),
+                    ALPAKA_TYPEOF(unit::blocks)) const
+                {
+                    return acc[layer::block].idx();
+                }
+            };
+        };
+
+        /** Get the number of elments in a layer in the selected units*/
+        struct GetExtentsOf
+        {
+            template<typename T_Acc, typename T_Origin, typename T_Unit>
+            struct Op
+            {
+                constexpr alpaka::concepts::Vector auto operator()(T_Acc const& acc, T_Origin origin, T_Unit unit)
+                    const;
+            };
+
+            template<typename T_Acc>
+            struct Op<T_Acc, ALPAKA_TYPEOF(origin::block), ALPAKA_TYPEOF(unit::threads)>
+            {
+                constexpr alpaka::concepts::Vector auto operator()(
+                    T_Acc const& acc,
+                    ALPAKA_TYPEOF(origin::block),
+                    ALPAKA_TYPEOF(unit::threads)) const
+                {
+                    return acc[layer::thread].count();
+                }
+            };
+
+            template<typename T_Acc>
+            struct Op<T_Acc, ALPAKA_TYPEOF(origin::grid), ALPAKA_TYPEOF(unit::blocks)>
+            {
+                constexpr alpaka::concepts::Vector auto operator()(
+                    T_Acc const& acc,
+                    ALPAKA_TYPEOF(origin::grid),
+                    ALPAKA_TYPEOF(unit::blocks)) const
+                {
+                    return acc[layer::block].count();
+                }
+            };
+
+            template<typename T_Acc>
+            struct Op<T_Acc, ALPAKA_TYPEOF(origin::grid), ALPAKA_TYPEOF(unit::threads)>
+            {
+                constexpr alpaka::concepts::Vector auto operator()(
+                    T_Acc const& acc,
+                    ALPAKA_TYPEOF(origin::grid),
+                    ALPAKA_TYPEOF(unit::threads)) const
+                {
+                    return acc[layer::block].count() * acc[layer::thread].count();
+                }
+            };
         };
     } // namespace internalCompute
 } // namespace alpaka::onAcc

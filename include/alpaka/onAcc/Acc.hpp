@@ -52,6 +52,20 @@ namespace alpaka::onAcc
             (*this)[action::sync]();
         }
 
+        /** get the M-dimensional indices within the origin in the quantity of the selected unit */
+        constexpr alpaka::concepts::Vector auto getIdxWithin(concepts::Origin auto origin, concepts::Unit auto unit)
+            const
+        {
+            return onAcc::getIdxWithin(*this, origin, unit);
+        }
+
+        /** get the M-dimensional extents of an origin in the quantity of the selected unit */
+        constexpr alpaka::concepts::Vector auto getExtentsOf(concepts::Origin auto origin, concepts::Unit auto unit)
+            const
+        {
+            return onAcc::getExtentsOf(*this, origin, unit);
+        }
+
         static constexpr bool hasKey(auto key)
         {
             constexpr auto idx = Idx<ALPAKA_TYPEOF(key), std::decay_t<T_Storage>>::value;

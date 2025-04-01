@@ -12,7 +12,9 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/mem/IdxRange.hpp"
 #include "alpaka/mem/ThreadSpace.hpp"
+#include "alpaka/onAcc/WorkGroup.hpp"
 #include "alpaka/onAcc/layout.hpp"
+#include "alpaka/onAcc/tag.hpp"
 #include "alpaka/onAcc/traverse.hpp"
 #include "alpaka/tag.hpp"
 
@@ -77,148 +79,6 @@ namespace alpaka::onAcc
         template<typename T>
         concept IdxTraversing = trait::isIdxTraversing_v<T>;
     } // namespace concepts
-
-    namespace idxTrait
-    {
-        struct TotalFrameSpecExtent
-        {
-            template<typename T_Acc>
-            constexpr auto operator()(T_Acc const& acc) const
-            {
-                return acc[frame::count] * acc[frame::extent];
-            }
-        };
-
-        struct FrameCount
-        {
-            template<typename T_Acc>
-            constexpr auto operator()(T_Acc const& acc) const
-            {
-                return acc[frame::count];
-            }
-        };
-
-        struct FrameExtent
-        {
-            template<typename T_Acc>
-            constexpr auto operator()(T_Acc const& acc) const
-            {
-                return acc[frame::extent];
-            }
-        };
-
-        struct GridThreadIdx
-        {
-            template<typename T_Acc>
-            constexpr auto operator()(T_Acc const& acc) const
-            {
-                return acc[layer::thread].count() * acc[layer::block].idx() + acc[layer::thread].idx();
-            }
-        };
-
-        struct BlockIdx
-        {
-            template<typename T_Acc>
-            constexpr auto operator()(T_Acc const& acc) const
-            {
-                return acc[layer::block].idx();
-            }
-        };
-
-        struct BlockCount
-        {
-            template<typename T_Acc>
-            constexpr auto operator()(T_Acc const& acc) const
-            {
-                return acc[layer::block].count();
-            }
-        };
-
-        struct GridThreadCount
-        {
-            template<typename T_Acc>
-            constexpr auto operator()(T_Acc const& acc) const
-            {
-                return acc[layer::block].count() * acc[layer::thread].count();
-            }
-        };
-
-        struct ThreadCountInBlock
-        {
-            template<typename T_Acc>
-            constexpr auto operator()(T_Acc const& acc) const
-            {
-                return acc[layer::thread].count();
-            }
-        };
-
-        struct ThreadIdxInBlock
-        {
-            template<typename T_Acc>
-            constexpr auto operator()(T_Acc const& acc) const
-            {
-                return acc[layer::thread].idx();
-            }
-        };
-
-        struct LinearizedBlockIdx
-        {
-            template<typename T_Acc>
-            constexpr auto operator()(T_Acc const& acc) const
-            {
-                return Vec{linearize(BlockCount{}(acc), BlockIdx{}(acc))};
-            }
-        };
-
-        struct LinearizedBlockCount
-        {
-            template<typename T_Acc>
-            constexpr auto operator()(T_Acc const& acc) const
-            {
-                return Vec{BlockCount{}(acc).product()};
-            }
-        };
-
-        struct LinearizedThreadIdxInBlock
-        {
-            template<typename T_Acc>
-            constexpr auto operator()(T_Acc const& acc) const
-            {
-                return Vec{linearize(ThreadCountInBlock{}(acc), ThreadIdxInBlock{}(acc))};
-            }
-        };
-
-        struct LinearizedThreadCountInBlock
-        {
-            template<typename T_Acc>
-            constexpr auto operator()(T_Acc const& acc) const
-            {
-                return Vec{ThreadCountInBlock{}(acc).product()};
-            }
-        };
-
-        struct LinearGridThreadIdx
-        {
-            template<typename T_Acc>
-            constexpr auto operator()(T_Acc const& acc) const
-            {
-                return Vec{linearize(GridThreadCount{}(acc), GridThreadIdx{}(acc))};
-            }
-        };
-
-        struct LinearGridThreadCount
-        {
-            template<typename T_Acc>
-            constexpr auto operator()(T_Acc const& acc) const
-            {
-                return Vec{GridThreadCount{}(acc).product()};
-            }
-        };
-    } // namespace idxTrait
-
-    ALPAKA_TAG(firstFn);
-    ALPAKA_TAG(extentFn);
-    ALPAKA_TAG(threadCountFn);
 
     namespace internal
     {
@@ -331,6 +191,33 @@ namespace alpaka::onAcc
         private:
             T_ExtentFn const m_extentFn;
         };
+
+        template<
+            concepts::Origin T_Origin,
+            concepts::Unit T_Unit,
+            typename T_MultiDimensional = MultiDimensional<true>>
+        struct IdxRangeLazy
+        {
+            constexpr IdxRangeLazy(
+                T_Origin const& origin,
+                T_Unit const& unit,
+                T_MultiDimensional = T_MultiDimensional{})
+            {
+            }
+
+            constexpr auto getIdxRange(auto const& acc)
+            {
+                auto const extent = internalCompute::GetExtentsOf::Op<ALPAKA_TYPEOF(acc), T_Origin, T_Unit>{}(
+                    acc,
+                    T_Origin{},
+                    T_Unit{});
+
+                if constexpr(T_MultiDimensional::value == false)
+                    return IdxRange{Vec{extent.product()}};
+                else
+                    return IdxRange{extent};
+            }
+        };
     } // namespace detail
 
     template<typename T_WorkGroup, typename T_IdxRange>
@@ -371,62 +258,49 @@ namespace alpaka::onAcc
         T_IdxRange m_idxRange;
     };
 
-    template<typename T_Idx, typename T_Extent>
-    struct WorkerGroup
+    namespace idxTrait
     {
-        constexpr WorkerGroup(T_Idx const& idxFn, T_Extent const& extentFn) : m_idxFn{idxFn}, m_extentFn{extentFn}
+        struct TotalFrameSpecExtent
         {
-        }
+            template<typename T_Acc>
+            constexpr auto operator()(T_Acc const& acc) const
+            {
+                return acc[frame::count] * acc[frame::extent];
+            }
+        };
 
-        constexpr auto size(auto const& acc) const
+        struct FrameCount
         {
-            return getThreadSpace(acc).size();
-        }
+            template<typename T_Acc>
+            constexpr auto operator()(T_Acc const& acc) const
+            {
+                return acc[frame::count];
+            }
+        };
 
-    private:
-        template<typename T_ThreadGroup, typename T_IdxRange>
-        friend struct DomainSpec;
-
-        constexpr auto getThreadSpace([[maybe_unused]] auto const& acc) const
+        struct FrameExtent
         {
-            return ThreadSpace{m_idxFn, m_extentFn};
-        }
-
-        constexpr auto getThreadSpace(auto const& acc) const requires(requires {
-            std::declval<T_Idx>()(acc);
-            std::declval<T_Extent>()(acc);
-        })
-        {
-            return ThreadSpace{m_idxFn(acc), m_extentFn(acc)};
-        }
-
-    private:
-        T_Idx const m_idxFn;
-        T_Extent const m_extentFn;
-    };
-
-    namespace worker
-    {
-        constexpr auto threadsInGrid = WorkerGroup{idxTrait::GridThreadIdx{}, idxTrait::GridThreadCount{}};
-        constexpr auto blocksInGrid = WorkerGroup{idxTrait::BlockIdx{}, idxTrait::BlockCount{}};
-        constexpr auto threadsInBlock = WorkerGroup{idxTrait::ThreadIdxInBlock{}, idxTrait::ThreadCountInBlock{}};
-
-        constexpr auto linearThreadsInGrid
-            = WorkerGroup{idxTrait::LinearGridThreadIdx{}, idxTrait::LinearGridThreadCount{}};
-        constexpr auto linearThreadsInBlock
-            = WorkerGroup{idxTrait::LinearizedThreadIdxInBlock{}, idxTrait::LinearizedThreadCountInBlock{}};
-        constexpr auto linearBlocksInGrid
-            = WorkerGroup{idxTrait::LinearizedBlockIdx{}, idxTrait::LinearizedBlockCount{}};
-    } // namespace worker
+            template<typename T_Acc>
+            constexpr auto operator()(T_Acc const& acc) const
+            {
+                return acc[frame::extent];
+            }
+        };
+    } // namespace idxTrait
 
     namespace range
     {
         constexpr auto totalFrameSpecExtent = detail::IdxRangeFn{idxTrait::TotalFrameSpecExtent{}};
         constexpr auto frameCount = detail::IdxRangeFn{idxTrait::FrameCount{}};
         constexpr auto frameExtent = detail::IdxRangeFn{idxTrait::FrameExtent{}};
-        constexpr auto threadsInGrid = detail::IdxRangeFn{idxTrait::GridThreadCount{}};
-        constexpr auto blocksInGrid = detail::IdxRangeFn{idxTrait::BlockCount{}};
-        constexpr auto threadsInBlock = detail::IdxRangeFn{idxTrait::ThreadCountInBlock{}};
+
+        constexpr auto threadsInGrid = detail::IdxRangeLazy{origin::grid, unit::threads};
+        constexpr auto blocksInGrid = detail::IdxRangeLazy{origin::grid, unit::blocks};
+        constexpr auto threadsInBlock = detail::IdxRangeLazy{origin::block, unit::threads};
+
+        constexpr auto linearThreadsInGrid = detail::IdxRangeLazy{origin::grid, unit::threads, linearized};
+        constexpr auto linearBlocksInGrid = detail::IdxRangeLazy{origin::grid, unit::blocks, linearized};
+        constexpr auto linearThreadsInBlock = detail::IdxRangeLazy{origin::block, unit::threads, linearized};
     } // namespace range
 
 } // namespace alpaka::onAcc

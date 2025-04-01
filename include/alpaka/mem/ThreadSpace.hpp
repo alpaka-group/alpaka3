@@ -12,7 +12,7 @@
 
 namespace alpaka
 {
-    template<typename T_ThreadIdx, typename T_ThreadCount>
+    template<concepts::Vector T_ThreadIdx, concepts::Vector T_ThreadCount>
     struct ThreadSpace
     {
         constexpr ThreadSpace(T_ThreadIdx const& threadIdx, T_ThreadCount const& threadCount)
@@ -44,6 +44,11 @@ namespace alpaka
         constexpr auto size() const
         {
             return m_threadCount;
+        }
+
+        constexpr auto idx() const
+        {
+            return m_threadIdx;
         }
 
         template<concepts::CVector T_CSelect>
