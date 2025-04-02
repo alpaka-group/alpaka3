@@ -87,11 +87,8 @@ namespace alpaka::onHost
                              })
                 {
                     return std::apply(
-                        [&](auto const&... args)
-                        {
-                            return BlockDynSharedMemBytes{kernelBundle.m_kernelFn, spec}(
-                                executor,
-                                remove_restrict_t<std::decay_t<T_Args>>()...);
+                        [&](auto const&... args) {
+                            return BlockDynSharedMemBytes{kernelBundle.m_kernelFn, spec}(executor, args...);
                         },
                         kernelBundle.m_args);
                 }
