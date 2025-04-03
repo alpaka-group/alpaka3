@@ -334,6 +334,22 @@ void testKernels(auto cfg)
     onHost::Platform platform = onHost::makePlatform(api);
     onHost::Device devAcc = platform.makeDevice(0);
 
+#ifdef ALPAKA_LANG_ONEAPI
+    // support for double precision is not guaranteed for sycl devices such as Intel GPUs
+    if constexpr(std::is_same_v<DataType, double> && std::is_same_v<decltype(api), api::SyclIntelGpu>)
+    {
+        if(devAcc.getNativeHandle().first.template get_info<sycl::info::device::double_fp_config>().size() == 0)
+        {
+            std::cout << onHost::getName(devAcc) << " does not support double precision"
+                      << "\n";
+            std::cout << "Skip benchmark.\n";
+            std::cout << "For Intel Arc GPUs, use the environemnt variables `IGC_EnableDPEmulation=1 "
+                         "OverrideDefaultFP64Settings=1` to emulate double precision support.\n";
+            return;
+        }
+    }
+#endif
+
     std::cout << getName(platform) << "\n" << getDeviceProperties(devAcc) << std::endl;
 
     std::cout << "used exec " << core::demangledName(exec) << std::endl;

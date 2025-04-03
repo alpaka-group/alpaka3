@@ -87,7 +87,7 @@ namespace alpaka::onHost
             template<typename T_Any>
             struct Op
             {
-                void operator()(T_Any const& any) const
+                void operator()(T_Any& any)
                 {
                     any.wait();
                 }

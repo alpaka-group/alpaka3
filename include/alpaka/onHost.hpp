@@ -115,7 +115,7 @@ namespace alpaka::onHost
      *
      * @param any currently only queue handles are supported
      */
-    inline void wait(alpaka::concepts::HasGet auto const& any)
+    inline void wait(alpaka::concepts::HasGet auto& any)
     {
         return internal::Wait::wait(*any.get());
     }

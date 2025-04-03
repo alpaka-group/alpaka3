@@ -202,7 +202,21 @@
 #    endif
 #endif
 
-// CUDA
+// Intel OneAPI Sycl GPU
+#if !defined(ALPAKA_LANG_SYCL)
+#    if defined(__ALPAKA_INTEL_ONEAPI_CPU__) || defined(__ALPAKA_INTEL_ONEAPI_GPU__)
+#        define ALPAKA_LANG_SYCL
+#        define ALPAKA_LANG_ONEAPI
+#    endif
+#    if defined(__ALPAKA_INTEL_ONEAPI_CPU__)
+#        define ALPAKA_LANG_ONEAPI_CPU
+#    endif
+#    if defined(__ALPAKA_INTEL_ONEAPI_GPU__)
+#        define ALPAKA_LANG_ONEAPI_GPU
+#    endif
+#endif
+
+// OpenMP
 #if !defined(ALPAKA_OMP)
 #    if defined(_OPENMP)
 #        include <omp.h>
