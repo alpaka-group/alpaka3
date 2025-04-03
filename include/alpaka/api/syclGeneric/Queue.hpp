@@ -21,6 +21,8 @@ namespace alpaka::onHost
         struct Queue : std::enable_shared_from_this<Queue<T_Device>>
         {
         private:
+            friend struct alpaka::internal::GetApi;
+
             template<alpaka::concepts::Vector TVec>
             static constexpr auto vecToSyclRange(TVec vec)
             {
@@ -68,7 +70,7 @@ namespace alpaka::onHost
             void enqueue(
                 T_Mapping const executor,
                 ThreadSpec<T_NumBlocks, T_NumThreads> const& threadBlocking,
-                auto kernelBundle)
+                auto const& kernelBundle)
             {
                 constexpr auto st_shared_mem_bytes = std::size_t{47u * 1024};
                 // allocate dynamic shared memory -- needs at least 1 byte to make the Xilinx Runtime happy
@@ -109,7 +111,10 @@ namespace alpaka::onHost
             }
 
             template<typename T_Mapping, alpaka::concepts::Vector T_NumFrames, alpaka::concepts::Vector T_FrameExtent>
-            void enqueue(T_Mapping const executor, FrameSpec<T_NumFrames, T_FrameExtent> frameSpec, auto kernelBundle)
+            void enqueue(
+                T_Mapping const executor,
+                FrameSpec<T_NumFrames, T_FrameExtent> frameSpec,
+                auto const& kernelBundle)
             {
                 auto const threadBlocking
                     = internal::adjustThreadSpec(m_device.get(), executor, frameSpec, kernelBundle);
@@ -180,33 +185,51 @@ namespace alpaka::onHost
     } // namespace syclGeneric
 
     template<typename T_Device, typename T_Dest, typename T_Extents>
-    requires(T_Dest::dim() == 1u)
+    requires(alpaka::trait::getDim_v<T_Extents> == 1u)
     struct internal::Memset::Op<syclGeneric::Queue<T_Device>, T_Dest, T_Extents>
     {
-        void operator()(syclGeneric::Queue<T_Device>& queue, T_Dest dest, uint8_t byteValue, T_Extents const& extents)
+        void operator()(syclGeneric::Queue<T_Device>& queue, T_Dest& dest, uint8_t byteValue, T_Extents const& extents)
             const
         {
             // TODO: implement generic version for multidimensional memory
             sycl::queue sycl_queue = queue.getNativeHandle();
-            sycl_queue.memset(std::data(dest), byteValue, extents.x() * sizeof(typename T_Dest::type));
+            sycl_queue.memset(
+                onHost::data(dest),
+                byteValue,
+                extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
         }
     };
 
     template<typename T_Device, typename T_Dest, typename T_Source, typename T_Extents>
-    requires(T_Dest::dim() == 1u && T_Source::dim() == 1u)
+    requires(alpaka::trait::getDim_v<T_Extents> == 1u)
     struct internal::Memcpy::Op<syclGeneric::Queue<T_Device>, T_Dest, T_Source, T_Extents>
     {
         void operator()(
             syclGeneric::Queue<T_Device>& queue,
-            T_Dest dest,
-            T_Source const source,
+            T_Dest& dest,
+            T_Source const& source,
             T_Extents const& extents) const
         {
             // TODO: implement generic version for multidimensional memory
             sycl::queue sycl_queue = queue.getNativeHandle();
-            sycl_queue.memcpy(std::data(dest), std::data(source), extents.x() * sizeof(typename T_Dest::type));
+            sycl_queue.memcpy(
+                onHost::data(dest),
+                onHost::data(source),
+                extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
         }
     };
 } // namespace alpaka::onHost
+
+namespace alpaka::internal
+{
+    template<typename T_Device>
+    struct GetApi::Op<alpaka::onHost::syclGeneric::Queue<T_Device>>
+    {
+        inline constexpr auto operator()(auto&& queue) const
+        {
+            return onHost::getApi(queue.m_device);
+        }
+    };
+} // namespace alpaka::internal
 
 #endif

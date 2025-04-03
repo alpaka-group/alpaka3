@@ -484,6 +484,15 @@ namespace alpaka
             {
                 return (*this)[T_start];
             }
+#if ALPAKA_LANG_SYCL
+            // SYCL can not call recursive functions
+            auto result = (*this)[T_start];
+            for(uint32_t i = T_start + 1u; i < T_end; ++i)
+            {
+                result = reduceFunc(result, (*this)[i]);
+            }
+            return result;
+#else
             // split range at midpoint
             constexpr uint32_t mid = T_start + size / 2u;
 
@@ -491,6 +500,7 @@ namespace alpaka
             return reduceFunc(
                 reduce_range<T_start, mid>(ALPAKA_FORWARD(reduceFunc)),
                 reduce_range<mid, T_end>(ALPAKA_FORWARD(reduceFunc)));
+#endif
         }
     };
 

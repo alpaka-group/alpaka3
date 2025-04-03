@@ -76,15 +76,29 @@ namespace alpaka::onHost
         template<typename T_Type, typename T_Platform, alpaka::concepts::Vector T_Extents>
         struct Alloc::Op<T_Type, syclGeneric::Device<T_Platform>, T_Extents>
         {
+            static consteval uint32_t highestPowerOfTwo(uint32_t value)
+            {
+                uint32_t result = 1u;
+                while((result << 1u) <= value)
+                {
+                    result <<= 1u;
+                }
+                return result;
+            }
+
             auto operator()(syclGeneric::Device<T_Platform>& device, T_Extents const& extents) const
             {
                 using IdxType = typename T_Extents::type;
-                constexpr uint32_t alignment
-                    = getArchSimdWidth<T_Type>(ALPAKA_TYPEOF(getApi(device)){}) * alignof(T_Type);
-                constexpr auto dim = T_Extents::dim();
+
+                constexpr uint32_t typeAlignmentBytes = alignof(T_Type);
+                constexpr uint32_t simdPackBytes
+                    = getArchSimdWidth<T_Type>(ALPAKA_TYPEOF(getApi(device)){}) * sizeof(T_Type);
+                constexpr uint32_t bestSimdPackBytes = highestPowerOfTwo(simdPackBytes);
+                constexpr IdxType alignment = std::max(bestSimdPackBytes, typeAlignmentBytes);
 
                 auto [sycl_device, sycl_context] = device.getNativeHandle();
 
+                constexpr auto dim = T_Extents::dim();
                 if constexpr(dim == 1u)
                 {
                     T_Type* ptr = reinterpret_cast<T_Type*>(sycl::aligned_alloc_device(
@@ -93,39 +107,34 @@ namespace alpaka::onHost
                         sycl_device,
                         sycl_context));
                     auto pitches = typename T_Extents::UniVec{sizeof(T_Type)};
-
                     auto deleter = [ctx = sycl_context](T_Type* ptr) { sycl::free(ptr, ctx); };
-                    auto data = std::make_shared<
-                        onHost::
-                            Data<Handle<std::decay_t<decltype(device)>>, T_Type, T_Extents, ALPAKA_TYPEOF(pitches)>>(
-                        device.getSharedPtr(),
-                        ptr,
-                        extents,
-                        pitches,
-                        std::move(deleter));
+
+                    auto data = std::make_shared<onHost::Data<
+                        Handle<std::decay_t<decltype(device)>>,
+                        T_Type,
+                        T_Extents,
+                        ALPAKA_TYPEOF(pitches),
+                        Alignment<alignment>>>(device.getSharedPtr(), ptr, extents, pitches, std::move(deleter));
                     return View<std::decay_t<decltype(data)>, T_Extents>(data);
                 }
                 else
                 {
-                    // TODO: copied from CPU -> validate if this is working
-                    auto rowExtentInBytes = extents.x() * static_cast<IdxType>(sizeof(T_Type));
-                    auto rowPitchInBytes = core::divCeil(rowExtentInBytes, alignment) * alignment;
+                    IdxType rowExtentInBytes = extents.x() * static_cast<IdxType>(sizeof(T_Type));
+                    IdxType rowPitchInBytes = divCeil(rowExtentInBytes, alignment) * alignment;
                     auto pitches = mem::calculatePitches<T_Type>(extents, rowPitchInBytes);
 
                     // product of pitches does contain the size for the first dimension
                     size_t memSizeInByte = pCast<size_t>(pitches).product() * static_cast<size_t>(extents[0]);
                     T_Type* ptr = reinterpret_cast<T_Type*>(
                         sycl::aligned_alloc_device(alignment, memSizeInByte, sycl_device, sycl_context));
-
                     auto deleter = [ctx = sycl_context](T_Type* ptr) { sycl::free(ptr, ctx); };
-                    auto data = std::make_shared<
-                        onHost::
-                            Data<Handle<std::decay_t<decltype(device)>>, T_Type, T_Extents, ALPAKA_TYPEOF(pitches)>>(
-                        device.getSharedPtr(),
-                        ptr,
-                        extents,
-                        pitches,
-                        std::move(deleter));
+
+                    auto data = std::make_shared<onHost::Data<
+                        Handle<std::decay_t<decltype(device)>>,
+                        T_Type,
+                        T_Extents,
+                        ALPAKA_TYPEOF(pitches),
+                        Alignment<alignment>>>(device.getSharedPtr(), ptr, extents, pitches, std::move(deleter));
                     return View<std::decay_t<decltype(data)>, T_Extents>(data);
                 }
             }

@@ -204,15 +204,15 @@
 
 // Intel OneAPI Sycl GPU
 #if !defined(ALPAKA_LANG_SYCL)
-#    if defined(__ALPAKA_INTEL_ONEAPI_CPU__) || defined(__ALPAKA_INTEL_ONEAPI_GPU__)
-#        define ALPAKA_LANG_SYCL
-#        define ALPAKA_LANG_ONEAPI
+#    if defined(SYCL_LANGUAGE_VERSION)
+#        define ALPAKA_LANG_SYCL ALPAKA_YYYYMMDD_TO_VERSION(SYCL_LANGUAGE_VERSION)
+#        define ALPAKA_LANG_ONEAPI ALPAKA_YYYYMMDD_TO_VERSION(SYCL_PI_DPCPP)
 #    endif
 #    if defined(__ALPAKA_INTEL_ONEAPI_CPU__)
-#        define ALPAKA_LANG_ONEAPI_CPU
+#        define ALPAKA_LANG_ONEAPI_CPU ALPAKA_LANG_ONEAPI
 #    endif
 #    if defined(__ALPAKA_INTEL_ONEAPI_GPU__)
-#        define ALPAKA_LANG_ONEAPI_GPU
+#        define ALPAKA_LANG_ONEAPI_GPU ALPAKA_LANG_ONEAPI
 #    endif
 #endif
 

@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "alpaka/core/Utility.hpp"
+
 #include <cstdint>
 #include <new>
 
@@ -12,35 +14,38 @@ namespace alpaka::onHost::internal
     template<typename T_Type>
     constexpr uint32_t getCPUSimdWidth()
     {
-        constexpr std::size_t simdWidthInByte =
-#if defined(__AVX512BW__)
-            // addition (AVX512BW): vpaddb / _mm512_mask_add_epi8
-            // subtraction (AVX512BW): vpsubb / _mm512_sub_epi8
-            // multiplication: -
+        constexpr size_t simdWidthInByte =
+#if defined(__AVX512BW__) || defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512VL__)
+            64u;
+#elif defined(__riscv_vector)
+            64u;
+        // ARM e.g. nvidia grace hopper
+#elif defined(__ARM_FEATURE_SVE) || defined(__ARM_FEATURE_SVE2_AES) || defined(__ARM_FEATURE_DOTPROD)
             64u;
 #elif defined(__AVX2__)
-            // addition (AVX2): vpaddb / _mm256_add_epi8
-            // subtraction (AVX2): vpsubb / _mm256_sub_epi8
-            // multiplication: -
             32u;
-#elif defined(__SSE2__)
-            // addition (SSE2): paddb / _mm_add_epi8
-            // subtraction (SSE2): psubb / _mm_sub_epi8
-            // multiplication: -
+#elif defined(__SSE__) || defined(__SSE2__) || defined(__SSE4_1__) || defined(__SSE4_2__)
             16u;
 #elif defined(__ARM_NEON__)
             16u;
 #elif defined(__ALTIVEC__)
             16u;
-#elif defined(__CUDA_ARCH__)
-            // addition: __vadd4
-            // subtraction: __vsub4
-            // multiplication: -
-            4u;
 #else
-            1u;
+            sizeof(T_Type);
 #endif
-        return simdWidthInByte / sizeof(T_Type);
+        return alpaka::divExZero(simdWidthInByte, sizeof(T_Type));
+    }
+
+    constexpr uint32_t getCPUNumPipelines()
+    {
+        /* INTEL can issue 4 commands and AMD typically 2, since we can not distinguish between both we use
+         * the higher value.
+         * ARM SVE can typically issue 4 commands too.
+         *
+         * Therefor we use at the moment as default 4.
+         */
+        constexpr uint32_t numPipes = 4u;
+        return numPipes;
     }
 
     constexpr uint32_t getCPUCachelineSize()
