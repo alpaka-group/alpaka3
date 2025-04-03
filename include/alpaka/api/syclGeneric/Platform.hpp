@@ -100,8 +100,8 @@ namespace alpaka
                     return core::demangledName<syclGeneric::Platform<T_ApiInterface>>();
                 }
 
-                friend class syclGeneric::Device<syclGeneric::Platform<T_ApiInterface>>;
-                friend class internal::GetDeviceProperties::Op<syclGeneric::Platform<T_ApiInterface>>;
+                friend struct syclGeneric::Device<syclGeneric::Platform<T_ApiInterface>>;
+                friend struct internal::GetDeviceProperties::Op<syclGeneric::Platform<T_ApiInterface>>;
 
             private:
                 sycl::platform platform;

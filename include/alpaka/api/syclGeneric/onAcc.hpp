@@ -266,8 +266,6 @@ namespace alpaka::onAcc
 
         class StaticSharedMemory : private detail::BlockSharedMemStMemberImpl<>
         {
-            sycl::local_accessor<std::byte> const& m_accessor;
-
         public:
             StaticSharedMemory(StaticSharedMemory const&) = delete;
 
@@ -275,7 +273,7 @@ namespace alpaka::onAcc
                 : BlockSharedMemStMemberImpl(
                     reinterpret_cast<std::uint8_t*>(accessor.get_multi_ptr<sycl::access::decorated::no>().get()),
                     accessor.size())
-                , m_accessor(accessor)
+
             {
             }
 

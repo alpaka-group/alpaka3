@@ -4,14 +4,23 @@
 
 #pragma once
 
-namespace alpaka::onAcc
+namespace alpaka
 {
-    namespace internal
+    namespace onAcc::internal
     {
         struct SyclAtomic
         {
         };
 
         constexpr auto syclAtomic = SyclAtomic{};
-    } // namespace internal
-} // namespace alpaka::onAcc
+    } // namespace onAcc::internal
+
+    namespace math::internal
+    {
+        struct SyclMath
+        {
+        };
+
+        constexpr auto syclMath = SyclMath{};
+    } // namespace math::internal
+} // namespace alpaka

@@ -81,8 +81,7 @@ namespace alpaka::onHost
                     <= m_device->getNativeHandle().first.template get_info<sycl::info::device::local_mem_size>());
 
                 m_queue.submit(
-                    [executor, threadBlocking, kernelBundle, st_shared_mem_bytes, blockDynSharedMemBytes](
-                        sycl::handler& cgh)
+                    [threadBlocking, kernelBundle, blockDynSharedMemBytes](sycl::handler& cgh)
                     {
                         using T_Api = decltype(getApi(m_device));
                         auto st_shared_accessor
@@ -99,7 +98,7 @@ namespace alpaka::onHost
                                 sycl::nd_item<T_NumThreads::dim()> work_item)
                             {
                                 onAcc::syclGeneric::StaticSharedMemory ssm(st_shared_accessor);
-                                onAcc::syclGeneric::DynamicSharedMemory dsm(st_shared_accessor);
+                                onAcc::syclGeneric::DynamicSharedMemory dsm(dyn_shared_accessor);
                                 auto acc = onAcc::Acc{
                                     onAcc::makeSyclGenericAccDict<T_Mapping, T_Api, T_NumBlocks, T_NumThreads>(
                                         work_item,
@@ -129,8 +128,7 @@ namespace alpaka::onHost
                     <= m_device->getNativeHandle().first.template get_info<sycl::info::device::local_mem_size>());
 
                 m_queue.submit(
-                    [executor, threadBlocking, frameSpec, kernelBundle, st_shared_mem_bytes, blockDynSharedMemBytes](
-                        sycl::handler& cgh)
+                    [threadBlocking, frameSpec, kernelBundle, blockDynSharedMemBytes](sycl::handler& cgh)
                     {
                         using T_Api = decltype(getApi(m_device));
                         auto st_shared_accessor
@@ -146,7 +144,7 @@ namespace alpaka::onHost
                                 sycl::nd_item<T_NumFrames::dim()> work_item)
                             {
                                 onAcc::syclGeneric::StaticSharedMemory ssm(st_shared_accessor);
-                                onAcc::syclGeneric::DynamicSharedMemory dsm(st_shared_accessor);
+                                onAcc::syclGeneric::DynamicSharedMemory dsm(dyn_shared_accessor);
 
                                 auto acc = onAcc::Acc{joinDict(
                                     onAcc::makeSyclGenericAccDict<
