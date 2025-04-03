@@ -9,6 +9,7 @@
 #include "alpaka/api/cuda/Api.hpp"
 #include "alpaka/api/hip/Api.hpp"
 #include "alpaka/api/syclIntel/Api.hpp"
+#include "alpaka/core/config.hpp"
 #include "alpaka/meta/filter.hpp"
 #include "alpaka/onHost/trait.hpp"
 
@@ -23,7 +24,11 @@ namespace alpaka
      */
     constexpr auto thisApi()
     {
-#if ALPAKA_LANG_CUDA && (ALPAKA_COMP_CLANG_CUDA || ALPAKA_COMP_NVCC) && __CUDA_ARCH__
+#if ALPAKA_LANG_SYCL && ALPAKA_LANG_ONEAPI_GPU
+        return api::syclIntelGpu;
+#elif ALPAKA_LANG_SYCL && ALPAKA_LANG_ONEAPI_CPU
+        return api::syclIntelCpu;
+#elif ALPAKA_LANG_CUDA && (ALPAKA_COMP_CLANG_CUDA || ALPAKA_COMP_NVCC) && __CUDA_ARCH__
         return api::cuda;
 #elif ALPAKA_LANG_HIP && defined(__HIP_DEVICE_COMPILE__) && __HIP_DEVICE_COMPILE__ == 1
         return api::hip;

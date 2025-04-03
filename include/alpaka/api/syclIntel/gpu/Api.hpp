@@ -35,6 +35,7 @@ namespace alpaka
         {
         };
     } // namespace onHost::trait
+#endif
 
     namespace trait
     {
@@ -46,7 +47,20 @@ namespace alpaka
                 /** vector load and store width in bytes */
                 // copied from CUDA/HIP -> not verified if this is the optional value
                 constexpr std::size_t simdWidthInByte = 16u;
-                return simdWidthInByte / sizeof(T_Type);
+                return alpaka::divExZero(simdWidthInByte, sizeof(T_Type));
+            }
+        };
+
+        template<>
+        struct GetNumPipelines::Op<api::SyclIntelGpu>
+        {
+            constexpr uint32_t operator()(api::SyclIntelGpu const) const
+            {
+                /* AMD GPUs SIMD units will be interpreted as pipelines, CUDA GPUs using 2 pipelines (2 warp schedular)
+                 * @TODO check INTEL GPUs
+                 */
+                constexpr uint32_t numPipes = 4u;
+                return numPipes;
             }
         };
 
@@ -61,5 +75,4 @@ namespace alpaka
             }
         };
     } // namespace trait
-#endif
 } // namespace alpaka

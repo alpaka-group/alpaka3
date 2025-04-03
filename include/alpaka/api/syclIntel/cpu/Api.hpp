@@ -38,6 +38,7 @@ namespace alpaka
         };
     } // namespace onHost::trait
 
+#endif
     namespace trait
     {
 
@@ -51,6 +52,15 @@ namespace alpaka
         };
 
         template<>
+        struct GetNumPipelines::Op<api::SyclIntelCpu>
+        {
+            constexpr uint32_t operator()(api::SyclIntelCpu const) const
+            {
+                return onHost::internal::getCPUNumPipelines();
+            }
+        };
+
+        template<>
         struct GetCachelineSize::Op<api::SyclIntelCpu>
         {
             constexpr uint32_t operator()(api::SyclIntelCpu const) const
@@ -59,5 +69,4 @@ namespace alpaka
             }
         };
     } // namespace trait
-#endif
 } // namespace alpaka

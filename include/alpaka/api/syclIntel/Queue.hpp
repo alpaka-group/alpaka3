@@ -12,10 +12,10 @@ namespace alpaka::onHost::internal
 {
 #ifdef ALPAKA_LANG_ONEAPI
     template<typename T_Device, typename T_Dest, typename T_Extents>
-    requires(T_Dest::dim() > 1u)
+    requires(alpaka::trait::getDim_v<T_Extents> > 1u)
     struct Memset::Op<syclGeneric::Queue<T_Device>, T_Dest, T_Extents>
     {
-        void operator()(syclGeneric::Queue<T_Device>& queue, T_Dest dest, uint8_t byteValue, T_Extents const& extents)
+        void operator()(syclGeneric::Queue<T_Device>& queue, T_Dest& dest, uint8_t byteValue, T_Extents const& extents)
             const
         {
             sycl::queue sycl_queue = queue.getNativeHandle();
@@ -32,20 +32,20 @@ namespace alpaka::onHost::internal
                     events.push_back(sycl_queue.memset(
                         reinterpret_cast<std::uint8_t*>(destPtr) + (idx * destPitchBytesWithoutColumn).sum(),
                         byteValue,
-                        static_cast<size_t>(extents.back()) * sizeof(typename T_Dest::type)));
+                        static_cast<size_t>(extents.back()) * sizeof(alpaka::trait::GetValueType_t<T_Dest>)));
                 });
             sycl_queue.ext_oneapi_submit_barrier(events);
         }
     };
 
     template<typename T_Device, typename T_Dest, typename T_Source, typename T_Extents>
-    requires(T_Dest::dim() > 1u)
+    requires(alpaka::trait::getDim_v<T_Extents> > 1u)
     struct internal::Memcpy::Op<syclGeneric::Queue<T_Device>, T_Dest, T_Source, T_Extents>
     {
         void operator()(
             syclGeneric::Queue<T_Device>& queue,
-            T_Dest dest,
-            T_Source const source,
+            T_Dest& dest,
+            T_Source const& source,
             T_Extents const& extents) const
         {
             sycl::queue sycl_queue = queue.getNativeHandle();
@@ -64,7 +64,7 @@ namespace alpaka::onHost::internal
                     events.push_back(sycl_queue.memcpy(
                         reinterpret_cast<std::uint8_t*>(destPtr) + (idx * destPitchBytesWithoutColumn).sum(),
                         reinterpret_cast<std::uint8_t*>(sourcePtr) + (idx * sourcePitchBytesWithoutColumn).sum(),
-                        static_cast<size_t>(extents.back()) * sizeof(typename T_Dest::type)));
+                        static_cast<size_t>(extents.back()) * sizeof(alpaka::trait::GetValueType_t<T_Dest>)));
                 });
             sycl_queue.ext_oneapi_submit_barrier(events);
         }
