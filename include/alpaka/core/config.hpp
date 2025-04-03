@@ -206,13 +206,17 @@
 #if !defined(ALPAKA_LANG_SYCL)
 #    if defined(SYCL_LANGUAGE_VERSION)
 #        define ALPAKA_LANG_SYCL ALPAKA_YYYYMMDD_TO_VERSION(SYCL_LANGUAGE_VERSION)
-#        define ALPAKA_LANG_ONEAPI ALPAKA_YYYYMMDD_TO_VERSION(SYCL_PI_DPCPP)
 #    endif
-#    if defined(__ALPAKA_INTEL_ONEAPI_CPU__)
-#        define ALPAKA_LANG_ONEAPI_CPU ALPAKA_LANG_ONEAPI
-#    endif
-#    if defined(__ALPAKA_INTEL_ONEAPI_GPU__)
-#        define ALPAKA_LANG_ONEAPI_GPU ALPAKA_LANG_ONEAPI
+#    if(ALPAKA_COMP_ICPX)
+// ONE API must be detected via the ICPX compiler see
+// https://www.intel.com/content/www/us/en/docs/dpcpp-cpp-compiler/developer-guide-reference/2023-2/use-predefined-macros-to-specify-intel-compilers.html
+#        define ALPAKA_LANG_ONEAPI ALPAKA_COMP_ICPX
+#        if defined(__ALPAKA_INTEL_ONEAPI_CPU__)
+#            define ALPAKA_LANG_ONEAPI_CPU ALPAKA_LANG_ONEAPI
+#        endif
+#        if defined(__ALPAKA_INTEL_ONEAPI_GPU__)
+#            define ALPAKA_LANG_ONEAPI_GPU ALPAKA_LANG_ONEAPI
+#        endif
 #    endif
 #endif
 
