@@ -21,12 +21,17 @@ int example(auto const deviceApi)
 
     // get all the devices on the accelerator platform
     alpaka::onHost::Platform platform = alpaka::onHost::makePlatform(deviceApi);
-    alpaka::onHost::Device devAcc = platform.makeDevice(0);
 
     auto numDevice = alpaka::onHost::getDeviceCount(platform);
 
     std::cout << "Accelerator platform: " << alpaka::onHost::getName(platform) << '\n';
     std::cout << "Found " << numDevice << " device(s):\n";
+
+    if(numDevice > 0)
+    {
+        alpaka::onHost::Device devAcc = platform.makeDevice(0);
+        std::cout << devAcc.getName() << "\n";
+    }
 
     for(auto i = 0u; i < numDevice; ++i)
     {

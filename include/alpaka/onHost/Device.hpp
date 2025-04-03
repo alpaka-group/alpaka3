@@ -39,7 +39,7 @@ namespace alpaka::onHost
             return onHost::getName(static_cast<Parent>(*this));
         }
 
-        [[nodiscard]] uint32_t getNativeHandle() const
+        [[nodiscard]] auto getNativeHandle() const
         {
             return onHost::getNativeHandle(static_cast<Parent>(*this));
         }

@@ -7,6 +7,7 @@
 #include "alpaka/api/cpu/executor.hpp"
 #include "alpaka/api/cuda/executor.hpp"
 #include "alpaka/api/hip/executor.hpp"
+#include "alpaka/api/syclIntel/executor.hpp"
 
 namespace alpaka::exec
 {
@@ -30,6 +31,14 @@ namespace alpaka::exec
 #ifndef ALPAKA_DISABLE_EXEC_GpuHip
         ,
         gpuHip
+#endif
+#ifndef alpaka_EXEC_CpuOneApi
+        ,
+        cpuIntelSycl
+#endif
+#ifndef alpaka_EXEC_GpuOneApi
+        ,
+        gpuIntelSycl
 #endif
         ));
 } // namespace alpaka::exec
