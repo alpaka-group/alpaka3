@@ -71,6 +71,19 @@ make -j
 ctest --output-on-failure
 ```
 
+### compile for OneApi SYCL CPU/GPU only
+
+```bash
+spack load cmake@3.29.1
+spack load intel-oneapi-compilers@2025.0.4
+spack load intel-oneapi-dpl@2022.2.0
+
+# for Intel GPU use -Dalpaka_DEP_ONEAPI_GPU=ON 
+cmake ../alpaka -DCMAKE_CXX_COMPILER=icpx -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_DEP_ONEAPI_CPU=ON -Dalpaka_DEP_OMP=OFF -Dalpaka_EXEC_CpuSerial=OFF
+make -j
+ctest --output-on-failure
+```
+
 ### optimization for benchmarking
 
 If you like to run benchmarks you should set at least the following CMake variables.
