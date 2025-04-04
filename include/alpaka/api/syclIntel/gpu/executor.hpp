@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include "alpaka/api/syclGeneric/tag.hpp"
+#include "alpaka/api/trait.hpp"
+
 namespace alpaka
 {
     namespace exec
@@ -12,7 +15,7 @@ namespace alpaka
         {
         };
 
-        GpuIntelSycl gpuIntelSycl{};
+        constexpr GpuIntelSycl gpuIntelSycl{};
     } // namespace exec
 
     namespace onAcc::trait

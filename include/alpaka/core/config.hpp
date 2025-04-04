@@ -206,6 +206,8 @@
 #if !defined(ALPAKA_LANG_SYCL)
 #    if defined(SYCL_LANGUAGE_VERSION)
 #        define ALPAKA_LANG_SYCL ALPAKA_YYYYMMDD_TO_VERSION(SYCL_LANGUAGE_VERSION)
+#    else
+#        define ALPAKA_LANG_SYCL ALPAKA_VERSION_NUMBER_NOT_AVAILABLE
 #    endif
 #    if(ALPAKA_COMP_ICPX)
 // ONE API must be detected via the ICPX compiler see

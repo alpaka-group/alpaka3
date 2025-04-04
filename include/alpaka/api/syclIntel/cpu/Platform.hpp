@@ -6,7 +6,7 @@
 
 #include "alpaka/core/config.hpp"
 
-#ifdef ALPAKA_LANG_ONEAPI_CPU
+#if ALPAKA_LANG_ONEAPI_CPU
 #    include "alpaka/api/syclGeneric/Platform.hpp"
 #    include "alpaka/api/syclIntel/cpu/Api.hpp"
 

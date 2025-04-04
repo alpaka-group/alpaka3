@@ -5,8 +5,10 @@
 #pragma once
 
 #include "alpaka/api/syclGeneric/Api.hpp"
+#include "alpaka/api/syclIntel/gpu/Api.hpp"
 #include "alpaka/api/trait.hpp"
-#include "alpaka/concepts.hpp"
+#include "alpaka/core/Utility.hpp"
+#include "alpaka/mem/trait.hpp"
 #include "alpaka/onHost/trait.hpp"
 
 #include <memory>
@@ -27,7 +29,7 @@ namespace alpaka
         constexpr auto syclIntelGpu = SyclIntelGpu{};
     } // namespace api
 
-#ifdef ALPAKA_LANG_ONEAPI_GPU
+#if ALPAKA_LANG_ONEAPI_GPU
     namespace onHost::trait
     {
         template<>
@@ -75,4 +77,5 @@ namespace alpaka
             }
         };
     } // namespace trait
+
 } // namespace alpaka

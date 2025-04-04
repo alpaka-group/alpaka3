@@ -4,10 +4,13 @@
 
 #pragma once
 
-#ifdef ALPAKA_LANG_SYCL
+#include "alpaka/core/config.hpp"
+
+#if ALPAKA_LANG_SYCL
 
 #    include "Queue.hpp"
 #    include "alpaka/Vec.hpp"
+#    include "alpaka/onHost/mem/Data.hpp"
 
 #    include <sycl/sycl.hpp>
 

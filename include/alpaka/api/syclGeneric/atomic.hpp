@@ -4,15 +4,19 @@
 
 #pragma once
 
-#include "alpaka/onAcc/atomicHierarchy.hpp"
-#include "alpaka/onAcc/atomicOp.hpp"
+#include "alpaka/core/config.hpp"
 
-#include <cstdint>
-#include <type_traits>
+#if ALPAKA_LANG_SYCL
 
-#ifdef ALPAKA_LANG_SYCL
+#    include "alpaka/api/syclGeneric/tag.hpp"
+#    include "alpaka/onAcc/atomicHierarchy.hpp"
+#    include "alpaka/onAcc/atomicOp.hpp"
+#    include "alpaka/onAcc/internal.hpp"
 
 #    include <sycl/sycl.hpp>
+
+#    include <cstdint>
+#    include <type_traits>
 
 namespace alpaka::detail
 {

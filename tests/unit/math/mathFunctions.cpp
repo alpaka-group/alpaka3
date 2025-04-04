@@ -232,7 +232,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
     alpaka::onHost::memcpy(queue, inDev, inHost);
 
     // Helper lambda to print values and perform FuzzyEqual comparison
-    auto fuzzyEqualWithLogging = [](char const* functionName, auto input, auto expected, auto actual)
+    [[maybe_unused]] auto fuzzyEqualWithLogging = [](char const* functionName, auto input, auto expected, auto actual)
     {
         std::cout << "Testing " << functionName << ": Input = " << input << ", Expected = " << expected
                   << ", Actual = " << actual << std::endl;
@@ -401,7 +401,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Returning Boolean - Test", "", TestApis)
     alpaka::onHost::memcpy(queue, inDev, inHost);
 
     // Helper lambda to print values and perform FuzzyEqual comparison
-    auto fuzzyEqualWithLogging = [](char const* functionName, auto input, auto expected, auto actual)
+    [[maybe_unused]] auto fuzzyEqualWithLogging = [](char const* functionName, auto input, auto expected, auto actual)
     {
         std::cout << "Testing " << functionName << ": Input = " << input << ", Expected = " << expected
                   << ", Actual = " << actual << std::endl;

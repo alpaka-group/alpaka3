@@ -334,7 +334,7 @@ void testKernels(auto cfg)
     onHost::Platform platform = onHost::makePlatform(api);
     onHost::Device devAcc = platform.makeDevice(0);
 
-#ifdef ALPAKA_LANG_ONEAPI
+#if ALPAKA_LANG_ONEAPI
     // support for double precision is not guaranteed for sycl devices such as Intel GPUs
     if constexpr(std::is_same_v<DataType, double> && std::is_same_v<decltype(api), api::SyclIntelGpu>)
     {

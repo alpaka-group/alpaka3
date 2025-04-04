@@ -10,7 +10,7 @@
 
 namespace alpaka::onHost::internal
 {
-#ifdef ALPAKA_LANG_ONEAPI
+#if ALPAKA_LANG_ONEAPI
     template<typename T_Device, typename T_Dest, typename T_Extents>
     requires(alpaka::trait::getDim_v<T_Extents> > 1u)
     struct Memset::Op<syclGeneric::Queue<T_Device>, T_Dest, T_Extents>

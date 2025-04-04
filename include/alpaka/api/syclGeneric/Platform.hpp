@@ -6,7 +6,7 @@
 
 #include "alpaka/core/config.hpp"
 
-#ifdef ALPAKA_LANG_SYCL
+#if ALPAKA_LANG_SYCL
 
 #    include "Device.hpp"
 #    include "alpaka/internal.hpp"
