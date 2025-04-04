@@ -2,15 +2,14 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 #if !(defined(__ALPAKA_INTEL_ONEAPI_CPU__) || defined(__ALPAKA_INTEL_ONEAPI_GPU__))
-#    if 1
-#        include <alpaka/alpaka.hpp>
-#        include <alpaka/example/executeForEach.hpp>
-#        include <alpaka/example/executors.hpp>
+#    include <alpaka/alpaka.hpp>
+#    include <alpaka/example/executeForEach.hpp>
+#    include <alpaka/example/executors.hpp>
 
-#        include <catch2/catch_template_test_macros.hpp>
-#        include <catch2/catch_test_macros.hpp>
+#    include <catch2/catch_template_test_macros.hpp>
+#    include <catch2/catch_test_macros.hpp>
 
-#        include <iostream>
+#    include <iostream>
 
 using namespace alpaka;
 using namespace alpaka::onHost;
@@ -163,5 +162,4 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
     }
 }
 
-#    endif
 #endif

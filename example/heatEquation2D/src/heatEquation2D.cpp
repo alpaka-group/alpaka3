@@ -71,7 +71,7 @@ auto example(T_Cfg const& cfg) -> int
             std::cout << "For Intel Arc GPUs, use the environemnt variables `IGC_EnableDPEmulation=1 "
                          "OverrideDefaultFP64Settings=1` to emulate double precision support.\n";
             // return 0 otherwise ctest fails
-            return 0;
+            return EXIT_SUCCESS;
         }
     }
 #endif

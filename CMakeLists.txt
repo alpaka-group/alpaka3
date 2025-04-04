@@ -90,9 +90,8 @@ target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_20)
 option(alpaka_DEP_CUDA "Enable the CUDA as dependency, allows the usage of api::Cuda and exec::GpuCuda." OFF)
 option(alpaka_DEP_HIP "Enable the HIP as dependency, allows the usage of api::Hip and exec::GpuHip" OFF)
 option(alpaka_DEP_OMP "Enable the OMP as dependency, allows the usage of exec::CpuOmpBlocks and exec::OmpBlocksAndThreads" ON)
-option(alpaka_DEP_ONEAPI_CPU "Enable the Intel OneAPI SYCL CPU back-end" OFF)
-option(alpaka_DEP_ONEAPI_GPU "Enable the Intel OneAPI SYCL GPU back-end" OFF)
-option(alpaka_DEP_OMP "Enable the OMP back-end" ON)
+option(alpaka_DEP_ONEAPI_CPU "Enable the Intel OneAPI SYCL CPU dependency, allows using exec::cpuIntelSycl" OFF)
+option(alpaka_DEP_ONEAPI_GPU "Enable the Intel OneAPI SYCL GPU dependency, allows using exec::gpuIntelSycl" OFF)
 
 ## OpenMP
 if(alpaka_DEP_OMP)

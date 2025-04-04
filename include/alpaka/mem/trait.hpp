@@ -1,4 +1,4 @@
-/* Copyright 2024 Andrea Bocci, René Widera
+/* Copyright 2025 René Widera
  * SPDX-License-Identifier: MPL-2.0
  */
 
