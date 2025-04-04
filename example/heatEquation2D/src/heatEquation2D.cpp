@@ -59,7 +59,7 @@ auto example(T_Cfg const& cfg) -> int
     Platform platformAcc = makePlatform(api);
     Device devAcc = platformAcc.makeDevice(0);
 
-#ifdef ALPAKA_LANG_ONEAPI
+#if ALPAKA_LANG_ONEAPI
     // support for double precision is not guaranteed for sycl devices such as Intel GPUs
     if constexpr(std::is_same_v<decltype(api), api::SyclIntelGpu>)
     {
@@ -106,9 +106,6 @@ auto example(T_Cfg const& cfg) -> int
     // Accelerator buffer
     auto uCurrBufAcc = alpaka::onHost::allocMirror(devAcc, uBufHost);
     auto uNextBufAcc = alpaka::onHost::allocMirror(devAcc, uBufHost);
-
-    auto const pitchCurrAcc{uCurrBufAcc.getPitches()};
-    auto const pitchNextAcc{uNextBufAcc.getPitches()};
 
     // Set buffer to initial conditions
     initalizeBuffer(uBufHost.getMdSpan(), dx, dy);

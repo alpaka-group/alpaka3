@@ -7,6 +7,7 @@
 #include "alpaka/api/cpu/cpuArchSize.hpp"
 #include "alpaka/api/trait.hpp"
 #include "alpaka/concepts.hpp"
+#include "alpaka/mem/trait.hpp"
 #include "alpaka/onHost/trait.hpp"
 
 #include <memory>
@@ -76,5 +77,18 @@ namespace alpaka
                 return alpaka::onHost::internal::getCPUCachelineSize();
             }
         };
+
     } // namespace trait
+
+    namespace onAcc::internal::trait
+    {
+        template<typename T_Acc>
+        struct AutoIndexMapping::Op<T_Acc, api::Cpu>
+        {
+            constexpr auto operator()(T_Acc const&, api::Cpu) const
+            {
+                return layout::Contigious{};
+            }
+        };
+    } // namespace onAcc::internal::trait
 } // namespace alpaka

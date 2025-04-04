@@ -5,6 +5,7 @@
 #pragma once
 
 #include "alpaka/api/syclGeneric/tag.hpp"
+#include "alpaka/api/trait.hpp"
 
 namespace alpaka
 {
@@ -14,7 +15,7 @@ namespace alpaka
         {
         };
 
-        CpuIntelSycl cpuIntelSycl;
+        constexpr CpuIntelSycl cpuIntelSycl;
 
     } // namespace exec
 

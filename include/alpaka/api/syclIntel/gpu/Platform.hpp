@@ -6,7 +6,7 @@
 
 #include "alpaka/core/config.hpp"
 
-#ifdef ALPAKA_LANG_ONEAPI_GPU
+#if ALPAKA_LANG_ONEAPI_GPU
 #    include "alpaka/api/syclGeneric/Platform.hpp"
 #    include "alpaka/api/syclIntel/gpu/Api.hpp"
 

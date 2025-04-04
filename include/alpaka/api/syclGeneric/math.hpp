@@ -5,19 +5,20 @@
 
 #pragma once
 
-#include "alpaka/api/api.hpp"
-#include "alpaka/api/unifiedCudaHip/tag.hpp"
-#include "alpaka/core/Unreachable.hpp"
-#include "alpaka/core/common.hpp"
-#include "alpaka/core/decay.hpp"
+#include "alpaka/core/config.hpp"
 
-#include <cmath>
-#include <concepts>
+#if ALPAKA_LANG_SYCL
+
+#    include "alpaka/api/api.hpp"
+#    include "alpaka/api/syclGeneric/tag.hpp"
+#    include "alpaka/core/common.hpp"
+
+#    include <sycl/sycl.hpp>
+
+#    include <concepts>
 
 namespace alpaka::math::internal
 {
-#ifdef ALPAKA_LANG_SYCL
-
     template<std::floating_point T_Arg>
     struct Sin::Op<SyclMath, T_Arg>
     {
@@ -99,6 +100,6 @@ namespace alpaka::math::internal
             return static_cast<bool>(sycl::isnan(arg));
         }
     };
-#endif
-
 } // namespace alpaka::math::internal
+
+#endif

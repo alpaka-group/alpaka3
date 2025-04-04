@@ -8,9 +8,10 @@
 #include "alpaka/api/syclGeneric/Api.hpp"
 #include "alpaka/api/trait.hpp"
 #include "alpaka/concepts.hpp"
+#include "alpaka/core/Utility.hpp"
+#include "alpaka/mem/trait.hpp"
 #include "alpaka/onHost/trait.hpp"
 
-#include <memory>
 #include <string>
 
 namespace alpaka
@@ -28,7 +29,7 @@ namespace alpaka
         constexpr auto syclIntelCpu = SyclIntelCpu{};
     } // namespace api
 
-#ifdef ALPAKA_LANG_ONEAPI_CPU
+#if ALPAKA_LANG_ONEAPI_CPU
 
     namespace onHost::trait
     {
@@ -69,4 +70,16 @@ namespace alpaka
             }
         };
     } // namespace trait
+
+    namespace onAcc::internal::trait
+    {
+        template<typename T_Acc>
+        struct AutoIndexMapping::Op<T_Acc, api::SyclIntelCpu>
+        {
+            constexpr auto operator()(T_Acc const&, api::SyclIntelCpu) const
+            {
+                return layout::Contigious{};
+            }
+        };
+    } // namespace onAcc::internal::trait
 } // namespace alpaka

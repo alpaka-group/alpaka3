@@ -12,6 +12,7 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/mem/IdxRange.hpp"
 #include "alpaka/mem/ThreadSpace.hpp"
+#include "alpaka/mem/trait.hpp"
 #include "alpaka/onAcc/WorkGroup.hpp"
 #include "alpaka/onAcc/layout.hpp"
 #include "alpaka/onAcc/tag.hpp"
@@ -82,32 +83,6 @@ namespace alpaka::onAcc
 
     namespace internal
     {
-        struct AutoIndexMapping
-        {
-            template<typename T_Acc, typename T_Api>
-            struct Op
-            {
-                constexpr auto operator()(T_Acc const&, T_Api) const
-                {
-                    return layout::Strided{};
-                }
-            };
-        };
-
-        template<typename T_Acc>
-        struct AutoIndexMapping::Op<T_Acc, api::Cpu>
-        {
-            constexpr auto operator()(T_Acc const&, api::Cpu) const
-            {
-                return layout::Contigious{};
-            }
-        };
-
-        constexpr auto adjustMapping(auto const& acc, auto api)
-        {
-            return internal::AutoIndexMapping::Op<ALPAKA_TYPEOF(acc), ALPAKA_TYPEOF(api)>{}(acc, api);
-        }
-
         struct MakeIter
         {
             /* create iterator

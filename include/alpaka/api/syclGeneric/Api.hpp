@@ -5,7 +5,6 @@
 #pragma once
 
 #include "alpaka/concepts.hpp"
-#include "alpaka/onHost/trait.hpp"
 
 #include <memory>
 #include <string>

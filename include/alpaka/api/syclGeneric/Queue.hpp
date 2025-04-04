@@ -4,9 +4,16 @@
 
 #pragma once
 
-#ifdef ALPAKA_LANG_SYCL
+#include "alpaka/core/config.hpp"
 
-#    include "onAcc.hpp"
+#if ALPAKA_LANG_SYCL
+
+#    include "alpaka/api/syclGeneric/onAcc.hpp"
+#    include "alpaka/internal.hpp"
+#    include "alpaka/onAcc/Acc.hpp"
+#    include "alpaka/onHost.hpp"
+#    include "alpaka/onHost/concepts.hpp"
+#    include "alpaka/onHost/trait.hpp"
 
 #    include <sycl/sycl.hpp>
 
@@ -39,7 +46,7 @@ namespace alpaka::onHost
                 , m_queue(
                       m_device->getNativeHandle().second,
                       m_device->getNativeHandle().first,
-                      {sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order{}})
+                      {sycl::property::queue::in_order{}})
             {
             }
 

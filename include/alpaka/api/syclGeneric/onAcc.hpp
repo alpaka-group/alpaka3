@@ -4,9 +4,15 @@
 
 #pragma once
 
-#ifdef ALPAKA_LANG_SYCL
+#include "alpaka/core/config.hpp"
 
+#if ALPAKA_LANG_SYCL
+
+#    include "alpaka/Vec.hpp"
+#    include "alpaka/core/Assert.hpp"
 #    include "alpaka/core/Dict.hpp"
+#    include "alpaka/core/Vectorize.hpp"
+#    include "alpaka/tag.hpp"
 
 #    include <sycl/sycl.hpp>
 
