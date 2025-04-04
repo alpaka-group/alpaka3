@@ -116,7 +116,7 @@ jobs:
       - name: Install oneAPI
         if: matrix.config.compiler == 'icpx'
         run: |
-          echo "use icpx"
+          echo "test is adding -DCMAKE_CXX_FLAGS='-fsycl -fsycl-targets=spir64_x86_64' to speedup execution"
 
       # Configure CMake with the selected compiler and options
       - name: Configure CMake
@@ -132,7 +132,7 @@ jobs:
           cmake -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
                 ${alpaka_cmake_flags} -Dalpaka_DEP_OMP=ON \
-                ${{ matrix.config.compiler == 'icpx' && '-DCMAKE_CXX_COMPILER=icpx -Dalpaka_DEP_ONEAPI_CPU=ON -Dalpaka_EXEC_CpuSerial=OFF -Dalpaka_DEP_OMP=OFF' || '' }} \
+                ${{ matrix.config.compiler == 'icpx' && '-DCMAKE_CXX_COMPILER=icpx -DCMAKE_CXX_FLAGS="-fsycl -fsycl-targets=spir64_x86_64" -Dalpaka_DEP_ONEAPI_CPU=ON -Dalpaka_EXEC_CpuSerial=OFF -Dalpaka_DEP_OMP=OFF' || '' }} \
                 ${{ matrix.config.cuda != 'no' && '-Dalpaka_DEP_CUDA=ON' || '' }} \
                 ${{ matrix.config.hip != 'no' && '-DCMAKE_CXX_COMPILER=clang++ -Dalpaka_DEP_HIP=ON -Dalpaka_DEP_OMP=OFF \
                    -DCMAKE_HIP_ARCHITECTURES=gfx906 -DAMDGPU_TARGETS=gfx906' || '' }} ..

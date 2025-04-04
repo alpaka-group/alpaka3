@@ -79,7 +79,8 @@ spack load intel-oneapi-compilers@2025.0.4
 spack load intel-oneapi-dpl@2022.2.0
 
 # for Intel GPU use -Dalpaka_DEP_ONEAPI_GPU=ON 
-cmake ../alpaka -DCMAKE_CXX_COMPILER=icpx -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_DEP_ONEAPI_CPU=ON -Dalpaka_DEP_OMP=OFF -Dalpaka_EXEC_CpuSerial=OFF
+# for GPU remove -DCMAKE_CXX_FLAGS='-fsycl -fsycl-targets=spir64_x86_64'
+cmake ../alpaka -DCMAKE_CXX_COMPILER=icpx -DCMAKE_CXX_FLAGS='-fsycl -fsycl-targets=spir64_x86_64' -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_DEP_ONEAPI_CPU=ON -Dalpaka_DEP_OMP=OFF -Dalpaka_EXEC_CpuSerial=OFF
 make -j
 ctest --output-on-failure
 ```
