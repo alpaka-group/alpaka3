@@ -43,6 +43,7 @@ jobs:
           - { compiler: clang, version: "17", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: clang, version: "18", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: clang, version: "19", cuda: "no", hip: "no", container: "ubuntu:24.04" }
+          - { compiler: clang, version: "20", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: nvcc, version: "", cuda: "12.5", hip: "no", container: "nvidia/cuda:12.5.1-devel-ubuntu24.04" }
           - { compiler: nvcc, version: "", cuda: "12.6", hip: "no", container: "nvidia/cuda:12.6.3-devel-ubuntu24.04" }
           - { compiler: nvcc, version: "", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.0-devel-ubuntu24.04" }
@@ -79,6 +80,10 @@ jobs:
       - name: Install Clang
         if: matrix.config.compiler == 'clang' && matrix.config.hip == 'no'
         run: |
+          apt update
+          apt install -y software-properties-common wget gnupg2
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+          add-apt-repository -y "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-20 main"
           apt-get update
           apt-get install -y clang-${{ matrix.config.version }}
           update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${{ matrix.config.version }} 100 \
