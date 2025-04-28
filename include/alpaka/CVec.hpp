@@ -73,6 +73,22 @@ namespace alpaka
                 return ((value == T_values) || ...);
             }
         };
+
+        /* this specialization is required for clang20 but in principle the specialization above should cover it
+         * compile error: CVec.hpp:92:51: error: implicit instantiation of undefined template
+         * 'alpaka::detail::Contains<std::integer_sequence<unsigned int, 0>>' 92 |         return
+         * integerSequenceToCVec(filterValues(Contains<ALPAKA_TYPEOF(rightSeq)>{}, toIntegerSequence(left)));
+         */
+        template<typename T, T... T_values>
+        struct Contains<std::integer_sequence<T, T_values...>>
+        {
+            using argument_type = T;
+
+            constexpr bool operator()(T value) const
+            {
+                return ((value == T_values) || ...);
+            }
+        };
     } // namespace detail
 
     template<typename T, uint32_t T_dim>
@@ -89,7 +105,8 @@ namespace alpaka
         using namespace detail;
         constexpr auto rightSeq = toIntegerSequence(right);
 
-        return integerSequenceToCVec(filterValues(Contains<ALPAKA_TYPEOF(rightSeq)>{}, toIntegerSequence(left)));
+        return integerSequenceToCVec(
+            filterValues(detail::Contains<ALPAKA_TYPEOF(rightSeq)>{}, toIntegerSequence(left)));
     }
 
     constexpr auto rightJoin(concepts::CVector auto left, concepts::CVector auto right)
@@ -97,7 +114,8 @@ namespace alpaka
         using namespace detail;
         constexpr auto leftSeq = toIntegerSequence(left);
 
-        return integerSequenceToCVec(filterValues(Contains<ALPAKA_TYPEOF(leftSeq)>{}, toIntegerSequence(right)));
+        return integerSequenceToCVec(
+            filterValues(detail::Contains<ALPAKA_TYPEOF(leftSeq)>{}, toIntegerSequence(right)));
     }
 
     constexpr auto innerJoin(concepts::CVector auto left, concepts::CVector auto right)
@@ -106,7 +124,7 @@ namespace alpaka
         constexpr auto leftSeq = toIntegerSequence(left);
 
         return integerSequenceToCVec(
-            filterValues(std::not_fn(Contains<ALPAKA_TYPEOF(leftSeq)>{}), toIntegerSequence(right)));
+            filterValues(std::not_fn(detail::Contains<ALPAKA_TYPEOF(leftSeq)>{}), toIntegerSequence(right)));
     }
 
 } // namespace alpaka
