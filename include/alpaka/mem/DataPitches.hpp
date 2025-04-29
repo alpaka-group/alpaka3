@@ -53,8 +53,8 @@ namespace alpaka
         decltype(std::declval<T_Pitches>().eraseBack()) m_pitch;
     };
 
-    template<typename T_Type, typename T_IndexType>
-    struct DataPitches<T_Type, Vec<T_IndexType, 1u>>
+    template<typename T_Type, typename T_IndexType, typename T_Storage>
+    struct DataPitches<T_Type, Vec<T_IndexType, 1u, T_Storage>>
     {
         using value_type = T_Type;
         using index_type = T_IndexType;
