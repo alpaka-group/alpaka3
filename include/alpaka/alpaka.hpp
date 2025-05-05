@@ -34,6 +34,7 @@
 #include "alpaka/onHost/DeviceSelector.hpp"
 #include "alpaka/onHost/Queue.hpp"
 #include "alpaka/onHost/mem/stdContainer.hpp"
+#include "alpaka/rand/BoxMullerConverter.hpp"
 #include "alpaka/rand/RandPhilox.hpp"
 #include "alpaka/rand/Traits.hpp"
 #include "alpaka/tag.hpp"

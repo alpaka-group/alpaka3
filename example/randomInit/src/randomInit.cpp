@@ -2,6 +2,8 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
+#include "randomInitNormal.hpp"
+
 #include <alpaka/alpaka.hpp>
 #include <alpaka/example/executeForEach.hpp>
 #include <alpaka/example/executors.hpp>
@@ -185,6 +187,7 @@ bool testRandomInitKernels(
     const uint32_t size = numElements;
     const uint32_t numBins = numberOfBins;
 
+    std::cout << "\nTesting uniform distributions with " << size << " elements.\n";
     // Allocate input and output host buffers in pinned memory accessible by the Platform devices
     auto outBins_h = alpaka::onHost::alloc<int>(host, numBins);
 
@@ -307,7 +310,7 @@ bool testRandomInitKernels(
     return isValid;
 }
 
-int example(auto const cfg, size_t numElements)
+int exampleUniformDist(auto const cfg, size_t numElements)
 {
     using namespace alpaka;
 
@@ -329,8 +332,6 @@ int example(auto const cfg, size_t numElements)
     }
 
     auto deviceSelector = alpaka::onHost::makeDeviceSelector(deviceSpec);
-
-
     // Use the first device
     alpaka::onHost::Device device = deviceSelector.makeDevice(0);
     std::cout << "Device: " << alpaka::onHost::getName(device) << "\n";
@@ -397,6 +398,10 @@ auto main(int argc, char* argv[]) -> int
     using namespace alpaka;
     // Execute the example once for each enabled API and executor.
     return executeForEachIfHasDevice(
-        [=](auto const& tag) { return example(tag, numElements); },
+        [=](auto const& tag)
+        {
+            auto retVal = exampleUniformDist(tag, numElements) || exampleNormalDist(tag, numElementsNormal);
+            return retVal;
+        },
         onHost::allBackends(onHost::enabledApis));
 }
