@@ -11,6 +11,7 @@
 #include "alpaka/onAcc/atomicOp.hpp"
 #include "alpaka/onAcc/internal.hpp"
 
+#include <algorithm>
 #include <type_traits>
 
 namespace alpaka::onAcc
@@ -181,4 +182,26 @@ namespace alpaka::onAcc
     {
         return atomicOp<AtomicCas>(acc, addr, compare, value, hier);
     }
+
+
+    template<typename Functor>
+    struct FunctorToAtomicTag;
+
+    template<>
+    struct FunctorToAtomicTag<std::plus<>>
+    {
+        using type = alpaka::onAcc::AtomicAdd;
+    };
+
+    template<>
+    struct FunctorToAtomicTag<std::minus<>>
+    {
+        using type = alpaka::onAcc::AtomicSub;
+    };
+
+    // Add more functors as needed
+
+    template<typename TStdFunctor>
+    using AtomicFnTag = typename FunctorToAtomicTag<std::decay_t<TStdFunctor>>::type;
+
 } // namespace alpaka::onAcc
