@@ -20,12 +20,12 @@ namespace alpaka::onHost
     namespace internal
     {
 
-        template<>
-        struct MakePlatform::Op<api::Hip>
+        template<deviceKind::concepts::DeviceKind T_DeviceKind>
+        struct MakePlatform::Op<api::Hip, T_DeviceKind>
         {
-            auto operator()(api::Hip const&) const
+            auto operator()(api::Hip, T_DeviceKind) const
             {
-                return onHost::make_sharedSingleton<unifiedCudaHip::Platform<ApiHipRt>>();
+                return onHost::make_sharedSingleton<unifiedCudaHip::Platform<ApiHipRt, T_DeviceKind>>();
             }
         };
     } // namespace internal
@@ -33,12 +33,21 @@ namespace alpaka::onHost
 
 namespace alpaka::internal
 {
-    template<>
-    struct GetApi::Op<onHost::unifiedCudaHip::Platform<ApiHipRt>>
+    template<deviceKind::concepts::DeviceKind T_DeviceKind>
+    struct GetApi::Op<onHost::unifiedCudaHip::Platform<ApiHipRt, T_DeviceKind>>
     {
         inline constexpr auto operator()(auto&& platform) const
         {
             return api::Hip{};
+        }
+    };
+
+    template<deviceKind::concepts::DeviceKind T_DeviceKind>
+    struct GetDeviceType::Op<onHost::unifiedCudaHip::Platform<ApiHipRt, T_DeviceKind>>
+    {
+        decltype(auto) operator()(auto&& platform) const
+        {
+            return T_DeviceKind{};
         }
     };
 } // namespace alpaka::internal

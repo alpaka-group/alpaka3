@@ -35,12 +35,14 @@ namespace alpaka::onAcc::internal
             auto numElements = typename ALPAKA_TYPEOF(extents)::UniVec{extents};
             using ValueType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data0)>;
 
-            constexpr uint32_t maxArchSimdWidth = getArchSimdWidth<ValueType>(thisApi());
-            constexpr uint32_t cachlineBytes = getCachelineSize(thisApi());
+            constexpr uint32_t maxArchSimdWidth
+                = getArchSimdWidth<ValueType>(ALPAKA_TYPEOF(acc.getApi()){}, ALPAKA_TYPEOF(acc.getDeviceKind()){});
+            constexpr uint32_t cachelineBytes
+                = getCachelineSize(ALPAKA_TYPEOF(acc.getApi()){}, ALPAKA_TYPEOF(acc.getDeviceKind()){});
 
             constexpr uint32_t width = std::min(
                 maxArchSimdWidth,
-                T_Parent::template calcSimdWidth<ValueType, T_maxConcurrencyInByte, cachlineBytes>());
+                T_Parent::template calcSimdWidth<ValueType, T_maxConcurrencyInByte, cachelineBytes>());
 
             if constexpr(width != 1u)
             {
@@ -128,9 +130,10 @@ namespace alpaka::onAcc::internal
             constexpr uint32_t numSimdPacksToUtilizeConcurrency
                 = alpaka::divExZero(T_maxConcurrencyInByte, simdWidthInByte);
 
-            constexpr uint32_t cachlineBytes = getCachelineSize(thisApi());
+            constexpr uint32_t cachelineBytes
+                = getCachelineSize(ALPAKA_TYPEOF(acc.getApi()){}, ALPAKA_TYPEOF(acc.getDeviceKind()){});
             // number of simd packs fitting into the cacheline
-            constexpr uint32_t numSimdPacksPerCacheLine = std::max(cachlineBytes / simdWidthInByte, 1u);
+            constexpr uint32_t numSimdPacksPerCacheLine = std::max(cachelineBytes / simdWidthInByte, 1u);
             /* number of simd packs used per functor call
              * - the number of simd packs per functor call should be a multiple of the number of simd packs per
              * cacheline

@@ -11,17 +11,9 @@
 
 namespace alpaka::onHost::trait
 {
-#if ALPAKA_LANG_ONEAPI_CPU
+#if ALPAKA_LANG_ONEAPI
     template<typename T_Platform>
-    struct IsMappingSupportedBy::Op<alpaka::exec::CpuIntelSycl, alpaka::onHost::syclGeneric::Device<T_Platform>>
-        : std::true_type
-    {
-    };
-#endif
-
-#if ALPAKA_LANG_ONEAPI_GPU
-    template<typename T_Platform>
-    struct IsMappingSupportedBy::Op<alpaka::exec::GpuIntelSycl, alpaka::onHost::syclGeneric::Device<T_Platform>>
+    struct IsMappingSupportedBy::Op<alpaka::exec::OneApi, alpaka::onHost::syclGeneric::Device<T_Platform>>
         : std::true_type
     {
     };

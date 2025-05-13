@@ -14,11 +14,11 @@ using namespace alpaka::onHost;
 
 TEST_CASE("cpu api creation", "")
 {
-    Platform platform = makePlatform(api::cpu);
-    CHECK(platform.getDeviceCount() == 1u);
+    auto hostSelector = onHost::makeDeviceSelector(api::cpu, deviceKind::cpu);
+    CHECK(hostSelector.getDeviceCount() == 1u);
 
-    Device device = platform.makeDevice(0);
-    Device device2 = platform.makeDevice(0);
+    Device device = hostSelector.makeDevice(0);
+    Device device2 = hostSelector.makeDevice(0);
     std::cout << device.getName() << " == " << device2.getName() << std::endl;
     // api::cpu has only one device therefore the device must be equal
     CHECK(device.getNativeHandle() == device2.getNativeHandle());
@@ -26,20 +26,20 @@ TEST_CASE("cpu api creation", "")
 
 TEST_CASE("api creation", "")
 {
-    executeForEach(
-        [](auto api)
+    executeForEachIfHasDevice(
+        [](auto deviceSpec)
         {
-            Platform platform = makePlatform(api);
-            auto numDevices = platform.getDeviceCount();
+            auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+            auto numDevices = devSelector.getDeviceCount();
             for(uint32_t i = 0; i < numDevices; ++i)
             {
-                Device device = platform.makeDevice(i);
-                std::cout << "api=" << platform.getName() << "device=" << device.getName() << std::endl;
+                Device device = devSelector.makeDevice(i);
+                std::cout << "api=" << deviceSpec.getApi().getName() << "device=" << device.getName() << std::endl;
             }
 
             return 0;
         },
-        enabledApis);
+        getDeviceSpecsFor(enabledApis));
 }
 #if 0
 using MyTypes = std::decay_t<decltype(enabledApis)>;

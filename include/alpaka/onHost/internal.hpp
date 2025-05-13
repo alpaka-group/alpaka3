@@ -10,6 +10,7 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/onHost/DeviceProperties.hpp"
 #include "alpaka/onHost/Handle.hpp"
+#include "alpaka/tag.hpp"
 
 namespace alpaka::onHost
 {
@@ -17,16 +18,16 @@ namespace alpaka::onHost
     {
         struct MakePlatform
         {
-            template<typename T_Api>
+            template<typename T_Api, deviceKind::concepts::DeviceKind T_DeviceKind>
             struct Op
             {
-                auto operator()(T_Api&& api) const;
+                auto operator()(T_Api api, T_DeviceKind deviceType) const;
             };
         };
 
-        static auto makePlatform(auto&& api)
+        static auto makePlatform(auto api, deviceKind::concepts::DeviceKind auto deviceType)
         {
-            return MakePlatform::Op<std::decay_t<decltype(api)>>{}(api);
+            return MakePlatform::Op<ALPAKA_TYPEOF(api), ALPAKA_TYPEOF(deviceType)>{}(api, deviceType);
         }
 
         struct GetDeviceCount
@@ -222,11 +223,16 @@ namespace alpaka::onHost
             template<typename T_Any>
             struct Op
             {
-                DeviceProperties operator()(auto const& platform, uint32_t) const;
+                DeviceProperties operator()(auto const& platform, uint32_t idx) const;
 
                 DeviceProperties operator()(auto const& device) const;
             };
         };
+
+        inline DeviceProperties getDeviceProperties(auto const& platform, uint32_t idx)
+        {
+            return GetDeviceProperties::Op<ALPAKA_TYPEOF(platform)>{}(platform, idx);
+        }
 
         struct GetExtents
         {

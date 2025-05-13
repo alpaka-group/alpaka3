@@ -11,19 +11,19 @@ namespace alpaka
 {
     namespace exec
     {
-        struct GpuIntelSycl
+        struct OneApi
         {
         };
 
-        constexpr GpuIntelSycl gpuIntelSycl{};
+        constexpr OneApi oneApi{};
     } // namespace exec
 
     namespace onAcc::trait
     {
         template<>
-        struct GetAtomicImpl::Op<alpaka::exec::GpuIntelSycl>
+        struct GetAtomicImpl::Op<alpaka::exec::OneApi>
         {
-            constexpr decltype(auto) operator()(alpaka::exec::GpuIntelSycl const) const
+            constexpr decltype(auto) operator()(alpaka::exec::OneApi const) const
             {
                 return alpaka::onAcc::internal::syclAtomic;
             }

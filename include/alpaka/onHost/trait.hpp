@@ -40,6 +40,14 @@ namespace alpaka::onHost
         {
         };
 
+        struct IsDeviceSupportedBy
+        {
+            template<deviceKind::concepts::DeviceKind T_DeviceKind, typename T_Api>
+            struct Op : std::false_type
+            {
+            };
+        };
+
         template<typename T_Kernel, typename T_Spec>
         struct BlockDynSharedMemBytes
         {
@@ -127,6 +135,16 @@ namespace alpaka::onHost
             [&](auto executor) constexpr
             { return trait::IsMappingSupportedBy::Op<ALPAKA_TYPEOF(executor), ALPAKA_TYPEOF(deviceHandle)>::value; },
             exec::availableMappings);
+    }
+
+    constexpr auto supportedDevices(auto const api)
+    {
+        return meta::filter(
+            // we can not use isExecutorSupportedBy() because gcc14 is more strict in the detection which functions can
+            // be evaluated at compile time
+            [&](auto devTag) constexpr
+            { return trait::IsDeviceSupportedBy::Op<ALPAKA_TYPEOF(devTag), ALPAKA_TYPEOF(api)>::value; },
+            deviceKind::allDevices);
     }
 
     template<typename T_Executor, typename T_Spec, typename T_KernelBundle>

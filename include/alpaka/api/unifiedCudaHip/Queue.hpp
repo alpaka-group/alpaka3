@@ -104,6 +104,13 @@ namespace alpaka::onHost
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(ApiInterface, ApiInterface::streamSynchronize(getNativeHandle()));
             }
 
+            friend struct alpaka::internal::GetDeviceType;
+
+            auto getDeviceKind() const
+            {
+                return alpaka::internal::getDeviceKind(*m_device.get());
+            }
+
             friend struct alpaka::internal::GetApi;
             friend struct onHost::internal::Memcpy;
             friend struct onHost::internal::Memset;
@@ -112,6 +119,7 @@ namespace alpaka::onHost
 
         template<
             typename T_Api,
+            deviceKind::concepts::DeviceKind T_DeviceKind,
             typename T_Executor,
             typename T_NumBlocksType,
             typename T_NumThreadsType,
@@ -131,6 +139,7 @@ namespace alpaka::onHost
                     DictEntry(frame::extent, frameExtent),
                     DictEntry(action::sync, onAcc::unifiedCudaHip::Sync{}),
                     DictEntry(object::api, T_Api{}),
+                    DictEntry(object::deviceKind, T_DeviceKind{}),
                     DictEntry(object::exec, T_Executor{})},
             };
             kernelBundle(acc);
@@ -138,6 +147,7 @@ namespace alpaka::onHost
 
         template<
             typename T_Api,
+            deviceKind::concepts::DeviceKind T_DeviceKind,
             typename T_Executor,
             typename T_NumBlocksType,
             typename T_NumThreadsType,
@@ -150,6 +160,7 @@ namespace alpaka::onHost
                     DictEntry(layer::thread, onAcc::unifiedCudaHip::ThreadLayer<T_NumThreadsType>{}),
                     DictEntry(action::sync, onAcc::unifiedCudaHip::Sync{}),
                     DictEntry(object::api, T_Api{}),
+                    DictEntry(object::deviceKind, T_DeviceKind{}),
                     DictEntry(object::exec, T_Executor{})},
             };
             kernelBundle(acc);
@@ -192,6 +203,7 @@ namespace alpaka::onHost
 
                 auto kernelName = gpuKernel<
                     ALPAKA_TYPEOF(onHost::getApi(queue)),
+                    ALPAKA_TYPEOF(onHost::getDeviceKind(queue)),
                     T_Executor,
                     T_NumBlocks,
                     T_NumThreads,

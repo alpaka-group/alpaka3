@@ -49,6 +49,11 @@ namespace alpaka
         struct IsPlatformAvailable::Op<api::Cuda> : std::true_type
         {
         };
+
+        template<>
+        struct IsDeviceSupportedBy::Op<deviceKind::NvidiaGpu, api::Cuda> : std::true_type
+        {
+        };
 #endif
     } // namespace onHost::trait
 
@@ -63,9 +68,9 @@ namespace alpaka
     namespace trait
     {
         template<typename T_Type>
-        struct GetArchSimdWidth::Op<T_Type, api::Cuda>
+        struct GetArchSimdWidth::Op<T_Type, api::Cuda, deviceKind::NvidiaGpu>
         {
-            constexpr uint32_t operator()(api::Cuda const) const
+            constexpr uint32_t operator()(api::Cuda const, deviceKind::NvidiaGpu const) const
             {
                 /** vector load and store width in bytes */
                 constexpr size_t simdWidthInByte = 16u;
@@ -74,9 +79,9 @@ namespace alpaka
         };
 
         template<>
-        struct GetNumPipelines::Op<api::Cuda>
+        struct GetNumPipelines::Op<api::Cuda, deviceKind::NvidiaGpu>
         {
-            constexpr uint32_t operator()(api::Cuda const) const
+            constexpr uint32_t operator()(api::Cuda const, deviceKind::NvidiaGpu const) const
             {
                 /* NVIDIA GPUs have two scheduler what we interpreted as pipelines. */
                 constexpr uint32_t numPipes = 2u;
@@ -85,9 +90,9 @@ namespace alpaka
         };
 
         template<>
-        struct GetCachelineSize::Op<api::Cuda>
+        struct GetCachelineSize::Op<api::Cuda, deviceKind::NvidiaGpu>
         {
-            constexpr uint32_t operator()(api::Cuda const) const
+            constexpr uint32_t operator()(api::Cuda const, deviceKind::NvidiaGpu const) const
             {
                 // loading 16 byte per thread will result in optimal memory bandwith
                 return 16u;

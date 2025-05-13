@@ -322,7 +322,13 @@ namespace alpaka::onAcc
         };
     } // namespace syclGeneric
 
-    template<typename T_Executor, typename T_Api, typename T_NumBlocks, typename T_NumThreads, auto TDim>
+    template<
+        typename T_Executor,
+        typename T_Api,
+        deviceKind::concepts::DeviceKind T_DeviceKind,
+        typename T_NumBlocks,
+        typename T_NumThreads,
+        auto TDim>
     auto makeSyclGenericAccDict(
         sycl::nd_item<TDim> const& work_item,
         onAcc::syclGeneric::StaticSharedMemory& static_shared_memory,
@@ -338,6 +344,7 @@ namespace alpaka::onAcc
             DictEntry(object::dynSharedMemBytes, dynamic_shared_memory.byte_size()),
             DictEntry(action::sync, onAcc::syclGeneric::Sync{work_item}),
             DictEntry(object::api, T_Api{}),
+            DictEntry(object::deviceKind, T_DeviceKind{}),
             DictEntry(object::exec, T_Executor{})};
     };
 

@@ -12,12 +12,9 @@
 
 int main()
 {
-    // the cpu api always has a single device
-    alpaka::onHost::Platform host_platform = alpaka::onHost::makePlatform(alpaka::api::cpu);
-    alpaka::onHost::Device host = host_platform.makeDevice(0);
+    alpaka::onHost::Device host = alpaka::onHost::makeHostDevice();
 
-    std::cout << "Host platform: " << alpaka::onHost::getName(host_platform) << '\n';
-    std::cout << "Found 1 device:\n";
+    std::cout << "Use host device:\n";
     std::cout << "  - " << alpaka::onHost::getName(host) << "\n\n";
 
     // create a blocking host queue and submit some work to it

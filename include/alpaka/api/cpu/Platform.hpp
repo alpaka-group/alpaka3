@@ -19,7 +19,8 @@ namespace alpaka::onHost
 {
     namespace cpu
     {
-        struct Platform : std::enable_shared_from_this<Platform>
+        template<deviceKind::concepts::DeviceKind T_DeviceKind>
+        struct Platform : std::enable_shared_from_this<Platform<T_DeviceKind>>
         {
         public:
             Platform() = default;
@@ -37,7 +38,7 @@ namespace alpaka::onHost
 
             std::shared_ptr<Platform> getSharedPtr()
             {
-                return shared_from_this();
+                return this->shared_from_this();
             }
 
             friend struct alpaka::internal::GetName;
@@ -51,7 +52,11 @@ namespace alpaka::onHost
 
             uint32_t getDeviceCount() const
             {
-                return 1u;
+                constexpr bool isSupportedDev = trait::IsDeviceSupportedBy::Op<T_DeviceKind, api::Cpu>::value;
+                if constexpr(isSupportedDev)
+                    return 1;
+
+                return 0;
             }
 
             friend struct internal::MakeDevice;
@@ -62,8 +67,9 @@ namespace alpaka::onHost
                 if(idx >= numDevices)
                 {
                     std::stringstream ssErr;
-                    ssErr << "Unable to return device handle for CPU device with index " << idx
-                          << " because there are only " << numDevices << " devices!";
+                    ssErr << "Unable to return device handle with index " << idx << " because there are only "
+                          << numDevices << " devices of type '" << alpaka::onHost::getStaticName(T_DeviceKind{})
+                          << "' !";
                     throw std::runtime_error(ssErr.str());
                 }
                 if(auto sharedPtr = device.lock())
@@ -77,24 +83,31 @@ namespace alpaka::onHost
             }
 
             friend struct internal::GetDeviceProperties;
+
+            friend struct alpaka::internal::GetDeviceType;
+
+            T_DeviceKind getDeviceKind() const
+            {
+                return T_DeviceKind{};
+            }
         };
     } // namespace cpu
 
     namespace internal
     {
-        template<>
-        struct MakePlatform::Op<api::Cpu>
+        template<deviceKind::concepts::DeviceKind T_DeviceKind>
+        struct MakePlatform::Op<api::Cpu, T_DeviceKind>
         {
-            auto operator()(auto&&) const
+            auto operator()(api::Cpu, T_DeviceKind) const
             {
-                return make_sharedSingleton<cpu::Platform>();
+                return make_sharedSingleton<cpu::Platform<T_DeviceKind>>();
             }
         };
 
-        template<>
-        struct GetDeviceProperties::Op<cpu::Platform>
+        template<deviceKind::concepts::DeviceKind T_DeviceKind>
+        struct GetDeviceProperties::Op<cpu::Platform<T_DeviceKind>>
         {
-            DeviceProperties operator()(cpu::Platform const& platform, uint32_t deviceIdx) const
+            DeviceProperties operator()(cpu::Platform<T_DeviceKind> const& platform, uint32_t deviceIdx) const
             {
                 auto prop = DeviceProperties{};
                 prop.m_name = getCpuName();
@@ -110,8 +123,8 @@ namespace alpaka::onHost
 
 namespace alpaka::internal
 {
-    template<>
-    struct GetApi::Op<onHost::cpu::Platform>
+    template<deviceKind::concepts::DeviceKind T_DeviceKind>
+    struct GetApi::Op<onHost::cpu::Platform<T_DeviceKind>>
     {
         inline constexpr auto operator()(auto&& platform) const
         {

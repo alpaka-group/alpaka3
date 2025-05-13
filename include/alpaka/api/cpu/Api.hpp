@@ -46,33 +46,39 @@ namespace alpaka
         struct IsPlatformAvailable::Op<api::Cpu> : std::true_type
         {
         };
+
+        template<>
+        struct IsDeviceSupportedBy::Op<deviceKind::Cpu, api::Cpu> : std::true_type
+        {
+        };
+
     } // namespace onHost::trait
 
     namespace trait
     {
 
         template<typename T_Type>
-        struct GetArchSimdWidth::Op<T_Type, api::Cpu>
+        struct GetArchSimdWidth::Op<T_Type, api::Cpu, deviceKind::Cpu>
         {
-            constexpr uint32_t operator()(api::Cpu const) const
+            constexpr uint32_t operator()(api::Cpu const, deviceKind::Cpu const) const
             {
                 return alpaka::onHost::internal::getCPUSimdWidth<T_Type>();
             }
         };
 
         template<>
-        struct GetNumPipelines::Op<api::Cpu>
+        struct GetNumPipelines::Op<api::Cpu, deviceKind::Cpu>
         {
-            constexpr uint32_t operator()(api::Cpu const) const
+            constexpr uint32_t operator()(api::Cpu const, deviceKind::Cpu const) const
             {
                 return alpaka::onHost::internal::getCPUNumPipelines();
             }
         };
 
         template<>
-        struct GetCachelineSize::Op<api::Cpu>
+        struct GetCachelineSize::Op<api::Cpu, deviceKind::Cpu>
         {
-            constexpr uint32_t operator()(api::Cpu const) const
+            constexpr uint32_t operator()(api::Cpu const, deviceKind::Cpu const) const
             {
                 return alpaka::onHost::internal::getCPUCachelineSize();
             }
@@ -83,9 +89,9 @@ namespace alpaka
     namespace onAcc::internal::trait
     {
         template<typename T_Acc>
-        struct AutoIndexMapping::Op<T_Acc, api::Cpu>
+        struct AutoIndexMapping::Op<T_Acc, api::Cpu, deviceKind::Cpu>
         {
-            constexpr auto operator()(T_Acc const&, api::Cpu) const
+            constexpr auto operator()(T_Acc const&, api::Cpu, deviceKind::Cpu) const
             {
                 return layout::Contigious{};
             }

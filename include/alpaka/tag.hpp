@@ -9,6 +9,7 @@
 #include "alpaka/core/util.hpp"
 
 #include <cassert>
+#include <string>
 #include <tuple>
 
 namespace alpaka
@@ -21,10 +22,88 @@ namespace alpaka
 
         constexpr Api api;
 
+        struct DeviceKind
+        {
+        };
+
+        constexpr DeviceKind deviceKind;
+
         ALPAKA_TAG(exec);
+
+        ALPAKA_TAG(deviceSpec);
 
         ALPAKA_TAG(dynSharedMemBytes);
     } // namespace object
+
+    namespace deviceKind
+    {
+        namespace detail
+        {
+            struct DeviceKindBase
+            {
+            };
+        } // namespace detail
+
+        namespace trait
+        {
+            template<typename T_DeviceKind>
+            struct IsDeviceKind : std::is_base_of<detail::DeviceKindBase, T_DeviceKind>
+            {
+            };
+        } // namespace trait
+
+        template<typename T_DeviceKind>
+        constexpr bool isDeviceKind_v = trait::IsDeviceKind<T_DeviceKind>::value;
+
+        namespace concepts
+        {
+            template<typename T_DeviceKind>
+            concept DeviceKind = isDeviceKind_v<T_DeviceKind>;
+        } // namespace concepts
+
+        struct Cpu : detail::DeviceKindBase
+        {
+            static std::string getName()
+            {
+                return "Cpu";
+            }
+        };
+
+        constexpr auto cpu = Cpu{};
+
+        struct AmdGpu : detail::DeviceKindBase
+        {
+            static std::string getName()
+            {
+                return "AmdGpu";
+            }
+        };
+
+        constexpr auto amdGpu = AmdGpu{};
+
+        struct NvidiaGpu : detail::DeviceKindBase
+        {
+            static std::string getName()
+            {
+                return "NvidiaGpu";
+            }
+        };
+
+        constexpr auto nvidiaGpu = NvidiaGpu{};
+
+        struct IntelGpu : detail::DeviceKindBase
+        {
+            static std::string getName()
+            {
+                return "IntelGpu";
+            }
+        };
+
+        constexpr auto intelGpu = IntelGpu{};
+
+        constexpr auto allDevices = std::make_tuple(cpu, amdGpu, nvidiaGpu, intelGpu);
+
+    } // namespace deviceKind
 
     namespace layer
     {

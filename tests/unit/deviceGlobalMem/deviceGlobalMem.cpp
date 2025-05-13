@@ -1,7 +1,7 @@
 /* Copyright 2024 René Widera
  * SPDX-License-Identifier: MPL-2.0
  */
-#if !(defined(__ALPAKA_INTEL_ONEAPI_CPU__) || defined(__ALPAKA_INTEL_ONEAPI_GPU__))
+#if ALPAKA_LANG_SYCL != 0
 #    include <alpaka/alpaka.hpp>
 #    include <alpaka/example/executeForEach.hpp>
 #    include <alpaka/example/executors.hpp>
@@ -14,7 +14,7 @@
 using namespace alpaka;
 using namespace alpaka::onHost;
 
-using TestApis = std::decay_t<decltype(allExecutorsAndApis(enabledApis))>;
+using TestApis = std::decay_t<decltype(allBackends(enabledApis))>;
 
 
 ALPAKA_DEVICE_GLOBAL(const, (alpaka::Vec<uint32_t, 2u>), initialised_vector, 42u, 43u);
@@ -73,15 +73,15 @@ struct DeviceGlobalMemKernelCArray2D
 TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
 {
     auto cfg = TestType::makeDict();
-    auto api = cfg[object::api];
+    auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
-    std::cout << api.getName() << std::endl;
+    std::cout << deviceSpec.getApi().getName() << std::endl;
 
-    Platform platform = makePlatform(api);
-    Device device = platform.makeDevice(0);
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    onHost::Device device = devSelector.makeDevice(0);
 
-    std::cout << getName(platform) << " " << device.getName() << std::endl;
+    std::cout << device.getName() << std::endl;
 
     Queue queue = device.makeQueue();
     constexpr Vec numBlocks = Vec{1u};
@@ -90,8 +90,7 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
     std::cout << "block shared iota exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<uint32_t>(device, dataExtent);
 
-    Platform cpuPlatform = makePlatform(api::cpu);
-    Device cpuDevice = cpuPlatform.makeDevice(0);
+    Device cpuDevice = makeHostDevice();
     auto hBuff = onHost::allocMirror(cpuDevice, dBuff);
     wait(queue);
     {

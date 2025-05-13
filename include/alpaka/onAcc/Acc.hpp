@@ -71,6 +71,16 @@ namespace alpaka::onAcc
             constexpr auto idx = Idx<ALPAKA_TYPEOF(key), std::decay_t<T_Storage>>::value;
             return idx != -1;
         }
+
+        constexpr auto getApi() const
+        {
+            return T_Storage::operator[](object::api);
+        }
+
+        constexpr auto getDeviceKind() const
+        {
+            return T_Storage::operator[](object::deviceKind);
+        }
     };
 
 } // namespace alpaka::onAcc

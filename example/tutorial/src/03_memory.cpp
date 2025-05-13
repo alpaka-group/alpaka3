@@ -10,13 +10,13 @@
 #include <iostream>
 #include <vector>
 
-int example(auto const deviceApi)
+int example(auto const devSpec)
 {
     // initialise the accelerator platform
-    alpaka::onHost::Platform platform = alpaka::onHost::makePlatform(deviceApi);
+    auto devSelector = alpaka::onHost::makeDeviceSelector(devSpec);
 
     // require at least one device
-    std::size_t n = alpaka::onHost::getDeviceCount(platform);
+    std::size_t n = devSelector.getDeviceCount();
 
     if(n == 0)
     {
@@ -24,11 +24,9 @@ int example(auto const deviceApi)
     }
 
     // use the single host device
-    alpaka::onHost::Platform host_platform = alpaka::onHost::makePlatform(alpaka::api::cpu);
-    alpaka::onHost::Device host = host_platform.makeDevice(0);
+    alpaka::onHost::Device host = alpaka::onHost::makeHostDevice();
 
-    std::cout << "Host platform: " << alpaka::onHost::getName(host_platform) << '\n';
-    std::cout << "Found 1 device:\n";
+    std::cout << "Use host device:\n";
     std::cout << "  - " << alpaka::onHost::getName(host) << "\n\n";
 
     // allocate a buffer of floats in host memory
@@ -43,7 +41,7 @@ int example(auto const deviceApi)
     }
 
     // use the first device
-    alpaka::onHost::Device device = platform.makeDevice(0);
+    alpaka::onHost::Device device = alpaka::onHost::makeHostDevice();
     std::cout << "Device: " << alpaka::onHost::getName(device) << '\n';
 
     // create a work queue
@@ -84,5 +82,7 @@ auto main() -> int
 {
     using namespace alpaka;
     // Execute the example once for each enabled API and executor.
-    return executeForEach([=](auto const& tag) { return example(tag); }, onHost::enabledApis);
+    return executeForEachIfHasDevice(
+        [=](auto const& devSpec) { return example(devSpec); },
+        onHost::getDeviceSpecsFor(onHost::enabledApis));
 }

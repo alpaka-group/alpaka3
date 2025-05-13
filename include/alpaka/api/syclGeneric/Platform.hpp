@@ -9,10 +9,12 @@
 #if ALPAKA_LANG_SYCL
 
 #    include "Device.hpp"
+#    include "alpaka/core/Dict.hpp"
 #    include "alpaka/internal.hpp"
 
 #    include <sycl/sycl.hpp>
 
+#    include <map>
 #    include <memory>
 #    include <numeric>
 
@@ -20,59 +22,123 @@ namespace alpaka
 {
     namespace detail
     {
-        template<typename T_ApiInterface>
+        template<typename T_DeviceKind>
         struct SYCLDeviceSelector;
+
+        struct Context
+        {
+            Context() = default;
+
+            sycl::platform getPlatformByName(std::string const& platformName)
+            {
+                auto platforms = sycl::platform::get_platforms();
+
+                for(auto const& platform : platforms)
+                {
+                    if(platform.get_info<sycl::info::platform::name>() == platformName)
+                    {
+                        return platform;
+                    }
+                }
+
+                throw std::runtime_error("Platform not found");
+            }
+
+            auto getContext(sycl::platform platform)
+            {
+                std::string platformName = platform.get_info<sycl::info::platform::name>();
+                if(contextMap.contains(platformName))
+                {
+                    return contextMap[platformName];
+                }
+
+                std::vector<sycl::device> devices;
+                try
+                {
+                    devices = platform.get_devices();
+                }
+                catch(...)
+                {
+                }
+                if(devices.size())
+                {
+                    auto context = sycl::context{
+                        platform.get_devices(),
+                        [](sycl::exception_list exceptions)
+                        {
+                            auto ss_err = std::stringstream{};
+                            ss_err << "Caught asynchronous SYCL exception(s):\n";
+                            for(std::exception_ptr e : exceptions)
+                            {
+                                try
+                                {
+                                    std::rethrow_exception(e);
+                                }
+                                catch(sycl::exception const& err)
+                                {
+                                    ss_err << err.what() << " (" << err.code() << ")\n";
+                                }
+                            }
+                            throw std::runtime_error(ss_err.str());
+                        }};
+                    return contextMap[platformName] = context;
+                }
+                return sycl::context{};
+            }
+
+            std::map<std::string, sycl::context> contextMap;
+        };
     } // namespace detail
 
     namespace onHost
+
     {
         namespace syclGeneric
         {
-
-            template<typename T_ApiInterface>
-            struct Platform : std::enable_shared_from_this<Platform<T_ApiInterface>>
+            template<typename T_ApiInterface, deviceKind::concepts::DeviceKind T_DeviceKind>
+            struct Platform : std::enable_shared_from_this<Platform<T_ApiInterface, T_DeviceKind>>
             {
             public:
-                Platform()
-                    : platform{detail::SYCLDeviceSelector<T_ApiInterface>{}}
-                    , sycl_devices(platform.get_devices())
-                    , context{sycl::context{
-                          sycl_devices,
-                          [](sycl::exception_list exceptions)
-                          {
-                              auto ss_err = std::stringstream{};
-                              ss_err << "Caught asynchronous SYCL exception(s):\n";
-                              for(std::exception_ptr e : exceptions)
-                              {
-                                  try
-                                  {
-                                      std::rethrow_exception(e);
-                                  }
-                                  catch(sycl::exception const& err)
-                                  {
-                                      ss_err << err.what() << " (" << err.code() << ")\n";
-                                  }
-                              }
-                              throw std::runtime_error(ss_err.str());
-                          }}}
+                Platform() : contextManager{make_sharedSingleton<detail::Context>()}
                 {
-                    devices.resize(sycl_devices.size());
+                    try
+                    {
+                        platform = sycl::platform{detail::SYCLDeviceSelector<T_DeviceKind>{}};
+                        std::vector<sycl::device> syclDevs = platform.get_devices();
+                        devices.resize(syclDevs.size());
+                    }
+                    catch(...)
+                    {
+                    }
+                    context = contextManager->getContext(platform);
                 }
 
                 Platform(Platform const&) = delete;
                 Platform(Platform&&) = delete;
 
-                std::shared_ptr<Platform<T_ApiInterface>> getSharedPtr()
+                std::shared_ptr<Platform<T_ApiInterface, T_DeviceKind>> getSharedPtr()
                 {
                     return this->shared_from_this();
                 }
 
-                uint32_t getDeviceCount() const
+                auto getContext() const
                 {
-                    return devices.size();
+                    return context;
                 }
 
-                Handle<syclGeneric::Device<Platform<T_ApiInterface>>> makeDevice(uint32_t const& idx)
+                uint32_t getDeviceCount()
+                {
+                    constexpr bool isSupportedDev = trait::IsDeviceSupportedBy::
+                        Op<T_DeviceKind, ALPAKA_TYPEOF(alpaka::internal::getApi(std::declval<Platform>()))>::value;
+                    if constexpr(isSupportedDev)
+                    {
+                        auto numDevices = devices.size();
+                        return static_cast<uint32_t>(numDevices);
+                    }
+                    return 0;
+                }
+
+                Handle<syclGeneric::Device<Platform<T_ApiInterface, T_DeviceKind>>> makeDevice(uint32_t const& idx)
                 {
                     uint32_t const numDevices = getDeviceCount();
                     if(idx >= numDevices)
@@ -82,14 +148,18 @@ namespace alpaka
                               << " because there are only " << numDevices << " devices!";
                         throw std::runtime_error(ssErr.str());
                     }
+
                     std::lock_guard<std::mutex> lk{deviceGuard};
 
                     if(auto sharedPtr = devices[idx].lock())
                     {
                         return sharedPtr;
                     }
-                    auto newDevice = std::make_shared<syclGeneric::Device<Platform<T_ApiInterface>>>(
+
+                    auto devPlatform = sycl::platform{detail::SYCLDeviceSelector<T_DeviceKind>{}};
+                    auto newDevice = std::make_shared<syclGeneric::Device<Platform<T_ApiInterface, T_DeviceKind>>>(
                         std::move(getSharedPtr()),
+                        devPlatform.get_devices()[idx],
                         idx);
                     devices[idx] = newDevice;
                     return newDevice;
@@ -97,35 +167,37 @@ namespace alpaka
 
                 static constexpr auto getName()
                 {
-                    return core::demangledName<syclGeneric::Platform<T_ApiInterface>>();
+                    return core::demangledName<syclGeneric::Platform<T_ApiInterface, T_DeviceKind>>();
                 }
 
-                friend struct syclGeneric::Device<syclGeneric::Platform<T_ApiInterface>>;
-                friend struct internal::GetDeviceProperties::Op<syclGeneric::Platform<T_ApiInterface>>;
+                friend struct internal::GetDeviceProperties::Op<syclGeneric::Platform<T_ApiInterface, T_DeviceKind>>;
 
             private:
+                std::shared_ptr<alpaka::detail::Context> contextManager;
                 sycl::platform platform;
-                std::vector<sycl::device> sycl_devices;
+                std::vector<std::weak_ptr<syclGeneric::Device<Platform<T_ApiInterface, T_DeviceKind>>>> devices;
+
                 sycl::context context;
-                std::vector<std::weak_ptr<syclGeneric::Device<Platform<T_ApiInterface>>>> devices;
                 std::mutex deviceGuard;
 
                 void _()
                 {
-                    static_assert(concepts::Platform<Platform<T_ApiInterface>>);
+                    static_assert(concepts::Platform<Platform>);
                 }
             };
         } // namespace syclGeneric
 
         namespace internal
         {
-            template<typename T_ApiInterface>
-            struct GetDeviceProperties::Op<syclGeneric::Platform<T_ApiInterface>>
+            template<typename T_ApiInterface, deviceKind::concepts::DeviceKind T_DeviceKind>
+            struct GetDeviceProperties::Op<syclGeneric::Platform<T_ApiInterface, T_DeviceKind>>
             {
-                DeviceProperties operator()(syclGeneric::Platform<T_ApiInterface> const& platform, uint32_t deviceIdx)
-                    const
+                DeviceProperties operator()(
+                    syclGeneric::Platform<T_ApiInterface, T_DeviceKind> const& platform,
+                    uint32_t deviceIdx) const
                 {
-                    sycl::device const& dev = platform.sycl_devices[deviceIdx];
+                    auto devPlatform = sycl::platform{detail::SYCLDeviceSelector<T_DeviceKind>{}};
+                    sycl::device const dev = devPlatform.get_devices()[deviceIdx];
 
                     auto prop = DeviceProperties{};
                     prop.m_name = dev.get_info<sycl::info::device::name>();
@@ -138,8 +210,8 @@ namespace alpaka
                         std::size_t{0},
                         [](std::size_t a, std::size_t b)
                         {
-                            // The CPU runtime supports a sub-group size of 64, but the SYCL implementation currently
-                            // does not
+                            // The CPU runtime supports a sub-group size of 64, but the SYCL implementation
+                            // currently does not
                             return std::max(a, b) <= 32 ? std::max(a, b) : 32;
                         });
                     prop.m_multiProcessorCount = dev.get_info<sycl::info::device::max_compute_units>();

@@ -18,7 +18,7 @@
 using namespace alpaka;
 using namespace alpaka::onHost;
 
-using TestApis = std::decay_t<decltype(allExecutorsAndApis(enabledApis))>;
+using TestApis = std::decay_t<decltype(allBackends(enabledApis))>;
 
 // Kernels for individual mathematical functions
 struct SqrtKernel
@@ -189,19 +189,24 @@ template<typename T>
 TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
 {
     auto cfg = TestType::makeDict();
-    auto api = cfg[object::api];
+    auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
-    std::cout << api.getName() << std::endl;
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+
+    std::cout << deviceSpec.getApi().getName() << std::endl;
 
     // Use the single host device
-    alpaka::onHost::Platform platform_host = alpaka::onHost::makePlatform(alpaka::api::cpu);
-    alpaka::onHost::Device host = platform_host.makeDevice(0);
+    alpaka::onHost::Device host = alpaka::onHost::makeHostDevice();
     std::cout << "Host:   " << alpaka::onHost::getName(host) << "\n\n";
 
     // Use the first device
-    alpaka::onHost::Platform platform_device = alpaka::onHost::makePlatform(api);
-    alpaka::onHost::Device device = platform_device.makeDevice(0);
+    onHost::Device device = devSelector.makeDevice(0);
     std::cout << "Device: " << alpaka::onHost::getName(device) << "\n\n";
 
     Queue queue = device.makeQueue();
@@ -352,19 +357,23 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
 TEMPLATE_LIST_TEST_CASE("Math Functions Returning Boolean - Test", "", TestApis)
 {
     auto cfg = TestType::makeDict();
-    auto api = cfg[object::api];
+    auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
-    std::cout << api.getName() << std::endl;
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+    std::cout << deviceSpec.getApi().getName() << std::endl;
 
     // Use the single host device
-    alpaka::onHost::Platform platform_host = alpaka::onHost::makePlatform(alpaka::api::cpu);
-    alpaka::onHost::Device host = platform_host.makeDevice(0);
+    alpaka::onHost::Device host = alpaka::onHost::makeHostDevice();
     std::cout << "Host:   " << alpaka::onHost::getName(host) << "\n\n";
 
     // Use the first device
-    alpaka::onHost::Platform platform_device = alpaka::onHost::makePlatform(api);
-    alpaka::onHost::Device device = platform_device.makeDevice(0);
+    onHost::Device device = devSelector.makeDevice(0);
     std::cout << "Device: " << alpaka::onHost::getName(device) << "\n\n";
 
     Queue queue = device.makeQueue();

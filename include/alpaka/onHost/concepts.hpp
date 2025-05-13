@@ -32,10 +32,6 @@ namespace alpaka::onHost
             {
                 alpaka::internal::GetName::Op<T>{}(platform)
             };
-            {
-                internal::GetDeviceCount::Op<T>{}(platform)
-            } -> std::same_as<uint32_t>;
-            // api.makeDevice(uint32_t{0});
         };
 
         template<typename T>

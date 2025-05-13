@@ -7,6 +7,7 @@
 
 #include "alpaka/core/common.hpp"
 #include "alpaka/math/math.hpp"
+#include "alpaka/tag.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -36,10 +37,10 @@ namespace alpaka
 
         struct GetArchSimdWidth
         {
-            template<typename T_Type, typename T_Api>
+            template<typename T_Type, typename T_Api, deviceKind::concepts::DeviceKind T_DeviceKind>
             struct Op
             {
-                consteval uint32_t operator()(T_Api const) const
+                consteval uint32_t operator()(T_Api const, T_DeviceKind const) const
                 {
                     static_assert(sizeof(T_Api) && false, "Missing definition of GetArchSimdWidth for API.");
                     return 1u;
@@ -50,11 +51,11 @@ namespace alpaka
         /** Number of commands a CPU can issue at the same time. */
         struct GetNumPipelines
         {
-            template<typename T_Api>
+            template<typename T_Api, deviceKind::concepts::DeviceKind T_DeviceKind>
             struct Op
             {
                 /** @return the return value must be >= 1 */
-                consteval uint32_t operator()(T_Api const) const
+                consteval uint32_t operator()(T_Api const, T_DeviceKind const) const
                 {
                     static_assert(sizeof(T_Api) && false, "Missing definition of GetNumPipelines for API.");
                     return 1u;
@@ -64,10 +65,10 @@ namespace alpaka
 
         struct GetCachelineSize
         {
-            template<typename T_Api>
+            template<typename T_Api, deviceKind::concepts::DeviceKind T_DeviceKind>
             struct Op
             {
-                consteval uint32_t operator()(T_Api const) const
+                consteval uint32_t operator()(T_Api const, T_DeviceKind const) const
                 {
                     static_assert(sizeof(T_Api) && false, "GetCachelineSize for the current used API is not defined.");
                     return 42u;
@@ -82,15 +83,15 @@ namespace alpaka
      * @return number of elements that can be processed in parallel in a vector register
      */
     template<typename T_Type>
-    consteval uint32_t getArchSimdWidth(auto const api)
+    consteval uint32_t getArchSimdWidth(auto const api, deviceKind::concepts::DeviceKind auto const deviceType)
     {
-        return trait::GetArchSimdWidth::Op<T_Type, ALPAKA_TYPEOF(api)>{}(api);
+        return trait::GetArchSimdWidth::Op<T_Type, ALPAKA_TYPEOF(api), ALPAKA_TYPEOF(deviceType)>{}(api, deviceType);
     }
 
     /** get the number of instruction can be issued in parallel */
-    consteval uint32_t getNumPipelines(auto const api)
+    consteval uint32_t getNumPipelines(auto const api, deviceKind::concepts::DeviceKind auto const deviceType)
     {
-        return trait::GetNumPipelines::Op<ALPAKA_TYPEOF(api)>{}(api);
+        return trait::GetNumPipelines::Op<ALPAKA_TYPEOF(api), ALPAKA_TYPEOF(deviceType)>{}(api, deviceType);
     }
 
     /**  Get the number of elements to compute per thread.
@@ -102,9 +103,9 @@ namespace alpaka
      * @return The minimum number of elements a thread should compute to achieve optimal utilization.
      */
     template<typename T_Type>
-    constexpr uint32_t getNumElemPerThread(auto const api)
+    consteval uint32_t getNumElemPerThread(auto const api, deviceKind::concepts::DeviceKind auto const deviceType)
     {
-        return getArchSimdWidth<T_Type>(api) * getNumPipelines(api);
+        return getArchSimdWidth<T_Type>(api, deviceType) * getNumPipelines(api, deviceType);
     }
 
     /** get the cacheline size in bytes
@@ -113,9 +114,9 @@ namespace alpaka
      *
      * @return cacheline size in bytes
      */
-    consteval uint32_t getCachelineSize(auto const api)
+    consteval uint32_t getCachelineSize(auto const api, deviceKind::concepts::DeviceKind auto const deviceType)
     {
-        return trait::GetCachelineSize::Op<ALPAKA_TYPEOF(api)>{}(api);
+        return trait::GetCachelineSize::Op<ALPAKA_TYPEOF(api), ALPAKA_TYPEOF(deviceType)>{}(api, deviceType);
     }
 
     namespace onAcc::trait

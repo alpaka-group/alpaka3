@@ -5,9 +5,10 @@
 #pragma once
 
 #include "alpaka/KernelBundle.hpp"
+#include "alpaka/api/trait.hpp"
 #include "alpaka/concepts.hpp"
-#include "alpaka/onHost/DeviceProperties.hpp"
 #include "alpaka/onHost/concepts.hpp"
+#include "alpaka/tag.hpp"
 #include "alpaka/trait.hpp"
 
 namespace alpaka::onHost
@@ -50,12 +51,6 @@ namespace alpaka::onHost
 
     /** @} */
 
-    /** create a platform to get access to devices */
-    inline concepts::PlatformHandle auto makePlatform(alpaka::concepts::Api auto&& api)
-    {
-        return internal::makePlatform(ALPAKA_FORWARD(api));
-    }
-
     inline std::convertible_to<std::string> auto getStaticName(auto const& any)
     {
         return alpaka::internal::GetStaticName::Op<ALPAKA_TYPEOF(any)>{}(any);
@@ -69,21 +64,6 @@ namespace alpaka::onHost
     inline std::convertible_to<std::string> auto getName(concepts::NameHandle auto const& any)
     {
         return alpaka::internal::GetName::Op<std::decay_t<decltype(*any.get())>>{}(*any.get());
-    }
-
-    /** Number of devices accessible by the platform. */
-    inline uint32_t getDeviceCount(concepts::PlatformHandle auto const& platform)
-    {
-        return internal::GetDeviceCount::Op<std::decay_t<decltype(*platform.get())>>{}(*platform.get());
-    }
-
-    /** create a device
-     *
-     * @param idx index of the device, range [0,getDeviceCount)
-     */
-    inline concepts::DeviceHandle auto makeDevice(concepts::PlatformHandle auto const& platform, uint32_t idx)
-    {
-        return internal::MakeDevice::Op<std::decay_t<decltype(*platform.get())>>{}(*platform.get(), idx);
     }
 
     /** Get the native handle type
@@ -191,6 +171,57 @@ namespace alpaka::onHost
 
     /** @} */
 
+    /** Get the device type of an object
+     *
+     * @param any can be a platform, device, queue, view
+     * @return type from alpaka::deviceKind
+     *
+     * @{
+     */
+    inline constexpr decltype(auto) getDeviceKind(auto&& any)
+    {
+        return alpaka::internal::getDeviceKind(ALPAKA_FORWARD(any));
+    }
+
+    inline constexpr decltype(auto) getDeviceKind(alpaka::concepts::HasGet auto&& any)
+    {
+        return alpaka::internal::getDeviceKind(*any.get());
+    }
+
+    /** @} */
+
+
+    /**  Get the number of elements to compute per thread.
+     *
+     * This function considers the SIMD width for the corresponding data type and the potential for instruction
+     * parallelism.
+     *
+     * @tparam T_Type The data type used to determine the SIMD width.
+     * @return The minimum number of elements a thread should compute to achieve optimal utilization.
+     */
+    template<typename T_Type>
+    constexpr uint32_t getNumElemPerThread(auto&& any)
+    {
+        return alpaka::getNumElemPerThread<T_Type>(ALPAKA_TYPEOF(getApi(any)){}, ALPAKA_TYPEOF(getDeviceKind(any)){});
+    }
+
+    /** get SIMD with in bytes for the
+     *
+     * @tparam T_Type data type
+     * @return number of elements that can be processed in parallel in a vector register
+     */
+    template<typename T_Type>
+    constexpr uint32_t getArchSimdWidth(auto&& any)
+    {
+        return alpaka::getArchSimdWidth<T_Type>(ALPAKA_TYPEOF(getApi(any)){}, ALPAKA_TYPEOF(getDeviceKind(any)){});
+    }
+
+    /** get the number of instruction can be issued in parallel */
+    constexpr uint32_t getNumPipelines(auto&& any)
+    {
+        return alpaka::getNumPipelines(ALPAKA_TYPEOF(getApi(any)){}, ALPAKA_TYPEOF(getDeviceKind(any)){});
+    }
+
     /** allocate memory on the given device
      *
      * @tparam T_Type type of the data elements
@@ -295,14 +326,6 @@ namespace alpaka::onHost
      *
      * @{
      */
-
-    /**
-     * @param idx index of the device, range [0,getDeviceCount)
-     */
-    inline DeviceProperties getDeviceProperties(concepts::PlatformHandle auto const& platform, uint32_t idx)
-    {
-        return internal::GetDeviceProperties::Op<ALPAKA_TYPEOF(*platform.get())>{}(*platform.get(), idx);
-    }
 
     inline DeviceProperties getDeviceProperties(concepts::DeviceHandle auto const& device)
     {

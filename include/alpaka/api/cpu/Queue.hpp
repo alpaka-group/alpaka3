@@ -99,12 +99,13 @@ namespace alpaka::onHost
             {
                 auto threadBlocking = internal::adjustThreadSpec(*m_device.get(), executor, frameSpec, kernelBundle);
                 m_workerThread.submit(
-                    [=]()
+                    [=, this]()
                     {
                         auto moreLayer = Dict{
                             DictEntry(frame::count, frameSpec.m_numFrames),
                             DictEntry(frame::extent, frameSpec.m_frameExtent),
                             DictEntry(object::api, api::cpu),
+                            DictEntry(object::deviceKind, onHost::getDeviceKind(m_device)),
                             DictEntry(object::exec, executor)};
                         onAcc::Acc acc = makeAcc(executor, threadBlocking);
                         acc(kernelBundle, moreLayer);
@@ -114,6 +115,13 @@ namespace alpaka::onHost
             void enqueue(auto const& task)
             {
                 m_workerThread.submit([task]() { task(); });
+            }
+
+            friend struct alpaka::internal::GetDeviceType;
+
+            auto getDeviceKind() const
+            {
+                return alpaka::internal::getDeviceKind(*m_device.get());
             }
 
             friend struct internal::Wait;

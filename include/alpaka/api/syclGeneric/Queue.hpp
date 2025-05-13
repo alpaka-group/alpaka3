@@ -106,11 +106,12 @@ namespace alpaka::onHost
                             {
                                 onAcc::syclGeneric::StaticSharedMemory ssm(st_shared_accessor);
                                 onAcc::syclGeneric::DynamicSharedMemory dsm(dyn_shared_accessor);
-                                auto acc = onAcc::Acc{
-                                    onAcc::makeSyclGenericAccDict<T_Mapping, T_Api, T_NumBlocks, T_NumThreads>(
-                                        work_item,
-                                        ssm,
-                                        dsm)};
+                                auto acc = onAcc::Acc{onAcc::makeSyclGenericAccDict<
+                                    T_Mapping,
+                                    T_Api,
+                                    ALPAKA_TYPEOF(onHost::getDeviceKind(m_device)),
+                                    T_NumBlocks,
+                                    T_NumThreads>(work_item, ssm, dsm)};
                                 kernelBundle(acc);
                             });
                     });
@@ -157,6 +158,7 @@ namespace alpaka::onHost
                                     onAcc::makeSyclGenericAccDict<
                                         T_Mapping,
                                         T_Api,
+                                        ALPAKA_TYPEOF(onHost::getDeviceKind(m_device)),
                                         decltype(threadBlocking.m_numBlocks),
                                         decltype(threadBlocking.m_numThreads)>(work_item, ssm, dsm),
                                     Dict{
@@ -181,6 +183,13 @@ namespace alpaka::onHost
             }
 
         private:
+            friend struct alpaka::internal::GetDeviceType;
+
+            auto getDeviceKind() const
+            {
+                return alpaka::internal::getDeviceKind(*m_device.get());
+            }
+
             Handle<T_Device> m_device;
             uint32_t m_idx = 0u;
             sycl::queue m_queue;
@@ -199,7 +208,7 @@ namespace alpaka::onHost
             // TODO: implement generic version for multidimensional memory
             sycl::queue sycl_queue = queue.getNativeHandle();
             sycl_queue.memset(
-                onHost::data(dest),
+                internal::Data::data(dest),
                 byteValue,
                 extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
         }
@@ -218,8 +227,8 @@ namespace alpaka::onHost
             // TODO: implement generic version for multidimensional memory
             sycl::queue sycl_queue = queue.getNativeHandle();
             sycl_queue.memcpy(
-                onHost::data(dest),
-                onHost::data(source),
+                internal::Data::data(dest),
+                internal::Data::data(source),
                 extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
         }
     };

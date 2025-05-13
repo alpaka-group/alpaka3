@@ -21,7 +21,7 @@
 using namespace alpaka;
 using namespace alpaka::onHost;
 
-using TestApis = std::decay_t<decltype(allExecutorsAndApis(enabledApis))>;
+using TestApis = std::decay_t<decltype(allBackends(enabledApis))>;
 
 struct KernelCVecFrameExtents
 {
@@ -42,23 +42,27 @@ struct KernelCVecFrameExtents
 TEMPLATE_LIST_TEST_CASE("CVec frame extent kernel call", "", TestApis)
 {
     auto cfg = TestType::makeDict();
-    auto api = cfg[object::api];
+    auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
-    std::cout << api.getName() << std::endl;
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
 
-    Platform platform = makePlatform(api);
-    Device device = platform.makeDevice(0);
+    std::cout << deviceSpec.getApi().getName() << std::endl;
+    onHost::Device device = devSelector.makeDevice(0);
 
-    std::cout << getName(platform) << " " << device.getName() << std::endl;
+    std::cout << device.getName() << std::endl;
 
     Queue queue = device.makeQueue();
 
 
     auto dBuff = onHost::alloc<bool>(device, Vec{1u});
 
-    Platform cpuPlatform = makePlatform(api::cpu);
-    Device cpuDevice = cpuPlatform.makeDevice(0);
+    Device cpuDevice = makeHostDevice();
     auto hBuff = onHost::allocMirror(cpuDevice, dBuff);
     wait(queue);
     {
@@ -88,23 +92,27 @@ struct KernelCVecThreadExtents
 TEMPLATE_LIST_TEST_CASE("CVec thread extent kernel call", "", TestApis)
 {
     auto cfg = TestType::makeDict();
-    auto api = cfg[object::api];
+    auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
-    std::cout << api.getName() << std::endl;
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+    std::cout << deviceSpec.getApi().getName() << std::endl;
 
-    Platform platform = makePlatform(api);
-    Device device = platform.makeDevice(0);
+    onHost::Device device = devSelector.makeDevice(0);
 
-    std::cout << getName(platform) << " " << device.getName() << std::endl;
+    std::cout << device.getName() << std::endl;
 
     Queue queue = device.makeQueue();
 
 
     auto dBuff = onHost::alloc<bool>(device, Vec{1u});
 
-    Platform cpuPlatform = makePlatform(api::cpu);
-    Device cpuDevice = cpuPlatform.makeDevice(0);
+    Device cpuDevice = makeHostDevice();
     auto hBuff = onHost::allocMirror(cpuDevice, dBuff);
     wait(queue);
     {

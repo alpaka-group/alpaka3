@@ -48,6 +48,11 @@ namespace alpaka
         struct IsPlatformAvailable::Op<api::Hip> : std::true_type
         {
         };
+
+        template<>
+        struct IsDeviceSupportedBy::Op<deviceKind::AmdGpu, api::Hip> : std::true_type
+        {
+        };
 #endif
     } // namespace onHost::trait
 
@@ -62,9 +67,9 @@ namespace alpaka
     namespace trait
     {
         template<typename T_Type>
-        struct GetArchSimdWidth::Op<T_Type, api::Hip>
+        struct GetArchSimdWidth::Op<T_Type, api::Hip, deviceKind::AmdGpu>
         {
-            constexpr uint32_t operator()(api::Hip const) const
+            constexpr uint32_t operator()(api::Hip const, deviceKind::AmdGpu const) const
             {
                 /** vector load/store width in bytes */
                 constexpr size_t simdWidthInByte = 16u;
@@ -73,9 +78,9 @@ namespace alpaka
         };
 
         template<>
-        struct GetNumPipelines::Op<api::Hip>
+        struct GetNumPipelines::Op<api::Hip, deviceKind::AmdGpu>
         {
-            constexpr uint32_t operator()(api::Hip const) const
+            constexpr uint32_t operator()(api::Hip const, deviceKind::AmdGpu const) const
             {
                 /* AMD GPUs SIMD units will be interpreted as pipelines */
                 constexpr uint32_t numPipes = 4u;
@@ -84,9 +89,9 @@ namespace alpaka
         };
 
         template<>
-        struct GetCachelineSize::Op<api::Hip>
+        struct GetCachelineSize::Op<api::Hip, deviceKind::AmdGpu>
         {
-            constexpr uint32_t operator()(api::Hip const) const
+            constexpr uint32_t operator()(api::Hip const, deviceKind::AmdGpu const) const
             {
                 // loading 16 byte per thread will result in optimal memory bandwith
                 return 16u;

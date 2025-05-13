@@ -24,8 +24,8 @@ namespace alpaka::onHost
 {
     namespace unifiedCudaHip
     {
-        template<typename T_ApiInterface>
-        struct Platform : std::enable_shared_from_this<Platform<T_ApiInterface>>
+        template<typename T_ApiInterface, deviceKind::concepts::DeviceKind T_DeviceKind>
+        struct Platform : std::enable_shared_from_this<Platform<T_ApiInterface, T_DeviceKind>>
         {
             using ApiInterface = T_ApiInterface;
 
@@ -60,17 +60,24 @@ namespace alpaka::onHost
 
             uint32_t getDeviceCount()
             {
-                int numDevices{0};
-                typename ApiInterface::Error_t error = ApiInterface::getDeviceCount(&numDevices);
-                if(error != ApiInterface::success)
-                    numDevices = 0;
-
-                if(devices.size() < numDevices)
+                constexpr bool isSupportedDev = trait::IsDeviceSupportedBy::
+                    Op<T_DeviceKind, ALPAKA_TYPEOF(getApi(std::declval<Platform>()))>::value;
+                if constexpr(isSupportedDev)
                 {
-                    std::lock_guard<std::mutex> lk{deviceGuard};
-                    devices.resize(numDevices);
+                    int numDevices{0};
+                    typename ApiInterface::Error_t error = ApiInterface::getDeviceCount(&numDevices);
+                    if(error != ApiInterface::success)
+                        numDevices = 0;
+
+                    if(devices.size() < numDevices)
+                    {
+                        std::lock_guard<std::mutex> lk{deviceGuard};
+                        devices.resize(numDevices);
+                    }
+                    return static_cast<uint32_t>(numDevices);
                 }
-                return static_cast<uint32_t>(numDevices);
+
+                return 0;
             }
 
             friend struct onHost::internal::MakeDevice;
@@ -81,8 +88,8 @@ namespace alpaka::onHost
                 if(idx >= numDevices)
                 {
                     std::stringstream ssErr;
-                    ssErr << "Unable to return device handle for CPU device with index " << idx
-                          << " because there are only " << numDevices << " devices!";
+                    ssErr << "Unable to return device handle for GPU (" << T_DeviceKind{}.getName()
+                          << ") device with index " << idx << " because there are only " << numDevices << " devices!";
                     throw std::runtime_error(ssErr.str());
                 }
                 std::lock_guard<std::mutex> lk{deviceGuard};
@@ -103,13 +110,14 @@ namespace alpaka::onHost
 
     namespace internal
     {
-        template<typename T_ApiInterface>
-        struct GetDeviceProperties::Op<unifiedCudaHip::Platform<T_ApiInterface>>
+        template<typename T_ApiInterface, deviceKind::concepts::DeviceKind T_DeviceKind>
+        struct GetDeviceProperties::Op<unifiedCudaHip::Platform<T_ApiInterface, T_DeviceKind>>
         {
-            DeviceProperties operator()(unifiedCudaHip::Platform<T_ApiInterface> const& platform, uint32_t deviceIdx)
-                const
+            DeviceProperties operator()(
+                unifiedCudaHip::Platform<T_ApiInterface, T_DeviceKind> const& platform,
+                uint32_t deviceIdx) const
             {
-                using ApiInterface = typename unifiedCudaHip::Platform<T_ApiInterface>::ApiInterface;
+                using ApiInterface = typename unifiedCudaHip::Platform<T_ApiInterface, T_DeviceKind>::ApiInterface;
                 typename ApiInterface::DeviceProp_t devProp;
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(ApiInterface, ApiInterface::getDeviceProperties(&devProp, deviceIdx));
 

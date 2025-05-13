@@ -243,14 +243,13 @@ void testVectorAddKernel3D(
 
 int example(auto const cfg)
 {
-    auto deviceApi = cfg[alpaka::object::api];
+    auto deviceSpec = cfg[alpaka::object::deviceSpec];
     auto computeExec = cfg[alpaka::object::exec];
 
-    // initialise the accelerator platform
-    alpaka::onHost::Platform platform = alpaka::onHost::makePlatform(deviceApi);
+    auto devSelector = alpaka::onHost::makeDeviceSelector(deviceSpec);
 
     // require at least one device
-    std::size_t n = alpaka::onHost::getDeviceCount(platform);
+    std::size_t n = devSelector.getDeviceCount();
 
     if(n == 0)
     {
@@ -258,12 +257,11 @@ int example(auto const cfg)
     }
 
     // use the single host device
-    alpaka::onHost::Platform host_platform = alpaka::onHost::makePlatform(alpaka::api::cpu);
-    alpaka::onHost::Device host = host_platform.makeDevice(0);
+    alpaka::onHost::Device host = alpaka::onHost::makeHostDevice();
     std::cout << "Host:   " << alpaka::onHost::getName(host) << "\n\n";
 
     // use the first device
-    alpaka::onHost::Device device = platform.makeDevice(0);
+    alpaka::onHost::Device device = devSelector.makeDevice(0);
     std::cout << "Device: " << alpaka::onHost::getName(device) << "\n\n";
 
     testVectorAddKernel(host, device, computeExec);
@@ -276,7 +274,7 @@ auto main() -> int
 {
     using namespace alpaka;
     // Execute the example once for each enabled API and executor.
-    return executeForEach(
+    return executeForEachIfHasDevice(
         [=](auto const& tag) { return example(tag); },
-        onHost::allExecutorsAndApis(onHost::enabledApis));
+        onHost::allBackends(onHost::enabledApis));
 }

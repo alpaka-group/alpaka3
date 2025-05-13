@@ -59,7 +59,7 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
 {
     using IdxVec = Vec<std::size_t, 1u>;
 
-    auto api = cfg[object::api];
+    auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
     // Define problem size
@@ -71,18 +71,18 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
     std::cout << "Number of elements: " << numElements << std::endl;
     std::cout << "Element type: " << core::demangledName<Data>() << std::endl;
 
-    std::cout << "Using alpaka accelerator: " << core::demangledName(exec) << " for " << api.getName() << std::endl;
+    std::cout << "Using alpaka accelerator: " << core::demangledName(exec) << " for " << deviceSpec.getApi().getName()
+              << " " << deviceSpec.getDeviceKind().getName() << std::endl;
 
     // Select a device
-    onHost::Platform platform = onHost::makePlatform(api);
-    onHost::Device devAcc = platform.makeDevice(0);
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    onHost::Device devAcc = devSelector.makeDevice(0);
 
     // Create a queue on the device
     onHost::Queue queue = devAcc.makeQueue();
 
     // Get the host device for allocating memory on the host.
-    onHost::Platform platformHost = onHost::makePlatform(api::cpu);
-    onHost::Device devHost = platformHost.makeDevice(0);
+    onHost::Device devHost = onHost::makeHostDevice();
 
     // Allocate 3 host memory buffers
     auto bufHostA = onHost::alloc<Data>(devHost, extent);
@@ -118,7 +118,7 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
 
     Vec<size_t, 1u> chunkSize = 256u;
     // how many elements one worker should compute to ensure vectorization or instruction parallelism
-    uint32_t elementsPerWorker = alpaka::getNumElemPerThread<Data>(alpaka::onHost::getApi(queue));
+    uint32_t elementsPerWorker = alpaka::onHost::getNumElemPerThread<Data>(queue);
     auto dataBlocking = onHost::FrameSpec{divCeil(extent, chunkSize * elementsPerWorker), chunkSize};
 
     // Enqueue the kernel execution task
@@ -211,7 +211,7 @@ auto main(int argc, char* argv[]) -> int
 
     using namespace alpaka;
     // Execute the example once for each enabled API and executor.
-    return executeForEach(
+    return executeForEachIfHasDevice(
         [=](auto const& tag) { return example(tag, numElements); },
-        onHost::allExecutorsAndApis(onHost::enabledApis));
+        onHost::allBackends(onHost::enabledApis));
 }

@@ -125,7 +125,7 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdForEach) -> int
 {
     using IdxVec = Vec<std::size_t, 1u>;
 
-    auto api = cfg[object::api];
+    auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
     // Define the buffer element type.
@@ -142,15 +142,14 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdForEach) -> int
     std::cout << std::endl;
 
     // Select a device
-    onHost::Platform platform = onHost::makePlatform(api);
-    onHost::Device devAcc = platform.makeDevice(0);
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    onHost::Device devAcc = devSelector.makeDevice(0);
 
     // Create a queue on the device
     onHost::Queue queue = devAcc.makeQueue();
 
     // Get the host device for allocating memory on the host.
-    onHost::Platform platformHost = onHost::makePlatform(api::cpu);
-    onHost::Device devHost = platformHost.makeDevice(0);
+    onHost::Device devHost = onHost::makeHostDevice();
 
     // Allocate host memory buffers for R, G, B, and ARGB
     auto bufHostR = onHost::alloc<uint8_t>(devHost, extent);
@@ -208,13 +207,13 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdForEach) -> int
 
     // Define frameExtent
     Vec<size_t, 1u> frameExtent = 256u;
-    uint32_t elementsPerWorker = alpaka::getNumElemPerThread<Data>(alpaka::onHost::getApi(queue));
+    uint32_t elementsPerWorker = alpaka::onHost::getNumElemPerThread<Data>(queue);
     auto dataBlocking = onHost::FrameSpec{divCeil(extent, frameExtent * elementsPerWorker), frameExtent};
 
     // Enqueue the kernel execution task
     {
-        std::cout << "Using alpaka accelerator: " << core::demangledName(exec) << " for " << api.getName()
-                  << std::endl;
+        std::cout << "Using alpaka accelerator: " << core::demangledName(exec) << " for "
+                  << deviceSpec.getApi().getName() << std::endl;
         onHost::wait(queue);
         auto const beginT = std::chrono::high_resolution_clock::now();
         onHost::enqueue(
@@ -295,7 +294,7 @@ auto main(int argc, char* argv[]) -> int
 
     using namespace alpaka;
     // Execute the example once for each enabled API and executor.
-    return executeForEach(
+    return executeForEachIfHasDevice(
         [=](auto const& tag) { return example(tag, numElements, enableStdForEach); },
-        onHost::allExecutorsAndApis(onHost::enabledApis));
+        onHost::allBackends(onHost::enabledApis));
 }

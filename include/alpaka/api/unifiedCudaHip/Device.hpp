@@ -31,7 +31,7 @@ namespace alpaka::onHost
             Device(concepts::PlatformHandle auto platform, uint32_t const idx)
                 : m_platform(std::move(platform))
                 , m_idx(idx)
-                , m_properties{getDeviceProperties(m_platform, m_idx)}
+                , m_properties{internal::getDeviceProperties(*m_platform.get(), m_idx)}
             {
                 m_properties.m_name += " id=" + std::to_string(m_idx);
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(ApiInterface, ApiInterface::setDevice(idx));
@@ -98,6 +98,13 @@ namespace alpaka::onHost
 
                 queues.emplace_back(newQueue);
                 return newQueue;
+            }
+
+            friend struct alpaka::internal::GetDeviceType;
+
+            auto getDeviceKind() const
+            {
+                return alpaka::internal::getDeviceKind(*m_platform.get());
             }
 
             friend struct onHost::internal::Alloc;

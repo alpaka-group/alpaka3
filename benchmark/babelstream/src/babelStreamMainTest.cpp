@@ -328,15 +328,21 @@ void testKernels(auto cfg)
         std::cout << "Kernels: Init, Copy, Mul, Add, Triad, Dot Kernels" << std::endl;
     }
 
-    auto api = cfg[object::api];
+    auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
-    onHost::Platform platform = onHost::makePlatform(api);
-    onHost::Device devAcc = platform.makeDevice(0);
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+
+    onHost::Device devAcc = devSelector.makeDevice(0);
 
 #if ALPAKA_LANG_ONEAPI
     // support for double precision is not guaranteed for sycl devices such as Intel GPUs
-    if constexpr(std::is_same_v<DataType, double> && std::is_same_v<decltype(api), api::SyclIntelGpu>)
+    if constexpr(std::is_same_v<DataType, double> && std::is_same_v<decltype(deviceSpec.getApi()), api::OneApi>)
     {
         if(devAcc.getNativeHandle().first.template get_info<sycl::info::device::double_fp_config>().size() == 0)
         {
@@ -350,7 +356,7 @@ void testKernels(auto cfg)
     }
 #endif
 
-    std::cout << getName(platform) << "\n" << getDeviceProperties(devAcc) << std::endl;
+    std::cout << getDeviceProperties(devAcc) << std::endl;
 
     std::cout << "used exec " << core::demangledName(exec) << std::endl;
 
@@ -371,8 +377,7 @@ void testKernels(auto cfg)
 
     // Get the host device for allocating memory on the host
     onHost::Queue queue = devAcc.makeQueue();
-    onHost::Platform platformHost = onHost::makePlatform(api::cpu);
-    onHost::Device devHost = platformHost.makeDevice(0);
+    onHost::Device devHost = onHost::makeHostDevice();
 
     // Create vectors
     using Idx = std::uint32_t;
@@ -396,7 +401,7 @@ void testKernels(auto cfg)
      * a kernel can reflect the concurrency bytes used for the `SimdAlgo::concurrent()` back to the host, e.g. some
      * as we use for dynamic shared memory.
      */
-    uint32_t elementsPerFrameItem = alpaka::getNumElemPerThread<DataType>(alpaka::onHost::getApi(queue));
+    uint32_t elementsPerFrameItem = alpaka::onHost::getNumElemPerThread<DataType>(queue);
 
     auto numFrames = divExZero(arraySize, static_cast<Idx>(blockThreadExtentMain) * elementsPerFrameItem);
     auto dataBlocking = onHost::FrameSpec{numFrames, static_cast<Idx>(blockThreadExtentMain)};
@@ -531,7 +536,7 @@ void testKernels(auto cfg)
         }
         if(kernelsToBeExecuted == KernelsToRun::All)
         {
-            uint32_t elementsPerFrameItem = alpaka::getNumElemPerThread<DataType>(alpaka::onHost::getApi(queue));
+            uint32_t elementsPerFrameItem = alpaka::onHost::getNumElemPerThread<DataType>(queue);
             auto numFrames = std::min(
                 static_cast<Idx>(dotGridBlockExtent),
                 alpaka::divExZero(arraySize, (static_cast<Idx>(blockThreadExtentMain) * elementsPerFrameItem)));
@@ -721,7 +726,7 @@ void testKernels(auto cfg)
     std::cout << metaData.serializeAsTable() << std::endl;
 }
 
-using TestApis = std::decay_t<decltype(onHost::allExecutorsAndApis(onHost::enabledApis))>;
+using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis))>;
 
 // Run for all Accs given by the argument
 TEMPLATE_LIST_TEST_CASE("TEST: Babelstream Kernels<Float>", "[benchmark-test]", TestApis)

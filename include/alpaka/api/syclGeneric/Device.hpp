@@ -11,6 +11,7 @@
 #    include "Queue.hpp"
 #    include "alpaka/Vec.hpp"
 #    include "alpaka/onHost/mem/Data.hpp"
+#    include "alpaka/onHost/mem/View.hpp"
 
 #    include <sycl/sycl.hpp>
 
@@ -22,11 +23,11 @@ namespace alpaka::onHost
         struct Device : std::enable_shared_from_this<Device<T_Platform>>
         {
         public:
-            Device(concepts::PlatformHandle auto platform, uint32_t const idx)
+            Device(concepts::PlatformHandle auto platform, auto const& dev, uint32_t const idx)
                 : m_platform(std::move(platform))
                 , m_idx(idx)
-                , m_sycl_dev(m_platform->sycl_devices[idx])
-                , m_properties{getDeviceProperties(m_platform, m_idx)}
+                , m_sycl_dev(dev)
+                , m_properties{internal::getDeviceProperties(*m_platform.get(), m_idx)}
             {
             }
 
@@ -52,7 +53,7 @@ namespace alpaka::onHost
 
             [[nodiscard]] std::pair<sycl::device, sycl::context> getNativeHandle() const noexcept
             {
-                return {m_sycl_dev, m_platform->context};
+                return {m_sycl_dev, m_platform->getContext()};
             }
 
         private:
@@ -61,9 +62,16 @@ namespace alpaka::onHost
                 static_assert(concepts::Device<Device>);
             }
 
+            friend struct alpaka::internal::GetDeviceType;
+
+            auto getDeviceKind() const
+            {
+                return alpaka::internal::getDeviceKind(*m_platform.get());
+            }
+
             Handle<T_Platform> m_platform;
             uint32_t m_idx = 0u;
-            sycl::device& m_sycl_dev;
+            sycl::device m_sycl_dev;
             std::vector<std::weak_ptr<syclGeneric::Queue<Device>>> queues;
             std::mutex queuesGuard;
             DeviceProperties m_properties;
@@ -94,8 +102,10 @@ namespace alpaka::onHost
                 using IdxType = typename T_Extents::type;
 
                 constexpr uint32_t typeAlignmentBytes = alignof(T_Type);
-                constexpr uint32_t simdPackBytes
-                    = getArchSimdWidth<T_Type>(ALPAKA_TYPEOF(getApi(device)){}) * sizeof(T_Type);
+                constexpr uint32_t simdPackBytes = alpaka::getArchSimdWidth<T_Type>(
+                                                       ALPAKA_TYPEOF(getApi(device)){},
+                                                       ALPAKA_TYPEOF(getDeviceKind(device)){})
+                                                   * sizeof(T_Type);
                 constexpr uint32_t bestSimdPackBytes = highestPowerOfTwo(simdPackBytes);
                 constexpr IdxType alignment = std::max(bestSimdPackBytes, typeAlignmentBytes);
 
@@ -161,7 +171,7 @@ namespace alpaka::internal
     {
         decltype(auto) operator()(auto&& device) const
         {
-            return onHost::getApi(device.m_platform);
+            return internal::getApi(*device.m_platform.get());
         }
     };
 } // namespace alpaka::internal

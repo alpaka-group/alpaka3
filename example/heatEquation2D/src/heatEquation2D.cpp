@@ -45,23 +45,23 @@ auto example(T_Cfg const& cfg) -> int
     using Idx = uint32_t;
     using IdxVec = alpaka::Vec<Idx, 2u>;
 
-    auto api = cfg[object::api];
+    auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
-    std::cout << api.getName() << std::endl;
+    std::cout << deviceSpec.getApi().getName() << std::endl;
 
-    std::cout << "Using alpaka accelerator: " << core::demangledName(exec) << " for " << api.getName() << std::endl;
+    std::cout << "Using alpaka accelerator: " << core::demangledName(exec) << " for " << deviceSpec.getApi().getName()
+              << std::endl;
 
     // Select specific devices
-    Platform platformHost = makePlatform(api::cpu);
-    Device devHost = platformHost.makeDevice(0);
+    Device devHost = makeHostDevice();
 
-    Platform platformAcc = makePlatform(api);
-    Device devAcc = platformAcc.makeDevice(0);
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    onHost::Device devAcc = devSelector.makeDevice(0);
 
 #if ALPAKA_LANG_ONEAPI
     // support for double precision is not guaranteed for sycl devices such as Intel GPUs
-    if constexpr(std::is_same_v<decltype(api), api::SyclIntelGpu>)
+    if constexpr(std::is_same_v<decltype(deviceSpec.getApi()), api::OneApi>)
     {
         if(devAcc.getNativeHandle().first.template get_info<sycl::info::device::double_fp_config>().size() == 0)
         {
@@ -226,7 +226,7 @@ auto main() -> int
     //   TagCpuSerial, TagGpuHipRt, TagGpuCudaRt, TagCpuOmp2Blocks, TagCpuTbbBlocks,
     //   TagCpuOmp2Threads, TagCpuSycl, TagCpuTbbBlocks, TagCpuThreads,
     //   TagFpgaSyclIntel, TagGenericSycl, TagGpuSyclIntel
-    return executeForEach(
+    return executeForEachIfHasDevice(
         [=](auto const& tag) { return example(tag); },
-        onHost::allExecutorsAndApis(onHost::enabledApis));
+        onHost::allBackends(onHost::enabledApis));
 }

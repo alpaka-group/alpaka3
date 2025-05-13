@@ -88,7 +88,11 @@ namespace alpaka::onAcc
             alpaka::concepts::MdSpan auto&&... dataN) const
         {
             using ValueType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data0)>;
-            concurrent<alpaka::getNumElemPerThread<ValueType>(thisApi()) * sizeof(ValueType)>(
+            concurrent<
+                alpaka::getNumElemPerThread<ValueType>(
+                    ALPAKA_TYPEOF(acc.getApi()){},
+                    ALPAKA_TYPEOF(acc.getDeviceKind()){})
+                * sizeof(ValueType)>(
                 acc,
                 extents,
                 ALPAKA_FORWARD(func),
@@ -198,7 +202,11 @@ namespace alpaka::onAcc
             alpaka::concepts::MdSpan auto&&... dataN) const
         {
             using ValueType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data0)>;
-            return transformReduce<alpaka::getNumElemPerThread<ValueType>(thisApi()) * sizeof(ValueType)>(
+            return transformReduce<
+                alpaka::getNumElemPerThread<ValueType>(
+                    ALPAKA_TYPEOF(acc.getApi()){},
+                    ALPAKA_TYPEOF(acc.getDeviceKind()){})
+                * sizeof(ValueType)>(
                 acc,
                 extents,
                 neutralElement,

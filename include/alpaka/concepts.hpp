@@ -5,6 +5,7 @@
 #pragma once
 
 #include "alpaka/internal.hpp"
+#include "alpaka/tag.hpp"
 
 #include <concepts>
 #include <string>
@@ -39,5 +40,12 @@ namespace alpaka
 
         template<typename T, unsigned int T_dim>
         concept Dim = requires { T::dim() == T_dim; };
+
+
+        template<typename T>
+        concept IsGpuType = deviceKind::concepts::DeviceKind<T>
+                            && (std::is_same_v<T, deviceKind::NvidiaGpu> || std::is_same_v<T, deviceKind::AmdGpu>
+                                || std::is_same_v<T, deviceKind::IntelGpu>);
+
     } // namespace concepts
 } // namespace alpaka

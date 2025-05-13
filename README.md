@@ -78,9 +78,19 @@ spack load cmake@3.29.1
 spack load intel-oneapi-compilers@2025.0.4
 spack load intel-oneapi-dpl@2022.2.0
 
-# for Intel GPU use -Dalpaka_DEP_ONEAPI_GPU=ON 
-# for GPU remove -DCMAKE_CXX_FLAGS='-fsycl -fsycl-targets=spir64_x86_64'
-cmake ../alpaka -DCMAKE_CXX_COMPILER=icpx -DCMAKE_CXX_FLAGS='-fsycl -fsycl-targets=spir64_x86_64' -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_DEP_ONEAPI_CPU=ON -Dalpaka_DEP_OMP=OFF -Dalpaka_EXEC_CpuSerial=OFF
+# by default all device kinds get be addressed CPU and Intel GPU will be addressed
+# You can add support for NVIDIA GPU and AMD GPU via
+#  -Dalpaka_ONEAPI_AmdGpu=ON
+#  -Dalpaka_ONEAPI_NvidiaGpu=ON
+# or deselect the device kind with 
+#  -Dalpaka_ONEAPI_Cpu=OFF
+#  -Dalpaka_ONEAPI_IntelGpu=OFF
+#
+# The architecture can be set with -Dalpaka_ONEAPI_*_ARCH=<arch>
+# Cpu ISA e.g. avx,avx2, avx512 
+# Nvidia only the sm number is needed e.g. 80
+# Amd full qualifier is required e.g. gfx906
+cmake ../alpaka -DCMAKE_CXX_COMPILER=icpx -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_DEP_ONEAPI=ON -Dalpaka_DEP_OMP=OFF -Dalpaka_EXEC_CpuSerial=OFF
 make -j
 ctest --output-on-failure
 ```

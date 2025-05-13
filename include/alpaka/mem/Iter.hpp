@@ -105,7 +105,7 @@ namespace alpaka::onAcc
                     T_IdxMapping idxMapping) const
                     requires std::is_same_v<ALPAKA_TYPEOF(idxMapping), layout::Optimized>
                 {
-                    auto adjIdxMapping = adjustMapping(acc, acc[object::api]);
+                    auto adjIdxMapping = adjustMapping(acc);
                     auto const idxRange = domainSpec.getIdxRange(acc);
                     auto const threadSpace = domainSpec.getThreadSpace(acc);
 

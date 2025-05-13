@@ -17,7 +17,7 @@
 using namespace alpaka;
 using namespace alpaka::onHost;
 
-using TestApis = std::decay_t<decltype(allExecutorsAndApis(enabledApis))>;
+using TestApis = std::decay_t<decltype(allBackends(enabledApis))>;
 
 template<uint32_t T_blockSize>
 struct SharedBlockIotaKernel
@@ -49,15 +49,20 @@ struct SharedBlockIotaKernel
 TEMPLATE_LIST_TEST_CASE("block shared iota", "", TestApis)
 {
     auto cfg = TestType::makeDict();
-    auto api = cfg[object::api];
+    auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
-    std::cout << api.getName() << std::endl;
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
 
-    Platform platform = makePlatform(api);
-    Device device = platform.makeDevice(0);
+    std::cout << deviceSpec.getApi().getName() << std::endl;
+    Device device = devSelector.makeDevice(0);
 
-    std::cout << getName(platform) << " " << device.getName() << std::endl;
+    std::cout << " " << device.getName() << std::endl;
 
     Queue queue = device.makeQueue();
     constexpr Vec numBlocks = Vec{2u};
@@ -66,8 +71,7 @@ TEMPLATE_LIST_TEST_CASE("block shared iota", "", TestApis)
     std::cout << "block shared iota exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<uint32_t>(device, dataExtent);
 
-    Platform cpuPlatform = makePlatform(api::cpu);
-    Device cpuDevice = cpuPlatform.makeDevice(0);
+    Device cpuDevice = makeHostDevice();
     auto hBuff = onHost::allocMirror(cpuDevice, dBuff);
     wait(queue);
 
@@ -186,15 +190,20 @@ namespace alpaka::onHost::trait
 TEMPLATE_LIST_TEST_CASE("block shared alias", "", TestApis)
 {
     auto cfg = TestType::makeDict();
-    auto api = cfg[object::api];
+    auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
-    std::cout << api.getName() << std::endl;
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+    std::cout << deviceSpec.getApi().getName() << std::endl;
 
-    Platform platform = makePlatform(api);
-    Device device = platform.makeDevice(0);
+    Device device = devSelector.makeDevice(0);
 
-    std::cout << getName(platform) << " " << device.getName() << std::endl;
+    std::cout << " " << device.getName() << std::endl;
 
     Queue queue = device.makeQueue();
     constexpr Vec numBlocks = Vec{1u};
@@ -202,8 +211,7 @@ TEMPLATE_LIST_TEST_CASE("block shared alias", "", TestApis)
 
     auto dBuff = onHost::alloc<bool>(device, Vec{1u});
 
-    Platform cpuPlatform = makePlatform(api::cpu);
-    Device cpuDevice = cpuPlatform.makeDevice(0);
+    Device cpuDevice = makeHostDevice();
     auto hBuff = onHost::allocMirror(cpuDevice, dBuff);
     wait(queue);
     {

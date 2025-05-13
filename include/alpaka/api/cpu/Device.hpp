@@ -34,7 +34,7 @@ namespace alpaka::onHost
             Device(concepts::PlatformHandle auto platform, uint32_t const idx)
                 : m_platform(std::move(platform))
                 , m_idx(idx)
-                , m_properties{getDeviceProperties(m_platform, m_idx)}
+                , m_properties{internal::getDeviceProperties(*m_platform.get(), m_idx)}
             {
                 m_properties.m_name += " id=" + std::to_string(m_idx);
             }
@@ -95,6 +95,13 @@ namespace alpaka::onHost
                 return newQueue;
             }
 
+            friend struct alpaka::internal::GetDeviceType;
+
+            auto getDeviceKind() const
+            {
+                return alpaka::internal::getDeviceKind(*m_platform.get());
+            }
+
             friend struct internal::Alloc;
             friend struct alpaka::internal::GetApi;
             friend struct internal::GetDeviceProperties;
@@ -142,8 +149,10 @@ namespace alpaka::onHost
                 using IdxType = typename T_Extents::type;
 
                 constexpr uint32_t typeAlignmentBytes = alignof(T_Type);
-                constexpr uint32_t simdPackBytes
-                    = getArchSimdWidth<T_Type>(ALPAKA_TYPEOF(getApi(device)){}) * sizeof(T_Type);
+                constexpr uint32_t simdPackBytes = alpaka::getArchSimdWidth<T_Type>(
+                                                       ALPAKA_TYPEOF(getApi(device)){},
+                                                       ALPAKA_TYPEOF(getDeviceKind(device)){})
+                                                   * sizeof(T_Type);
                 constexpr uint32_t bestSimdPackBytes = highestPowerOfTwo(simdPackBytes);
                 constexpr IdxType alignment = std::max(bestSimdPackBytes, typeAlignmentBytes);
 

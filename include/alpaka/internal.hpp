@@ -56,5 +56,22 @@ namespace alpaka
         {
             return GetApi::Op<std::decay_t<decltype(any)>>{}(any);
         }
+
+        struct GetDeviceType
+        {
+            template<typename T_Any>
+            struct Op
+            {
+                inline constexpr auto operator()(auto&& any) const
+                {
+                    return any.getDeviceKind();
+                }
+            };
+        };
+
+        inline constexpr auto getDeviceKind(auto&& any)
+        {
+            return GetDeviceType::Op<std::decay_t<decltype(any)>>{}(any);
+        }
     } // namespace internal
 } // namespace alpaka

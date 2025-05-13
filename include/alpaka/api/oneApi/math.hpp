@@ -4,16 +4,16 @@
 
 #pragma once
 
+#include "alpaka/api/oneApi/Api.hpp"
 #include "alpaka/api/syclGeneric/tag.hpp"
-#include "alpaka/api/syclIntel/cpu/Api.hpp"
 #include "alpaka/api/trait.hpp"
 
 namespace alpaka::trait
 {
     template<>
-    struct GetMathImpl::Op<alpaka::api::SyclIntelCpu>
+    struct GetMathImpl::Op<alpaka::api::OneApi>
     {
-        constexpr decltype(auto) operator()(alpaka::api::SyclIntelCpu const) const
+        constexpr decltype(auto) operator()(alpaka::api::OneApi const) const
         {
             return alpaka::math::internal::syclMath;
         }

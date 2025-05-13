@@ -17,88 +17,7 @@
 using namespace alpaka;
 using namespace alpaka::onHost;
 
-using TestApis = std::decay_t<decltype(allExecutorsAndApis(enabledApis))>;
-
-#if 0
-TEST_CASE("enqueue task", "")
-{
-    std::cout << "enqueue" << std::endl;
-
-    Platform platform = makePlatform(api::cpu);
-    Device device = platform.makeDevice(0);
-
-    std::cout << getName(platform) << " " << device.getName() << std::endl;
-
-    concepts::Queue auto queue = Queue{device.makeQueue()};
-    constexpr auto fn = [](auto const& acc, auto x)
-    {
-        std::cout << "blockIdx = " << acc[layer::block].idx() << " threadIdx = " << acc[layer::thread].idx()
-                  << " value = " << x << std::endl;
-    };
-
-    queue.enqueue(exec::cpuSerial, Vec{3, 3}, Vec{1, 1}, fn, 42);
-    // queue.enqueue(exec::cpuOmpBlocks, Vec{3, 3}, Vec{1, 1}, KernelBundle{fn, 43});
-    // queue.enqueue(exec::cpuOmpBlocks, Kernel{fn}.config(Vec{3, 3}, Vec{1, 1})(23));
-
-     enqueue(queue, exec::cpuOmpBlocks, Vec{3, 3}, Vec{1, 1}, KernelBundle{fn, 43});
-}
-#endif
-
-#if 0
-struct PrintIdx
-{
-    ALPAKA_FN_ACC void operator()(auto const& acc, auto x) const
-    {
-        for(auto i : IndependentGridThreadIter{acc})
-        {
-#    if ALPAKA_LANG_CUDA && __CUDA_ARCH__
-            printf(
-                "blockIdx = %u threadIdx = %u globalIdx = %u\n",
-                acc[layer::block].idx().x(),
-                acc[layer::thread].idx().x(),
-                i.x());
-#    else
-            std::cout << "blockIdx = " << acc[layer::block].idx() << " threadIdx = " << acc[layer::thread].idx()
-                      << " value = " << i << std::endl;
-#    endif
-        }
-    }
-};
-
-void runPlatformCreationTest(auto exec, auto queue)
-{
-    std::cout << "exec=" << core::demangledName(exec) << std::endl;
-    std::cout << "start enqueue" << std::endl;
-    queue.enqueue(exec, ThreadSpec{Vec{3, 3}, Vec{1, 1}}, PrintIdx{}, 42);
-    wait(queue);
-    // queue.enqueue(exec::cpuOmpBlocks, Vec{3, 3}, Vec{1, 1}, KernelBundle{fn, 43});
-    // queue.enqueue(exec::cpuOmpBlocks, Kernel{fn}.config(Vec{3, 3}, Vec{1, 1})(23));
-
-    enqueue(queue, exec, FrameSpec{Vec{3, 3}, Vec{2, 2}}, KernelBundle{PrintIdx{}, 43});
-    wait(queue);
-}
-
-TEST_CASE("enqueue hallo idx", "")
-{
-    executeForEachNoReturn(
-        [](auto api)
-        {
-            std::cout << api.getName() << std::endl;
-
-            Platform platform = makePlatform(api);
-            Device device = platform.makeDevice(0);
-
-            std::cout << getName(platform) << " " << device.getName() << std::endl;
-
-            Queue queue = device.makeQueue();
-
-            std::cout << "all executors" << std::endl;
-            auto possibleMappings = supportedMappings(device);
-            executeForEachNoReturn([&](auto exec) { runPlatformCreationTest(exec, queue); }, possibleMappings);
-        },
-        enabledApis);
-}
-#endif
+using TestApis = std::decay_t<decltype(allBackends(enabledApis))>;
 
 #if 1
 struct IotaKernel
@@ -118,23 +37,27 @@ struct IotaKernel
 TEMPLATE_LIST_TEST_CASE("iota", "", TestApis)
 {
     auto cfg = TestType::makeDict();
-    auto api = cfg[object::api];
+    auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
-    std::cout << api.getName() << std::endl;
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+    std::cout << deviceSpec.getApi().getName() << std::endl;
 
-    Platform platform = makePlatform(api);
-    Device device = platform.makeDevice(0);
+    Device device = devSelector.makeDevice(0);
 
-    std::cout << getName(platform) << " " << device.getName() << std::endl;
+    std::cout << device.getName() << std::endl;
 
     Queue queue = device.makeQueue();
     constexpr Vec extent = Vec{12u};
     std::cout << "exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<uint32_t>(device, extent);
 
-    Platform cpuPlatform = makePlatform(api::cpu);
-    Device cpuDevice = cpuPlatform.makeDevice(0);
+    Device cpuDevice = makeHostDevice();
     auto hBuff = onHost::allocMirror(cpuDevice, dBuff);
 
     constexpr auto frameSize = CVec<uint32_t, 4u>{};
@@ -171,23 +94,27 @@ struct IotaKernelND
 TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
 {
     auto cfg = TestType::makeDict();
-    auto api = cfg[object::api];
+    auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
-    std::cout << api.getName() << std::endl;
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
 
-    Platform platform = makePlatform(api);
-    Device device = platform.makeDevice(0);
+    std::cout << deviceSpec.getApi().getName() << std::endl;
+    Device device = devSelector.makeDevice(0);
 
-    std::cout << getName(platform) << " " << device.getName() << std::endl;
+    std::cout << device.getName() << std::endl;
 
     Queue queue = device.makeQueue();
     constexpr Vec extent = Vec{8u, 16u};
     std::cout << "exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, 2u>>(device, extent);
 
-    Platform cpuPlatform = makePlatform(api::cpu);
-    Device cpuDevice = cpuPlatform.makeDevice(0);
+    Device cpuDevice = makeHostDevice();
     auto hBuff = onHost::allocMirror(cpuDevice, dBuff);
 
     wait(queue);
@@ -215,23 +142,27 @@ TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
 TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
 {
     auto cfg = TestType::makeDict();
-    auto api = cfg[object::api];
+    auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
-    std::cout << api.getName() << std::endl;
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
 
-    Platform platform = makePlatform(api);
-    Device device = platform.makeDevice(0);
+    std::cout << deviceSpec.getApi().getName() << std::endl;
+    Device device = devSelector.makeDevice(0);
 
-    std::cout << getName(platform) << " " << device.getName() << std::endl;
+    std::cout << device.getName() << std::endl;
 
     Queue queue = device.makeQueue();
     constexpr Vec extent = Vec{4u, 8u, 16u};
     std::cout << "exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, 3u>>(device, extent);
 
-    Platform cpuPlatform = makePlatform(api::cpu);
-    Device cpuDevice = cpuPlatform.makeDevice(0);
+    Device cpuDevice = makeHostDevice();
     auto hBuff = onHost::allocMirror(cpuDevice, dBuff);
 
     wait(queue);
@@ -288,15 +219,20 @@ struct IotaKernelNDSelection
 TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
 {
     auto cfg = TestType::makeDict();
-    auto api = cfg[object::api];
+    auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
-    std::cout << api.getName() << std::endl;
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
 
-    Platform platform = makePlatform(api);
-    Device device = platform.makeDevice(0);
+    std::cout << deviceSpec.getApi().getName() << std::endl;
+    Device device = devSelector.makeDevice(0);
 
-    std::cout << getName(platform) << " " << device.getName() << std::endl;
+    std::cout << device.getName() << std::endl;
 
     Queue queue = device.makeQueue();
     constexpr Vec numBlocks = Vec{4u, 8u, 16u};
@@ -307,8 +243,7 @@ TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
     std::cout << "exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, 3u>>(device, numBlocks);
 
-    Platform cpuPlatform = makePlatform(api::cpu);
-    Device cpuDevice = cpuPlatform.makeDevice(0);
+    Device cpuDevice = makeHostDevice();
     auto hBuff = onHost::allocMirror(cpuDevice, dBuff);
     onHost::memset(queue, dBuff, 0u);
 

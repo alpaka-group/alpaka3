@@ -8,7 +8,7 @@
 #include "alpaka/api/cpu/Api.hpp"
 #include "alpaka/api/cuda/Api.hpp"
 #include "alpaka/api/hip/Api.hpp"
-#include "alpaka/api/syclIntel/Api.hpp"
+#include "alpaka/api/oneApi/Api.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/meta/filter.hpp"
 #include "alpaka/onHost/trait.hpp"
@@ -24,10 +24,8 @@ namespace alpaka
      */
     constexpr auto thisApi()
     {
-#if ALPAKA_LANG_SYCL && ALPAKA_LANG_ONEAPI_GPU && __SYCL_DEVICE_ONLY__
-        return api::syclIntelGpu;
-#elif ALPAKA_LANG_SYCL && ALPAKA_LANG_ONEAPI_CPU && __SYCL_DEVICE_ONLY__
-        return api::syclIntelCpu;
+#if ALPAKA_LANG_SYCL && ALPAKA_LANG_ONEAPI && __SYCL_DEVICE_ONLY__
+        return api::oneApi;
 #elif ALPAKA_LANG_CUDA && (ALPAKA_COMP_CLANG_CUDA || ALPAKA_COMP_NVCC) && __CUDA_ARCH__
         return api::cuda;
 #elif ALPAKA_LANG_HIP && defined(__HIP_DEVICE_COMPILE__) && __HIP_DEVICE_COMPILE__ == 1
@@ -39,7 +37,7 @@ namespace alpaka
 
     namespace onHost
     {
-        constexpr auto apis = std::make_tuple(api::cpu, api::cuda, api::hip, api::syclIntelCpu, api::syclIntelGpu);
+        constexpr auto apis = std::make_tuple(api::cpu, api::cuda, api::hip, api::oneApi);
 
         constexpr auto enabledApis = meta::filter([](auto api) constexpr { return isPlatformAvaiable(api); }, apis);
     } // namespace onHost
