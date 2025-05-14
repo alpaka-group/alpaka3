@@ -63,10 +63,7 @@ struct VectorAddKernel3D
     }
 };
 
-void testVectorAddKernel(
-    alpaka::onHost::concepts::Device auto host,
-    alpaka::onHost::concepts::Device auto device,
-    auto computeExec)
+void testVectorAddKernel(alpaka::onHost::concepts::Device auto device, auto computeExec)
 {
     // random number generator with a gaussian distribution
     std::random_device rd{};
@@ -80,9 +77,9 @@ void testVectorAddKernel(
     constexpr uint32_t size = 1024 * 1024;
 
     // allocate input and output host buffers in pinned memory accessible by the Platform devices
-    auto in1_h = alpaka::onHost::alloc<float>(host, size);
-    auto in2_h = alpaka::onHost::allocMirror(host, in1_h);
-    auto out_h = alpaka::onHost::allocMirror(host, in1_h);
+    auto in1_h = alpaka::onHost::allocHost<float>(size);
+    auto in2_h = alpaka::onHost::allocHostMirror(in1_h);
+    auto out_h = alpaka::onHost::allocHostMirror(in1_h);
 
     // fill the input buffers with random data, and the output buffer with zeros
     for(uint32_t i = 0; i < size; ++i)
@@ -165,10 +162,7 @@ void testVectorAddKernel(
     std::cout << "success\n";
 }
 
-void testVectorAddKernel3D(
-    alpaka::onHost::concepts::Device auto host,
-    alpaka::onHost::concepts::Device auto device,
-    auto computeExec)
+void testVectorAddKernel3D(alpaka::onHost::concepts::Device auto device, auto computeExec)
 {
     // random number generator with a gaussian distribution
     std::random_device rd{};
@@ -183,9 +177,9 @@ void testVectorAddKernel3D(
     constexpr uint32_t size = ndsize.product();
 
     // allocate input and output host buffers in pinned memory accessible by the Platform devices
-    auto in1_h = alpaka::onHost::alloc<float>(host, ndsize);
-    auto in2_h = alpaka::onHost::allocMirror(host, in1_h);
-    auto out_h = alpaka::onHost::allocMirror(host, in1_h);
+    auto in1_h = alpaka::onHost::allocHost<float>(ndsize);
+    auto in2_h = alpaka::onHost::allocHostMirror(in1_h);
+    auto out_h = alpaka::onHost::allocHostMirror(in1_h);
 
     // fill the input buffers with random data, and the output buffer with zeros
     for(uint32_t i = 0; i < size; ++i)
@@ -256,16 +250,12 @@ int example(auto const cfg)
         return EXIT_FAILURE;
     }
 
-    // use the single host device
-    alpaka::onHost::Device host = alpaka::onHost::makeHostDevice();
-    std::cout << "Host:   " << alpaka::onHost::getName(host) << "\n\n";
-
     // use the first device
     alpaka::onHost::Device device = devSelector.makeDevice(0);
     std::cout << "Device: " << alpaka::onHost::getName(device) << "\n\n";
 
-    testVectorAddKernel(host, device, computeExec);
-    testVectorAddKernel3D(host, device, computeExec);
+    testVectorAddKernel(device, computeExec);
+    testVectorAddKernel3D(device, computeExec);
 
     return EXIT_SUCCESS;
 }

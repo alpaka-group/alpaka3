@@ -57,8 +57,7 @@ TEMPLATE_LIST_TEST_CASE("iota", "", TestApis)
     std::cout << "exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<uint32_t>(device, extent);
 
-    Device cpuDevice = makeHostDevice();
-    auto hBuff = onHost::allocMirror(cpuDevice, dBuff);
+    auto hBuff = onHost::allocHostMirror(dBuff);
 
     constexpr auto frameSize = CVec<uint32_t, 4u>{};
     onHost::enqueue(
@@ -114,8 +113,7 @@ TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
     std::cout << "exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, 2u>>(device, extent);
 
-    Device cpuDevice = makeHostDevice();
-    auto hBuff = onHost::allocMirror(cpuDevice, dBuff);
+    auto hBuff = onHost::allocHostMirror(dBuff);
 
     wait(queue);
     constexpr auto frameSize = Vec{2u, 4u};
@@ -162,8 +160,7 @@ TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
     std::cout << "exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, 3u>>(device, extent);
 
-    Device cpuDevice = makeHostDevice();
-    auto hBuff = onHost::allocMirror(cpuDevice, dBuff);
+    auto hBuff = onHost::allocHostMirror(dBuff);
 
     wait(queue);
     constexpr auto frameSize = Vec{2u, 4u, 8u};
@@ -243,8 +240,7 @@ TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
     std::cout << "exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, 3u>>(device, numBlocks);
 
-    Device cpuDevice = makeHostDevice();
-    auto hBuff = onHost::allocMirror(cpuDevice, dBuff);
+    auto hBuff = onHost::allocHostMirror(dBuff);
     onHost::memset(queue, dBuff, 0u);
 
     wait(queue);

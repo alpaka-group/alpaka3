@@ -53,9 +53,6 @@ auto example(T_Cfg const& cfg) -> int
     std::cout << "Using alpaka accelerator: " << core::demangledName(exec) << " for " << deviceSpec.getApi().getName()
               << std::endl;
 
-    // Select specific devices
-    Device devHost = makeHostDevice();
-
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     onHost::Device devAcc = devSelector.makeDevice(0);
 
@@ -101,7 +98,7 @@ auto example(T_Cfg const& cfg) -> int
 
     // Initialize host-buffer
     // This buffer will hold the current values (used for the next step)
-    auto uBufHost = alpaka::onHost::alloc<double>(devHost, extent);
+    auto uBufHost = alpaka::onHost::allocHost<double>(extent);
 
     // Accelerator buffer
     auto uCurrBufAcc = alpaka::onHost::allocMirror(devAcc, uBufHost);

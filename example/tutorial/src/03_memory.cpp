@@ -23,15 +23,9 @@ int example(auto const devSpec)
         return EXIT_FAILURE;
     }
 
-    // use the single host device
-    alpaka::onHost::Device host = alpaka::onHost::makeHostDevice();
-
-    std::cout << "Use host device:\n";
-    std::cout << "  - " << alpaka::onHost::getName(host) << "\n\n";
-
     // allocate a buffer of floats in host memory
     uint32_t size = 42;
-    auto host_buffer = alpaka::onHost::alloc<float>(host, size);
+    auto host_buffer = alpaka::onHost::allocHost<float>(size);
     std::cout << "host memory buffer at " << std::data(host_buffer) << "\n\n";
 
     // fill the host buffers with values
@@ -41,7 +35,7 @@ int example(auto const devSpec)
     }
 
     // use the first device
-    alpaka::onHost::Device device = alpaka::onHost::makeHostDevice();
+    alpaka::onHost::Device device = devSelector.makeDevice(0);
     std::cout << "Device: " << alpaka::onHost::getName(device) << '\n';
 
     // create a work queue

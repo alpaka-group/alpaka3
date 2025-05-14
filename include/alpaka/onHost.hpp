@@ -7,6 +7,7 @@
 #include "alpaka/KernelBundle.hpp"
 #include "alpaka/api/trait.hpp"
 #include "alpaka/concepts.hpp"
+#include "alpaka/onHost/DeviceSelector.hpp"
 #include "alpaka/onHost/concepts.hpp"
 #include "alpaka/tag.hpp"
 #include "alpaka/trait.hpp"
@@ -103,11 +104,30 @@ namespace alpaka::onHost
     /** Enqueue a kernel to a queue
      *
      * @param queue the kernel will be executed after all previous work in this queue is finished
-     * @param executor description how native worker threads will be mapped and grouped to compute grid layers (blocks,
-     * threads).
      * @param specification thread or frame specification which provides a chunked description of the thread or frame
      * index domain
      * @param kernelBundle the compute kernel and there arguments
+     *
+     * @{
+     */
+
+    /**
+     * A available default executor will be selected automaticlally. The default executor is a executor with most
+     * parallelism.
+     */
+    template<typename TKernelFn, typename... TArgs>
+    inline void enqueue(
+        concepts::QueueHandle auto const& queue,
+        auto const& specification,
+        KernelBundle<TKernelFn, TArgs...> const& kernelBundle)
+    {
+        auto executor = supportedMappings(getDevice(queue));
+        internal::enqueue(*queue.get(), std::get<0>(executor), specification, kernelBundle);
+    }
+
+    /**
+     * @param executor description how native worker threads will be mapped and grouped to compute grid layers (blocks,
+     * threads).
      */
     template<typename TKernelFn, typename... TArgs>
     inline void enqueue(
@@ -118,6 +138,8 @@ namespace alpaka::onHost
     {
         internal::enqueue(*queue.get(), executor, specification, kernelBundle);
     }
+
+    /** @} */
 
     /** Enqueue a operation which is executed on the host side
      *
@@ -225,9 +247,14 @@ namespace alpaka::onHost
     /** allocate memory on the given device
      *
      * @tparam T_Type type of the data elements
-     * @param device device handle
      * @param extents number of elements for each dimension
      * @return memory owning view to the allocated memory
+     *
+     * @{
+     */
+
+    /**
+     * @param device device handle
      */
     template<typename T_Type>
     inline auto alloc(auto const& device, alpaka::concepts::VectorOrScalar auto const& extents)
@@ -238,20 +265,51 @@ namespace alpaka::onHost
             extentsVec);
     }
 
+    /**
+     * The host controller device is the deviceKind::Cpu from api::Cpu.
+     */
+    template<typename T_Type>
+    inline auto allocHost(alpaka::concepts::VectorOrScalar auto const& extents)
+    {
+        auto device = makeHostDevice<T_Type>();
+        Vec const extentsVec = extents;
+        return internal::Alloc::Op<T_Type, std::decay_t<decltype(*device.get())>, ALPAKA_TYPEOF(extentsVec)>{}(
+            *device.get(),
+            extentsVec);
+    }
+
+    /** @} */
+
     /** allocate memory on the given device based on a view
      *
      * Derives type and extents of the memory from the view.
      * The content of the memory is not copied to the created allocated memory.
      *
-     * @param device device handle
      * @param view memory where properties will be derived from
      *
      * @return memory owning view to the allocated memory
+     *
+     * @{
+     */
+
+    /**
+     * @param device device handle
      */
     inline auto allocMirror(auto const& device, auto const& view)
     {
         return alloc<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(device, getExtents(view));
     }
+
+    /**
+     * The host controller device is the deviceKind::Cpu from api::Cpu.
+     */
+    inline auto allocHostMirror(auto const& view)
+    {
+        auto device = makeHostDevice<ALPAKA_TYPEOF(view)>();
+        return alloc<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(device, getExtents(view));
+    }
+
+    /** @} */
 
     /** copy data byte wise from one to another container
      *

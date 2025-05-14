@@ -377,7 +377,6 @@ void testKernels(auto cfg)
 
     // Get the host device for allocating memory on the host
     onHost::Queue queue = devAcc.makeQueue();
-    onHost::Device devHost = onHost::makeHostDevice();
 
     // Create vectors
     using Idx = std::uint32_t;
@@ -389,9 +388,9 @@ void testKernels(auto cfg)
     auto bufAccOutputC = onHost::allocMirror(devAcc, bufAccInputA);
 
     // Host buffer as the result
-    auto bufHostOutputA = onHost::allocMirror(devHost, bufAccInputA);
-    auto bufHostOutputB = onHost::allocMirror(devHost, bufAccInputB);
-    auto bufHostOutputC = onHost::allocMirror(devHost, bufAccOutputC);
+    auto bufHostOutputA = onHost::allocHostMirror(bufAccInputA);
+    auto bufHostOutputB = onHost::allocHostMirror(bufAccInputB);
+    auto bufHostOutputC = onHost::allocHostMirror(bufAccOutputC);
 
     /* Each frame will have 64 elements processed by each thread.
      * The number of frames is calculated based on the array size and the number of elements processed by each thread.
@@ -545,8 +544,7 @@ void testKernels(auto cfg)
 
             // Vector of sums of each block
             auto bufAccSumPerBlock = onHost::alloc<DataType>(devAcc, 1u);
-            auto bufHostSumPerBlock = onHost::allocMirror(devHost, bufAccSumPerBlock);
-
+            auto bufHostSumPerBlock = onHost::allocHostMirror(bufAccSumPerBlock);
 
             // Test Dot kernel with specific blocksize which is larger than one
             measureKernelExec(

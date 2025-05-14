@@ -148,16 +148,14 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdForEach) -> int
     // Create a queue on the device
     onHost::Queue queue = devAcc.makeQueue();
 
-    // Get the host device for allocating memory on the host.
-    onHost::Device devHost = onHost::makeHostDevice();
 
     // Allocate host memory buffers for R, G, B, and ARGB
-    auto bufHostR = onHost::alloc<uint8_t>(devHost, extent);
-    auto bufHostG = onHost::allocMirror(devHost, bufHostR);
-    auto bufHostB = onHost::allocMirror(devHost, bufHostR);
-    auto bufHostA = onHost::allocMirror(devHost, bufHostR);
-    auto bufHostARGB = onHost::alloc<Data>(devHost, extent);
-    auto bufHostScalarRGB = onHost::allocMirror(devHost, bufHostARGB);
+    auto bufHostR = onHost::allocHost<uint8_t>(extent);
+    auto bufHostG = onHost::allocHostMirror(bufHostR);
+    auto bufHostB = onHost::allocHostMirror(bufHostR);
+    auto bufHostA = onHost::allocHostMirror(bufHostR);
+    auto bufHostARGB = onHost::allocHost<Data>(extent);
+    auto bufHostScalarRGB = onHost::allocHostMirror(bufHostARGB);
 
     // Fill input data with random RGB values
     std::random_device rd{};

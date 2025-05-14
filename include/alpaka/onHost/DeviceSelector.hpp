@@ -4,10 +4,7 @@
 
 #pragma once
 
-#include "alpaka/api/cpu.hpp"
-#include "alpaka/api/oneApi.hpp"
-#include "alpaka/api/unifiedCudaHip.hpp"
-#include "alpaka/onHost/internal.hpp"
+#include "alpaka/api/cpu/Api.hpp"
 #include "alpaka/tag.hpp"
 
 namespace alpaka::onHost

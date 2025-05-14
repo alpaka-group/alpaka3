@@ -201,10 +201,6 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
 
     std::cout << deviceSpec.getApi().getName() << std::endl;
 
-    // Use the single host device
-    alpaka::onHost::Device host = alpaka::onHost::makeHostDevice();
-    std::cout << "Host:   " << alpaka::onHost::getName(host) << "\n\n";
-
     // Use the first device
     onHost::Device device = devSelector.makeDevice(0);
     std::cout << "Device: " << alpaka::onHost::getName(device) << "\n\n";
@@ -220,8 +216,8 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
     constexpr uint32_t size = 32;
 
     // Allocate input and output buffers on the host
-    auto inHost = alpaka::onHost::alloc<float>(host, size);
-    auto outHost = alpaka::onHost::alloc<float>(host, size);
+    auto inHost = alpaka::onHost::allocHost<float>(size);
+    auto outHost = alpaka::onHost::allocHost<float>(size);
 
     // Fill the input buffer with random data
     for(uint32_t i = 0; i < size; ++i)
@@ -368,10 +364,6 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Returning Boolean - Test", "", TestApis)
     }
     std::cout << deviceSpec.getApi().getName() << std::endl;
 
-    // Use the single host device
-    alpaka::onHost::Device host = alpaka::onHost::makeHostDevice();
-    std::cout << "Host:   " << alpaka::onHost::getName(host) << "\n\n";
-
     // Use the first device
     onHost::Device device = devSelector.makeDevice(0);
     std::cout << "Device: " << alpaka::onHost::getName(device) << "\n\n";
@@ -387,9 +379,9 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Returning Boolean - Test", "", TestApis)
     constexpr uint32_t size = 32;
 
     // Allocate input and output buffers on the host
-    auto inHost = alpaka::onHost::alloc<float>(host, size);
+    auto inHost = alpaka::onHost::allocHost<float>(size);
     // Return type of the array items is bool
-    auto outHost = alpaka::onHost::alloc<bool>(host, size);
+    auto outHost = alpaka::onHost::allocHost<bool>(size);
 
     // Fill the input buffer with random data
     for(uint32_t i = 0; i < size; ++i)

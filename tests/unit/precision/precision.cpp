@@ -70,8 +70,7 @@ void iotaTest(auto cfg, auto const extents, auto frameSize)
     std::cout << "exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<Vec<T_MemIdxType, ALPAKA_TYPEOF(extents)::dim()>>(device, extents);
 
-    Device cpuDevice = makeHostDevice();
-    auto hBuff = onHost::allocMirror(cpuDevice, dBuff);
+    auto hBuff = onHost::allocHostMirror(dBuff);
 
     wait(queue);
     onHost::enqueue(

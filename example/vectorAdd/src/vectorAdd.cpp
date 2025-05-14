@@ -81,13 +81,10 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
     // Create a queue on the device
     onHost::Queue queue = devAcc.makeQueue();
 
-    // Get the host device for allocating memory on the host.
-    onHost::Device devHost = onHost::makeHostDevice();
-
     // Allocate 3 host memory buffers
-    auto bufHostA = onHost::alloc<Data>(devHost, extent);
-    auto bufHostB = onHost::allocMirror(devHost, bufHostA);
-    auto bufHostC = onHost::allocMirror(devHost, bufHostA);
+    auto bufHostA = onHost::allocHost<Data>(extent);
+    auto bufHostB = onHost::allocHostMirror(bufHostA);
+    auto bufHostC = onHost::allocHostMirror(bufHostA);
 
     // C++14 random generator for uniformly distributed numbers in {1,..,42}
     std::random_device rd{};

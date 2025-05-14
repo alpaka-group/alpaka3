@@ -70,8 +70,7 @@ TEMPLATE_LIST_TEST_CASE("block iota", "", TestApis)
     std::cout << "block iota exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<uint32_t>(device, dataExtent);
 
-    Device cpuDevice = makeHostDevice();
-    auto hBuff = onHost::allocMirror(cpuDevice, dBuff);
+    auto hBuff = onHost::allocHostMirror(dBuff);
     wait(queue);
 
     onHost::enqueue(

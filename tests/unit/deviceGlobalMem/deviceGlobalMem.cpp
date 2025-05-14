@@ -90,8 +90,7 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
     std::cout << "block shared iota exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<uint32_t>(device, dataExtent);
 
-    Device cpuDevice = makeHostDevice();
-    auto hBuff = onHost::allocMirror(cpuDevice, dBuff);
+    auto hBuff = onHost::allocHostMirror(dBuff);
     wait(queue);
     {
         onHost::enqueue(

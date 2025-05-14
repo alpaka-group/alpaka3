@@ -11,14 +11,7 @@
 
 int example(auto const devSpec)
 {
-    // the cpu api always has a single device
-    // Get the host device for allocating memory on the host.
-    alpaka::onHost::Device host = alpaka::onHost::makeHostDevice();
-
-    std::cout << "Use host device:\n";
-    std::cout << "  - " << alpaka::onHost::getName(host) << "\n\n";
-
-    // get acces to querry number of devices
+    // get access to query the number of compute devices
     auto deviceSelector = alpaka::onHost::makeDeviceSelector(devSpec);
 
     auto numDevice = deviceSelector.getDeviceCount();
