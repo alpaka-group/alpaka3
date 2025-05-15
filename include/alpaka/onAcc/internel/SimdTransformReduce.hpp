@@ -122,19 +122,31 @@ namespace alpaka::onAcc::internal
             return std::apply(
                 [&](auto const&... dataIdx) constexpr
                 {
-                    auto results = Simd{executeDoReduce<T_MemAlignment, T_width>(
+                    /* It is not possible to create a Simd{Simd} due to constructor issues. Therefore we need to define
+                     * the type for the result explicit.
+                     */
+                    using ComponentType = ALPAKA_TYPEOF(executeDoReduce<T_MemAlignment, T_width>(
                         acc,
-                        dataIdx,
+                        std::get<0>(std::make_tuple(dataIdx...)),
                         ALPAKA_FORWARD(func),
-                        ALPAKA_FORWARD(data)...)...};
+                        ALPAKA_FORWARD(data)...));
+                    auto results = Simd<ComponentType, std::tuple_size_v<ALPAKA_TYPEOF(ids)>>{
+                        executeDoReduce<T_MemAlignment, T_width>(
+                            acc,
+                            dataIdx,
+                            ALPAKA_FORWARD(func),
+                            ALPAKA_FORWARD(data)...)...};
 
                     return results.reduce(ALPAKA_FORWARD(reduceFunc));
-                },
+                }
+
+                ,
                 ids);
         }
 
     private:
         constexpr auto const& asParent() const
+
         {
             return static_cast<T_Parent const&>(*this);
         }
@@ -164,8 +176,8 @@ namespace alpaka::onAcc::internal
             auto&& func,
             alpaka::concepts::MdSpan auto&&... data)
         {
-            /* We do not check if the iterator points to a valid element, the caller must ensure that we can safely
-             * increase the iterator without jumping over iter.end().
+            /* We do not check if the iterator points to a valid element, the caller must ensure that we can
+             * safely increase the iterator without jumping over iter.end().
              *
              * The ternary operator is used to allow using the folding expression on iter.
              */
@@ -197,7 +209,7 @@ namespace alpaka::onAcc::internal
             constexpr uint32_t cachlineBytes
                 = getCachelineSize(ALPAKA_TYPEOF(acc.getApi()){}, ALPAKA_TYPEOF(acc.getDeviceKind()){});
             // number of simd packs fitting into the cacheline
-            constexpr uint32_t numSimdPacksPerCacheLine = std::max(cachlineBytes / simdWidthInByte, 1u);
+            constexpr uint32_t numSimdPacksPerCacheLine = alpaka::divExZero(cachlineBytes, simdWidthInByte);
             /* number of simd packs used per functor call
              * - the number of simd packs per functor call should be a multiple of the number of simd packs per
              * cacheline
@@ -247,6 +259,7 @@ namespace alpaka::onAcc::internal
 
             auto tmpReturn = SimdReturn::all(neutralElement);
 
+            // auto tmpReturn = SimdReturn::all(neutralElement);
             for(; iter != simdIdxContainer.end();)
             {
                 tmpReturn = reduceFunc(
