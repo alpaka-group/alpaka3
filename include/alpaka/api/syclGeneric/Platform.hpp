@@ -182,7 +182,7 @@ namespace alpaka
 
                 void _()
                 {
-                    static_assert(concepts::Platform<Platform>);
+                    static_assert(internal::concepts::Platform<Platform>);
                 }
             };
         } // namespace syclGeneric

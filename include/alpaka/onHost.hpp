@@ -78,79 +78,13 @@ namespace alpaka::onHost
         return internal::getNativeHandle(*any.get());
     }
 
-    /** create a queue for a given device
-     *
-     * @attention If you call this method multiple times it is allowed that you get always the same handle back.
-     * There is no guarantee that you will get independent queues.
-     *
-     * Enqueuing tasks into two different queues is not guaranteeing that these tasks running in parallel.
-     * Running tasks from different tasks sequential is a valid behaviour. Enqueuing into two queues only providing the
-     * information that the tasks are independent of each other.
-     */
-    inline auto makeQueue(concepts::DeviceHandle auto const& device)
-    {
-        return internal::MakeQueue::Op<std::decay_t<decltype(*device.get())>>{}(*device.get());
-    }
-
     /** blocks the caller until the given handle executes all work
      *
      * @param any currently only queue handles are supported
      */
     inline void wait(alpaka::concepts::HasGet auto& any)
     {
-        return internal::Wait::wait(*any.get());
-    }
-
-    /** Enqueue a kernel to a queue
-     *
-     * @param queue the kernel will be executed after all previous work in this queue is finished
-     * @param specification thread or frame specification which provides a chunked description of the thread or frame
-     * index domain
-     * @param kernelBundle the compute kernel and there arguments
-     *
-     * @{
-     */
-
-    /**
-     * A available default executor will be selected automaticlally. The default executor is a executor with most
-     * parallelism.
-     */
-    template<typename TKernelFn, typename... TArgs>
-    inline void enqueue(
-        concepts::QueueHandle auto const& queue,
-        auto const& specification,
-        KernelBundle<TKernelFn, TArgs...> const& kernelBundle)
-    {
-        auto executor = supportedMappings(getDevice(queue));
-        internal::enqueue(*queue.get(), std::get<0>(executor), specification, kernelBundle);
-    }
-
-    /**
-     * @param executor description how native worker threads will be mapped and grouped to compute grid layers (blocks,
-     * threads).
-     */
-    template<typename TKernelFn, typename... TArgs>
-    inline void enqueue(
-        concepts::QueueHandle auto const& queue,
-        auto const executor,
-        auto const& specification,
-        KernelBundle<TKernelFn, TArgs...> const& kernelBundle)
-    {
-        internal::enqueue(*queue.get(), executor, specification, kernelBundle);
-    }
-
-    /** @} */
-
-    /** Enqueue a operation which is executed on the host side
-     *
-     * @param queue the task will be executed after all previous work in this queue is finished
-     * @param task task to be executed on the host side
-     */
-    inline void enqueue(concepts::QueueHandle auto const& queue, auto const& task)
-    {
-        return internal::Enqueue::Task<std::decay_t<decltype(*queue.get())>, std::decay_t<decltype(task)>>{}(
-            *queue.get(),
-            task);
+        return internal::wait(*any.get());
     }
 
     /** pointer to data
@@ -250,22 +184,6 @@ namespace alpaka::onHost
      * @param extents number of elements for each dimension
      * @return memory owning view to the allocated memory
      *
-     * @{
-     */
-
-    /**
-     * @param device device handle
-     */
-    template<typename T_Type>
-    inline auto alloc(auto const& device, alpaka::concepts::VectorOrScalar auto const& extents)
-    {
-        Vec const extentsVec = extents;
-        return internal::Alloc::Op<T_Type, std::decay_t<decltype(*device.get())>, ALPAKA_TYPEOF(extentsVec)>{}(
-            *device.get(),
-            extentsVec);
-    }
-
-    /**
      * The host controller device is the deviceKind::Cpu from api::Cpu.
      */
     template<typename T_Type>
@@ -278,30 +196,16 @@ namespace alpaka::onHost
             extentsVec);
     }
 
-    /** @} */
-
     /** allocate memory on the given device based on a view
      *
      * Derives type and extents of the memory from the view.
      * The content of the memory is not copied to the created allocated memory.
      *
+     * The host controller device is the deviceKind::Cpu from api::Cpu.
+     *
      * @param view memory where properties will be derived from
      *
      * @return memory owning view to the allocated memory
-     *
-     * @{
-     */
-
-    /**
-     * @param device device handle
-     */
-    inline auto allocMirror(auto const& device, auto const& view)
-    {
-        return alloc<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(device, getExtents(view));
-    }
-
-    /**
-     * The host controller device is the deviceKind::Cpu from api::Cpu.
      */
     inline auto allocHostMirror(auto const& view)
     {
@@ -309,86 +213,4 @@ namespace alpaka::onHost
         return alloc<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(device, getExtents(view));
     }
 
-    /** @} */
-
-    /** copy data byte wise from one to another container
-     *
-     * @attention For dest and source the caller should ensure that the memory is valid until the operation is
-     * completed not until the execution handle is given back because alpaka is not extending the life-time until the
-     * operation is finished.
-     *
-     * @param queue the copy will be executed after all previous work in this queue is finished
-     * @param dest can be a container/view where the data should be written to
-     * @param source can be a container/view from which the data will be copied
-     *
-     * @{
-     */
-    inline void memcpy(concepts::QueueHandle auto& queue, auto& dest, auto const& source)
-    {
-        return memcpy(queue, dest, source, getExtents(dest));
-    }
-
-    /** @param extents M-dimensional data extents in elements, can be smaller than the container capacity */
-    inline void memcpy(
-        concepts::QueueHandle auto& queue,
-        auto& dest,
-        auto const& source,
-        alpaka::concepts::VectorOrScalar auto const& extents)
-    {
-        Vec const extentsVec = extents;
-        return internal::Memcpy::Op<
-            std::decay_t<decltype(*queue.get())>,
-            std::decay_t<decltype(dest)>,
-            std::decay_t<decltype(source)>,
-            std::decay_t<decltype(extentsVec)>>{}(*queue.get(), dest, source, extentsVec);
-    }
-
-    /** @} */
-
-    /** fill memory byte wise
-     *
-     * @param queue memset will be executed after all previous work in this queue is finished
-     * @param dest can be a container/view where the data should be written to
-     *             The caller should ensure that the memory is valid until the operation is completed not until the
-     *             execution handle is given back because alpaka is not extending the life-time until the operation is
-     *             finished.
-     * @param byteValue value to be written to each byte
-     *
-     * @{
-     */
-    inline auto memset(concepts::QueueHandle auto& queue, auto& dest, uint8_t byteValue)
-    {
-        return memset(queue, dest, byteValue, getExtents(dest));
-    }
-
-    /** @param extents M-dimensional data extents in elements, can be smaller than the container capacity */
-    inline auto memset(
-        concepts::QueueHandle auto& queue,
-        auto& dest,
-        uint8_t byteValue,
-        alpaka::concepts::VectorOrScalar auto const& extents)
-    {
-        Vec const extentsVec = extents;
-        return internal::Memset::Op<
-            std::decay_t<decltype(*queue.get())>,
-            std::decay_t<decltype(dest)>,
-            std::decay_t<decltype(extentsVec)>>{}(*queue.get(), dest, byteValue, extentsVec);
-    }
-
-    /** @} */
-
-    /** Properties of a given device
-     *
-     * @attention Currently only a handful of entries is available. The object will be refactored soon and will
-     * become most likely a compile time dictionary tu support optional entries.
-     *
-     * @{
-     */
-
-    inline DeviceProperties getDeviceProperties(concepts::DeviceHandle auto const& device)
-    {
-        return internal::GetDeviceProperties::Op<ALPAKA_TYPEOF(*device.get())>{}(*device.get());
-    }
-
-    /** @} */
 } // namespace alpaka::onHost

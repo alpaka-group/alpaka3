@@ -34,7 +34,7 @@ namespace alpaka::onHost
             };
         };
 
-        template<typename T_Mapping, concepts::DeviceHandle T_DeviceHandle>
+        template<typename T_Mapping, internal::concepts::DeviceHandle T_DeviceHandle>
         struct IsMappingSupportedBy::Op<T_Mapping, T_DeviceHandle>
             : IsMappingSupportedBy::Op<T_Mapping, typename T_DeviceHandle::element_type>
         {
@@ -122,12 +122,12 @@ namespace alpaka::onHost
         return trait::IsPlatformAvailable::Op<std::decay_t<decltype(api)>>::value;
     }
 
-    consteval bool isExecutorSupportedBy(auto executor, concepts::DeviceHandle auto const& deviceHandle)
+    consteval bool isExecutorSupportedBy(auto executor, internal::concepts::DeviceHandle auto const& deviceHandle)
     {
         return trait::IsMappingSupportedBy::Op<ALPAKA_TYPEOF(executor), ALPAKA_TYPEOF(deviceHandle)>::value;
     }
 
-    constexpr auto supportedMappings(concepts::DeviceHandle auto deviceHandle)
+    constexpr auto supportedMappings(internal::concepts::DeviceHandle auto deviceHandle)
     {
         return meta::filter(
             // we can not use isExecutorSupportedBy() because gcc14 is more strict in the detection which functions can

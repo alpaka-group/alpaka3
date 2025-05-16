@@ -63,12 +63,10 @@ struct VectorAddKernel1D
                 sharedIn1Data[linearFrameElem] = in1[globalDataIdx];
             }
 
-            /* This call is equal to `alpaka::onAcc::syncBlockThreads(acc)`
-             *
-             * The synchronization is required because we will use for the second loop over frame element indicis a
+            /* The synchronization is required because we will use for the second loop over frame element indicis a
              * different traversing schema. Therefore, you should not assume any thread and data element relation.
              */
-            acc.syncBlockThreads();
+            alpaka::onAcc::syncBlockThreads(acc);
 
             for(auto linearFrameElem : alpaka::onAcc::makeIdxMap(
                     acc,
@@ -84,7 +82,7 @@ struct VectorAddKernel1D
              * If this synchronization is missing threads can begin already to fill the shared memory with the next
              * frame data which results into a data race.
              */
-            acc.syncBlockThreads();
+            alpaka::onAcc::syncBlockThreads(acc);
         }
     }
 };
@@ -126,12 +124,10 @@ struct VectorAddKernel3D
                 sharedIn1Data[frameElemIdxMD] = in1[globalDataIdxMD];
             }
 
-            /* This call is equal to `alpaka::onAcc::syncBlockThreads(acc)`
-             *
-             * The synchronization is required because we will use for the second loop over frame element indicis a
+            /* The synchronization is required because we will use for the second loop over frame element indicis a
              * different traversing schema. Therefore, you should not assume any thread and data element relation.
              */
-            acc.syncBlockThreads();
+            alpaka::onAcc::syncBlockThreads(acc);
 
             for(auto frameElemIdxMD : alpaka::onAcc::makeIdxMap(
                     acc,
@@ -147,7 +143,7 @@ struct VectorAddKernel3D
              * If this synchronization is missing threads can begin already to fill the shared memory with the next
              * frame data which results into a data race.
              */
-            acc.syncBlockThreads();
+            alpaka::onAcc::syncBlockThreads(acc);
         }
     }
 };

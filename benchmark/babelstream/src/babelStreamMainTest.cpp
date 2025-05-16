@@ -283,7 +283,7 @@ struct DotKernel
             }
         }
         // sync is required because we do not know which thread wrote whcih value
-        onAcc::syncBlockThreads(acc);
+        alpaka::onAcc::syncBlockThreads(acc);
         // aggregate for each thread but skip the first shared memory slot
         for(auto [elemIdxInFrame] :
             onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{acc[layer::thread].count(), frameExtent}))
@@ -308,7 +308,7 @@ struct DotKernel
         auto const [blockSize] = acc[layer::thread].count();
         for(auto offset = blockSize / 2; offset > 0; offset /= 2)
         {
-            onAcc::syncBlockThreads(acc);
+            alpaka::onAcc::syncBlockThreads(acc);
             if(local_i < offset)
                 tbSum[local_i] += tbSum[local_i + offset];
         }
@@ -356,7 +356,7 @@ void testKernels(auto cfg)
     }
 #endif
 
-    std::cout << getDeviceProperties(devAcc) << std::endl;
+    std::cout << devAcc.getDeviceProperties() << std::endl;
 
     std::cout << "used exec " << core::demangledName(exec) << std::endl;
 
@@ -400,7 +400,7 @@ void testKernels(auto cfg)
      * a kernel can reflect the concurrency bytes used for the `SimdAlgo::concurrent()` back to the host, e.g. some
      * as we use for dynamic shared memory.
      */
-    uint32_t elementsPerFrameItem = alpaka::onHost::getNumElemPerThread<DataType>(queue);
+    uint32_t elementsPerFrameItem = onHost::getNumElemPerThread<DataType>(queue);
 
     auto numFrames = divExZero(arraySize, static_cast<Idx>(blockThreadExtentMain) * elementsPerFrameItem);
     auto dataBlocking = onHost::FrameSpec{numFrames, static_cast<Idx>(blockThreadExtentMain)};
@@ -535,7 +535,7 @@ void testKernels(auto cfg)
         }
         if(kernelsToBeExecuted == KernelsToRun::All)
         {
-            uint32_t elementsPerFrameItem = alpaka::onHost::getNumElemPerThread<DataType>(queue);
+            uint32_t elementsPerFrameItem = onHost::getNumElemPerThread<DataType>(queue);
             auto numFrames = std::min(
                 static_cast<Idx>(dotGridBlockExtent),
                 alpaka::divExZero(arraySize, (static_cast<Idx>(blockThreadExtentMain) * elementsPerFrameItem)));

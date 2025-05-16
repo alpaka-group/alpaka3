@@ -72,14 +72,13 @@ void iotaTest(auto cfg, auto const extents, auto frameSize)
 
     auto hBuff = onHost::allocHostMirror(dBuff);
 
-    wait(queue);
-    onHost::enqueue(
-        queue,
+    onHost::wait(queue);
+    queue.enqueue(
         exec,
         FrameSpec{pCast<KenelIdxScalarType>(extents) / frameSize, frameSize},
         KernelBundle{IotaKernelND<T_LoopIdxType>{}, dBuff.getMdSpan(), extents});
     onHost::memcpy(queue, hBuff, dBuff);
-    wait(queue);
+    onHost::wait(queue);
 
 
     alpaka::concepts::MdSpan auto mdSpan = hBuff.getMdSpan();

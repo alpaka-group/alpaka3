@@ -91,15 +91,14 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
     auto dBuff = onHost::alloc<uint32_t>(device, dataExtent);
 
     auto hBuff = onHost::allocHostMirror(dBuff);
-    wait(queue);
+    onHost::wait(queue);
     {
-        onHost::enqueue(
-            queue,
+        queue.enqueue(
             exec,
             FrameSpec{numBlocks, blockExtent},
             KernelBundle{DeviceGlobalMemKernelVec{}, dBuff.getMdSpan(), dataExtent});
         onHost::memcpy(queue, hBuff, dBuff);
-        wait(queue);
+        onHost::wait(queue);
 
         auto* ptr = onHost::data(hBuff);
         for(uint32_t i = 0u; i < dataExtent; ++i)
@@ -110,13 +109,12 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
 
     // scalar
     {
-        onHost::enqueue(
-            queue,
+        queue.enqueue(
             exec,
             FrameSpec{numBlocks, blockExtent},
             KernelBundle{DeviceGlobalMemKernelScalar{}, dBuff.getMdSpan(), dataExtent});
         onHost::memcpy(queue, hBuff, dBuff);
-        wait(queue);
+        onHost::wait(queue);
 
         auto* ptr = onHost::data(hBuff);
         for(uint32_t i = 0u; i < dataExtent; ++i)
@@ -127,13 +125,12 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
 
     // C array
     {
-        onHost::enqueue(
-            queue,
+        queue.enqueue(
             exec,
             FrameSpec{numBlocks, blockExtent},
             KernelBundle{DeviceGlobalMemKernelCArray{}, dBuff.getMdSpan(), dataExtent});
         onHost::memcpy(queue, hBuff, dBuff);
-        wait(queue);
+        onHost::wait(queue);
 
         auto* ptr = onHost::data(hBuff);
         for(uint32_t i = 0u; i < dataExtent; ++i)
@@ -144,13 +141,12 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
 
     // C array 2D
     {
-        onHost::enqueue(
-            queue,
+        queue.enqueue(
             exec,
             FrameSpec{numBlocks, blockExtent},
             KernelBundle{DeviceGlobalMemKernelCArray2D{}, dBuff.getMdSpan(), dataExtent});
         onHost::memcpy(queue, hBuff, dBuff);
-        wait(queue);
+        onHost::wait(queue);
 
         auto* ptr = onHost::data(hBuff);
         for(uint32_t i = 0u; i < dataExtent; ++i)

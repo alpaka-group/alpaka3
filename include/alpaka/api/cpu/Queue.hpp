@@ -29,13 +29,15 @@ namespace alpaka::onHost
         struct Queue
         {
         public:
-            Queue(concepts::DeviceHandle auto device, uint32_t const idx) : m_device(std::move(device)), m_idx(idx)
+            Queue(internal::concepts::DeviceHandle auto device, uint32_t const idx)
+                : m_device(std::move(device))
+                , m_idx(idx)
             {
             }
 
             ~Queue()
             {
-                internal::Wait::wait(*this);
+                internal::wait(*this);
             }
 
             Queue(Queue const&) = delete;
@@ -54,7 +56,7 @@ namespace alpaka::onHost
         private:
             void _()
             {
-                static_assert(concepts::Queue<Queue>);
+                static_assert(internal::concepts::Queue<Queue>);
             }
 
             Handle<T_Device> m_device;

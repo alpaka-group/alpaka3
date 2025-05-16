@@ -14,21 +14,18 @@ namespace alpaka::onAcc
 {
     namespace internalCompute
     {
-        struct SyncBlockThreads
+        struct Sync
         {
-            template<typename T_Acc>
+            template<typename T_Acc, alpaka::layer::concepts::Layer T_Scope>
             struct Op
             {
-                constexpr auto operator()(T_Acc const& acc) const
-                {
-                    acc[action::sync]();
-                }
+                constexpr auto operator()(T_Acc const& acc, T_Scope const scope) const;
             };
         };
 
-        constexpr void syncBlockThreads(auto const& acc)
+        constexpr void sync(auto const& acc, alpaka::layer::concepts::Layer auto const scope)
         {
-            SyncBlockThreads::Op<std::decay_t<decltype(acc)>>{}(acc);
+            Sync::Op<ALPAKA_TYPEOF(acc), ALPAKA_TYPEOF(scope)>{}(acc, scope);
         }
 
         struct SharedMemory

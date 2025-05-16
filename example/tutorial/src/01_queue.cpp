@@ -22,8 +22,7 @@ int main()
 
     std::cout << "Enqueue some work\n";
 
-    alpaka::onHost::enqueue(
-        queue,
+    queue.enqueue(
         []() noexcept
         {
             std::cout << "  - host task running...\n";

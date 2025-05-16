@@ -45,7 +45,7 @@ struct StencilKernel
             auto sdata = onAcc::declareSharedMdArray<double, uniqueId()>(acc, sharedMemExtents);
 
             // avoid data race with the stencil calculation at the end
-            onAcc::syncBlockThreads(acc);
+            alpaka::onAcc::syncBlockThreads(acc);
 
             for(alpaka::concepts::Dim<2u> auto idx2d :
                 onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{sharedMemExtents}))
@@ -54,7 +54,7 @@ struct StencilKernel
                 sdata[idx2d] = uCurrBuf[bufIdx];
             }
 
-            onAcc::syncBlockThreads(acc);
+            alpaka::onAcc::syncBlockThreads(acc);
 
             // Each kernel executes one element
             double const rX = dt / (dx * dx);

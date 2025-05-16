@@ -40,7 +40,7 @@ namespace alpaka::onHost
             };
 
         public:
-            Queue(concepts::DeviceHandle auto device, uint32_t const idx)
+            Queue(internal::concepts::DeviceHandle auto device, uint32_t const idx)
                 : m_device(std::move(device))
                 , m_idx(idx)
                 , m_queue(

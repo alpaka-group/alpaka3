@@ -115,15 +115,16 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
 
     Vec<size_t, 1u> chunkSize = 256u;
     // how many elements one worker should compute to ensure vectorization or instruction parallelism
-    uint32_t elementsPerWorker = alpaka::onHost::getNumElemPerThread<Data>(queue);
+    uint32_t elementsPerWorker = onHost::getNumElemPerThread<Data>(queue);
     auto dataBlocking = onHost::FrameSpec{divCeil(extent, chunkSize * elementsPerWorker), chunkSize};
 
     // Enqueue the kernel execution task
     {
         onHost::wait(queue);
         auto const beginT = std::chrono::high_resolution_clock::now();
-        onHost::enqueue(queue, exec, dataBlocking, taskKernel);
-        onHost::wait(queue); // wait in case we are using an asynchronous queue to time actual kernel runtime
+        queue.enqueue(exec, dataBlocking, taskKernel);
+        // wait in case we are using an asynchronous queue to time actual kernel runtime
+        onHost::wait(queue);
         auto const endT = std::chrono::high_resolution_clock::now();
         std::cout << "Time for kernel execution: " << std::chrono::duration<double>(endT - beginT).count() << 's'
                   << std::endl;

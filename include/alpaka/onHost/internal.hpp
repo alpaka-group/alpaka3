@@ -93,12 +93,12 @@ namespace alpaka::onHost
                     any.wait();
                 }
             };
-
-            static void wait(auto&& any)
-            {
-                return Op<std::decay_t<decltype(any)>>{}(any);
-            }
         };
+
+        inline void wait(auto&& any)
+        {
+            return Wait::Op<std::decay_t<decltype(any)>>{}(any);
+        }
 
         struct Enqueue
         {

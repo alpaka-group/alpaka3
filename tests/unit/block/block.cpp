@@ -61,7 +61,7 @@ TEMPLATE_LIST_TEST_CASE("block iota", "", TestApis)
     std::cout << deviceSpec.getApi().getName() << std::endl;
     onHost::Device device = devSelector.makeDevice(0);
 
-    std::cout << getDeviceProperties(device) << std::endl;
+    std::cout << device.getDeviceProperties() << std::endl;
 
     Queue queue = device.makeQueue();
     constexpr Vec numBlocks = Vec{9u};
@@ -71,15 +71,14 @@ TEMPLATE_LIST_TEST_CASE("block iota", "", TestApis)
     auto dBuff = onHost::alloc<uint32_t>(device, dataExtent);
 
     auto hBuff = onHost::allocHostMirror(dBuff);
-    wait(queue);
+    onHost::wait(queue);
 
-    onHost::enqueue(
-        queue,
+    queue.enqueue(
         exec,
         FrameSpec{numBlocks / 2u, blockExtent},
         KernelBundle{BlockIotaKernel{}, dBuff.getMdSpan(), numBlocks});
     onHost::memcpy(queue, hBuff, dBuff);
-    wait(queue);
+    onHost::wait(queue);
 
     auto* ptr = onHost::data(hBuff);
     for(uint32_t i = 0u; i < dataExtent; ++i)

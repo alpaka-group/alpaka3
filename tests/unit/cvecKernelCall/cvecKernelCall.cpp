@@ -31,7 +31,7 @@ struct KernelCVecFrameExtents
         alpaka::concepts::CVector auto frameExtent = acc[alpaka::frame::extent];
         // compile will fail if the type is silently cast to non CVec type
         [[maybe_unused]] alpaka::concepts::CVector auto blockThreadCount
-            = onAcc::getExtentsOf(acc, onAcc::origin::block, onAcc::unit::threads);
+            = acc.getExtentsOf(onAcc::origin::block, onAcc::unit::threads);
         [[maybe_unused]] alpaka::concepts::CVector auto blockThreadCount2 = acc[alpaka::layer::thread].count();
         static_assert(blockThreadCount2 == blockThreadCount);
         static_assert(frameExtent.x() == 43u);
@@ -63,15 +63,14 @@ TEMPLATE_LIST_TEST_CASE("CVec frame extent kernel call", "", TestApis)
     auto dBuff = onHost::alloc<bool>(device, Vec{1u});
 
     auto hBuff = onHost::allocHostMirror(dBuff);
-    wait(queue);
+    onHost::wait(queue);
     {
-        onHost::enqueue(
-            queue,
+        queue.enqueue(
             exec,
             FrameSpec{Vec{1u}, CVec<uint32_t, 43u>{}},
             KernelBundle{KernelCVecFrameExtents{}, dBuff.getMdSpan()});
         onHost::memcpy(queue, hBuff, dBuff);
-        wait(queue);
+        onHost::wait(queue);
         CHECK(hBuff[0] == true);
     }
 }
@@ -112,17 +111,16 @@ TEMPLATE_LIST_TEST_CASE("CVec thread extent kernel call", "", TestApis)
     auto dBuff = onHost::alloc<bool>(device, Vec{1u});
 
     auto hBuff = onHost::allocHostMirror(dBuff);
-    wait(queue);
+    onHost::wait(queue);
     {
-        onHost::enqueue(
-            queue,
+        queue.enqueue(
             exec,
             // we need to use one thread per thread block because serial executors will reduce the number of threads to
             // a single thread
             ThreadSpec{Vec{1u}, CVec<uint32_t, 1u>{}},
             KernelBundle{KernelCVecThreadExtents{}, dBuff.getMdSpan()});
         onHost::memcpy(queue, hBuff, dBuff);
-        wait(queue);
+        onHost::wait(queue);
         CHECK(hBuff[0] == true);
     }
 }

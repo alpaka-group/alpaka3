@@ -39,7 +39,9 @@ namespace alpaka::onHost
             using ApiInterface = typename T_Device::ApiInterface;
 
         public:
-            Queue(concepts::DeviceHandle auto device, uint32_t const idx) : m_device(std::move(device)), m_idx(idx)
+            Queue(internal::concepts::DeviceHandle auto device, uint32_t const idx)
+                : m_device(std::move(device))
+                , m_idx(idx)
             {
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
                     ApiInterface,
@@ -51,7 +53,7 @@ namespace alpaka::onHost
 
             ~Queue()
             {
-                onHost::internal::Wait::wait(*this);
+                onHost::internal::wait(*this);
                 // setDevice is not required because wait() is setting the device
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(
                     ApiInterface,
@@ -74,7 +76,7 @@ namespace alpaka::onHost
         private:
             void _()
             {
-                static_assert(concepts::Queue<Queue>);
+                static_assert(internal::concepts::Queue<Queue>);
             }
 
             Handle<T_Device> m_device;
@@ -137,7 +139,7 @@ namespace alpaka::onHost
                     DictEntry(layer::thread, onAcc::unifiedCudaHip::ThreadLayer<T_NumThreadsType>{}),
                     DictEntry(frame::count, numFrames),
                     DictEntry(frame::extent, frameExtent),
-                    DictEntry(action::sync, onAcc::unifiedCudaHip::Sync{}),
+                    DictEntry(action::threadBlockSync, onAcc::unifiedCudaHip::Sync{}),
                     DictEntry(object::api, T_Api{}),
                     DictEntry(object::deviceKind, T_DeviceKind{}),
                     DictEntry(object::exec, T_Executor{})},
@@ -158,7 +160,7 @@ namespace alpaka::onHost
                 Dict{
                     DictEntry(layer::block, onAcc::unifiedCudaHip::BlockLayer<T_NumBlocksType>{}),
                     DictEntry(layer::thread, onAcc::unifiedCudaHip::ThreadLayer<T_NumThreadsType>{}),
-                    DictEntry(action::sync, onAcc::unifiedCudaHip::Sync{}),
+                    DictEntry(action::threadBlockSync, onAcc::unifiedCudaHip::Sync{}),
                     DictEntry(object::api, T_Api{}),
                     DictEntry(object::deviceKind, T_DeviceKind{}),
                     DictEntry(object::exec, T_Executor{})},

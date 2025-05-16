@@ -74,7 +74,7 @@ namespace alpaka::onHost
                         onAcc::cpu::GenericLayer{std::cref(blockIdx), std::cref(blockCount)}};
                     auto const threadLayerEntry = DictEntry{layer::thread, onAcc::cpu::OneLayer<NumThreadsVecType>{}};
                     auto const blockSharedMemEntry = DictEntry{layer::shared, std::ref(blockSharedMem)};
-                    auto const blockSyncEntry = DictEntry{action::sync, onAcc::cpu::NoOp{}};
+                    auto const blockSyncEntry = DictEntry{action::threadBlockSync, onAcc::cpu::NoOp{}};
 
                     auto acc = onAcc::Acc(joinDict(
                         Dict{blockLayerEntry, threadLayerEntry, blockSharedMemEntry, blockSyncEntry},

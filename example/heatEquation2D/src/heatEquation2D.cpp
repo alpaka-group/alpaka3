@@ -146,8 +146,7 @@ auto example(T_Cfg const& cfg) -> int
     for(uint32_t step = 1; step <= numTimeSteps; ++step)
     {
         // Compute next values
-        alpaka::onHost::enqueue(
-            computeQueue,
+        computeQueue.enqueue(
             exec,
             dataBlockingStencil,
             KernelBundle{
@@ -162,8 +161,7 @@ auto example(T_Cfg const& cfg) -> int
                 dt});
 
         // Apply boundaries
-        alpaka::onHost::enqueue(
-            computeQueue,
+        computeQueue.enqueue(
             exec,
             dataBlockingBorder,
             KernelBundle{boundaryKernel, uNextBufAcc.getMdSpan(), chunkSize, numNodesWithHalo, step, dx, dy, dt});

@@ -13,27 +13,8 @@
 
 namespace alpaka::onHost
 {
-    namespace concepts
+    namespace internal::concepts
     {
-        template<typename T>
-        concept NameHandle = requires(T t) {
-            typename T::element_type;
-            requires alpaka::concepts::HasName<typename T::element_type>;
-        };
-
-        template<typename T>
-        concept StaticNameHandle = requires(T t) {
-            typename T::element_type;
-            requires alpaka::concepts::HasStaticName<typename T::element_type>;
-        };
-
-        template<typename T>
-        concept Platform = requires(T platform) {
-            {
-                alpaka::internal::GetName::Op<T>{}(platform)
-            };
-        };
-
         template<typename T>
         concept Device = requires(T device) {
             {
@@ -52,6 +33,13 @@ namespace alpaka::onHost
         };
 
         template<typename T>
+        concept Platform = requires(T platform) {
+            {
+                alpaka::internal::GetName::Op<T>{}(platform)
+            };
+        };
+
+        template<typename T>
         concept Queue = requires(T device) {
             {
                 alpaka::internal::GetName::Op<T>{}(device)
@@ -60,21 +48,11 @@ namespace alpaka::onHost
                 internal::GetNativeHandle::Op<T>{}(device)
             };
         };
-    } // namespace concepts
 
-    namespace concepts
-    {
         template<typename T>
         concept QueueHandle = requires(T t) {
             typename T::element_type;
             requires Queue<typename T::element_type>;
-        };
-
-
-        template<typename T>
-        concept DeviceHandle = requires(T t) {
-            typename T::element_type;
-            requires Device<typename T::element_type>;
         };
 
         template<typename T>
@@ -82,5 +60,27 @@ namespace alpaka::onHost
             typename T::element_type;
             requires Platform<typename T::element_type>;
         };
+
+        template<typename T>
+        concept DeviceHandle = requires(T t) {
+            typename T::element_type;
+            requires Device<typename T::element_type>;
+        };
+    } // namespace internal::concepts
+
+    namespace concepts
+    {
+        template<typename T>
+        concept NameHandle = requires(T t) {
+            typename T::element_type;
+            requires alpaka::concepts::HasName<typename T::element_type>;
+        };
+
+        template<typename T>
+        concept StaticNameHandle = requires(T t) {
+            typename T::element_type;
+            requires alpaka::concepts::HasStaticName<typename T::element_type>;
+        };
     } // namespace concepts
+
 } // namespace alpaka::onHost

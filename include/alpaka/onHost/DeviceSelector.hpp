@@ -5,6 +5,7 @@
 #pragma once
 
 #include "alpaka/api/cpu/Api.hpp"
+#include "alpaka/onHost/Device.hpp"
 #include "alpaka/tag.hpp"
 
 namespace alpaka::onHost
@@ -68,9 +69,14 @@ namespace alpaka::onHost
             return internal::GetDeviceProperties::Op<ALPAKA_TYPEOF(*m_platform.get())>{}(*m_platform.get(), idx);
         }
 
+        /** Get a device
+         *
+         * @param idx device index (range [0;number of devices), invalid index will throw an exception
+         * @return @see onHost::Device
+         */
         auto makeDevice(uint32_t idx)
         {
-            return internal::MakeDevice::Op<ALPAKA_TYPEOF(*m_platform.get())>{}(*m_platform.get(), idx);
+            return Device{internal::MakeDevice::Op<ALPAKA_TYPEOF(*m_platform.get())>{}(*m_platform.get(), idx)};
         }
 
     private:

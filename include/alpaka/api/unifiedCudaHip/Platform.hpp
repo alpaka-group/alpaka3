@@ -38,7 +38,7 @@ namespace alpaka::onHost
         private:
             void _()
             {
-                static_assert(concepts::Platform<Platform>);
+                static_assert(internal::concepts::Platform<Platform>);
             }
 
             std::vector<std::weak_ptr<unifiedCudaHip::Device<Platform>>> devices;

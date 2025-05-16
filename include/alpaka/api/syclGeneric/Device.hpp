@@ -23,7 +23,7 @@ namespace alpaka::onHost
         struct Device : std::enable_shared_from_this<Device<T_Platform>>
         {
         public:
-            Device(concepts::PlatformHandle auto platform, auto const& dev, uint32_t const idx)
+            Device(internal::concepts::PlatformHandle auto platform, auto const& dev, uint32_t const idx)
                 : m_platform(std::move(platform))
                 , m_idx(idx)
                 , m_sycl_dev(dev)
@@ -59,7 +59,7 @@ namespace alpaka::onHost
         private:
             void _()
             {
-                static_assert(concepts::Device<Device>);
+                static_assert(internal::concepts::Device<Device>);
             }
 
             friend struct alpaka::internal::GetDeviceType;

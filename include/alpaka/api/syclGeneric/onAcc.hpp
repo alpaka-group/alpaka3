@@ -342,7 +342,7 @@ namespace alpaka::onAcc
             DictEntry(layer::shared, std::ref(static_shared_memory)),
             DictEntry(layer::dynShared, std::ref(dynamic_shared_memory)),
             DictEntry(object::dynSharedMemBytes, dynamic_shared_memory.byte_size()),
-            DictEntry(action::sync, onAcc::syclGeneric::Sync{work_item}),
+            DictEntry(action::threadBlockSync, onAcc::syclGeneric::Sync{work_item}),
             DictEntry(object::api, T_Api{}),
             DictEntry(object::deviceKind, T_DeviceKind{}),
             DictEntry(object::exec, T_Executor{})};

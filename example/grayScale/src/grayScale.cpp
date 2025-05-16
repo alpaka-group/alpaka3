@@ -60,8 +60,8 @@ struct Pixel
 void naiveToGray(auto&& buffer)
 {
     std::for_each(
-        reinterpret_cast<Pixel*>(alpaka::onHost::data(buffer)),
-        reinterpret_cast<Pixel*>(alpaka::onHost::data(buffer) + alpaka::onHost::getExtents(buffer).x()),
+        reinterpret_cast<Pixel*>(onHost::data(buffer)),
+        reinterpret_cast<Pixel*>(onHost::data(buffer) + onHost::getExtents(buffer).x()),
         [](Pixel& pixel)
         {
             const auto gray = (pixel.r * 11 + pixel.g * 16 + pixel.b * 5) / 32;
@@ -205,7 +205,7 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdForEach) -> int
 
     // Define frameExtent
     Vec<size_t, 1u> frameExtent = 256u;
-    uint32_t elementsPerWorker = alpaka::onHost::getNumElemPerThread<Data>(queue);
+    uint32_t elementsPerWorker = onHost::getNumElemPerThread<Data>(queue);
     auto dataBlocking = onHost::FrameSpec{divCeil(extent, frameExtent * elementsPerWorker), frameExtent};
 
     // Enqueue the kernel execution task
@@ -214,8 +214,7 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdForEach) -> int
                   << deviceSpec.getApi().getName() << std::endl;
         onHost::wait(queue);
         auto const beginT = std::chrono::high_resolution_clock::now();
-        onHost::enqueue(
-            queue,
+        queue.enqueue(
             exec,
             dataBlocking,
             KernelBundle{kernel, bufAccARGB.getMdSpan(), static_cast<size_t>(extent[0])});

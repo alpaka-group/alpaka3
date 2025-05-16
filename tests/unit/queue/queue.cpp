@@ -60,12 +60,11 @@ TEMPLATE_LIST_TEST_CASE("iota", "", TestApis)
     auto hBuff = onHost::allocHostMirror(dBuff);
 
     constexpr auto frameSize = CVec<uint32_t, 4u>{};
-    onHost::enqueue(
-        queue,
+    queue.enqueue(
         exec,
         FrameSpec{extent / frameSize, frameSize},
         KernelBundle{IotaKernel{}, dBuff.getMdSpan(), extent.x()});
-    onHost::memcpy(queue, hBuff, dBuff);
+    memcpy(queue, hBuff, dBuff);
     wait(queue);
 #    if 1
     auto* ptr = onHost::data(hBuff);
@@ -117,12 +116,11 @@ TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
 
     wait(queue);
     constexpr auto frameSize = Vec{2u, 4u};
-    onHost::enqueue(
-        queue,
+    queue.enqueue(
         exec,
         FrameSpec{extent / frameSize, frameSize},
         KernelBundle{IotaKernelND{}, dBuff.getMdSpan(), extent});
-    onHost::memcpy(queue, hBuff, dBuff);
+    memcpy(queue, hBuff, dBuff);
     wait(queue);
 #    if 1
     auto mdSpan = hBuff.getMdSpan();
@@ -164,12 +162,11 @@ TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
 
     wait(queue);
     constexpr auto frameSize = Vec{2u, 4u, 8u};
-    onHost::enqueue(
-        queue,
+    queue.enqueue(
         exec,
         FrameSpec{extent / frameSize, frameSize},
         KernelBundle{IotaKernelND{}, dBuff.getMdSpan(), extent});
-    onHost::memcpy(queue, hBuff, dBuff);
+    memcpy(queue, hBuff, dBuff);
     wait(queue);
 #    if 1
     auto mdSpan = hBuff.getMdSpan();
@@ -241,19 +238,18 @@ TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
     auto dBuff = onHost::alloc<Vec<uint32_t, 3u>>(device, numBlocks);
 
     auto hBuff = onHost::allocHostMirror(dBuff);
-    onHost::memset(queue, dBuff, 0u);
+    memset(queue, dBuff, 0u);
 
     wait(queue);
     constexpr auto frameSize = Vec{1u, 1u, 2u};
 
     auto selection = CVec<uint32_t, 2u, 1u>{};
 
-    onHost::enqueue(
-        queue,
+    queue.enqueue(
         exec,
         FrameSpec{numBlocksReduced, frameSize},
         KernelBundle{IotaKernelNDSelection<ALPAKA_TYPEOF(selection)>{}, dBuff.getMdSpan(), numBlocks});
-    onHost::memcpy(queue, hBuff, dBuff);
+    memcpy(queue, hBuff, dBuff);
     wait(queue);
 #if 1
     auto mdSpan = hBuff.getMdSpan();

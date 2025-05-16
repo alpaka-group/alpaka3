@@ -107,8 +107,42 @@ namespace alpaka
 
     namespace layer
     {
-        ALPAKA_TAG(thread);
-        ALPAKA_TAG(block);
+        namespace detail
+        {
+            struct LayerBase
+            {
+            };
+        } // namespace detail
+
+        namespace trait
+        {
+            template<typename T_Layer>
+            struct IsLayer : std::is_base_of<detail::LayerBase, T_Layer>
+            {
+            };
+        } // namespace trait
+
+        template<typename T_Layer>
+        constexpr bool isIsLayer_v = trait::IsLayer<T_Layer>::value;
+
+        namespace concepts
+        {
+            template<typename T_Layer>
+            concept Layer = isIsLayer_v<T_Layer>;
+        } // namespace concepts
+
+        struct Thread : detail::LayerBase
+        {
+        };
+
+        constexpr auto thread = Thread{};
+
+        struct Block : detail::LayerBase
+        {
+        };
+
+        constexpr auto block = Block{};
+
         ALPAKA_TAG(shared);
         ALPAKA_TAG(dynShared);
     } // namespace layer
@@ -121,7 +155,7 @@ namespace alpaka
 
     namespace action
     {
-        ALPAKA_TAG(sync);
+        ALPAKA_TAG(threadBlockSync);
     } // namespace action
 
     struct Empty

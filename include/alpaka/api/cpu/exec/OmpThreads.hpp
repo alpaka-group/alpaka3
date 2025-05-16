@@ -82,7 +82,7 @@ namespace alpaka::onHost
                             layer::block,
                             onAcc::cpu::GenericLayer{std::cref(blockIdx), std::cref(blockCountND)}};
                         auto const blockSharedMemEntry = DictEntry{layer::shared, std::ref(blockSharedMem)};
-                        auto const blockSyncEntry = DictEntry{action::sync, onAcc::cpu::OmpSync{}};
+                        auto const blockSyncEntry = DictEntry{action::threadBlockSync, onAcc::cpu::OmpSync{}};
 
                         using NumThreadsVecType = typename ThreadSpecType::NumThreadsVecType::UniVec;
                         using ThreadIdxType = typename NumThreadsVecType::type;

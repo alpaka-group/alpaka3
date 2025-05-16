@@ -15,9 +15,8 @@
 #    include <thread>
 
 using namespace alpaka;
-using namespace alpaka::onHost;
 
-using TestApis = std::decay_t<decltype(allBackends(enabledApis))>;
+using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis))>;
 
 template<uint32_t T_blockSize>
 struct SharedBlockIotaKernel
@@ -36,8 +35,8 @@ struct SharedBlockIotaKernel
                 uint32_t id = (T_blockSize - 1u - inBlockOffset).x();
                 shared[id] = id;
             }
-            // acc.sync();
-            syncBlockThreads(acc);
+
+            alpaka::onAcc::syncBlockThreads(acc);
             for(auto inBlockOffset : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, onAcc::range::frameExtent))
             {
                 out[blockOffset + inBlockOffset] = (blockOffset + shared[inBlockOffset.x()]).x();
@@ -60,11 +59,11 @@ TEMPLATE_LIST_TEST_CASE("block shared iota", "", TestApis)
     }
 
     std::cout << deviceSpec.getApi().getName() << std::endl;
-    Device device = devSelector.makeDevice(0);
+    onHost::Device device = devSelector.makeDevice(0);
 
     std::cout << " " << device.getName() << std::endl;
 
-    Queue queue = device.makeQueue();
+    onHost::Queue queue = device.makeQueue();
     constexpr Vec numBlocks = Vec{2u};
     constexpr Vec blockExtent = Vec{128u};
     constexpr Vec dataExtent = numBlocks * blockExtent;
@@ -72,15 +71,14 @@ TEMPLATE_LIST_TEST_CASE("block shared iota", "", TestApis)
     auto dBuff = onHost::alloc<uint32_t>(device, dataExtent);
 
     auto hBuff = onHost::allocHostMirror(dBuff);
-    wait(queue);
+    alpaka::onHost::wait(queue);
 
-    onHost::enqueue(
-        queue,
+    queue.enqueue(
         exec,
-        FrameSpec{numBlocks / 2u, blockExtent},
+        onHost::FrameSpec{numBlocks / 2u, blockExtent},
         KernelBundle{SharedBlockIotaKernel<blockExtent.x()>{}, dBuff.getMdSpan(), numBlocks});
-    onHost::memcpy(queue, hBuff, dBuff);
-    wait(queue);
+    alpaka::onHost::memcpy(queue, hBuff, dBuff);
+    alpaka::onHost::wait(queue);
 
     auto* ptr = onHost::data(hBuff);
     for(uint32_t i = 0u; i < dataExtent; ++i)
@@ -200,46 +198,43 @@ TEMPLATE_LIST_TEST_CASE("block shared alias", "", TestApis)
     }
     std::cout << deviceSpec.getApi().getName() << std::endl;
 
-    Device device = devSelector.makeDevice(0);
+    onHost::Device device = devSelector.makeDevice(0);
 
     std::cout << " " << device.getName() << std::endl;
 
-    Queue queue = device.makeQueue();
+    onHost::Queue queue = device.makeQueue();
     constexpr Vec numBlocks = Vec{1u};
     constexpr Vec blockExtent = Vec{1u};
 
     auto dBuff = onHost::alloc<bool>(device, Vec{1u});
 
     auto hBuff = onHost::allocHostMirror(dBuff);
-    wait(queue);
+    alpaka::onHost::wait(queue);
     {
-        onHost::enqueue(
-            queue,
+        queue.enqueue(
             exec,
-            FrameSpec{numBlocks, blockExtent},
+            onHost::FrameSpec{numBlocks, blockExtent},
             KernelBundle{SharedMemAlias{}, dBuff.getMdSpan()});
-        onHost::memcpy(queue, hBuff, dBuff);
-        wait(queue);
+        alpaka::onHost::memcpy(queue, hBuff, dBuff);
+        alpaka::onHost::wait(queue);
         CHECK(hBuff[0] == true);
     }
     {
-        onHost::enqueue(
-            queue,
+        queue.enqueue(
             exec,
-            FrameSpec{numBlocks, blockExtent},
+            onHost::FrameSpec{numBlocks, blockExtent},
             KernelBundle{DynSharedMemMember{}, dBuff.getMdSpan()});
-        onHost::memcpy(queue, hBuff, dBuff);
-        wait(queue);
+        alpaka::onHost::memcpy(queue, hBuff, dBuff);
+        alpaka::onHost::wait(queue);
         CHECK(hBuff[0] == true);
     }
     {
-        onHost::enqueue(
-            queue,
+        queue.enqueue(
             exec,
-            FrameSpec{numBlocks, blockExtent},
+            onHost::FrameSpec{numBlocks, blockExtent},
             KernelBundle{DynSharedMemTrait{}, dBuff.getMdSpan()});
-        onHost::memcpy(queue, hBuff, dBuff);
-        wait(queue);
+        alpaka::onHost::memcpy(queue, hBuff, dBuff);
+        alpaka::onHost::wait(queue);
         CHECK(hBuff[0] == true);
     }
 }

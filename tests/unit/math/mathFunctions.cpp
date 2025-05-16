@@ -245,8 +245,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
     constexpr Vec blockExtent = Vec{size};
 
     // Sqrt kernel
-    alpaka::onHost::enqueue(
-        queue,
+    queue.enqueue(
         exec,
         alpaka::onHost::FrameSpec{numBlocks, blockExtent},
         KernelBundle{SqrtKernel{}, inDev.getMdSpan(), outDev.getMdSpan(), size});
@@ -260,8 +259,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
     }
 
     // Cos kernel
-    alpaka::onHost::enqueue(
-        queue,
+    queue.enqueue(
         exec,
         alpaka::onHost::FrameSpec{numBlocks, blockExtent},
         KernelBundle{CosKernel{}, inDev.getMdSpan(), outDev.getMdSpan(), size});
@@ -274,8 +272,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
     }
 
     // Log kernel
-    alpaka::onHost::enqueue(
-        queue,
+    queue.enqueue(
         exec,
         alpaka::onHost::FrameSpec{numBlocks, blockExtent},
         KernelBundle{LogKernel{}, inDev.getMdSpan(), outDev.getMdSpan(), size});
@@ -289,8 +286,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
     }
 
     // Tan kernel
-    alpaka::onHost::enqueue(
-        queue,
+    queue.enqueue(
         exec,
         alpaka::onHost::FrameSpec{numBlocks, blockExtent},
         KernelBundle{TanKernel{}, inDev.getMdSpan(), outDev.getMdSpan(), size});
@@ -304,8 +300,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
     }
 
     // Acos kernel
-    alpaka::onHost::enqueue(
-        queue,
+    queue.enqueue(
         exec,
         alpaka::onHost::FrameSpec{numBlocks, blockExtent},
         KernelBundle{AcosKernel{}, inDev.getMdSpan(), outDev.getMdSpan(), size});
@@ -319,8 +314,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
     }
 
     // Asin kernel
-    alpaka::onHost::enqueue(
-        queue,
+    queue.enqueue(
         exec,
         alpaka::onHost::FrameSpec{numBlocks, blockExtent},
         KernelBundle{AsinKernel{}, inDev.getMdSpan(), outDev.getMdSpan(), size});
@@ -334,8 +328,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
     }
 
     // Exp kernel
-    alpaka::onHost::enqueue(
-        queue,
+    queue.enqueue(
         exec,
         alpaka::onHost::FrameSpec{numBlocks, blockExtent},
         KernelBundle{ExpKernel{}, inDev.getMdSpan(), outDev.getMdSpan(), size});
@@ -414,8 +407,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Returning Boolean - Test", "", TestApis)
     constexpr Vec blockExtent = Vec{size};
 
     // isnan kernel
-    alpaka::onHost::enqueue(
-        queue,
+    queue.enqueue(
         exec,
         alpaka::onHost::FrameSpec{numBlocks, blockExtent},
         KernelBundle{IsNanKernel{}, inDev.getMdSpan(), outDev.getMdSpan(), size});
