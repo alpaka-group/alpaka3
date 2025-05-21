@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "alpaka/api/cpu/tag.hpp"
+#include "alpaka/api/host/tag.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/onAcc/atomicHierarchy.hpp"
 #include "alpaka/onAcc/atomicOp.hpp"

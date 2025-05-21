@@ -5,9 +5,9 @@
 #pragma once
 
 #include "alpaka/Vec.hpp"
-#include "alpaka/api/cpu/IdxLayer.hpp"
-#include "alpaka/api/cpu/block/mem/OmpStaticShared.hpp"
-#include "alpaka/api/cpu/block/sync/Omp.hpp"
+#include "alpaka/api/host/IdxLayer.hpp"
+#include "alpaka/api/host/block/mem/OmpStaticShared.hpp"
+#include "alpaka/api/host/block/sync/Omp.hpp"
 #include "alpaka/core/Dict.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/meta/NdLoop.hpp"

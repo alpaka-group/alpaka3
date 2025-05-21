@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "alpaka/api/cpu/tag.hpp"
+#include "alpaka/api/host/tag.hpp"
 #include "alpaka/api/trait.hpp"
 #include "alpaka/tag.hpp"
 

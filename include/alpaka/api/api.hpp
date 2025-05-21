@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "alpaka/api/cpu/Api.hpp"
+#include "alpaka/api/host/Api.hpp"
 #include "alpaka/api/cuda/Api.hpp"
 #include "alpaka/api/hip/Api.hpp"
 #include "alpaka/api/oneApi/Api.hpp"

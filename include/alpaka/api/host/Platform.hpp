@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "alpaka/api/cpu/Api.hpp"
-#include "alpaka/api/cpu/Device.hpp"
-#include "alpaka/api/cpu/sysInfo.hpp"
+#include "alpaka/api/host/Api.hpp"
+#include "alpaka/api/host/Device.hpp"
+#include "alpaka/api/host/sysInfo.hpp"
 #include "alpaka/internal.hpp"
 #include "alpaka/onHost.hpp"
 #include "alpaka/onHost/Handle.hpp"
@@ -45,7 +45,7 @@ namespace alpaka::onHost
 
             std::string getName() const
             {
-                return "cpu::Platform";
+                return "host::Platform";
             }
 
             friend struct internal::GetDeviceCount;
@@ -91,7 +91,7 @@ namespace alpaka::onHost
                 return T_DeviceKind{};
             }
         };
-    } // namespace cpu
+    } // namespace host
 
     namespace internal
     {

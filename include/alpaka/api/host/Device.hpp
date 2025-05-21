@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "alpaka/api/cpu/Api.hpp"
-#include "alpaka/api/cpu/Queue.hpp"
-#include "alpaka/api/cpu/sysInfo.hpp"
+#include "alpaka/api/host/Api.hpp"
+#include "alpaka/api/host/Queue.hpp"
+#include "alpaka/api/host/sysInfo.hpp"
 #include "alpaka/core/Utility.hpp"
 #include "alpaka/core/alignedAlloc.hpp"
 #include "alpaka/internal.hpp"
@@ -107,7 +107,7 @@ namespace alpaka::onHost
             friend struct internal::GetDeviceProperties;
             friend struct internal::AdjustThreadSpec;
         };
-    } // namespace cpu
+    } // namespace host
 
     namespace trait
 

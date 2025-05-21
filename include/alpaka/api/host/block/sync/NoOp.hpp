@@ -14,5 +14,5 @@ namespace alpaka::onAcc
             {
             }
         };
-    } // namespace cpu
+    } // namespace host
 } // namespace alpaka::onAcc

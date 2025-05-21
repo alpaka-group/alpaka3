@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "alpaka/api/cpu/cpuArchSize.hpp"
+#include "alpaka/api/host/cpuArchSize.hpp"
 #include "alpaka/api/trait.hpp"
 #include "alpaka/concepts.hpp"
 #include "alpaka/mem/trait.hpp"

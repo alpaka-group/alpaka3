@@ -3,7 +3,7 @@
  */
 
 #pragma once
-#include "alpaka/api/cpu/block/mem/SharedStorage.hpp"
+#include "alpaka/api/host/block/mem/SharedStorage.hpp"
 #include "alpaka/core/Vectorize.hpp"
 #include "alpaka/core/common.hpp"
 

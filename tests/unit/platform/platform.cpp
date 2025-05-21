@@ -12,7 +12,7 @@
 using namespace alpaka;
 using namespace alpaka::onHost;
 
-TEST_CASE("cpu api creation", "")
+TEST_CASE("host api creation", "")
 {
     auto hostSelector = onHost::makeDeviceSelector(api::cpu, deviceKind::cpu);
     CHECK(hostSelector.getDeviceCount() == 1u);
@@ -20,7 +20,7 @@ TEST_CASE("cpu api creation", "")
     Device device = hostSelector.makeDevice(0);
     Device device2 = hostSelector.makeDevice(0);
     std::cout << device.getName() << " == " << device2.getName() << std::endl;
-    // api::cpu has only one device therefore the device must be equal
+    // api::host has only one device therefore the device must be equal
     CHECK(device.getNativeHandle() == device2.getNativeHandle());
 }
 

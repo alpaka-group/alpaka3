@@ -156,4 +156,4 @@ namespace alpaka::onAcc::cpu::detail
         //! The last aligned before the free area is always a meta data header.
         mutable std::uint32_t m_allocdBytes = 0u;
     };
-} // namespace alpaka::onAcc::cpu::detail
+} // namespace alpaka::onAcc::host::detail

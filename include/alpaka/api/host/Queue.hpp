@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "alpaka/api/cpu/Api.hpp"
-#include "alpaka/api/cpu/exec/OmpBlocks.hpp"
-#include "alpaka/api/cpu/exec/OmpThreads.hpp"
-#include "alpaka/api/cpu/exec/Serial.hpp"
+#include "alpaka/api/host/Api.hpp"
+#include "alpaka/api/host/exec/OmpBlocks.hpp"
+#include "alpaka/api/host/exec/OmpThreads.hpp"
+#include "alpaka/api/host/exec/Serial.hpp"
 #include "alpaka/core/CallbackThread.hpp"
 #include "alpaka/internal.hpp"
 #include "alpaka/meta/NdLoop.hpp"
@@ -67,7 +67,7 @@ namespace alpaka::onHost
 
             std::string getName() const
             {
-                return std::string("cpu::Queue id=") + std::to_string(m_idx);
+                return std::string("host::Queue id=") + std::to_string(m_idx);
             }
 
             friend struct internal::GetNativeHandle;
@@ -131,7 +131,7 @@ namespace alpaka::onHost
             friend struct internal::Memset;
             friend struct alpaka::internal::GetApi;
         };
-    } // namespace cpu
+    } // namespace host
 
     namespace internal
     {
