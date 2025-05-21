@@ -137,7 +137,7 @@ namespace alpaka::onHost::internal
                             auto acc = onAcc::Acc{onAcc::makeSyclGenericAccDict<
                                 T_Executor,
                                 T_Api,
-                                ALPAKA_TYPEOF(onHost::getDeviceKind(queue)),
+                                ALPAKA_TYPEOF(getDeviceKind(queue)),
                                 T_NumBlocks,
                                 T_NumThreads>(work_item, ssm, dsm)};
                             kernelBundle(acc);
@@ -198,7 +198,7 @@ namespace alpaka::onHost::internal
                                 onAcc::makeSyclGenericAccDict<
                                     T_Executor,
                                     T_Api,
-                                    ALPAKA_TYPEOF(onHost::getDeviceKind(queue)),
+                                    ALPAKA_TYPEOF(getDeviceKind(queue)),
                                     ALPAKA_TYPEOF(threadBlocking.m_numBlocks),
                                     ALPAKA_TYPEOF(threadBlocking.m_numThreads)>(work_item, ssm, dsm),
                                 Dict{

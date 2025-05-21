@@ -204,8 +204,8 @@ namespace alpaka::onHost
                     ApiInterface::setDevice(onHost::getNativeHandle(queue.m_device)));
 
                 auto kernelName = gpuKernel<
-                    ALPAKA_TYPEOF(onHost::getApi(queue)),
-                    ALPAKA_TYPEOF(onHost::getDeviceKind(queue)),
+                    ALPAKA_TYPEOF(getApi(queue)),
+                    ALPAKA_TYPEOF(getDeviceKind(queue)),
                     T_Executor,
                     T_NumBlocks,
                     T_NumThreads,
@@ -232,7 +232,7 @@ namespace alpaka::internal
     {
         inline constexpr auto operator()(auto&& queue) const
         {
-            return onHost::getApi(queue.m_device);
+            return getApi(queue.m_device);
         }
     };
 } // namespace alpaka::internal

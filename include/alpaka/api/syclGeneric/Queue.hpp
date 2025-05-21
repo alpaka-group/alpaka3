@@ -9,6 +9,7 @@
 #if ALPAKA_LANG_SYCL
 
 #    include "alpaka/api/syclGeneric/onAcc.hpp"
+#    include "alpaka/interface.hpp"
 #    include "alpaka/internal.hpp"
 #    include "alpaka/onAcc/Acc.hpp"
 #    include "alpaka/onHost.hpp"
@@ -146,7 +147,7 @@ namespace alpaka::internal
     {
         inline constexpr auto operator()(auto&& queue) const
         {
-            return onHost::getApi(queue.m_device);
+            return alpaka::getApi(queue.m_device);
         }
     };
 } // namespace alpaka::internal

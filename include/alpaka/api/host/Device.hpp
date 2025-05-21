@@ -345,7 +345,7 @@ namespace alpaka::internal
     {
         inline constexpr auto operator()(auto&& device) const
         {
-            return onHost::getApi(device.m_platform);
+            return alpaka::getApi(device.m_platform);
         }
     };
 } // namespace alpaka::internal

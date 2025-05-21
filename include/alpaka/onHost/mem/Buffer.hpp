@@ -90,7 +90,7 @@ namespace alpaka::onHost
 
     public:
         template<
-            concepts::HasApi T_Any,
+            alpaka::concepts::HasApi T_Any,
             alpaka::concepts::Vector T_UserExtents,
             alpaka::concepts::Vector T_UserPitches>
         Buffer(
@@ -176,7 +176,7 @@ namespace alpaka::onHost
     }; // namespace alpaka::onHost
 
     template<
-        concepts::HasApi T_Any,
+        alpaka::concepts::HasApi T_Any,
         typename T_Type,
         alpaka::concepts::Vector T_UserExtents,
         alpaka::concepts::Vector T_UserPitches,
@@ -189,21 +189,18 @@ namespace alpaka::onHost
         std::invocable<> auto,
         T_MemAlignment const)
         -> Buffer<
-            ALPAKA_TYPEOF(onHost::getApi(std::declval<T_Any>())),
+            ALPAKA_TYPEOF(getApi(std::declval<T_Any>())),
             T_Type,
             typename T_UserPitches::UniVec,
             T_MemAlignment>;
 
     template<
-        concepts::HasApi T_Any,
+        alpaka::concepts::HasApi T_Any,
         typename T_Type,
         alpaka::concepts::Vector T_UserExtents,
         alpaka::concepts::Vector T_UserPitches>
-    Buffer(T_Any const&, T_Type*, T_UserExtents const&, T_UserPitches const&, std::invocable<> auto) -> Buffer<
-        ALPAKA_TYPEOF(onHost::getApi(std::declval<T_Any>())),
-        T_Type,
-        typename T_UserPitches::UniVec,
-        Alignment<>>;
+    Buffer(T_Any const&, T_Type*, T_UserExtents const&, T_UserPitches const&, std::invocable<> auto)
+        -> Buffer<ALPAKA_TYPEOF(getApi(std::declval<T_Any>())), T_Type, typename T_UserPitches::UniVec, Alignment<>>;
 } // namespace alpaka::onHost
 
 namespace alpaka::internal

@@ -9,6 +9,7 @@
 #include "alpaka/api/host/exec/OmpThreads.hpp"
 #include "alpaka/api/host/exec/Serial.hpp"
 #include "alpaka/core/CallbackThread.hpp"
+#include "alpaka/interface.hpp"
 #include "alpaka/internal.hpp"
 #include "alpaka/meta/NdLoop.hpp"
 #include "alpaka/onHost.hpp"
@@ -107,7 +108,7 @@ namespace alpaka::onHost
                             DictEntry(frame::count, frameSpec.m_numFrames),
                             DictEntry(frame::extent, frameSpec.m_frameExtent),
                             DictEntry(object::api, api::host),
-                            DictEntry(object::deviceKind, onHost::getDeviceKind(m_device)),
+                            DictEntry(object::deviceKind, alpaka::getDeviceKind(m_device)),
                             DictEntry(object::exec, executor)};
                         onAcc::Acc acc = makeAcc(executor, threadBlocking);
                         acc(kernelBundle, moreLayer);
@@ -263,7 +264,7 @@ namespace alpaka::internal
     {
         inline constexpr auto operator()(auto&& queue) const
         {
-            return onHost::getApi(queue.m_device);
+            return alpaka::getApi(queue.m_device);
         }
     };
 } // namespace alpaka::internal

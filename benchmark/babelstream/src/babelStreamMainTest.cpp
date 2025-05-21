@@ -400,7 +400,7 @@ void testKernels(auto cfg)
      * a kernel can reflect the concurrency bytes used for the `SimdAlgo::concurrent()` back to the host, e.g. some
      * as we use for dynamic shared memory.
      */
-    uint32_t elementsPerFrameItem = onHost::getNumElemPerThread<DataType>(queue);
+    uint32_t elementsPerFrameItem = getNumElemPerThread<DataType>(queue);
 
     auto numFrames = divExZero(arraySize, static_cast<Idx>(blockThreadExtentMain) * elementsPerFrameItem);
     auto dataBlocking = onHost::FrameSpec{numFrames, static_cast<Idx>(blockThreadExtentMain)};
@@ -535,7 +535,7 @@ void testKernels(auto cfg)
         }
         if(kernelsToBeExecuted == KernelsToRun::All)
         {
-            uint32_t elementsPerFrameItem = onHost::getNumElemPerThread<DataType>(queue);
+            uint32_t elementsPerFrameItem = getNumElemPerThread<DataType>(queue);
             auto numFrames = std::min(
                 static_cast<Idx>(dotGridBlockExtent),
                 alpaka::divExZero(arraySize, (static_cast<Idx>(blockThreadExtentMain) * elementsPerFrameItem)));

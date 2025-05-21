@@ -115,7 +115,7 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
 
     Vec<size_t, 1u> chunkSize = 256u;
     // how many elements one worker should compute to ensure vectorization or instruction parallelism
-    uint32_t elementsPerWorker = onHost::getNumElemPerThread<Data>(queue);
+    uint32_t elementsPerWorker = getNumElemPerThread<Data>(queue);
     auto dataBlocking = onHost::FrameSpec{divCeil(extent, chunkSize * elementsPerWorker), chunkSize};
 
     // Enqueue the kernel execution task

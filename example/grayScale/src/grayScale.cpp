@@ -205,7 +205,7 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdForEach) -> int
 
     // Define frameExtent
     Vec<size_t, 1u> frameExtent = 256u;
-    uint32_t elementsPerWorker = onHost::getNumElemPerThread<Data>(queue);
+    uint32_t elementsPerWorker = getNumElemPerThread<Data>(queue);
     auto dataBlocking = onHost::FrameSpec{divCeil(extent, frameExtent * elementsPerWorker), frameExtent};
 
     // Enqueue the kernel execution task

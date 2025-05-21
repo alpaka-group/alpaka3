@@ -5,6 +5,7 @@
 #pragma once
 
 #include "alpaka/core/config.hpp"
+#include "alpaka/interface.hpp"
 #include "alpaka/internal.hpp"
 #include "alpaka/mem/MdSpan.hpp"
 #include "alpaka/mem/concepts.hpp"
@@ -41,7 +42,7 @@ namespace alpaka::onHost
          * handle.
          */
         template<
-            concepts::HasApi T_Any,
+            alpaka::concepts::HasApi T_Any,
             alpaka::concepts::Vector T_UserExtents,
             alpaka::concepts::Vector T_UserPitches>
         View(
@@ -156,27 +157,21 @@ namespace alpaka::onHost
     };
 
     template<
-        concepts::HasApi T_Any,
+        alpaka::concepts::HasApi T_Any,
         typename T_Type,
         alpaka::concepts::Vector T_UserExtents,
         alpaka::concepts::Vector T_UserPitches,
         alpaka::concepts::Alignment T_MemAlignment>
-    View(T_Any const&, T_Type*, T_UserExtents const&, T_UserPitches const&, T_MemAlignment const memAlignment) -> View<
-        ALPAKA_TYPEOF(onHost::getApi(std::declval<T_Any>())),
-        T_Type,
-        typename T_UserPitches::UniVec,
-        T_MemAlignment>;
+    View(T_Any const&, T_Type*, T_UserExtents const&, T_UserPitches const&, T_MemAlignment const memAlignment)
+        -> View<ALPAKA_TYPEOF(getApi(std::declval<T_Any>())), T_Type, typename T_UserPitches::UniVec, T_MemAlignment>;
 
     template<
-        concepts::HasApi T_Any,
+        alpaka::concepts::HasApi T_Any,
         typename T_Type,
         alpaka::concepts::Vector T_UserExtents,
         alpaka::concepts::Vector T_UserPitches>
-    View(T_Any, T_Type*, T_UserExtents const&, T_UserPitches const&) -> View<
-        ALPAKA_TYPEOF(onHost::getApi(std::declval<T_Any>())),
-        T_Type,
-        typename T_UserPitches::UniVec,
-        Alignment<>>;
+    View(T_Any, T_Type*, T_UserExtents const&, T_UserPitches const&)
+        -> View<ALPAKA_TYPEOF(getApi(std::declval<T_Any>())), T_Type, typename T_UserPitches::UniVec, Alignment<>>;
 } // namespace alpaka::onHost
 
 namespace alpaka::internal
