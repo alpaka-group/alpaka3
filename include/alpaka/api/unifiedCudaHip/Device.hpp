@@ -9,7 +9,7 @@
 #if ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP
 #    include "alpaka/api/unifiedCudaHip/Queue.hpp"
 #    include "alpaka/core/UniformCudaHip.hpp"
-#    include "alpaka/onHost/mem/Data.hpp"
+#    include "alpaka/onHost/mem/Buffer.hpp"
 #    include "alpaka/onHost/mem/View.hpp"
 
 #    include <cstdint>
@@ -178,7 +178,9 @@ namespace alpaka::onHost
                     pitches = mem::calculatePitches<T_Type>(extents, static_cast<Idx>(pitchedPtrVal.pitch));
                 }
 
-                auto deleter = [](T_Type* ptr)
+                auto deviceDependency = onHost::Device{device.getSharedPtr()};
+
+                auto deleter = [ptr, deviceDependency]()
                 { ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::free(ptr)); };
 
                 /** Each CUDA/HIP allocation is aligned to at least 128 byte but typically to 256byte
@@ -187,13 +189,15 @@ namespace alpaka::onHost
                  * @todo validate if memory is always aligtne dto 256 byte
                  */
                 constexpr uint32_t alignment = 128u;
-                auto data = std::make_shared<onHost::Data<
-                    Handle<std::decay_t<decltype(device)>>,
-                    T_Type,
-                    T_Extents,
-                    ALPAKA_TYPEOF(pitches),
-                    Alignment<alignment>>>(device.getSharedPtr(), ptr, extents, pitches, deleter);
-                return onHost::View<std::decay_t<decltype(data)>, T_Extents>(data);
+
+                auto buffer = onHost::Buffer{
+                    deviceDependency,
+                    ptr,
+                    extents,
+                    pitches,
+                    std::move(deleter),
+                    Alignment<alignment>{}};
+                return buffer;
             }
         };
 

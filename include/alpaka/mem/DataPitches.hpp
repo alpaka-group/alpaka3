@@ -41,7 +41,7 @@ namespace alpaka
                 result[d] = m_pitch[d];
             }
             result.back() = static_cast<index_type>(sizeof(value_type));
-            return m_pitch;
+            return result;
         }
 
         constexpr index_type operator[](std::integral auto idx) const

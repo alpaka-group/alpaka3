@@ -18,14 +18,21 @@
 
 namespace alpaka::onHost
 {
-    /** memory owning view
+    /** Non owning view to data
      *
-     * This view is only holding a handle to the real data, copying the view is cheap.
-     * Owning mean that it is guaranteed that the lifetime of the data is defined by the lifetime of the view.
+     * This view is only holding a points to real data, copying the view is cheap.
+     * Const-ness of the view is propagated to the data region.
      */
-    template<typename T_Datahandle, typename T_Extents>
-    struct View
+    template<
+        typename T_Api,
+        typename T_Type,
+        alpaka::concepts::Vector T_Extents,
+        alpaka::concepts::Alignment T_MemAlignment = Alignment<>>
+    struct View : MdSpan<T_Type, typename T_Extents::UniVec, typename T_Extents::UniVec, T_MemAlignment>
     {
+    private:
+        using BaseMdSpan = MdSpan<T_Type, typename T_Extents::UniVec, typename T_Extents::UniVec, T_MemAlignment>;
+
     public:
         /** creates a view
          *
@@ -33,142 +40,158 @@ namespace alpaka::onHost
          * @param extents M-dimensional extents in elements of the view. Must be <= number of elements in the dat
          * handle.
          */
-        View(T_Datahandle data, T_Extents const& extents) : m_data(std::move(data)), m_extents(extents)
+        template<
+            concepts::HasApi T_Any,
+            alpaka::concepts::Vector T_UserExtents,
+            alpaka::concepts::Vector T_UserPitches>
+        View(
+            T_Any const& any,
+            T_Type* data,
+            T_UserExtents const& extents,
+            T_UserPitches const& pitches,
+            T_MemAlignment const memAlignment = Alignment{})
+            : BaseMdSpan{
+                data,
+                typename ALPAKA_TYPEOF(extents)::UniVec{extents},
+                typename ALPAKA_TYPEOF(pitches)::UniVec{pitches},
+                memAlignment}
         {
-        }
-
-        /** creates a view
-         *
-         * Extents will be dirived from the data handle.
-         *
-         * @param data handle to the physical data
-         */
-        View(T_Datahandle data) : m_data(std::move(data)), m_extents(m_data->m_extents)
-        {
+            static_assert(
+                isLosslessConvertible_v<typename T_UserPitches::type, typename T_UserExtents::type>,
+                "extent type and pitch type must be lossless convertible");
         }
 
         View(View const&) = default;
         View(View&&) = default;
+        constexpr View& operator=(View const&) = default;
+        constexpr View& operator=(View&&) = default;
 
-        /** shallow copy the handle
-         *
-         * It is not copying the data the view is pointing to.
-         */
-        View& operator=(View const&) = default;
-
-        static consteval uint32_t dim()
+        static consteval T_Api getApi()
         {
-            return T_Extents::dim();
-        }
-
-        using value_type = alpaka::trait::GetValueType_t<T_Datahandle>;
-        using index_type = typename T_Extents::type;
-
-        /** get the number of elements for each dimension */
-        auto getExtents() const
-        {
-            return m_extents;
-        }
-
-        /** Get the distance in bytes to move to the next element in the corresponding dimension. */
-        auto getPitches() const
-        {
-            return m_data->getPitches();
+            return T_Api{};
         }
 
         /** pointer to data */
         decltype(auto) data()
         {
-            return onHost::data(m_data);
+            return BaseMdSpan::data();
         }
 
         /** pointer to data */
         decltype(auto) data() const
         {
-            return onHost::data(m_data);
+            using RetType = ConstPtr_t<ALPAKA_TYPEOF(BaseMdSpan::data())>;
+            return static_cast<RetType>(BaseMdSpan::data());
         }
 
         alpaka::concepts::MdSpan auto getMdSpan() const
         {
-            auto* ptr = onHost::data(m_data);
-            return makeMdSpan(
-                ptr,
-                m_data->getExtents(),
-                m_data->getPitches(),
-                ALPAKA_TYPEOF(m_data->getAlignment()){});
+            // creates a read only MDSpan if data() if the view is const itself
+            return makeMdSpan(data(), this->getExtents(), this->getPitches(), T_MemAlignment{});
         }
 
-        /** access 1-dimensional data with a scalar index
+        alpaka::concepts::MdSpan auto getMdSpan()
+        {
+            return BaseMdSpan{*this};
+        }
+
+        /** create a read only view */
+        auto getConstView() const
+        {
+            return View<T_Api, std::remove_pointer_t<decltype(this->data())>, T_Extents, T_MemAlignment>{
+                T_Api{},
+                this->data(),
+                this->getExtents(),
+                this->getPitches(),
+                T_MemAlignment{}};
+        }
+
+        /** Creates a sub view to a part of the memory.
          *
-         * @{
+         * @param extents number of elements for each dimension
+         * @return View which is pointing only to a part of the original view.
          */
-        decltype(auto) operator[](std::integral auto idx) const requires(dim() == 1u)
+        auto getSubView(alpaka::concepts::Vector auto const& extents) const
         {
-            return data()[idx];
+            assert(extents <= this->getExtents());
+            return View{T_Api{}, data(), extents, this->getPitches(), T_MemAlignment{}};
         }
 
-        decltype(auto) operator[](std::integral auto idx) requires(dim() == 1u)
+        auto getSubView(alpaka::concepts::Vector auto const& extents)
         {
-            return data()[idx];
+            assert(extents <= this->getExtents());
+            return View{T_Api{}, data(), extents, this->getPitches(), T_MemAlignment{}};
         }
 
-        /** @} */
-
-        /** access M-dimensional data with a vector index
+        /** Creates a sub view to a part of the memory.
          *
-         * @{
+         * @param offset offset in elements to the original view
+         * @param extents number of elements for each dimension
+         * @return View which is pointing only to a part of the original view with a shifted origin pointer.
+         *         View which pointThe alignment of the sub view is reduced to the element alignment.
          */
-        decltype(auto) operator[](alpaka::concepts::Vector auto idx) const
+        auto getSubView(alpaka::concepts::Vector auto const& offset, alpaka::concepts::Vector auto const& extents)
+            const
         {
-            return getMdSpan()[idx];
+            assert(offset + extents <= this->getExtents());
+            auto shiftedPtr = &getMdSpan()[offset];
+            return View{T_Api{}, shiftedPtr, extents, this->getPitches(), Alignment<>{}};
         }
 
-        decltype(auto) operator[](alpaka::concepts::Vector auto idx)
+        auto getSubView(alpaka::concepts::Vector auto const& offset, alpaka::concepts::Vector auto const& extents)
         {
-            return getMdSpan()[idx];
+            assert(offset + extents <= this->getExtents());
+            auto shiftedPtr = &getMdSpan()[offset];
+            return View{T_Api{}, shiftedPtr, extents - offset, this->getPitches(), Alignment<>{}};
         }
-
-        /** @} */
 
     private:
+        template<typename T>
+        using ConstPtr_t = std::add_pointer_t<std::add_const_t<std::remove_pointer_t<T>>>;
+
         void _()
         {
             //                static_assert(concepts::Device<Device>);
         }
-
-        friend struct internal::Memcpy;
-
-        T_Datahandle m_data;
-        T_Extents m_extents;
-
-        friend struct internal::Data;
-        friend struct alpaka::internal::GetApi;
     };
 
-    template<typename T_Datahandle>
-    ALPAKA_FN_HOST_ACC View(T_Datahandle) -> View<T_Datahandle, typename T_Datahandle::element_type::ExtentType>;
+    template<
+        concepts::HasApi T_Any,
+        typename T_Type,
+        alpaka::concepts::Vector T_UserExtents,
+        alpaka::concepts::Vector T_UserPitches,
+        alpaka::concepts::Alignment T_MemAlignment>
+    View(T_Any const&, T_Type*, T_UserExtents const&, T_UserPitches const&, T_MemAlignment const memAlignment) -> View<
+        ALPAKA_TYPEOF(onHost::getApi(std::declval<T_Any>())),
+        T_Type,
+        typename T_UserPitches::UniVec,
+        T_MemAlignment>;
 
-    namespace internal
-    {
-        template<typename... T_Args>
-        struct Data::Op<View<T_Args...>>
-        {
-            decltype(auto) operator()(auto&& buffer) const
-            {
-                return onHost::data(buffer.m_data);
-            }
-        };
-    } // namespace internal
+    template<
+        concepts::HasApi T_Any,
+        typename T_Type,
+        alpaka::concepts::Vector T_UserExtents,
+        alpaka::concepts::Vector T_UserPitches>
+    View(T_Any, T_Type*, T_UserExtents const&, T_UserPitches const&) -> View<
+        ALPAKA_TYPEOF(onHost::getApi(std::declval<T_Any>())),
+        T_Type,
+        typename T_UserPitches::UniVec,
+        Alignment<>>;
 } // namespace alpaka::onHost
 
 namespace alpaka::internal
 {
-    template<typename... T_Args>
-    struct GetApi::Op<onHost::View<T_Args...>>
+    // external define the API trait to support constexpr evaluation
+    template<
+        typename T_Api,
+        typename T_Type,
+        alpaka::concepts::Vector T_Extents,
+        alpaka::concepts::Alignment T_MemAlignment>
+    struct GetApi::Op<onHost::View<T_Api, T_Type, T_Extents, T_MemAlignment>>
     {
-        inline constexpr auto operator()(auto&& buffer) const
+        inline constexpr auto operator()(auto&& data) const
         {
-            return onHost::getApi(buffer.m_data);
+            return T_Api{};
         }
     };
 } // namespace alpaka::internal

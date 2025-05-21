@@ -72,7 +72,7 @@ namespace alpaka::onHost
             {
                 return m_queue;
             }
-
+#    if 0
             template<typename T_Mapping, alpaka::concepts::Vector T_NumBlocks, alpaka::concepts::Vector T_NumThreads>
             void enqueue(
                 T_Mapping const executor,
@@ -168,6 +168,7 @@ namespace alpaka::onHost
                             });
                     });
             }
+#    endif
 
             void wait()
             {
@@ -184,6 +185,7 @@ namespace alpaka::onHost
 
         private:
             friend struct alpaka::internal::GetDeviceType;
+            friend struct alpaka::onHost::internal::Enqueue;
 
             auto getDeviceKind() const
             {

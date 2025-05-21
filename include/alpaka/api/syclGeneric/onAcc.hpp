@@ -331,7 +331,7 @@ namespace alpaka::onAcc
         auto TDim>
     auto makeSyclGenericAccDict(
         sycl::nd_item<TDim> const& work_item,
-        onAcc::syclGeneric::StaticSharedMemory& static_shared_memory,
+        auto& static_shared_memory,
         onAcc::syclGeneric::DynamicSharedMemory& dynamic_shared_memory)
     {
         static_assert(TDim > 0);

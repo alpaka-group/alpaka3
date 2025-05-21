@@ -15,7 +15,7 @@
 #include "alpaka/onHost/DeviceProperties.hpp"
 #include "alpaka/onHost/Handle.hpp"
 #include "alpaka/onHost/Queue.hpp"
-#include "alpaka/onHost/mem/Data.hpp"
+#include "alpaka/onHost/mem/Buffer.hpp"
 #include "alpaka/onHost/mem/View.hpp"
 #include "alpaka/onHost/trait.hpp"
 
@@ -157,19 +157,24 @@ namespace alpaka::onHost
                 constexpr IdxType alignment = std::max(bestSimdPackBytes, typeAlignmentBytes);
 
                 constexpr auto dim = T_Extents::dim();
+
+                auto deviceDependency = onHost::Device{device.getSharedPtr()};
+
                 if constexpr(dim == 1u)
                 {
                     auto* ptr = reinterpret_cast<T_Type*>(
                         alpaka::core::alignedAlloc(alignment, extents.x() * sizeof(T_Type)));
-                    auto deleter = [](T_Type* ptr) { alpaka::core::alignedFree(alignment, ptr); };
+                    // deviceDependency is captured to keep the device alive until the memory is deleted
+                    auto deleter = [ptr, deviceDependency]() { alpaka::core::alignedFree(alignment, ptr); };
                     auto pitches = typename T_Extents::UniVec{sizeof(T_Type)};
-                    auto data = std::make_shared<onHost::Data<
-                        Handle<std::decay_t<decltype(device)>>,
-                        T_Type,
-                        T_Extents,
-                        ALPAKA_TYPEOF(pitches),
-                        Alignment<alignment>>>(device.getSharedPtr(), ptr, extents, pitches, std::move(deleter));
-                    return View<std::decay_t<decltype(data)>, T_Extents>(data);
+                    auto buffer = onHost::Buffer{
+                        deviceDependency,
+                        ptr,
+                        extents,
+                        pitches,
+                        std::move(deleter),
+                        Alignment<alignment>{}};
+                    return buffer;
                 }
                 else
                 {
@@ -180,15 +185,17 @@ namespace alpaka::onHost
                     // product of pitches does contain the size for the first dimension
                     size_t memSizeInByte = pCast<size_t>(pitches).product() * static_cast<size_t>(extents[0]);
                     auto* ptr = reinterpret_cast<T_Type*>(alpaka::core::alignedAlloc(alignment, memSizeInByte));
-                    auto deleter = [](T_Type* ptr) { alpaka::core::alignedFree(alignment, ptr); };
+                    // deviceDependency is captured to keep the device alive until the memory is deleted
+                    auto deleter = [ptr, deviceDependency]() { alpaka::core::alignedFree(alignment, ptr); };
 
-                    auto data = std::make_shared<onHost::Data<
-                        Handle<std::decay_t<decltype(device)>>,
-                        T_Type,
-                        T_Extents,
-                        ALPAKA_TYPEOF(pitches),
-                        Alignment<alignment>>>(device.getSharedPtr(), ptr, extents, pitches, std::move(deleter));
-                    return View<std::decay_t<decltype(data)>, T_Extents>(data);
+                    auto buffer = onHost::Buffer{
+                        deviceDependency,
+                        ptr,
+                        extents,
+                        pitches,
+                        std::move(deleter),
+                        Alignment<alignment>{}};
+                    return buffer;
                 }
             }
         };

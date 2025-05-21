@@ -9,12 +9,20 @@
 #include "alpaka/core/config.hpp"
 #include "alpaka/mem/Alignment.hpp"
 #include "alpaka/mem/DataPitches.hpp"
+#include "alpaka/onHost.hpp"
 #include "alpaka/trait.hpp"
 
 #include <type_traits>
 
 namespace alpaka
 {
+    /** Lightweight view to data in a n-dimensional array
+     *
+     * Const-ness of the MdSpan is NOT propagated to the data region.
+     * A constant MdSpan can be used to access non-const data.
+     *
+     * @tparam T_Type if the type is const the data is only readable
+     */
     template<
         typename T_Type,
         concepts::Vector T_Extents,
@@ -29,6 +37,11 @@ namespace alpaka
         concepts::Alignment auto const& memAlignment = Alignment{})
     {
         return MdSpan{pointer, extents, pitchBytes, memAlignment};
+    }
+
+    inline constexpr auto makeMdSpan(auto&& any)
+    {
+        return MdSpan{onHost::data(any), onHost::getExtents(any), onHost::getPitches(any), any.getAlignment()};
     }
 
     template<
@@ -60,9 +73,11 @@ namespace alpaka
 
         /** get origin pointer
          *
+         * If the pointer is const and therefore read only depends on T_Type and not the const-ness of MdSPan.
+         *
          * @{
          */
-        constexpr value_type const* data() const
+        constexpr value_type* data() const
         {
             return this->m_ptr;
         }
@@ -97,6 +112,8 @@ namespace alpaka
 
         MdSpan(MdSpan const&) = default;
         MdSpan(MdSpan&&) = default;
+        constexpr MdSpan& operator=(MdSpan const&) = default;
+        constexpr MdSpan& operator=(MdSpan&&) = default;
 
         static consteval auto getAlignment()
         {
@@ -134,6 +151,11 @@ namespace alpaka
         constexpr auto getExtents() const
         {
             return m_extent;
+        }
+
+        T_Extents getPitches() const
+        {
+            return m_pitch.getPitches();
         }
 
     protected:
@@ -182,6 +204,7 @@ namespace alpaka
             return this->m_ptr + idx.x();
         }
 
+    private:
         value_type* m_ptr;
         T_Extents m_extent;
         DataPitches<value_type, T_Pitches> m_pitch;
