@@ -52,7 +52,7 @@ namespace alpaka::onHost
 
             uint32_t getDeviceCount() const
             {
-                constexpr bool isSupportedDev = trait::IsDeviceSupportedBy::Op<T_DeviceKind, api::Cpu>::value;
+                constexpr bool isSupportedDev = trait::IsDeviceSupportedBy::Op<T_DeviceKind, api::Host>::value;
                 if constexpr(isSupportedDev)
                     return 1;
 
@@ -91,14 +91,14 @@ namespace alpaka::onHost
                 return T_DeviceKind{};
             }
         };
-    } // namespace host
+    } // namespace cpu
 
     namespace internal
     {
         template<deviceKind::concepts::DeviceKind T_DeviceKind>
-        struct MakePlatform::Op<api::Cpu, T_DeviceKind>
+        struct MakePlatform::Op<api::Host, T_DeviceKind>
         {
-            auto operator()(api::Cpu, T_DeviceKind) const
+            auto operator()(api::Host, T_DeviceKind) const
             {
                 return make_sharedSingleton<cpu::Platform<T_DeviceKind>>();
             }
@@ -128,7 +128,7 @@ namespace alpaka::internal
     {
         inline constexpr auto operator()(auto&& platform) const
         {
-            return api::Cpu{};
+            return api::Host{};
         }
     };
 } // namespace alpaka::internal

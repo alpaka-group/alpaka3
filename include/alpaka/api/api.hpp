@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "alpaka/api/host/Api.hpp"
 #include "alpaka/api/cuda/Api.hpp"
 #include "alpaka/api/hip/Api.hpp"
+#include "alpaka/api/host/Api.hpp"
 #include "alpaka/api/oneApi/Api.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/meta/filter.hpp"
@@ -19,7 +19,7 @@ namespace alpaka
 {
     /** provides the API used during the execution of the current code path
      *
-     * @attention if api::cpu os returned it can also mean that this method was called within the host controlling
+     * @attention if api::host os returned it can also mean that this method was called within the host controlling
      * workflow and not within a kernel running on a CPU device.
      */
     constexpr auto thisApi()
@@ -31,13 +31,13 @@ namespace alpaka
 #elif ALPAKA_LANG_HIP && defined(__HIP_DEVICE_COMPILE__) && __HIP_DEVICE_COMPILE__ == 1
         return api::hip;
 #else
-        return api::cpu;
+        return api::host;
 #endif
     }
 
     namespace onHost
     {
-        constexpr auto apis = std::make_tuple(api::cpu, api::cuda, api::hip, api::oneApi);
+        constexpr auto apis = std::make_tuple(api::host, api::cuda, api::hip, api::oneApi);
 
         constexpr auto enabledApis = meta::filter([](auto api) constexpr { return isPlatformAvaiable(api); }, apis);
     } // namespace onHost

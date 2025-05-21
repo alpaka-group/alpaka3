@@ -61,5 +61,5 @@ namespace alpaka::onAcc
             T_Idx m_idx;
             T_Count m_count;
         };
-    } // namespace host
+    } // namespace cpu
 } // namespace alpaka::onAcc

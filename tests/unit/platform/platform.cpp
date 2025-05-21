@@ -14,7 +14,7 @@ using namespace alpaka::onHost;
 
 TEST_CASE("host api creation", "")
 {
-    auto hostSelector = onHost::makeDeviceSelector(api::cpu, deviceKind::cpu);
+    auto hostSelector = onHost::makeDeviceSelector(api::host, deviceKind::cpu);
     CHECK(hostSelector.getDeviceCount() == 1u);
 
     Device device = hostSelector.makeDevice(0);

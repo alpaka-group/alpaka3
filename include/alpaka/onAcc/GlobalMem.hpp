@@ -84,11 +84,11 @@ namespace alpaka::onAcc
         struct ALPAKA_PP_CAT(GlobalStorage, name)                                                                     \
         {                                                                                                             \
             template<typename T_Api>                                                                                  \
-            requires(std::is_same_v<alpaka::api::Cpu, T_Api>)                                                         \
+            requires(std::is_same_v<alpaka::api::Host, T_Api>)                                                        \
             constexpr auto& get(T_Api) const                                                                          \
             {                                                                                                         \
                 static_assert(                                                                                        \
-                    std::is_same_v<alpaka::api::Cpu, ALPAKA_TYPEOF(thisApi())>,                                       \
+                    std::is_same_v<alpaka::api::Host, ALPAKA_TYPEOF(thisApi())>,                                      \
                     "This call is only allowed from the host or a kernel running on CPU.");                           \
                 return alpaka_onHost::name;                                                                           \
             }                                                                                                         \
