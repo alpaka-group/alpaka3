@@ -106,7 +106,7 @@ namespace alpaka::onHost
                         auto moreLayer = Dict{
                             DictEntry(frame::count, frameSpec.m_numFrames),
                             DictEntry(frame::extent, frameSpec.m_frameExtent),
-                            DictEntry(object::api, api::cpu),
+                            DictEntry(object::api, api::host),
                             DictEntry(object::deviceKind, onHost::getDeviceKind(m_device)),
                             DictEntry(object::exec, executor)};
                         onAcc::Acc acc = makeAcc(executor, threadBlocking);
@@ -131,7 +131,7 @@ namespace alpaka::onHost
             friend struct internal::Memset;
             friend struct alpaka::internal::GetApi;
         };
-    } // namespace host
+    } // namespace cpu
 
     namespace internal
     {

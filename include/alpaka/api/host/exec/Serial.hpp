@@ -80,7 +80,7 @@ namespace alpaka::onHost
 
             ThreadSpecType m_threadBlocking;
         };
-    } // namespace host
+    } // namespace cpu
 
     inline auto makeAcc(exec::CpuSerial, auto const& threadBlocking)
     {

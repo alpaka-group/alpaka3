@@ -24,7 +24,7 @@ namespace alpaka
         {
             inline constexpr auto operator()(auto&& stdVector) const
             {
-                return api::Cpu{};
+                return api::Host{};
             }
         };
 

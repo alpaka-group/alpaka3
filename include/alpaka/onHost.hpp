@@ -194,7 +194,7 @@ namespace alpaka::onHost
      * @param extents number of elements for each dimension
      * @return memory owning view to the allocated memory
      *
-     * The host controller device is the deviceKind::Cpu from api::Cpu.
+     * The host controller device is the deviceKind::Cpu from api::Host.
      */
     template<typename T_Type>
     inline auto allocHost(alpaka::concepts::VectorOrScalar auto const& extents)
@@ -211,7 +211,7 @@ namespace alpaka::onHost
      * Derives type and extents of the memory from the view.
      * The content of the memory is not copied to the created allocated memory.
      *
-     * The host controller device is the deviceKind::Cpu from api::Cpu.
+     * The host controller device is the deviceKind::Cpu from api::Host.
      *
      * @param view memory where properties will be derived from
      *

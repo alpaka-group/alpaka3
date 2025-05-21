@@ -17,9 +17,9 @@ namespace alpaka
 {
     namespace api
     {
-        struct Cpu : detail::ApiBase
+        struct Host : detail::ApiBase
         {
-            using element_type = Cpu;
+            using element_type = Host;
 
             auto get() const
             {
@@ -28,27 +28,27 @@ namespace alpaka
 
             void _()
             {
-                static_assert(concepts::Api<Cpu>);
+                static_assert(concepts::Api<Host>);
             }
 
             static std::string getName()
             {
-                return "Cpu";
+                return "Host";
             }
         };
 
-        constexpr auto cpu = Cpu{};
+        constexpr auto host = Host{};
     } // namespace api
 
     namespace onHost::trait
     {
         template<>
-        struct IsPlatformAvailable::Op<api::Cpu> : std::true_type
+        struct IsPlatformAvailable::Op<api::Host> : std::true_type
         {
         };
 
         template<>
-        struct IsDeviceSupportedBy::Op<deviceKind::Cpu, api::Cpu> : std::true_type
+        struct IsDeviceSupportedBy::Op<deviceKind::Cpu, api::Host> : std::true_type
         {
         };
 
@@ -58,27 +58,27 @@ namespace alpaka
     {
 
         template<typename T_Type>
-        struct GetArchSimdWidth::Op<T_Type, api::Cpu, deviceKind::Cpu>
+        struct GetArchSimdWidth::Op<T_Type, api::Host, deviceKind::Cpu>
         {
-            constexpr uint32_t operator()(api::Cpu const, deviceKind::Cpu const) const
+            constexpr uint32_t operator()(api::Host const, deviceKind::Cpu const) const
             {
                 return alpaka::onHost::internal::getCPUSimdWidth<T_Type>();
             }
         };
 
         template<>
-        struct GetNumPipelines::Op<api::Cpu, deviceKind::Cpu>
+        struct GetNumPipelines::Op<api::Host, deviceKind::Cpu>
         {
-            constexpr uint32_t operator()(api::Cpu const, deviceKind::Cpu const) const
+            constexpr uint32_t operator()(api::Host const, deviceKind::Cpu const) const
             {
                 return alpaka::onHost::internal::getCPUNumPipelines();
             }
         };
 
         template<>
-        struct GetCachelineSize::Op<api::Cpu, deviceKind::Cpu>
+        struct GetCachelineSize::Op<api::Host, deviceKind::Cpu>
         {
-            constexpr uint32_t operator()(api::Cpu const, deviceKind::Cpu const) const
+            constexpr uint32_t operator()(api::Host const, deviceKind::Cpu const) const
             {
                 return alpaka::onHost::internal::getCPUCachelineSize();
             }
@@ -89,9 +89,9 @@ namespace alpaka
     namespace onAcc::internal::trait
     {
         template<typename T_Acc>
-        struct AutoIndexMapping::Op<T_Acc, api::Cpu, deviceKind::Cpu>
+        struct AutoIndexMapping::Op<T_Acc, api::Host, deviceKind::Cpu>
         {
-            constexpr auto operator()(T_Acc const&, api::Cpu, deviceKind::Cpu) const
+            constexpr auto operator()(T_Acc const&, api::Host, deviceKind::Cpu) const
             {
                 return layout::Contigious{};
             }

@@ -107,7 +107,7 @@ namespace alpaka::onHost
             friend struct internal::GetDeviceProperties;
             friend struct internal::AdjustThreadSpec;
         };
-    } // namespace host
+    } // namespace cpu
 
     namespace trait
 

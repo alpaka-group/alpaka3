@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "alpaka/api/host/executor.hpp"
 #include "alpaka/api/cuda/executor.hpp"
 #include "alpaka/api/hip/executor.hpp"
+#include "alpaka/api/host/executor.hpp"
 #include "alpaka/api/oneApi/executor.hpp"
 
 namespace alpaka::exec
