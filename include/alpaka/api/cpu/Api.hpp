@@ -17,7 +17,7 @@ namespace alpaka
 {
     namespace api
     {
-        struct Cpu
+        struct Cpu : detail::ApiBase
         {
             using element_type = Cpu;
 

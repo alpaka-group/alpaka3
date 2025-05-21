@@ -63,7 +63,7 @@ namespace alpaka::onHost::internal
                 {
                     events.push_back(sycl_queue.memcpy(
                         reinterpret_cast<std::uint8_t*>(destPtr) + (idx * destPitchBytesWithoutColumn).sum(),
-                        reinterpret_cast<std::uint8_t*>(sourcePtr) + (idx * sourcePitchBytesWithoutColumn).sum(),
+                        reinterpret_cast<std::uint8_t const*>(sourcePtr) + (idx * sourcePitchBytesWithoutColumn).sum(),
                         static_cast<size_t>(extents.back()) * sizeof(alpaka::trait::GetValueType_t<T_Dest>)));
                 });
             sycl_queue.ext_oneapi_submit_barrier(events);

@@ -18,7 +18,7 @@ namespace alpaka
 {
     namespace api
     {
-        struct Cuda
+        struct Cuda : detail::ApiBase
         {
             using element_type = Cuda;
 

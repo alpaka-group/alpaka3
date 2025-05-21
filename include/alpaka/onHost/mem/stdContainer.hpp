@@ -22,7 +22,7 @@ namespace alpaka
         template<typename T_Type, typename T_Allocator>
         struct GetApi::Op<std::vector<T_Type, T_Allocator>>
         {
-            inline constexpr auto operator()(auto&& platform) const
+            inline constexpr auto operator()(auto&& stdVector) const
             {
                 return api::Cpu{};
             }
@@ -32,7 +32,7 @@ namespace alpaka
         template<typename T_Type, size_t T_size>
         struct GetApi::Op<std::array<T_Type, T_size>>
         {
-            inline constexpr auto operator()(auto&& platform) const
+            inline constexpr auto operator()(auto&& srdArray) const
             {
                 return thisApi();
             }

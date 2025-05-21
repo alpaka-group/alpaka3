@@ -18,7 +18,7 @@ namespace alpaka
 {
     namespace api
     {
-        struct Hip
+        struct Hip : detail::ApiBase
         {
             using element_type = Hip;
 

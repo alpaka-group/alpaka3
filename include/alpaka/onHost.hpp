@@ -125,6 +125,16 @@ namespace alpaka::onHost
         return alpaka::internal::getApi(*any.get());
     }
 
+    namespace concepts
+    {
+        template<typename T_Any>
+        concept HasApi = requires(T_Any&& any) {
+            {
+                getApi(any)
+            } -> alpaka::concepts::Api;
+        };
+    } // namespace concepts
+
     /** @} */
 
     /** Get the device type of an object

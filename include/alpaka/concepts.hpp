@@ -12,6 +12,24 @@
 
 namespace alpaka
 {
+    namespace detail
+    {
+        struct ApiBase
+        {
+        };
+    } // namespace detail
+
+    namespace trait
+    {
+        template<typename T_Type>
+        struct IsApi : std::is_base_of<detail::ApiBase, T_Type>
+        {
+        };
+    } // namespace trait
+
+    template<typename T_Type>
+    constexpr bool isApi_v = trait::IsApi<T_Type>::value;
+
     namespace concepts
     {
         template<typename T>
@@ -36,7 +54,7 @@ namespace alpaka
 
 
         template<typename T>
-        concept Api = requires(T t) { requires HasStaticName<T>; };
+        concept Api = isApi_v<T> && requires(T t) { requires HasStaticName<T>; };
 
         template<typename T, unsigned int T_dim>
         concept Dim = requires { T::dim() == T_dim; };
@@ -48,4 +66,16 @@ namespace alpaka
                                 || std::is_same_v<T, deviceKind::IntelGpu>);
 
     } // namespace concepts
+
+    namespace internal
+    {
+        template<alpaka::concepts::Api T_Api>
+        struct GetApi::Op<T_Api>
+        {
+            inline constexpr auto operator()(auto&& api) const
+            {
+                return api;
+            }
+        };
+    } // namespace internal
 } // namespace alpaka

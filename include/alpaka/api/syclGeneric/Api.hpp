@@ -14,7 +14,7 @@ namespace alpaka
     namespace api
     {
         template<typename TApiInterface>
-        struct GenericSycl
+        struct GenericSycl : detail::ApiBase
         {
             using element_type = TApiInterface;
 
