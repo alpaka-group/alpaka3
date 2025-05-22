@@ -8,16 +8,45 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/core/config.hpp"
 
+#include <alpaka/mem/concepts.hpp>
+
 #include <tuple>
 #include <type_traits>
 
 namespace alpaka
 {
+    namespace onHost
+    {
+        /** Provides an instance of an object which can be used within the compute kernel*/
+        struct MakeDeviceAccessible
+        {
+            template<typename T_Any>
+            struct Op
+            {
+                /** @return @attention returns a reference to the original data */
+                auto& operator()(auto&& any) const
+                {
+                    return any;
+                }
+            };
+        };
 
-    //! \brief The class used to bind kernel function object and arguments together. Once an instance of this class is
-    //! created, arguments are not needed to be separately given to functions who need kernel function and arguments.
+        /** Provides an instance of an object which can be used within the compute kernel
+         *
+         * @return compute kernel compatible object if MakeDeviceAccessible is specialized else the identity
+         */
+        inline decltype(auto) makeDeviceAccessible(auto&& any)
+        {
+            return MakeDeviceAccessible::Op<ALPAKA_TYPEOF(any)>{}(ALPAKA_FORWARD(any));
+        }
+    } // namespace onHost
+
+    //! \brief The class used to bind kernel function object and arguments together. Once an instance of this class
+    //! is created, arguments are not needed to be separately given to functions who need kernel function and
+    //! arguments.
     //! \tparam TKernelFn The kernel function object type.
-    //! \tparam TArgs Kernel function object invocation argument types as a parameter pack.
+    //! \tparam TArgs Kernel function object
+    //! invocation argument types as a parameter pack.
     template<typename TKernelFn, typename... TArgs>
     class KernelBundle
     {
@@ -25,10 +54,13 @@ namespace alpaka
         //! The function object type
         using KernelFn = std::decay_t<TKernelFn>;
         //! Tuple type to encapsulate kernel function argument types and argument values
-        using ArgTuple = std::tuple<remove_restrict_t<std::decay_t<TArgs>>...>;
+        using ArgTuple
+            = std::tuple<remove_restrict_t<ALPAKA_TYPEOF(onHost::makeDeviceAccessible(std::declval<TArgs>()))>...>;
 
         // Constructor
-        constexpr KernelBundle(KernelFn const& kernelFn, TArgs const&... args) : m_kernelFn{kernelFn}, m_args(args...)
+        constexpr KernelBundle(KernelFn const& kernelFn, auto&&... args)
+            : m_kernelFn{kernelFn}
+            , m_args(onHost::makeDeviceAccessible(ALPAKA_FORWARD(args))...)
         {
         }
 
@@ -66,5 +98,5 @@ namespace alpaka
     //! \return Kernel function bundle. An instance of KernelBundle which consists the kernel function object and its
     //! arguments.
     template<typename TKernelFn, typename... TArgs>
-    ALPAKA_FN_HOST KernelBundle(TKernelFn const&, TArgs const&...) -> KernelBundle<TKernelFn, TArgs...>;
+    ALPAKA_FN_HOST KernelBundle(TKernelFn const&, TArgs&&...) -> KernelBundle<TKernelFn, TArgs...>;
 } // namespace alpaka

@@ -137,14 +137,7 @@ void testVectorAddKernel(alpaka::onHost::concepts::Device auto device, auto comp
 
 
     std::cout << "Testing VectorAddKernel with vector indices with a grid of " << frameSpec << "\n";
-    queue.enqueue(
-        computeExec,
-        frameSpec,
-        VectorAddKernel1D{},
-        in1_d.getMdSpan(),
-        in2_d.getMdSpan(),
-        out_d.getMdSpan(),
-        Vec1D{size});
+    queue.enqueue(computeExec, frameSpec, VectorAddKernel1D{}, in1_d, in2_d, out_d, Vec1D{size});
 
     // copy the results from the device to the host
     alpaka::onHost::memcpy(queue, out_h, out_d);

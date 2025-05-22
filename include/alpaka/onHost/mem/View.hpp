@@ -172,6 +172,19 @@ namespace alpaka::onHost
         alpaka::concepts::Vector T_UserPitches>
     View(T_Any, T_Type*, T_UserExtents const&, T_UserPitches const&)
         -> View<ALPAKA_TYPEOF(getApi(std::declval<T_Any>())), T_Type, typename T_UserPitches::UniVec, Alignment<>>;
+
+    template<
+        alpaka::concepts::Api T_Api,
+        typename T_Type,
+        alpaka::concepts::Vector T_Extents,
+        alpaka::concepts::Alignment T_MemAlignment>
+    struct MakeDeviceAccessible::Op<View<T_Api, T_Type, T_Extents, T_MemAlignment>>
+    {
+        decltype(auto) operator()(auto&& any) const
+        {
+            return any.getMdSpan();
+        }
+    };
 } // namespace alpaka::onHost
 
 namespace alpaka::internal

@@ -476,26 +476,17 @@ void testKernels(auto cfg)
         {
             // Test the copy-kernel. Copy A one by one to C.
             measureKernelExec(
-                [&]()
-                {
+                [&]() {
                     queue.enqueue(
                         exec,
                         dataBlocking,
-                        KernelBundle{CopyKernel(), bufAccInputA.getMdSpan(), bufAccOutputC.getMdSpan(), arraySize});
+                        KernelBundle{CopyKernel(), bufAccInputA, bufAccOutputC, arraySize});
                 },
                 "CopyKernel");
 
             // Test the scaling-kernel. Calculate B=scalar*C. Where C = A.
             measureKernelExec(
-                [&]() {
-                    queue.enqueue(
-                        exec,
-                        dataBlocking,
-                        MultKernel(),
-                        bufAccInputB.getMdSpan(),
-                        bufAccOutputC.getMdSpan(),
-                        arraySize);
-                },
+                [&]() { queue.enqueue(exec, dataBlocking, MultKernel(), bufAccInputB, bufAccOutputC, arraySize); },
                 "MultKernel");
 
             // Test the addition-kernel. Calculate C=A+B. Where B=scalar*C or B=scalar*A.
@@ -505,12 +496,7 @@ void testKernels(auto cfg)
                     queue.enqueue(
                         exec,
                         dataBlocking,
-                        KernelBundle{
-                            AddKernel(),
-                            bufAccInputA.getMdSpan(),
-                            bufAccInputB.getMdSpan(),
-                            bufAccOutputC.getMdSpan(),
-                            arraySize});
+                        KernelBundle{AddKernel(), bufAccInputA, bufAccInputB, bufAccOutputC, arraySize});
                 },
                 "AddKernel");
         }
@@ -524,12 +510,7 @@ void testKernels(auto cfg)
                     queue.enqueue(
                         exec,
                         dataBlocking,
-                        KernelBundle{
-                            TriadKernel(),
-                            bufAccInputA.getMdSpan(),
-                            bufAccInputB.getMdSpan(),
-                            bufAccOutputC.getMdSpan(),
-                            arraySize});
+                        KernelBundle{TriadKernel(), bufAccInputA, bufAccInputB, bufAccOutputC, arraySize});
                 },
                 "TriadKernel");
         }
@@ -557,9 +538,9 @@ void testKernels(auto cfg)
                         dataBlockingDot,
                         KernelBundle{
                             DotKernel(), // Dot kernel
-                            bufAccInputA.getMdSpan(),
-                            bufAccInputB.getMdSpan(),
-                            bufAccSumPerBlock.getMdSpan(),
+                            bufAccInputA,
+                            bufAccInputB,
+                            bufAccSumPerBlock,
                             arraySize});
                     onHost::memcpy(queue, bufHostSumPerBlock, bufAccSumPerBlock);
                     onHost::wait(queue);

@@ -110,8 +110,7 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
 
     // Instantiate the kernel function object
     VectorAddKernel kernel;
-    auto const taskKernel
-        = KernelBundle{kernel, bufAccA.getMdSpan(), bufAccB.getMdSpan(), bufAccC.getMdSpan(), extent};
+    auto const taskKernel = KernelBundle{kernel, bufAccA, bufAccB, bufAccC, extent};
 
     Vec<size_t, 1u> chunkSize = 256u;
     // how many elements one worker should compute to ensure vectorization or instruction parallelism
