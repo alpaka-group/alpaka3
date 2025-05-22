@@ -65,6 +65,10 @@ namespace alpaka
                             && (std::is_same_v<T, deviceKind::NvidiaGpu> || std::is_same_v<T, deviceKind::AmdGpu>
                                 || std::is_same_v<T, deviceKind::IntelGpu>);
 
+
+        template<typename T>
+        concept IsPointer = std::is_pointer_v<T>;
+
     } // namespace concepts
 
     namespace internal

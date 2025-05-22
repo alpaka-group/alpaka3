@@ -87,8 +87,7 @@ namespace alpaka::onHost
 
         alpaka::concepts::MdSpan auto getMdSpan() const
         {
-            // creates a read only MDSpan if data() if the view is const itself
-            return makeMdSpan(data(), this->getExtents(), this->getPitches(), T_MemAlignment{});
+            return this->getConstMdSpan();
         }
 
         alpaka::concepts::MdSpan auto getMdSpan()
@@ -147,7 +146,8 @@ namespace alpaka::onHost
         }
 
     private:
-        template<typename T>
+        /** @todo move this to trais or somewhere else that it can be used everywhere */
+        template<alpaka::concepts::IsPointer T>
         using ConstPtr_t = std::add_pointer_t<std::add_const_t<std::remove_pointer_t<T>>>;
 
         void _()

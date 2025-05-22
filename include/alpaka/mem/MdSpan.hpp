@@ -158,7 +158,21 @@ namespace alpaka
             return m_pitch.getPitches();
         }
 
+        auto getConstMdSpan() const
+        {
+            using ConstPtrType = ConstPtr_t<ALPAKA_TYPEOF(m_ptr)>;
+            return makeMdSpan(
+                static_cast<ConstPtrType>(m_ptr),
+                this->getExtents(),
+                this->getPitches(),
+                T_MemAlignment{});
+        }
+
     protected:
+        /** @todo move this to trais or somewhere else that it can be used everywhere */
+        template<alpaka::concepts::IsPointer T>
+        using ConstPtr_t = std::add_pointer_t<std::add_const_t<std::remove_pointer_t<T>>>;
+
         /** get the pointer of the value relative to the origin pointer m_ptr
          *
          * @param idx n-dimensional offset
