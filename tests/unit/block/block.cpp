@@ -73,10 +73,7 @@ TEMPLATE_LIST_TEST_CASE("block iota", "", TestApis)
     auto hBuff = onHost::allocHostMirror(dBuff);
     onHost::wait(queue);
 
-    queue.enqueue(
-        exec,
-        FrameSpec{numBlocks / 2u, blockExtent},
-        KernelBundle{BlockIotaKernel{}, dBuff.getMdSpan(), numBlocks});
+    queue.enqueue(exec, FrameSpec{numBlocks / 2u, blockExtent}, KernelBundle{BlockIotaKernel{}, dBuff, numBlocks});
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);
 

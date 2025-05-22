@@ -79,7 +79,7 @@ namespace alpaka::onHost
                 *m_queue.get(),
                 std::move(executor),
                 blockCfg,
-                KernelBundle{f, onHost::makeDeviceAccessible(ALPAKA_FORWARD(args))...});
+                KernelBundle{f, onHost::makeAccessibleOnAcc(ALPAKA_FORWARD(args))...});
         }
 
         /** Enqueue a kernel to a queue

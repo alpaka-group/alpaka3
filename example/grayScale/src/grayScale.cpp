@@ -214,10 +214,7 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdForEach) -> int
                   << deviceSpec.getApi().getName() << std::endl;
         onHost::wait(queue);
         auto const beginT = std::chrono::high_resolution_clock::now();
-        queue.enqueue(
-            exec,
-            dataBlocking,
-            KernelBundle{kernel, bufAccARGB.getMdSpan(), static_cast<size_t>(extent[0])});
+        queue.enqueue(exec, dataBlocking, KernelBundle{kernel, bufAccARGB, static_cast<size_t>(extent[0])});
         onHost::wait(queue); // Ensure kernel execution completes before proceeding
         auto const endT = std::chrono::high_resolution_clock::now();
         double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();

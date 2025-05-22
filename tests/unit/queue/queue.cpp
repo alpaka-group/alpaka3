@@ -60,10 +60,7 @@ TEMPLATE_LIST_TEST_CASE("iota", "", TestApis)
     auto hBuff = onHost::allocHostMirror(dBuff);
 
     constexpr auto frameSize = CVec<uint32_t, 4u>{};
-    queue.enqueue(
-        exec,
-        FrameSpec{extent / frameSize, frameSize},
-        KernelBundle{IotaKernel{}, dBuff.getMdSpan(), extent.x()});
+    queue.enqueue(exec, FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernel{}, dBuff, extent.x()});
     memcpy(queue, hBuff, dBuff);
     wait(queue);
 #    if 1
@@ -116,10 +113,7 @@ TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
 
     wait(queue);
     constexpr auto frameSize = Vec{2u, 4u};
-    queue.enqueue(
-        exec,
-        FrameSpec{extent / frameSize, frameSize},
-        KernelBundle{IotaKernelND{}, dBuff.getMdSpan(), extent});
+    queue.enqueue(exec, FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff, extent});
     memcpy(queue, hBuff, dBuff);
     wait(queue);
 #    if 1
@@ -162,10 +156,7 @@ TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
 
     wait(queue);
     constexpr auto frameSize = Vec{2u, 4u, 8u};
-    queue.enqueue(
-        exec,
-        FrameSpec{extent / frameSize, frameSize},
-        KernelBundle{IotaKernelND{}, dBuff.getMdSpan(), extent});
+    queue.enqueue(exec, FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff, extent});
     memcpy(queue, hBuff, dBuff);
     wait(queue);
 #    if 1
@@ -248,7 +239,7 @@ TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
     queue.enqueue(
         exec,
         FrameSpec{numBlocksReduced, frameSize},
-        KernelBundle{IotaKernelNDSelection<ALPAKA_TYPEOF(selection)>{}, dBuff.getMdSpan(), numBlocks});
+        KernelBundle{IotaKernelNDSelection<ALPAKA_TYPEOF(selection)>{}, dBuff, numBlocks});
     memcpy(queue, hBuff, dBuff);
     wait(queue);
 #if 1

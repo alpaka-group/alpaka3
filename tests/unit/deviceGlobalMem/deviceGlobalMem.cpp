@@ -96,7 +96,7 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
         queue.enqueue(
             exec,
             FrameSpec{numBlocks, blockExtent},
-            KernelBundle{DeviceGlobalMemKernelVec{}, dBuff.getMdSpan(), dataExtent});
+            KernelBundle{DeviceGlobalMemKernelVec{}, dBuff, dataExtent});
         onHost::memcpy(queue, hBuff, dBuff);
         onHost::wait(queue);
 
@@ -112,7 +112,7 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
         queue.enqueue(
             exec,
             FrameSpec{numBlocks, blockExtent},
-            KernelBundle{DeviceGlobalMemKernelScalar{}, dBuff.getMdSpan(), dataExtent});
+            KernelBundle{DeviceGlobalMemKernelScalar{}, dBuff, dataExtent});
         onHost::memcpy(queue, hBuff, dBuff);
         onHost::wait(queue);
 
@@ -128,7 +128,7 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
         queue.enqueue(
             exec,
             FrameSpec{numBlocks, blockExtent},
-            KernelBundle{DeviceGlobalMemKernelCArray{}, dBuff.getMdSpan(), dataExtent});
+            KernelBundle{DeviceGlobalMemKernelCArray{}, dBuff, dataExtent});
         onHost::memcpy(queue, hBuff, dBuff);
         onHost::wait(queue);
 
@@ -144,7 +144,7 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
         queue.enqueue(
             exec,
             FrameSpec{numBlocks, blockExtent},
-            KernelBundle{DeviceGlobalMemKernelCArray2D{}, dBuff.getMdSpan(), dataExtent});
+            KernelBundle{DeviceGlobalMemKernelCArray2D{}, dBuff, dataExtent});
         onHost::memcpy(queue, hBuff, dBuff);
         onHost::wait(queue);
 

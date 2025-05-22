@@ -76,7 +76,7 @@ TEMPLATE_LIST_TEST_CASE("block shared iota", "", TestApis)
     queue.enqueue(
         exec,
         onHost::FrameSpec{numBlocks / 2u, blockExtent},
-        KernelBundle{SharedBlockIotaKernel<blockExtent.x()>{}, dBuff.getMdSpan(), numBlocks});
+        KernelBundle{SharedBlockIotaKernel<blockExtent.x()>{}, dBuff, numBlocks});
     alpaka::onHost::memcpy(queue, hBuff, dBuff);
     alpaka::onHost::wait(queue);
 
@@ -211,28 +211,19 @@ TEMPLATE_LIST_TEST_CASE("block shared alias", "", TestApis)
     auto hBuff = onHost::allocHostMirror(dBuff);
     alpaka::onHost::wait(queue);
     {
-        queue.enqueue(
-            exec,
-            onHost::FrameSpec{numBlocks, blockExtent},
-            KernelBundle{SharedMemAlias{}, dBuff.getMdSpan()});
+        queue.enqueue(exec, onHost::FrameSpec{numBlocks, blockExtent}, KernelBundle{SharedMemAlias{}, dBuff});
         alpaka::onHost::memcpy(queue, hBuff, dBuff);
         alpaka::onHost::wait(queue);
         CHECK(hBuff[0] == true);
     }
     {
-        queue.enqueue(
-            exec,
-            onHost::FrameSpec{numBlocks, blockExtent},
-            KernelBundle{DynSharedMemMember{}, dBuff.getMdSpan()});
+        queue.enqueue(exec, onHost::FrameSpec{numBlocks, blockExtent}, KernelBundle{DynSharedMemMember{}, dBuff});
         alpaka::onHost::memcpy(queue, hBuff, dBuff);
         alpaka::onHost::wait(queue);
         CHECK(hBuff[0] == true);
     }
     {
-        queue.enqueue(
-            exec,
-            onHost::FrameSpec{numBlocks, blockExtent},
-            KernelBundle{DynSharedMemTrait{}, dBuff.getMdSpan()});
+        queue.enqueue(exec, onHost::FrameSpec{numBlocks, blockExtent}, KernelBundle{DynSharedMemTrait{}, dBuff});
         alpaka::onHost::memcpy(queue, hBuff, dBuff);
         alpaka::onHost::wait(queue);
         CHECK(hBuff[0] == true);

@@ -149,16 +149,7 @@ auto example(T_Cfg const& cfg) -> int
         computeQueue.enqueue(
             exec,
             dataBlockingStencil,
-            KernelBundle{
-                stencilKernel,
-                uCurrBufAcc.getMdSpan(),
-                uNextBufAcc.getMdSpan(),
-                chunkSize,
-                sharedMemExtents,
-                numNodes,
-                dx,
-                dy,
-                dt});
+            KernelBundle{stencilKernel, uCurrBufAcc, uNextBufAcc, chunkSize, sharedMemExtents, numNodes, dx, dy, dt});
 
         // Apply boundaries
         computeQueue.enqueue(

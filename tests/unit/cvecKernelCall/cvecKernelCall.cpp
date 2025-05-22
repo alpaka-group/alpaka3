@@ -65,10 +65,7 @@ TEMPLATE_LIST_TEST_CASE("CVec frame extent kernel call", "", TestApis)
     auto hBuff = onHost::allocHostMirror(dBuff);
     onHost::wait(queue);
     {
-        queue.enqueue(
-            exec,
-            FrameSpec{Vec{1u}, CVec<uint32_t, 43u>{}},
-            KernelBundle{KernelCVecFrameExtents{}, dBuff.getMdSpan()});
+        queue.enqueue(exec, FrameSpec{Vec{1u}, CVec<uint32_t, 43u>{}}, KernelBundle{KernelCVecFrameExtents{}, dBuff});
         onHost::memcpy(queue, hBuff, dBuff);
         onHost::wait(queue);
         CHECK(hBuff[0] == true);
@@ -118,7 +115,7 @@ TEMPLATE_LIST_TEST_CASE("CVec thread extent kernel call", "", TestApis)
             // we need to use one thread per thread block because serial executors will reduce the number of threads to
             // a single thread
             ThreadSpec{Vec{1u}, CVec<uint32_t, 1u>{}},
-            KernelBundle{KernelCVecThreadExtents{}, dBuff.getMdSpan()});
+            KernelBundle{KernelCVecThreadExtents{}, dBuff});
         onHost::memcpy(queue, hBuff, dBuff);
         onHost::wait(queue);
         CHECK(hBuff[0] == true);

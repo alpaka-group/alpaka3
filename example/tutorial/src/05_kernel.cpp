@@ -108,14 +108,7 @@ void testVectorAddKernel(alpaka::onHost::concepts::Device auto device, auto comp
     auto frameSpec = alpaka::onHost::FrameSpec{32u, 32u};
 
     std::cout << "Testing VectorAddKernel with scalar indices with a grid of " << frameSpec << "\n";
-    queue.enqueue(
-        computeExec,
-        frameSpec,
-        VectorAddKernel{},
-        in1_d.getMdSpan(),
-        in2_d.getMdSpan(),
-        out_d.getMdSpan(),
-        size);
+    queue.enqueue(computeExec, frameSpec, VectorAddKernel{}, in1_d, in2_d, out_d, size);
 
     // copy the results from the device to the host
     alpaka::onHost::memcpy(queue, out_h, out_d);
@@ -202,14 +195,7 @@ void testVectorAddKernel3D(alpaka::onHost::concepts::Device auto device, auto co
     auto frameSpec = alpaka::onHost::FrameSpec{Vec3D{5, 5, 1}, Vec3D{4, 4, 4}};
     std::cout << "Testing VectorAddKernel3D with vector indices with a grid of " << frameSpec << "\n";
 
-    queue.enqueue(
-        computeExec,
-        frameSpec,
-        VectorAddKernel3D{},
-        in1_d.getMdSpan(),
-        in2_d.getMdSpan(),
-        out_d.getMdSpan(),
-        ndsize);
+    queue.enqueue(computeExec, frameSpec, VectorAddKernel3D{}, in1_d, in2_d, out_d, ndsize);
 
     // copy the results from the device to the host
     alpaka::onHost::memcpy(queue, out_h, out_d);

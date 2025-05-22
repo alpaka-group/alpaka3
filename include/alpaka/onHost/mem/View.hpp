@@ -178,7 +178,7 @@ namespace alpaka::onHost
         typename T_Type,
         alpaka::concepts::Vector T_Extents,
         alpaka::concepts::Alignment T_MemAlignment>
-    struct MakeDeviceAccessible::Op<View<T_Api, T_Type, T_Extents, T_MemAlignment>>
+    struct MakeAccessibleOnAcc::Op<View<T_Api, T_Type, T_Extents, T_MemAlignment>>
     {
         decltype(auto) operator()(auto&& any) const
         {

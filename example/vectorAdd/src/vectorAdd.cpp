@@ -93,9 +93,9 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
 
     for(auto i(0u); i < extent; ++i)
     {
-        bufHostA.getMdSpan()[i] = dist(eng);
-        bufHostB.getMdSpan()[i] = dist(eng);
-        bufHostC.getMdSpan()[i] = 0;
+        bufHostA[i] = dist(eng);
+        bufHostB[i] = dist(eng);
+        bufHostC[i] = 0;
     }
 
     // Allocate 3 buffers on the accelerator
@@ -143,8 +143,8 @@ auto example(T_Cfg const& cfg, size_t numElements) -> int
     static constexpr int MAX_PRINT_FALSE_RESULTS = 20;
     for(auto i(0u); i < extent; ++i)
     {
-        Data const& val(bufHostC.getMdSpan()[i]);
-        Data const correctResult(bufHostA.getMdSpan()[i] + bufHostB.getMdSpan()[i]);
+        Data const& val(bufHostC[i]);
+        Data const correctResult(bufHostA[i] + bufHostB[i]);
         if(val != correctResult)
         {
             if(falseResults < MAX_PRINT_FALSE_RESULTS)

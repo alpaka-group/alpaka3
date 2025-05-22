@@ -18,7 +18,7 @@ namespace alpaka
     namespace onHost
     {
         /** Provides an instance of an object which can be used within the compute kernel*/
-        struct MakeDeviceAccessible
+        struct MakeAccessibleOnAcc
         {
             template<typename T_Any>
             struct Op
@@ -33,11 +33,11 @@ namespace alpaka
 
         /** Provides an instance of an object which can be used within the compute kernel
          *
-         * @return compute kernel compatible object if MakeDeviceAccessible is specialized else the identity
+         * @return compute kernel compatible object if MakeAccessibleOnAcc is specialized else the identity
          */
-        inline decltype(auto) makeDeviceAccessible(auto&& any)
+        inline decltype(auto) makeAccessibleOnAcc(auto&& any)
         {
-            return MakeDeviceAccessible::Op<ALPAKA_TYPEOF(any)>{}(ALPAKA_FORWARD(any));
+            return MakeAccessibleOnAcc::Op<ALPAKA_TYPEOF(any)>{}(ALPAKA_FORWARD(any));
         }
     } // namespace onHost
 
@@ -55,12 +55,12 @@ namespace alpaka
         using KernelFn = std::decay_t<TKernelFn>;
         //! Tuple type to encapsulate kernel function argument types and argument values
         using ArgTuple
-            = std::tuple<remove_restrict_t<ALPAKA_TYPEOF(onHost::makeDeviceAccessible(std::declval<TArgs>()))>...>;
+            = std::tuple<remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>...>;
 
         // Constructor
         constexpr KernelBundle(KernelFn const& kernelFn, auto&&... args)
             : m_kernelFn{kernelFn}
-            , m_args(onHost::makeDeviceAccessible(ALPAKA_FORWARD(args))...)
+            , m_args(onHost::makeAccessibleOnAcc(ALPAKA_FORWARD(args))...)
         {
         }
 

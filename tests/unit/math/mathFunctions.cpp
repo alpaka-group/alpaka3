@@ -248,7 +248,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
     queue.enqueue(
         exec,
         alpaka::onHost::FrameSpec{numBlocks, blockExtent},
-        KernelBundle{SqrtKernel{}, inDev.getMdSpan(), outDev.getMdSpan(), size});
+        KernelBundle{SqrtKernel{}, inDev, outDev, size});
     alpaka::onHost::memcpy(queue, outHost, outDev);
     alpaka::onHost::wait(queue);
     for(uint32_t i = 0; i < size; ++i)
@@ -262,7 +262,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
     queue.enqueue(
         exec,
         alpaka::onHost::FrameSpec{numBlocks, blockExtent},
-        KernelBundle{CosKernel{}, inDev.getMdSpan(), outDev.getMdSpan(), size});
+        KernelBundle{CosKernel{}, inDev, outDev, size});
     alpaka::onHost::memcpy(queue, outHost, outDev);
     alpaka::onHost::wait(queue);
     for(uint32_t i = 0; i < size; ++i)
@@ -275,7 +275,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
     queue.enqueue(
         exec,
         alpaka::onHost::FrameSpec{numBlocks, blockExtent},
-        KernelBundle{LogKernel{}, inDev.getMdSpan(), outDev.getMdSpan(), size});
+        KernelBundle{LogKernel{}, inDev, outDev, size});
     alpaka::onHost::memcpy(queue, outHost, outDev);
     alpaka::onHost::wait(queue);
     for(uint32_t i = 0; i < size; ++i)
@@ -289,7 +289,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
     queue.enqueue(
         exec,
         alpaka::onHost::FrameSpec{numBlocks, blockExtent},
-        KernelBundle{TanKernel{}, inDev.getMdSpan(), outDev.getMdSpan(), size});
+        KernelBundle{TanKernel{}, inDev, outDev, size});
     alpaka::onHost::memcpy(queue, outHost, outDev);
     alpaka::onHost::wait(queue);
     for(uint32_t i = 0; i < size; ++i)
@@ -303,7 +303,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
     queue.enqueue(
         exec,
         alpaka::onHost::FrameSpec{numBlocks, blockExtent},
-        KernelBundle{AcosKernel{}, inDev.getMdSpan(), outDev.getMdSpan(), size});
+        KernelBundle{AcosKernel{}, inDev, outDev, size});
     alpaka::onHost::memcpy(queue, outHost, outDev);
     alpaka::onHost::wait(queue);
     for(uint32_t i = 0; i < size; ++i)
@@ -317,7 +317,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
     queue.enqueue(
         exec,
         alpaka::onHost::FrameSpec{numBlocks, blockExtent},
-        KernelBundle{AsinKernel{}, inDev.getMdSpan(), outDev.getMdSpan(), size});
+        KernelBundle{AsinKernel{}, inDev, outDev, size});
     alpaka::onHost::memcpy(queue, outHost, outDev);
     alpaka::onHost::wait(queue);
     for(uint32_t i = 0; i < size; ++i)
@@ -331,7 +331,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
     queue.enqueue(
         exec,
         alpaka::onHost::FrameSpec{numBlocks, blockExtent},
-        KernelBundle{ExpKernel{}, inDev.getMdSpan(), outDev.getMdSpan(), size});
+        KernelBundle{ExpKernel{}, inDev, outDev, size});
     alpaka::onHost::memcpy(queue, outHost, outDev);
     alpaka::onHost::wait(queue);
     for(uint32_t i = 0; i < size; ++i)
@@ -410,7 +410,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Returning Boolean - Test", "", TestApis)
     queue.enqueue(
         exec,
         alpaka::onHost::FrameSpec{numBlocks, blockExtent},
-        KernelBundle{IsNanKernel{}, inDev.getMdSpan(), outDev.getMdSpan(), size});
+        KernelBundle{IsNanKernel{}, inDev, outDev, size});
     alpaka::onHost::memcpy(queue, outHost, outDev);
     alpaka::onHost::wait(queue);
     for(uint32_t i = 0; i < size; ++i)

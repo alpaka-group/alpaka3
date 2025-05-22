@@ -76,7 +76,7 @@ void iotaTest(auto cfg, auto const extents, auto frameSize)
     queue.enqueue(
         exec,
         FrameSpec{pCast<KenelIdxScalarType>(extents) / frameSize, frameSize},
-        KernelBundle{IotaKernelND<T_LoopIdxType>{}, dBuff.getMdSpan(), extents});
+        KernelBundle{IotaKernelND<T_LoopIdxType>{}, dBuff, extents});
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);
 
