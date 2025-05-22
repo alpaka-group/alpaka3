@@ -11,8 +11,10 @@
 
 namespace alpaka::concepts
 {
-    template<typename T>
-    concept MdSpan = alpaka::isMdSpan_v<T>;
+    template<typename T, typename T_ValueType = alpaka::NotRequired>
+    concept MdSpan = alpaka::isMdSpan_v<T>
+                     && (std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
+                         || std::same_as<T_ValueType, alpaka::NotRequired>);
 
     template<typename T>
     concept Reference = std::is_reference_v<T>;

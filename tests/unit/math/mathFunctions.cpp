@@ -212,7 +212,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Test", "", TestApis)
     std::default_random_engine rand{rd()};
     std::uniform_real_distribution<float> dist{-10.0f, 10.0f};
 
-    // Buffer size
+    // ManagedView size
     constexpr uint32_t size = 32;
 
     // Allocate input and output buffers on the host
@@ -368,7 +368,7 @@ TEMPLATE_LIST_TEST_CASE("Math Functions Returning Boolean - Test", "", TestApis)
     std::default_random_engine rand{rd()};
     std::uniform_real_distribution<float> dist{-10.0f, 10.0f};
 
-    // Buffer size
+    // ManagedView size
     constexpr uint32_t size = 32;
 
     // Allocate input and output buffers on the host

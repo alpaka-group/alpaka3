@@ -11,6 +11,12 @@
 
 namespace alpaka
 {
+    /** This types is used in cases where the type is not required and can be given optionally into a trait or concept.
+     */
+    struct NotRequired
+    {
+    };
+
     namespace trait
     {
         template<typename T>

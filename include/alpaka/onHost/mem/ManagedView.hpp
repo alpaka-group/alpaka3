@@ -57,23 +57,23 @@ namespace alpaka::onHost
         }
     } // namespace mem
 
-    /** Container with contiguous data
+    /** Life time managed view with contiguous data
      *
-     * The container owns the data and will deallocate it when the buffer is destroyed.
-     * Const-ness of the buffer is propagated to the data region.
+     * This managed view owns the data and will deallocate it when the view is destroyed.
+     * Const-ness of the managed view is NOT propagated to the data region.
      */
     template<
         alpaka::concepts::Api T_Api,
         typename T_Type,
         alpaka::concepts::Vector T_Extents,
         alpaka::concepts::Alignment T_MemAlignment = Alignment<>>
-    struct Buffer : View<T_Api, T_Type, T_Extents, T_MemAlignment>
+    struct ManagedView : View<T_Api, T_Type, T_Extents, T_MemAlignment>
     {
     private:
         using BaseView = View<T_Api, T_Type, T_Extents, T_MemAlignment>;
 
         /** Constructor with existing managed deleter */
-        Buffer(
+        ManagedView(
             T_Api const api,
             T_Type* data,
             T_Extents const& extents,
@@ -85,15 +85,16 @@ namespace alpaka::onHost
         {
         }
 
-        // friend declaration is required that a non const buffer can access the private constructor
-        friend struct Buffer<T_Api, std::remove_const_t<T_Type>, T_Extents, T_MemAlignment>;
+        // friend declaration is required that a non const managed view can access the private constructor
+        friend struct ManagedView<T_Api, std::remove_const_t<T_Type>, T_Extents, T_MemAlignment>;
+
 
     public:
         template<
             alpaka::concepts::HasApi T_Any,
             alpaka::concepts::Vector T_UserExtents,
             alpaka::concepts::Vector T_UserPitches>
-        Buffer(
+        ManagedView(
             T_Any const& any,
             T_Type* data,
             T_UserExtents const& extents,
@@ -109,69 +110,55 @@ namespace alpaka::onHost
         }
 
         auto getView() const
-
-        {
-            return this->getConstView();
-        }
-
-        BaseView getView()
         {
             return *this;
         }
 
-        /** create a read only buffer */
-        auto getConstBuffer() const
+        /** create a read only managed view */
+        auto getConstManagedView() const
         {
-            auto const* ptr = this->data();
-            return Buffer<T_Api, std::remove_pointer_t<decltype(ptr)>, T_Extents, T_MemAlignment>(
+            using ConstValueType = std::add_const_t<typename BaseView::value_type>;
+            return ManagedView<T_Api, ConstValueType, T_Extents, T_MemAlignment>(
                 T_Api{},
-                ptr,
+                static_cast<ConstValueType*>(this->data()),
                 this->getExtents(),
                 this->getPitches(),
                 m_deleter,
                 T_MemAlignment{});
         }
 
-        /** Creates a sub buffer to a part of the memory.
+        /** Creates a sub managed view to a part of the memory.
          *
          * @param extents number of elements for each dimension
-         * @return View which is pointing only to a part of the original buffer.
+         * @return View which is pointing only to a part of the original managed view.
          */
-        auto getSubBuffer(alpaka::concepts::Vector auto const& extents) const
+        auto getManagedSubView(alpaka::concepts::Vector auto const& extents) const
         {
             assert(extents <= this->getExtents());
-            return Buffer{T_Api{}, this->data(), extents, this->getPitches(), m_deleter, T_MemAlignment{}};
+            return ManagedView{T_Api{}, this->data(), extents, this->getPitches(), m_deleter, T_MemAlignment{}};
         }
 
-        auto getSubBuffer(alpaka::concepts::Vector auto const& extents)
-        {
-            assert(extents <= this->getExtents());
-            return Buffer{T_Api{}, this->data(), extents, this->getPitches(), m_deleter, T_MemAlignment{}};
-        }
-
-        /** Creates a sub buffer to a part of the memory.
+        /** Creates a sub managed view to a part of the memory.
          *
-         * @param offset offset in elements to the original buffer
+         * @param offset offset in elements to the original managed view
          * @param extents number of elements for each dimension
-         * @return View which is pointing only to a part of the original buffer with a shifted origin pointer.
+         * @return View which is pointing only to a part of the original managed view with a shifted origin pointer.
          *         View which pointThe alignment of the sub view is reduced to the element alignment.
          */
-        auto getSubBuffer(alpaka::concepts::Vector auto const& offset, alpaka::concepts::Vector auto const& extents)
-            const
+        auto getManagedSubView(
+            alpaka::concepts::Vector auto const& offset,
+            alpaka::concepts::Vector auto const& extents) const
         {
             assert(offset + extents <= this->getExtents());
             auto shiftedPtr = &this->getMdSpan()[offset];
-            return Buffer{T_Api{}, shiftedPtr, extents, this->getPitches(), Alignment<>{}};
-        }
-
-        auto getSubBuffer(alpaka::concepts::Vector auto const& offset, alpaka::concepts::Vector auto const& extents)
-        {
-            assert(offset + extents <= this->getExtents());
-            auto shiftedPtr = &this->getMdSpan()[offset];
-            return Buffer{T_Api{}, shiftedPtr, extents - offset, this->getPitches(), Alignment<>{}};
+            return ManagedView{T_Api{}, shiftedPtr, extents, this->getPitches(), Alignment<>{}};
         }
 
     private:
+        /** @todo move this to trais or somewhere else that it can be used everywhere */
+        template<alpaka::concepts::IsPointer T>
+        using ConstPtr_t = std::add_pointer_t<std::add_const_t<std::remove_pointer_t<T>>>;
+
         std::shared_ptr<mem::ManagedDealloc> m_deleter;
     }; // namespace alpaka::onHost
 
@@ -181,14 +168,14 @@ namespace alpaka::onHost
         alpaka::concepts::Vector T_UserExtents,
         alpaka::concepts::Vector T_UserPitches,
         alpaka::concepts::Alignment T_MemAlignment>
-    Buffer(
+    ManagedView(
         T_Any const&,
         T_Type*,
         T_UserExtents const&,
         T_UserPitches const&,
         std::invocable<> auto,
         T_MemAlignment const)
-        -> Buffer<
+        -> ManagedView<
             ALPAKA_TYPEOF(getApi(std::declval<T_Any>())),
             T_Type,
             typename T_UserPitches::UniVec,
@@ -199,15 +186,19 @@ namespace alpaka::onHost
         typename T_Type,
         alpaka::concepts::Vector T_UserExtents,
         alpaka::concepts::Vector T_UserPitches>
-    Buffer(T_Any const&, T_Type*, T_UserExtents const&, T_UserPitches const&, std::invocable<> auto)
-        -> Buffer<ALPAKA_TYPEOF(getApi(std::declval<T_Any>())), T_Type, typename T_UserPitches::UniVec, Alignment<>>;
+    ManagedView(T_Any const&, T_Type*, T_UserExtents const&, T_UserPitches const&, std::invocable<> auto)
+        -> ManagedView<
+            ALPAKA_TYPEOF(getApi(std::declval<T_Any>())),
+            T_Type,
+            typename T_UserPitches::UniVec,
+            Alignment<>>;
 
     template<
         alpaka::concepts::Api T_Api,
         typename T_Type,
         alpaka::concepts::Vector T_Extents,
         alpaka::concepts::Alignment T_MemAlignment>
-    struct MakeAccessibleOnAcc::Op<Buffer<T_Api, T_Type, T_Extents, T_MemAlignment>>
+    struct MakeAccessibleOnAcc::Op<ManagedView<T_Api, T_Type, T_Extents, T_MemAlignment>>
     {
         decltype(auto) operator()(auto&& any) const
         {
@@ -225,7 +216,7 @@ namespace alpaka::internal
         typename T_Type,
         alpaka::concepts::Vector T_Extents,
         alpaka::concepts::Alignment T_MemAlignment>
-    struct GetApi::Op<onHost::Buffer<T_Api, T_Type, T_Extents, T_MemAlignment>>
+    struct GetApi::Op<onHost::ManagedView<T_Api, T_Type, T_Extents, T_MemAlignment>>
     {
         inline constexpr auto operator()(auto&& data) const
         {

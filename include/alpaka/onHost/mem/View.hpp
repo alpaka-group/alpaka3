@@ -22,7 +22,7 @@ namespace alpaka::onHost
     /** Non owning view to data
      *
      * This view is only holding a points to real data, copying the view is cheap.
-     * Const-ness of the view is propagated to the data region.
+     * Const-ness of the view is NOT propagated to the data region.
      */
     template<
         typename T_Api,
@@ -72,25 +72,7 @@ namespace alpaka::onHost
             return T_Api{};
         }
 
-        /** pointer to data */
-        decltype(auto) data()
-        {
-            return BaseMdSpan::data();
-        }
-
-        /** pointer to data */
-        decltype(auto) data() const
-        {
-            using RetType = ConstPtr_t<ALPAKA_TYPEOF(BaseMdSpan::data())>;
-            return static_cast<RetType>(BaseMdSpan::data());
-        }
-
         alpaka::concepts::MdSpan auto getMdSpan() const
-        {
-            return this->getConstMdSpan();
-        }
-
-        alpaka::concepts::MdSpan auto getMdSpan()
         {
             return BaseMdSpan{*this};
         }
@@ -98,9 +80,10 @@ namespace alpaka::onHost
         /** create a read only view */
         auto getConstView() const
         {
-            return View<T_Api, std::remove_pointer_t<decltype(this->data())>, T_Extents, T_MemAlignment>{
+            using ConstValueType = std::add_const_t<typename BaseMdSpan::value_type>;
+            return View<T_Api, ConstValueType, T_Extents, T_MemAlignment>{
                 T_Api{},
-                this->data(),
+                static_cast<ConstValueType*>(this->data()),
                 this->getExtents(),
                 this->getPitches(),
                 T_MemAlignment{}};
@@ -114,13 +97,7 @@ namespace alpaka::onHost
         auto getSubView(alpaka::concepts::Vector auto const& extents) const
         {
             assert(extents <= this->getExtents());
-            return View{T_Api{}, data(), extents, this->getPitches(), T_MemAlignment{}};
-        }
-
-        auto getSubView(alpaka::concepts::Vector auto const& extents)
-        {
-            assert(extents <= this->getExtents());
-            return View{T_Api{}, data(), extents, this->getPitches(), T_MemAlignment{}};
+            return View{T_Api{}, this->data(), extents, this->getPitches(), T_MemAlignment{}};
         }
 
         /** Creates a sub view to a part of the memory.
@@ -138,18 +115,7 @@ namespace alpaka::onHost
             return View{T_Api{}, shiftedPtr, extents, this->getPitches(), Alignment<>{}};
         }
 
-        auto getSubView(alpaka::concepts::Vector auto const& offset, alpaka::concepts::Vector auto const& extents)
-        {
-            assert(offset + extents <= this->getExtents());
-            auto shiftedPtr = &getMdSpan()[offset];
-            return View{T_Api{}, shiftedPtr, extents - offset, this->getPitches(), Alignment<>{}};
-        }
-
     private:
-        /** @todo move this to trais or somewhere else that it can be used everywhere */
-        template<alpaka::concepts::IsPointer T>
-        using ConstPtr_t = std::add_pointer_t<std::add_const_t<std::remove_pointer_t<T>>>;
-
         void _()
         {
             //                static_assert(concepts::Device<Device>);

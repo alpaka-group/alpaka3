@@ -10,7 +10,7 @@
 
 #    include "Queue.hpp"
 #    include "alpaka/Vec.hpp"
-#    include "alpaka/onHost/mem/Buffer.hpp"
+#    include "alpaka/onHost/mem/ManagedView.hpp"
 #    include "alpaka/onHost/mem/View.hpp"
 
 #    include <sycl/sycl.hpp>
@@ -122,7 +122,7 @@ namespace alpaka::onHost
                     auto pitches = typename T_Extents::UniVec{sizeof(T_Type)};
                     auto deleter = [ctx = sycl_context, ptr]() { sycl::free(ptr, ctx); };
 
-                    auto buffer = onHost::Buffer{
+                    auto buffer = onHost::ManagedView{
                         onHost::Device{device.getSharedPtr()},
                         ptr,
                         extents,
@@ -143,7 +143,7 @@ namespace alpaka::onHost
                         sycl::aligned_alloc_device(alignment, memSizeInByte, sycl_device, sycl_context));
                     auto deleter = [ctx = sycl_context, ptr]() { sycl::free(ptr, ctx); };
 
-                    auto buffer = onHost::Buffer{
+                    auto buffer = onHost::ManagedView{
                         onHost::Device{device.getSharedPtr()},
                         ptr,
                         extents,

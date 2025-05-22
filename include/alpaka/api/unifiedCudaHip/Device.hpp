@@ -9,7 +9,7 @@
 #if ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP
 #    include "alpaka/api/unifiedCudaHip/Queue.hpp"
 #    include "alpaka/core/UniformCudaHip.hpp"
-#    include "alpaka/onHost/mem/Buffer.hpp"
+#    include "alpaka/onHost/mem/ManagedView.hpp"
 #    include "alpaka/onHost/mem/View.hpp"
 
 #    include <cstdint>
@@ -190,7 +190,7 @@ namespace alpaka::onHost
                  */
                 constexpr uint32_t alignment = 128u;
 
-                auto buffer = onHost::Buffer{
+                auto buffer = onHost::ManagedView{
                     deviceDependency,
                     ptr,
                     extents,

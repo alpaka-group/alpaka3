@@ -15,7 +15,7 @@
 #include "alpaka/onHost/DeviceProperties.hpp"
 #include "alpaka/onHost/Handle.hpp"
 #include "alpaka/onHost/Queue.hpp"
-#include "alpaka/onHost/mem/Buffer.hpp"
+#include "alpaka/onHost/mem/ManagedView.hpp"
 #include "alpaka/onHost/mem/View.hpp"
 #include "alpaka/onHost/trait.hpp"
 
@@ -167,7 +167,7 @@ namespace alpaka::onHost
                     // deviceDependency is captured to keep the device alive until the memory is deleted
                     auto deleter = [ptr, deviceDependency]() { alpaka::core::alignedFree(alignment, ptr); };
                     auto pitches = typename T_Extents::UniVec{sizeof(T_Type)};
-                    auto buffer = onHost::Buffer{
+                    auto buffer = onHost::ManagedView{
                         deviceDependency,
                         ptr,
                         extents,
@@ -188,7 +188,7 @@ namespace alpaka::onHost
                     // deviceDependency is captured to keep the device alive until the memory is deleted
                     auto deleter = [ptr, deviceDependency]() { alpaka::core::alignedFree(alignment, ptr); };
 
-                    auto buffer = onHost::Buffer{
+                    auto buffer = onHost::ManagedView{
                         deviceDependency,
                         ptr,
                         extents,
