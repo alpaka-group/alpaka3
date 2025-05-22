@@ -121,13 +121,10 @@ All methods and classes in the `alpaka` namespace can be called from the control
 - `alpaka::onHost` can only be called from `host`.
 - `alpaka::onAcc` can only be called from within a kernel running on the compute device.
 
-Methods starting with `onHost::make` (e.g., `onHost::makeDevice()`) create handles to instances where the copy is only a shallow copy and not a deep copy.  
-Methods starting with `get` (e.g., `onHost::getDeviceProperties(...)`) provide access to properties of an instance.
+Methods starting with `onHost::make` (e.g., `onHost::makeHostDevice()`) create handles to instances where the copy is only a shallow copy and not a deep copy.  
+Methods starting with `get` (e.g., `onHost::getExtents(...)`) provide access to properties of an instance.
 
-There are two types of interfaces: a free function interface and an OOP interface for many `host` objects (e.g., `Platform`, `Device`, and `Queue`).  
-If you use the free function interface, `auto platform = onHost::makePlatform(api::host)` will return an instance that follows the `concepts::Platform` concept, but it can only be used in free functions.  
-If you use the OOP interface, where you can access members like `platform.getDevice(...)`, you transform the instance into a fixed-typed object with `onHost::Platform platform = onHost::makePlatform(api::host)`.
-
+alpaka provides for generic access to objects properties free functions.
 Most free functions that can be called from `host` can be found under [onHost.hpp](include/alpaka/onHost.hpp).  
 Functions callable from within a compute kernel can be found under [onAcc.hpp](include/alpaka/onAcc.hpp).
 
@@ -137,7 +134,7 @@ Passing an instance of `CVec` into a function or kernel will retain the full com
 Performing calculations like addition, subtraction, etc., with a `CVec` will result in losing the full compile-time knowledge, and the results will be of type `Vec`.
 
 `alpaka` is designed so that explicit usage of types is reduced to a minimum.  
-Most objects should be created with factories (e.g., `onHost::makePlatform(api::host)`) and using tags (empty C++ structs), such as `api::host`, instead of the tag type.
+Most objects should be created with factories (e.g., `onHost::makeDeviceSelector(api::host, deviceKind::cpu)`) and using tags (empty C++ structs), such as `api::host`, `api::cuda`, instead of the tag type.
 
 ### Host Side Objects
 
@@ -148,9 +145,10 @@ The following APIs are available:
   api::host
   api::cuda
   api::hip
+  api::oneApi
   ```
 
-APIs except `api::host` often introduce third-party library dependencies (e.g., CUDA or ROCm).
+APIs except `api::host` often introduce third-party library dependencies (e.g., CUDA, ROCm or OneApi).
 You can de/activate these in CMake via `alpaka_DEP_*`.
 
 Executors describe how compute threads will be executed and mapped to the hierarchy of grids, blocks, and threads.
