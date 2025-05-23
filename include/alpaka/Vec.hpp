@@ -784,15 +784,37 @@ namespace alpaka
 
     namespace concepts
     {
-        template<typename T>
-        concept Vector = isVector_v<T>;
 
-        template<typename T>
-        concept VectorOrScalar = (isVector_v<T> || std::integral<T>);
+        /** Concept to check if a type is a vector
+         *
+         * @tparam T Type to check
+         * @tparam T_ValueType enforce a value type of the vector, if not provided the value type is not checked
+         */
+        template<typename T, typename T_ValueType = alpaka::NotRequired>
+        concept Vector = isVector_v<T>
+                         && (std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
+                             || std::same_as<T_ValueType, alpaka::NotRequired>);
 
-        template<typename T>
-        concept CVector = isCVector_v<T>;
+        /** Concept to check if a type is a vector or scalar variable
+         *
+         * @tparam T Type to check
+         * @tparam T_ValueType enforce a value type of T, if not provided the value type is not checked
+         */
+        template<typename T, typename T_ValueType = alpaka::NotRequired>
+        concept VectorOrScalar = (isVector_v<T> || std::integral<T>) &&(
+            std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
+            || std::same_as<T_ValueType, alpaka::NotRequired>);
 
+        template<typename T, typename T_ValueType = alpaka::NotRequired>
+        concept CVector = isCVector_v<T>
+                          && (std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
+                              || std::same_as<T_ValueType, alpaka::NotRequired>);
+
+        /** Concept to check if a type is a vector or a specific other type
+         *
+         * @tparam T Type to check
+         * @tparam T_RequiredComponent enforce that T is a vector or a specific other type
+         */
         template<typename T, typename T_RequiredComponent>
         concept TypeOrVector = (isVector_v<T> || std::is_same_v<T, T_RequiredComponent>);
 
