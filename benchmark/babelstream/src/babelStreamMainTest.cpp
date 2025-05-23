@@ -59,162 +59,77 @@ int main(int argc, char* argv[])
     return result;
 }
 
-//! Initialization kernel
-struct InitKernel
+struct SimdForEachKernel
 {
-    //! The kernel entry point
-    //! \tparam TAcc The accelerator environment to be executed on.
-    //! \tparam T The data type
     //! \param acc The accelerator to be executed on.
-    //! \param a MdSpan for vector a
-    //! \param initialA the value to set all items in the vector a
-    //! \param initialB the value to set all items in the vector b
-    template<typename TAcc, typename T>
+    //! \param func functor applied to each SIMD package.
+    //! \param arg0 MdSpan from which the problem size is derived
+    //! \param args MdSpan other spans
     ALPAKA_FN_ACC void operator()(
-        TAcc const& acc,
-        T* a,
-        T* b,
-        T* c,
-        T initialA,
-        T initialB,
-        T initialC,
-        auto arraySize) const
-    {
-        for(auto [i] : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{arraySize}))
-        {
-            a[i] = initialA;
-            b[i] = initialB;
-            c[i] = initialC;
-        }
-    }
-};
-
-//! Vector copying kernel
-struct CopyKernel
-{
-    //! The kernel entry point
-    //! \tparam TAcc The accelerator environment to be executed on.
-    //! \tparam T The data type
-    //! \param acc The accelerator to be executed on.
-    //! \param a MdSpan for vector a
-    //! \param c MdSpan for vector c
-    template<typename TAcc>
-    ALPAKA_FN_ACC void operator()(
-        TAcc const& acc,
-        alpaka::concepts::MdSpan auto const a,
-        alpaka::concepts::MdSpan auto c,
-        auto arraySize) const
+        auto const& acc,
+        auto const& func,
+        alpaka::concepts::MdSpan auto const& arg0,
+        alpaka::concepts::MdSpan auto const&... args) const
     {
         auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
-        simdGrid.concurrent(
-            acc,
-            alpaka::Vec{arraySize},
-            [](auto const&, auto const in, auto out) constexpr { out = in.load(); },
-            a,
-            c);
+        simdGrid.concurrent(acc, arg0.getExtents(), func, arg0, args...);
     }
 };
 
-//! Kernel multiplies the vector with a scalar, scaling or multiplication kernel
-struct MultKernel
+struct SimdInitOp
 {
-    //! The kernel entry point
-    //! \tparam TAcc The accelerator environment to be executed on.
-    //! \tparam T The data type
-    //! \param acc The accelerator to be executed on.
-    //! \param c MdSpan for vector c
-    //! \param b Pointer for result vector b
-    template<typename TAcc>
-    ALPAKA_FN_ACC void operator()(
-        TAcc const& acc,
-        alpaka::concepts::MdSpan auto b,
-        alpaka::concepts::MdSpan auto const c,
-        auto arraySize) const
+    constexpr void operator()(auto const&, auto a, auto b, auto c) const
+    {
+        using SimdType = ALPAKA_TYPEOF(a.load());
+        a = SimdType::all(initA);
+        b = SimdType::all(initB);
+        c = SimdType::all(initC);
+    }
+};
+
+struct SimdCopyOp
+{
+    constexpr void operator()(auto const&, auto const a, auto c) const
+    {
+        c = a.load();
+    }
+};
+
+struct SimdMultOp
+{
+    constexpr void operator()(auto const&, auto b, auto const c) const
     {
         using T = trait::GetValueType_t<ALPAKA_TYPEOF(b)>;
         T const scalar = static_cast<T>(scalarVal);
-
-        auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
-        simdGrid.concurrent(
-            acc,
-            alpaka::Vec{arraySize},
-            [&](auto const&, auto out, auto const& in) constexpr { out = scalar * in.load(); },
-            b,
-            c);
+        b = scalar * c.load();
     }
 };
 
-//! Vector summation kernel
-struct AddKernel
+struct SimdAddOp
 {
-    //! The kernel entry point
-    //! \tparam TAcc The accelerator environment to be executed on.
-    //! \tparam T The data type
-    //! \param acc The accelerator to be executed on.
-    //! \param a MdSpan for vector a
-    //! \param b MdSpan for vector b
-    //! \param c Pointer for result vector c
-    template<typename TAcc>
-    ALPAKA_FN_ACC void operator()(
-        TAcc const& acc,
-        alpaka::concepts::MdSpan auto const a,
-        alpaka::concepts::MdSpan auto const b,
-        auto c,
-        auto arraySize) const
+    constexpr void operator()(auto const&, auto const a, auto b, auto c) const
     {
-        auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
-        simdGrid.concurrent(
-            acc,
-            alpaka::Vec{arraySize},
-            [&](auto const&, auto const& simdA, auto const& simdB, auto simdC) constexpr
-            { simdC = simdA.load() + simdB.load(); },
-            a,
-            b,
-            c);
+        c = a.load() + b.load();
     }
 };
 
-//! Kernel to find the linear combination of 2 vectors by initially scaling one of them
-struct TriadKernel
+struct SimdTriadOp
 {
-    //! The kernel entry point
-    //! \tparam TAcc The accelerator environment to be executed on.
-    //! \tparam T The data type
-    //! \param acc The accelerator to be executed on.
-    //! \param a MdSpan for vector a
-    //! \param b MdSpan for vector b
-    //! \param c Pointer for result vector c
-    template<typename TAcc>
-    ALPAKA_FN_ACC void operator()(
-        TAcc const& acc,
-        alpaka::concepts::MdSpan auto a,
-        alpaka::concepts::MdSpan auto const b,
-        alpaka::concepts::MdSpan auto const c,
-        auto arraySize) const
+    constexpr void operator()(auto const&, auto a, auto const b, auto const c) const
     {
         using T = trait::GetValueType_t<ALPAKA_TYPEOF(a)>;
         T const scalar = static_cast<T>(scalarVal);
-
-        auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
-        simdGrid.concurrent(
-            acc,
-            [&](auto const&, auto&& simdA, auto&& simdB, auto&& simdC) constexpr
-            { simdA = simdB.load() + scalar * simdC.load(); },
-            a,
-            b,
-            c);
+        a = b.load() + scalar * c.load();
     }
 };
 
-//! Optional kernel, not one of the 5 standard Babelstream kernels
-struct NstreamKernel
+struct SimdNStreamOp
 {
-    template<typename TAcc, typename T>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, T* a, T const* b, T const* c, auto arraySize) const
+    constexpr void operator()(auto const&, auto a, auto const b, auto const c) const
     {
+        using T = trait::GetValueType_t<ALPAKA_TYPEOF(a)>;
         T const scalar = static_cast<T>(scalarVal);
-        for(auto [i] : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{arraySize}))
-            a[i] += b[i] + scalar * c[i];
+        a = a.load() + b.load() + scalar * c.load();
     }
 };
 
@@ -270,12 +185,7 @@ struct DotKernel
                     alpaka::Vec{arraySize},
                     T{0},
                     std::plus{},
-                    [&](auto const&, auto&& simdA, auto&& simdB) constexpr
-                    {
-                        auto tmp = simdA.load() * simdB.load();
-                        // tmpValue += tmp.sum();
-                        return tmp;
-                    },
+                    [&](auto const&, auto&& simdA, auto&& simdB) constexpr { return simdA.load() * simdB.load(); },
                     a,
                     b);
 
@@ -320,8 +230,8 @@ struct DotKernel
 //! \brief The Function for testing babelstream kernels for given Acc type and data type.
 //! \tparam TAcc the accelerator type
 //! \tparam DataType The data type to differentiate single or double data type based tests.
-template<typename DataType>
-void testKernels(auto cfg)
+template<typename DataType, typename T_Cfg>
+void testKernels(T_Cfg cfg)
 {
     if(kernelsToBeExecuted == KernelsToRun::All)
     {
@@ -451,15 +361,7 @@ void testKernels(auto cfg)
             queue.enqueue(
                 exec,
                 dataBlocking,
-                KernelBundle{
-                    InitKernel{},
-                    std::data(bufAccInputA),
-                    std::data(bufAccInputB),
-                    std::data(bufAccOutputC),
-                    static_cast<DataType>(initA),
-                    static_cast<DataType>(initB),
-                    static_cast<DataType>(initC),
-                    arraySize});
+                KernelBundle{SimdForEachKernel{}, SimdInitOp{}, bufAccInputA, bufAccInputB, bufAccOutputC});
         },
         "InitKernel");
 
@@ -480,13 +382,14 @@ void testKernels(auto cfg)
                     queue.enqueue(
                         exec,
                         dataBlocking,
-                        KernelBundle{CopyKernel(), bufAccInputA, bufAccOutputC, arraySize});
+                        KernelBundle{SimdForEachKernel{}, SimdCopyOp{}, bufAccInputA, bufAccOutputC});
                 },
                 "CopyKernel");
 
             // Test the scaling-kernel. Calculate B=scalar*C. Where C = A.
             measureKernelExec(
-                [&]() { queue.enqueue(exec, dataBlocking, MultKernel(), bufAccInputB, bufAccOutputC, arraySize); },
+                [&]()
+                { queue.enqueue(exec, dataBlocking, SimdForEachKernel{}, SimdMultOp{}, bufAccInputB, bufAccOutputC); },
                 "MultKernel");
 
             // Test the addition-kernel. Calculate C=A+B. Where B=scalar*C or B=scalar*A.
@@ -496,7 +399,7 @@ void testKernels(auto cfg)
                     queue.enqueue(
                         exec,
                         dataBlocking,
-                        KernelBundle{AddKernel(), bufAccInputA, bufAccInputB, bufAccOutputC, arraySize});
+                        KernelBundle{SimdForEachKernel{}, SimdAddOp{}, bufAccInputA, bufAccInputB, bufAccOutputC});
                 },
                 "AddKernel");
         }
@@ -510,7 +413,7 @@ void testKernels(auto cfg)
                     queue.enqueue(
                         exec,
                         dataBlocking,
-                        KernelBundle{TriadKernel(), bufAccInputA, bufAccInputB, bufAccOutputC, arraySize});
+                        KernelBundle{SimdForEachKernel{}, SimdTriadOp{}, bufAccInputA, bufAccInputB, bufAccOutputC});
                 },
                 "TriadKernel");
         }
@@ -561,12 +464,7 @@ void testKernels(auto cfg)
                     queue.enqueue(
                         exec,
                         dataBlocking,
-                        KernelBundle{
-                            NstreamKernel(),
-                            std::data(bufAccInputA),
-                            std::data(bufAccInputB),
-                            std::data(bufAccOutputC),
-                            arraySize});
+                        KernelBundle{SimdForEachKernel{}, SimdNStreamOp{}, bufAccInputA, bufAccInputB, bufAccOutputC});
                 },
                 "NStreamKernel");
         }
