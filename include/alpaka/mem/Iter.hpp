@@ -180,7 +180,7 @@ namespace alpaka::onAcc
             {
             }
 
-            constexpr auto getIdxRange(auto const& acc)
+            constexpr auto getIdxRange(auto const& acc) const
             {
                 auto const extent = internalCompute::GetExtentsOf::Op<ALPAKA_TYPEOF(acc), T_Origin, T_Unit>{}(
                     acc,
