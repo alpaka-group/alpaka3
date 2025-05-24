@@ -182,8 +182,7 @@ namespace alpaka::onHost
                     IdxType rowPitchInBytes = divCeil(rowExtentInBytes, alignment) * alignment;
                     auto pitches = mem::calculatePitches<T_Type>(extents, rowPitchInBytes);
 
-                    // product of pitches does contain the size for the first dimension
-                    size_t memSizeInByte = pCast<size_t>(pitches).product() * static_cast<size_t>(extents[0]);
+                    size_t memSizeInByte = pCast<size_t>(pitches)[0] * static_cast<size_t>(extents[0]);
                     auto* ptr = reinterpret_cast<T_Type*>(alpaka::core::alignedAlloc(alignment, memSizeInByte));
                     // deviceDependency is captured to keep the device alive until the memory is deleted
                     auto deleter = [ptr, deviceDependency]() { alpaka::core::alignedFree(alignment, ptr); };
