@@ -17,9 +17,13 @@
 #        define ALPAKA_SYCL_NUM_MAX_SHARED_MEMORY_ALLOCATIONS 32u
 #    endif
 
+#    ifndef SYCL_EXT_ONEAPI_MEMCPY2D
+#        error                                                                                                        \
+            "SYCL_EXT_ONEAPI_MEMCPY2D is not defined. Extension https://github.com/intel/llvm/blob/sycl/sycl/doc/extensions/supported/sycl_ext_oneapi_memcpy2d.asciidoc is required!"
+#    endif
+
 namespace alpaka::onHost::internal
 {
-
     template<typename T_Device, typename T_Dest, typename T_Extents>
     requires(alpaka::trait::getDim_v<T_Extents> > 1u)
     struct Memset::Op<syclGeneric::Queue<T_Device>, T_Dest, T_Extents>
@@ -28,22 +32,31 @@ namespace alpaka::onHost::internal
             const
         {
             sycl::queue sycl_queue = queue.getNativeHandle();
-            auto const dstExtentWithoutColumn = extents.eraseBack();
-            std::vector<sycl::event> events(dstExtentWithoutColumn.product());
 
             auto const destPitchBytesWithoutColumn = dest.getPitches().eraseBack();
             auto* destPtr = data(dest);
 
-            meta::ndLoopIncIdx(
-                dstExtentWithoutColumn,
-                [&](auto const& idx)
-                {
-                    events.push_back(sycl_queue.memset(
-                        reinterpret_cast<std::uint8_t*>(destPtr) + (idx * destPitchBytesWithoutColumn).sum(),
-                        byteValue,
-                        static_cast<size_t>(extents.back()) * sizeof(alpaka::trait::GetValueType_t<T_Dest>)));
-                });
-            sycl_queue.ext_oneapi_submit_barrier(events);
+            constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
+
+            if constexpr(dim == 2u)
+            {
+                sycl_queue.ext_oneapi_memset2d(
+                    destPtr,
+                    destPitchBytesWithoutColumn.back(),
+                    byteValue,
+                    extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                    extents.y());
+            }
+            else if constexpr(dim == 3u)
+            {
+                auto const dstExtentWithoutColumn = extents.eraseBack();
+                sycl_queue.ext_oneapi_memset2d(
+                    destPtr,
+                    destPitchBytesWithoutColumn.back(),
+                    byteValue,
+                    extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                    dstExtentWithoutColumn.product());
+            }
         }
     };
 
@@ -58,24 +71,35 @@ namespace alpaka::onHost::internal
             T_Extents const& extents) const
         {
             sycl::queue sycl_queue = queue.getNativeHandle();
-            auto const dstExtentWithoutColumn = extents.eraseBack();
-            std::vector<sycl::event> events(dstExtentWithoutColumn.product());
 
             auto const destPitchBytesWithoutColumn = dest.getPitches().eraseBack();
             auto* destPtr = data(dest);
             auto const sourcePitchBytesWithoutColumn = source.getPitches().eraseBack();
             auto* sourcePtr = data(source);
 
-            meta::ndLoopIncIdx(
-                dstExtentWithoutColumn,
-                [&](auto const& idx)
-                {
-                    events.push_back(sycl_queue.memcpy(
-                        reinterpret_cast<std::uint8_t*>(destPtr) + (idx * destPitchBytesWithoutColumn).sum(),
-                        reinterpret_cast<std::uint8_t const*>(sourcePtr) + (idx * sourcePitchBytesWithoutColumn).sum(),
-                        static_cast<size_t>(extents.back()) * sizeof(alpaka::trait::GetValueType_t<T_Dest>)));
-                });
-            sycl_queue.ext_oneapi_submit_barrier(events);
+            constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
+
+            if constexpr(dim == 2u)
+            {
+                sycl_queue.ext_oneapi_memcpy2d(
+                    destPtr,
+                    destPitchBytesWithoutColumn.back(),
+                    sourcePtr,
+                    sourcePitchBytesWithoutColumn.back(),
+                    extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                    extents.y());
+            }
+            else if constexpr(dim == 3u)
+            {
+                auto const dstExtentWithoutColumn = extents.eraseBack();
+                sycl_queue.ext_oneapi_memcpy2d(
+                    destPtr,
+                    destPitchBytesWithoutColumn.back(),
+                    sourcePtr,
+                    sourcePitchBytesWithoutColumn.back(),
+                    extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                    dstExtentWithoutColumn.product());
+            }
         }
     };
 
