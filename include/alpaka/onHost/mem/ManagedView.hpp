@@ -8,11 +8,11 @@
 #include "alpaka/Vec.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/internal.hpp"
+#include "alpaka/mem/View.hpp"
 #include "alpaka/onHost.hpp"
 #include "alpaka/onHost/Device.hpp"
 #include "alpaka/onHost/Handle.hpp"
 #include "alpaka/onHost/mem/MangedDealloc.hpp"
-#include "alpaka/onHost/mem/View.hpp"
 
 #include <cstdint>
 #include <functional>
@@ -111,7 +111,7 @@ namespace alpaka::onHost
 
         auto getView() const
         {
-            return *this;
+            return static_cast<BaseView>(*this);
         }
 
         /** create a read only managed view */
@@ -200,9 +200,9 @@ namespace alpaka::onHost
         alpaka::concepts::Alignment T_MemAlignment>
     struct MakeAccessibleOnAcc::Op<ManagedView<T_Api, T_Type, T_Extents, T_MemAlignment>>
     {
-        decltype(auto) operator()(auto&& any) const
+        auto operator()(auto&& any) const
         {
-            return any.getMdSpan();
+            return any.getView();
         }
     };
 

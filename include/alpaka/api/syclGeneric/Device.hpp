@@ -11,7 +11,6 @@
 #    include "Queue.hpp"
 #    include "alpaka/Vec.hpp"
 #    include "alpaka/onHost/mem/ManagedView.hpp"
-#    include "alpaka/onHost/mem/View.hpp"
 
 #    include <sycl/sycl.hpp>
 

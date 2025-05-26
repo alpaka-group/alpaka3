@@ -24,7 +24,12 @@ namespace alpaka
             struct Op
             {
                 /** @return @attention returns a reference to the original data */
-                auto& operator()(auto&& any) const
+                auto const& operator()(auto const& any) const
+                {
+                    return any;
+                }
+
+                auto& operator()(auto& any) const
                 {
                     return any;
                 }
