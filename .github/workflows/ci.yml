@@ -65,7 +65,7 @@ jobs:
       - name: Install base dependencies
         run: |
           apt-get update
-          apt-get install -y cmake build-essential ninja-build git
+          apt-get install --no-install-recommends -y cmake build-essential ninja-build git
 
       # Install GCC if specified
       - name: Install GCC
@@ -73,21 +73,17 @@ jobs:
         run: |
           apt-get update
           apt-get install -y gcc-${{ matrix.config.version }} g++-${{ matrix.config.version }}
-          update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${{ matrix.config.version }} 100 \
-                              --slave /usr/bin/g++ g++ /usr/bin/g++-${{ matrix.config.version }}
 
       # Install Clang if specified
       - name: Install Clang
         if: matrix.config.compiler == 'clang' && matrix.config.hip == 'no'
         run: |
           apt update
-          apt install -y software-properties-common wget gnupg2
+          apt install --no-install-recommends -y software-properties-common wget gnupg2
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
           add-apt-repository -y "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-20 main"
           apt-get update
-          apt-get install -y clang-${{ matrix.config.version }}
-          update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${{ matrix.config.version }} 100 \
-                              --slave /usr/bin/clang++ clang++ /usr/bin/clang++-${{ matrix.config.version }}
+          apt-get install --no-install-recommends -y clang-${{ matrix.config.version }}
           apt install -y libomp-${{ matrix.config.version }}-dev
 
       # ROCm
@@ -95,7 +91,7 @@ jobs:
         if: matrix.config.hip != 'no'
         run: |
           apt-get update
-          apt-get install -y hiprand-dev rocrand-dev
+          apt-get install --no-install-recommends -y hiprand-dev rocrand-dev
 
           export ROCM_PATH=/opt/rocm
           export CMAKE_PREFIX_PATH=$ROCM_PATH:$CMAKE_PREFIX_PATH
@@ -131,8 +127,8 @@ jobs:
             export CC=gcc-${{ matrix.config.version }}
             export CXX=g++-${{ matrix.config.version }}
           elif [ "${{ matrix.config.compiler }}" = "clang" ]; then
-            export CC=clang
-            export CXX=clang++
+            export CC=clang-${{ matrix.config.version }}
+            export CXX=clang++-${{ matrix.config.version }}
           fi
           cmake -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
