@@ -63,13 +63,7 @@ TEMPLATE_LIST_TEST_CASE("iota", "", TestApis)
     queue.enqueue(exec, FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernel{}, dBuff, extent.x()});
     memcpy(queue, hBuff, dBuff);
     wait(queue);
-#    if 1
-    auto* ptr = onHost::data(hBuff);
-    for(uint32_t i = 0u; i < extent; ++i)
-    {
-        CHECK(i == ptr[i]);
-    }
-#    endif
+    meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx.x() == hBuff[idx]); });
 }
 #endif
 
@@ -116,14 +110,7 @@ TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
     queue.enqueue(exec, FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff, extent});
     memcpy(queue, hBuff, dBuff);
     wait(queue);
-#    if 1
-    auto mdSpan = hBuff.getMdSpan();
-    for(uint32_t j = 0u; j < extent.y(); ++j)
-        for(uint32_t i = 0u; i < extent.x(); ++i)
-        {
-            CHECK(Vec{j, i} == mdSpan[Vec{j, i}]);
-        }
-#    endif
+    meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx == hBuff[idx]); });
 }
 #endif
 
@@ -159,15 +146,7 @@ TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
     queue.enqueue(exec, FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff, extent});
     memcpy(queue, hBuff, dBuff);
     wait(queue);
-#    if 1
-    auto mdSpan = hBuff.getMdSpan();
-    for(uint32_t k = 0u; k < extent.z(); ++k)
-        for(uint32_t j = 0u; j < extent.y(); ++j)
-            for(uint32_t i = 0u; i < extent.x(); ++i)
-            {
-                CHECK(Vec{k, j, i} == mdSpan[Vec{k, j, i}]);
-            }
-#    endif
+    meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx == hBuff[idx]); });
 }
 #endif
 
@@ -201,16 +180,7 @@ TEMPLATE_LIST_TEST_CASE("iota4D", "", TestApis)
     queue.enqueue(exec, FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff, extent});
     memcpy(queue, hBuff, dBuff);
     wait(queue);
-#if 1
-    auto mdSpan = hBuff.getMdSpan();
-    for(uint32_t l = 0u; l < extent.w(); ++l)
-        for(uint32_t k = 0u; k < extent.z(); ++k)
-            for(uint32_t j = 0u; j < extent.y(); ++j)
-                for(uint32_t i = 0u; i < extent.x(); ++i)
-                {
-                    CHECK(Vec{l, k, j, i} == mdSpan[Vec{l, k, j, i}]);
-                }
-#endif
+    meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx == hBuff[idx]); });
 }
 
 template<typename T_Selection>
@@ -283,13 +253,5 @@ TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
         KernelBundle{IotaKernelNDSelection<ALPAKA_TYPEOF(selection)>{}, dBuff, numBlocks});
     memcpy(queue, hBuff, dBuff);
     wait(queue);
-#if 1
-    auto mdSpan = hBuff.getMdSpan();
-    for(uint32_t k = 0u; k < numBlocks.z(); ++k)
-        for(uint32_t j = 0u; j < numBlocks.y(); ++j)
-            for(uint32_t i = 0u; i < numBlocks.x(); ++i)
-            {
-                CHECK(Vec{k, j, i} == mdSpan[Vec{k, j, i}]);
-            }
-#endif
+    meta::ndLoopIncIdx(numBlocks, [&](auto idx) { CHECK(idx == hBuff[idx]); });
 }

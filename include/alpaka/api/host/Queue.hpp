@@ -163,7 +163,7 @@ namespace alpaka::onHost
                 /* Get all required properties outside the lambda function to not extend the life-time of the data.
                  * The life-time is not extended to have some life-time behaviours with all backends.
                  */
-                auto* destPtr = alpaka::onHost::data(dest);
+                void* destPtr = static_cast<void*>(alpaka::onHost::data(dest));
                 auto const* srcPtr = alpaka::onHost::data(source);
 
                 if constexpr(dim == 1u)
@@ -212,7 +212,7 @@ namespace alpaka::onHost
             {
                 constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
 
-                auto* destPtr = alpaka::onHost::data(dest);
+                void* destPtr = static_cast<void*>(alpaka::onHost::data(dest));
 
                 if constexpr(dim == 1u)
                 {

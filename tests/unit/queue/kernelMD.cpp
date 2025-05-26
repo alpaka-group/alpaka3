@@ -63,36 +63,15 @@ void validate(auto& queue, auto& device, auto exec, auto testCase)
         KernelBundle{LastSetDataBlockIdx{}, dBuff, extentMd});
     memcpy(queue, hBuff, dBuff);
     wait(queue);
-    // the result must be the index of the last valid element in the extent range
-    auto hostDevice = onHost::makeHostDevice();
 
     // validate that each data entry has its corresponding MD-element index
-    hostDevice.makeQueue().enqueue(
-        exec::cpuSerial,
-        FrameSpec{extentMd, frameSize},
-        [=](auto const& acc, alpaka::concepts::MdSpan auto in)
-        {
-            for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange(extentMd)))
-            {
-                CHECK(in[i] == i);
-            }
-        },
-        hBuff);
+    meta::ndLoopIncIdx(extentMd, [&](auto idx) { CHECK(hBuff[idx] == idx); });
+
     memset(queue, dBuff, 0u);
     memcpy(queue, hBuff, dBuff);
     wait(queue);
     // validate that all data is zero
-    hostDevice.makeQueue().enqueue(
-        exec::cpuSerial,
-        FrameSpec{extentMd, frameSize},
-        [=](auto const& acc, alpaka::concepts::MdSpan auto in)
-        {
-            for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange(extentMd)))
-            {
-                CHECK(in[i] == ALPAKA_TYPEOF(extentMd)::all(0));
-            }
-        },
-        hBuff);
+    meta::ndLoopIncIdx(extentMd, [&](auto idx) { CHECK(hBuff[idx] == ALPAKA_TYPEOF(extentMd)::all(0)); });
 }
 
 TEMPLATE_LIST_TEST_CASE("kernelCallMD", "", TestApis)
