@@ -17,7 +17,7 @@
 #include <memory>
 #include <sstream>
 
-namespace alpaka::onHost
+namespace alpaka
 {
     /** Non owning view to data
      *
@@ -45,7 +45,7 @@ namespace alpaka::onHost
             alpaka::concepts::HasApi T_Any,
             alpaka::concepts::Vector T_UserExtents,
             alpaka::concepts::Vector T_UserPitches>
-        View(
+        constexpr View(
             T_Any const& any,
             T_Type* data,
             T_UserExtents const& extents,
@@ -62,8 +62,8 @@ namespace alpaka::onHost
                 "extent type and pitch type must be lossless convertible");
         }
 
-        View(View const&) = default;
-        View(View&&) = default;
+        constexpr View(View const&) = default;
+        constexpr View(View&&) = default;
         constexpr View& operator=(View const&) = default;
         constexpr View& operator=(View&&) = default;
 
@@ -72,13 +72,13 @@ namespace alpaka::onHost
             return T_Api{};
         }
 
-        alpaka::concepts::MdSpan auto getMdSpan() const
+        constexpr alpaka::concepts::MdSpan auto getMdSpan() const
         {
             return BaseMdSpan{*this};
         }
 
         /** create a read only view */
-        auto getConstView() const
+        constexpr auto getConstView() const
         {
             using ConstValueType = std::add_const_t<typename BaseMdSpan::value_type>;
             return View<T_Api, ConstValueType, T_Extents, T_MemAlignment>{
@@ -94,7 +94,7 @@ namespace alpaka::onHost
          * @param extents number of elements for each dimension
          * @return View which is pointing only to a part of the original view.
          */
-        auto getSubView(alpaka::concepts::Vector auto const& extents) const
+        constexpr auto getSubView(alpaka::concepts::Vector auto const& extents) const
         {
             assert(extents <= this->getExtents());
             return View{T_Api{}, this->data(), extents, this->getPitches(), T_MemAlignment{}};
@@ -107,18 +107,13 @@ namespace alpaka::onHost
          * @return View which is pointing only to a part of the original view with a shifted origin pointer.
          *         View which pointThe alignment of the sub view is reduced to the element alignment.
          */
-        auto getSubView(alpaka::concepts::Vector auto const& offset, alpaka::concepts::Vector auto const& extents)
-            const
+        constexpr auto getSubView(
+            alpaka::concepts::Vector auto const& offset,
+            alpaka::concepts::Vector auto const& extents) const
         {
             assert(offset + extents <= this->getExtents());
             auto shiftedPtr = &getMdSpan()[offset];
             return View{T_Api{}, shiftedPtr, extents, this->getPitches(), Alignment<>{}};
-        }
-
-    private:
-        void _()
-        {
-            //                static_assert(concepts::Device<Device>);
         }
     };
 
@@ -128,7 +123,12 @@ namespace alpaka::onHost
         alpaka::concepts::Vector T_UserExtents,
         alpaka::concepts::Vector T_UserPitches,
         alpaka::concepts::Alignment T_MemAlignment>
-    View(T_Any const&, T_Type*, T_UserExtents const&, T_UserPitches const&, T_MemAlignment const memAlignment)
+    ALPAKA_FN_HOST_ACC View(
+        T_Any const&,
+        T_Type*,
+        T_UserExtents const&,
+        T_UserPitches const&,
+        T_MemAlignment const memAlignment)
         -> View<ALPAKA_TYPEOF(getApi(std::declval<T_Any>())), T_Type, typename T_UserPitches::UniVec, T_MemAlignment>;
 
     template<
@@ -136,22 +136,18 @@ namespace alpaka::onHost
         typename T_Type,
         alpaka::concepts::Vector T_UserExtents,
         alpaka::concepts::Vector T_UserPitches>
-    View(T_Any, T_Type*, T_UserExtents const&, T_UserPitches const&)
+    ALPAKA_FN_HOST_ACC View(T_Any, T_Type*, T_UserExtents const&, T_UserPitches const&)
         -> View<ALPAKA_TYPEOF(getApi(std::declval<T_Any>())), T_Type, typename T_UserPitches::UniVec, Alignment<>>;
 
-    template<
-        alpaka::concepts::Api T_Api,
-        typename T_Type,
-        alpaka::concepts::Vector T_Extents,
-        alpaka::concepts::Alignment T_MemAlignment>
-    struct MakeAccessibleOnAcc::Op<View<T_Api, T_Type, T_Extents, T_MemAlignment>>
+    namespace trait
     {
-        decltype(auto) operator()(auto&& any) const
+        template<typename T>
+        requires(isSpecializationOf_v<std::remove_cvref_t<T>, alpaka::View>)
+        struct IsMdSpan<T> : std::true_type
         {
-            return any.getMdSpan();
-        }
-    };
-} // namespace alpaka::onHost
+        };
+    } // namespace trait
+} // namespace alpaka
 
 namespace alpaka::internal
 {
@@ -161,7 +157,7 @@ namespace alpaka::internal
         typename T_Type,
         alpaka::concepts::Vector T_Extents,
         alpaka::concepts::Alignment T_MemAlignment>
-    struct GetApi::Op<onHost::View<T_Api, T_Type, T_Extents, T_MemAlignment>>
+    struct GetApi::Op<alpaka::View<T_Api, T_Type, T_Extents, T_MemAlignment>>
     {
         inline constexpr auto operator()(auto&& data) const
         {

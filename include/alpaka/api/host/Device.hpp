@@ -16,7 +16,6 @@
 #include "alpaka/onHost/Handle.hpp"
 #include "alpaka/onHost/Queue.hpp"
 #include "alpaka/onHost/mem/ManagedView.hpp"
-#include "alpaka/onHost/mem/View.hpp"
 #include "alpaka/onHost/trait.hpp"
 
 #include <cstdint>

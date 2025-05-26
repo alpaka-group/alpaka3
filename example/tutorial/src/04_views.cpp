@@ -50,7 +50,7 @@ int example(auto const devSpec)
         alpaka::onHost::memset(queue, device_buffer, 0x00);
 
         // create a view to the device data
-        auto view = alpaka::onHost::View(device_buffer);
+        auto view = alpaka::View(device_buffer);
 
         // copy the contents of the device buffer to the host buffer
         alpaka::onHost::memcpy(queue, host_data, view);
