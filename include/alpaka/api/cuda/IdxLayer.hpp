@@ -14,40 +14,83 @@ namespace alpaka::onAcc
 {
     namespace unifiedCudaHip
     {
-        template<typename T_NumBlocksType>
+        template<typename T_OptimzedThreadSpec>
         struct BlockLayer
         {
+            T_OptimzedThreadSpec const& m_optimizedThreadSpec;
+            static constexpr uint32_t dim = T_OptimzedThreadSpec::dim();
+            using IdxType = typename T_OptimzedThreadSpec::NumBlocksVecType::type;
+
+            constexpr BlockLayer(T_OptimzedThreadSpec const& optimizedThreadSpec)
+                : m_optimizedThreadSpec(optimizedThreadSpec)
+            {
+            }
+
             constexpr auto idx() const
             {
-                return Vec<typename T_NumBlocksType::type, 3u>{::blockIdx.z, ::blockIdx.y, ::blockIdx.x}
-                    .template rshrink<T_NumBlocksType::dim()>();
+                if constexpr(dim <= 3u)
+                {
+                    return Vec<IdxType, 3u>{::blockIdx.z, ::blockIdx.y, ::blockIdx.x}.template rshrink<dim>();
+                }
+                else
+                {
+                    return mapToND(m_optimizedThreadSpec.m_numBlocks, static_cast<IdxType>(::blockIdx.x));
+                }
             }
 
             constexpr auto count() const
             {
-                return Vec<typename T_NumBlocksType::type, 3u>{::gridDim.z, ::gridDim.y, ::gridDim.x}
-                    .template rshrink<T_NumBlocksType::dim()>();
+                if constexpr(dim <= 3u)
+                {
+                    return Vec<IdxType, 3u>{::gridDim.z, ::gridDim.y, ::gridDim.x}.template rshrink<dim>();
+                }
+                else
+                {
+                    return m_optimizedThreadSpec.m_numBlocks;
+                }
             }
         };
 
-        template<typename T_NumThreadsType>
+        template<typename T_OptimzedThreadSpec>
         struct ThreadLayer
         {
+            T_OptimzedThreadSpec const& m_optimizedThreadSpec;
+            static constexpr uint32_t dim = T_OptimzedThreadSpec::dim();
+            using IdxType = typename T_OptimzedThreadSpec::NumThreadsVecType::type;
+
+            constexpr ThreadLayer(T_OptimzedThreadSpec const& optimizedThreadSpec)
+                : m_optimizedThreadSpec(optimizedThreadSpec)
+            {
+            }
+
             constexpr auto idx() const
             {
-                return Vec<typename T_NumThreadsType::type, 3u>{::threadIdx.z, ::threadIdx.y, ::threadIdx.x}
-                    .template rshrink<T_NumThreadsType::dim()>();
+                if constexpr(dim <= 3u)
+                {
+                    return Vec<IdxType, 3u>{::threadIdx.z, ::threadIdx.y, ::threadIdx.x}.template rshrink<dim>();
+                }
+                else
+                {
+                    return mapToND(m_optimizedThreadSpec.m_numThreads, static_cast<IdxType>(::threadIdx.x));
+                }
             }
 
             constexpr auto count() const
             {
-                return Vec<typename T_NumThreadsType::type, 3u>{::blockDim.z, ::blockDim.y, ::blockDim.x}
-                    .template rshrink<T_NumThreadsType::dim()>();
+                if constexpr(dim <= 3u)
+                {
+                    return Vec<IdxType, 3u>{::blockDim.z, ::blockDim.y, ::blockDim.x}.template rshrink<dim>();
+                }
+                else
+                {
+                    return m_optimizedThreadSpec.m_numThreads;
+                }
             }
 
-            constexpr auto count() const requires alpaka::concepts::CVector<T_NumThreadsType>
+            constexpr auto count() const
+                requires alpaka::concepts::CVector<typename T_OptimzedThreadSpec::NumThreadsVecType>
             {
-                return T_NumThreadsType{};
+                return typename T_OptimzedThreadSpec::NumThreadsVecType{};
             }
         };
     } // namespace unifiedCudaHip

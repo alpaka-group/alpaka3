@@ -884,19 +884,21 @@ namespace alpaka
     /** @todo the function for intergral values is defined in Utils.hpp
      * move this to a better place, e.g. math and expose this for the user too
      */
-    template<concepts::Vector Vector>
-    [[nodiscard]] ALPAKA_FN_HOST_ACC constexpr auto divCeil(Vector a, Vector b) -> Vector
+    template<concepts::Vector T_Vector0, concepts::Vector T_Vector1>
+    requires(std::is_same_v<trait::GetValueType_t<T_Vector0>, trait::GetValueType_t<T_Vector1>>)
+    [[nodiscard]] ALPAKA_FN_HOST_ACC constexpr concepts::Vector auto divCeil(T_Vector0 a, T_Vector1 b)
     {
-        return (a + b - Vector::all(1)) / b;
+        return (a + b - T_Vector0::all(1)) / b;
     }
 
-    template<concepts::Vector Vector>
-    [[nodiscard]] ALPAKA_FN_HOST_ACC constexpr auto divExZero(Vector a, Vector b) -> Vector
+    template<concepts::Vector T_Vector0, concepts::Vector T_Vector1>
+    requires(std::is_same_v<trait::GetValueType_t<T_Vector0>, trait::GetValueType_t<T_Vector1>>)
+    [[nodiscard]] ALPAKA_FN_HOST_ACC constexpr concepts::Vector auto divExZero(T_Vector0 a, T_Vector1 b)
     {
         auto tmp = a / b;
 
-        using ValueType = alpaka::trait::GetValueType_t<Vector>;
-        for(uint32_t d = 0u; d < Vector::dim(); ++d)
+        using ValueType = alpaka::trait::GetValueType_t<T_Vector0>;
+        for(uint32_t d = 0u; d < a.dim(); ++d)
             tmp[d] = std::min(tmp[d], ValueType{1u});
         return tmp;
     }

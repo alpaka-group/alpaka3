@@ -171,6 +171,47 @@ TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
 }
 #endif
 
+TEMPLATE_LIST_TEST_CASE("iota4D", "", TestApis)
+{
+    auto cfg = TestType::makeDict();
+    auto deviceSpec = cfg[object::deviceSpec];
+    auto exec = cfg[object::exec];
+
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+
+    std::cout << deviceSpec.getApi().getName() << std::endl;
+    Device device = devSelector.makeDevice(0);
+
+    std::cout << device.getName() << std::endl;
+
+    Queue queue = device.makeQueue();
+    constexpr Vec extent = Vec{4u, 8u, 16, 32};
+    std::cout << "exec=" << core::demangledName(exec) << std::endl;
+    auto dBuff = onHost::alloc<Vec<uint32_t, 4u>>(device, extent);
+
+    auto hBuff = onHost::allocHostMirror(dBuff);
+
+    wait(queue);
+    constexpr auto frameSize = Vec{2u, 4u, 8u, 4u};
+    queue.enqueue(exec, FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff, extent});
+    memcpy(queue, hBuff, dBuff);
+    wait(queue);
+#if 1
+    auto mdSpan = hBuff.getMdSpan();
+    for(uint32_t l = 0u; l < extent.w(); ++l)
+        for(uint32_t k = 0u; k < extent.z(); ++k)
+            for(uint32_t j = 0u; j < extent.y(); ++j)
+                for(uint32_t i = 0u; i < extent.x(); ++i)
+                {
+                    CHECK(Vec{l, k, j, i} == mdSpan[Vec{l, k, j, i}]);
+                }
+#endif
+}
 
 template<typename T_Selection>
 struct IotaKernelNDSelection

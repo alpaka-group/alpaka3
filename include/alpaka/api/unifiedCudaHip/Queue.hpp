@@ -123,20 +123,20 @@ namespace alpaka::onHost
             typename T_Api,
             deviceKind::concepts::DeviceKind T_DeviceKind,
             typename T_Executor,
-            typename T_NumBlocksType,
-            typename T_NumThreadsType,
             typename TKernelBundle,
+            typename T_OptimizedThreadSpec,
             typename T_NumFrames,
             typename T_FrameSize>
         __global__ void gpuKernel(
             TKernelBundle const kernelBundle,
+            T_OptimizedThreadSpec const optimizedThreadSpec,
             T_NumFrames const numFrames,
             T_FrameSize const frameExtent)
         {
             auto acc = onAcc::Acc{
                 Dict{
-                    DictEntry(layer::block, onAcc::unifiedCudaHip::BlockLayer<T_NumBlocksType>{}),
-                    DictEntry(layer::thread, onAcc::unifiedCudaHip::ThreadLayer<T_NumThreadsType>{}),
+                    DictEntry(layer::block, onAcc::unifiedCudaHip::BlockLayer{optimizedThreadSpec}),
+                    DictEntry(layer::thread, onAcc::unifiedCudaHip::ThreadLayer{optimizedThreadSpec}),
                     DictEntry(frame::count, numFrames),
                     DictEntry(frame::extent, frameExtent),
                     DictEntry(action::threadBlockSync, onAcc::unifiedCudaHip::Sync{}),
@@ -151,15 +151,14 @@ namespace alpaka::onHost
             typename T_Api,
             deviceKind::concepts::DeviceKind T_DeviceKind,
             typename T_Executor,
-            typename T_NumBlocksType,
-            typename T_NumThreadsType,
-            typename TKernelBundle>
-        __global__ void gpuKernel(TKernelBundle const kernelBundle)
+            typename TKernelBundle,
+            typename T_OptimizedThreadSpec>
+        __global__ void gpuKernel(TKernelBundle const kernelBundle, T_OptimizedThreadSpec const optimizedThreadSpec)
         {
             auto acc = onAcc::Acc{
                 Dict{
-                    DictEntry(layer::block, onAcc::unifiedCudaHip::BlockLayer<T_NumBlocksType>{}),
-                    DictEntry(layer::thread, onAcc::unifiedCudaHip::ThreadLayer<T_NumThreadsType>{}),
+                    DictEntry(layer::block, onAcc::unifiedCudaHip::BlockLayer{optimizedThreadSpec}),
+                    DictEntry(layer::thread, onAcc::unifiedCudaHip::ThreadLayer{optimizedThreadSpec}),
                     DictEntry(action::threadBlockSync, onAcc::unifiedCudaHip::Sync{}),
                     DictEntry(object::api, T_Api{}),
                     DictEntry(object::deviceKind, T_DeviceKind{}),
@@ -184,6 +183,22 @@ namespace alpaka::onHost
 
         struct CallKernel
         {
+            template<alpaka::concepts::Vector T_NumBlocks, alpaka::concepts::Vector T_NumThreads>
+            struct OptimizedThreadSpec
+            {
+                using NumBlocksVecType = typename T_NumBlocks::UniVec;
+                using NumThreadsVecType = T_NumThreads;
+
+                static consteval uint32_t dim()
+                {
+                    return T_NumThreads::dim();
+                }
+
+                constexpr OptimizedThreadSpec(T_NumBlocks const&, T_NumThreads const&)
+                {
+                }
+            };
+
             template<
                 typename T_Executor,
                 typename T_Device,
@@ -194,7 +209,7 @@ namespace alpaka::onHost
             void operator()(
                 T_Executor const executor,
                 unifiedCudaHip::Queue<T_Device>& queue,
-                ThreadSpec<T_NumBlocks, T_NumThreads> const& threadBlocking,
+                ThreadSpec<T_NumBlocks, T_NumThreads> const& threadSpec,
                 T_KernelBundle const& kernelBundle,
                 T_Args const&... args) const
             {
@@ -203,23 +218,50 @@ namespace alpaka::onHost
                     ApiInterface,
                     ApiInterface::setDevice(onHost::getNativeHandle(queue.m_device)));
 
+                constexpr uint32_t dim = T_NumBlocks::dim();
+                // dimension of the cuda/hip layer
+                constexpr uint32_t layerDim = dim >= 4u ? 1u : dim;
+                using IdxType = typename T_NumBlocks::type;
+
+                Vec<IdxType, layerDim> numBlocks;
+                Vec<IdxType, layerDim> numThreadsPerBlock;
+
+                if constexpr(dim >= 4u)
+                {
+                    numBlocks = threadSpec.m_numBlocks.product();
+                    numThreadsPerBlock = threadSpec.m_numThreads.product();
+                }
+                else
+                {
+                    numBlocks = threadSpec.m_numBlocks;
+                    numThreadsPerBlock = threadSpec.m_numThreads;
+                }
+
+                using ThreadSpecType = std::conditional_t<
+                    dim >= 4u,
+                    ALPAKA_TYPEOF(threadSpec),
+                    OptimizedThreadSpec<
+                        typename ALPAKA_TYPEOF(threadSpec)::NumBlocksVecType,
+                        typename ALPAKA_TYPEOF(threadSpec)::NumThreadsVecType>>;
+                // thread spec which is only holding data if the dimension is larger than 3u
+                auto optimizedThreadSpec = ThreadSpecType(threadSpec.m_numBlocks, threadSpec.m_numThreads);
+
                 auto kernelName = gpuKernel<
                     ALPAKA_TYPEOF(getApi(queue)),
                     ALPAKA_TYPEOF(getDeviceKind(queue)),
                     T_Executor,
-                    T_NumBlocks,
-                    T_NumThreads,
                     T_KernelBundle,
+                    ALPAKA_TYPEOF(optimizedThreadSpec),
                     T_Args...>;
 
                 uint32_t blockDynSharedMemBytes
-                    = onHost::getDynSharedMemBytes(exec::gpuCuda, threadBlocking, kernelBundle);
+                    = onHost::getDynSharedMemBytes(exec::gpuCuda, threadSpec, kernelBundle);
 
                 kernelName<<<
-                    convertVecToUniformCudaHipDim(threadBlocking.m_numBlocks),
-                    convertVecToUniformCudaHipDim(threadBlocking.m_numThreads),
+                    convertVecToUniformCudaHipDim(numBlocks),
+                    convertVecToUniformCudaHipDim(numThreadsPerBlock),
                     static_cast<std::size_t>(blockDynSharedMemBytes),
-                    queue.getNativeHandle()>>>(kernelBundle, args...);
+                    queue.getNativeHandle()>>>(kernelBundle, optimizedThreadSpec, args...);
             }
         };
     } // namespace unifiedCudaHip
@@ -299,6 +341,8 @@ namespace alpaka::onHost
             {
                 using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
 
+                auto extentMd = pCast<size_t>(extents);
+
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
                     ApiInterface,
                     ApiInterface::setDevice(onHost::getNativeHandle(queue.m_device)));
@@ -320,7 +364,7 @@ namespace alpaka::onHost
                         ApiInterface::memcpyAsync(
                             destPtr,
                             srcPtr,
-                            extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                            extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
                             copyKind,
                             internal::getNativeHandle(queue)));
                 }
@@ -333,13 +377,14 @@ namespace alpaka::onHost
                             dest.getPitches().y(),
                             srcPtr,
                             source.getPitches().y(),
-                            extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
-                            extents.y(),
+                            extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                            extentMd.y(),
                             copyKind,
                             internal::getNativeHandle(queue)));
                 }
-                else if constexpr(dim == 3u)
+                else if constexpr(dim >= 3u)
                 {
+                    auto const extentMdNoXY = extentMd.eraseBack().eraseBack();
                     // zero-init required per CUDA documentation
                     typename ApiInterface::Memcpy3DParms_t memCpy3DParms{};
 
@@ -354,9 +399,9 @@ namespace alpaka::onHost
                         dest.getExtents().x(),
                         dest.getExtents().y());
                     memCpy3DParms.extent = ApiInterface::makeExtent(
-                        extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
-                        extents.y(),
-                        extents.z());
+                        extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                        extentMd.y(),
+                        extentMdNoXY.product());
                     memCpy3DParms.kind = copyKind;
 
                     ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
@@ -376,6 +421,7 @@ namespace alpaka::onHost
                 T_Extents const& extents) const
             {
                 using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
+                auto extentMd = pCast<size_t>(extents);
 
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
                     ApiInterface,
@@ -391,7 +437,7 @@ namespace alpaka::onHost
                         ApiInterface::memsetAsync(
                             destPtr,
                             static_cast<int>(byteValue),
-                            extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                            extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
                             internal::getNativeHandle(queue)));
                 }
                 else if constexpr(dim == 2u)
@@ -402,11 +448,11 @@ namespace alpaka::onHost
                             destPtr,
                             dest.getPitches().y(),
                             static_cast<int>(byteValue),
-                            extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
-                            extents.y(),
+                            extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                            extentMd.y(),
                             internal::getNativeHandle(queue)));
                 }
-                else if constexpr(dim == 3u)
+                else if constexpr(dim >= 3u)
                 {
                     typename ApiInterface::PitchedPtr_t const pitchedPtrVal = ApiInterface::makePitchedPtr(
                         destPtr,
@@ -414,10 +460,11 @@ namespace alpaka::onHost
                         dest.getExtents().x(),
                         dest.getExtents().y());
 
+                    auto const extentMdNoXY = extentMd.eraseBack().eraseBack();
                     typename ApiInterface::Extent_t const extentVal = ApiInterface::makeExtent(
-                        extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
-                        extents.y(),
-                        extents.z());
+                        extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                        extentMd.y(),
+                        extentMdNoXY.product());
 
                     ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
                         ApiInterface,

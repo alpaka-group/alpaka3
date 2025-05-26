@@ -22,115 +22,141 @@ namespace alpaka::onAcc
 {
     namespace syclGeneric
     {
-
-        template<typename T_NumBlocks, auto TDim>
+        template<auto T_syclDim, typename T_OptimzedThreadSpec>
         class BlockLayer
         {
-            using TIdx = typename T_NumBlocks::type;
+            using IdxType = typename T_OptimzedThreadSpec::NumBlocksVecType::type;
 
-            sycl::nd_item<TDim> const& m_item;
+            sycl::nd_item<T_syclDim> const& m_item;
+            T_OptimzedThreadSpec const& m_optimizedThreadSpec;
+            // dimension of the alpaka objects
+            static constexpr uint32_t dim = T_OptimzedThreadSpec::dim();
 
         public:
-            BlockLayer(sycl::nd_item<TDim> const& item) : m_item(item)
+            BlockLayer(sycl::nd_item<T_syclDim> const& item, T_OptimzedThreadSpec const& optimizedThreadSpec)
+                : m_item(item)
+                , m_optimizedThreadSpec(optimizedThreadSpec)
             {
             }
 
-            constexpr auto idx() const -> Vec<TIdx, TDim>
+            constexpr auto idx() const -> Vec<IdxType, dim>
             {
-                if constexpr(TDim == 1)
+                if constexpr(dim == 1)
                 {
-                    return Vec<TIdx, 1u>{m_item.get_group(0)};
+                    return Vec<IdxType, 1u>{m_item.get_group(0)};
                 }
-                else if constexpr(TDim == 2)
+                else if constexpr(dim == 2)
                 {
-                    return Vec<TIdx, 2u>{m_item.get_group(0), m_item.get_group(1)};
+                    return Vec<IdxType, 2u>{m_item.get_group(0), m_item.get_group(1)};
                 }
-                else if constexpr(TDim == 3)
+                else if constexpr(dim == 3)
                 {
-                    return Vec<TIdx, 3u>{m_item.get_group(0), m_item.get_group(1), m_item.get_group(2)};
+                    return Vec<IdxType, 3u>{m_item.get_group(0), m_item.get_group(1), m_item.get_group(2)};
+                }
+                else
+                {
+                    return mapToND(m_optimizedThreadSpec.m_numBlocks, static_cast<IdxType>(m_item.get_group(0)));
                 }
             }
 
-            constexpr auto count() const -> Vec<TIdx, TDim>
+            constexpr auto count() const -> Vec<IdxType, dim>
             {
-                if constexpr(TDim == 1)
+                if constexpr(dim == 1)
                 {
-                    return Vec<TIdx, 1u>{m_item.get_group_range(0)};
+                    return Vec<IdxType, 1u>{m_item.get_group_range(0)};
                 }
-                else if constexpr(TDim == 2)
+                else if constexpr(dim == 2)
                 {
-                    return Vec<TIdx, 2u>{m_item.get_group_range(0), m_item.get_group_range(1)};
+                    return Vec<IdxType, 2u>{m_item.get_group_range(0), m_item.get_group_range(1)};
                 }
-                else if constexpr(TDim == 3)
+                else if constexpr(dim == 3)
                 {
-                    return Vec<TIdx, 3u>{
+                    return Vec<IdxType, 3u>{
                         m_item.get_group_range(0),
                         m_item.get_group_range(1),
                         m_item.get_group_range(2)};
                 }
+                else
+                {
+                    return m_optimizedThreadSpec.m_numBlocks;
+                }
             }
         };
 
-        template<typename T_NumThreads, auto TDim>
+        template<auto T_syclDim, typename T_OptimzedThreadSpec>
         class ThreadLayer
         {
-            using TIdx = typename T_NumThreads::type;
+            using IdxType = typename T_OptimzedThreadSpec::NumThreadsVecType::type;
 
-            sycl::nd_item<TDim> const& m_item;
+            sycl::nd_item<T_syclDim> const& m_item;
+            T_OptimzedThreadSpec const& m_optimizedThreadSpec;
+            // dimension of the alpaka objects
+            static constexpr uint32_t dim = T_OptimzedThreadSpec::dim();
 
         public:
-            ThreadLayer(sycl::nd_item<TDim> const& item) : m_item(item)
+            ThreadLayer(sycl::nd_item<T_syclDim> const& item, T_OptimzedThreadSpec const& optimizedThreadSpec)
+                : m_item(item)
+                , m_optimizedThreadSpec(optimizedThreadSpec)
             {
             }
 
-            constexpr auto idx() const -> Vec<TIdx, TDim>
+            constexpr auto idx() const -> Vec<IdxType, dim>
             {
-                if constexpr(TDim == 1)
+                if constexpr(dim == 1)
                 {
-                    return Vec<TIdx, 1u>{m_item.get_local_id(0)};
+                    return Vec<IdxType, 1u>{m_item.get_local_id(0)};
                 }
-                else if constexpr(TDim == 2)
+                else if constexpr(dim == 2)
                 {
-                    return Vec<TIdx, 2u>{m_item.get_local_id(0), m_item.get_local_id(1)};
+                    return Vec<IdxType, 2u>{m_item.get_local_id(0), m_item.get_local_id(1)};
                 }
-                else if constexpr(TDim == 3)
+                else if constexpr(dim == 3)
                 {
-                    return Vec<TIdx, 3u>{m_item.get_local_id(0), m_item.get_local_id(1), m_item.get_local_id(2)};
+                    return Vec<IdxType, 3u>{m_item.get_local_id(0), m_item.get_local_id(1), m_item.get_local_id(2)};
+                }
+                else
+                {
+                    return mapToND(m_optimizedThreadSpec.m_numThreads, static_cast<IdxType>(m_item.get_local_id(0)));
                 }
             }
 
-            constexpr auto count() const -> Vec<TIdx, TDim>
+            constexpr auto count() const -> Vec<IdxType, dim>
             {
-                if constexpr(TDim == 1)
+                if constexpr(dim == 1)
                 {
-                    return Vec<TIdx, 1u>{m_item.get_local_range(0)};
+                    return Vec<IdxType, 1u>{m_item.get_local_range(0)};
                 }
-                else if constexpr(TDim == 2)
+                else if constexpr(dim == 2)
                 {
-                    return Vec<TIdx, 2u>{m_item.get_local_range(0), m_item.get_local_range(1)};
+                    return Vec<IdxType, 2u>{m_item.get_local_range(0), m_item.get_local_range(1)};
                 }
-                else if constexpr(TDim == 3)
+                else if constexpr(dim == 3)
                 {
-                    return Vec<TIdx, 3u>{
+                    return Vec<IdxType, 3u>{
                         m_item.get_local_range(0),
                         m_item.get_local_range(1),
                         m_item.get_local_range(2)};
                 }
+                else
+                {
+                    return m_optimizedThreadSpec.m_numThreads;
+                }
             }
 
-            constexpr auto count() const requires alpaka::concepts::CVector<T_NumThreads>
+            constexpr auto count() const
+                requires alpaka::concepts::CVector<typename T_OptimzedThreadSpec::NumThreadsVecType>
             {
-                return T_NumThreads{};
+                return typename T_OptimzedThreadSpec::NumThreadsVecType{};
             }
         };
 
-        template<auto TDim>
+        template<auto T_syclDim>
         class Sync
         {
-            sycl::nd_item<TDim> const& m_item;
+            sycl::nd_item<T_syclDim> const& m_item;
 
         public:
-            Sync(sycl::nd_item<TDim> const& item) : m_item(item)
+            Sync(sycl::nd_item<T_syclDim> const& item) : m_item(item)
             {
             }
 
@@ -161,33 +187,6 @@ namespace alpaka::onAcc
             }
         };
     } // namespace syclGeneric
-
-    template<
-        typename T_Executor,
-        typename T_Api,
-        deviceKind::concepts::DeviceKind T_DeviceKind,
-        typename T_NumBlocks,
-        typename T_NumThreads,
-        auto TDim>
-    auto makeSyclGenericAccDict(
-        sycl::nd_item<TDim> const& work_item,
-        auto& static_shared_memory,
-        onAcc::syclGeneric::DynamicSharedMemory& dynamic_shared_memory)
-    {
-        static_assert(TDim > 0);
-        static_assert(TDim <= 3, "more the 3 dimensions are not supported");
-        return Dict{
-            DictEntry(layer::block, onAcc::syclGeneric::BlockLayer<T_NumBlocks, TDim>{work_item}),
-            DictEntry(layer::thread, onAcc::syclGeneric::ThreadLayer<T_NumThreads, TDim>{work_item}),
-            DictEntry(layer::shared, std::ref(static_shared_memory)),
-            DictEntry(layer::dynShared, std::ref(dynamic_shared_memory)),
-            DictEntry(object::dynSharedMemBytes, dynamic_shared_memory.byte_size()),
-            DictEntry(action::threadBlockSync, onAcc::syclGeneric::Sync{work_item}),
-            DictEntry(object::api, T_Api{}),
-            DictEntry(object::deviceKind, T_DeviceKind{}),
-            DictEntry(object::exec, T_Executor{})};
-    };
-
 } // namespace alpaka::onAcc
 
 #endif

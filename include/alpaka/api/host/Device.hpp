@@ -183,6 +183,7 @@ namespace alpaka::onHost
                     auto pitches = mem::calculatePitches<T_Type>(extents, rowPitchInBytes);
 
                     size_t memSizeInByte = pCast<size_t>(pitches)[0] * static_cast<size_t>(extents[0]);
+
                     auto* ptr = reinterpret_cast<T_Type*>(alpaka::core::alignedAlloc(alignment, memSizeInByte));
                     // deviceDependency is captured to keep the device alive until the memory is deleted
                     auto deleter = [ptr, deviceDependency]() { alpaka::core::alignedFree(alignment, ptr); };

@@ -33,6 +33,7 @@ namespace alpaka::onHost::internal
         {
             sycl::queue sycl_queue = queue.getNativeHandle();
 
+            auto extentMd = pCast<size_t>(extents);
             auto const destPitchBytesWithoutColumn = dest.getPitches().eraseBack();
             auto* destPtr = data(dest);
 
@@ -44,17 +45,17 @@ namespace alpaka::onHost::internal
                     destPtr,
                     destPitchBytesWithoutColumn.back(),
                     byteValue,
-                    extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
-                    extents.y());
+                    extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                    extentMd.y());
             }
-            else if constexpr(dim == 3u)
+            else if constexpr(dim >= 3u)
             {
-                auto const dstExtentWithoutColumn = extents.eraseBack();
+                auto const dstExtentWithoutColumn = extentMd.eraseBack();
                 sycl_queue.ext_oneapi_memset2d(
                     destPtr,
                     destPitchBytesWithoutColumn.back(),
                     byteValue,
-                    extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                    extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
                     dstExtentWithoutColumn.product());
             }
         }
@@ -72,6 +73,7 @@ namespace alpaka::onHost::internal
         {
             sycl::queue sycl_queue = queue.getNativeHandle();
 
+            auto extentMd = pCast<size_t>(extents);
             auto const destPitchBytesWithoutColumn = dest.getPitches().eraseBack();
             auto* destPtr = data(dest);
             auto const sourcePitchBytesWithoutColumn = source.getPitches().eraseBack();
@@ -86,18 +88,18 @@ namespace alpaka::onHost::internal
                     destPitchBytesWithoutColumn.back(),
                     sourcePtr,
                     sourcePitchBytesWithoutColumn.back(),
-                    extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
-                    extents.y());
+                    extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                    extentMd.y());
             }
-            else if constexpr(dim == 3u)
+            else if constexpr(dim >= 3u)
             {
-                auto const dstExtentWithoutColumn = extents.eraseBack();
+                auto const dstExtentWithoutColumn = extentMd.eraseBack();
                 sycl_queue.ext_oneapi_memcpy2d(
                     destPtr,
                     destPitchBytesWithoutColumn.back(),
                     sourcePtr,
                     sourcePitchBytesWithoutColumn.back(),
-                    extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                    extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
                     dstExtentWithoutColumn.product());
             }
         }
@@ -113,6 +115,60 @@ namespace alpaka::onHost::internal
             // TODO: check if this is the correct order
             { return sycl::range<dim>(vec[I]...); }(std::make_index_sequence<dim>{});
         };
+
+        template<alpaka::concepts::Vector T_NumBlocks, alpaka::concepts::Vector T_NumThreads>
+        struct OptimizedThreadSpec
+        {
+            using NumBlocksVecType = typename T_NumBlocks::UniVec;
+            using NumThreadsVecType = T_NumThreads;
+
+            static consteval uint32_t dim()
+            {
+                return T_NumThreads::dim();
+            }
+
+            constexpr OptimizedThreadSpec(T_NumBlocks const&, T_NumThreads const&)
+            {
+            }
+        };
+
+        /** provides the sycl worker description
+         *
+         * @return A pair of the sycl nd range and an optimized thread spec. The thread spec is not holding any data
+         * for dimension smaller equal to 3u
+         */
+        template<typename T_ThreadSpec>
+        inline constexpr auto getWorkerDescription(T_ThreadSpec const& threadSpec)
+        {
+            constexpr uint32_t dim = T_ThreadSpec::dim();
+            // dimension of the sycl nd range
+            constexpr uint32_t syclDim = dim >= 4u ? 1u : dim;
+
+            sycl::nd_range<syclDim> gridRange;
+
+            if constexpr(T_ThreadSpec::dim() >= 4u)
+            {
+                gridRange = sycl::nd_range<syclDim>{
+                    (threadSpec.m_numBlocks * threadSpec.m_numThreads).product(),
+                    threadSpec.m_numThreads.product()};
+            }
+            else
+            {
+                gridRange = sycl::nd_range<T_ThreadSpec::dim()>{
+                    detail::vecToSyclRange(threadSpec.m_numBlocks * threadSpec.m_numThreads),
+                    detail::vecToSyclRange(threadSpec.m_numThreads)};
+            }
+
+            using ThreadSpecType = std::conditional_t<
+                dim >= 4u,
+                ALPAKA_TYPEOF(threadSpec),
+                detail::OptimizedThreadSpec<
+                    typename ALPAKA_TYPEOF(threadSpec)::NumBlocksVecType,
+                    typename ALPAKA_TYPEOF(threadSpec)::NumThreadsVecType>>;
+            // thread spec which is only holding data if the dimension is larger than 3u
+            auto optimizedThreadSpec = ThreadSpecType(threadSpec.m_numBlocks, threadSpec.m_numThreads);
+            return std::make_pair(gridRange, optimizedThreadSpec);
+        }
     } // namespace detail
 
     template<
@@ -142,28 +198,44 @@ namespace alpaka::onHost::internal
             queue.m_queue.submit(
                 [threadBlocking, kernelBundle, blockDynSharedMemBytes](sycl::handler& cgh)
                 {
-                    using T_Api = decltype(getApi(queue));
+                    using ApiType = decltype(getApi(queue));
+                    using DeviceKindType = ALPAKA_TYPEOF(getDeviceKind(queue));
+
                     auto st_shared_accessor
                         = sycl::local_accessor<std::byte>{sycl::range<1>{st_shared_mem_bytes}, cgh};
 
                     auto dyn_shared_accessor
                         = sycl::local_accessor<std::byte>{sycl::range<1>{blockDynSharedMemBytes}, cgh};
 
+                    auto workerDesc = detail::getWorkerDescription(threadBlocking);
+                    auto optimizedThreadSpec = workerDesc.second;
+                    constexpr uint32_t syclDim = workerDesc.first.dimensions;
+
                     cgh.parallel_for(
-                        sycl::nd_range<T_NumThreads::dim()>{
-                            detail::vecToSyclRange(threadBlocking.m_numBlocks * threadBlocking.m_numThreads),
-                            detail::vecToSyclRange(threadBlocking.m_numThreads)},
-                        [st_shared_accessor, dyn_shared_accessor, kernelBundle](
-                            sycl::nd_item<T_NumThreads::dim()> work_item)
+                        workerDesc.first,
+                        [optimizedThreadSpec, st_shared_accessor, dyn_shared_accessor, kernelBundle](
+                            sycl::nd_item<syclDim> work_item)
                         {
                             onAcc::oneApi::StaticSharedMemory ssm(st_shared_accessor);
                             onAcc::syclGeneric::DynamicSharedMemory dsm(dyn_shared_accessor);
-                            auto acc = onAcc::Acc{onAcc::makeSyclGenericAccDict<
-                                T_Executor,
-                                T_Api,
-                                ALPAKA_TYPEOF(getDeviceKind(queue)),
-                                T_NumBlocks,
-                                T_NumThreads>(work_item, ssm, dsm)};
+
+                            static_assert(syclDim > 0);
+                            static_assert(syclDim <= 3, "more the 3 dimensions are not supported");
+                            auto acc = onAcc::Acc{Dict{
+                                DictEntry(
+                                    layer::block,
+                                    onAcc::syclGeneric::BlockLayer{work_item, optimizedThreadSpec}),
+                                DictEntry(
+                                    layer::thread,
+                                    onAcc::syclGeneric::ThreadLayer{work_item, optimizedThreadSpec}),
+                                DictEntry(layer::shared, std::ref(ssm)),
+                                DictEntry(layer::dynShared, std::ref(dsm)),
+                                DictEntry(object::dynSharedMemBytes, dsm.byte_size()),
+                                DictEntry(action::threadBlockSync, onAcc::syclGeneric::Sync{work_item}),
+                                DictEntry(object::api, ApiType{}),
+                                DictEntry(object::deviceKind, DeviceKindType{}),
+                                DictEntry(object::exec, T_Executor{})}};
+
                             kernelBundle(acc);
                         });
                 });
@@ -202,32 +274,44 @@ namespace alpaka::onHost::internal
             queue.m_queue.submit(
                 [threadBlocking, frameSpec, kernelBundle, blockDynSharedMemBytes](sycl::handler& cgh)
                 {
-                    using T_Api = decltype(getApi(queue));
+                    using ApiType = decltype(getApi(queue));
+                    using DeviceKindType = ALPAKA_TYPEOF(getDeviceKind(queue));
                     auto st_shared_accessor
                         = sycl::local_accessor<std::byte>{sycl::range<1>{st_shared_mem_bytes}, cgh};
                     auto dyn_shared_accessor
                         = sycl::local_accessor<std::byte>{sycl::range<1>{blockDynSharedMemBytes}, cgh};
 
+                    auto workerDesc = detail::getWorkerDescription(threadBlocking);
+                    auto optimizedThreadSpec = workerDesc.second;
+                    constexpr uint32_t syclDim = workerDesc.first.dimensions;
+
                     cgh.parallel_for(
-                        sycl::nd_range<T_NumFrames::dim()>{
-                            detail::vecToSyclRange(threadBlocking.m_numBlocks * threadBlocking.m_numThreads),
-                            detail::vecToSyclRange(threadBlocking.m_numThreads)},
-                        [frameSpec, st_shared_accessor, dyn_shared_accessor, kernelBundle](
-                            sycl::nd_item<T_NumFrames::dim()> work_item)
+                        workerDesc.first,
+                        [optimizedThreadSpec, frameSpec, st_shared_accessor, dyn_shared_accessor, kernelBundle](
+                            sycl::nd_item<syclDim> work_item)
                         {
                             onAcc::oneApi::StaticSharedMemory ssm(st_shared_accessor);
                             onAcc::syclGeneric::DynamicSharedMemory dsm(dyn_shared_accessor);
 
-                            auto acc = onAcc::Acc{joinDict(
-                                onAcc::makeSyclGenericAccDict<
-                                    T_Executor,
-                                    T_Api,
-                                    ALPAKA_TYPEOF(getDeviceKind(queue)),
-                                    ALPAKA_TYPEOF(threadBlocking.m_numBlocks),
-                                    ALPAKA_TYPEOF(threadBlocking.m_numThreads)>(work_item, ssm, dsm),
-                                Dict{
-                                    DictEntry(frame::count, frameSpec.m_numFrames),
-                                    DictEntry(frame::extent, frameSpec.m_frameExtent)})};
+                            static_assert(syclDim > 0);
+                            static_assert(syclDim <= 3, "more the 3 dimensions are not supported");
+                            auto acc = onAcc::Acc{Dict{
+                                DictEntry(
+                                    layer::block,
+                                    onAcc::syclGeneric::BlockLayer{work_item, optimizedThreadSpec}),
+                                DictEntry(
+                                    layer::thread,
+                                    onAcc::syclGeneric::ThreadLayer{work_item, optimizedThreadSpec}),
+                                DictEntry(layer::shared, std::ref(ssm)),
+                                DictEntry(layer::dynShared, std::ref(dsm)),
+                                DictEntry(object::dynSharedMemBytes, dsm.byte_size()),
+                                DictEntry(action::threadBlockSync, onAcc::syclGeneric::Sync{work_item}),
+                                DictEntry(object::api, ApiType{}),
+                                DictEntry(object::deviceKind, DeviceKindType{}),
+                                DictEntry(object::exec, T_Executor{}),
+                                DictEntry(frame::count, frameSpec.m_numFrames),
+                                DictEntry(frame::extent, frameSpec.m_frameExtent)}};
+
                             kernelBundle(acc);
                         });
                 });

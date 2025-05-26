@@ -163,12 +163,13 @@ namespace alpaka::onHost
 
                     pitches = mem::calculatePitches<T_Type>(extents, static_cast<Idx>(rowPitchInBytes));
                 }
-                else if constexpr(dim == 3u)
+                else if constexpr(dim >= 3u)
                 {
+                    auto const extentsNoXY = pCast<size_t>(extents.eraseBack().eraseBack());
                     typename ApiInterface::Extent_t const extentVal = ApiInterface::makeExtent(
                         static_cast<std::size_t>(extents.x()) * sizeof(T_Type),
                         static_cast<std::size_t>(extents.y()),
-                        static_cast<std::size_t>(extents.z()));
+                        pCast<std::size_t>(extentsNoXY).product());
                     typename ApiInterface::PitchedPtr_t pitchedPtrVal;
                     pitchedPtrVal.ptr = nullptr;
                     ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(ApiInterface, ApiInterface::malloc3D(&pitchedPtrVal, extentVal));
