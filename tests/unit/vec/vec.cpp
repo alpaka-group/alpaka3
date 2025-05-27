@@ -305,16 +305,17 @@ struct CompileTimeKernelDivCeilAndDivExZero
         // Test divExZero with 1D vectors
         constexpr auto vec5 = Vec{7};
         constexpr auto vec6 = Vec{3};
-        // 7 / 3 = 2 -> clamped to 1
-        static_assert(divExZero(vec5, vec6) == Vec{std::min(7 / 3, 1)});
+        // 7 / 3 = 2
+        static_assert(divExZero(vec5, vec6) == Vec{std::max(7 / 3, 1)});
+        static_assert(divExZero(vec5, Vec{8}) == Vec{1});
 
         // Test divExZero with 3D vectors
         constexpr auto vec7 = Vec{3, 7, 5};
         constexpr auto vec8 = Vec{2, 3, 4};
         // 3 / 2 = 1 -> no clamping needed, already 1
-        // 7 / 3 = 2 -> clamped to 1
+        // 7 / 3 = 2
         // 5 / 4 = 1 -> no clamping needed, already 1
-        static_assert(divExZero(vec7, vec8) == Vec{std::min(3 / 2, 1), std::min(7 / 3, 1), std::min(5 / 4, 1)});
+        static_assert(divExZero(vec7, vec8) == Vec{std::max(3 / 2, 1), std::max(7 / 3, 1), std::max(5 / 4, 1)});
     }
 };
 
