@@ -899,7 +899,7 @@ namespace alpaka
 
         using ValueType = alpaka::trait::GetValueType_t<T_Vector0>;
         for(uint32_t d = 0u; d < a.dim(); ++d)
-            tmp[d] = std::min(tmp[d], ValueType{1u});
+            tmp[d] = std::max(tmp[d], ValueType{1u});
         return tmp;
     }
 }; // namespace alpaka
