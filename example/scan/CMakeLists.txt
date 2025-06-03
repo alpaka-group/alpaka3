@@ -1,5 +1,5 @@
 #
-# Copyright 2023 Benjamin Worpitz, Jan Stephan
+# Copyright 2025 Anton Reinhard
 # SPDX-License-Identifier: ISC
 #
 
@@ -13,7 +13,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 ################################################################################
 # Project.
 
-set(_TARGET_NAME vectorAdd)
+set(_TARGET_NAME scan)
 
 project(tutorial LANGUAGES CXX)
 
