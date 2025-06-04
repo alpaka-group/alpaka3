@@ -8,151 +8,205 @@
 
 #include <algorithm>
 #include <chrono>
-// #include <execution>
 #include <functional> // std::plus
 #include <iomanip>
 #include <iostream>
-#include <numeric> // std::inclusive_scan
+#include <numeric> // std::exclusive_scan
 #include <random>
 #include <typeinfo>
 
 using namespace alpaka;
-using Vec1D = Vec<uint32_t, 1u>;
+using Vec1D = Vec<std::size_t, 1u>;
+using Data = int32_t;
 
-class InclusiveScanKernel_ScanBlocks
+class ExclusiveScan_ScanBlocksKernel
 {
 public:
     ALPAKA_FN_ACC void operator()(
         auto const& acc,
         alpaka::concepts::MdSpan auto const& inputVec,
-        alpaka::concepts::MdSpan auto& outputVec,
-        auto const numElements, // TODO: data type!
-        alpaka::concepts::MdSpan auto& blockSums) const
+        alpaka::concepts::MdSpan auto outputVec,
+        auto... blockSums) const
     {
-        // product() returns a scalar therefore we need the explicit Vec1D type
-        Vec1D linearNumFrames = acc[alpaka::frame::count].product();
-        auto frameExtent = acc[alpaka::frame::extent];
-        Vec1D linearFrameExtent = frameExtent.product();
+        alpaka::concepts::Vector auto numFrames = acc[alpaka::frame::count];
+        alpaka::concepts::CVector auto frameExtent = acc[alpaka::frame::extent];
+        alpaka::concepts::Vector auto numElements = inputVec.getExtents();
 
-        /* This kernel is called with 1- dimensional frame extents.
+        /* This kernel is called with 1-dimensional frame extents.
          *
          * All thread blocks will be used to iterate over the frames. Each thread block will handle one or more frames.
          */
-        for(auto linearFrameIdx : alpaka::onAcc::makeIdxMap(
+        for(auto frameIdx : alpaka::onAcc::makeIdxMap(
                 acc,
-                alpaka::onAcc::worker::linearBlocksInGrid,
-                alpaka::IdxRange{linearNumFrames}))
+                alpaka::onAcc::worker::blocksInGrid,
+                alpaka::IdxRange{Vec<std::size_t, 1u>{0}, numFrames}))
         {
-            auto temp = alpaka::onAcc::declareSharedMdArray<int32_t, alpaka::uniqueId()>(
+            auto tmp = alpaka::onAcc::declareSharedMdArray<Data, alpaka::uniqueId()>(
                 acc,
-                2 * frameExtent); // TODO: data type!
+                CVec<std::size_t, 2u * frameExtent.x()>{});
 
-            // iterate over elements within the frame and use all threads from the thread block
-            for(auto linearFrameElem : alpaka::onAcc::makeIdxMap(
+            // -- COPY TO SHARED MEM --
+            for(auto frameElem : alpaka::onAcc::makeIdxMap(
                     acc,
-                    alpaka::onAcc::worker::linearThreadsInBlock,
-                    alpaka::IdxRange{linearFrameExtent}))
+                    alpaka::onAcc::worker::threadsInBlock,
+                    alpaka::IdxRange{tmp.getExtents()}))
             {
-                auto const globalDataIdx = linearFrameIdx * frameExtent + linearFrameElem;
+                if(tmp.getExtents() * frameIdx + frameElem < numElements)
+                    tmp[frameElem] = inputVec[tmp.getExtents() * frameIdx + frameElem];
+                else
+                    tmp[frameElem] = 0;
+            }
 
-                auto start = frameExtent * linearFrameIdx * 2;
-                auto i1 = start + linearFrameElem;
-                auto i2 = i1 + 1;
+            // -- UP-SWEEP / REDUCE --
+            std::size_t offset = 1u;
+            std::size_t d = tmp.getExtents().x() / 2u;
 
-                if(linearFrameElem >= 0 && 2 * linearFrameElem < 2 * frameExtent)
-                {
-                    if(i1 < numElements)
-                    {
-                        temp[2 * linearFrameElem] = inputVec[i1];
-                    }
-                    else
-                    {
-                        temp[2 * linearFrameElem] = 0;
-                    }
-                    if(i2 < numElements)
-                    {
-                        temp[2 * linearFrameElem + 1] = inputVec[i2];
-                    }
-                    else
-                    {
-                        temp[2 * linearFrameElem + 1] = 0;
-                    }
-                }
-
-                // -- UP-SWEEP / REDUCE --
-                std::int32_t offset = 1;
-                std::int32_t d = frameExtent;
-
-                while(d > 0)
-                {
-                    alpaka::onAcc::syncBlockThreads(acc);
-                    if(linearFrameElem < d)
-                    {
-                        std::int32_t ai = offset * (2 * linearFrameElem);
-                        std::int32_t bi = offset * (2 * linearFrameElem + 1);
-                        temp[bi] += temp[ai];
-                    }
-                    offset <<= 1;
-                    d >>= 1;
-                }
-
+            while(d > 0)
+            {
                 alpaka::onAcc::syncBlockThreads(acc);
-
-                // Save sum of block -> blockSums[block index]
-                if(linearFrameElem == 0)
+                for(auto frameElem : alpaka::onAcc::makeIdxMap(
+                        acc,
+                        alpaka::onAcc::worker::threadsInBlock,
+                        alpaka::IdxRange{Vec<std::size_t, 1>{d}}))
                 {
-                    blockSums[linearFrameIdx] = temp[2 * linearFrameExtent];
-                }
-                temp[2 * linearFrameExtent] = 0;
-                // alpaka::onAcc::syncBlockThreads(acc);
-
-                // -- DOWN-SWEEP --
-                d = 1;
-                while(d < 2 * linearFrameExtent)
-                {
-                    offset >>= 1;
-                    alpaka::onAcc::syncBlockThreads(acc);
-                    if(linearFrameElem < d)
+                    if(tmp.getExtents() * frameIdx + frameElem < numElements)
                     {
-                        std::int32_t ai = offset * (2 * linearFrameElem);
-                        std::int32_t bi = offset * (2 * linearFrameElem + 1);
-                        auto t = temp[ai];
-                        temp[ai] = temp[bi];
-                        temp[bi] += t;
+                        std::size_t left = offset * (2u * frameElem + 1u).x() - 1u;
+                        std::size_t right = offset * (2u * frameElem + 2u).x() - 1u;
+                        tmp[right] += tmp[left];
                     }
-                    d <<= 1;
                 }
+
+                offset <<= 1;
+                d >>= 1;
+            }
+            alpaka::onAcc::syncBlockThreads(acc);
+
+            for(auto frameElem :
+                alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInBlock, alpaka::IdxRange{1}))
+            {
+                // -- SAVE BLOCK SUMS --
+                if constexpr(sizeof...(blockSums))
+                {
+                    auto _blockSums = std::get<0>(std::make_tuple(blockSums...));
+                    _blockSums[frameIdx] = tmp[tmp.getExtents() - 1u];
+                }
+
+                // -- SET 0 --
+                tmp[tmp.getExtents() - 1u] = 0u;
+            }
+
+            // -- DOWN-SWEEP --
+            d = 1u;
+            while(d < tmp.getExtents())
+            {
+                offset >>= 1;
                 alpaka::onAcc::syncBlockThreads(acc);
-
-
-                // -- WRITE-OUT --
-                if(linearFrameElem >= 0 && 2 * linearFrameElem < 2 * linearFrameExtent)
+                for(auto frameElem :
+                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInBlock, alpaka::IdxRange{d}))
                 {
-                    if(i1 < numElements)
+                    if(tmp.getExtents() * frameIdx + frameElem < numElements)
                     {
-                        outputVec[i1] = temp[2 * linearFrameElem];
-                    }
-                    if(i2 < numElements)
-                    {
-                        outputVec[i2] = temp[2 * linearFrameElem + 1];
+                        std::size_t left = offset * (2u * frameElem + 1u).x() - 1u;
+                        std::size_t right = offset * (2u * frameElem + 2u).x() - 1u;
+                        auto t = tmp[left];
+                        tmp[left] = tmp[right];
+                        tmp[right] += t;
                     }
                 }
+                d <<= 1;
+            }
+            alpaka::onAcc::syncBlockThreads(acc);
+
+            // -- WRITE BACK --
+            for(auto frameElem : alpaka::onAcc::makeIdxMap(
+                    acc,
+                    alpaka::onAcc::worker::threadsInBlock,
+                    alpaka::IdxRange{tmp.getExtents()}))
+            {
+                if(tmp.getExtents() * frameIdx + frameElem < numElements)
+                {
+                    outputVec[tmp.getExtents() * frameIdx + frameElem] = tmp[frameElem];
+                }
+            }
+            alpaka::onAcc::syncBlockThreads(acc);
+        }
+    }
+};
+
+/*
+ * Add prefix sum from previous blocks (blockSums) to all elements in each block
+ */
+class ExclusiveScan_AddIncrementsKernel
+{
+public:
+    ALPAKA_FN_ACC void operator()(
+        auto const& acc,
+        alpaka::concepts::MdSpan auto const& blockSums,
+        alpaka::concepts::MdSpan auto outputVec) const
+    {
+        alpaka::concepts::Vector auto numFrames = acc[alpaka::frame::count];
+        alpaka::concepts::CVector auto frameExtent = acc[alpaka::frame::extent];
+        alpaka::concepts::Vector auto numElements = outputVec.getExtents();
+
+        for(auto frameIdx : alpaka::onAcc::makeIdxMap(
+                acc,
+                alpaka::onAcc::worker::blocksInGrid,
+                alpaka::IdxRange{Vec<std::size_t, 1u>{0}, numFrames}))
+        {
+            for(auto frameElem : alpaka::onAcc::makeIdxMap(
+                    acc,
+                    alpaka::onAcc::worker::threadsInBlock,
+                    alpaka::IdxRange{Vec<std::size_t, 1u>{0}, 2u * frameExtent, Vec<std::size_t, 1u>{2}}))
+            {
+                if(2u * frameIdx * frameExtent + (frameElem) < numElements)
+                    outputVec[2u * frameIdx * frameExtent + (frameElem)] += blockSums[frameIdx];
+                if(2u * frameIdx * frameExtent + (frameElem) + 1u < numElements)
+                    outputVec[2u * frameIdx * frameExtent + (frameElem) + 1u] += blockSums[frameIdx];
             }
         }
     }
 };
 
+auto exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, auto outputVec)
+{
+    // Instantiate the kernel function objects
+    ExclusiveScan_ScanBlocksKernel scanBlocks;
+    ExclusiveScan_AddIncrementsKernel addIncrements;
+
+    // Define frameExtent
+    auto frameExtent = CVec<std::size_t, 256u>{};
+    std::size_t elementsPerWorker = 2u; // because we start half as many frame elements
+    auto mainFrameSpec
+        = onHost::FrameSpec{divCeil(inputVec.getExtents(), frameExtent * elementsPerWorker), frameExtent};
+
+    // allocate block increments, one element per frame
+    auto increments = onHost::alloc<Data>(devAcc, mainFrameSpec.m_numFrames);
+    auto blockSums = onHost::alloc<Data>(devAcc, mainFrameSpec.m_numFrames);
+
+    auto subFrameSpec
+        = onHost::FrameSpec{divCeil(increments.getExtents(), frameExtent * elementsPerWorker), frameExtent};
+
+    // Enqueue the kernel execution tasks
+    {
+        queue.enqueue(exec, mainFrameSpec, KernelBundle{scanBlocks, inputVec, outputVec, increments});
+        //   TODO: change this to a recursion call
+        queue.enqueue(exec, subFrameSpec, KernelBundle{scanBlocks, increments, blockSums});
+        // exclusiveScan(exec, devAcc, increments, blockSums);
+
+        queue.enqueue(exec, mainFrameSpec, KernelBundle{addIncrements, blockSums, outputVec});
+        onHost::wait(queue); // Ensure kernel execution completes before proceeding
+    }
+}
+
 auto validateResult(auto const& bufHostX, auto const& bufHostY, size_t extent)
 {
-    // TODO: this probably shouldn't be set here
-    using Data = int32_t;
-
     // Validate results
     int falseResults = 0;
     static constexpr int MAX_PRINT_FALSE_RESULTS = 20;
 
     auto const& groundtruth = onHost::allocHost<Data>(extent);
-    std::inclusive_scan(bufHostX.begin(), bufHostX.end(), groundtruth.begin());
+    std::exclusive_scan(bufHostX.data(), bufHostX.data() + bufHostX.getExtents().x(), groundtruth.data(), 0);
 
     for(size_t i = 0u; i < extent; ++i)
     {
@@ -162,8 +216,7 @@ auto validateResult(auto const& bufHostX, auto const& bufHostY, size_t extent)
         if(computedY != correctResult)
         {
             if(falseResults < MAX_PRINT_FALSE_RESULTS)
-                std::cerr << "RGBA[" << i << "] == " << std::hex << computedGray << " != " << correctResult
-                          << std::endl;
+                std::cerr << "bufY[" << i << "] == " << computedY << " != " << correctResult << std::endl;
             std::cerr << std::resetiosflags(std::ios_base::fmtflags(0));
             ++falseResults;
         }
@@ -186,23 +239,20 @@ auto validateResult(auto const& bufHostX, auto const& bufHostY, size_t extent)
 }
 
 template<typename T_Cfg>
-auto example(T_Cfg const& cfg, size_t numElements, bool enableStdInclusiveScan) -> int
+auto example(T_Cfg const& cfg, size_t numElements, bool enableStdExclusiveScan) -> int
 {
     using IdxVec = Vec<std::size_t, 1u>;
 
     auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
-    // Define the buffer element type.
-    using Data = int32_t;
-
     // Number of elements to process
     IdxVec const extent(numElements);
 
     // Operator to use for reduction
-    auto operator= std::plus<>;
+    auto op = std::plus<>();
 
-    std::cout << "Example Inclusive Scan" << std::endl;
+    std::cout << "Example Exclusive Scan" << std::endl;
     std::cout << "    Number of elements [#]: " << numElements << std::endl;
     std::cout << "    Element type [byte]: " << core::demangledName<Data>() << std::endl;
     std::cout << "    Buffer size [Gbyte]: " << numElements * sizeof(Data) / 1.e9 << std::endl;
@@ -233,12 +283,12 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdInclusiveScan) 
     auto bufAccY = onHost::allocMirror(devAcc, bufHostY);
 
     // run for comparison but only if the executor is exec::cpuSerial
-    if(std::is_same_v<ALPAKA_TYPEOF(exec), alpaka::exec::CpuSerial> && enableStdInclusiveScan)
+    if(std::is_same_v<ALPAKA_TYPEOF(exec), alpaka::exec::CpuSerial> && enableStdExclusiveScan)
     {
-        std::cout << "Using native CPU std::inclusive_scan()" << std::endl;
+        std::cout << "Using native CPU std::exclusive_scan()" << std::endl;
         onHost::wait(queue);
         auto const beginT = std::chrono::high_resolution_clock::now();
-        std::inclusive_scan(bufHostX.begin(), bufHostX.end(), bufHostY.begin());
+        std::exclusive_scan(bufHostX.data(), bufHostX.data() + bufHostX.getExtents().x(), bufHostY.data(), 0);
         auto const endT = std::chrono::high_resolution_clock::now();
         double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
 
@@ -255,23 +305,15 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdInclusiveScan) 
     // Copy Host -> Acc
     onHost::memcpy(queue, bufAccX, bufHostX);
 
-
-    // Instantiate the kernel function object
-    InclusiveScanKernel kernel;
-
-    // Define frameExtent
-    Vec<size_t, 1u> frameExtent = 256u;
-    uint32_t elementsPerWorker = getNumElemPerThread<Data>(queue);
-    auto dataBlocking = onHost::FrameSpec{divCeil(extent, frameExtent * elementsPerWorker), frameExtent};
-
     // Enqueue the kernel execution task
     {
         std::cout << "Using alpaka accelerator: " << core::demangledName(exec) << " for "
                   << deviceSpec.getApi().getName() << std::endl;
         onHost::wait(queue);
         auto const beginT = std::chrono::high_resolution_clock::now();
-        queue.enqueue(exec, dataBlocking, KernelBundle{kernel, bufAccX, bufAccY, static_cast<size_t>(extent[0])});
-        onHost::wait(queue); // Ensure kernel execution completes before proceeding
+
+        exclusiveScan(exec, devAcc, queue, bufAccX, bufAccY);
+
         auto const endT = std::chrono::high_resolution_clock::now();
         double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
         std::cout << "    Time for kernel execution [s]: " << kernelRuntime << std::endl;
@@ -299,17 +341,17 @@ void help(char* argv[])
 {
     std::cerr << argv[0] << " [OPTIONS]" << std::endl;
     std::cerr << "  -n  numElements: Number of elements to process. Default: 2^20" << std::endl;
-    std::cerr << "  -e: disable execution of the native std::inclusive_scan implementation" << std::endl;
+    std::cerr << "  -e: disable execution of the native std::exclusive_scan implementation" << std::endl;
     std::cerr << "  -h: Print this help message" << std::endl;
 }
 
 auto main(int argc, char* argv[]) -> int
 {
     // Default value if no command line argument used
-    size_t numElements = 1024 * 1024;
+    size_t numElements = 64 * 64;
 
     int opt;
-    bool enableStdForEach = true;
+    bool enableStdExclusiveScan = true;
     while((opt = getopt(argc, argv, "hn:e")) != -1)
     {
         switch(opt)
@@ -334,7 +376,7 @@ auto main(int argc, char* argv[]) -> int
             help(argv);
             exit(EXIT_SUCCESS);
         case 'e':
-            enableStdInclusiveScan = false;
+            enableStdExclusiveScan = false;
             break;
         default:
             help(argv);
@@ -345,6 +387,6 @@ auto main(int argc, char* argv[]) -> int
     using namespace alpaka;
     // Execute the example once for each enabled API and executor.
     return executeForEachIfHasDevice(
-        [=](auto const& tag) { return example(tag, numElements, enableStdInclusiveScan); },
+        [=](auto const& tag) { return example(tag, numElements, enableStdExclusiveScan); },
         onHost::allBackends(onHost::enabledApis));
 }

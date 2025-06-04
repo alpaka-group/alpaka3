@@ -705,8 +705,9 @@ namespace alpaka
     }
 
     template<std::integral T_IntegralType, typename T_Storage, typename T_OtherStorage>
-    ALPAKA_FN_HOST_ACC T_IntegralType
-    linearize(Vec<T_IntegralType, 1u, T_Storage> const&, Vec<T_IntegralType, 1u, T_OtherStorage> const& idx)
+    ALPAKA_FN_HOST_ACC T_IntegralType linearize(
+        Vec<T_IntegralType, 1u, T_Storage> const&,
+        Vec<T_IntegralType, 1u, T_OtherStorage> const& idx)
     {
         return idx.x();
     }
@@ -801,9 +802,9 @@ namespace alpaka
          * @tparam T_ValueType enforce a value type of T, if not provided the value type is not checked
          */
         template<typename T, typename T_ValueType = alpaka::NotRequired>
-        concept VectorOrScalar = (isVector_v<T> || std::integral<T>) &&(
-            std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
-            || std::same_as<T_ValueType, alpaka::NotRequired>);
+        concept VectorOrScalar = (isVector_v<T> || std::integral<T>)
+                                 && (std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
+                                     || std::same_as<T_ValueType, alpaka::NotRequired>);
 
         template<typename T, typename T_ValueType = alpaka::NotRequired>
         concept CVector = isCVector_v<T>
