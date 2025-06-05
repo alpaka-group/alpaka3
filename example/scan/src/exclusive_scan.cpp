@@ -19,6 +19,8 @@ using namespace alpaka;
 using Vec1D = Vec<std::size_t, 1u>;
 using Data = int32_t;
 
+constexpr bool BOUNDSCHECK = true;
+
 class ExclusiveScan_ScanBlocksKernel
 {
 public:
@@ -69,7 +71,7 @@ public:
                         alpaka::onAcc::worker::threadsInBlock,
                         alpaka::IdxRange{Vec<std::size_t, 1>{d}}))
                 {
-                    if(tmp.getExtents() * frameIdx + frameElem < numElements)
+                    if(!BOUNDSCHECK || tmp.getExtents() * frameIdx + frameElem < numElements)
                     {
                         std::size_t left = offset * (2u * frameElem + 1u).x() - 1u;
                         std::size_t right = offset * (2u * frameElem + 2u).x() - 1u;
@@ -105,7 +107,7 @@ public:
                 for(auto frameElem :
                     alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInBlock, alpaka::IdxRange{d}))
                 {
-                    if(tmp.getExtents() * frameIdx + frameElem < numElements)
+                    if(!BOUNDSCHECK || tmp.getExtents() * frameIdx + frameElem < numElements)
                     {
                         std::size_t left = offset * (2u * frameElem + 1u).x() - 1u;
                         std::size_t right = offset * (2u * frameElem + 2u).x() - 1u;
@@ -124,7 +126,7 @@ public:
                     alpaka::onAcc::worker::threadsInBlock,
                     alpaka::IdxRange{tmp.getExtents()}))
             {
-                if(tmp.getExtents() * frameIdx + frameElem < numElements)
+                if(!BOUNDSCHECK || tmp.getExtents() * frameIdx + frameElem < numElements)
                 {
                     outputVec[tmp.getExtents() * frameIdx + frameElem] = tmp[frameElem];
                 }
@@ -159,43 +161,47 @@ public:
                     alpaka::onAcc::worker::threadsInBlock,
                     alpaka::IdxRange{Vec<std::size_t, 1u>{0}, 2u * frameExtent, Vec<std::size_t, 1u>{2}}))
             {
-                if(2u * frameIdx * frameExtent + (frameElem) < numElements)
+                if(!BOUNDSCHECK || 2u * frameIdx * frameExtent + (frameElem) < numElements)
                     outputVec[2u * frameIdx * frameExtent + (frameElem)] += blockSums[frameIdx];
-                if(2u * frameIdx * frameExtent + (frameElem) + 1u < numElements)
+                if(!BOUNDSCHECK || 2u * frameIdx * frameExtent + (frameElem) + 1u < numElements)
                     outputVec[2u * frameIdx * frameExtent + (frameElem) + 1u] += blockSums[frameIdx];
             }
         }
     }
 };
 
-auto exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, auto outputVec)
+void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, auto outputVec)
 {
     // Instantiate the kernel function objects
     ExclusiveScan_ScanBlocksKernel scanBlocks;
-    ExclusiveScan_AddIncrementsKernel addIncrements;
 
     // Define frameExtent
-    auto frameExtent = CVec<std::size_t, 256u>{};
+    auto frameExtent = CVec<std::size_t, 32u>{};
     std::size_t elementsPerWorker = 2u; // because we start half as many frame elements
-    auto mainFrameSpec
-        = onHost::FrameSpec{divCeil(inputVec.getExtents(), frameExtent * elementsPerWorker), frameExtent};
+    auto frameSpec = onHost::FrameSpec{divCeil(inputVec.getExtents(), frameExtent * elementsPerWorker), frameExtent};
 
-    // allocate block increments, one element per frame
-    auto increments = onHost::alloc<Data>(devAcc, mainFrameSpec.m_numFrames);
-    auto blockSums = onHost::alloc<Data>(devAcc, mainFrameSpec.m_numFrames);
-
-    auto subFrameSpec
-        = onHost::FrameSpec{divCeil(increments.getExtents(), frameExtent * elementsPerWorker), frameExtent};
-
-    // Enqueue the kernel execution tasks
+    if(frameSpec.m_numFrames > 1u)
     {
-        queue.enqueue(exec, mainFrameSpec, KernelBundle{scanBlocks, inputVec, outputVec, increments});
-        //   TODO: change this to a recursion call
-        queue.enqueue(exec, subFrameSpec, KernelBundle{scanBlocks, increments, blockSums});
-        // exclusiveScan(exec, devAcc, increments, blockSums);
+        // problem does not fit in 1 frame, recurse
+        ExclusiveScan_AddIncrementsKernel addIncrements;
 
-        queue.enqueue(exec, mainFrameSpec, KernelBundle{addIncrements, blockSums, outputVec});
-        onHost::wait(queue); // Ensure kernel execution completes before proceeding
+        // allocate block increments, one element per frame
+        auto increments = onHost::alloc<Data>(devAcc, frameSpec.m_numFrames);
+        auto blockSums = onHost::alloc<Data>(devAcc, frameSpec.m_numFrames);
+
+        // Enqueue the kernel execution tasks
+        queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec, increments});
+        exclusiveScan(exec, devAcc, queue, increments, blockSums);
+        queue.enqueue(exec, frameSpec, KernelBundle{addIncrements, blockSums, outputVec});
+
+        // need to wait here until the previous call is done before we can destruct the buffers for
+        // increments/blockSums
+        onHost::wait(queue);
+    }
+    else
+    {
+        // problem fits within 1 frame
+        queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec});
     }
 }
 
@@ -348,7 +354,7 @@ void help(char* argv[])
 auto main(int argc, char* argv[]) -> int
 {
     // Default value if no command line argument used
-    size_t numElements = 64 * 64;
+    size_t numElements = 64 * 64 * 64 * 64 * 64;
 
     int opt;
     bool enableStdExclusiveScan = true;
