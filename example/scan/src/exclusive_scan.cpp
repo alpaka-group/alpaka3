@@ -64,19 +64,27 @@ public:
             }
 
             // -- UP-SWEEP / REDUCE --
-            for(std::size_t d = frameExtent.x() / 2u, offset = 1u; d > 0; d >>= 1, offset <<= 1)
+            auto up_sweep = [&acc, &tmp]<std::size_t D, std::size_t OFFSET>()
             {
                 onAcc::syncBlockThreads(acc);
                 for(auto frameElem :
-                    onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{Vec<std::size_t, 1>{d}}))
+                    onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{CVec<std::size_t, D>{}}))
                 {
-                    std::size_t left = offset * (2u * frameElem + 1u).x() - 1u;
-                    std::size_t right = offset * (2u * frameElem + 2u).x() - 1u;
+                    std::size_t left = OFFSET * (2u * frameElem + 1u).x() - 1u;
+                    std::size_t right = OFFSET * (2u * frameElem + 2u).x() - 1u;
                     left += CONFLICT_FREE_OFFSET(left);
                     right += CONFLICT_FREE_OFFSET(right);
                     tmp[right] += tmp[left];
                 }
-            }
+            };
+
+            // unrolled loop
+            up_sweep.template operator()<16u, 1u>();
+            up_sweep.template operator()<8u, 2u>();
+            up_sweep.template operator()<4u, 4u>();
+            up_sweep.template operator()<2u, 8u>();
+            up_sweep.template operator()<1u, 16u>();
+
             onAcc::syncBlockThreads(acc);
 
             for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{1}))
@@ -93,20 +101,29 @@ public:
             }
 
             // -- DOWN-SWEEP --
-            for(std::size_t d = 1u, offset = frameExtent.x() / 2u; d < frameExtent; d <<= 1, offset >>= 1)
+            auto down_sweep = [&acc, &tmp]<std::size_t D, std::size_t OFFSET>()
             {
                 onAcc::syncBlockThreads(acc);
-                for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{d}))
+                for(auto frameElem :
+                    onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{CVec<std::size_t, D>{}}))
                 {
-                    std::size_t left = offset * (2u * frameElem.x() + 1u) - 1u;
-                    std::size_t right = offset * (2u * frameElem.x() + 2u) - 1u;
+                    std::size_t left = OFFSET * (2u * frameElem.x() + 1u) - 1u;
+                    std::size_t right = OFFSET * (2u * frameElem.x() + 2u) - 1u;
                     left += CONFLICT_FREE_OFFSET(left);
                     right += CONFLICT_FREE_OFFSET(right);
                     auto t = tmp[left];
                     tmp[left] = tmp[right];
                     tmp[right] += t;
                 }
-            }
+            };
+
+            // unrolled loop
+            down_sweep.template operator()<1u, 16u>();
+            down_sweep.template operator()<2u, 8u>();
+            down_sweep.template operator()<4u, 4u>();
+            down_sweep.template operator()<8u, 2u>();
+            down_sweep.template operator()<16u, 1u>();
+
             onAcc::syncBlockThreads(acc);
 
             // -- WRITE BACK --
