@@ -19,6 +19,14 @@ using namespace alpaka;
 using Vec1D = Vec<std::size_t, 1u>;
 using Data = int32_t;
 
+constexpr auto NUM_BANKS = 16u;
+constexpr auto LOG_NUM_BANKS = 4u;
+
+ALPAKA_FN_HOST_ACC auto CONFLICT_FREE_OFFSET(auto const& n)
+{
+    return n >> NUM_BANKS + n >> (2u * LOG_NUM_BANKS);
+}
+
 constexpr bool BOUNDSCHECK = true;
 
 class ExclusiveScan_ScanBlocksKernel
@@ -50,9 +58,9 @@ public:
             for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{frameExtent}))
             {
                 if(frameOffset + frameElem < numElements)
-                    tmp[frameElem] = inputVec[frameOffset + frameElem];
+                    tmp[frameElem + CONFLICT_FREE_OFFSET(frameElem)] = inputVec[frameOffset + frameElem];
                 else
-                    tmp[frameElem] = 0;
+                    tmp[frameElem + CONFLICT_FREE_OFFSET(frameElem)] = 0;
             }
 
             // -- UP-SWEEP / REDUCE --
@@ -62,12 +70,11 @@ public:
                 for(auto frameElem :
                     onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{Vec<std::size_t, 1>{d}}))
                 {
-                    if(!BOUNDSCHECK || frameOffset + frameElem < numElements)
-                    {
-                        std::size_t left = offset * (2u * frameElem + 1u).x() - 1u;
-                        std::size_t right = offset * (2u * frameElem + 2u).x() - 1u;
-                        tmp[right] += tmp[left];
-                    }
+                    std::size_t left = offset * (2u * frameElem + 1u).x() - 1u;
+                    std::size_t right = offset * (2u * frameElem + 2u).x() - 1u;
+                    left += CONFLICT_FREE_OFFSET(left);
+                    right += CONFLICT_FREE_OFFSET(right);
+                    tmp[right] += tmp[left];
                 }
             }
             onAcc::syncBlockThreads(acc);
@@ -82,7 +89,7 @@ public:
                 }
 
                 // -- SET 0 --
-                tmp[frameExtent - 1u] = 0u;
+                tmp[frameExtent - 1u + CONFLICT_FREE_OFFSET(frameExtent - 1u)] = 0;
             }
 
             // -- DOWN-SWEEP --
@@ -91,14 +98,13 @@ public:
                 onAcc::syncBlockThreads(acc);
                 for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{d}))
                 {
-                    if(!BOUNDSCHECK || frameOffset + frameElem < numElements)
-                    {
-                        std::size_t left = offset * (2u * frameElem.x() + 1u) - 1u;
-                        std::size_t right = offset * (2u * frameElem.x() + 2u) - 1u;
-                        auto t = tmp[left];
-                        tmp[left] = tmp[right];
-                        tmp[right] += t;
-                    }
+                    std::size_t left = offset * (2u * frameElem.x() + 1u) - 1u;
+                    std::size_t right = offset * (2u * frameElem.x() + 2u) - 1u;
+                    left += CONFLICT_FREE_OFFSET(left);
+                    right += CONFLICT_FREE_OFFSET(right);
+                    auto t = tmp[left];
+                    tmp[left] = tmp[right];
+                    tmp[right] += t;
                 }
             }
             onAcc::syncBlockThreads(acc);
@@ -109,7 +115,7 @@ public:
             {
                 if(!BOUNDSCHECK || frameOffset + frameElem < numElements)
                 {
-                    outputVec[frameOffset + frameElem] = tmp[frameElem];
+                    outputVec[frameOffset + frameElem] = tmp[frameElem + CONFLICT_FREE_OFFSET(frameElem)];
                 }
             }
             onAcc::syncBlockThreads(acc);
@@ -152,7 +158,7 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
     ExclusiveScan_ScanBlocksKernel scanBlocks;
 
     // Define frameExtent
-    auto frameExtent = CVec<std::size_t, 32u>{};
+    auto frameExtent = CVec<std::size_t, 16u>{};
     std::size_t elementsPerWorker = 2u; // because we start half as many frame elements
     auto frameSpec = onHost::FrameSpec{divCeil(inputVec.getExtents(), frameExtent * elementsPerWorker), frameExtent};
 
