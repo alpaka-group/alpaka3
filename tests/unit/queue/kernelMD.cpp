@@ -74,6 +74,44 @@ void validate(auto& queue, auto& device, auto exec, auto testCase)
     meta::ndLoopIncIdx(extentMd, [&](auto idx) { CHECK(hBuff[idx] == ALPAKA_TYPEOF(extentMd)::all(0)); });
 }
 
+// Common test cases for all backends
+constexpr auto getCommonTestCases()
+{
+    return std::make_tuple(
+        Case{Vec{3u}, Vec{2u}},
+        Case{Vec{4u, 7u}, Vec{2u, 4u}},
+        Case{Vec{4u, 8u, 13}, Vec{2u, 4u, 8u}},
+        Case{Vec{4u, 8u, 13u}, CVec<uint32_t, 2u, 4u, 8u>{}},
+        Case{Vec{4u, 8u, 16u, 31u}, Vec{2u, 4u, 8u, 4u}},
+        Case{Vec{4u, 8u, 16u, 8u, 3u}, Vec{2u, 4u, 8u, 4u, 2u}},
+        Case{Vec{3u}, CVec<uint32_t, 2u>{}},
+        Case{Vec{4u, 7u}, CVec<uint32_t, 2u, 4u>{}},
+        Case{Vec{4u, 8u, 13u}, CVec<uint32_t, 2u, 4u, 8u>{}},
+        Case{Vec{4u, 8u, 16u, 31u}, CVec<uint32_t, 2u, 4u, 8u, 4u>{}},
+        Case{Vec{4u, 8u, 16u, 8u, 3u}, CVec<uint32_t, 2u, 4u, 8u, 4u, 2u>{}});
+}
+
+// Additional GPU-specific test cases
+constexpr auto getGpuSpecificTestCases()
+{
+    // Just in case a specific test case is required for GPU backends
+    return std::make_tuple(
+        // FrameExtent can not be larger than 1024, 2x4x8x4x2x3 = 1596
+        // Case{Vec{4u, 8u, 16u, 8u, 3u}, Vec{2u, 4u, 8u, 4u, 2u}},
+        // Case{Vec{4u, 8u, 16u, 8u, 3u, 5u}, CVec<uint32_t, 2u, 4u, 8u, 4u, 2u, 3u>{}}
+    );
+}
+
+// Additional CPU-specific test cases
+constexpr auto getCpuSpecificTestCases()
+{
+    // FrameExtent can be larger than 1024
+    return std::make_tuple(
+        Case{Vec{4u, 8u, 13u}, Vec{2u, 16u, 128u}},
+        Case{Vec{4u, 8u, 16u, 8u, 3u, 5u}, Vec{2u, 4u, 8u, 4u, 2u, 3u}},
+        Case{Vec{4u, 8u, 16u, 8u, 3u, 5u}, CVec<uint32_t, 2u, 4u, 8u, 4u, 2u, 3u>{}});
+}
+
 TEMPLATE_LIST_TEST_CASE("kernelCallMD", "", TestApis)
 {
     auto cfg = TestType::makeDict();
@@ -88,25 +126,35 @@ TEMPLATE_LIST_TEST_CASE("kernelCallMD", "", TestApis)
     }
 
     std::cout << deviceSpec.getApi().getName() << std::endl;
+
     Device device = devSelector.makeDevice(0);
-
     std::cout << device.getName() << std::endl;
-
     Queue queue = device.makeQueue();
 
-    auto testCfg = std::make_tuple(
-        Case{Vec{3u}, Vec{2u}},
-        Case{Vec{4u, 7u}, Vec{2u, 4u}},
-        Case{Vec{4u, 8u, 13}, Vec{2u, 4u, 8u}},
-        Case{Vec{4u, 8u, 16, 31}, Vec{2u, 4u, 8u, 4u}},
-        Case{Vec{4u, 8u, 16, 8u, 3u}, Vec{2u, 4u, 8u, 4u, 2u}},
-        Case{Vec{4u, 8u, 16, 8u, 3u, 5u}, Vec{2u, 4u, 8u, 4u, 2u, 3u}},
-        Case{Vec{3u}, CVec<uint32_t, 2u>{}},
-        Case{Vec{4u, 7u}, CVec<uint32_t, 2u, 4u>{}},
-        Case{Vec{4u, 8u, 13}, CVec<uint32_t, 2u, 4u, 8u>{}},
-        Case{Vec{4u, 8u, 16, 31}, CVec<uint32_t, 2u, 4u, 8u, 4u>{}},
-        Case{Vec{4u, 8u, 16, 8u, 3u}, CVec<uint32_t, 2u, 4u, 8u, 4u, 2u>{}},
-        Case{Vec{4u, 8u, 16, 8u, 3u, 5u}, CVec<uint32_t, 2u, 4u, 8u, 4u, 2u, 3u>{}});
+    using ExecutorType = std::decay_t<decltype(exec)>;
 
-    std::apply([&](auto... testCase) { (validate(queue, device, exec, testCase), ...); }, testCfg);
+    // Run common test cases for all backends
+    constexpr auto commonTestCases = getCommonTestCases();
+    std::apply([&](auto... testCase) { (validate(queue, device, exec, testCase), ...); }, commonTestCases);
+
+    // Backend-specific additional test cases
+    if constexpr(
+        std::is_same_v<ExecutorType, alpaka::exec::GpuCuda> || std::is_same_v<ExecutorType, alpaka::exec::GpuHip>)
+    {
+        constexpr auto gpuTestCases = getGpuSpecificTestCases();
+        if constexpr(std::tuple_size_v<decltype(gpuTestCases)> > 1)
+        {
+            std::cout << "Running additional GPU test configuration" << std::endl;
+            std::apply([&](auto... testCase) { (validate(queue, device, exec, testCase), ...); }, gpuTestCases);
+        }
+    }
+    else if constexpr(
+        std::is_same_v<ExecutorType, alpaka::exec::CpuSerial>
+        || std::is_same_v<ExecutorType, alpaka::exec::CpuOmpBlocks>
+        || std::is_same_v<ExecutorType, alpaka::exec::CpuOmpBlocksAndThreads>)
+    {
+        std::cout << "Running additional CPU test configuration" << std::endl;
+        constexpr auto cpuTestCases = getCpuSpecificTestCases();
+        std::apply([&](auto... testCase) { (validate(queue, device, exec, testCase), ...); }, cpuTestCases);
+    }
 }
