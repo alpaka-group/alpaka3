@@ -19,8 +19,8 @@ using namespace alpaka;
 using Vec1D = Vec<std::size_t, 1u>;
 using Data = int32_t;
 
-constexpr auto NUM_BANKS = 16u;
-constexpr auto LOG_NUM_BANKS = 4u;
+constexpr auto NUM_BANKS = 32u;
+constexpr auto LOG_NUM_BANKS = 5u;
 
 ALPAKA_FN_HOST_ACC auto CONFLICT_FREE_OFFSET(auto const& n)
 {
@@ -28,6 +28,9 @@ ALPAKA_FN_HOST_ACC auto CONFLICT_FREE_OFFSET(auto const& n)
 }
 
 constexpr bool BOUNDSCHECK = true;
+
+constexpr std::size_t ELEMENTS_PER_WORKER = 2u;
+constexpr std::size_t LINEAR_SCAN_PER_WORKER = 1u;
 
 class ExclusiveScan_ScanBlocksKernel
 {
@@ -64,27 +67,19 @@ public:
             }
 
             // -- UP-SWEEP / REDUCE --
-            auto up_sweep = [&acc, &tmp]<std::size_t D, std::size_t OFFSET>()
+            for(std::size_t d = frameExtent.x() / 2u, offset = 1u; d > 0; d >>= 1, offset <<= 1)
             {
                 onAcc::syncBlockThreads(acc);
                 for(auto frameElem :
-                    onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{CVec<std::size_t, D>{}}))
+                    onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{Vec<std::size_t, 1>{d}}))
                 {
-                    std::size_t left = OFFSET * (2u * frameElem + 1u).x() - 1u;
-                    std::size_t right = OFFSET * (2u * frameElem + 2u).x() - 1u;
+                    std::size_t left = offset * (2u * frameElem + 1u).x() - 1u;
+                    std::size_t right = offset * (2u * frameElem + 2u).x() - 1u;
                     left += CONFLICT_FREE_OFFSET(left);
                     right += CONFLICT_FREE_OFFSET(right);
                     tmp[right] += tmp[left];
                 }
-            };
-
-            // unrolled loop
-            up_sweep.template operator()<16u, 1u>();
-            up_sweep.template operator()<8u, 2u>();
-            up_sweep.template operator()<4u, 4u>();
-            up_sweep.template operator()<2u, 8u>();
-            up_sweep.template operator()<1u, 16u>();
-
+            }
             onAcc::syncBlockThreads(acc);
 
             for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{1}))
@@ -101,29 +96,20 @@ public:
             }
 
             // -- DOWN-SWEEP --
-            auto down_sweep = [&acc, &tmp]<std::size_t D, std::size_t OFFSET>()
+            for(std::size_t d = 1u, offset = frameExtent.x() / 2u; d < frameExtent; d <<= 1, offset >>= 1)
             {
                 onAcc::syncBlockThreads(acc);
-                for(auto frameElem :
-                    onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{CVec<std::size_t, D>{}}))
+                for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{d}))
                 {
-                    std::size_t left = OFFSET * (2u * frameElem.x() + 1u) - 1u;
-                    std::size_t right = OFFSET * (2u * frameElem.x() + 2u) - 1u;
+                    std::size_t left = offset * (2u * frameElem.x() + 1u) - 1u;
+                    std::size_t right = offset * (2u * frameElem.x() + 2u) - 1u;
                     left += CONFLICT_FREE_OFFSET(left);
                     right += CONFLICT_FREE_OFFSET(right);
                     auto t = tmp[left];
                     tmp[left] = tmp[right];
                     tmp[right] += t;
                 }
-            };
-
-            // unrolled loop
-            down_sweep.template operator()<1u, 16u>();
-            down_sweep.template operator()<2u, 8u>();
-            down_sweep.template operator()<4u, 4u>();
-            down_sweep.template operator()<8u, 2u>();
-            down_sweep.template operator()<16u, 1u>();
-
+            }
             onAcc::syncBlockThreads(acc);
 
             // -- WRITE BACK --
@@ -152,18 +138,19 @@ public:
         concepts::MdSpan auto outputVec) const
     {
         concepts::Vector auto numFrames = acc[frame::count];
-        concepts::CVector auto frameExtent = acc[frame::extent]; // times 2 because of elements per thread
+        concepts::CVector auto frameExtent = acc[frame::extent];
         concepts::Vector auto numElements = outputVec.getExtents();
 
         // TODO: this should be possible to simd-ify?
         for(auto frameIdx :
             onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec<std::size_t, 1u>{0}, numFrames}))
         {
-            for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{frameExtent * 2u}))
+            auto const val = blockSums[frameIdx];
+            for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{frameExtent}))
             {
-                auto idx = frameIdx * frameExtent * 2u + frameElem;
+                auto idx = frameIdx * frameExtent + frameElem;
                 if(idx < numElements)
-                    outputVec[idx] += blockSums[frameIdx];
+                    outputVec[idx] += val;
             }
         }
     }
@@ -175,9 +162,10 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
     ExclusiveScan_ScanBlocksKernel scanBlocks;
 
     // Define frameExtent
-    auto frameExtent = CVec<std::size_t, 16u>{};
-    std::size_t elementsPerWorker = 2u; // because we start half as many frame elements
-    auto frameSpec = onHost::FrameSpec{divCeil(inputVec.getExtents(), frameExtent * elementsPerWorker), frameExtent};
+    auto frameExtent = CVec<std::size_t, NUM_BANKS>{};
+    auto frameSpec = onHost::FrameSpec{
+        divCeil(inputVec.getExtents(), frameExtent * ELEMENTS_PER_WORKER * LINEAR_SCAN_PER_WORKER),
+        frameExtent};
 
     if(frameSpec.m_numFrames > 1u)
     {
@@ -188,10 +176,14 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
         auto increments = onHost::alloc<Data>(devAcc, frameSpec.m_numFrames);
         auto blockSums = onHost::alloc<Data>(devAcc, frameSpec.m_numFrames);
 
+        auto addIncrementsFrameSpec = onHost::FrameSpec{
+            divCeil(inputVec.getExtents(), frameExtent * ELEMENTS_PER_WORKER * LINEAR_SCAN_PER_WORKER),
+            CVec<std::size_t, frameExtent.x() * ELEMENTS_PER_WORKER * LINEAR_SCAN_PER_WORKER>{}};
+
         // Enqueue the kernel execution tasks
         queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec, increments});
         exclusiveScan(exec, devAcc, queue, increments, blockSums);
-        queue.enqueue(exec, frameSpec, KernelBundle{addIncrements, blockSums, outputVec});
+        queue.enqueue(exec, addIncrementsFrameSpec, KernelBundle{addIncrements, blockSums, outputVec});
 
         // need to wait here until the previous call is done before we can destruct the buffers for
         // increments/blockSums
@@ -254,9 +246,6 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdExclusiveScan) 
     // Number of elements to process
     IdxVec const extent(numElements);
 
-    // Operator to use for reduction
-    auto op = std::plus<>();
-
     std::cout << "Example Exclusive Scan" << std::endl;
     std::cout << "    Number of elements [#]: " << numElements << std::endl;
     std::cout << "    Element type [byte]: " << core::demangledName<Data>() << std::endl;
@@ -298,9 +287,8 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdExclusiveScan) 
         double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
 
         std::cout << "    Time for kernel execution [s]: " << kernelRuntime << std::endl;
-        // size is multiplied by two because we read and write to the buffer
         std::cout << "    Processed [Gbyte/s]: "
-                  << (static_cast<double>(2ull * numElements * sizeof(Data)) / kernelRuntime) / 1.e9 << std::endl;
+                  << (static_cast<double>(numElements * sizeof(Data)) / kernelRuntime) / 1.e9 << std::endl;
 
         auto result = validateResult(bufHostX, bufHostY, extent.x());
         if(result != EXIT_SUCCESS)
@@ -322,9 +310,8 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdExclusiveScan) 
         auto const endT = std::chrono::high_resolution_clock::now();
         double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
         std::cout << "    Time for kernel execution [s]: " << kernelRuntime << std::endl;
-        // size is multiplied by two because we read and write to the buffer
         std::cout << "    Processed [Gbyte/s]: "
-                  << (static_cast<double>(2llu * numElements * sizeof(Data)) / kernelRuntime) / 1.e9 << std::endl;
+                  << (static_cast<double>(numElements * sizeof(Data)) / kernelRuntime) / 1.e9 << std::endl;
     }
 
     // Copy back the result
@@ -353,7 +340,7 @@ void help(char* argv[])
 auto main(int argc, char* argv[]) -> int
 {
     // Default value if no command line argument used
-    size_t numElements = 64 * 64 * 64 * 64;
+    size_t numElements = 1024 * 1024 * 64;
 
     int opt;
     bool enableStdExclusiveScan = true;
