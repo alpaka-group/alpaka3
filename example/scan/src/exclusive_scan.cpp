@@ -26,112 +26,93 @@ class ExclusiveScan_ScanBlocksKernel
 public:
     ALPAKA_FN_ACC void operator()(
         auto const& acc,
-        alpaka::concepts::MdSpan auto const& inputVec,
-        alpaka::concepts::MdSpan auto outputVec,
+        concepts::MdSpan auto const& inputVec,
+        concepts::MdSpan auto outputVec,
         auto... blockSums) const
     {
-        alpaka::concepts::Vector auto numFrames = acc[alpaka::frame::count];
-        alpaka::concepts::CVector auto frameExtent = acc[alpaka::frame::extent];
-        alpaka::concepts::Vector auto numElements = inputVec.getExtents();
+        concepts::Vector auto numFrames = acc[frame::count];
+
+        concepts::CVector auto _ = acc[frame::extent];
+        concepts::CVector auto frameExtent = CVec<std::size_t, 2u * _.x()>{};
+        concepts::Vector auto numElements = inputVec.getExtents();
 
         /* This kernel is called with 1-dimensional frame extents.
          *
          * All thread blocks will be used to iterate over the frames. Each thread block will handle one or more frames.
          */
-        for(auto frameIdx : alpaka::onAcc::makeIdxMap(
-                acc,
-                alpaka::onAcc::worker::blocksInGrid,
-                alpaka::IdxRange{Vec<std::size_t, 1u>{0}, numFrames}))
+        for(auto frameIdx :
+            onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec<std::size_t, 1u>{0}, numFrames}))
         {
-            auto tmp = alpaka::onAcc::declareSharedMdArray<Data, alpaka::uniqueId()>(
-                acc,
-                CVec<std::size_t, 2u * frameExtent.x()>{});
+            auto tmp = onAcc::declareSharedMdArray<Data, uniqueId()>(acc, frameExtent);
+            auto frameOffset = frameExtent * frameIdx;
 
             // -- COPY TO SHARED MEM --
-            for(auto frameElem : alpaka::onAcc::makeIdxMap(
-                    acc,
-                    alpaka::onAcc::worker::threadsInBlock,
-                    alpaka::IdxRange{tmp.getExtents()}))
+            for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{frameExtent}))
             {
-                if(tmp.getExtents() * frameIdx + frameElem < numElements)
-                    tmp[frameElem] = inputVec[tmp.getExtents() * frameIdx + frameElem];
+                if(frameOffset + frameElem < numElements)
+                    tmp[frameElem] = inputVec[frameOffset + frameElem];
                 else
                     tmp[frameElem] = 0;
             }
 
             // -- UP-SWEEP / REDUCE --
-            std::size_t offset = 1u;
-            std::size_t d = tmp.getExtents().x() / 2u;
-
-            while(d > 0)
+            for(std::size_t d = frameExtent.x() / 2u, offset = 1u; d > 0; d >>= 1, offset <<= 1)
             {
-                alpaka::onAcc::syncBlockThreads(acc);
-                for(auto frameElem : alpaka::onAcc::makeIdxMap(
-                        acc,
-                        alpaka::onAcc::worker::threadsInBlock,
-                        alpaka::IdxRange{Vec<std::size_t, 1>{d}}))
+                onAcc::syncBlockThreads(acc);
+                for(auto frameElem :
+                    onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{Vec<std::size_t, 1>{d}}))
                 {
-                    if(!BOUNDSCHECK || tmp.getExtents() * frameIdx + frameElem < numElements)
+                    if(!BOUNDSCHECK || frameOffset + frameElem < numElements)
                     {
                         std::size_t left = offset * (2u * frameElem + 1u).x() - 1u;
                         std::size_t right = offset * (2u * frameElem + 2u).x() - 1u;
                         tmp[right] += tmp[left];
                     }
                 }
-
-                offset <<= 1;
-                d >>= 1;
             }
-            alpaka::onAcc::syncBlockThreads(acc);
+            onAcc::syncBlockThreads(acc);
 
-            for(auto frameElem :
-                alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInBlock, alpaka::IdxRange{1}))
+            for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{1}))
             {
                 // -- SAVE BLOCK SUMS --
                 if constexpr(sizeof...(blockSums))
                 {
                     auto _blockSums = std::get<0>(std::make_tuple(blockSums...));
-                    _blockSums[frameIdx] = tmp[tmp.getExtents() - 1u];
+                    _blockSums[frameIdx] = tmp[frameExtent - 1u];
                 }
 
                 // -- SET 0 --
-                tmp[tmp.getExtents() - 1u] = 0u;
+                tmp[frameExtent - 1u] = 0u;
             }
 
             // -- DOWN-SWEEP --
-            d = 1u;
-            while(d < tmp.getExtents())
+            for(std::size_t d = 1u, offset = frameExtent.x() / 2u; d < frameExtent; d <<= 1, offset >>= 1)
             {
-                offset >>= 1;
-                alpaka::onAcc::syncBlockThreads(acc);
-                for(auto frameElem :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInBlock, alpaka::IdxRange{d}))
+                onAcc::syncBlockThreads(acc);
+                for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{d}))
                 {
-                    if(!BOUNDSCHECK || tmp.getExtents() * frameIdx + frameElem < numElements)
+                    if(!BOUNDSCHECK || frameOffset + frameElem < numElements)
                     {
-                        std::size_t left = offset * (2u * frameElem + 1u).x() - 1u;
-                        std::size_t right = offset * (2u * frameElem + 2u).x() - 1u;
+                        std::size_t left = offset * (2u * frameElem.x() + 1u) - 1u;
+                        std::size_t right = offset * (2u * frameElem.x() + 2u) - 1u;
                         auto t = tmp[left];
                         tmp[left] = tmp[right];
                         tmp[right] += t;
                     }
                 }
-                d <<= 1;
             }
-            alpaka::onAcc::syncBlockThreads(acc);
+            onAcc::syncBlockThreads(acc);
 
             // -- WRITE BACK --
-            for(auto frameElem : alpaka::onAcc::makeIdxMap(
-                    acc,
-                    alpaka::onAcc::worker::threadsInBlock,
-                    alpaka::IdxRange{tmp.getExtents()}))
+            // auto outputView = View(outputVec).getSubView(frameExtent, frameOffset);
+            for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{frameExtent}))
             {
-                if(!BOUNDSCHECK || tmp.getExtents() * frameIdx + frameElem < numElements)
+                if(!BOUNDSCHECK || frameOffset + frameElem < numElements)
                 {
-                    outputVec[tmp.getExtents() * frameIdx + frameElem] = tmp[frameElem];
+                    outputVec[frameOffset + frameElem] = tmp[frameElem];
                 }
             }
-            alpaka::onAcc::syncBlockThreads(acc);
+            onAcc::syncBlockThreads(acc);
         }
     }
 };
@@ -144,27 +125,22 @@ class ExclusiveScan_AddIncrementsKernel
 public:
     ALPAKA_FN_ACC void operator()(
         auto const& acc,
-        alpaka::concepts::MdSpan auto const& blockSums,
-        alpaka::concepts::MdSpan auto outputVec) const
+        concepts::MdSpan auto const& blockSums,
+        concepts::MdSpan auto outputVec) const
     {
-        alpaka::concepts::Vector auto numFrames = acc[alpaka::frame::count];
-        alpaka::concepts::CVector auto frameExtent = acc[alpaka::frame::extent];
-        alpaka::concepts::Vector auto numElements = outputVec.getExtents();
+        concepts::Vector auto numFrames = acc[frame::count];
+        concepts::CVector auto frameExtent = acc[frame::extent]; // times 2 because of elements per thread
+        concepts::Vector auto numElements = outputVec.getExtents();
 
-        for(auto frameIdx : alpaka::onAcc::makeIdxMap(
-                acc,
-                alpaka::onAcc::worker::blocksInGrid,
-                alpaka::IdxRange{Vec<std::size_t, 1u>{0}, numFrames}))
+        // TODO: this should be possible to simd-ify?
+        for(auto frameIdx :
+            onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec<std::size_t, 1u>{0}, numFrames}))
         {
-            for(auto frameElem : alpaka::onAcc::makeIdxMap(
-                    acc,
-                    alpaka::onAcc::worker::threadsInBlock,
-                    alpaka::IdxRange{Vec<std::size_t, 1u>{0}, 2u * frameExtent, Vec<std::size_t, 1u>{2}}))
+            for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{frameExtent * 2u}))
             {
-                if(!BOUNDSCHECK || 2u * frameIdx * frameExtent + (frameElem) < numElements)
-                    outputVec[2u * frameIdx * frameExtent + (frameElem)] += blockSums[frameIdx];
-                if(!BOUNDSCHECK || 2u * frameIdx * frameExtent + (frameElem) + 1u < numElements)
-                    outputVec[2u * frameIdx * frameExtent + (frameElem) + 1u] += blockSums[frameIdx];
+                auto idx = frameIdx * frameExtent * 2u + frameElem;
+                if(idx < numElements)
+                    outputVec[idx] += blockSums[frameIdx];
             }
         }
     }
@@ -289,7 +265,7 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdExclusiveScan) 
     auto bufAccY = onHost::allocMirror(devAcc, bufHostY);
 
     // run for comparison but only if the executor is exec::cpuSerial
-    if(std::is_same_v<ALPAKA_TYPEOF(exec), alpaka::exec::CpuSerial> && enableStdExclusiveScan)
+    if(std::is_same_v<ALPAKA_TYPEOF(exec), exec::CpuSerial> && enableStdExclusiveScan)
     {
         std::cout << "Using native CPU std::exclusive_scan()" << std::endl;
         onHost::wait(queue);
@@ -354,7 +330,7 @@ void help(char* argv[])
 auto main(int argc, char* argv[]) -> int
 {
     // Default value if no command line argument used
-    size_t numElements = 64 * 64 * 64 * 64 * 64;
+    size_t numElements = 64 * 64 * 64 * 64;
 
     int opt;
     bool enableStdExclusiveScan = true;
