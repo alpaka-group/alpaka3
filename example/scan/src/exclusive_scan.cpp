@@ -20,18 +20,26 @@ using IdxType = std::size_t;
 using Data = int32_t;
 using Vec1D = Vec<IdxType, 1u>;
 
-constexpr auto NUM_BANKS = 32u;
-constexpr auto LOG_NUM_BANKS = 5u;
+constexpr auto numNvidiaBanks = 32u;
+constexpr auto numAmdBanks = 32u;
+constexpr auto numIntelBanks = 16u;
 
-constexpr auto CONFLICT_FREE_ACCESS(auto const& n)
+template<typename TDeviceKind>
+constexpr auto conflictFreeAccess(auto const& n)
 {
-    return n + n / NUM_BANKS;
+    if constexpr(std::is_same_v<TDeviceKind, deviceKind::NvidiaGpu>)
+        return n + n / numNvidiaBanks;
+    else if constexpr(std::is_same_v<TDeviceKind, deviceKind::AmdGpu>)
+        return n + n / numAmdBanks;
+    else if constexpr(std::is_same_v<TDeviceKind, deviceKind::IntelGpu>)
+        return n + n / numIntelBanks;
+    else
+        return n;
 }
 
 constexpr bool BOUNDSCHECK = true;
 
-constexpr IdxType ELEMENTS_PER_WORKER = 2u;
-constexpr IdxType LINEAR_SCAN_PER_WORKER = 1u;
+constexpr IdxType ELEMENTS_PER_WORKER = 8u;
 
 class ExclusiveScan_ScanBlocksKernel
 {
@@ -42,10 +50,11 @@ public:
         concepts::MdSpan auto outputVec,
         auto... blockSums) const
     {
+        using DeviceType = ALPAKA_TYPEOF(acc.getDeviceKind());
         concepts::Vector auto numFrames = acc[frame::count];
 
         concepts::CVector auto _ = acc[frame::extent];
-        concepts::CVector auto frameExtent = CVec<IdxType, 2u * _.x()>{};
+        concepts::CVector auto frameExtent = CVec<IdxType, ELEMENTS_PER_WORKER * _.x()>{};
         concepts::Vector auto numElements = inputVec.getExtents();
 
         /* This kernel is called with 1-dimensional frame extents.
@@ -57,29 +66,30 @@ public:
         {
             auto tmp = onAcc::declareSharedMdArray<Data, uniqueId()>(
                 acc,
-                CVec<IdxType, CONFLICT_FREE_ACCESS(frameExtent.x())>{});
+                CVec<IdxType, conflictFreeAccess<DeviceType>(frameExtent.x())>{});
             auto const frameOffset = frameExtent * frameIdx;
 
             // -- COPY TO SHARED MEM --
             for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{frameExtent}))
             {
                 if(frameOffset + frameElem < numElements)
-                    tmp[CONFLICT_FREE_ACCESS(frameElem)] = inputVec[frameOffset + frameElem];
+                    tmp[conflictFreeAccess<DeviceType>(frameElem)] = inputVec[frameOffset + frameElem];
                 else
-                    tmp[CONFLICT_FREE_ACCESS(frameElem)] = 0;
+                    tmp[conflictFreeAccess<DeviceType>(frameElem)] = 0;
             }
 
             // -- UP-SWEEP / REDUCE --
             for(IdxType d = frameExtent.x() / 2u, offset = 1u; d > 0; d >>= 1, offset <<= 1)
             {
                 onAcc::syncBlockThreads(acc);
+                // TODO: stride 2
                 for(auto frameElem :
                     onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{Vec<IdxType, 1>{d}}))
                 {
                     IdxType left = offset * (2u * frameElem + 1u).x() - 1u;
                     IdxType right = offset * (2u * frameElem + 2u).x() - 1u;
-                    left = CONFLICT_FREE_ACCESS(left);
-                    right = CONFLICT_FREE_ACCESS(right);
+                    left = conflictFreeAccess<DeviceType>(left);
+                    right = conflictFreeAccess<DeviceType>(right);
                     tmp[right] += tmp[left];
                 }
             }
@@ -91,23 +101,24 @@ public:
                 if constexpr(sizeof...(blockSums))
                 {
                     auto _blockSums = std::get<0>(std::make_tuple(blockSums...));
-                    _blockSums[frameIdx] = tmp[CONFLICT_FREE_ACCESS(frameExtent - 1u)];
+                    _blockSums[frameIdx] = tmp[conflictFreeAccess<DeviceType>(frameExtent - 1u)];
                 }
 
                 // -- SET 0 --
-                tmp[CONFLICT_FREE_ACCESS(frameExtent - 1u)] = 0;
+                tmp[conflictFreeAccess<DeviceType>(frameExtent - 1u)] = 0;
             }
 
             // -- DOWN-SWEEP --
             for(IdxType d = 1u, offset = frameExtent.x() / 2u; d < frameExtent; d <<= 1, offset >>= 1)
             {
+                // TODO: stride 2
                 onAcc::syncBlockThreads(acc);
                 for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{d}))
                 {
                     IdxType left = offset * (2u * frameElem.x() + 1u) - 1u;
                     IdxType right = offset * (2u * frameElem.x() + 2u) - 1u;
-                    left = CONFLICT_FREE_ACCESS(left);
-                    right = CONFLICT_FREE_ACCESS(right);
+                    left = conflictFreeAccess<DeviceType>(left);
+                    right = conflictFreeAccess<DeviceType>(right);
                     auto t = tmp[left];
                     tmp[left] = tmp[right];
                     tmp[right] += t;
@@ -120,7 +131,7 @@ public:
             {
                 if(!BOUNDSCHECK || frameOffset + frameElem < numElements)
                 {
-                    outputVec[frameOffset + frameElem] = tmp[CONFLICT_FREE_ACCESS(frameElem)];
+                    outputVec[frameOffset + frameElem] = tmp[conflictFreeAccess<DeviceType>(frameElem)];
                 }
             }
             onAcc::syncBlockThreads(acc);
@@ -159,8 +170,8 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
     ExclusiveScan_ScanBlocksKernel scanBlocks;
 
     // Define frameExtent
-    constexpr auto frameExtent = CVec<IdxType, NUM_BANKS>{};
-    constexpr auto const adjustedFrameExtent = frameExtent * ELEMENTS_PER_WORKER * LINEAR_SCAN_PER_WORKER;
+    constexpr auto frameExtent = CVec<IdxType, 256u>{};
+    constexpr auto const adjustedFrameExtent = frameExtent * ELEMENTS_PER_WORKER;
     auto const frameSpec = onHost::FrameSpec{divCeil(inputVec.getExtents(), adjustedFrameExtent), frameExtent};
 
     if(frameSpec.m_numFrames > 1u)
