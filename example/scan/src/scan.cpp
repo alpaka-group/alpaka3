@@ -8,10 +8,9 @@
 
 #include <algorithm>
 #include <chrono>
-#include <functional> // std::plus
 #include <iomanip>
 #include <iostream>
-#include <numeric> // std::exclusive_scan
+#include <numeric> // std::exclusive_scan, std::inclusive_scan
 #include <random>
 #include <typeinfo>
 
@@ -23,6 +22,12 @@ using Vec1D = Vec<IdxType, 1u>;
 constexpr IdxType numNvidiaBanks = 32u;
 constexpr IdxType numAmdBanks = 32u;
 constexpr IdxType numIntelBanks = 16u;
+
+enum ScanType
+{
+    INCLUSIVE_SCAN,
+    EXCLUSIVE_SCAN
+};
 
 template<typename TDeviceKind>
 constexpr auto conflictFreeAccess(auto const& n)
@@ -167,6 +172,27 @@ public:
     }
 };
 
+class InclusiveScan_VectorAddKernel
+{
+public:
+    // kernel for vectorized B += A
+    ALPAKA_FN_ACC auto operator()(
+        auto const& acc,
+        alpaka::concepts::MdSpan auto const A,
+        alpaka::concepts::MdSpan auto B) const -> void
+    {
+        concepts::Vector auto numElements = A.getExtents();
+
+        auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
+        simdGrid.concurrent(
+            acc,
+            numElements,
+            [&](auto const&, auto&& simdA, auto&& simdB) constexpr { simdB = simdB.load() + simdA.load(); },
+            A,
+            B);
+    }
+};
+
 void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, auto outputVec)
 {
     // Instantiate the kernel function object
@@ -207,14 +233,37 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
     }
 }
 
-auto validateResult(auto const& bufHostX, auto const& bufHostY, IdxType extent)
+void inclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, auto outputVec)
+{
+    exclusiveScan(exec, devAcc, queue, inputVec, outputVec);
+
+    // instantiate the kernel function object
+    InclusiveScan_VectorAddKernel kernel;
+
+    // Define frameExtent
+    constexpr auto frameExtent = CVec<IdxType, 256u>{};
+    uint32_t elementsPerWorker = getNumElemPerThread<Data>(queue);
+    auto frameSpec = onHost::FrameSpec{divExZero(inputVec.getExtents(), frameExtent * elementsPerWorker), frameExtent};
+
+    queue.enqueue(exec, frameSpec, KernelBundle{kernel, inputVec, outputVec});
+}
+
+auto validateResult(auto const& bufHostX, auto const& bufHostY, IdxType extent, ScanType scanType)
 {
     // validate results
     int falseResults = 0;
     static constexpr int MAX_PRINT_FALSE_RESULTS = 20;
 
     auto const& groundtruth = onHost::allocHost<Data>(extent);
-    std::exclusive_scan(bufHostX.data(), bufHostX.data() + bufHostX.getExtents().x(), groundtruth.data(), 0);
+    switch(scanType)
+    {
+    case EXCLUSIVE_SCAN:
+        std::exclusive_scan(bufHostX.data(), bufHostX.data() + bufHostX.getExtents().x(), groundtruth.data(), 0);
+        break;
+    case INCLUSIVE_SCAN:
+        std::inclusive_scan(bufHostX.data(), bufHostX.data() + bufHostX.getExtents().x(), groundtruth.data());
+        break;
+    }
 
     for(IdxType i = 0u; i < extent; ++i)
     {
@@ -247,7 +296,7 @@ auto validateResult(auto const& bufHostX, auto const& bufHostY, IdxType extent)
 }
 
 template<typename T_Cfg>
-auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdExclusiveScan) -> int
+auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdScan, ScanType scanType) -> int
 {
     auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
@@ -255,7 +304,15 @@ auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdExclusiveScan)
     // Number of elements to process
     Vec1D const extent(numElements);
 
-    std::cout << "Example Exclusive Scan" << std::endl;
+    switch(scanType)
+    {
+    case INCLUSIVE_SCAN:
+        std::cout << "Example Inclusive Scan" << std::endl;
+        break;
+    case EXCLUSIVE_SCAN:
+        std::cout << "Example Exclusive Scan" << std::endl;
+        break;
+    }
     std::cout << "    Number of elements [#]: " << numElements << std::endl;
     std::cout << "    Element type [byte]: " << core::demangledName<Data>() << std::endl;
     std::cout << "    Buffer size [Gbyte]: " << numElements * sizeof(Data) / 1.e9 << std::endl;
@@ -286,36 +343,53 @@ auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdExclusiveScan)
     auto bufAccY = onHost::allocMirror(devAcc, bufHostY);
 
     // run for comparison but only if the executor is exec::cpuSerial
-    if(std::is_same_v<ALPAKA_TYPEOF(exec), exec::CpuSerial> && enableStdExclusiveScan)
+    if(std::is_same_v<ALPAKA_TYPEOF(exec), exec::CpuSerial> && enableStdScan)
     {
-        std::cout << "Using native CPU std::exclusive_scan()" << std::endl;
+        std::cout << "Using native CPU "
+                  << (scanType == EXCLUSIVE_SCAN ? "std::exclusive_scan()" : "std::inclusive_scan()") << std::endl;
         onHost::wait(queue);
         auto const beginT = std::chrono::high_resolution_clock::now();
-        std::exclusive_scan(bufHostX.data(), bufHostX.data() + bufHostX.getExtents().x(), bufHostY.data(), 0);
+
+        switch(scanType)
+        {
+        case EXCLUSIVE_SCAN:
+            std::exclusive_scan(bufHostX.data(), bufHostX.data() + bufHostX.getExtents().x(), bufHostY.data(), 0);
+            break;
+        case INCLUSIVE_SCAN:
+            std::inclusive_scan(bufHostX.data(), bufHostX.data() + bufHostX.getExtents().x(), bufHostY.data());
+            break;
+        }
+
         auto const endT = std::chrono::high_resolution_clock::now();
         double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
 
         std::cout << "    Time for kernel execution [s]: " << kernelRuntime << std::endl;
         std::cout << "    Processed [Gbyte/s]: "
                   << (static_cast<double>(numElements * sizeof(Data)) / kernelRuntime) / 1.e9 << std::endl;
-
-        auto result = validateResult(bufHostX, bufHostY, extent.x());
-        if(result != EXIT_SUCCESS)
-            return result;
+        std::cout << std::endl;
     }
 
     // Copy Host -> Acc
     onHost::memcpy(queue, bufAccX, bufHostX);
 
-    // Enqueue the exclusive scan
+    // Enqueue the scan
     {
         std::cout << "Using alpaka accelerator: " << core::demangledName(exec) << " for "
                   << deviceSpec.getApi().getName() << std::endl;
         onHost::wait(queue);
         auto const beginT = std::chrono::high_resolution_clock::now();
 
-        exclusiveScan(exec, devAcc, queue, bufAccX, bufAccY);
-        onHost::wait(queue); // for large n, exclusiveScan is synchronous anyway
+        switch(scanType)
+        {
+        case EXCLUSIVE_SCAN:
+            exclusiveScan(exec, devAcc, queue, bufAccX, bufAccY);
+            break;
+        case INCLUSIVE_SCAN:
+            inclusiveScan(exec, devAcc, queue, bufAccX, bufAccY);
+            break;
+        }
+
+        onHost::wait(queue); // for large n, scan is synchronous anyway
 
         auto const endT = std::chrono::high_resolution_clock::now();
         double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
@@ -336,14 +410,16 @@ auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdExclusiveScan)
                   << std::endl;
     }
 
-    return validateResult(bufHostX, bufHostY, extent.x());
+    return validateResult(bufHostX, bufHostY, extent.x(), scanType);
 }
 
 void help(char* argv[])
 {
     std::cerr << argv[0] << " [OPTIONS]" << std::endl;
-    std::cerr << "  -n  numElements: Number of elements to process. Default: 2^24" << std::endl;
-    std::cerr << "  -e: disable execution of the native std::exclusive_scan implementation" << std::endl;
+    std::cerr << "  -n  numElements: Number of elements to process. Default: 2^24 = 16 Mi" << std::endl;
+    std::cerr << "  -e: disable execution of the native std::inclusive_scan or std::exclusive_scan implementation"
+              << std::endl;
+    std::cerr << "  -t: scanType: 0 for inclusive, 1 for exclusive scan. Default: 0 (inclusive)" << std::endl;
     std::cerr << "  -h: Print this help message" << std::endl;
 }
 
@@ -352,9 +428,11 @@ auto main(int argc, char* argv[]) -> int
     // Default value if no command line argument used
     IdxType numElements = 1 << 24;
 
+    ScanType scanType = INCLUSIVE_SCAN;
+
     int opt;
-    bool enableStdExclusiveScan = true;
-    while((opt = getopt(argc, argv, "hn:e")) != -1)
+    bool enableStdScan = true;
+    while((opt = getopt(argc, argv, "hn:t:e")) != -1)
     {
         switch(opt)
         {
@@ -374,11 +452,38 @@ auto main(int argc, char* argv[]) -> int
                 return EXIT_FAILURE;
             }
             break;
+        case 't':
+            try
+            {
+                switch(std::stoi(optarg, nullptr, 0))
+                {
+                case 0:
+                    scanType = INCLUSIVE_SCAN;
+                    break;
+                case 1:
+                    scanType = EXCLUSIVE_SCAN;
+                    break;
+                default:
+                    std::cerr << "Error: invalid argument '" << optarg << " for scan type, use 0 or 1'.\n";
+                    return EXIT_FAILURE;
+                }
+            }
+            catch(std::invalid_argument const& e)
+            {
+                std::cerr << "Error: invalid argument '" << optarg << "'.\n";
+                return EXIT_FAILURE;
+            }
+            catch(std::out_of_range const& e)
+            {
+                std::cerr << "Error: value '" << optarg << "' out of range for unsigned long long.\n";
+                return EXIT_FAILURE;
+            }
+            break;
         case 'h':
             help(argv);
             exit(EXIT_SUCCESS);
         case 'e':
-            enableStdExclusiveScan = false;
+            enableStdScan = false;
             break;
         default:
             help(argv);
@@ -389,6 +494,6 @@ auto main(int argc, char* argv[]) -> int
     using namespace alpaka;
     // Execute the example once for each enabled API and executor.
     return executeForEachIfHasDevice(
-        [=](auto const& tag) { return example(tag, numElements, enableStdExclusiveScan); },
+        [=](auto const& tag) { return example(tag, numElements, enableStdScan, scanType); },
         onHost::allBackends(onHost::enabledApis));
 }

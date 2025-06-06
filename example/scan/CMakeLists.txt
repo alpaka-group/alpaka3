@@ -12,7 +12,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # ###############################################################################
 # Project.
-set(_TARGET_NAME exclusive_scan)
+set(_TARGET_NAME scan)
 
 project(tutorial LANGUAGES CXX)
 
