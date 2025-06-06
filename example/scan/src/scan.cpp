@@ -38,13 +38,11 @@ constexpr auto conflictFreeAccess(auto const& n)
         return n + n / numAmdBanks;
     else if constexpr(std::is_same_v<TDeviceKind, deviceKind::IntelGpu>)
         return n + n / numIntelBanks;
-    else
+    else // cpu or unknown backend
         return n;
 }
 
-constexpr bool BOUNDSCHECK = true;
-
-constexpr IdxType ELEMENTS_PER_WORKER = 8u;
+constexpr IdxType elsPerThread = 8u;
 
 class ExclusiveScan_ScanBlocksKernel
 {
@@ -59,7 +57,7 @@ public:
         concepts::Vector auto numFrames = acc[frame::count];
 
         concepts::CVector auto _ = acc[frame::extent];
-        concepts::CVector auto frameExtent = CVec<IdxType, ELEMENTS_PER_WORKER * _.x()>{};
+        concepts::CVector auto frameExtent = CVec<IdxType, elsPerThread * _.x()>{};
         concepts::Vector auto numElements = inputVec.getExtents();
 
         /* This kernel is called with 1-dimensional frame extents.
@@ -137,7 +135,7 @@ public:
             // -- WRITE BACK --
             for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{frameExtent}))
             {
-                if(!BOUNDSCHECK || frameOffset + frameElem < numElements)
+                if(frameOffset + frameElem < numElements)
                 {
                     outputVec[frameOffset + frameElem] = tmp[conflictFreeAccess<DeviceType>(frameElem)];
                 }
@@ -200,7 +198,7 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
 
     // Define frameExtent
     constexpr auto frameExtent = CVec<IdxType, 256u>{};
-    constexpr auto const adjustedFrameExtent = frameExtent * ELEMENTS_PER_WORKER;
+    constexpr auto const adjustedFrameExtent = frameExtent * elsPerThread;
     auto const frameSpec = onHost::FrameSpec{divCeil(inputVec.getExtents(), adjustedFrameExtent), frameExtent};
 
     if(frameSpec.m_numFrames > IdxType{1})
