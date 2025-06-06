@@ -209,7 +209,36 @@ namespace alpaka::onHost
                 return device.m_properties;
             }
         };
-#    if 0
+
+        template<auto T_limit, auto T_index, auto T_increment, auto... T_idx>
+        consteval auto adjustToLimit(auto const input, std::index_sequence<T_idx...>)
+        {
+            if constexpr(input.product() <= T_limit)
+                return input;
+
+            constexpr uint32_t dim = static_cast<uint32_t>(sizeof...(T_idx));
+
+            constexpr auto newValue = CVec<
+                typename ALPAKA_TYPEOF(input)::type,
+                (T_idx == T_index ? divExZero(input[T_idx], 2u) : input[T_idx])...>{};
+
+            constexpr auto nextIdx = T_index + T_increment;
+
+            if constexpr(nextIdx == sizeof...(T_idx))
+            {
+                constexpr auto nextIncrement = dim == 1u ? 1u : -1u;
+
+                return adjustToLimit < T_limit, dim == 1 ? 0 : dim - 1u,
+                       nextIncrement > (newValue, std::index_sequence<T_idx...>{});
+            }
+            else if constexpr(nextIdx == 0u)
+            {
+                return adjustToLimit<T_limit, nextIdx, 1u>(newValue, std::index_sequence<T_idx...>{});
+            }
+
+            return adjustToLimit<T_limit, nextIdx, T_increment>(newValue, std::index_sequence<T_idx...>{});
+        }
+#    if 1
         template<
             typename T_Platform,
             typename T_Mapping,
@@ -225,7 +254,13 @@ namespace alpaka::onHost
                 FrameSpec<T_NumBlocks, T_NumThreads> const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
             {
-                return dataBlocking.getThreadSpec();
+                auto numThreads = dataBlocking.getThreadSpec().m_numThreads;
+
+                constexpr auto result
+                    = adjustToLimit<1024u, 0u, 1u>(numThreads, std::make_index_sequence<T_NumThreads::dim()>{});
+                std::cout << dataBlocking.getThreadSpec().m_numThreads << " -> " << result << " = " << result.product()
+                          << std::endl;
+                return result;
             }
 
             auto operator()(
@@ -234,27 +269,27 @@ namespace alpaka::onHost
                 FrameSpec<T_NumBlocks, T_NumThreads> const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const
             {
-                auto numThreadBlocks = dataBlocking.getThreadSpec().m_numBlocks;
-#        if 0
+                auto numThreadsPerBlocks = dataBlocking.getThreadSpec().m_numThreads;
                 using IdxType = typename T_NumBlocks::type;
                 // @todo get this number from device properties
-                static auto const maxBlocks = device.m_properties.m_multiProcessorCount * 16u;
+                static auto const maxThreadsPerBlock = device.m_properties.m_maxThreadsPerBlock;
 
-                while(numThreadBlocks.product() > maxBlocks)
+                while(numThreadsPerBlocks.product() > maxThreadsPerBlock)
                 {
                     uint32_t maxIdx = 0u;
-                    auto maxValue = numThreadBlocks[0];
+                    auto maxValue = numThreadsPerBlocks[0];
                     for(auto i = 0u; i < T_NumBlocks::dim(); ++i)
-                        if(maxValue < numThreadBlocks[i])
+                        if(maxValue < numThreadsPerBlocks[i])
                         {
                             maxIdx = i;
-                            maxValue = numThreadBlocks[i];
+                            maxValue = numThreadsPerBlocks[i];
                         }
-                    if(numThreadBlocks.product() > maxBlocks)
-                        numThreadBlocks[maxIdx] = divCeil(numThreadBlocks[maxIdx], IdxType{2u});
+                    if(numThreadsPerBlocks.product() > maxThreadsPerBlock)
+                        numThreadsPerBlocks[maxIdx] = divExZero(numThreadsPerBlocks[maxIdx], IdxType{2u});
                 }
-#        endif
-                return ThreadSpec{numThreadBlocks, dataBlocking.getThreadSpec().m_numThreads};
+                std::cout << dataBlocking.getThreadSpec().m_numThreads << " -> " << numThreadsPerBlocks << " = "
+                          << numThreadsPerBlocks.product() << std::endl;
+                return ThreadSpec{dataBlocking.getThreadSpec().m_numBlocks, numThreadsPerBlocks};
             }
         };
 #    endif
