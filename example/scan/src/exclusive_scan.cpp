@@ -112,7 +112,6 @@ public:
             // -- DOWN-SWEEP --
             for(IdxType d = 1, offset = frameExtent.x() / IdxType{2}; d < frameExtent; d <<= 1, offset >>= 1)
             {
-                // TODO: stride 2
                 onAcc::syncBlockThreads(acc);
                 for(auto frameElem : onAcc::makeIdxMap(
                         acc,
@@ -170,7 +169,7 @@ public:
 
 void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, auto outputVec)
 {
-    // Instantiate the kernel function objects
+    // Instantiate the kernel function object
     ExclusiveScan_ScanBlocksKernel scanBlocks;
 
     // Define frameExtent
@@ -192,13 +191,13 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
             divCeil(inputVec.getExtents(), adjustedFrameExtent * elementsPerWorker),
             CVec<IdxType, adjustedFrameExtent.x()>{}};
 
-        // Enqueue the kernel execution tasks
+        // enqueue the kernel execution tasks
         queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec, increments});
         exclusiveScan(exec, devAcc, queue, increments, blockSums);
         queue.enqueue(exec, addIncrementsFrameSpec, KernelBundle{addIncrements, blockSums, outputVec});
 
         // need to wait here until the previous call is done before we can destruct the buffers for
-        // increments/blockSums
+        // increments/blockSums when running out of scope
         onHost::wait(queue);
     }
     else
@@ -210,7 +209,7 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
 
 auto validateResult(auto const& bufHostX, auto const& bufHostY, IdxType extent)
 {
-    // Validate results
+    // validate results
     int falseResults = 0;
     static constexpr int MAX_PRINT_FALSE_RESULTS = 20;
 
@@ -308,7 +307,7 @@ auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdExclusiveScan)
     // Copy Host -> Acc
     onHost::memcpy(queue, bufAccX, bufHostX);
 
-    // Enqueue the kernel execution task
+    // Enqueue the exclusive scan
     {
         std::cout << "Using alpaka accelerator: " << core::demangledName(exec) << " for "
                   << deviceSpec.getApi().getName() << std::endl;
@@ -316,6 +315,7 @@ auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdExclusiveScan)
         auto const beginT = std::chrono::high_resolution_clock::now();
 
         exclusiveScan(exec, devAcc, queue, bufAccX, bufAccY);
+        onHost::wait(queue); // for large n, exclusiveScan is synchronous anyway
 
         auto const endT = std::chrono::high_resolution_clock::now();
         double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
@@ -342,7 +342,7 @@ auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdExclusiveScan)
 void help(char* argv[])
 {
     std::cerr << argv[0] << " [OPTIONS]" << std::endl;
-    std::cerr << "  -n  numElements: Number of elements to process. Default: 2^20" << std::endl;
+    std::cerr << "  -n  numElements: Number of elements to process. Default: 2^24" << std::endl;
     std::cerr << "  -e: disable execution of the native std::exclusive_scan implementation" << std::endl;
     std::cerr << "  -h: Print this help message" << std::endl;
 }
@@ -350,7 +350,7 @@ void help(char* argv[])
 auto main(int argc, char* argv[]) -> int
 {
     // Default value if no command line argument used
-    IdxType numElements = 1 << 8;
+    IdxType numElements = 1 << 24;
 
     int opt;
     bool enableStdExclusiveScan = true;
@@ -361,7 +361,7 @@ auto main(int argc, char* argv[]) -> int
         case 'n':
             try
             {
-                numElements = std::stoul(optarg, nullptr, 0);
+                numElements = static_cast<IdxType>(std::stoull(optarg, nullptr, 0));
             }
             catch(std::invalid_argument const& e)
             {
@@ -370,7 +370,7 @@ auto main(int argc, char* argv[]) -> int
             }
             catch(std::out_of_range const& e)
             {
-                std::cerr << "Error: value '" << optarg << "' out of range for size_t.\n";
+                std::cerr << "Error: value '" << optarg << "' out of range for unsigned long long.\n";
                 return EXIT_FAILURE;
             }
             break;
