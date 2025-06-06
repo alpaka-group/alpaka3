@@ -17,12 +17,12 @@
 
 using namespace alpaka;
 using IdxType = std::size_t;
-using Data = int32_t;
+using Data = std::int32_t;
 using Vec1D = Vec<IdxType, 1u>;
 
-constexpr auto numNvidiaBanks = 32u;
-constexpr auto numAmdBanks = 32u;
-constexpr auto numIntelBanks = 16u;
+constexpr IdxType numNvidiaBanks = 32u;
+constexpr IdxType numAmdBanks = 32u;
+constexpr IdxType numIntelBanks = 16u;
 
 template<typename TDeviceKind>
 constexpr auto conflictFreeAccess(auto const& n)
@@ -79,15 +79,16 @@ public:
             }
 
             // -- UP-SWEEP / REDUCE --
-            for(IdxType d = frameExtent.x() / 2u, offset = 1u; d > 0; d >>= 1, offset <<= 1)
+            for(IdxType d = frameExtent.x() / IdxType{2}, offset = IdxType{1}; d > 0; d >>= 1, offset <<= 1)
             {
                 onAcc::syncBlockThreads(acc);
-                // TODO: stride 2
-                for(auto frameElem :
-                    onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{Vec<IdxType, 1>{d}}))
+                for(auto frameElem : onAcc::makeIdxMap(
+                        acc,
+                        onAcc::worker::threadsInBlock,
+                        IdxRange{CVec<IdxType, 0>{}, Vec<IdxType, 1>{IdxType{2} * d}, IdxType{2}}))
                 {
-                    IdxType left = offset * (2u * frameElem + 1u).x() - 1u;
-                    IdxType right = offset * (2u * frameElem + 2u).x() - 1u;
+                    IdxType left = offset * (frameElem + IdxType{1}).x() - IdxType{1};
+                    IdxType right = offset * (frameElem + IdxType{2}).x() - IdxType{1};
                     left = conflictFreeAccess<DeviceType>(left);
                     right = conflictFreeAccess<DeviceType>(right);
                     tmp[right] += tmp[left];
@@ -101,22 +102,25 @@ public:
                 if constexpr(sizeof...(blockSums))
                 {
                     auto _blockSums = std::get<0>(std::make_tuple(blockSums...));
-                    _blockSums[frameIdx] = tmp[conflictFreeAccess<DeviceType>(frameExtent - 1u)];
+                    _blockSums[frameIdx] = tmp[conflictFreeAccess<DeviceType>(frameExtent - IdxType{1})];
                 }
 
                 // -- SET 0 --
-                tmp[conflictFreeAccess<DeviceType>(frameExtent - 1u)] = 0;
+                tmp[conflictFreeAccess<DeviceType>(frameExtent - IdxType{1})] = 0;
             }
 
             // -- DOWN-SWEEP --
-            for(IdxType d = 1u, offset = frameExtent.x() / 2u; d < frameExtent; d <<= 1, offset >>= 1)
+            for(IdxType d = 1, offset = frameExtent.x() / IdxType{2}; d < frameExtent; d <<= 1, offset >>= 1)
             {
                 // TODO: stride 2
                 onAcc::syncBlockThreads(acc);
-                for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{d}))
+                for(auto frameElem : onAcc::makeIdxMap(
+                        acc,
+                        onAcc::worker::threadsInBlock,
+                        IdxRange{CVec<IdxType, 0>{}, Vec<IdxType, 1>{IdxType{2} * d}, IdxType{2}}))
                 {
-                    IdxType left = offset * (2u * frameElem.x() + 1u) - 1u;
-                    IdxType right = offset * (2u * frameElem.x() + 2u) - 1u;
+                    IdxType left = offset * (frameElem.x() + IdxType{1}) - IdxType{1};
+                    IdxType right = offset * (frameElem.x() + IdxType{2}) - IdxType{1};
                     left = conflictFreeAccess<DeviceType>(left);
                     right = conflictFreeAccess<DeviceType>(right);
                     auto t = tmp[left];
@@ -174,7 +178,7 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
     constexpr auto const adjustedFrameExtent = frameExtent * ELEMENTS_PER_WORKER;
     auto const frameSpec = onHost::FrameSpec{divCeil(inputVec.getExtents(), adjustedFrameExtent), frameExtent};
 
-    if(frameSpec.m_numFrames > 1u)
+    if(frameSpec.m_numFrames > IdxType{1})
     {
         // problem does not fit in 1 frame, recurse
         ExclusiveScan_AddIncrementsKernel addIncrements;
@@ -272,10 +276,10 @@ auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdExclusiveScan)
     // Fill input data with random values
     std::random_device rd{};
     std::default_random_engine eng{rd()};
-    std::uniform_int_distribution<Data> dist(0, 10);
+    std::uniform_int_distribution<std::int32_t> dist(0, 10);
     for(IdxType i = 0u; i < extent; ++i)
     {
-        bufHostX[i] = dist(eng);
+        bufHostX[i] = static_cast<Data>(dist(eng));
     }
 
     // Allocate device memory buffers for x and y
@@ -346,7 +350,7 @@ void help(char* argv[])
 auto main(int argc, char* argv[]) -> int
 {
     // Default value if no command line argument used
-    IdxType numElements = 1 << 24;
+    IdxType numElements = 1 << 8;
 
     int opt;
     bool enableStdExclusiveScan = true;
