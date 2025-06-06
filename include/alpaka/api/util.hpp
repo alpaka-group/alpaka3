@@ -30,7 +30,8 @@ namespace alpaka::api::util
 
                 constexpr auto newValue = CVec<
                     typename ALPAKA_TYPEOF(input)::type,
-                    (T_idx == T_index ? divExZero(input[T_idx], 2u) : input[T_idx])...>{};
+                    (T_idx == T_index ? divExZero(input[T_idx], static_cast<ALPAKA_TYPEOF(T_limit)>(2))
+                                      : input[T_idx])...>{};
 
                 constexpr auto nextIncrement = dim == 1u ? 0u : T_increment;
                 constexpr auto nextIdx = T_index + T_increment;
