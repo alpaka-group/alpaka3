@@ -23,9 +23,9 @@ using Vec1D = Vec<IdxType, 1u>;
 constexpr auto NUM_BANKS = 32u;
 constexpr auto LOG_NUM_BANKS = 5u;
 
-ALPAKA_FN_HOST_ACC auto CONFLICT_FREE_ACCESS(auto const& n)
+constexpr auto CONFLICT_FREE_ACCESS(auto const& n)
 {
-    return n + (n >> NUM_BANKS + n >> (2u * LOG_NUM_BANKS));
+    return n + n / NUM_BANKS;
 }
 
 constexpr bool BOUNDSCHECK = true;
@@ -55,7 +55,9 @@ public:
         for(auto frameIdx :
             onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec<IdxType, 1u>{0}, numFrames}))
         {
-            auto tmp = onAcc::declareSharedMdArray<Data, uniqueId()>(acc, frameExtent);
+            auto tmp = onAcc::declareSharedMdArray<Data, uniqueId()>(
+                acc,
+                CVec<IdxType, CONFLICT_FREE_ACCESS(frameExtent.x())>{});
             auto const frameOffset = frameExtent * frameIdx;
 
             // -- COPY TO SHARED MEM --
@@ -89,7 +91,7 @@ public:
                 if constexpr(sizeof...(blockSums))
                 {
                     auto _blockSums = std::get<0>(std::make_tuple(blockSums...));
-                    _blockSums[frameIdx] = tmp[frameExtent - 1u];
+                    _blockSums[frameIdx] = tmp[CONFLICT_FREE_ACCESS(frameExtent - 1u)];
                 }
 
                 // -- SET 0 --
@@ -114,7 +116,6 @@ public:
             onAcc::syncBlockThreads(acc);
 
             // -- WRITE BACK --
-            // auto outputView = View(outputVec).getSubView(frameExtent, frameOffset);
             for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{frameExtent}))
             {
                 if(!BOUNDSCHECK || frameOffset + frameElem < numElements)
@@ -142,18 +143,13 @@ public:
         concepts::CVector auto frameExtent = acc[frame::extent];
         concepts::Vector auto numElements = outputVec.getExtents();
 
-        // TODO: this should be possible to simd-ify?
-        for(auto frameIdx :
-            onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec<IdxType, 1u>{0}, numFrames}))
-        {
-            auto const val = blockSums[frameIdx];
-            for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{frameExtent}))
-            {
-                auto idx = frameIdx * frameExtent + frameElem;
-                if(idx < numElements)
-                    outputVec[idx] += val;
-            }
-        }
+        auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
+        simdGrid.concurrent(
+            acc,
+            numElements,
+            [&](auto const&, auto&& simdOut) constexpr
+            { simdOut = simdOut.load() + blockSums[simdOut.getIdx() / frameExtent]; },
+            outputVec);
     }
 };
 
@@ -163,10 +159,9 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
     ExclusiveScan_ScanBlocksKernel scanBlocks;
 
     // Define frameExtent
-    auto frameExtent = CVec<IdxType, NUM_BANKS>{};
-    auto frameSpec = onHost::FrameSpec{
-        divCeil(inputVec.getExtents(), frameExtent * ELEMENTS_PER_WORKER * LINEAR_SCAN_PER_WORKER),
-        frameExtent};
+    constexpr auto frameExtent = CVec<IdxType, NUM_BANKS>{};
+    constexpr auto const adjustedFrameExtent = frameExtent * ELEMENTS_PER_WORKER * LINEAR_SCAN_PER_WORKER;
+    auto const frameSpec = onHost::FrameSpec{divCeil(inputVec.getExtents(), adjustedFrameExtent), frameExtent};
 
     if(frameSpec.m_numFrames > 1u)
     {
@@ -177,9 +172,10 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
         auto increments = onHost::alloc<Data>(devAcc, frameSpec.m_numFrames);
         auto blockSums = onHost::alloc<Data>(devAcc, frameSpec.m_numFrames);
 
+        IdxType elementsPerWorker = getNumElemPerThread<Data>(queue);
         auto addIncrementsFrameSpec = onHost::FrameSpec{
-            divCeil(inputVec.getExtents(), frameExtent * ELEMENTS_PER_WORKER * LINEAR_SCAN_PER_WORKER),
-            CVec<IdxType, frameExtent.x() * ELEMENTS_PER_WORKER * LINEAR_SCAN_PER_WORKER>{}};
+            divCeil(inputVec.getExtents(), adjustedFrameExtent * elementsPerWorker),
+            CVec<IdxType, adjustedFrameExtent.x()>{}};
 
         // Enqueue the kernel execution tasks
         queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec, increments});
@@ -197,7 +193,7 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
     }
 }
 
-auto validateResult(auto const& bufHostX, auto const& bufHostY, size_t extent)
+auto validateResult(auto const& bufHostX, auto const& bufHostY, IdxType extent)
 {
     // Validate results
     int falseResults = 0;
@@ -206,7 +202,7 @@ auto validateResult(auto const& bufHostX, auto const& bufHostY, size_t extent)
     auto const& groundtruth = onHost::allocHost<Data>(extent);
     std::exclusive_scan(bufHostX.data(), bufHostX.data() + bufHostX.getExtents().x(), groundtruth.data(), 0);
 
-    for(size_t i = 0u; i < extent; ++i)
+    for(IdxType i = 0u; i < extent; ++i)
     {
         Data const& computedY = bufHostY[i];
         Data const& correctResult = groundtruth[i];
@@ -237,7 +233,7 @@ auto validateResult(auto const& bufHostX, auto const& bufHostY, size_t extent)
 }
 
 template<typename T_Cfg>
-auto example(T_Cfg const& cfg, size_t numElements, bool enableStdExclusiveScan) -> int
+auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdExclusiveScan) -> int
 {
     auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
@@ -339,7 +335,7 @@ void help(char* argv[])
 auto main(int argc, char* argv[]) -> int
 {
     // Default value if no command line argument used
-    size_t numElements = 1024 * 1024 * 64;
+    IdxType numElements = 1 << 24;
 
     int opt;
     bool enableStdExclusiveScan = true;
