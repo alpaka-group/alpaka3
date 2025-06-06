@@ -8,6 +8,7 @@
 
 #if ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP
 #    include "alpaka/api/unifiedCudaHip/Queue.hpp"
+#    include "alpaka/api/util.hpp"
 #    include "alpaka/core/UniformCudaHip.hpp"
 #    include "alpaka/onHost/mem/ManagedView.hpp"
 
@@ -210,35 +211,6 @@ namespace alpaka::onHost
             }
         };
 
-        template<auto T_limit, auto T_index, auto T_increment, auto... T_idx>
-        consteval auto adjustToLimit(auto const input, std::index_sequence<T_idx...>)
-        {
-            if constexpr(input.product() <= T_limit)
-                return input;
-
-            constexpr uint32_t dim = static_cast<uint32_t>(sizeof...(T_idx));
-
-            constexpr auto newValue = CVec<
-                typename ALPAKA_TYPEOF(input)::type,
-                (T_idx == T_index ? divExZero(input[T_idx], 2u) : input[T_idx])...>{};
-
-            constexpr auto nextIdx = T_index + T_increment;
-
-            if constexpr(nextIdx == sizeof...(T_idx))
-            {
-                constexpr auto nextIncrement = dim == 1u ? 1u : -1u;
-
-                return adjustToLimit < T_limit, dim == 1 ? 0 : dim - 1u,
-                       nextIncrement > (newValue, std::index_sequence<T_idx...>{});
-            }
-            else if constexpr(nextIdx == 0u)
-            {
-                return adjustToLimit<T_limit, nextIdx, 1u>(newValue, std::index_sequence<T_idx...>{});
-            }
-
-            return adjustToLimit<T_limit, nextIdx, T_increment>(newValue, std::index_sequence<T_idx...>{});
-        }
-#    if 1
         template<
             typename T_Platform,
             typename T_Mapping,
@@ -256,11 +228,15 @@ namespace alpaka::onHost
             {
                 auto numThreads = dataBlocking.getThreadSpec().m_numThreads;
 
-                constexpr auto result
-                    = adjustToLimit<1024u, 0u, 1u>(numThreads, std::make_index_sequence<T_NumThreads::dim()>{});
-                std::cout << dataBlocking.getThreadSpec().m_numThreads << " -> " << result << " = " << result.product()
-                          << std::endl;
-                return result;
+                /** All modern NVIDIA and AMD GPUs support at least 1014 threads.
+                 * @attention: Due to lmem, shared memory or register usage the limit could be lower. In this case the
+                 * kernel call will vail at runtime with invalid kernel configuration. We can not avoid this at compile
+                 * time.
+                 */
+                constexpr typename ALPAKA_TYPEOF(numThreads)::type hardwareLimitThreadsPerBlock = 1024u;
+
+                constexpr auto result = api::util::adjustToLimit<hardwareLimitThreadsPerBlock, 0u, 1u>(numThreads);
+                return ThreadSpec{dataBlocking.getThreadSpec().m_numBlocks, result};
             }
 
             auto operator()(
@@ -270,29 +246,12 @@ namespace alpaka::onHost
                 T_KernelBundle const& kernelBundle) const
             {
                 auto numThreadsPerBlocks = dataBlocking.getThreadSpec().m_numThreads;
-                using IdxType = typename T_NumBlocks::type;
-                // @todo get this number from device properties
-                static auto const maxThreadsPerBlock = device.m_properties.m_maxThreadsPerBlock;
+                auto const maxThreadsPerBlock = device.m_properties.m_maxThreadsPerBlock;
 
-                while(numThreadsPerBlocks.product() > maxThreadsPerBlock)
-                {
-                    uint32_t maxIdx = 0u;
-                    auto maxValue = numThreadsPerBlocks[0];
-                    for(auto i = 0u; i < T_NumBlocks::dim(); ++i)
-                        if(maxValue < numThreadsPerBlocks[i])
-                        {
-                            maxIdx = i;
-                            maxValue = numThreadsPerBlocks[i];
-                        }
-                    if(numThreadsPerBlocks.product() > maxThreadsPerBlock)
-                        numThreadsPerBlocks[maxIdx] = divExZero(numThreadsPerBlocks[maxIdx], IdxType{2u});
-                }
-                std::cout << dataBlocking.getThreadSpec().m_numThreads << " -> " << numThreadsPerBlocks << " = "
-                          << numThreadsPerBlocks.product() << std::endl;
-                return ThreadSpec{dataBlocking.getThreadSpec().m_numBlocks, numThreadsPerBlocks};
+                auto result = api::util::adjustToLimit(numThreadsPerBlocks, maxThreadsPerBlock);
+                return ThreadSpec{dataBlocking.getThreadSpec().m_numBlocks, result};
             }
         };
-#    endif
     } // namespace internal
 } // namespace alpaka::onHost
 

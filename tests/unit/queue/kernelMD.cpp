@@ -101,12 +101,14 @@ TEMPLATE_LIST_TEST_CASE("kernelCallMD", "", TestApis)
         Case{Vec{4u, 8u, 16, 31}, Vec{2u, 4u, 8u, 4u}},
         Case{Vec{4u, 8u, 16, 8u, 3u}, Vec{2u, 4u, 8u, 4u, 2u}},
         Case{Vec{4u, 8u, 16, 8u, 3u, 5u}, Vec{2u, 4u, 8u, 4u, 2u, 3u}},
+        Case{Vec{4u, 8u, 16, 8u, 3u, 5u, 2u}, Vec{2u, 4u, 8u, 4u, 2u, 3u, 2u}},
         Case{Vec{3u}, CVec<uint32_t, 2u>{}},
         Case{Vec{4u, 7u}, CVec<uint32_t, 2u, 4u>{}},
         Case{Vec{4u, 8u, 13}, CVec<uint32_t, 2u, 4u, 8u>{}},
         Case{Vec{4u, 8u, 16, 31}, CVec<uint32_t, 2u, 4u, 8u, 4u>{}},
         Case{Vec{4u, 8u, 16, 8u, 3u}, CVec<uint32_t, 2u, 4u, 8u, 4u, 2u>{}},
-        Case{Vec{4u, 8u, 16, 8u, 3u, 5u}, CVec<uint32_t, 2u, 4u, 8u, 4u, 2u, 3u>{}});
+        Case{Vec{4u, 8u, 16, 8u, 3u, 5u}, CVec<uint32_t, 2u, 4u, 8u, 4u, 2u, 3u>{}},
+        Case{Vec{4u, 8u, 16, 8u, 3u, 5u, 2u}, CVec<uint32_t, 2u, 4u, 8u, 4u, 2u, 3u, 2u>{}});
 
     std::apply([&](auto... testCase) { (validate(queue, device, exec, testCase), ...); }, testCfg);
 }

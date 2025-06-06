@@ -258,7 +258,7 @@ namespace alpaka::onHost::internal
             T_KernelBundle const& kernelBundle) const
         {
             auto const threadBlocking
-                = internal::adjustThreadSpec(queue.m_device.get(), executor, frameSpec, kernelBundle);
+                = internal::adjustThreadSpec(*queue.m_device.get(), executor, frameSpec, kernelBundle);
 
             constexpr auto st_shared_mem_bytes = onAcc::oneApi::StaticSharedMemory::sizeLookupBufferInBytes(
                 ALPAKA_SYCL_NUM_MAX_SHARED_MEMORY_ALLOCATIONS);
