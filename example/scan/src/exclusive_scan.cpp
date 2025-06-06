@@ -16,21 +16,22 @@
 #include <typeinfo>
 
 using namespace alpaka;
-using Vec1D = Vec<std::size_t, 1u>;
+using IdxType = std::size_t;
 using Data = int32_t;
+using Vec1D = Vec<IdxType, 1u>;
 
 constexpr auto NUM_BANKS = 32u;
 constexpr auto LOG_NUM_BANKS = 5u;
 
-ALPAKA_FN_HOST_ACC auto CONFLICT_FREE_OFFSET(auto const& n)
+ALPAKA_FN_HOST_ACC auto CONFLICT_FREE_ACCESS(auto const& n)
 {
-    return n >> NUM_BANKS + n >> (2u * LOG_NUM_BANKS);
+    return n + (n >> NUM_BANKS + n >> (2u * LOG_NUM_BANKS));
 }
 
 constexpr bool BOUNDSCHECK = true;
 
-constexpr std::size_t ELEMENTS_PER_WORKER = 2u;
-constexpr std::size_t LINEAR_SCAN_PER_WORKER = 1u;
+constexpr IdxType ELEMENTS_PER_WORKER = 2u;
+constexpr IdxType LINEAR_SCAN_PER_WORKER = 1u;
 
 class ExclusiveScan_ScanBlocksKernel
 {
@@ -44,7 +45,7 @@ public:
         concepts::Vector auto numFrames = acc[frame::count];
 
         concepts::CVector auto _ = acc[frame::extent];
-        concepts::CVector auto frameExtent = CVec<std::size_t, 2u * _.x()>{};
+        concepts::CVector auto frameExtent = CVec<IdxType, 2u * _.x()>{};
         concepts::Vector auto numElements = inputVec.getExtents();
 
         /* This kernel is called with 1-dimensional frame extents.
@@ -52,31 +53,31 @@ public:
          * All thread blocks will be used to iterate over the frames. Each thread block will handle one or more frames.
          */
         for(auto frameIdx :
-            onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec<std::size_t, 1u>{0}, numFrames}))
+            onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec<IdxType, 1u>{0}, numFrames}))
         {
             auto tmp = onAcc::declareSharedMdArray<Data, uniqueId()>(acc, frameExtent);
-            auto frameOffset = frameExtent * frameIdx;
+            auto const frameOffset = frameExtent * frameIdx;
 
             // -- COPY TO SHARED MEM --
             for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{frameExtent}))
             {
                 if(frameOffset + frameElem < numElements)
-                    tmp[frameElem + CONFLICT_FREE_OFFSET(frameElem)] = inputVec[frameOffset + frameElem];
+                    tmp[CONFLICT_FREE_ACCESS(frameElem)] = inputVec[frameOffset + frameElem];
                 else
-                    tmp[frameElem + CONFLICT_FREE_OFFSET(frameElem)] = 0;
+                    tmp[CONFLICT_FREE_ACCESS(frameElem)] = 0;
             }
 
             // -- UP-SWEEP / REDUCE --
-            for(std::size_t d = frameExtent.x() / 2u, offset = 1u; d > 0; d >>= 1, offset <<= 1)
+            for(IdxType d = frameExtent.x() / 2u, offset = 1u; d > 0; d >>= 1, offset <<= 1)
             {
                 onAcc::syncBlockThreads(acc);
                 for(auto frameElem :
-                    onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{Vec<std::size_t, 1>{d}}))
+                    onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{Vec<IdxType, 1>{d}}))
                 {
-                    std::size_t left = offset * (2u * frameElem + 1u).x() - 1u;
-                    std::size_t right = offset * (2u * frameElem + 2u).x() - 1u;
-                    left += CONFLICT_FREE_OFFSET(left);
-                    right += CONFLICT_FREE_OFFSET(right);
+                    IdxType left = offset * (2u * frameElem + 1u).x() - 1u;
+                    IdxType right = offset * (2u * frameElem + 2u).x() - 1u;
+                    left = CONFLICT_FREE_ACCESS(left);
+                    right = CONFLICT_FREE_ACCESS(right);
                     tmp[right] += tmp[left];
                 }
             }
@@ -92,19 +93,19 @@ public:
                 }
 
                 // -- SET 0 --
-                tmp[frameExtent - 1u + CONFLICT_FREE_OFFSET(frameExtent - 1u)] = 0;
+                tmp[CONFLICT_FREE_ACCESS(frameExtent - 1u)] = 0;
             }
 
             // -- DOWN-SWEEP --
-            for(std::size_t d = 1u, offset = frameExtent.x() / 2u; d < frameExtent; d <<= 1, offset >>= 1)
+            for(IdxType d = 1u, offset = frameExtent.x() / 2u; d < frameExtent; d <<= 1, offset >>= 1)
             {
                 onAcc::syncBlockThreads(acc);
                 for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{d}))
                 {
-                    std::size_t left = offset * (2u * frameElem.x() + 1u) - 1u;
-                    std::size_t right = offset * (2u * frameElem.x() + 2u) - 1u;
-                    left += CONFLICT_FREE_OFFSET(left);
-                    right += CONFLICT_FREE_OFFSET(right);
+                    IdxType left = offset * (2u * frameElem.x() + 1u) - 1u;
+                    IdxType right = offset * (2u * frameElem.x() + 2u) - 1u;
+                    left = CONFLICT_FREE_ACCESS(left);
+                    right = CONFLICT_FREE_ACCESS(right);
                     auto t = tmp[left];
                     tmp[left] = tmp[right];
                     tmp[right] += t;
@@ -118,7 +119,7 @@ public:
             {
                 if(!BOUNDSCHECK || frameOffset + frameElem < numElements)
                 {
-                    outputVec[frameOffset + frameElem] = tmp[frameElem + CONFLICT_FREE_OFFSET(frameElem)];
+                    outputVec[frameOffset + frameElem] = tmp[CONFLICT_FREE_ACCESS(frameElem)];
                 }
             }
             onAcc::syncBlockThreads(acc);
@@ -143,7 +144,7 @@ public:
 
         // TODO: this should be possible to simd-ify?
         for(auto frameIdx :
-            onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec<std::size_t, 1u>{0}, numFrames}))
+            onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec<IdxType, 1u>{0}, numFrames}))
         {
             auto const val = blockSums[frameIdx];
             for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{frameExtent}))
@@ -162,7 +163,7 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
     ExclusiveScan_ScanBlocksKernel scanBlocks;
 
     // Define frameExtent
-    auto frameExtent = CVec<std::size_t, NUM_BANKS>{};
+    auto frameExtent = CVec<IdxType, NUM_BANKS>{};
     auto frameSpec = onHost::FrameSpec{
         divCeil(inputVec.getExtents(), frameExtent * ELEMENTS_PER_WORKER * LINEAR_SCAN_PER_WORKER),
         frameExtent};
@@ -178,7 +179,7 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
 
         auto addIncrementsFrameSpec = onHost::FrameSpec{
             divCeil(inputVec.getExtents(), frameExtent * ELEMENTS_PER_WORKER * LINEAR_SCAN_PER_WORKER),
-            CVec<std::size_t, frameExtent.x() * ELEMENTS_PER_WORKER * LINEAR_SCAN_PER_WORKER>{}};
+            CVec<IdxType, frameExtent.x() * ELEMENTS_PER_WORKER * LINEAR_SCAN_PER_WORKER>{}};
 
         // Enqueue the kernel execution tasks
         queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec, increments});
@@ -238,13 +239,11 @@ auto validateResult(auto const& bufHostX, auto const& bufHostY, size_t extent)
 template<typename T_Cfg>
 auto example(T_Cfg const& cfg, size_t numElements, bool enableStdExclusiveScan) -> int
 {
-    using IdxVec = Vec<std::size_t, 1u>;
-
     auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
     // Number of elements to process
-    IdxVec const extent(numElements);
+    Vec1D const extent(numElements);
 
     std::cout << "Example Exclusive Scan" << std::endl;
     std::cout << "    Number of elements [#]: " << numElements << std::endl;
@@ -267,7 +266,7 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdExclusiveScan) 
     std::random_device rd{};
     std::default_random_engine eng{rd()};
     std::uniform_int_distribution<Data> dist(0, 10);
-    for(std::size_t i = 0u; i < extent; ++i)
+    for(IdxType i = 0u; i < extent; ++i)
     {
         bufHostX[i] = dist(eng);
     }
