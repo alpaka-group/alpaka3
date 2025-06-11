@@ -2,6 +2,6 @@
  * SPDX-License-Identifier: ISC
  */
 
-#include "scan.hpp"
+#include "scan_improved.hpp"
 
 #include "scan_main.hpp"
