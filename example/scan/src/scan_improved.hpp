@@ -138,8 +138,7 @@ public:
         std::cout << "chunkExtent: " << chunkExtent << std::endl;
 #endif
 
-        // TODO use MdSpanArray?
-        // MdSpanArray<LocalArray, alpaka::Alignment<>> regMemMd{regMem};
+        const auto validElementsInLastFrame = (numElements - IdxType{1}) % chunkExtent + IdxType{1};
 
         /* This kernel is called with 1-dimensional frame extents.
          *
@@ -149,6 +148,9 @@ public:
         for(auto frameIdx :
             onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec<IdxType, 1u>{0}, numFrames}))
         {
+            bool const lastFrameFull = validElementsInLastFrame == chunkExtent;
+            bool const isLastFrame = frameIdx == numFrames - IdxType{1};
+
             // allocate "per-thread" register memory to store mini blocks of 4 elements per thread persistently
             LocalArray regMem;
 
@@ -163,13 +165,29 @@ public:
                     onAcc::worker::threadsInBlock,
                     IdxRange{CVec<IdxType, 0u>{}, chunkExtent, CVec<IdxType, elsPerThread>{}}))
             {
-                // load into miniblock, from frameElem to frameElem + elsPerThread
-                for(auto i = IdxType{0}; i < elsPerThread; ++i)
+                if((!lastFrameFull && isLastFrame) || elsPerThread % IdxType{4} != IdxType{0})
                 {
-                    if(frameOffset + frameElem + i < numElements)
-                        regMem[i] = inputVec[frameOffset + frameElem + i];
-                    else
-                        regMem[i] = 0;
+                    // load into miniblock, from frameElem to frameElem + elsPerThread
+                    for(auto i = IdxType{0}; i < elsPerThread; ++i)
+                    {
+                        if(frameOffset + frameElem + i < numElements)
+                            regMem[i] = inputVec[frameOffset + frameElem + i];
+                        else
+                            regMem[i] = 0;
+                    }
+                }
+                else
+                {
+                    MdSpanArray<LocalArray, alpaka::Alignment<16>> regMemMd{regMem};
+
+                    for(auto i = IdxType{0}; i < elsPerThread; i += IdxType{4})
+                    {
+                        auto inputVecView
+                            = SimdPtr{inputVec, Vec{frameOffset + frameElem + i}, Alignment<16>{}, CVec<IdxType, 4>{}};
+                        auto regView = SimdPtr{regMemMd, Vec{i}, Alignment<16>{}, CVec<IdxType, 4>{}};
+
+                        regView = inputVecView.load();
+                    }
                 }
 
                 // scan miniblock
@@ -247,11 +265,30 @@ public:
                 // add block sum to mini block
                 addIncrements(regMem, blockSum, CVec<IdxType, elsPerThread>{});
 
-                // write back to global mem, from frameElem to frameElem + elsPerThread
-                for(auto i = IdxType{0}; i < elsPerThread; ++i)
+                if((!lastFrameFull && isLastFrame) || elsPerThread % IdxType{4} != IdxType{0})
                 {
-                    if(frameOffset + frameElem + i < numElements)
-                        outputVec[frameOffset + frameElem + i] = regMem[i];
+                    // write back to global mem, from frameElem to frameElem + elsPerThread
+                    for(auto i = IdxType{0}; i < elsPerThread; ++i)
+                    {
+                        if(frameOffset + frameElem + i < numElements)
+                            outputVec[frameOffset + frameElem + i] = regMem[i];
+                    }
+                }
+                else
+                {
+                    MdSpanArray<LocalArray, alpaka::Alignment<16>> regMemMd{regMem};
+
+                    for(auto i = IdxType{0}; i < elsPerThread; i += IdxType{4})
+                    {
+                        auto outputVecView = SimdPtr{
+                            outputVec,
+                            Vec{frameOffset + frameElem + i},
+                            Alignment<16>{},
+                            CVec<IdxType, 4>{}};
+                        auto regView = SimdPtr{regMemMd, Vec{i}, Alignment<16>{}, CVec<IdxType, 4>{}};
+
+                        outputVecView = regView.load();
+                    }
                 }
             }
             onAcc::syncBlockThreads(acc);

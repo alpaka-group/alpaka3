@@ -45,7 +45,7 @@ constexpr auto conflictFreeAccess(auto const& n)
         return n;
 }
 
-constexpr IdxType elsPerThread = 2u;
+constexpr IdxType elsPerThread = 8u;
 
 /* This kernel calculates an exclusive scan for each block indvidually. The algorithm is based on Blelloch, written up
  * in the CUDA blog:
