@@ -48,9 +48,11 @@ constexpr auto conflictFreeAccess(auto const& n)
  */
 ALPAKA_FN_ACC Data scanMiniBlock(auto& block, concepts::CVector auto const& extent)
 {
+#if 0
     // could also be improved with a mini (shared memory-less) version of blelloch
     Data c = Data(0);
     Data t;
+
     for(auto i = 0; i < extent.x(); ++i)
     {
         t = c + block[i];
@@ -58,6 +60,40 @@ ALPAKA_FN_ACC Data scanMiniBlock(auto& block, concepts::CVector auto const& exte
         c = t;
     }
     return c;
+#else
+
+    // -- UP-SWEEP / REDUCE --
+    for(IdxType d = extent.x() / IdxType{2}, offset = IdxType{1}; d > 0; d >>= 1, offset <<= 1)
+    {
+        for(auto frameElem = IdxType{0}; frameElem < IdxType{2} * d; frameElem += IdxType{2})
+        {
+            IdxType left = offset * (frameElem + IdxType{1}) - IdxType{1};
+            IdxType right = offset * (frameElem + IdxType{2}) - IdxType{1};
+            block[right] += block[left];
+        }
+    }
+
+    // save total sum
+    Data blockSum = block[extent.x() - IdxType{1}];
+
+    // set 0
+    block[extent.x() - IdxType{1}] = Data{0};
+
+    // -- DOWN-SWEEP --
+    for(IdxType d = 1, offset = extent.x() / IdxType{2}; d < extent.x(); d <<= 1, offset >>= 1)
+    {
+        for(auto frameElem = 0; frameElem < IdxType{2} * d; frameElem += IdxType{2})
+        {
+            IdxType left = offset * (frameElem + IdxType{1}) - IdxType{1};
+            IdxType right = offset * (frameElem + IdxType{2}) - IdxType{1};
+            auto t = block[left];
+            block[left] = block[right];
+            block[right] += t;
+        }
+    }
+
+    return blockSum;
+#endif
 }
 
 /* Do an add increment on the given miniblock, adding the given blockSum to each element.
@@ -278,10 +314,9 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
     ExclusiveScan_ScanBlocksKernel scanBlocks;
 
     // Define chunkExtent
-    constexpr auto chunkExtent = CVec<IdxType, 2u * 1024u>{};
-    auto const frameSpec = onHost::FrameSpec<Vec<IdxType, 1u>, ALPAKA_TYPEOF(chunkExtent)>{
-        divCeil(inputVec.getExtents(), chunkExtent),
-        chunkExtent};
+    constexpr auto chunkExtent = CVec<IdxType, 1024u>{};
+    auto numFrames = divCeil(inputVec.getExtents(), chunkExtent);
+    auto const frameSpec = onHost::FrameSpec{numFrames, chunkExtent, CVec<IdxType, 256u>{}};
 
     if(frameSpec.m_numFrames > IdxType{1})
     {

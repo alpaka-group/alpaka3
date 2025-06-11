@@ -174,7 +174,8 @@ namespace alpaka::onHost
                 {
                     internal::enqueue(
                         queue,
-                        [extents, destPtr, srcPtr]() {
+                        [extents, destPtr, srcPtr]()
+                        {
                             std::memcpy(destPtr, srcPtr, extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
                         });
                 }
@@ -222,7 +223,8 @@ namespace alpaka::onHost
                 {
                     internal::enqueue(
                         queue,
-                        [extents, destPtr, byteValue]() {
+                        [extents, destPtr, byteValue]()
+                        {
                             std::memset(
                                 destPtr,
                                 byteValue,

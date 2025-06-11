@@ -95,8 +95,7 @@ auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdScan, ScanType
     std::uniform_int_distribution<std::int32_t> dist(0, 10);
     for(IdxType i = 0u; i < extent; ++i)
     {
-        // bufHostX[i] = static_cast<Data>(dist(eng));
-        bufHostX[i] = static_cast<Data>(1);
+        bufHostX[i] = static_cast<Data>(dist(eng));
     }
 
     // Allocate device memory buffers for x and y
