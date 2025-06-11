@@ -29,6 +29,10 @@ enum ScanType
     EXCLUSIVE_SCAN
 };
 
+/* This function introduces padding to the shared memory accesses to reduce bank conflicts between threads. The
+ * template parameter is the device kind, which dictates how many memory banks are assumed. For CPU or
+ * unknown/unimplemented device kinds, infinite memory banks are assumed, i.e., no padding is used.
+ */
 template<typename TDeviceKind>
 constexpr auto conflictFreeAccess(auto const& n)
 {
@@ -44,6 +48,10 @@ constexpr auto conflictFreeAccess(auto const& n)
 
 constexpr IdxType elsPerThread = 8u;
 
+/* This kernel calculates an exclusive scan for each block indvidually. The algorithm is based on Blelloch, written up
+ * in the CUDA blog:
+ * https://developer.nvidia.com/gpugems/gpugems3/part-vi-gpu-computing/chapter-39-parallel-prefix-sum-scan-cuda
+ */
 class ExclusiveScan_ScanBlocksKernel
 {
 public:
@@ -145,8 +153,7 @@ public:
     }
 };
 
-/*
- * Add prefix sum from previous blocks (blockSums) to all elements in each block
+/* Add prefix sum from previous blocks (blockSums) to all elements in each block.
  */
 class ExclusiveScan_AddIncrementsKernel
 {
@@ -170,10 +177,12 @@ public:
     }
 };
 
+/* Vectorized B += A, used here to turn an exclusive scan reslut into an inclusive one, by adding the input to the
+ * exclusive result.
+ */
 class InclusiveScan_VectorAddKernel
 {
 public:
-    // kernel for vectorized B += A
     ALPAKA_FN_ACC auto operator()(
         auto const& acc,
         alpaka::concepts::MdSpan auto const A,
@@ -419,6 +428,9 @@ void help(char* argv[])
               << std::endl;
     std::cerr << "  -t: scanType: 0 for inclusive, 1 for exclusive scan. Default: 0 (inclusive)" << std::endl;
     std::cerr << "  -h: Print this help message" << std::endl;
+    std::cerr << std::endl;
+    std::cerr << "Example call for an exclusive scan with 256Ki elements:" << std::endl;
+    std::cerr << argv[0] << " -n 262144 -t 1" << std::endl;
 }
 
 auto main(int argc, char* argv[]) -> int
