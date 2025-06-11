@@ -48,20 +48,6 @@ constexpr auto conflictFreeAccess(auto const& n)
  */
 ALPAKA_FN_ACC Data scanMiniBlock(auto& block, concepts::CVector auto const& extent)
 {
-#if 0
-    // could also be improved with a mini (shared memory-less) version of blelloch
-    Data c = Data(0);
-    Data t;
-
-    for(auto i = 0; i < extent.x(); ++i)
-    {
-        t = c + block[i];
-        block[i] = c;
-        c = t;
-    }
-    return c;
-#else
-
     // -- UP-SWEEP / REDUCE --
     for(IdxType d = extent.x() / IdxType{2}, offset = IdxType{1}; d > 0; d >>= 1, offset <<= 1)
     {
@@ -93,7 +79,6 @@ ALPAKA_FN_ACC Data scanMiniBlock(auto& block, concepts::CVector auto const& exte
     }
 
     return blockSum;
-#endif
 }
 
 /* Do an add increment on the given miniblock, adding the given blockSum to each element.
@@ -156,7 +141,7 @@ public:
 
             auto tmp = onAcc::declareSharedMdArray<Data, uniqueId()>(
                 acc,
-                CVec<IdxType, conflictFreeAccess<DeviceType>(numThreadsPerBlock.x())>{});
+                CVec<IdxType, conflictFreeAccess<DeviceType>(numThreadsPerBlock.x() - IdxType{1}) + IdxType{1}>{});
             auto const frameOffset = chunkExtent * frameIdx;
 
             // -- COPY TO SHARED MEM --
@@ -351,7 +336,7 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
     ExclusiveScan_ScanBlocksKernel scanBlocks;
 
     // Define chunkExtent
-    constexpr auto chunkExtent = CVec<IdxType, 1024u>{};
+    constexpr auto chunkExtent = CVec<IdxType, 2048u>{};
     auto numFrames = divCeil(inputVec.getExtents(), chunkExtent);
     auto const frameSpec = onHost::FrameSpec{numFrames, chunkExtent, CVec<IdxType, 256u>{}};
 
@@ -388,9 +373,12 @@ void inclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
     InclusiveScan_VectorAddKernel kernel;
 
     // Define chunkExtent
-    constexpr auto chunkExtent = CVec<IdxType, 256u>{};
+    constexpr auto chunkExtent = CVec<IdxType, 2048u>{};
     uint32_t elementsPerWorker = getNumElemPerThread<Data>(queue);
-    auto frameSpec = onHost::FrameSpec{divExZero(inputVec.getExtents(), chunkExtent * elementsPerWorker), chunkExtent};
+    auto frameSpec = onHost::FrameSpec{
+        divExZero(inputVec.getExtents(), chunkExtent * elementsPerWorker),
+        chunkExtent,
+        CVec<IdxType, 256u>{}};
 
     queue.enqueue(exec, frameSpec, KernelBundle{kernel, inputVec, outputVec});
 }
