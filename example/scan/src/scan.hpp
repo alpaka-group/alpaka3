@@ -28,6 +28,11 @@ enum ScanType
     EXCLUSIVE_SCAN
 };
 
+constexpr IdxType operator""_idx(unsigned long long n)
+{
+    return IdxType{n};
+}
+
 /* This function introduces padding to the shared memory accesses to reduce bank conflicts between threads. The
  * template parameter is the device kind, which dictates how many memory banks are assumed. For CPU or
  * unknown/unimplemented device kinds, infinite memory banks are assumed, i.e., no padding is used.
@@ -51,7 +56,8 @@ constexpr IdxType elsPerThread = 8u;
  * in the CUDA blog:
  * https://developer.nvidia.com/gpugems/gpugems3/part-vi-gpu-computing/chapter-39-parallel-prefix-sum-scan-cuda
  */
-class ExclusiveScan_ScanBlocksKernel
+template<ScanType SCAN_TYPE>
+class Scan_ScanBlocksKernel
 {
 public:
     ALPAKA_FN_ACC void operator()(
@@ -89,16 +95,16 @@ public:
             }
 
             // -- UP-SWEEP / REDUCE --
-            for(IdxType d = frameExtent.x() / IdxType{2}, offset = IdxType{1}; d > 0; d >>= 1, offset <<= 1)
+            for(IdxType d = frameExtent.x() / 2_idx, offset = 1_idx; d > 0; d >>= 1, offset <<= 1)
             {
                 onAcc::syncBlockThreads(acc);
                 for(auto frameElem : onAcc::makeIdxMap(
                         acc,
                         onAcc::worker::threadsInBlock,
-                        IdxRange{CVec<IdxType, 0>{}, Vec<IdxType, 1>{IdxType{2} * d}, IdxType{2}}))
+                        IdxRange{CVec<IdxType, 0>{}, Vec<IdxType, 1>{2_idx * d}, 2_idx}))
                 {
-                    IdxType left = offset * (frameElem + IdxType{1}).x() - IdxType{1};
-                    IdxType right = offset * (frameElem + IdxType{2}).x() - IdxType{1};
+                    IdxType left = offset * (frameElem + 1_idx).x() - 1_idx;
+                    IdxType right = offset * (frameElem + 2_idx).x() - 1_idx;
                     left = conflictFreeAccess<DeviceType>(left);
                     right = conflictFreeAccess<DeviceType>(right);
                     tmp[right] += tmp[left];
@@ -112,24 +118,24 @@ public:
                 if constexpr(sizeof...(blockSums))
                 {
                     auto _blockSums = std::get<0>(std::make_tuple(blockSums...));
-                    _blockSums[frameIdx] = tmp[conflictFreeAccess<DeviceType>(frameExtent - IdxType{1})];
+                    _blockSums[frameIdx] = tmp[conflictFreeAccess<DeviceType>(frameExtent - 1_idx)];
                 }
 
                 // -- SET 0 --
-                tmp[conflictFreeAccess<DeviceType>(frameExtent - IdxType{1})] = 0;
+                tmp[conflictFreeAccess<DeviceType>(frameExtent - 1_idx)] = 0;
             }
 
             // -- DOWN-SWEEP --
-            for(IdxType d = 1, offset = frameExtent.x() / IdxType{2}; d < frameExtent; d <<= 1, offset >>= 1)
+            for(IdxType d = 1, offset = frameExtent.x() / 2_idx; d < frameExtent; d <<= 1, offset >>= 1)
             {
                 onAcc::syncBlockThreads(acc);
                 for(auto frameElem : onAcc::makeIdxMap(
                         acc,
                         onAcc::worker::threadsInBlock,
-                        IdxRange{CVec<IdxType, 0>{}, Vec<IdxType, 1>{IdxType{2} * d}, IdxType{2}}))
+                        IdxRange{CVec<IdxType, 0>{}, Vec<IdxType, 1>{2_idx * d}, 2_idx}))
                 {
-                    IdxType left = offset * (frameElem.x() + IdxType{1}) - IdxType{1};
-                    IdxType right = offset * (frameElem.x() + IdxType{2}) - IdxType{1};
+                    IdxType left = offset * (frameElem.x() + 1_idx) - 1_idx;
+                    IdxType right = offset * (frameElem.x() + 2_idx) - 1_idx;
                     left = conflictFreeAccess<DeviceType>(left);
                     right = conflictFreeAccess<DeviceType>(right);
                     auto t = tmp[left];
@@ -144,7 +150,11 @@ public:
             {
                 if(frameOffset + frameElem < numElements)
                 {
-                    outputVec[frameOffset + frameElem] = tmp[conflictFreeAccess<DeviceType>(frameElem)];
+                    if constexpr(SCAN_TYPE == EXCLUSIVE_SCAN)
+                        outputVec[frameOffset + frameElem] = tmp[conflictFreeAccess<DeviceType>(frameElem)];
+                    else if constexpr(SCAN_TYPE == INCLUSIVE_SCAN)
+                        outputVec[frameOffset + frameElem]
+                            = inputVec[frameOffset + frameElem] + tmp[conflictFreeAccess<DeviceType>(frameElem)];
                 }
             }
             onAcc::syncBlockThreads(acc);
@@ -154,7 +164,7 @@ public:
 
 /* Add prefix sum from previous blocks (blockSums) to all elements in each block.
  */
-class ExclusiveScan_AddIncrementsKernel
+class Scan_AddIncrementsKernel
 {
 public:
     ALPAKA_FN_ACC void operator()(
@@ -176,43 +186,21 @@ public:
     }
 };
 
-/* Vectorized B += A, used here to turn an exclusive scan reslut into an inclusive one, by adding the input to the
- * exclusive result.
- */
-class InclusiveScan_VectorAddKernel
-{
-public:
-    ALPAKA_FN_ACC auto operator()(
-        auto const& acc,
-        alpaka::concepts::MdSpan auto const A,
-        alpaka::concepts::MdSpan auto B) const -> void
-    {
-        concepts::Vector auto numElements = A.getExtents();
-
-        auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
-        simdGrid.concurrent(
-            acc,
-            numElements,
-            [&](auto const&, auto&& simdA, auto&& simdB) constexpr { simdB = simdB.load() + simdA.load(); },
-            A,
-            B);
-    }
-};
-
-void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, auto outputVec)
+template<ScanType SCAN_TYPE>
+void scan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, auto outputVec)
 {
     // Instantiate the kernel function object
-    ExclusiveScan_ScanBlocksKernel scanBlocks;
+    Scan_ScanBlocksKernel<SCAN_TYPE> scanBlocks;
 
     // Define frameExtent
     constexpr auto frameExtent = CVec<IdxType, 256u>{};
     constexpr auto const adjustedFrameExtent = frameExtent * elsPerThread;
     auto const frameSpec = onHost::FrameSpec{divCeil(inputVec.getExtents(), adjustedFrameExtent), frameExtent};
 
-    if(frameSpec.m_numFrames > IdxType{1})
+    if(frameSpec.m_numFrames > 1_idx)
     {
         // problem does not fit in 1 frame, recurse
-        ExclusiveScan_AddIncrementsKernel addIncrements;
+        Scan_AddIncrementsKernel addIncrements;
 
         // allocate block increments, one element per frame
         auto increments = onHost::alloc<Data>(devAcc, frameSpec.m_numFrames);
@@ -225,7 +213,8 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
 
         // enqueue the kernel execution tasks
         queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec, increments});
-        exclusiveScan(exec, devAcc, queue, increments, blockSums);
+        // always recurse into exclusive scan
+        scan<EXCLUSIVE_SCAN>(exec, devAcc, queue, increments, blockSums);
         queue.enqueue(exec, addIncrementsFrameSpec, KernelBundle{addIncrements, blockSums, outputVec});
 
         // need to wait here until the previous call is done before we can destruct the buffers for
@@ -237,19 +226,4 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
         // problem fits within 1 frame
         queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec});
     }
-}
-
-void inclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, auto outputVec)
-{
-    exclusiveScan(exec, devAcc, queue, inputVec, outputVec);
-
-    // instantiate the kernel function object
-    InclusiveScan_VectorAddKernel kernel;
-
-    // Define frameExtent
-    constexpr auto frameExtent = CVec<IdxType, 256u>{};
-    uint32_t elementsPerWorker = getNumElemPerThread<Data>(queue);
-    auto frameSpec = onHost::FrameSpec{divExZero(inputVec.getExtents(), frameExtent * elementsPerWorker), frameExtent};
-
-    queue.enqueue(exec, frameSpec, KernelBundle{kernel, inputVec, outputVec});
 }

@@ -142,10 +142,10 @@ auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdScan, ScanType
         switch(scanType)
         {
         case EXCLUSIVE_SCAN:
-            exclusiveScan(exec, devAcc, queue, bufAccX, bufAccY);
+            scan<EXCLUSIVE_SCAN>(exec, devAcc, queue, bufAccX, bufAccY);
             break;
         case INCLUSIVE_SCAN:
-            inclusiveScan(exec, devAcc, queue, bufAccX, bufAccY);
+            scan<INCLUSIVE_SCAN>(exec, devAcc, queue, bufAccX, bufAccY);
             break;
         }
 
