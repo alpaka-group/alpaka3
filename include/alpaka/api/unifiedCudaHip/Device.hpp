@@ -218,7 +218,7 @@ namespace alpaka::onHost
             typename T_KernelBundle>
         struct AdjustThreadSpec::Op<unifiedCudaHip::Device<T_Platform>, T_Mapping, T_FrameSpec, T_KernelBundle>
         {
-            using T_NumThreads = alpaka::internal::nth_template_arg<1, T_FrameSpec>::type;
+            using T_NumThreads = T_FrameSpec::NumThreadsVecType;
 
             auto operator()(
                 unifiedCudaHip::Device<T_Platform> const& device,

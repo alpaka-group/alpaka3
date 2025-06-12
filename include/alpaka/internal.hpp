@@ -74,18 +74,5 @@ namespace alpaka
             return GetDeviceType::Op<std::decay_t<decltype(any)>>{}(any);
         }
 
-        // helper structure for HasNthTemplateArgument
-        template<std::size_t N, typename T>
-        struct nth_template_arg;
-
-        template<std::size_t N, template<typename...> class Template, typename... Args>
-        struct nth_template_arg<N, Template<Args...>>
-        {
-            using type = typename std::tuple_element<N, std::tuple<Args...>>::type;
-        };
-
-        template<std::size_t N, typename T, typename X>
-        concept HasNthTemplateArgument = std::same_as<typename nth_template_arg<N, T>::type, X>;
-
     } // namespace internal
 } // namespace alpaka
