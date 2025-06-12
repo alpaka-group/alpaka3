@@ -202,14 +202,13 @@ namespace alpaka::onHost
             template<
                 typename T_Executor,
                 typename T_Device,
-                typename T_NumBlocks,
-                typename T_NumThreads,
+                alpaka::concepts::ThreadSpec T_ThreadSpec,
                 typename T_KernelBundle,
                 typename... T_Args>
             void operator()(
                 T_Executor const executor,
                 unifiedCudaHip::Queue<T_Device>& queue,
-                ThreadSpec<T_NumBlocks, T_NumThreads> const& threadSpec,
+                T_ThreadSpec const& threadSpec,
                 T_KernelBundle const& kernelBundle,
                 T_Args const&... args) const
             {
@@ -218,6 +217,7 @@ namespace alpaka::onHost
                     ApiInterface,
                     ApiInterface::setDevice(onHost::getNativeHandle(queue.m_device)));
 
+                using T_NumBlocks = T_ThreadSpec::NumBlocksVecType;
                 constexpr uint32_t dim = T_NumBlocks::dim();
                 // dimension of the cuda/hip layer
                 constexpr uint32_t layerDim = dim >= 4u ? 1u : dim;
@@ -287,16 +287,14 @@ namespace alpaka::onHost
         template<
             typename T_Device,
             alpaka::concepts::UnifiedCudaHipExecutor T_Executor,
-            typename T_NumBlocks,
-            typename T_NumThreads,
+            alpaka::concepts::ThreadSpec T_ThreadSpec,
             typename T_KernelBundle>
-        struct Enqueue::
-            Kernel<unifiedCudaHip::Queue<T_Device>, T_Executor, ThreadSpec<T_NumBlocks, T_NumThreads>, T_KernelBundle>
+        struct Enqueue::Kernel<unifiedCudaHip::Queue<T_Device>, T_Executor, T_ThreadSpec, T_KernelBundle>
         {
             void operator()(
                 unifiedCudaHip::Queue<T_Device>& queue,
                 T_Executor const executor,
-                ThreadSpec<T_NumBlocks, T_NumThreads> const& threadBlocking,
+                T_ThreadSpec const& threadBlocking,
                 T_KernelBundle const& kernelBundle) const
             {
                 unifiedCudaHip::CallKernel{}(executor, queue, threadBlocking, kernelBundle);

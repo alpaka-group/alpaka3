@@ -25,12 +25,10 @@ namespace alpaka::onHost
 {
     namespace cpu
     {
-        template<typename T_NumBlocks, typename T_NumThreads>
+        template<alpaka::concepts::ThreadSpec T_ThreadSpec>
         struct OmpThreads
         {
-            using ThreadSpecType = ThreadSpec<T_NumBlocks, T_NumThreads>;
-
-            constexpr OmpThreads(ThreadSpecType threadBlocking) : m_threadBlocking{std::move(threadBlocking)}
+            constexpr OmpThreads(T_ThreadSpec threadBlocking) : m_threadBlocking{std::move(threadBlocking)}
             {
             }
 
@@ -69,7 +67,7 @@ namespace alpaka::onHost
                          * static assert if the kernel tries to access dynamic shared memory */
                         auto additionalDict = conditionalAppendDict<trait::HasUserDefinedDynSharedMemBytes<
                             exec::CpuOmpBlocksAndThreads,
-                            ThreadSpecType,
+                            T_ThreadSpec,
                             ALPAKA_TYPEOF(kernelBundle)>::value>(
                             dict,
                             Dict{blockDynSharedMemEntry, blockDynSharedMemBytesEntry});
@@ -84,7 +82,7 @@ namespace alpaka::onHost
                         auto const blockSharedMemEntry = DictEntry{layer::shared, std::ref(blockSharedMem)};
                         auto const blockSyncEntry = DictEntry{action::threadBlockSync, onAcc::cpu::OmpSync{}};
 
-                        using NumThreadsVecType = typename ThreadSpecType::NumThreadsVecType::UniVec;
+                        using NumThreadsVecType = typename T_ThreadSpec::NumThreadsVecType::UniVec;
                         using ThreadIdxType = typename NumThreadsVecType::type;
 #    pragma omp for
                         for(ThreadIdxType i = 0; i < blockCountND.product(); ++i)
@@ -113,7 +111,7 @@ namespace alpaka::onHost
                 }
             }
 
-            ThreadSpecType m_threadBlocking;
+            T_ThreadSpec m_threadBlocking;
         };
     } // namespace cpu
 

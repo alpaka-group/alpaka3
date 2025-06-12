@@ -21,13 +21,12 @@ namespace alpaka::onHost
 {
     namespace cpu
     {
-        template<typename T_NumBlocks, typename T_NumThreads>
+        template<alpaka::concepts::ThreadSpec T_ThreadSpec>
         struct Serial
         {
-            using ThreadSpecType = ThreadSpec<T_NumBlocks, T_NumThreads>;
-            using NumThreadsVecType = typename ThreadSpecType::NumThreadsVecType;
+            using NumThreadsVecType = typename T_ThreadSpec::NumThreadsVecType;
 
-            constexpr Serial(ThreadSpecType threadBlocking) : m_threadBlocking{std::move(threadBlocking)}
+            constexpr Serial(T_ThreadSpec threadBlocking) : m_threadBlocking{std::move(threadBlocking)}
             {
             }
 
@@ -60,7 +59,7 @@ namespace alpaka::onHost
                  * assert if the kernel tries to access dynamic shared memory */
                 auto additionalDict = conditionalAppendDict<trait::HasUserDefinedDynSharedMemBytes<
                     exec::CpuSerial,
-                    ThreadSpecType,
+                    T_ThreadSpec,
                     ALPAKA_TYPEOF(kernelBundle)>::value>(
                     dict,
                     Dict{blockDynSharedMemEntry, blockDynSharedMemBytesEntry});
@@ -78,7 +77,7 @@ namespace alpaka::onHost
                     });
             }
 
-            ThreadSpecType m_threadBlocking;
+            T_ThreadSpec m_threadBlocking;
         };
     } // namespace cpu
 

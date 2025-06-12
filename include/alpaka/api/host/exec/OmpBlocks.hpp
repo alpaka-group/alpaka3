@@ -25,12 +25,10 @@ namespace alpaka::onHost
 {
     namespace cpu
     {
-        template<typename T_NumBlocks, typename T_NumThreads>
+        template<alpaka::concepts::ThreadSpec T_ThreadSpec>
         struct OmpBlocks
         {
-            using ThreadSpecType = ThreadSpec<T_NumBlocks, T_NumThreads>;
-
-            constexpr OmpBlocks(ThreadSpecType threadBlocking) : m_threadBlocking{std::move(threadBlocking)}
+            constexpr OmpBlocks(T_ThreadSpec threadBlocking) : m_threadBlocking{std::move(threadBlocking)}
             {
             }
 
@@ -41,7 +39,7 @@ namespace alpaka::onHost
 
             void operator()(auto const& kernelBundle, auto const& dict) const
             {
-                using NumThreadsVecType = typename ThreadSpecType::NumThreadsVecType;
+                using NumThreadsVecType = typename T_ThreadSpec::NumThreadsVecType;
 
                 if(m_threadBlocking.m_numThreads.product() != 1u)
                     throw std::runtime_error("Thread block extent must be 1.");
@@ -62,7 +60,7 @@ namespace alpaka::onHost
                      * assert if the kernel tries to access dynamic shared memory */
                     auto additionalDict = conditionalAppendDict<trait::HasUserDefinedDynSharedMemBytes<
                         exec::CpuOmpBlocks,
-                        ThreadSpecType,
+                        T_ThreadSpec,
                         ALPAKA_TYPEOF(kernelBundle)>::value>(
                         dict,
                         Dict{blockDynSharedMemEntry, blockDynSharedMemBytesEntry});
@@ -91,7 +89,7 @@ namespace alpaka::onHost
                 }
             }
 
-            ThreadSpecType m_threadBlocking;
+            T_ThreadSpec m_threadBlocking;
         };
     } // namespace cpu
 

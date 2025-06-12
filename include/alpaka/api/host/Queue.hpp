@@ -80,10 +80,9 @@ namespace alpaka::onHost
 
             friend struct internal::Enqueue;
 
-            template<alpaka::concepts::Vector T_NumBlocks, alpaka::concepts::Vector T_NumThreads>
             void enqueue(
                 auto const executor,
-                ThreadSpec<T_NumBlocks, T_NumThreads> const& threadBlocking,
+                alpaka::concepts::ThreadSpec auto const& threadBlocking,
                 auto const& kernelBundle)
             {
                 m_workerThread.submit(

@@ -22,18 +22,18 @@ namespace alpaka::onAcc
 {
     namespace syclGeneric
     {
-        template<auto T_syclDim, typename T_OptimzedThreadSpec>
+        template<auto T_syclDim, typename T_OptimizedThreadSpec>
         class BlockLayer
         {
-            using IdxType = typename T_OptimzedThreadSpec::NumBlocksVecType::type;
+            using IdxType = typename T_OptimizedThreadSpec::NumBlocksVecType::type;
 
             sycl::nd_item<T_syclDim> const& m_item;
-            T_OptimzedThreadSpec const& m_optimizedThreadSpec;
+            T_OptimizedThreadSpec const& m_optimizedThreadSpec;
             // dimension of the alpaka objects
-            static constexpr uint32_t dim = T_OptimzedThreadSpec::dim();
+            static constexpr uint32_t dim = T_OptimizedThreadSpec::dim();
 
         public:
-            BlockLayer(sycl::nd_item<T_syclDim> const& item, T_OptimzedThreadSpec const& optimizedThreadSpec)
+            BlockLayer(sycl::nd_item<T_syclDim> const& item, T_OptimizedThreadSpec const& optimizedThreadSpec)
                 : m_item(item)
                 , m_optimizedThreadSpec(optimizedThreadSpec)
             {
@@ -83,18 +83,18 @@ namespace alpaka::onAcc
             }
         };
 
-        template<auto T_syclDim, typename T_OptimzedThreadSpec>
+        template<auto T_syclDim, typename T_OptimizedThreadSpec>
         class ThreadLayer
         {
-            using IdxType = typename T_OptimzedThreadSpec::NumThreadsVecType::type;
+            using IdxType = typename T_OptimizedThreadSpec::NumThreadsVecType::type;
 
             sycl::nd_item<T_syclDim> const& m_item;
-            T_OptimzedThreadSpec const& m_optimizedThreadSpec;
+            T_OptimizedThreadSpec const& m_optimizedThreadSpec;
             // dimension of the alpaka objects
-            static constexpr uint32_t dim = T_OptimzedThreadSpec::dim();
+            static constexpr uint32_t dim = T_OptimizedThreadSpec::dim();
 
         public:
-            ThreadLayer(sycl::nd_item<T_syclDim> const& item, T_OptimzedThreadSpec const& optimizedThreadSpec)
+            ThreadLayer(sycl::nd_item<T_syclDim> const& item, T_OptimizedThreadSpec const& optimizedThreadSpec)
                 : m_item(item)
                 , m_optimizedThreadSpec(optimizedThreadSpec)
             {
@@ -144,9 +144,9 @@ namespace alpaka::onAcc
             }
 
             constexpr auto count() const
-                requires alpaka::concepts::CVector<typename T_OptimzedThreadSpec::NumThreadsVecType>
+                requires alpaka::concepts::CVector<typename T_OptimizedThreadSpec::NumThreadsVecType>
             {
-                return typename T_OptimzedThreadSpec::NumThreadsVecType{};
+                return typename T_OptimizedThreadSpec::NumThreadsVecType{};
             }
         };
 

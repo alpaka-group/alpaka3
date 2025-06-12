@@ -14,14 +14,14 @@ namespace alpaka::onAcc
 {
     namespace unifiedCudaHip
     {
-        template<typename T_OptimzedThreadSpec>
+        template<typename T_OptimizedThreadSpec>
         struct BlockLayer
         {
-            T_OptimzedThreadSpec const& m_optimizedThreadSpec;
-            static constexpr uint32_t dim = T_OptimzedThreadSpec::dim();
-            using IdxType = typename T_OptimzedThreadSpec::NumBlocksVecType::type;
+            T_OptimizedThreadSpec const& m_optimizedThreadSpec;
+            static constexpr uint32_t dim = T_OptimizedThreadSpec::dim();
+            using IdxType = typename T_OptimizedThreadSpec::NumBlocksVecType::type;
 
-            constexpr BlockLayer(T_OptimzedThreadSpec const& optimizedThreadSpec)
+            constexpr BlockLayer(T_OptimizedThreadSpec const& optimizedThreadSpec)
                 : m_optimizedThreadSpec(optimizedThreadSpec)
             {
             }
@@ -51,14 +51,14 @@ namespace alpaka::onAcc
             }
         };
 
-        template<typename T_OptimzedThreadSpec>
+        template<typename T_OptimizedThreadSpec>
         struct ThreadLayer
         {
-            T_OptimzedThreadSpec const& m_optimizedThreadSpec;
-            static constexpr uint32_t dim = T_OptimzedThreadSpec::dim();
-            using IdxType = typename T_OptimzedThreadSpec::NumThreadsVecType::type;
+            T_OptimizedThreadSpec const& m_optimizedThreadSpec;
+            static constexpr uint32_t dim = T_OptimizedThreadSpec::dim();
+            using IdxType = typename T_OptimizedThreadSpec::NumThreadsVecType::type;
 
-            constexpr ThreadLayer(T_OptimzedThreadSpec const& optimizedThreadSpec)
+            constexpr ThreadLayer(T_OptimizedThreadSpec const& optimizedThreadSpec)
                 : m_optimizedThreadSpec(optimizedThreadSpec)
             {
             }
@@ -88,9 +88,9 @@ namespace alpaka::onAcc
             }
 
             constexpr auto count() const
-                requires alpaka::concepts::CVector<typename T_OptimzedThreadSpec::NumThreadsVecType>
+                requires alpaka::concepts::CVector<typename T_OptimizedThreadSpec::NumThreadsVecType>
             {
-                return typename T_OptimzedThreadSpec::NumThreadsVecType{};
+                return typename T_OptimizedThreadSpec::NumThreadsVecType{};
             }
         };
     } // namespace unifiedCudaHip
