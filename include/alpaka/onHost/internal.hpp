@@ -160,17 +160,22 @@ namespace alpaka::onHost
             };
         };
 
-        template<typename T_NumBlocks, typename T_NumThreads, typename TKernelFn, typename... TArgs>
+        template<
+            typename T_NumBlocks,
+            typename T_NumThreads,
+            typename T_ThreadExtents,
+            typename TKernelFn,
+            typename... TArgs>
         static auto adjustThreadSpec(
             auto const& device,
             auto const& executor,
-            FrameSpec<T_NumBlocks, T_NumThreads> const& dataBlocking,
+            FrameSpec<T_NumBlocks, T_NumThreads, T_ThreadExtents> const& dataBlocking,
             KernelBundle<TKernelFn, TArgs...> const& kernelBundle)
         {
             return AdjustThreadSpec::Op<
                 ALPAKA_TYPEOF(device),
                 ALPAKA_TYPEOF(executor),
-                FrameSpec<T_NumBlocks, T_NumThreads>,
+                FrameSpec<T_NumBlocks, T_NumThreads, T_ThreadExtents>,
                 KernelBundle<TKernelFn, TArgs...>>{}(device, executor, dataBlocking, kernelBundle);
         }
 

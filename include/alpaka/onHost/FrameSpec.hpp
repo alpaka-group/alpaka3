@@ -14,28 +14,31 @@
 
 namespace alpaka::onHost
 {
-    template<alpaka::concepts::Vector T_NumFrames, alpaka::concepts::Vector T_FrameExtent>
+    template<
+        alpaka::concepts::Vector T_NumFrames,
+        alpaka::concepts::Vector T_FrameExtents,
+        alpaka::concepts::Vector T_ThreadExtents>
     struct FrameSpec
     {
         using type = typename T_NumFrames::type;
 
         consteval uint32_t dim() const
         {
-            return T_FrameExtent::dim();
+            return T_FrameExtents::dim();
         }
 
         T_NumFrames m_numFrames;
-        T_FrameExtent m_frameExtent;
-        ThreadSpec<T_NumFrames, T_FrameExtent> m_threadSpec;
+        T_FrameExtents m_frameExtent;
+        ThreadSpec<T_NumFrames, T_ThreadExtents> m_threadSpec;
 
-        FrameSpec(T_NumFrames const& numFrames, T_FrameExtent const& frameExtent)
+        FrameSpec(T_NumFrames const& numFrames, T_FrameExtents const& frameExtent)
             : m_numFrames(numFrames)
             , m_frameExtent(frameExtent)
             , m_threadSpec(numFrames, frameExtent)
         {
         }
 
-        FrameSpec(T_NumFrames const& numFrames, T_FrameExtent const& frameExtent, T_FrameExtent const& numThreads)
+        FrameSpec(T_NumFrames const& numFrames, T_FrameExtents const& frameExtent, T_ThreadExtents const& numThreads)
             : m_numFrames(numFrames)
             , m_frameExtent(frameExtent)
             , m_threadSpec(numFrames, numThreads)
@@ -44,9 +47,9 @@ namespace alpaka::onHost
 
         FrameSpec(
             T_NumFrames const& numFrames,
-            T_FrameExtent const& frameExtent,
+            T_FrameExtents const& frameExtent,
             T_NumFrames numBlocks,
-            T_FrameExtent const& numThreads)
+            T_FrameExtents const& numThreads)
             : m_numFrames(numFrames)
             , m_frameExtent(frameExtent)
             , m_threadSpec(numBlocks, numThreads)
@@ -59,20 +62,26 @@ namespace alpaka::onHost
         }
     };
 
-    template<concepts::VectorOrScalar T_NumFrames, concepts::VectorOrScalar T_FrameExtent>
-    FrameSpec(T_NumFrames const&, T_FrameExtent const&)
-        -> FrameSpec<trait::getVec_t<T_NumFrames>, trait::getVec_t<T_FrameExtent>>;
+    template<concepts::VectorOrScalar T_NumFrames, concepts::VectorOrScalar T_FrameExtents>
+    FrameSpec(T_NumFrames const&, T_FrameExtents const&)
+        -> FrameSpec<trait::getVec_t<T_NumFrames>, trait::getVec_t<T_FrameExtents>, trait::getVec_t<T_FrameExtents>>;
 
-    template<concepts::VectorOrScalar T_NumFrames, concepts::VectorOrScalar T_FrameExtent>
-    FrameSpec(T_NumFrames const&, T_FrameExtent const&, T_FrameExtent const&)
-        -> FrameSpec<trait::getVec_t<T_NumFrames>, trait::getVec_t<T_FrameExtent>>;
+    template<
+        concepts::VectorOrScalar T_NumFrames,
+        concepts::VectorOrScalar T_FrameExtents,
+        concepts::VectorOrScalar T_ThreadExtents>
+    FrameSpec(T_NumFrames const&, T_FrameExtents const&, T_ThreadExtents const&)
+        -> FrameSpec<trait::getVec_t<T_NumFrames>, trait::getVec_t<T_FrameExtents>, trait::getVec_t<T_ThreadExtents>>;
 
-    template<concepts::VectorOrScalar T_NumFrames, concepts::VectorOrScalar T_FrameExtent>
-    FrameSpec(T_NumFrames const&, T_FrameExtent const&, T_NumFrames const&, T_FrameExtent const&)
-        -> FrameSpec<trait::getVec_t<T_NumFrames>, trait::getVec_t<T_FrameExtent>>;
+    template<concepts::VectorOrScalar T_NumFrames, concepts::VectorOrScalar T_FrameExtents>
+    FrameSpec(T_NumFrames const&, T_FrameExtents const&, T_NumFrames const&, T_FrameExtents const&)
+        -> FrameSpec<trait::getVec_t<T_NumFrames>, trait::getVec_t<T_FrameExtents>, trait::getVec_t<T_FrameExtents>>;
 
-    template<alpaka::concepts::Vector T_NumFrames, alpaka::concepts::Vector T_FrameExtent>
-    std::ostream& operator<<(std::ostream& s, FrameSpec<T_NumFrames, T_FrameExtent> const& d)
+    template<
+        alpaka::concepts::Vector T_NumFrames,
+        alpaka::concepts::Vector T_FrameExtents,
+        alpaka::concepts::Vector T_ThreadExtents>
+    std::ostream& operator<<(std::ostream& s, FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents> const& d)
     {
         return s << "frames=" << d.m_numFrames << " frameExtent=" << d.m_frameExtent;
     }

@@ -202,17 +202,17 @@ namespace alpaka
     };
 
     /** build C array type with compile time extents from a scalar value based on the compile time extents vector */
-    template<typename T, concepts::CVector T_Extent, uint32_t T_numDims = T_Extent::dim(), uint32_t T_dim = 0u>
+    template<typename T, concepts::CVector T_Extents, uint32_t T_numDims = T_Extents::dim(), uint32_t T_dim = 0u>
     struct CArrayType
     {
         using type =
-            typename CArrayType<T[T_Extent{}[T_numDims - T_dim - 1u]], T_Extent, T_numDims - 1u, T_dim + 1u>::type;
+            typename CArrayType<T[T_Extents{}[T_numDims - T_dim - 1u]], T_Extents, T_numDims - 1u, T_dim + 1u>::type;
     };
 
-    template<typename T, concepts::CVector T_Extent, uint32_t T_dim>
-    struct CArrayType<T, T_Extent, 1u, T_dim>
+    template<typename T, concepts::CVector T_Extents, uint32_t T_dim>
+    struct CArrayType<T, T_Extents, 1u, T_dim>
     {
-        using type = T[T_Extent{}[0u]];
+        using type = T[T_Extents{}[0u]];
     };
 
     template<typename T_ArrayType, concepts::Alignment T_MemAlignment = Alignment<>>

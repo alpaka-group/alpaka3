@@ -120,8 +120,8 @@ namespace alpaka
 
     } // namespace internal
 
-    template<concepts::VectorOrScalar T_Extent>
-    ALPAKA_FN_HOST_ACC IdxRange(T_Extent const&) -> IdxRange<typename trait::getVec_t<T_Extent>::UniVec>;
+    template<concepts::VectorOrScalar T_Extents>
+    ALPAKA_FN_HOST_ACC IdxRange(T_Extents const&) -> IdxRange<typename trait::getVec_t<T_Extents>::UniVec>;
 
     template<concepts::VectorOrScalar T_Begin, concepts::VectorOrScalar T_End>
     ALPAKA_FN_HOST_ACC IdxRange(T_Begin const&, T_End const&) -> IdxRange<
