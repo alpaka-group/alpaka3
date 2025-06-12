@@ -50,15 +50,18 @@ TEST_CASE("vector concepts", "[concepts][vector]")
     testVector<std::int64_t>();
 }
 
-void testFrameSpec()
+TEST_CASE("frame spec concepts", "[concepts][framespec]")
 {
     using namespace alpaka::onHost;
+
     using TestVec1 = Vec<std::size_t, 1>;
     using TestVec2 = Vec<std::size_t, 2>;
-    STATIC_CHECK(alpaka::concepts::FrameSpec<FrameSpec<TestVec1, TestVec1, TestVec1>>);
-    STATIC_CHECK(alpaka::concepts::FrameSpec<FrameSpec<TestVec1, TestVec1, TestVec1>, TestVec1>);
-    STATIC_CHECK(alpaka::concepts::FrameSpec<FrameSpec<TestVec1, TestVec1, TestVec1>, TestVec1, TestVec1>);
-    STATIC_CHECK(alpaka::concepts::FrameSpec<FrameSpec<TestVec1, TestVec1, TestVec1>, TestVec1, TestVec1, TestVec1>);
+    using TestVec3 = Vec<std::size_t, 3>;
+
+    STATIC_CHECK(alpaka::concepts::FrameSpec<FrameSpec<TestVec1, TestVec2, TestVec3>>);
+    STATIC_CHECK(alpaka::concepts::FrameSpec<FrameSpec<TestVec1, TestVec2, TestVec3>, TestVec1>);
+    STATIC_CHECK(alpaka::concepts::FrameSpec<FrameSpec<TestVec1, TestVec2, TestVec3>, TestVec1, TestVec2>);
+    STATIC_CHECK(alpaka::concepts::FrameSpec<FrameSpec<TestVec1, TestVec2, TestVec3>, TestVec1, TestVec2, TestVec3>);
 
     STATIC_CHECK_FALSE(
         alpaka::concepts::FrameSpec<FrameSpec<TestVec2, TestVec1, TestVec1>, TestVec1, TestVec1, TestVec1>);
@@ -68,7 +71,17 @@ void testFrameSpec()
         alpaka::concepts::FrameSpec<FrameSpec<TestVec1, TestVec1, TestVec2>, TestVec1, TestVec1, TestVec1>);
 }
 
-TEST_CASE("frame spec concepts", "[concepts][framespec]")
+TEST_CASE("thread spec concepts", "[concepts][threadspec]")
 {
-    testFrameSpec();
+    using namespace alpaka::onHost;
+
+    using TestVec1 = Vec<std::size_t, 1>;
+    using TestVec2 = Vec<std::size_t, 2>;
+
+    STATIC_CHECK(alpaka::concepts::ThreadSpec<ThreadSpec<TestVec1, TestVec2>>);
+    STATIC_CHECK(alpaka::concepts::ThreadSpec<ThreadSpec<TestVec1, TestVec2>, TestVec1>);
+    STATIC_CHECK(alpaka::concepts::ThreadSpec<ThreadSpec<TestVec1, TestVec2>, TestVec1, TestVec2>);
+
+    STATIC_CHECK_FALSE(alpaka::concepts::ThreadSpec<ThreadSpec<TestVec2, TestVec1>, TestVec1, TestVec1>);
+    STATIC_CHECK_FALSE(alpaka::concepts::ThreadSpec<ThreadSpec<TestVec1, TestVec2>, TestVec1, TestVec1>);
 }
