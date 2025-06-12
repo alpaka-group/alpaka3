@@ -120,7 +120,8 @@ ALPAKA_FN_ACC void addIncrements(Data* block, Data const& blockSum, concepts::CV
  * improvement from Lichterman, written up in the CUDA blog (see 39.2.5):
  * https://developer.nvidia.com/gpugems/gpugems3/part-vi-gpu-computing/chapter-39-parallel-prefix-sum-scan-cuda
  */
-class ExclusiveScan_ScanBlocksKernel
+template<ScanType SCAN_TYPE>
+class Scan_ScanBlocksKernel
 {
 public:
     ALPAKA_FN_ACC void operator()(
@@ -154,7 +155,7 @@ public:
         std::cout << "miniBlocksPerThread: " << miniBlocksPerThread << std::endl;
 #endif
 
-        const auto validElementsInLastFrame = (numElements - 1_idx) % chunkExtent + 1_idx;
+        auto const validElementsInLastFrame = (numElements - 1_idx) % chunkExtent + 1_idx;
 
         /* This kernel is called with 1-dimensional frame extents.
          *
@@ -310,8 +311,17 @@ public:
                             Alignment<16>{},
                             CVec<IdxType, 4>{}};
                         auto regView = SimdPtr{regMemMd, Vec{i}, Alignment<16>{}, CVec<IdxType, 4>{}};
-
-                        outputVecView = regView.load();
+                        if constexpr(SCAN_TYPE == EXCLUSIVE_SCAN)
+                            outputVecView = regView.load();
+                        else if constexpr(SCAN_TYPE == INCLUSIVE_SCAN)
+                        {
+                            auto inputVecView = SimdPtr{
+                                inputVec,
+                                Vec{frameOffset + frameElem + i},
+                                Alignment<16>{},
+                                CVec<IdxType, 4>{}};
+                            outputVecView = inputVecView.load() + regView.load();
+                        }
                     }
                 }
             }
@@ -322,7 +332,7 @@ public:
 
 /* Add prefix sum from previous blocks (blockSums) to all elements in each block.
  */
-class ExclusiveScan_AddIncrementsKernel
+class Scan_AddIncrementsKernel
 {
 public:
     ALPAKA_FN_ACC void operator()(
@@ -346,33 +356,11 @@ public:
     }
 };
 
-/* Vectorized B += A, used here to turn an exclusive scan reslut into an inclusive one, by adding the input to the
- * exclusive result.
- */
-class InclusiveScan_VectorAddKernel
+template<ScanType SCAN_TYPE>
+void scan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, auto outputVec)
 {
-public:
-    ALPAKA_FN_ACC auto operator()(
-        auto const& acc,
-        alpaka::concepts::MdSpan auto const A,
-        alpaka::concepts::MdSpan auto B) const -> void
-    {
-        concepts::Vector auto numElements = A.getExtents();
-
-        auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
-        simdGrid.concurrent(
-            acc,
-            numElements,
-            [&](auto const&, auto&& simdA, auto&& simdB) constexpr { simdB = simdB.load() + simdA.load(); },
-            A,
-            B);
-    }
-};
-
-void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, auto outputVec)
-{
-    // Instantiate the kernel function object
-    ExclusiveScan_ScanBlocksKernel scanBlocks;
+    // Instantiate the kernel function object with the given scan type
+    Scan_ScanBlocksKernel<SCAN_TYPE> scanBlocks;
 
     // Define chunkExtent
     constexpr auto chunkExtent = CVec<IdxType, 2048u>{};
@@ -382,7 +370,7 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
     if(frameSpec.m_numFrames > 1_idx)
     {
         // problem does not fit in 1 frame, recurse
-        ExclusiveScan_AddIncrementsKernel addIncrements;
+        Scan_AddIncrementsKernel addIncrements;
 
         // allocate block increments, one element per frame
         auto increments = onHost::alloc<Data>(devAcc, frameSpec.m_numFrames);
@@ -390,7 +378,9 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
 
         // enqueue the kernel execution tasks
         queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec, increments});
-        exclusiveScan(exec, devAcc, queue, increments, blockSums);
+
+        // always recurse into exclusive scan
+        scan<EXCLUSIVE_SCAN>(exec, devAcc, queue, increments, blockSums);
         queue.enqueue(exec, frameSpec, KernelBundle{addIncrements, blockSums, outputVec});
 
         // need to wait here until the previous call is done before we can destruct the buffers for
@@ -402,22 +392,4 @@ void exclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, 
         // problem fits within 1 frame
         queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec});
     }
-}
-
-void inclusiveScan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, auto outputVec)
-{
-    exclusiveScan(exec, devAcc, queue, inputVec, outputVec);
-
-    // instantiate the kernel function object
-    InclusiveScan_VectorAddKernel kernel;
-
-    // Define chunkExtent
-    constexpr auto chunkExtent = CVec<IdxType, 2048u>{};
-    uint32_t elementsPerWorker = getNumElemPerThread<Data>(queue);
-    auto frameSpec = onHost::FrameSpec{
-        divExZero(inputVec.getExtents(), chunkExtent * elementsPerWorker),
-        chunkExtent,
-        CVec<IdxType, 256u>{}};
-
-    queue.enqueue(exec, frameSpec, KernelBundle{kernel, inputVec, outputVec});
 }
