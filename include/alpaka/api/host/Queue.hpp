@@ -94,14 +94,10 @@ namespace alpaka::onHost
                     });
             }
 
-            template<
-                typename T_Mapping,
-                alpaka::concepts::Vector T_NumFrames,
-                alpaka::concepts::Vector T_FrameExtents,
-                alpaka::concepts::Vector T_ThreadExtents>
+            template<typename T_Mapping>
             void enqueue(
                 T_Mapping const executor,
-                FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents> frameSpec,
+                alpaka::concepts::FrameSpec auto const& frameSpec,
                 auto const& kernelBundle)
             {
                 auto threadBlocking = internal::adjustThreadSpec(*m_device.get(), executor, frameSpec, kernelBundle);

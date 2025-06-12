@@ -242,19 +242,13 @@ namespace alpaka::onHost::internal
         }
     };
 
-    template<
-        typename T_Device,
-        typename T_Executor,
-        alpaka::concepts::Vector T_NumFrames,
-        alpaka::concepts::Vector T_FrameExtents,
-        typename T_KernelBundle>
-    struct Enqueue::
-        Kernel<syclGeneric::Queue<T_Device>, T_Executor, FrameSpec<T_NumFrames, T_FrameExtents>, T_KernelBundle>
+    template<typename T_Device, typename T_Executor, alpaka::concepts::FrameSpec T_FrameSpec, typename T_KernelBundle>
+    struct Enqueue::Kernel<syclGeneric::Queue<T_Device>, T_Executor, T_FrameSpec, T_KernelBundle>
     {
         void operator()(
             syclGeneric::Queue<T_Device>& queue,
             T_Executor const executor,
-            FrameSpec<T_NumFrames, T_FrameExtents> const& frameSpec,
+            T_FrameSpec const& frameSpec,
             T_KernelBundle const& kernelBundle) const
         {
             auto const threadBlocking

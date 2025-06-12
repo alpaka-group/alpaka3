@@ -62,26 +62,78 @@ namespace alpaka::onHost
         }
     };
 
-    template<concepts::VectorOrScalar T_NumFrames, concepts::VectorOrScalar T_FrameExtents>
-    FrameSpec(T_NumFrames const&, T_FrameExtents const&)
-        -> FrameSpec<trait::getVec_t<T_NumFrames>, trait::getVec_t<T_FrameExtents>, trait::getVec_t<T_FrameExtents>>;
+    template<alpaka::concepts::VectorOrScalar T_NumFrames, alpaka::concepts::VectorOrScalar T_FrameExtents>
+    FrameSpec(T_NumFrames const&, T_FrameExtents const&) -> FrameSpec<
+        alpaka::trait::getVec_t<T_NumFrames>,
+        alpaka::trait::getVec_t<T_FrameExtents>,
+        alpaka::trait::getVec_t<T_FrameExtents>>;
 
     template<
-        concepts::VectorOrScalar T_NumFrames,
-        concepts::VectorOrScalar T_FrameExtents,
-        concepts::VectorOrScalar T_ThreadExtents>
-    FrameSpec(T_NumFrames const&, T_FrameExtents const&, T_ThreadExtents const&)
-        -> FrameSpec<trait::getVec_t<T_NumFrames>, trait::getVec_t<T_FrameExtents>, trait::getVec_t<T_ThreadExtents>>;
+        alpaka::concepts::VectorOrScalar T_NumFrames,
+        alpaka::concepts::VectorOrScalar T_FrameExtents,
+        alpaka::concepts::VectorOrScalar T_ThreadExtents>
+    FrameSpec(T_NumFrames const&, T_FrameExtents const&, T_ThreadExtents const&) -> FrameSpec<
+        alpaka::trait::getVec_t<T_NumFrames>,
+        alpaka::trait::getVec_t<T_FrameExtents>,
+        alpaka::trait::getVec_t<T_ThreadExtents>>;
 
-    template<concepts::VectorOrScalar T_NumFrames, concepts::VectorOrScalar T_FrameExtents>
-    FrameSpec(T_NumFrames const&, T_FrameExtents const&, T_NumFrames const&, T_FrameExtents const&)
-        -> FrameSpec<trait::getVec_t<T_NumFrames>, trait::getVec_t<T_FrameExtents>, trait::getVec_t<T_FrameExtents>>;
+    template<alpaka::concepts::VectorOrScalar T_NumFrames, alpaka::concepts::VectorOrScalar T_FrameExtents>
+    FrameSpec(T_NumFrames const&, T_FrameExtents const&, T_NumFrames const&, T_FrameExtents const&) -> FrameSpec<
+        alpaka::trait::getVec_t<T_NumFrames>,
+        alpaka::trait::getVec_t<T_FrameExtents>,
+        alpaka::trait::getVec_t<T_FrameExtents>>;
+
+} // namespace alpaka::onHost
+
+namespace alpaka
+{
+    template<typename T>
+    struct IsFrameSpec : std::false_type
+    {
+    };
 
     template<
         alpaka::concepts::Vector T_NumFrames,
         alpaka::concepts::Vector T_FrameExtents,
         alpaka::concepts::Vector T_ThreadExtents>
-    std::ostream& operator<<(std::ostream& s, FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents> const& d)
+    struct IsFrameSpec<onHost::FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents>> : std::true_type
+    {
+    };
+
+    template<typename T>
+    constexpr bool isFrameSpec_v = IsFrameSpec<T>::value;
+
+} // namespace alpaka
+
+namespace alpaka::concepts
+{
+    /** Concept to check if a type is a FrameSpec
+     *
+     * @tparam T Type to check
+     * @tparam T_NumFrames enforce a value type for T_NumFrames, if not provided the value type is not checked
+     * @tparam T_FrameExtents enforce a value type for T_FrameExtents, if not provided the value type is not
+     * checked
+     * @tparam T_ThreadExtents enforce a value type for T_ThreadExtents, if not provided the value type is not
+     * checked
+     */
+    template<
+        typename T,
+        typename T_NumFrames = alpaka::NotRequired,
+        typename T_FrameExtents = alpaka::NotRequired,
+        typename T_ThreadExtents = alpaka::NotRequired>
+    concept FrameSpec
+        = isFrameSpec_v<T>
+          && (std::same_as<T_NumFrames, alpaka::NotRequired> || internal::HasNthTemplateArgument<0, T, T_NumFrames>) &&(
+              std::same_as<T_FrameExtents, alpaka::NotRequired>
+              || internal::HasNthTemplateArgument<
+                  1,
+                  T,
+                  T_FrameExtents>) &&(std::same_as<T_ThreadExtents, alpaka::NotRequired> || internal::HasNthTemplateArgument<2, T, T_ThreadExtents>);
+} // namespace alpaka::concepts
+
+namespace alpaka::onHost
+{
+    std::ostream& operator<<(std::ostream& s, alpaka::concepts::FrameSpec auto const& d)
     {
         return s << "frames=" << d.m_numFrames << " frameExtent=" << d.m_frameExtent;
     }

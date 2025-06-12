@@ -306,20 +306,14 @@ namespace alpaka::onHost
         template<
             typename T_Device,
             alpaka::concepts::UnifiedCudaHipExecutor T_Executor,
-            typename T_NumFrames,
-            typename T_FrameExtents,
-            typename T_ThreadExtents,
+            alpaka::concepts::FrameSpec T_FrameSpec,
             typename T_KernelBundle>
-        struct Enqueue::Kernel<
-            unifiedCudaHip::Queue<T_Device>,
-            T_Executor,
-            FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents>,
-            T_KernelBundle>
+        struct Enqueue::Kernel<unifiedCudaHip::Queue<T_Device>, T_Executor, T_FrameSpec, T_KernelBundle>
         {
             void operator()(
                 unifiedCudaHip::Queue<T_Device>& queue,
                 T_Executor const executor,
-                FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents> const& frameSpec,
+                T_FrameSpec const& frameSpec,
                 T_KernelBundle const& kernelBundle) const
             {
                 auto threadBlocking

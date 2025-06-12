@@ -214,20 +214,16 @@ namespace alpaka::onHost
         template<
             typename T_Platform,
             typename T_Mapping,
-            typename T_NumBlocks,
-            typename T_NumThreads,
-            typename T_ThreadExtents,
+            alpaka::concepts::FrameSpec T_FrameSpec,
             typename T_KernelBundle>
-        struct AdjustThreadSpec::Op<
-            unifiedCudaHip::Device<T_Platform>,
-            T_Mapping,
-            FrameSpec<T_NumBlocks, T_NumThreads, T_ThreadExtents>,
-            T_KernelBundle>
+        struct AdjustThreadSpec::Op<unifiedCudaHip::Device<T_Platform>, T_Mapping, T_FrameSpec, T_KernelBundle>
         {
+            using T_NumThreads = alpaka::internal::nth_template_arg<1, T_FrameSpec>::type;
+
             auto operator()(
                 unifiedCudaHip::Device<T_Platform> const& device,
                 T_Mapping const& executor,
-                FrameSpec<T_NumBlocks, T_NumThreads, T_ThreadExtents> const& dataBlocking,
+                T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
             {
                 auto numThreads = dataBlocking.getThreadSpec().m_numThreads;
@@ -246,7 +242,7 @@ namespace alpaka::onHost
             auto operator()(
                 unifiedCudaHip::Device<T_Platform> const& device,
                 T_Mapping const& executor,
-                FrameSpec<T_NumBlocks, T_NumThreads, T_ThreadExtents> const& dataBlocking,
+                T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const
             {
                 auto numThreadsPerBlocks = dataBlocking.getThreadSpec().m_numThreads;

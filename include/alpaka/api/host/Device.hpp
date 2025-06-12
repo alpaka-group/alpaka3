@@ -203,22 +203,15 @@ namespace alpaka::onHost
          *
          * There is no need to emulate blocks if we have only one thread.
          */
-        template<
-            typename T_Platform,
-            typename T_NumBlocks,
-            typename T_NumThreads,
-            typename T_ThreadExtents,
-            typename T_KernelBundle>
-        struct AdjustThreadSpec::Op<
-            cpu::Device<T_Platform>,
-            exec::CpuSerial,
-            FrameSpec<T_NumBlocks, T_NumThreads, T_ThreadExtents>,
-            T_KernelBundle>
+        template<typename T_Platform, alpaka::concepts::FrameSpec T_FrameSpec, typename T_KernelBundle>
+        struct AdjustThreadSpec::Op<cpu::Device<T_Platform>, exec::CpuSerial, T_FrameSpec, T_KernelBundle>
         {
+            using T_NumThreads = alpaka::internal::nth_template_arg<1, T_FrameSpec>::type;
+
             auto operator()(
                 cpu::Device<T_Platform> const& device,
                 exec::CpuSerial const& executor,
-                FrameSpec<T_NumBlocks, T_NumThreads, T_ThreadExtents> const& dataBlocking,
+                T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
             {
                 /// @todo add shortcut to create a CVec with equal values
@@ -230,7 +223,7 @@ namespace alpaka::onHost
             auto operator()(
                 cpu::Device<T_Platform> const& device,
                 exec::CpuSerial const& executor,
-                FrameSpec<T_NumBlocks, T_NumThreads, T_ThreadExtents> const& dataBlocking,
+                T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const
             {
                 /// @todo add shortcut to create a CVec with equal values
@@ -243,21 +236,17 @@ namespace alpaka::onHost
         template<
             typename T_Platform,
             typename T_Mapping,
-            typename T_NumBlocks,
-            typename T_NumThreads,
-            typename T_ThreadExtents,
+            alpaka::concepts::FrameSpec T_FrameSpec,
             typename T_KernelBundle>
         requires exec::traits::isSeqExecutor_v<T_Mapping>
-        struct AdjustThreadSpec::Op<
-            cpu::Device<T_Platform>,
-            T_Mapping,
-            FrameSpec<T_NumBlocks, T_NumThreads, T_ThreadExtents>,
-            T_KernelBundle>
+        struct AdjustThreadSpec::Op<cpu::Device<T_Platform>, T_Mapping, T_FrameSpec, T_KernelBundle>
         {
+            using T_NumThreads = alpaka::internal::nth_template_arg<1, T_FrameSpec>::type;
+
             auto operator()(
                 cpu::Device<T_Platform> const& device,
                 T_Mapping const& executor,
-                FrameSpec<T_NumBlocks, T_NumThreads, T_ThreadExtents> const& dataBlocking,
+                T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
             {
                 auto numThreadBlocks = dataBlocking.getThreadSpec().m_numBlocks;
@@ -267,7 +256,7 @@ namespace alpaka::onHost
             auto operator()(
                 cpu::Device<T_Platform> const& device,
                 T_Mapping const& executor,
-                FrameSpec<T_NumBlocks, T_NumThreads, T_ThreadExtents> const& dataBlocking,
+                T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const
             {
                 auto numThreadBlocks = dataBlocking.getThreadSpec().m_numBlocks;
@@ -297,22 +286,15 @@ namespace alpaka::onHost
             }
         };
 
-        template<
-            typename T_Platform,
-            typename T_NumBlocks,
-            typename T_NumThreads,
-            typename T_ThreadExtents,
-            typename T_KernelBundle>
-        struct AdjustThreadSpec::Op<
-            cpu::Device<T_Platform>,
-            exec::CpuOmpBlocksAndThreads,
-            FrameSpec<T_NumBlocks, T_NumThreads, T_ThreadExtents>,
-            T_KernelBundle>
+        template<typename T_Platform, alpaka::concepts::FrameSpec T_FrameSpec, typename T_KernelBundle>
+        struct AdjustThreadSpec::Op<cpu::Device<T_Platform>, exec::CpuOmpBlocksAndThreads, T_FrameSpec, T_KernelBundle>
         {
+            using T_NumThreads = alpaka::internal::nth_template_arg<1, T_FrameSpec>::type;
+
             auto operator()(
                 cpu::Device<T_Platform> const& device,
                 exec::CpuOmpBlocksAndThreads const& executor,
-                FrameSpec<T_NumBlocks, T_NumThreads, T_ThreadExtents> const& dataBlocking,
+                T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
             {
                 auto numThreadBlocks = dataBlocking.getThreadSpec().m_numBlocks;
@@ -323,7 +305,7 @@ namespace alpaka::onHost
             auto operator()(
                 cpu::Device<T_Platform> const& device,
                 exec::CpuOmpBlocksAndThreads const& executor,
-                FrameSpec<T_NumBlocks, T_NumThreads, T_ThreadExtents> const& dataBlocking,
+                T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const
             {
                 // universal vector type that both return produce the same result type.
