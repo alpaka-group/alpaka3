@@ -50,42 +50,14 @@ consteval auto maximumMiniBlockSize()
  * unknown/unimplemented device kinds, infinite memory banks are assumed, i.e., no padding is used.
  */
 template<typename TDeviceKind>
-constexpr auto conflictFreeAccess(auto n, auto const& max)
+constexpr auto conflictFreeAccess(auto const& n)
 {
-    // TODO: do with a lambda
     if constexpr(std::is_same_v<TDeviceKind, deviceKind::NvidiaGpu>)
-    {
-        auto m = n + n / numNvidiaBanks;
-        if(m >= max)
-        {
-            auto nMax = max - (max / (numNvidiaBanks + 1_idx));
-            return numNvidiaBanks + (n - nMax) * (numNvidiaBanks + 1_idx);
-        }
-        else
-            return m;
-    }
+        return n + n / numNvidiaBanks;
     else if constexpr(std::is_same_v<TDeviceKind, deviceKind::AmdGpu>)
-    {
-        auto m = n + n / numAmdBanks;
-        if(m >= max)
-        {
-            auto nMax = max - (max / (numAmdBanks + 1_idx));
-            return numAmdBanks + (n - nMax) * (numAmdBanks + 1_idx);
-        }
-        else
-            return m;
-    }
+        return n + n / numAmdBanks;
     else if constexpr(std::is_same_v<TDeviceKind, deviceKind::IntelGpu>)
-    {
-        auto m = n + n / numIntelBanks;
-        if(m >= max)
-        {
-            auto nMax = max - (max / (numIntelBanks + 1_idx));
-            return numIntelBanks + (n - nMax) * (numIntelBanks + 1_idx);
-        }
-        else
-            return m;
-    }
+        return n + n / numIntelBanks;
     else // cpu or unknown backend does nothing
         return n;
 }
@@ -198,7 +170,9 @@ public:
             // allocate "per-thread" register memory to store all mini blocks of a thread persistently
             LocalArray regMem;
 
-            auto tmp = onAcc::declareSharedMdArray<Data, uniqueId()>(acc, CVec<IdxType, miniBlocksPerChunk>{});
+            auto tmp = onAcc::declareSharedMdArray<Data, uniqueId()>(
+                acc,
+                CVec<IdxType, conflictFreeAccess<DeviceType>(miniBlocksPerChunk - 1_idx) + 1_idx>{});
             auto const frameOffset = chunkExtent * frameIdx;
 
             for(auto frameElem : onAcc::makeIdxMap(
@@ -236,17 +210,10 @@ public:
                 for(auto miniBlockOffset = 0_idx; miniBlockOffset < elsPerThread; miniBlockOffset += miniBlockSize)
                 {
                     // scan miniblock
-                    /*std::cout << "regMem (1): " << regMem[0] << ", " << regMem[1] << ", " << regMem[2] << ", ..."
-                              << std::endl;*/
                     auto miniBlockSum = scanMiniBlock(regMem + miniBlockOffset, CVec<IdxType, miniBlockSize>{});
-                    /*std::cout << "regMem (2): " << regMem[0] << ", " << regMem[1] << ", " << regMem[2] << ", ..."
-                              << std::endl;*/
 
                     // write miniblock sum into shared memory
-                    tmp[conflictFreeAccess<DeviceType>(
-                        (frameElem + miniBlockOffset) / miniBlockSize,
-                        miniBlocksPerChunk)]
-                        = miniBlockSum;
+                    tmp[conflictFreeAccess<DeviceType>((frameElem + miniBlockOffset) / miniBlockSize)] = miniBlockSum;
                 }
             }
 
@@ -261,9 +228,8 @@ public:
                 {
                     IdxType left = offset * (frameElem + 1_idx).x() - 1_idx;
                     IdxType right = offset * (frameElem + 2_idx).x() - 1_idx;
-                    left = conflictFreeAccess<DeviceType>(left, miniBlocksPerChunk);
-                    right = conflictFreeAccess<DeviceType>(right, miniBlocksPerChunk);
-                    // std::cout << "up-sweep " << left << ", " << right << std::endl;
+                    left = conflictFreeAccess<DeviceType>(left);
+                    right = conflictFreeAccess<DeviceType>(right);
                     tmp[right] += tmp[left];
                 }
             }
@@ -275,12 +241,11 @@ public:
                 if constexpr(sizeof...(blockSums))
                 {
                     auto _blockSums = std::get<0>(std::make_tuple(blockSums...));
-                    _blockSums[frameIdx]
-                        = tmp[conflictFreeAccess<DeviceType>(miniBlocksPerChunk - 1_idx, miniBlocksPerChunk)];
+                    _blockSums[frameIdx] = tmp[conflictFreeAccess<DeviceType>(miniBlocksPerChunk - 1_idx)];
                 }
 
                 // -- SET 0 --
-                tmp[conflictFreeAccess<DeviceType>(miniBlocksPerChunk - 1_idx, miniBlocksPerChunk)] = 0;
+                tmp[conflictFreeAccess<DeviceType>(miniBlocksPerChunk - 1_idx)] = 0;
             }
 
             // -- DOWN-SWEEP --
@@ -294,9 +259,8 @@ public:
                 {
                     IdxType left = offset * (frameElem.x() + 1_idx) - 1_idx;
                     IdxType right = offset * (frameElem.x() + 2_idx) - 1_idx;
-                    left = conflictFreeAccess<DeviceType>(left, miniBlocksPerChunk);
-                    right = conflictFreeAccess<DeviceType>(right, miniBlocksPerChunk);
-                    // std::cout << "down-sweep " << left << ", " << right << std::endl;
+                    left = conflictFreeAccess<DeviceType>(left);
+                    right = conflictFreeAccess<DeviceType>(right);
                     auto t = tmp[left];
                     tmp[left] = tmp[right];
                     tmp[right] += t;
@@ -317,18 +281,12 @@ public:
                     Data blockSum;
                     if(frameOffset + frameElem + miniBlockOffset < numElements)
                     {
-                        blockSum = tmp[conflictFreeAccess<DeviceType>(
-                            (frameElem + miniBlockOffset) / miniBlockSize,
-                            miniBlocksPerChunk)];
-                        // std::cout << "reading block sum " << blockSum << std::endl;
+                        blockSum
+                            = tmp[conflictFreeAccess<DeviceType>((frameElem.x() + miniBlockOffset) / miniBlockSize)];
                     }
 
-                    /*std::cout << "regMem (3): " << regMem[0] << ", " << regMem[1] << ", " << regMem[2] << ", ..."
-                              << std::endl;*/
                     // add block sum to mini block
                     addIncrements(regMem + miniBlockOffset, blockSum, CVec<IdxType, miniBlockSize>{});
-                    /*std::cout << "regMem (4): " << regMem[0] << ", " << regMem[1] << ", " << regMem[2] << ", ..."
-                              << std::endl;*/
                 }
 
                 if((!lastFrameFull && isLastFrame) || elsPerThread % 4_idx != 0_idx)
