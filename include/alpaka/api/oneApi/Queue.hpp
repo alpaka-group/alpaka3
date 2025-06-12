@@ -247,14 +247,18 @@ namespace alpaka::onHost::internal
         typename T_Executor,
         alpaka::concepts::Vector T_NumFrames,
         alpaka::concepts::Vector T_FrameExtents,
+        alpaka::concepts::Vector T_ThreadExtents,
         typename T_KernelBundle>
-    struct Enqueue::
-        Kernel<syclGeneric::Queue<T_Device>, T_Executor, FrameSpec<T_NumFrames, T_FrameExtents>, T_KernelBundle>
+    struct Enqueue::Kernel<
+        syclGeneric::Queue<T_Device>,
+        T_Executor,
+        FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents>,
+        T_KernelBundle>
     {
         void operator()(
             syclGeneric::Queue<T_Device>& queue,
             T_Executor const executor,
-            FrameSpec<T_NumFrames, T_FrameExtents> const& frameSpec,
+            FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents> const& frameSpec,
             T_KernelBundle const& kernelBundle) const
         {
             auto const threadBlocking
