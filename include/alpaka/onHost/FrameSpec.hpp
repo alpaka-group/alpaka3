@@ -22,6 +22,11 @@ namespace alpaka::onHost
     {
         using type = typename T_NumFrames::type;
 
+        using NumFramesVecType = T_NumFrames;
+        using FrameExtentsVecType = T_FrameExtents;
+        using ThreadExtentsVecType = T_ThreadExtents;
+        using ThreadSpecType = ThreadSpec<T_NumFrames, T_ThreadExtents>;
+
         consteval uint32_t dim() const
         {
             return T_FrameExtents::dim();
@@ -29,7 +34,7 @@ namespace alpaka::onHost
 
         T_NumFrames m_numFrames;
         T_FrameExtents m_frameExtent;
-        ThreadSpec<T_NumFrames, T_ThreadExtents> m_threadSpec;
+        ThreadSpecType m_threadSpec;
 
         FrameSpec(T_NumFrames const& numFrames, T_FrameExtents const& frameExtent)
             : m_numFrames(numFrames)
@@ -123,12 +128,12 @@ namespace alpaka::concepts
         typename T_ThreadExtents = alpaka::NotRequired>
     concept FrameSpec
         = isFrameSpec_v<T>
-          && (std::same_as<T_NumFrames, alpaka::NotRequired> || internal::HasNthTemplateArgument<0, T, T_NumFrames>) &&(
+          && (std::same_as<T_NumFrames, alpaka::NotRequired> || std::same_as<T_NumFrames, typename T::NumFramesVecType>) &&(
               std::same_as<T_FrameExtents, alpaka::NotRequired>
-              || internal::HasNthTemplateArgument<
-                  1,
-                  T,
-                  T_FrameExtents>) &&(std::same_as<T_ThreadExtents, alpaka::NotRequired> || internal::HasNthTemplateArgument<2, T, T_ThreadExtents>);
+              || std::same_as<
+                  T_FrameExtents,
+                  typename T::
+                      FrameExtentsVecType>) &&(std::same_as<T_ThreadExtents, alpaka::NotRequired> || std::same_as<T_ThreadExtents, typename T::ThreadExtentsVecType>);
 } // namespace alpaka::concepts
 
 namespace alpaka::onHost

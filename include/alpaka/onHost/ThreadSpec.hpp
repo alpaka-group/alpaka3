@@ -69,8 +69,9 @@ namespace alpaka::concepts
     template<typename T, typename T_NumBlocks = alpaka::NotRequired, typename T_NumThreads = alpaka::NotRequired>
     concept ThreadSpec
         = isThreadSpec_v<T>
-          && (std::same_as<T_NumBlocks, alpaka::NotRequired> || internal::HasNthTemplateArgument<0, T, T_NumBlocks>) &&(
-              std::same_as<T_NumThreads, alpaka::NotRequired> || internal::HasNthTemplateArgument<1, T, T_NumThreads>);
+          && (std::same_as<T_NumBlocks, alpaka::NotRequired> || std::same_as<T_NumBlocks, typename T::NumBlocksVecType>) &&(
+              std::same_as<T_NumThreads, alpaka::NotRequired>
+              || std::same_as<T_NumThreads, typename T::NumThreadsVecType>);
 } // namespace alpaka::concepts
 
 namespace alpaka::onHost
