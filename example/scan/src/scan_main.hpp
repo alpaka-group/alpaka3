@@ -56,7 +56,13 @@ auto validateResult(auto const& bufHostX, auto const& bufHostY, IdxType extent, 
 }
 
 template<typename T_Cfg>
-auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdScan, bool enableCheck, ScanType scanType) -> int
+auto example(
+    T_Cfg const& cfg,
+    IdxType numElements,
+    bool enableStdScan,
+    bool enableCheck,
+    bool enableInPlace,
+    ScanType scanType) -> int
 {
     auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
@@ -85,9 +91,11 @@ auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdScan, bool ena
     // Create a queue on the device
     onHost::Queue queue = devAcc.makeQueue();
 
+    auto inputData = onHost::allocHost<Data>(extent);
+
     // Allocate host memory buffer for x (input) and y (output)
     auto bufHostX = onHost::allocHost<Data>(extent);
-    auto bufHostY = onHost::allocHost<Data>(extent);
+    auto bufHostY = enableInPlace ? bufHostX : onHost::allocHost<Data>(extent);
 
     // Fill input data with random values
     std::random_device rd{};
@@ -95,18 +103,25 @@ auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdScan, bool ena
     std::uniform_int_distribution<std::int32_t> dist(0, 10);
     for(IdxType i = 0u; i < extent; ++i)
     {
-        bufHostX[i] = static_cast<Data>(dist(eng));
+#if 1
+        inputData[i] = static_cast<Data>(dist(eng));
+#else
+        inputData[i] = static_cast<Data>(1);
+#endif
     }
 
     // Allocate device memory buffers for x and y
     auto bufAccX = onHost::allocMirror(devAcc, bufHostX);
-    auto bufAccY = onHost::allocMirror(devAcc, bufHostY);
+    auto bufAccY = enableInPlace ? bufAccX : onHost::allocMirror(devAcc, bufHostY);
 
     // run for comparison but only if the executor is exec::cpuSerial
     if(std::is_same_v<ALPAKA_TYPEOF(exec), exec::CpuSerial> && enableStdScan)
     {
         std::cout << "Using native CPU "
                   << (scanType == EXCLUSIVE_SCAN ? "std::exclusive_scan()" : "std::inclusive_scan()") << std::endl;
+
+        // initialize input data (it might get overwritten if we run in-place)
+        std::memcpy(bufHostX.data(), inputData.data(), sizeof(Data) * numElements);
         onHost::wait(queue);
         auto const beginT = std::chrono::high_resolution_clock::now();
 
@@ -129,6 +144,8 @@ auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdScan, bool ena
         std::cout << std::endl;
     }
 
+    // initialize input data (it might get overwritten if we run in-place)
+    std::memcpy(bufHostX.data(), inputData.data(), sizeof(Data) * numElements);
     // Copy Host -> Acc
     onHost::memcpy(queue, bufAccX, bufHostX);
 
@@ -170,7 +187,7 @@ auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdScan, bool ena
                   << std::endl;
     }
 
-    return enableCheck ? validateResult(bufHostX, bufHostY, extent.x(), scanType) : EXIT_SUCCESS;
+    return enableCheck ? validateResult(inputData, bufHostY, extent.x(), scanType) : EXIT_SUCCESS;
 }
 
 void help(char* argv[])
@@ -180,6 +197,7 @@ void help(char* argv[])
     std::cerr << "  -e: disable execution of the native std::inclusive_scan or std::exclusive_scan implementation"
               << std::endl;
     std::cerr << "  -c: disable checking for correct results" << std::endl;
+    std::cerr << "  -i: enable in-place scan instead of creating an output buffer for the result" << std::endl;
     std::cerr << "  -t: scanType: 0 for inclusive, 1 for exclusive scan. Default: 0 (inclusive)" << std::endl;
     std::cerr << "  -h: Print this help message" << std::endl;
     std::cerr << std::endl;
@@ -197,8 +215,9 @@ auto main(int argc, char* argv[]) -> int
     int opt;
     bool enableStdScan = true;
     bool enableCheck = true;
+    bool enableInPlace = false;
 
-    while((opt = getopt(argc, argv, "hn:t:ec")) != -1)
+    while((opt = getopt(argc, argv, "hn:t:eci")) != -1)
     {
         switch(opt)
         {
@@ -254,6 +273,9 @@ auto main(int argc, char* argv[]) -> int
         case 'c':
             enableCheck = false;
             break;
+        case 'i':
+            enableInPlace = true;
+            break;
         default:
             help(argv);
             exit(EXIT_FAILURE);
@@ -263,6 +285,7 @@ auto main(int argc, char* argv[]) -> int
     using namespace alpaka;
     // Execute the example once for each enabled API and executor.
     return executeForEachIfHasDevice(
-        [=](auto const& tag) { return example(tag, numElements, enableStdScan, enableCheck, scanType); },
+        [=](auto const& tag)
+        { return example(tag, numElements, enableStdScan, enableCheck, enableInPlace, scanType); },
         onHost::allBackends(onHost::enabledApis));
 }

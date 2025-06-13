@@ -296,7 +296,13 @@ public:
                     for(auto i = 0_idx; i < elsPerThread; ++i)
                     {
                         if(frameOffset + frameElem + i < numElements)
-                            outputVec[frameOffset + frameElem + i] = regMem[i];
+                        {
+                            if constexpr(SCAN_TYPE == EXCLUSIVE_SCAN)
+                                outputVec[frameOffset + frameElem + i] = regMem[i];
+                            else if constexpr(SCAN_TYPE == INCLUSIVE_SCAN)
+                                outputVec[frameOffset + frameElem + i]
+                                    = inputVec[frameOffset + frameElem + i] + regMem[i];
+                        }
                     }
                 }
                 else
