@@ -71,9 +71,13 @@ namespace alpaka::onHost
          *
          * @param executor description how native worker threads will be mapped and grouped to compute grid layers
          * @param f the compute kernel functor
-         * @param args aruments to forwarded to the kernel functor
+         * @param args arguments to forwarded to the kernel functor
          */
-        void enqueue(auto const executor, auto const& blockCfg, auto const& f, auto&&... args) const
+        void enqueue(
+            auto const executor,
+            alpaka::concepts::ThreadOrFrameSpec auto const& blockCfg,
+            auto const& f,
+            auto&&... args) const
         {
             return internal::enqueue(
                 *m_queue.get(),
@@ -96,7 +100,9 @@ namespace alpaka::onHost
          * parallelism.
          */
         template<typename TKernelFn, typename... TArgs>
-        void enqueue(auto const& specification, KernelBundle<TKernelFn, TArgs...> const& kernelBundle) const
+        void enqueue(
+            alpaka::concepts::ThreadOrFrameSpec auto const& specification,
+            KernelBundle<TKernelFn, TArgs...> const& kernelBundle) const
         {
             auto executor = supportedMappings(getDevice(*m_queue.get()));
             internal::enqueue(*m_queue.get(), std::get<0>(executor), specification, kernelBundle);
@@ -106,11 +112,10 @@ namespace alpaka::onHost
          * @param executor description how native worker threads will be mapped and grouped to compute grid layers
          * (blocks, threads).
          */
-        template<typename TKernelFn, typename... TArgs>
         void enqueue(
             auto const executor,
-            auto const& specification,
-            KernelBundle<TKernelFn, TArgs...> const& kernelBundle) const
+            alpaka::concepts::ThreadOrFrameSpec auto const& specification,
+            alpaka::concepts::KernelBundle auto const& kernelBundle) const
         {
             internal::enqueue(*m_queue.get(), executor, specification, kernelBundle);
         }

@@ -203,7 +203,10 @@ namespace alpaka::onHost
          *
          * There is no need to emulate blocks if we have only one thread.
          */
-        template<typename T_Platform, alpaka::concepts::FrameSpec T_FrameSpec, typename T_KernelBundle>
+        template<
+            typename T_Platform,
+            alpaka::concepts::FrameSpec T_FrameSpec,
+            alpaka::concepts::KernelBundle T_KernelBundle>
         struct AdjustThreadSpec::Op<cpu::Device<T_Platform>, exec::CpuSerial, T_FrameSpec, T_KernelBundle>
         {
             using T_NumThreads = T_FrameSpec::ThreadExtentsVecType;
@@ -237,7 +240,7 @@ namespace alpaka::onHost
             typename T_Platform,
             typename T_Mapping,
             alpaka::concepts::FrameSpec T_FrameSpec,
-            typename T_KernelBundle>
+            alpaka::concepts::KernelBundle T_KernelBundle>
         requires exec::traits::isSeqExecutor_v<T_Mapping>
         struct AdjustThreadSpec::Op<cpu::Device<T_Platform>, T_Mapping, T_FrameSpec, T_KernelBundle>
         {
@@ -286,7 +289,10 @@ namespace alpaka::onHost
             }
         };
 
-        template<typename T_Platform, alpaka::concepts::FrameSpec T_FrameSpec, typename T_KernelBundle>
+        template<
+            typename T_Platform,
+            alpaka::concepts::FrameSpec T_FrameSpec,
+            alpaka::concepts::KernelBundle T_KernelBundle>
         struct AdjustThreadSpec::Op<cpu::Device<T_Platform>, exec::CpuOmpBlocksAndThreads, T_FrameSpec, T_KernelBundle>
         {
             using T_NumThreads = T_FrameSpec::ThreadExtentsVecType;

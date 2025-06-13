@@ -84,7 +84,12 @@ namespace alpaka
 
         /** @} */
 
-        constexpr auto operator()(auto const& acc) const
+        template<typename TAcc>
+        requires(std::invocable<
+                 KernelFn,
+                 TAcc,
+                 remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>...>)
+        constexpr auto operator()(TAcc const& acc) const
         {
             std::apply([&](auto const&... args) constexpr { m_kernelFn(acc, args...); }, m_args);
         }
@@ -104,4 +109,28 @@ namespace alpaka
     //! arguments.
     template<typename TKernelFn, typename... TArgs>
     ALPAKA_FN_HOST KernelBundle(TKernelFn const&, TArgs&&...) -> KernelBundle<TKernelFn, TArgs...>;
+
+    template<typename T>
+    struct IsKernelBundle : std::false_type
+    {
+    };
+
+    template<typename TKernelFn, typename... TArgs>
+    struct IsKernelBundle<KernelBundle<TKernelFn, TArgs...>> : std::true_type
+    {
+    };
+
+    template<typename T>
+    constexpr bool isKernelBundle_v = IsKernelBundle<T>::value;
+
 } // namespace alpaka
+
+namespace alpaka::concepts
+{
+    /** Concept to check if a type is a KernelBundle
+     *
+     * @tparam T Type to check
+     */
+    template<typename T>
+    concept KernelBundle = isKernelBundle_v<T>;
+} // namespace alpaka::concepts

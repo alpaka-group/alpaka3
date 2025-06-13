@@ -134,6 +134,14 @@ namespace alpaka::concepts
                   T_FrameExtents,
                   typename T::
                       FrameExtentsVecType>) &&(std::same_as<T_ThreadExtents, alpaka::NotRequired> || std::same_as<T_ThreadExtents, typename T::ThreadExtentsVecType>);
+
+
+    /** Concept to check if a type is a ThreadSpec or a FrameSpec
+     *
+     * @tparam T Type to check
+     */
+    template<typename T>
+    concept ThreadOrFrameSpec = isFrameSpec_v<T> || isThreadSpec_v<T>;
 } // namespace alpaka::concepts
 
 namespace alpaka::onHost

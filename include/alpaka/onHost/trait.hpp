@@ -61,14 +61,17 @@ namespace alpaka::onHost
             }
         };
 
-        template<typename T_Executor, typename T_Spec, typename T_KernelBundle>
+        template<
+            typename T_Executor,
+            alpaka::concepts::ThreadSpec T_ThreadSpec,
+            alpaka::concepts::KernelBundle T_KernelBundle>
         struct GetDynSharedMemBytes
         {
             static constexpr bool zeroSharedMemory = true;
 
             uint32_t operator()(
                 T_Executor const executor,
-                T_Spec const spec,
+                T_ThreadSpec const spec,
                 [[maybe_unused]] T_KernelBundle const& kernelBundle) const
             {
                 return 0u;
@@ -105,14 +108,20 @@ namespace alpaka::onHost
             }
         };
 
-        template<typename T_Executor, typename T_Spec, typename T_KernelBundle>
+        template<
+            typename T_Executor,
+            alpaka::concepts::ThreadSpec T_ThreadSpec,
+            alpaka::concepts::KernelBundle T_KernelBundle>
         struct HasUserDefinedDynSharedMemBytes : std::true_type
         {
         };
 
-        template<typename T_Executor, typename T_Spec, typename T_KernelBundle>
-        requires(trait::GetDynSharedMemBytes<T_Executor, T_Spec, T_KernelBundle>::zeroSharedMemory == true)
-        struct HasUserDefinedDynSharedMemBytes<T_Executor, T_Spec, T_KernelBundle> : std::false_type
+        template<
+            typename T_Executor,
+            alpaka::concepts::ThreadSpec T_ThreadSpec,
+            alpaka::concepts::KernelBundle T_KernelBundle>
+        requires(trait::GetDynSharedMemBytes<T_Executor, T_ThreadSpec, T_KernelBundle>::zeroSharedMemory == true)
+        struct HasUserDefinedDynSharedMemBytes<T_Executor, T_ThreadSpec, T_KernelBundle> : std::false_type
         {
         };
     } // namespace trait
@@ -147,19 +156,28 @@ namespace alpaka::onHost
             deviceKind::allDevices);
     }
 
-    template<typename T_Executor, typename T_Spec, typename T_KernelBundle>
-    constexpr uint32_t getDynSharedMemBytes(T_Executor const executor, T_Spec spec, T_KernelBundle const& kernelBundle)
-    {
-        return trait::GetDynSharedMemBytes<T_Executor, T_Spec, T_KernelBundle>{}(executor, spec, kernelBundle);
-    }
-
-    template<typename T_Executor, typename T_Spec, typename T_KernelBundle>
-    consteval bool hasUserDefinedDynSharedMemBytes(
+    template<
+        typename T_Executor,
+        alpaka::concepts::ThreadSpec T_ThreadSpec,
+        alpaka::concepts::KernelBundle T_KernelBundle>
+    constexpr uint32_t getDynSharedMemBytes(
         T_Executor const executor,
-        T_Spec spec,
+        T_ThreadSpec spec,
         T_KernelBundle const& kernelBundle)
     {
-        return trait::HasUserDefinedDynSharedMemBytes<T_Executor, T_Spec, T_KernelBundle>::value;
+        return trait::GetDynSharedMemBytes<T_Executor, T_ThreadSpec, T_KernelBundle>{}(executor, spec, kernelBundle);
+    }
+
+    template<
+        typename T_Executor,
+        alpaka::concepts::ThreadSpec T_ThreadSpec,
+        alpaka::concepts::KernelBundle T_KernelBundle>
+    consteval bool hasUserDefinedDynSharedMemBytes(
+        T_Executor const executor,
+        T_ThreadSpec spec,
+        T_KernelBundle const& kernelBundle)
+    {
+        return trait::HasUserDefinedDynSharedMemBytes<T_Executor, T_ThreadSpec, T_KernelBundle>::value;
     }
 
 } // namespace alpaka::onHost

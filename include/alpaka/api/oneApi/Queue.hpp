@@ -175,7 +175,7 @@ namespace alpaka::onHost::internal
         typename T_Device,
         typename T_Executor,
         alpaka::concepts::ThreadSpec T_ThreadSpec,
-        typename T_KernelBundle>
+        alpaka::concepts::KernelBundle T_KernelBundle>
     struct Enqueue::Kernel<syclGeneric::Queue<T_Device>, T_Executor, T_ThreadSpec, T_KernelBundle>
     {
         void operator()(
@@ -240,7 +240,11 @@ namespace alpaka::onHost::internal
         }
     };
 
-    template<typename T_Device, typename T_Executor, alpaka::concepts::FrameSpec T_FrameSpec, typename T_KernelBundle>
+    template<
+        typename T_Device,
+        typename T_Executor,
+        alpaka::concepts::FrameSpec T_FrameSpec,
+        alpaka::concepts::KernelBundle T_KernelBundle>
     struct Enqueue::Kernel<syclGeneric::Queue<T_Device>, T_Executor, T_FrameSpec, T_KernelBundle>
     {
         void operator()(

@@ -215,7 +215,7 @@ namespace alpaka::onHost
             typename T_Platform,
             typename T_Mapping,
             alpaka::concepts::FrameSpec T_FrameSpec,
-            typename T_KernelBundle>
+            alpaka::concepts::KernelBundle T_KernelBundle>
         struct AdjustThreadSpec::Op<unifiedCudaHip::Device<T_Platform>, T_Mapping, T_FrameSpec, T_KernelBundle>
         {
             using T_NumThreads = T_FrameSpec::NumThreadsVecType;
