@@ -171,7 +171,7 @@ namespace alpaka::onHost
             alpaka::concepts::KernelBundle T_KernelBundle>
         struct AdjustThreadSpec::Op<syclGeneric::Device<T_Platform>, T_Mapping, T_FrameSpec, T_KernelBundle>
         {
-            using T_NumThreads = T_FrameSpec::NumThreadsVecType;
+            using T_NumThreads = T_FrameSpec::ThreadExtentsVecType;
 
             auto operator()(
                 syclGeneric::Device<T_Platform> const& device,
