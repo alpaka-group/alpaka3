@@ -56,7 +56,7 @@ auto validateResult(auto const& bufHostX, auto const& bufHostY, IdxType extent, 
 }
 
 template<typename T_Cfg>
-auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdScan, ScanType scanType) -> int
+auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdScan, bool enableCheck, ScanType scanType) -> int
 {
     auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
@@ -170,7 +170,7 @@ auto example(T_Cfg const& cfg, IdxType numElements, bool enableStdScan, ScanType
                   << std::endl;
     }
 
-    return validateResult(bufHostX, bufHostY, extent.x(), scanType);
+    return enableCheck ? validateResult(bufHostX, bufHostY, extent.x(), scanType) : EXIT_SUCCESS;
 }
 
 void help(char* argv[])
@@ -179,6 +179,7 @@ void help(char* argv[])
     std::cerr << "  -n  numElements: Number of elements to process. Default: 2^24 = 16 Mi" << std::endl;
     std::cerr << "  -e: disable execution of the native std::inclusive_scan or std::exclusive_scan implementation"
               << std::endl;
+    std::cerr << "  -c: disable checking for correct results" << std::endl;
     std::cerr << "  -t: scanType: 0 for inclusive, 1 for exclusive scan. Default: 0 (inclusive)" << std::endl;
     std::cerr << "  -h: Print this help message" << std::endl;
     std::cerr << std::endl;
@@ -195,7 +196,9 @@ auto main(int argc, char* argv[]) -> int
 
     int opt;
     bool enableStdScan = true;
-    while((opt = getopt(argc, argv, "hn:t:e")) != -1)
+    bool enableCheck = true;
+
+    while((opt = getopt(argc, argv, "hn:t:ec")) != -1)
     {
         switch(opt)
         {
@@ -248,6 +251,9 @@ auto main(int argc, char* argv[]) -> int
         case 'e':
             enableStdScan = false;
             break;
+        case 'c':
+            enableCheck = false;
+            break;
         default:
             help(argv);
             exit(EXIT_FAILURE);
@@ -257,6 +263,6 @@ auto main(int argc, char* argv[]) -> int
     using namespace alpaka;
     // Execute the example once for each enabled API and executor.
     return executeForEachIfHasDevice(
-        [=](auto const& tag) { return example(tag, numElements, enableStdScan, scanType); },
+        [=](auto const& tag) { return example(tag, numElements, enableStdScan, enableCheck, scanType); },
         onHost::allBackends(onHost::enabledApis));
 }
