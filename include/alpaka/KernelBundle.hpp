@@ -110,18 +110,21 @@ namespace alpaka
     template<typename TKernelFn, typename... TArgs>
     ALPAKA_FN_HOST KernelBundle(TKernelFn const&, TArgs&&...) -> KernelBundle<TKernelFn, TArgs...>;
 
-    template<typename T>
-    struct IsKernelBundle : std::false_type
+    namespace trait
     {
-    };
+        template<typename T>
+        struct IsKernelBundle : std::false_type
+        {
+        };
 
-    template<typename TKernelFn, typename... TArgs>
-    struct IsKernelBundle<KernelBundle<TKernelFn, TArgs...>> : std::true_type
-    {
-    };
+        template<typename TKernelFn, typename... TArgs>
+        struct IsKernelBundle<KernelBundle<TKernelFn, TArgs...>> : std::true_type
+        {
+        };
+    } // namespace trait
 
     template<typename T>
-    constexpr bool isKernelBundle_v = IsKernelBundle<T>::value;
+    constexpr bool isKernelBundle_v = trait::IsKernelBundle<T>::value;
 
 } // namespace alpaka
 

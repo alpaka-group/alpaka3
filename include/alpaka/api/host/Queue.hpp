@@ -80,9 +80,10 @@ namespace alpaka::onHost
 
             friend struct internal::Enqueue;
 
+            template<alpaka::concepts::Vector T_NumBlocks, alpaka::concepts::Vector T_NumThreads>
             void enqueue(
                 auto const executor,
-                alpaka::concepts::ThreadSpec auto const& threadBlocking,
+                ThreadSpec<T_NumBlocks, T_NumThreads> const& threadBlocking,
                 auto const& kernelBundle)
             {
                 m_workerThread.submit(
@@ -93,10 +94,14 @@ namespace alpaka::onHost
                     });
             }
 
-            template<typename T_Mapping>
+            template<
+                typename T_Mapping,
+                alpaka::concepts::Vector T_NumFrames,
+                alpaka::concepts::Vector T_FrameExtents,
+                alpaka::concepts::Vector T_ThreadExtents>
             void enqueue(
                 T_Mapping const executor,
-                alpaka::concepts::FrameSpec auto const& frameSpec,
+                FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents> const& frameSpec,
                 auto const& kernelBundle)
             {
                 auto threadBlocking = internal::adjustThreadSpec(*m_device.get(), executor, frameSpec, kernelBundle);
