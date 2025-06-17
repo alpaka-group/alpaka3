@@ -6,7 +6,7 @@
 #pragma once
 
 #include "alpaka/core/common.hpp"
-#include "alpaka/math/math.hpp"
+#include "alpaka/math/internal/math.hpp"
 #include "alpaka/tag.hpp"
 
 #include <algorithm>

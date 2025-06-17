@@ -22,6 +22,7 @@
 #include "alpaka/internal.hpp"
 #include "alpaka/math.hpp"
 #include "alpaka/math/constants.hpp"
+#include "alpaka/math/internal/Complex.hpp"
 #include "alpaka/mem/Iter.hpp"
 #include "alpaka/onAcc.hpp"
 #include "alpaka/onAcc/Acc.hpp"

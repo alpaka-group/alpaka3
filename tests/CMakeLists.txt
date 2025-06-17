@@ -57,8 +57,6 @@ function(alpaka_add_test_target target_prefix folder)
 
                     target_link_libraries(${_test_target_name} PRIVATE Catch2::Catch2WithMain alpaka::alpaka)
                     catch_discover_tests(${_test_target_name})
-                else()
-                    message(WARNING "found non .cpp source file: ${source_file}")
                 endif()
             endforeach()
         endif()
