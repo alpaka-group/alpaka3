@@ -245,6 +245,8 @@ if (alpaka_DEP_ONEAPI)
     if (alpaka_ONEAPI_IntelGpu)
         # spir64 is required for Intel GPUs
         list(APPEND custom_SYCL_TARGETS spir64)
+    else ()
+        target_compile_definitions(alpaka INTERFACE ALPAKA_DISABLE_OneApi_IntelGpu)
     endif ()
 
     if (alpaka_ONEAPI_NvidiaGpu)
