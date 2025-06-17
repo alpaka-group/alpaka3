@@ -42,21 +42,25 @@ struct LastSetDataBlockIdx
 template<alpaka::concepts::Vector T_Extents, alpaka::concepts::Vector T_FrameSize>
 struct Case
 {
-    T_Extents extents;
-    T_FrameSize frameSize;
+    Case(T_Extents extents, T_FrameSize frameSize) : m_extents(extents), m_frameSize(frameSize)
+    {
+    }
+
+    T_Extents m_extents;
+    T_FrameSize m_frameSize;
 };
 
 void validate(auto& queue, auto& device, auto exec, auto testCase)
 {
-    Vec extentMd = testCase.extents;
-    std::cout << " exec=" << core::demangledName(exec) << " extents=" << testCase.extents
-              << " frame size=" << testCase.frameSize << std::endl;
+    Vec extentMd = testCase.m_extents;
+    std::cout << " exec=" << core::demangledName(exec) << " extents=" << testCase.m_extents
+              << " frame size=" << testCase.m_frameSize << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, extentMd.dim()>>(device, extentMd);
 
     auto hBuff = onHost::allocHostMirror(dBuff);
 
     wait(queue);
-    auto frameSize = testCase.frameSize;
+    auto frameSize = testCase.m_frameSize;
     queue.enqueue(
         exec,
         FrameSpec{divExZero(extentMd, frameSize), frameSize},

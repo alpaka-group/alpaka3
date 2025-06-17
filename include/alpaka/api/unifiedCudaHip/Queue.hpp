@@ -202,13 +202,14 @@ namespace alpaka::onHost
             template<
                 typename T_Executor,
                 typename T_Device,
-                alpaka::concepts::ThreadSpec T_ThreadSpec,
-                alpaka::concepts::KernelBundle T_KernelBundle,
+                typename T_NumBlocks,
+                typename T_NumThreads,
+                typename T_KernelBundle,
                 typename... T_Args>
             void operator()(
                 T_Executor const executor,
                 unifiedCudaHip::Queue<T_Device>& queue,
-                T_ThreadSpec const& threadSpec,
+                ThreadSpec<T_NumBlocks, T_NumThreads> const& threadSpec,
                 T_KernelBundle const& kernelBundle,
                 T_Args const&... args) const
             {
@@ -217,7 +218,6 @@ namespace alpaka::onHost
                     ApiInterface,
                     ApiInterface::setDevice(onHost::getNativeHandle(queue.m_device)));
 
-                using T_NumBlocks = T_ThreadSpec::NumBlocksVecType;
                 constexpr uint32_t dim = T_NumBlocks::dim();
                 // dimension of the cuda/hip layer
                 constexpr uint32_t layerDim = dim >= 4u ? 1u : dim;
@@ -287,14 +287,16 @@ namespace alpaka::onHost
         template<
             typename T_Device,
             alpaka::concepts::UnifiedCudaHipExecutor T_Executor,
-            alpaka::concepts::ThreadSpec T_ThreadSpec,
-            alpaka::concepts::KernelBundle T_KernelBundle>
-        struct Enqueue::Kernel<unifiedCudaHip::Queue<T_Device>, T_Executor, T_ThreadSpec, T_KernelBundle>
+            typename T_NumBlocks,
+            typename T_NumThreads,
+            typename T_KernelBundle>
+        struct Enqueue::
+            Kernel<unifiedCudaHip::Queue<T_Device>, T_Executor, ThreadSpec<T_NumBlocks, T_NumThreads>, T_KernelBundle>
         {
             void operator()(
                 unifiedCudaHip::Queue<T_Device>& queue,
                 T_Executor const executor,
-                T_ThreadSpec const& threadBlocking,
+                ThreadSpec<T_NumBlocks, T_NumThreads> const& threadBlocking,
                 T_KernelBundle const& kernelBundle) const
             {
                 unifiedCudaHip::CallKernel{}(executor, queue, threadBlocking, kernelBundle);
@@ -304,14 +306,20 @@ namespace alpaka::onHost
         template<
             typename T_Device,
             alpaka::concepts::UnifiedCudaHipExecutor T_Executor,
-            alpaka::concepts::FrameSpec T_FrameSpec,
-            alpaka::concepts::KernelBundle T_KernelBundle>
-        struct Enqueue::Kernel<unifiedCudaHip::Queue<T_Device>, T_Executor, T_FrameSpec, T_KernelBundle>
+            typename T_NumFrames,
+            typename T_FrameExtents,
+            typename T_ThreadExtents,
+            typename T_KernelBundle>
+        struct Enqueue::Kernel<
+            unifiedCudaHip::Queue<T_Device>,
+            T_Executor,
+            FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents>,
+            T_KernelBundle>
         {
             void operator()(
                 unifiedCudaHip::Queue<T_Device>& queue,
                 T_Executor const executor,
-                T_FrameSpec const& frameSpec,
+                FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents> const& frameSpec,
                 T_KernelBundle const& kernelBundle) const
             {
                 auto threadBlocking
