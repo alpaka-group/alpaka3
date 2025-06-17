@@ -23,8 +23,8 @@ namespace alpaka::onHost
     {
     private:
         using DeviceInterface = Device<T_Api, T_DeviceKind>;
-        using QueueHandle = ALPAKA_TYPEOF(
-            internal::MakeQueue::Op<ALPAKA_TYPEOF(*std::declval<DeviceInterface>().get())>{}(
+        using QueueHandle
+            = ALPAKA_TYPEOF(internal::MakeQueue::Op<ALPAKA_TYPEOF(*std::declval<DeviceInterface>().get())>{}(
                 *std::declval<DeviceInterface>().get()));
 
         QueueHandle m_queue;

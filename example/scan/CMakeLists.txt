@@ -34,11 +34,14 @@ endif()
 # Add executable.
 file(GLOB_RECURSE tutorialSource "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 
+find_package(CUDAToolkit)
+
 foreach(tutExampleFile ${tutorialSource})
     get_filename_component(tutFileName ${tutExampleFile} NAME)
     string(REPLACE ".cpp" "" tutName ${tutFileName})
     alpaka_add_executable(${tutName} ${tutExampleFile})
     target_link_libraries(${tutName} PUBLIC alpaka::alpaka)
+    target_link_libraries(${tutName} PRIVATE CUDA::cudart)
     set_target_properties(${tutName} PROPERTIES FOLDER tutorial)
     target_compile_features(${tutName} PRIVATE cxx_std_20)
 

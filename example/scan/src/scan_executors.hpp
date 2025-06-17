@@ -22,8 +22,8 @@ void runExampleGeneric(
     auto& exec,
     auto const& dev,
     auto const& queue,
-    auto const& bufX,
-    auto const& bufY,
+    auto& bufX,
+    auto& bufY,
     IdxType numElements,
     ScanType scanType)
 {
@@ -57,8 +57,8 @@ void runExample(
     auto const& dev,
     auto const& queue,
     auto const& inputData, // host buffer with input data
-    auto const& bufX, // accelerator input buffer (uninitialized)
-    auto const& bufY, // accelerator output buffer (may be same as bufX when running inplace)
+    auto& bufX, // accelerator input buffer (uninitialized)
+    auto& bufY, // accelerator output buffer (may be same as bufX when running inplace)
     IdxType numElements,
     ScanType scanType,
     bool const /*enableStd*/)
@@ -76,8 +76,8 @@ void runExample(
     auto const& dev,
     auto const& queue,
     auto const& inputData,
-    auto const& bufX,
-    auto const& bufY,
+    auto& bufX,
+    auto& bufY,
     IdxType numElements,
     ScanType scanType,
     bool const enableStd)
@@ -117,14 +117,20 @@ void runExample(
     runExampleGeneric(exec, dev, queue, bufX, bufY, numElements, scanType);
 }
 
+
+#if ALPAKA_LANG_CUDA
+// only do this when CUDA is enabled, the host compiler can't compile this
+
+#    include <cub/device/device_scan.cuh>
+
 // overload for GpuCuda running cublas implementations if requested
 void runExample(
     exec::GpuCuda exec,
     auto const& dev,
     auto const& queue,
     auto const& inputData,
-    auto const& bufX,
-    auto const& bufY,
+    auto& bufX,
+    auto& bufY,
     IdxType numElements,
     ScanType scanType,
     bool const enableStd)
@@ -136,21 +142,42 @@ void runExample(
     if(enableStd)
     {
         std::cout << std::endl << std::endl;
-        std::cout << "===== EXECUTOR CUBLAS =====" << std::endl;
+        std::cout << "===== EXECUTOR CUDA CUB =====" << std::endl;
 
-        /*
-        // initialize input data (it might get overwritten if we run in-place)
-        std::memcpy(bufHostX.data(), inputData.data(), sizeof(Data) * numElements);
+        // implementation see:
+        // https://nvidia.github.io/cccl/cub/api/structcub_1_1DeviceScan.html#_CPPv4N3cub10DeviceScanE
+
+        auto d_in = bufX.data();
+        auto d_out = bufY.data();
+
         onHost::wait(queue);
         auto const beginT = std::chrono::high_resolution_clock::now();
+
+        // in order to be fair to the alpaka implementation, which allocates its temporary memory inside the measured
+        // time too, we need to do the same for the cub implementation
+
+        void* d_temp_storage = nullptr;
+        size_t temp_storage_bytes = 0;
 
         switch(scanType)
         {
         case EXCLUSIVE_SCAN:
-            // TODO
+            // Determine temporary device storage requirements
+            cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, numElements);
+
+            // Allocate temporary storage
+            cudaMalloc(&d_temp_storage, temp_storage_bytes);
+
+            cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, numElements);
             break;
         case INCLUSIVE_SCAN:
-            // TODO
+            // Determine temporary device storage requirements
+            cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, numElements);
+
+            // Allocate temporary storage
+            cudaMalloc(&d_temp_storage, temp_storage_bytes);
+
+            cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, numElements);
             break;
         }
 
@@ -162,8 +189,8 @@ void runExample(
         // copy data to accelerator buffer
         onHost::memcpy(queue, bufX, inputData);
         onHost::wait(queue);
-        */
     }
 
     runExampleGeneric(exec, dev, queue, bufX, bufY, numElements, scanType);
 }
+#endif
