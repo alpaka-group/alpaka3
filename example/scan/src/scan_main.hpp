@@ -4,10 +4,35 @@
  * This file contains the main setup and surrounding functions for the scan example.
  */
 
+#include "scan_executors.hpp"
+
+#include <alpaka/alpaka.hpp>
+
 #include <chrono> // std::now
 #include <iostream> // std::cout
-#include <numeric> // std::exclusive_scan, std::inclusive_scan
 #include <random> // std::random_eng
+
+// set to false to use all 1s as input, for example for debugging
+constexpr bool RANDOM_INPUT = true;
+
+void printExampleHeader(ScanType const scanType, IdxType const numElements)
+{
+    std::cout << "================================" << std::endl;
+    switch(scanType)
+    {
+    case INCLUSIVE_SCAN:
+        std::cout << "Example Inclusive Scan" << std::endl;
+        break;
+    case EXCLUSIVE_SCAN:
+        std::cout << "Example Exclusive Scan" << std::endl;
+        break;
+    }
+    std::cout << "    Number of elements [#]: " << numElements << std::endl;
+    std::cout << "    Element type [byte]: " << core::demangledName<Data>() << std::endl;
+    std::cout << "    Buffer size [Gbyte]: " << numElements * sizeof(Data) / 1.e9 << std::endl;
+    std::cout << "================================" << std::endl;
+    std::cout << std::endl;
+}
 
 auto validateResult(auto const& bufHostX, auto const& bufHostY, IdxType extent, ScanType scanType)
 {
@@ -42,7 +67,6 @@ auto validateResult(auto const& bufHostX, auto const& bufHostY, IdxType extent, 
     if(falseResults == 0)
     {
         std::cout << "Execution results correct!" << std::endl;
-        std::cout << std::endl;
         return EXIT_SUCCESS;
     }
     else
@@ -50,7 +74,6 @@ auto validateResult(auto const& bufHostX, auto const& bufHostY, IdxType extent, 
         std::cout << "Found " << falseResults << " false results, printed no more than " << MAX_PRINT_FALSE_RESULTS
                   << "\n"
                   << "Execution results incorrect!" << std::endl;
-        std::cout << std::endl;
         return EXIT_FAILURE;
     }
 }
@@ -69,20 +92,6 @@ auto example(
 
     // Number of elements to process
     Vec1D const extent(numElements);
-
-    switch(scanType)
-    {
-    case INCLUSIVE_SCAN:
-        std::cout << "Example Inclusive Scan" << std::endl;
-        break;
-    case EXCLUSIVE_SCAN:
-        std::cout << "Example Exclusive Scan" << std::endl;
-        break;
-    }
-    std::cout << "    Number of elements [#]: " << numElements << std::endl;
-    std::cout << "    Element type [byte]: " << core::demangledName<Data>() << std::endl;
-    std::cout << "    Buffer size [Gbyte]: " << numElements * sizeof(Data) / 1.e9 << std::endl;
-    std::cout << std::endl;
 
     // Select a device
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
@@ -103,77 +112,17 @@ auto example(
     std::uniform_int_distribution<std::int32_t> dist(0, 10);
     for(IdxType i = 0u; i < extent; ++i)
     {
-#if 1
-        inputData[i] = static_cast<Data>(dist(eng));
-#else
-        inputData[i] = static_cast<Data>(1);
-#endif
+        if constexpr(RANDOM_INPUT)
+            inputData[i] = static_cast<Data>(dist(eng));
+        else
+            inputData[i] = static_cast<Data>(1);
     }
 
     // Allocate device memory buffers for x and y
     auto bufAccX = onHost::allocMirror(devAcc, bufHostX);
     auto bufAccY = enableInPlace ? bufAccX : onHost::allocMirror(devAcc, bufHostY);
 
-    // run for comparison but only if the executor is exec::cpuSerial
-    if(std::is_same_v<ALPAKA_TYPEOF(exec), exec::CpuSerial> && enableStdScan)
-    {
-        std::cout << "Using native CPU "
-                  << (scanType == EXCLUSIVE_SCAN ? "std::exclusive_scan()" : "std::inclusive_scan()") << std::endl;
-
-        // initialize input data (it might get overwritten if we run in-place)
-        std::memcpy(bufHostX.data(), inputData.data(), sizeof(Data) * numElements);
-        onHost::wait(queue);
-        auto const beginT = std::chrono::high_resolution_clock::now();
-
-        switch(scanType)
-        {
-        case EXCLUSIVE_SCAN:
-            std::exclusive_scan(bufHostX.data(), bufHostX.data() + bufHostX.getExtents().x(), bufHostY.data(), 0);
-            break;
-        case INCLUSIVE_SCAN:
-            std::inclusive_scan(bufHostX.data(), bufHostX.data() + bufHostX.getExtents().x(), bufHostY.data());
-            break;
-        }
-
-        auto const endT = std::chrono::high_resolution_clock::now();
-        double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
-
-        std::cout << "    Time for kernel execution [s]: " << kernelRuntime << std::endl;
-        std::cout << "    Processed [Gbyte/s]: "
-                  << (static_cast<double>(numElements * sizeof(Data)) / kernelRuntime) / 1.e9 << std::endl;
-        std::cout << std::endl;
-    }
-
-    // initialize input data (it might get overwritten if we run in-place)
-    std::memcpy(bufHostX.data(), inputData.data(), sizeof(Data) * numElements);
-    // Copy Host -> Acc
-    onHost::memcpy(queue, bufAccX, bufHostX);
-
-    // Enqueue the scan
-    {
-        std::cout << "Using alpaka accelerator: " << core::demangledName(exec) << " for "
-                  << deviceSpec.getApi().getName() << std::endl;
-        onHost::wait(queue);
-        auto const beginT = std::chrono::high_resolution_clock::now();
-
-        switch(scanType)
-        {
-        case EXCLUSIVE_SCAN:
-            scan<EXCLUSIVE_SCAN>(exec, devAcc, queue, bufAccX, bufAccY);
-            break;
-        case INCLUSIVE_SCAN:
-            scan<INCLUSIVE_SCAN>(exec, devAcc, queue, bufAccX, bufAccY);
-            break;
-        }
-
-        onHost::wait(queue); // for large n, scan is synchronous anyway
-
-        auto const endT = std::chrono::high_resolution_clock::now();
-        double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
-        std::cout << "    Time for kernel execution [s]: " << kernelRuntime << std::endl;
-        std::cout << "    Processed [Gbyte/s]: "
-                  << (static_cast<double>(numElements * sizeof(Data)) / kernelRuntime) / 1.e9 << std::endl;
-    }
+    runExample(exec, devAcc, queue, inputData, bufAccX, bufAccY, numElements, scanType, enableStdScan);
 
     // Copy back the result
     {
@@ -281,6 +230,8 @@ auto main(int argc, char* argv[]) -> int
             exit(EXIT_FAILURE);
         }
     }
+
+    printExampleHeader(scanType, numElements);
 
     using namespace alpaka;
     // Execute the example once for each enabled API and executor.
