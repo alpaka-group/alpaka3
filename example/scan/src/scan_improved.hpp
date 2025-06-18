@@ -236,7 +236,7 @@ public:
             }
             onAcc::syncBlockThreads(acc);
 
-            for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{1}))
+            for([[maybe_unused]] auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{1}))
             {
                 // -- SAVE BLOCK SUMS --
                 if constexpr(sizeof...(blockSums))

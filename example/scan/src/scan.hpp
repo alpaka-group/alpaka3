@@ -112,7 +112,7 @@ public:
             }
             onAcc::syncBlockThreads(acc);
 
-            for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{1}))
+            for([[maybe_unused]] auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{1}))
             {
                 // -- SAVE BLOCK SUMS --
                 if constexpr(sizeof...(blockSums))
@@ -172,7 +172,6 @@ public:
         concepts::MdSpan auto const& blockSums,
         concepts::MdSpan auto outputVec) const
     {
-        concepts::Vector auto numFrames = acc[frame::count];
         concepts::CVector auto frameExtent = acc[frame::extent];
         concepts::Vector auto numElements = outputVec.getExtents();
 

@@ -118,8 +118,8 @@ void runExample(
 }
 
 
-#if ALPAKA_LANG_CUDA
-// only do this when CUDA is enabled, the host compiler can't compile this
+#if ALPAKA_HAS_CUB
+// only do this when CUB is found
 
 #    include <cub/device/device_scan.cuh>
 
