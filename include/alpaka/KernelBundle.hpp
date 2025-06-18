@@ -113,12 +113,7 @@ namespace alpaka
     namespace trait
     {
         template<typename T>
-        struct IsKernelBundle : std::false_type
-        {
-        };
-
-        template<typename TKernelFn, typename... TArgs>
-        struct IsKernelBundle<KernelBundle<TKernelFn, TArgs...>> : std::true_type
+        struct IsKernelBundle : std::integral_constant<bool, isSpecializationOf_v<T, KernelBundle>>
         {
         };
     } // namespace trait
