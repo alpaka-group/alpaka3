@@ -11,6 +11,62 @@
 
 using namespace alpaka;
 
+int validateResult(auto queue, auto const& inputData, auto const& bufY, IdxType numElements, ScanType scanType)
+{
+    // Copy back the result
+    auto bufHostY = onHost::allocHost<Data>(numElements);
+
+    auto beginT = std::chrono::high_resolution_clock::now();
+    onHost::memcpy(queue, bufHostY, bufY);
+    onHost::wait(queue);
+    auto const endT = std::chrono::high_resolution_clock::now();
+    double copyRuntime = std::chrono::duration<double>(endT - beginT).count();
+    std::cout << "    Time for HtoD copy [s]: " << copyRuntime << std::endl;
+    std::cout << "    Copied [Gbyte/s]: " << (static_cast<double>(numElements * sizeof(Data)) / copyRuntime) / 1.e9
+              << std::endl;
+
+    // validate results
+    int falseResults = 0;
+    static constexpr int MAX_PRINT_FALSE_RESULTS = 20;
+
+    auto const& groundtruth = onHost::allocHost<Data>(numElements);
+    switch(scanType)
+    {
+    case EXCLUSIVE_SCAN:
+        std::exclusive_scan(inputData.data(), inputData.data() + numElements, groundtruth.data(), 0);
+        break;
+    case INCLUSIVE_SCAN:
+        std::inclusive_scan(inputData.data(), inputData.data() + numElements, groundtruth.data());
+        break;
+    }
+
+    for(IdxType i = 0u; i < numElements; ++i)
+    {
+        Data const& computedY = bufHostY[i];
+        Data const& correctResult = groundtruth[i];
+
+        if(computedY != correctResult)
+        {
+            if(falseResults < MAX_PRINT_FALSE_RESULTS)
+                std::cerr << "bufY[" << i << "] == " << computedY << " != " << correctResult << std::endl;
+            ++falseResults;
+        }
+    }
+
+    if(falseResults == 0)
+    {
+        std::cout << "Execution results correct!" << std::endl;
+        return EXIT_SUCCESS;
+    }
+    else
+    {
+        std::cout << "Found " << falseResults << " false results, printed no more than " << MAX_PRINT_FALSE_RESULTS
+                  << "\n"
+                  << "Execution results incorrect!" << std::endl;
+        return EXIT_FAILURE;
+    }
+}
+
 void printResults(double time, IdxType numElements)
 {
     std::cout << "    Time for kernel execution [s]: " << time << std::endl;
@@ -18,14 +74,16 @@ void printResults(double time, IdxType numElements)
               << std::endl;
 }
 
-void runExampleGeneric(
+int runExampleGeneric(
     auto& exec,
     auto const& dev,
     auto const& queue,
+    auto const& inputData,
     auto& bufX,
     auto& bufY,
     IdxType numElements,
-    ScanType scanType)
+    ScanType scanType,
+    bool const enableCheck)
 {
     std::cout << std::endl << std::endl;
     std::cout << "===== EXECUTOR " << core::demangledName(exec) << " =====" << std::endl;
@@ -49,10 +107,12 @@ void runExampleGeneric(
     double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
 
     printResults(kernelRuntime, numElements);
+
+    return enableCheck ? validateResult(queue, inputData, bufY, numElements, scanType) : EXIT_SUCCESS;
 }
 
 // overload for generic executors with no special std implementation
-void runExample(
+int runExample(
     auto& exec,
     auto const& dev,
     auto const& queue,
@@ -61,17 +121,18 @@ void runExample(
     auto& bufY, // accelerator output buffer (may be same as bufX when running inplace)
     IdxType numElements,
     ScanType scanType,
+    bool const enableCheck,
     bool const /*enableStd*/)
 {
     // copy data to accelerator buffer
     onHost::memcpy(queue, bufX, inputData);
     onHost::wait(queue);
 
-    runExampleGeneric(exec, dev, queue, bufX, bufY, numElements, scanType);
+    return runExampleGeneric(exec, dev, queue, inputData, bufX, bufY, numElements, scanType, enableCheck);
 }
 
 // overload for CpuSerial running std:: implementations if requested
-void runExample(
+int runExample(
     exec::CpuSerial exec,
     auto const& dev,
     auto const& queue,
@@ -80,11 +141,14 @@ void runExample(
     auto& bufY,
     IdxType numElements,
     ScanType scanType,
+    bool const enableCheck,
     bool const enableStd)
 {
     // copy data to accelerator buffer
     onHost::memcpy(queue, bufX, inputData);
     onHost::wait(queue);
+
+    int const res = EXIT_SUCCESS;
 
     if(enableStd)
     {
@@ -109,12 +173,23 @@ void runExample(
 
         printResults(kernelRuntime, numElements);
 
+        if(enableCheck)
+        {
+            res = validateResult(queue, inputData, bufY, numElements, scanType);
+        }
+
         // copy data to accelerator buffer for the next generic run
         onHost::memcpy(queue, bufX, inputData);
         onHost::wait(queue);
     }
 
-    runExampleGeneric(exec, dev, queue, bufX, bufY, numElements, scanType);
+    auto resGeneric = runExampleGeneric(exec, dev, queue, inputData, bufX, bufY, numElements, scanType, enableCheck);
+
+    if(resGeneric != EXIT_SUCCESS || res != EXIT_SUCCESS)
+    {
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
 }
 
 
@@ -124,7 +199,7 @@ void runExample(
 #    include <cub/device/device_scan.cuh>
 
 // overload for GpuCuda running cublas implementations if requested
-void runExample(
+int runExample(
     exec::GpuCuda exec,
     auto const& dev,
     auto const& queue,
@@ -133,11 +208,14 @@ void runExample(
     auto& bufY,
     IdxType numElements,
     ScanType scanType,
+    bool const enableCheck,
     bool const enableStd)
 {
     // copy data to accelerator buffer
     onHost::memcpy(queue, bufX, inputData);
     onHost::wait(queue);
+
+    int res = EXIT_SUCCESS;
 
     if(enableStd)
     {
@@ -163,34 +241,74 @@ void runExample(
         {
         case EXCLUSIVE_SCAN:
             // Determine temporary device storage requirements
-            cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, numElements);
+            cub::DeviceScan::ExclusiveSum(
+                d_temp_storage,
+                temp_storage_bytes,
+                d_in,
+                d_out,
+                numElements,
+                queue.getNativeHandle());
+
+            onHost::wait(queue);
 
             // Allocate temporary storage
             cudaMalloc(&d_temp_storage, temp_storage_bytes);
 
-            cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, numElements);
+            cub::DeviceScan::ExclusiveSum(
+                d_temp_storage,
+                temp_storage_bytes,
+                d_in,
+                d_out,
+                numElements,
+                queue.getNativeHandle());
             break;
         case INCLUSIVE_SCAN:
             // Determine temporary device storage requirements
-            cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, numElements);
+            cub::DeviceScan::InclusiveSum(
+                d_temp_storage,
+                temp_storage_bytes,
+                d_in,
+                d_out,
+                numElements,
+                queue.getNativeHandle());
+
+            onHost::wait(queue);
 
             // Allocate temporary storage
             cudaMalloc(&d_temp_storage, temp_storage_bytes);
 
-            cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes, d_in, d_out, numElements);
+            cub::DeviceScan::InclusiveSum(
+                d_temp_storage,
+                temp_storage_bytes,
+                d_in,
+                d_out,
+                numElements,
+                queue.getNativeHandle());
             break;
         }
+        onHost::wait(queue);
 
         auto const endT = std::chrono::high_resolution_clock::now();
         double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
 
         printResults(kernelRuntime, numElements);
 
+        if(enableCheck)
+        {
+            res = validateResult(queue, inputData, bufY, numElements, scanType);
+        }
+
         // copy data to accelerator buffer
         onHost::memcpy(queue, bufX, inputData);
         onHost::wait(queue);
     }
 
-    runExampleGeneric(exec, dev, queue, bufX, bufY, numElements, scanType);
+    auto resGeneric = runExampleGeneric(exec, dev, queue, inputData, bufX, bufY, numElements, scanType, enableCheck);
+
+    if(resGeneric != EXIT_SUCCESS || res != EXIT_SUCCESS)
+    {
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
 }
 #endif

@@ -34,50 +34,6 @@ void printExampleHeader(ScanType const scanType, IdxType const numElements)
     std::cout << std::endl;
 }
 
-auto validateResult(auto const& bufHostX, auto const& bufHostY, IdxType extent, ScanType scanType)
-{
-    // validate results
-    int falseResults = 0;
-    static constexpr int MAX_PRINT_FALSE_RESULTS = 20;
-
-    auto const& groundtruth = onHost::allocHost<Data>(extent);
-    switch(scanType)
-    {
-    case EXCLUSIVE_SCAN:
-        std::exclusive_scan(bufHostX.data(), bufHostX.data() + bufHostX.getExtents().x(), groundtruth.data(), 0);
-        break;
-    case INCLUSIVE_SCAN:
-        std::inclusive_scan(bufHostX.data(), bufHostX.data() + bufHostX.getExtents().x(), groundtruth.data());
-        break;
-    }
-
-    for(IdxType i = 0u; i < extent; ++i)
-    {
-        Data const& computedY = bufHostY[i];
-        Data const& correctResult = groundtruth[i];
-
-        if(computedY != correctResult)
-        {
-            if(falseResults < MAX_PRINT_FALSE_RESULTS)
-                std::cerr << "bufY[" << i << "] == " << computedY << " != " << correctResult << std::endl;
-            ++falseResults;
-        }
-    }
-
-    if(falseResults == 0)
-    {
-        std::cout << "Execution results correct!" << std::endl;
-        return EXIT_SUCCESS;
-    }
-    else
-    {
-        std::cout << "Found " << falseResults << " false results, printed no more than " << MAX_PRINT_FALSE_RESULTS
-                  << "\n"
-                  << "Execution results incorrect!" << std::endl;
-        return EXIT_FAILURE;
-    }
-}
-
 template<typename T_Cfg>
 auto example(
     T_Cfg const& cfg,
@@ -104,7 +60,6 @@ auto example(
 
     // Allocate host memory buffer for x (input) and y (output)
     auto bufHostX = onHost::allocHost<Data>(extent);
-    auto bufHostY = enableInPlace ? bufHostX : onHost::allocHost<Data>(extent);
 
     // Fill input data with random values
     std::random_device rd{};
@@ -120,23 +75,19 @@ auto example(
 
     // Allocate device memory buffers for x and y
     auto bufAccX = onHost::allocMirror(devAcc, bufHostX);
-    auto bufAccY = enableInPlace ? bufAccX : onHost::allocMirror(devAcc, bufHostY);
+    auto bufAccY = enableInPlace ? bufAccX : onHost::allocMirror(devAcc, bufAccX);
 
-    runExample(exec, devAcc, queue, inputData, bufAccX, bufAccY, numElements, scanType, enableStdScan);
-
-    // Copy back the result
-    {
-        auto beginT = std::chrono::high_resolution_clock::now();
-        onHost::memcpy(queue, bufHostY, bufAccY);
-        onHost::wait(queue);
-        auto const endT = std::chrono::high_resolution_clock::now();
-        double copyRuntime = std::chrono::duration<double>(endT - beginT).count();
-        std::cout << "    Time for HtoD copy [s]: " << copyRuntime << std::endl;
-        std::cout << "    Copied [Gbyte/s]: " << (static_cast<double>(numElements * sizeof(Data)) / copyRuntime) / 1.e9
-                  << std::endl;
-    }
-
-    return enableCheck ? validateResult(inputData, bufHostY, extent.x(), scanType) : EXIT_SUCCESS;
+    return runExample(
+        exec,
+        devAcc,
+        queue,
+        inputData,
+        bufAccX,
+        bufAccY,
+        numElements,
+        scanType,
+        enableCheck,
+        enableStdScan);
 }
 
 void help(char* argv[])
@@ -234,9 +185,12 @@ auto main(int argc, char* argv[]) -> int
     printExampleHeader(scanType, numElements);
 
     using namespace alpaka;
+
     // Execute the example once for each enabled API and executor.
-    return executeForEachIfHasDevice(
+    auto result = executeForEachIfHasDevice(
         [=](auto const& tag)
         { return example(tag, numElements, enableStdScan, enableCheck, enableInPlace, scanType); },
         onHost::allBackends(onHost::enabledApis));
+
+    return result;
 }

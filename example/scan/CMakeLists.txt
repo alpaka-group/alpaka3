@@ -61,11 +61,11 @@ foreach(scanFile ${scanSource})
     target_compile_features(${scanName} PRIVATE cxx_std_20)
 
     if(CUDAToolkit_FOUND)
-        target_link_libraries(${scanName} PRIVATE CUDA::cudart)
+        target_link_libraries(${scanName} PRIVATE CUDA::cudart_static)
         target_compile_definitions(${scanName} PRIVATE ALPAKA_HAS_CUB=1)
     endif()
     if(HIPBLAS_FOUND)
-        target_link_libraries(${scanName} PRIVATE roc::hipblas)
+        target_link_libraries(${scanName} PRIVATE roc::hipcub)
         target_compile_definitions(${scanName} PRIVATE ALPAKA_HAS_HIPBLAS=1)
     endif()
 
