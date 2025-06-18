@@ -5,6 +5,8 @@
  * implementation and cublas.
  */
 
+#pragma once
+
 #include <alpaka/alpaka.hpp>
 
 #include <numeric> // std::exclusive_scan, std::inclusive_scan
@@ -148,7 +150,7 @@ int runExample(
     onHost::memcpy(queue, bufX, inputData);
     onHost::wait(queue);
 
-    int const res = EXIT_SUCCESS;
+    int res = EXIT_SUCCESS;
 
     if(enableStd)
     {
@@ -198,7 +200,18 @@ int runExample(
 
 #    include <cub/device/device_scan.cuh>
 
-// overload for GpuCuda running cublas implementations if requested
+#    define CUDA_CHECK(condition)                                                                                     \
+        do                                                                                                            \
+        {                                                                                                             \
+            auto error = condition;                                                                                   \
+            if(error != cudaSuccess)                                                                                  \
+            {                                                                                                         \
+                std::cout << "CUDA error: " << error << " line: " << __LINE__ << std::endl;                           \
+                exit(error);                                                                                          \
+            }                                                                                                         \
+        } while(0);
+
+// overload for GpuCuda running cub implementations if requested
 int runExample(
     exec::GpuCuda exec,
     auto const& dev,
@@ -241,52 +254,55 @@ int runExample(
         {
         case EXCLUSIVE_SCAN:
             // Determine temporary device storage requirements
-            cub::DeviceScan::ExclusiveSum(
+            CUDA_CHECK(cub::DeviceScan::ExclusiveSum(
                 d_temp_storage,
                 temp_storage_bytes,
                 d_in,
                 d_out,
                 numElements,
-                queue.getNativeHandle());
+                queue.getNativeHandle()));
 
             onHost::wait(queue);
 
             // Allocate temporary storage
-            cudaMalloc(&d_temp_storage, temp_storage_bytes);
+            CUDA_CHECK(cudaMalloc(&d_temp_storage, temp_storage_bytes));
 
-            cub::DeviceScan::ExclusiveSum(
+            CUDA_CHECK(cub::DeviceScan::ExclusiveSum(
                 d_temp_storage,
                 temp_storage_bytes,
                 d_in,
                 d_out,
                 numElements,
-                queue.getNativeHandle());
+                queue.getNativeHandle()));
             break;
         case INCLUSIVE_SCAN:
             // Determine temporary device storage requirements
-            cub::DeviceScan::InclusiveSum(
+            CUDA_CHECK(cub::DeviceScan::InclusiveSum(
                 d_temp_storage,
                 temp_storage_bytes,
                 d_in,
                 d_out,
                 numElements,
-                queue.getNativeHandle());
+                queue.getNativeHandle()));
 
             onHost::wait(queue);
 
             // Allocate temporary storage
-            cudaMalloc(&d_temp_storage, temp_storage_bytes);
+            CUDA_CHECK(cudaMalloc(&d_temp_storage, temp_storage_bytes));
 
-            cub::DeviceScan::InclusiveSum(
+            CUDA_CHECK(cub::DeviceScan::InclusiveSum(
                 d_temp_storage,
                 temp_storage_bytes,
                 d_in,
                 d_out,
                 numElements,
-                queue.getNativeHandle());
+                queue.getNativeHandle()));
             break;
         }
         onHost::wait(queue);
+
+        if(d_temp_storage)
+            cudaFree(d_temp_storage);
 
         auto const endT = std::chrono::high_resolution_clock::now();
         double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
@@ -311,4 +327,140 @@ int runExample(
     }
     return EXIT_SUCCESS;
 }
+
+#endif
+
+#if ALPAKA_HAS_HIPCUB
+
+#    include <hipcub/device/device_scan.hpp>
+#    include <hipcub/util_allocator.hpp>
+
+using namespace hipcub;
+hipcub::CachingDeviceAllocator g_allocator; // Caching allocator for device memory
+
+#    define HIP_CHECK(condition)                                                                                      \
+        do                                                                                                            \
+        {                                                                                                             \
+            hipError_t error = condition;                                                                             \
+            if(error != hipSuccess)                                                                                   \
+            {                                                                                                         \
+                std::cout << "HIP error: " << error << " line: " << __LINE__ << std::endl;                            \
+                exit(error);                                                                                          \
+            }                                                                                                         \
+        } while(0);
+
+// overload for GpuHip running hipcub implementations if requested
+int runExample(
+    exec::GpuHip exec,
+    auto const& dev,
+    auto const& queue,
+    auto const& inputData,
+    auto& bufX,
+    auto& bufY,
+    IdxType numElements,
+    ScanType scanType,
+    bool const enableCheck,
+    bool const enableStd)
+{
+    // copy data to accelerator buffer
+    onHost::memcpy(queue, bufX, inputData);
+    onHost::wait(queue);
+
+    int res = EXIT_SUCCESS;
+
+    if(enableStd)
+    {
+        std::cout << std::endl << std::endl;
+        std::cout << "===== EXECUTOR HIP CUB =====" << std::endl;
+
+        auto d_in = bufX.data();
+        auto d_out = bufY.data();
+
+        onHost::wait(queue);
+        auto const beginT = std::chrono::high_resolution_clock::now();
+
+        // in order to be fair to the alpaka implementation, which allocates its temporary memory inside the measured
+        // time too, we need to do the same for the hip cub implementation
+
+        void* d_temp_storage = nullptr;
+        size_t temp_storage_bytes = 0;
+
+        switch(scanType)
+        {
+        case EXCLUSIVE_SCAN:
+            // Determine temporary device storage requirements
+            HIP_CHECK(hipcub::DeviceScan::ExclusiveSum(
+                d_temp_storage,
+                temp_storage_bytes,
+                d_in,
+                d_out,
+                numElements,
+                queue.getNativeHandle()));
+
+            onHost::wait(queue);
+
+            // Allocate temporary storage
+            HIP_CHECK(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
+
+            HIP_CHECK(hipcub::DeviceScan::ExclusiveSum(
+                d_temp_storage,
+                temp_storage_bytes,
+                d_in,
+                d_out,
+                numElements,
+                queue.getNativeHandle()));
+            break;
+        case INCLUSIVE_SCAN:
+            // Determine temporary device storage requirements
+            HIP_CHECK(hipcub::DeviceScan::InclusiveSum(
+                d_temp_storage,
+                temp_storage_bytes,
+                d_in,
+                d_out,
+                numElements,
+                queue.getNativeHandle()));
+
+            onHost::wait(queue);
+
+            // Allocate temporary storage
+            HIP_CHECK(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
+
+            HIP_CHECK(hipcub::DeviceScan::InclusiveSum(
+                d_temp_storage,
+                temp_storage_bytes,
+                d_in,
+                d_out,
+                numElements,
+                queue.getNativeHandle()));
+            break;
+        }
+        onHost::wait(queue);
+
+        if(d_temp_storage)
+            HIP_CHECK(g_allocator.DeviceFree(d_temp_storage));
+
+        auto const endT = std::chrono::high_resolution_clock::now();
+        double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
+
+        printResults(kernelRuntime, numElements);
+
+        if(enableCheck)
+        {
+            res = validateResult(queue, inputData, bufY, numElements, scanType);
+        }
+
+        // copy data to accelerator buffer
+        onHost::memcpy(queue, bufX, inputData);
+        onHost::wait(queue);
+    }
+
+    auto resGeneric = runExampleGeneric(exec, dev, queue, inputData, bufX, bufY, numElements, scanType, enableCheck);
+
+    if(resGeneric != EXIT_SUCCESS || res != EXIT_SUCCESS)
+    {
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
 #endif

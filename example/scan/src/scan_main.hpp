@@ -4,6 +4,9 @@
  * This file contains the main setup and surrounding functions for the scan example.
  */
 
+#pragma once
+
+#include "common.hpp"
 #include "scan_executors.hpp"
 
 #include <alpaka/alpaka.hpp>
@@ -15,7 +18,7 @@
 // set to false to use all 1s as input, for example for debugging
 constexpr bool RANDOM_INPUT = true;
 
-void printExampleHeader(ScanType const scanType, IdxType const numElements)
+void printExampleHeader(ScanType const scanType, IdxType const numElements, bool enableInPlace)
 {
     std::cout << "================================" << std::endl;
     switch(scanType)
@@ -27,6 +30,10 @@ void printExampleHeader(ScanType const scanType, IdxType const numElements)
         std::cout << "Example Exclusive Scan" << std::endl;
         break;
     }
+    if(enableInPlace)
+        std::cout << "    Running in-place (input buffer = output buffer)" << std::endl;
+    else
+        std::cout << "    Not running in-place (input buffer != output buffer)" << std::endl;
     std::cout << "    Number of elements [#]: " << numElements << std::endl;
     std::cout << "    Element type [byte]: " << core::demangledName<Data>() << std::endl;
     std::cout << "    Buffer size [Gbyte]: " << numElements * sizeof(Data) / 1.e9 << std::endl;
@@ -98,11 +105,11 @@ void help(char* argv[])
               << std::endl;
     std::cerr << "  -c: disable checking for correct results" << std::endl;
     std::cerr << "  -i: enable in-place scan instead of creating an output buffer for the result" << std::endl;
-    std::cerr << "  -t: scanType: 0 for inclusive, 1 for exclusive scan. Default: 0 (inclusive)" << std::endl;
+    std::cerr << "  -t: scanType: 0 for exclusive, 1 for inclusive scan. Default: 0 (exclusive)" << std::endl;
     std::cerr << "  -h: Print this help message" << std::endl;
     std::cerr << std::endl;
-    std::cerr << "Example call for an exclusive scan with 256Ki elements:" << std::endl;
-    std::cerr << argv[0] << " -n 262144 -t 1" << std::endl;
+    std::cerr << "Example call for an in-place inclusive scan with 256Ki elements:" << std::endl;
+    std::cerr << argv[0] << " -n 262144 -t 1 -i" << std::endl;
 }
 
 auto main(int argc, char* argv[]) -> int
@@ -110,7 +117,7 @@ auto main(int argc, char* argv[]) -> int
     // Default value if no command line argument used
     IdxType numElements = 1 << 24;
 
-    ScanType scanType = INCLUSIVE_SCAN;
+    ScanType scanType = EXCLUSIVE_SCAN;
 
     int opt;
     bool enableStdScan = true;
@@ -143,10 +150,10 @@ auto main(int argc, char* argv[]) -> int
                 switch(std::stoi(optarg, nullptr, 0))
                 {
                 case 0:
-                    scanType = INCLUSIVE_SCAN;
+                    scanType = EXCLUSIVE_SCAN;
                     break;
                 case 1:
-                    scanType = EXCLUSIVE_SCAN;
+                    scanType = INCLUSIVE_SCAN;
                     break;
                 default:
                     std::cerr << "Error: invalid argument '" << optarg << " for scan type, use 0 or 1'.\n";
@@ -182,7 +189,7 @@ auto main(int argc, char* argv[]) -> int
         }
     }
 
-    printExampleHeader(scanType, numElements);
+    printExampleHeader(scanType, numElements, enableInPlace);
 
     using namespace alpaka;
 

@@ -4,6 +4,10 @@
  * This file contains the basic implementation and kernels for the scan example.
  */
 
+#pragma once
+
+#include "common.hpp"
+
 #include <alpaka/alpaka.hpp>
 #include <alpaka/example/executeForEach.hpp>
 #include <alpaka/example/executors.hpp>
@@ -12,26 +16,6 @@
 #include <tuple> // std::tuple
 #include <type_traits> // is_same_v
 #include <typeinfo>
-
-using namespace alpaka;
-using IdxType = std::size_t;
-using Data = std::int32_t;
-using Vec1D = Vec<IdxType, 1u>;
-
-constexpr IdxType numNvidiaBanks = 32u;
-constexpr IdxType numAmdBanks = 32u;
-constexpr IdxType numIntelBanks = 16u;
-
-enum ScanType
-{
-    INCLUSIVE_SCAN,
-    EXCLUSIVE_SCAN
-};
-
-constexpr IdxType operator""_idx(unsigned long long n)
-{
-    return IdxType{n};
-}
 
 /* This function introduces padding to the shared memory accesses to reduce bank conflicts between threads. The
  * template parameter is the device kind, which dictates how many memory banks are assumed. For CPU or
