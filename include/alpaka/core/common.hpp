@@ -28,11 +28,7 @@
 //! \endcode
 //! @{
 #if ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP
-#    if defined(ALPAKA_ACC_GPU_CUDA_ONLY_MODE) || defined(ALPAKA_ACC_GPU_HIP_ONLY_MODE)
-#        define ALPAKA_FN_ACC __device__
-#    else
-#        define ALPAKA_FN_ACC __device__ __host__
-#    endif
+#    define ALPAKA_FN_ACC __device__ __host__
 #    define ALPAKA_FN_HOST_ACC __device__ __host__
 #    define ALPAKA_FN_HOST __host__
 #else
@@ -52,7 +48,7 @@
 //! Warning: If this is used together with the SYCL back-end make sure that your SYCL runtime supports generic
 //! address spaces. Otherwise it is forbidden to use pointers as parameter or return type for functions marked
 //! with ALPAKA_FN_EXTERN.
-#ifdef ALPAKA_ACC_SYCL_ENABLED
+#if ALPAKA_LANG_SYCL
 /*
    This is required by the SYCL standard, section 5.10.1 "SYCL functions and member functions linkage":
 

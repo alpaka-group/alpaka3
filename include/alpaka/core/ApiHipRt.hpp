@@ -438,4 +438,4 @@ namespace alpaka
 
 } // namespace alpaka
 
-#endif // ALPAKA_ACC_GPU_HIP_ENABLED
+#endif

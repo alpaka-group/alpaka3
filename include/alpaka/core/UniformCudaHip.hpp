@@ -6,7 +6,6 @@
 #pragma once
 
 #include "alpaka/core/Cuda.hpp"
-#include "alpaka/core/Hip.hpp"
 #include "alpaka/core/config.hpp"
 
 #include <initializer_list>
