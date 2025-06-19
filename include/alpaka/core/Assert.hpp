@@ -33,13 +33,13 @@
 //! In device code for a GPU or SYCL backend it can be disabled setting the ALPAKA_DISABLE_ASSERT_ACC preprocessor
 //! symbol or the NDEBUG preprocessor symbol. In device code for a native C++ CPU backend and in host code, it is
 //! equivalent to ALPAKA_ASSERT, and can be disabled setting the NDEBUG preprocessor symbol.
-#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) && defined(__CUDA_ARCH__)
+#if defined(ALPAKA_LANG_CUDA) && defined(__CUDA_ARCH__)
 // CUDA device code
 #    define ALPAKA_ASSERT_ACC(...) ALPAKA_ASSERT_ACC_IMPL(__VA_ARGS__)
-#elif defined(ALPAKA_ACC_GPU_HIP_ENABLED) && defined(__HIP_DEVICE_COMPILE__)
+#elif defined(ALPAKA_LANG_HIP) && defined(__HIP_DEVICE_COMPILE__)
 // HIP/ROCm device code
 #    define ALPAKA_ASSERT_ACC(...) ALPAKA_ASSERT_ACC_IMPL(__VA_ARGS__)
-#elif defined(ALPAKA_ACC_SYCL_ENABLED) && defined(__SYCL_DEVICE_ONLY__)
+#elif defined(ALPAKA_LANG_SYCL) && defined(__SYCL_DEVICE_ONLY__)
 // SYCL/oneAPI device code
 #    if defined(SYCL_EXT_ONEAPI_ASSERT)
 #        define ALPAKA_ASSERT_ACC(...) ALPAKA_ASSERT_ACC_IMPL(__VA_ARGS__)

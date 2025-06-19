@@ -45,12 +45,12 @@ namespace alpaka::onAcc::cpu::detail
         {
             // Add meta data chunk in front of the user data
             m_allocdBytes = varChunkEnd<MetaData>(m_allocdBytes, sizeof(MetaData));
-            ALPAKA_ASSERT_ACC(m_allocdBytes <= m_allocdBytes);
+            ALPAKA_ASSERT_ACC(m_allocdBytes <= totalSharedBytes);
             auto* meta = getLatestVarPtr<MetaData>();
 
             // Allocate variable
             m_allocdBytes = varChunkEnd<T>(m_allocdBytes, sizeof(T));
-            ALPAKA_ASSERT_ACC(m_allocdBytes <= m_allocdBytes);
+            ALPAKA_ASSERT_ACC(m_allocdBytes <= totalSharedBytes);
 
             // Update meta data with id and offset for the allocated variable.
             meta->id = id;
@@ -62,12 +62,12 @@ namespace alpaka::onAcc::cpu::detail
         {
             // Add meta data chunk in front of the user data
             m_allocdBytes = varChunkEnd<MetaData>(m_allocdBytes, sizeof(MetaData));
-            ALPAKA_ASSERT_ACC(m_allocdBytes <= m_allocdBytes);
+            ALPAKA_ASSERT_ACC(m_allocdBytes <= totalSharedBytes);
             auto* meta = getLatestVarPtr<MetaData>();
 
             // Allocate variable
             m_allocdBytes = varChunkEnd<T>(m_allocdBytes, numBytes);
-            ALPAKA_ASSERT_ACC(m_allocdBytes <= m_allocdBytes);
+            ALPAKA_ASSERT_ACC(m_allocdBytes <= totalSharedBytes);
 
             // Update meta data with id and offset for the allocated variable.
             meta->id = id;
