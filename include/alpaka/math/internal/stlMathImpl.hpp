@@ -15,6 +15,7 @@
 
 #include <bit>
 #include <cmath>
+#include <cstdint>
 #include <type_traits>
 
 namespace alpaka::math::internal
@@ -78,17 +79,17 @@ namespace alpaka::math::internal
         {
             if constexpr(std::is_same_v<T_Arg, float>)
             {
-                constexpr std::uint32_t expMask = 0x7F80'0000;
-                constexpr std::uint32_t fracMask = 0x007F'FFFF;
-                std::uint32_t bits = std::bit_cast<std::uint32_t>(arg);
+                constexpr uint32_t expMask = 0x7F80'0000;
+                constexpr uint32_t fracMask = 0x007F'FFFF;
+                uint32_t bits = std::bit_cast<uint32_t>(arg);
                 bool result = ((bits & expMask) == expMask) && (bits & fracMask);
                 return result;
             }
             else if constexpr(std::is_same_v<T_Arg, double>)
             {
-                constexpr std::uint64_t expMask = 0x7FF0'0000'0000'0000ULL;
-                constexpr std::uint64_t fracMask = 0x000F'FFFF'FFFF'FFFFULL;
-                std::uint64_t bits = std::bit_cast<std::uint64_t>(arg);
+                constexpr uint64_t expMask = 0x7FF0'0000'0000'0000ULL;
+                constexpr uint64_t fracMask = 0x000F'FFFF'FFFF'FFFFULL;
+                uint64_t bits = std::bit_cast<uint64_t>(arg);
                 bool result = ((bits & expMask) == expMask) && (bits & fracMask);
                 return result;
             }
@@ -109,17 +110,17 @@ namespace alpaka::math::internal
         {
             if constexpr(std::is_same_v<T_Arg, float>)
             {
-                constexpr std::uint32_t expMask = 0x7F80'0000;
-                constexpr std::uint32_t fracMask = 0x007F'FFFF;
-                std::uint32_t bits = std::bit_cast<std::uint32_t>(arg);
+                constexpr uint32_t expMask = 0x7F80'0000;
+                constexpr uint32_t fracMask = 0x007F'FFFF;
+                uint32_t bits = std::bit_cast<uint32_t>(arg);
                 bool result = ((bits & expMask) == expMask) && !(bits & fracMask);
                 return result;
             }
             else if constexpr(std::is_same_v<T_Arg, double>)
             {
-                constexpr std::uint64_t expMask = 0x7FF0'0000'0000'0000ULL;
-                constexpr std::uint64_t fracMask = 0x000F'FFFF'FFFF'FFFFULL;
-                std::uint64_t bits = std::bit_cast<std::uint64_t>(arg);
+                constexpr uint64_t expMask = 0x7FF0'0000'0000'0000ULL;
+                constexpr uint64_t fracMask = 0x000F'FFFF'FFFF'FFFFULL;
+                uint64_t bits = std::bit_cast<uint64_t>(arg);
                 bool result = ((bits & expMask) == expMask) && !(bits & fracMask);
                 return result;
             }
@@ -140,15 +141,15 @@ namespace alpaka::math::internal
         {
             if constexpr(std::is_same_v<T_Arg, float>)
             {
-                constexpr std::uint32_t expMask = 0x7F80'0000;
-                std::uint32_t bits = std::bit_cast<std::uint32_t>(arg);
+                constexpr uint32_t expMask = 0x7F80'0000;
+                uint32_t bits = std::bit_cast<uint32_t>(arg);
                 bool result = (bits & expMask) != expMask;
                 return result;
             }
             else if constexpr(std::is_same_v<T_Arg, double>)
             {
-                constexpr std::uint64_t expMask = 0x7FF0'0000'0000'0000ULL;
-                std::uint64_t bits = std::bit_cast<std::uint64_t>(arg);
+                constexpr uint64_t expMask = 0x7FF0'0000'0000'0000ULL;
+                uint64_t bits = std::bit_cast<uint64_t>(arg);
                 bool result = (bits & expMask) != expMask;
                 return result;
             }
