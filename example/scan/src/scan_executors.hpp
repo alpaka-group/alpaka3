@@ -11,16 +11,14 @@
 
 #include <numeric> // std::exclusive_scan, std::inclusive_scan
 
-using namespace alpaka;
-
 int validateResult(auto queue, auto const& inputData, auto const& bufY, IdxType numElements, ScanType scanType)
 {
     // Copy back the result
-    auto bufHostY = onHost::allocHost<Data>(numElements);
+    auto bufHostY = alpaka::onHost::allocHost<Data>(numElements);
 
     auto beginT = std::chrono::high_resolution_clock::now();
-    onHost::memcpy(queue, bufHostY, bufY);
-    onHost::wait(queue);
+    alpaka::onHost::memcpy(queue, bufHostY, bufY);
+    alpaka::onHost::wait(queue);
     auto const endT = std::chrono::high_resolution_clock::now();
     double copyRuntime = std::chrono::duration<double>(endT - beginT).count();
     std::cout << "    Time for HtoD copy [s]: " << copyRuntime << std::endl;
@@ -31,7 +29,7 @@ int validateResult(auto queue, auto const& inputData, auto const& bufY, IdxType 
     int falseResults = 0;
     static constexpr int MAX_PRINT_FALSE_RESULTS = 20;
 
-    auto const& groundtruth = onHost::allocHost<Data>(numElements);
+    auto const& groundtruth = alpaka::onHost::allocHost<Data>(numElements);
     switch(scanType)
     {
     case EXCLUSIVE_SCAN:
@@ -90,7 +88,7 @@ int runExampleGeneric(
     std::cout << std::endl << std::endl;
     std::cout << "===== EXECUTOR " << core::demangledName(exec) << " =====" << std::endl;
 
-    onHost::wait(queue);
+    alpaka::onHost::wait(queue);
     auto const beginT = std::chrono::high_resolution_clock::now();
 
     switch(scanType)
@@ -103,7 +101,7 @@ int runExampleGeneric(
         break;
     }
 
-    onHost::wait(queue); // for large n, scan is synchronous anyway
+    alpaka::onHost::wait(queue); // for large n, scan is synchronous anyway
 
     auto const endT = std::chrono::high_resolution_clock::now();
     double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
@@ -127,8 +125,8 @@ int runExample(
     bool const /*enableStd*/)
 {
     // copy data to accelerator buffer
-    onHost::memcpy(queue, bufX, inputData);
-    onHost::wait(queue);
+    alpaka::onHost::memcpy(queue, bufX, inputData);
+    alpaka::onHost::wait(queue);
 
     return runExampleGeneric(exec, dev, queue, inputData, bufX, bufY, numElements, scanType, enableCheck);
 }
@@ -147,8 +145,8 @@ int runExample(
     bool const enableStd)
 {
     // copy data to accelerator buffer
-    onHost::memcpy(queue, bufX, inputData);
-    onHost::wait(queue);
+    alpaka::onHost::memcpy(queue, bufX, inputData);
+    alpaka::onHost::wait(queue);
 
     int res = EXIT_SUCCESS;
 
@@ -157,7 +155,7 @@ int runExample(
         std::cout << std::endl << std::endl;
         std::cout << "===== EXECUTOR CPU STDLIB =====" << std::endl;
 
-        onHost::wait(queue);
+        alpaka::onHost::wait(queue);
         auto const beginT = std::chrono::high_resolution_clock::now();
 
         switch(scanType)
@@ -181,8 +179,8 @@ int runExample(
         }
 
         // copy data to accelerator buffer for the next generic run
-        onHost::memcpy(queue, bufX, inputData);
-        onHost::wait(queue);
+        alpaka::onHost::memcpy(queue, bufX, inputData);
+        alpaka::onHost::wait(queue);
     }
 
     auto resGeneric = runExampleGeneric(exec, dev, queue, inputData, bufX, bufY, numElements, scanType, enableCheck);
@@ -225,8 +223,8 @@ int runExample(
     bool const enableStd)
 {
     // copy data to accelerator buffer
-    onHost::memcpy(queue, bufX, inputData);
-    onHost::wait(queue);
+    alpaka::onHost::memcpy(queue, bufX, inputData);
+    alpaka::onHost::wait(queue);
 
     int res = EXIT_SUCCESS;
 
@@ -241,7 +239,7 @@ int runExample(
         auto d_in = bufX.data();
         auto d_out = bufY.data();
 
-        onHost::wait(queue);
+        alpaka::onHost::wait(queue);
         auto const beginT = std::chrono::high_resolution_clock::now();
 
         // in order to be fair to the alpaka implementation, which allocates its temporary memory inside the measured
@@ -262,7 +260,7 @@ int runExample(
                 numElements,
                 queue.getNativeHandle()));
 
-            onHost::wait(queue);
+            alpaka::onHost::wait(queue);
 
             // Allocate temporary storage
             CUDA_CHECK(cudaMalloc(&d_temp_storage, temp_storage_bytes));
@@ -285,7 +283,7 @@ int runExample(
                 numElements,
                 queue.getNativeHandle()));
 
-            onHost::wait(queue);
+            alpaka::onHost::wait(queue);
 
             // Allocate temporary storage
             CUDA_CHECK(cudaMalloc(&d_temp_storage, temp_storage_bytes));
@@ -299,7 +297,7 @@ int runExample(
                 queue.getNativeHandle()));
             break;
         }
-        onHost::wait(queue);
+        alpaka::onHost::wait(queue);
 
         if(d_temp_storage)
             cudaFree(d_temp_storage);
@@ -315,8 +313,8 @@ int runExample(
         }
 
         // copy data to accelerator buffer
-        onHost::memcpy(queue, bufX, inputData);
-        onHost::wait(queue);
+        alpaka::onHost::memcpy(queue, bufX, inputData);
+        alpaka::onHost::wait(queue);
     }
 
     auto resGeneric = runExampleGeneric(exec, dev, queue, inputData, bufX, bufY, numElements, scanType, enableCheck);
@@ -363,8 +361,8 @@ int runExample(
     bool const enableStd)
 {
     // copy data to accelerator buffer
-    onHost::memcpy(queue, bufX, inputData);
-    onHost::wait(queue);
+    alpaka::onHost::memcpy(queue, bufX, inputData);
+    alpaka::onHost::wait(queue);
 
     int res = EXIT_SUCCESS;
 
@@ -376,7 +374,7 @@ int runExample(
         auto d_in = bufX.data();
         auto d_out = bufY.data();
 
-        onHost::wait(queue);
+        alpaka::onHost::wait(queue);
         auto const beginT = std::chrono::high_resolution_clock::now();
 
         // in order to be fair to the alpaka implementation, which allocates its temporary memory inside the measured
@@ -397,7 +395,7 @@ int runExample(
                 numElements,
                 queue.getNativeHandle()));
 
-            onHost::wait(queue);
+            alpaka::onHost::wait(queue);
 
             // Allocate temporary storage
             HIP_CHECK(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
@@ -420,7 +418,7 @@ int runExample(
                 numElements,
                 queue.getNativeHandle()));
 
-            onHost::wait(queue);
+            alpaka::onHost::wait(queue);
 
             // Allocate temporary storage
             HIP_CHECK(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
@@ -434,7 +432,7 @@ int runExample(
                 queue.getNativeHandle()));
             break;
         }
-        onHost::wait(queue);
+        alpaka::onHost::wait(queue);
 
         if(d_temp_storage)
             HIP_CHECK(g_allocator.DeviceFree(d_temp_storage));
@@ -450,8 +448,8 @@ int runExample(
         }
 
         // copy data to accelerator buffer
-        onHost::memcpy(queue, bufX, inputData);
-        onHost::wait(queue);
+        alpaka::onHost::memcpy(queue, bufX, inputData);
+        alpaka::onHost::wait(queue);
     }
 
     auto resGeneric = runExampleGeneric(exec, dev, queue, inputData, bufX, bufY, numElements, scanType, enableCheck);

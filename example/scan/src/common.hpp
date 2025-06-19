@@ -10,8 +10,6 @@
 
 #include <cstddef>
 
-using namespace alpaka;
-
 enum ScanType
 {
     EXCLUSIVE_SCAN,
@@ -20,7 +18,7 @@ enum ScanType
 
 using IdxType = std::size_t;
 using Data = std::int32_t;
-using Vec1D = Vec<IdxType, 1u>;
+using Vec1D = alpaka::Vec<IdxType, 1u>;
 
 constexpr IdxType numNvidiaBanks = 32u;
 constexpr IdxType numAmdBanks = 32u;

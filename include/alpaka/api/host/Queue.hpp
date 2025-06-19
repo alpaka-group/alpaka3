@@ -158,7 +158,7 @@ namespace alpaka::onHost
         {
             void operator()(
                 cpu::Queue<T_Device>& queue,
-                T_Dest const& dest,
+                T_Dest& dest,
                 T_Source const& source,
                 T_Extents const& extents) const
             {

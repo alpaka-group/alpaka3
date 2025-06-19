@@ -17,6 +17,8 @@
 #include <type_traits> // is_same_v
 #include <typeinfo>
 
+using namespace alpaka;
+
 /* This function introduces padding to the shared memory accesses to reduce bank conflicts between threads. The
  * template parameter is the device kind, which dictates how many memory banks are assumed. For CPU or
  * unknown/unimplemented device kinds, infinite memory banks are assumed, i.e., no padding is used.
