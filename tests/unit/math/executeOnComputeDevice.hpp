@@ -67,7 +67,7 @@ namespace alpaka::test
         auto dViewResults = onHost::allocMirror(device, hViewResults);
         onHost::memset(queue, dViewResults, static_cast<std::uint8_t>(true));
         // Let alpaka calculate good block and grid sizes given our full problem extent
-        concepts::FrameSpec auto frameSpec = onHost::FrameSpec{1u, 1u};
+        onHost::concepts::FrameSpec auto frameSpec = onHost::FrameSpec{1u, 1u};
         auto kernel = KernelBundle{kernelFnObj, dViewResults, ALPAKA_FORWARD(args)...};
         queue.enqueue(exec, frameSpec, kernel);
         onHost::memcpy(queue, hViewResults, dViewResults);

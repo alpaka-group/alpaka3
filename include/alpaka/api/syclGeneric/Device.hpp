@@ -167,7 +167,7 @@ namespace alpaka::onHost
         template<
             typename T_Platform,
             typename T_Mapping,
-            alpaka::concepts::FrameSpec T_FrameSpec,
+            onHost::concepts::FrameSpec T_FrameSpec,
             alpaka::concepts::KernelBundle T_KernelBundle>
         struct AdjustThreadSpec::Op<syclGeneric::Device<T_Platform>, T_Mapping, T_FrameSpec, T_KernelBundle>
         {

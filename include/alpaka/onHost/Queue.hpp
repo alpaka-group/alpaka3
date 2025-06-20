@@ -75,7 +75,7 @@ namespace alpaka::onHost
          */
         void enqueue(
             auto const executor,
-            alpaka::concepts::ThreadOrFrameSpec auto const& blockCfg,
+            onHost::concepts::ThreadOrFrameSpec auto const& blockCfg,
             auto const& f,
             auto&&... args) const
         {
@@ -101,7 +101,7 @@ namespace alpaka::onHost
          */
         template<typename TKernelFn, typename... TArgs>
         void enqueue(
-            alpaka::concepts::ThreadOrFrameSpec auto const& specification,
+            onHost::concepts::ThreadOrFrameSpec auto const& specification,
             KernelBundle<TKernelFn, TArgs...> const& kernelBundle) const
         {
             auto executor = supportedMappings(getDevice(*m_queue.get()));
@@ -114,7 +114,7 @@ namespace alpaka::onHost
          */
         void enqueue(
             auto const executor,
-            alpaka::concepts::ThreadOrFrameSpec auto const& specification,
+            onHost::concepts::ThreadOrFrameSpec auto const& specification,
             alpaka::concepts::KernelBundle auto const& kernelBundle) const
         {
             internal::enqueue(*m_queue.get(), executor, specification, kernelBundle);

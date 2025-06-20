@@ -105,7 +105,7 @@ namespace alpaka::onHost
             template<
                 typename T_Queue,
                 typename T_Mapping,
-                alpaka::concepts::ThreadOrFrameSpec T_BlockCfg,
+                onHost::concepts::ThreadOrFrameSpec T_BlockCfg,
                 alpaka::concepts::KernelBundle T_KernelBundle>
             struct Kernel
             {
@@ -138,7 +138,7 @@ namespace alpaka::onHost
         inline void enqueue(
             auto& queue,
             auto const executor,
-            alpaka::concepts::ThreadOrFrameSpec auto const& blockCfg,
+            onHost::concepts::ThreadOrFrameSpec auto const& blockCfg,
             KernelBundle<TKernelFn, TArgs...> const& kernelBundle)
         {
             Enqueue::Kernel<
@@ -153,7 +153,7 @@ namespace alpaka::onHost
             template<
                 typename T_Device,
                 typename T_Mapping,
-                alpaka::concepts::FrameSpec T_FrameSpec,
+                onHost::concepts::FrameSpec T_FrameSpec,
                 alpaka::concepts::KernelBundle T_KernelBundle>
             struct Op
             {
@@ -172,7 +172,7 @@ namespace alpaka::onHost
         static auto adjustThreadSpec(
             auto const& device,
             auto const& executor,
-            alpaka::concepts::FrameSpec auto const& dataBlocking,
+            onHost::concepts::FrameSpec auto const& dataBlocking,
             KernelBundle<TKernelFn, TArgs...> const& kernelBundle)
         {
             return AdjustThreadSpec::Op<

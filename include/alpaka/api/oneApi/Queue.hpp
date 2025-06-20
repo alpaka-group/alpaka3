@@ -137,7 +137,7 @@ namespace alpaka::onHost::internal
          * @return A pair of the sycl nd range and an optimized thread spec. The thread spec is not holding any data
          * for dimension smaller equal to 3u
          */
-        template<alpaka::concepts::ThreadSpec T_ThreadSpec>
+        template<onHost::concepts::ThreadSpec T_ThreadSpec>
         inline constexpr auto getWorkerDescription(T_ThreadSpec const& threadSpec)
         {
             constexpr uint32_t dim = T_ThreadSpec::dim();
@@ -174,7 +174,7 @@ namespace alpaka::onHost::internal
     template<
         typename T_Device,
         typename T_Executor,
-        alpaka::concepts::ThreadSpec T_ThreadSpec,
+        onHost::concepts::ThreadSpec T_ThreadSpec,
         alpaka::concepts::KernelBundle T_KernelBundle>
     struct Enqueue::Kernel<syclGeneric::Queue<T_Device>, T_Executor, T_ThreadSpec, T_KernelBundle>
     {
@@ -243,7 +243,7 @@ namespace alpaka::onHost::internal
     template<
         typename T_Device,
         typename T_Executor,
-        alpaka::concepts::FrameSpec T_FrameSpec,
+        onHost::concepts::FrameSpec T_FrameSpec,
         alpaka::concepts::KernelBundle T_KernelBundle>
     struct Enqueue::Kernel<syclGeneric::Queue<T_Device>, T_Executor, T_FrameSpec, T_KernelBundle>
     {

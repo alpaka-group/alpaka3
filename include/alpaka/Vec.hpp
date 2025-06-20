@@ -790,11 +790,14 @@ namespace alpaka
          *
          * @tparam T Type to check
          * @tparam T_ValueType enforce a value type of the vector, if not provided the value type is not checked
+         * @tparam T_dim enforce a dimensionality of the vector, if not provided the value is not checked
          */
-        template<typename T, typename T_ValueType = alpaka::NotRequired>
+        template<typename T, typename T_ValueType = alpaka::NotRequired, uint32_t T_dim = alpaka::notRequiredDim>
         concept Vector = isVector_v<T>
                          && (std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
-                             || std::same_as<T_ValueType, alpaka::NotRequired>);
+                             || std::same_as<
+                                 T_ValueType,
+                                 alpaka::NotRequired>) &&((T_dim == alpaka::notRequiredDim) || (T::dim() == T_dim));
 
         /** Concept to check if a type is a vector or scalar variable
          *

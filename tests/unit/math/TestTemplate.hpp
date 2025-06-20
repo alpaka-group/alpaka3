@@ -174,7 +174,8 @@ namespace mathtest
 
             // Let alpaka calculate good block and grid sizes given our full problem extent
             constexpr uint32_t frameExtents = 256;
-            concepts::FrameSpec auto frameSpec = onHost::FrameSpec{divExZero(capacity, frameExtents), frameExtents};
+            onHost::concepts::FrameSpec auto frameSpec
+                = onHost::FrameSpec{divExZero(capacity, frameExtents), frameExtents};
             auto kernel = KernelBundle{
                 TestKernel<capacity>{},
                 results.m_deviceView.getMdSpan(),

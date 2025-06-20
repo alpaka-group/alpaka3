@@ -63,7 +63,7 @@ namespace alpaka::onHost
 
         template<
             typename T_Executor,
-            alpaka::concepts::ThreadSpec T_ThreadSpec,
+            onHost::concepts::ThreadSpec T_ThreadSpec,
             alpaka::concepts::KernelBundle T_KernelBundle>
         struct GetDynSharedMemBytes
         {
@@ -110,7 +110,7 @@ namespace alpaka::onHost
 
         template<
             typename T_Executor,
-            alpaka::concepts::ThreadSpec T_ThreadSpec,
+            onHost::concepts::ThreadSpec T_ThreadSpec,
             alpaka::concepts::KernelBundle T_KernelBundle>
         struct HasUserDefinedDynSharedMemBytes : std::true_type
         {
@@ -118,7 +118,7 @@ namespace alpaka::onHost
 
         template<
             typename T_Executor,
-            alpaka::concepts::ThreadSpec T_ThreadSpec,
+            onHost::concepts::ThreadSpec T_ThreadSpec,
             alpaka::concepts::KernelBundle T_KernelBundle>
         requires(trait::GetDynSharedMemBytes<T_Executor, T_ThreadSpec, T_KernelBundle>::zeroSharedMemory == true)
         struct HasUserDefinedDynSharedMemBytes<T_Executor, T_ThreadSpec, T_KernelBundle> : std::false_type
@@ -158,7 +158,7 @@ namespace alpaka::onHost
 
     template<
         typename T_Executor,
-        alpaka::concepts::ThreadSpec T_ThreadSpec,
+        onHost::concepts::ThreadSpec T_ThreadSpec,
         alpaka::concepts::KernelBundle T_KernelBundle>
     constexpr uint32_t getDynSharedMemBytes(
         T_Executor const executor,
@@ -170,7 +170,7 @@ namespace alpaka::onHost
 
     template<
         typename T_Executor,
-        alpaka::concepts::ThreadSpec T_ThreadSpec,
+        onHost::concepts::ThreadSpec T_ThreadSpec,
         alpaka::concepts::KernelBundle T_KernelBundle>
     consteval bool hasUserDefinedDynSharedMemBytes(
         T_Executor const executor,

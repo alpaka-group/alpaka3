@@ -16,8 +16,8 @@ namespace alpaka::onHost
 {
     template<
         alpaka::concepts::Vector T_NumFrames,
-        alpaka::concepts::Vector T_FrameExtents,
-        alpaka::concepts::Vector T_ThreadExtents>
+        alpaka::concepts::Vector<typename T_NumFrames::type, T_NumFrames::dim()> T_FrameExtents,
+        alpaka::concepts::Vector<typename T_NumFrames::type, T_NumFrames::dim()> T_ThreadExtents>
     struct FrameSpec
     {
         using type = typename T_NumFrames::type;
@@ -27,7 +27,7 @@ namespace alpaka::onHost
         using ThreadExtentsVecType = T_ThreadExtents;
         using ThreadSpecType = ThreadSpec<T_NumFrames, T_ThreadExtents>;
 
-        consteval uint32_t dim() const
+        static consteval uint32_t dim()
         {
             return T_FrameExtents::dim();
         }
@@ -88,65 +88,50 @@ namespace alpaka::onHost
         alpaka::trait::getVec_t<T_FrameExtents>,
         alpaka::trait::getVec_t<T_FrameExtents>>;
 
-} // namespace alpaka::onHost
-
-namespace alpaka
-{
-    template<typename T>
-    struct IsFrameSpec : std::false_type
+    namespace trait
     {
-    };
+        template<typename T>
+        struct IsFrameSpec : std::false_type
+        {
+        };
 
-    template<
-        alpaka::concepts::Vector T_NumFrames,
-        alpaka::concepts::Vector T_FrameExtents,
-        alpaka::concepts::Vector T_ThreadExtents>
-    struct IsFrameSpec<onHost::FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents>> : std::true_type
+        template<
+            alpaka::concepts::Vector T_NumFrames,
+            alpaka::concepts::Vector T_FrameExtents,
+            alpaka::concepts::Vector T_ThreadExtents>
+        struct IsFrameSpec<onHost::FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents>> : std::true_type
+        {
+        };
+
+    } // namespace trait
+
+    template<typename T>
+    constexpr bool isFrameSpec_v = trait::IsFrameSpec<T>::value;
+
+    namespace concepts
     {
-    };
+        /** Concept to check if a type is a FrameSpec
+         *
+         * @tparam T Type to check
+         * @tparam T_IndexType enforce a index type of the frame specification, if not provided the type is not checked
+         * @tparam T_dim enforce a dimensionality of the frame specification, if not provided the value is not
+         * checked
+         */
+        template<typename T, typename T_IndexType = alpaka::NotRequired, uint32_t T_dim = alpaka::notRequiredDim>
+        concept FrameSpec
+            = isFrameSpec_v<T>
+              && (std::same_as<T_IndexType, alpaka::NotRequired> || std::same_as<typename T::type, T_IndexType>) &&(
+                  (T_dim == alpaka::notRequiredDim) || (T::dim() == T_dim));
 
-    template<typename T>
-    constexpr bool isFrameSpec_v = IsFrameSpec<T>::value;
+        /** Concept to check if a type is a ThreadSpec or a FrameSpec
+         *
+         * @tparam T Type to check
+         */
+        template<typename T>
+        concept ThreadOrFrameSpec = isFrameSpec_v<T> || isThreadSpec_v<T>;
+    } // namespace concepts
 
-} // namespace alpaka
-
-namespace alpaka::concepts
-{
-    /** Concept to check if a type is a FrameSpec
-     *
-     * @tparam T Type to check
-     * @tparam T_NumFrames enforce a value type for T_NumFrames, if not provided the value type is not checked
-     * @tparam T_FrameExtents enforce a value type for T_FrameExtents, if not provided the value type is not
-     * checked
-     * @tparam T_ThreadExtents enforce a value type for T_ThreadExtents, if not provided the value type is not
-     * checked
-     */
-    template<
-        typename T,
-        typename T_NumFrames = alpaka::NotRequired,
-        typename T_FrameExtents = alpaka::NotRequired,
-        typename T_ThreadExtents = alpaka::NotRequired>
-    concept FrameSpec
-        = isFrameSpec_v<T>
-          && (std::same_as<T_NumFrames, alpaka::NotRequired> || std::same_as<T_NumFrames, typename T::NumFramesVecType>) &&(
-              std::same_as<T_FrameExtents, alpaka::NotRequired>
-              || std::same_as<
-                  T_FrameExtents,
-                  typename T::
-                      FrameExtentsVecType>) &&(std::same_as<T_ThreadExtents, alpaka::NotRequired> || std::same_as<T_ThreadExtents, typename T::ThreadExtentsVecType>);
-
-
-    /** Concept to check if a type is a ThreadSpec or a FrameSpec
-     *
-     * @tparam T Type to check
-     */
-    template<typename T>
-    concept ThreadOrFrameSpec = isFrameSpec_v<T> || isThreadSpec_v<T>;
-} // namespace alpaka::concepts
-
-namespace alpaka::onHost
-{
-    std::ostream& operator<<(std::ostream& s, alpaka::concepts::FrameSpec auto const& d)
+    std::ostream& operator<<(std::ostream& s, concepts::FrameSpec auto const& d)
     {
         return s << "frames=" << d.m_numFrames << " frameExtent=" << d.m_frameExtent;
     }

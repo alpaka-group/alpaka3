@@ -21,7 +21,7 @@ namespace alpaka::onHost
 {
     namespace cpu
     {
-        template<alpaka::concepts::ThreadSpec T_ThreadSpec>
+        template<onHost::concepts::ThreadSpec T_ThreadSpec>
         struct Serial
         {
             using NumThreadsVecType = typename T_ThreadSpec::NumThreadsVecType;

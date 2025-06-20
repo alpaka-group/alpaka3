@@ -8,6 +8,7 @@
 
 #include <concepts>
 #include <cstdint>
+#include <limits>
 
 namespace alpaka
 {
@@ -16,6 +17,8 @@ namespace alpaka
     struct NotRequired
     {
     };
+
+    constexpr uint32_t notRequiredDim = std::numeric_limits<uint32_t>::max();
 
     namespace trait
     {

@@ -14,7 +14,7 @@ namespace alpaka
 {
 
     template<
-        concepts::Vector T_End,
+        concepts::VectorOrScalar T_End,
         concepts::Vector T_Begin = typename T_End::UniVec,
         concepts::Vector T_Stride = typename T_End::UniVec>
     struct IdxRange

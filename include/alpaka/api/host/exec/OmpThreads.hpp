@@ -25,7 +25,7 @@ namespace alpaka::onHost
 {
     namespace cpu
     {
-        template<alpaka::concepts::ThreadSpec T_ThreadSpec>
+        template<onHost::concepts::ThreadSpec T_ThreadSpec>
         struct OmpThreads
         {
             constexpr OmpThreads(T_ThreadSpec threadBlocking) : m_threadBlocking{std::move(threadBlocking)}
