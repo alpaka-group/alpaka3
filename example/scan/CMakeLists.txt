@@ -77,6 +77,7 @@ foreach(scanFile ${scanSource})
     if(HAS_HIP_CUB)
         target_link_libraries(${scanName} PRIVATE hip::hipcub)
         target_compile_definitions(${scanName} PRIVATE ALPAKA_HAS_HIPCUB=1)
+        target_compile_options(${scanName} PRIVATE -diag-suppress 20014-D)
     endif()
 
     add_test(NAME ${scanName} COMMAND ${scanName})
