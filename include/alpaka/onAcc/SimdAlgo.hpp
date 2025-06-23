@@ -7,8 +7,8 @@
 #include "alpaka/Vec.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/mem/concepts.hpp"
-#include "alpaka/onAcc/internel/SimdConcurrent.hpp"
-#include "alpaka/onAcc/internel/SimdTransformReduce.hpp"
+#include "alpaka/onAcc/internal/SimdConcurrent.hpp"
+#include "alpaka/onAcc/internal/SimdTransformReduce.hpp"
 
 #include <cstdint>
 
