@@ -9,6 +9,7 @@
 #include "alpaka/core/config.hpp"
 #include "alpaka/mem/Alignment.hpp"
 #include "alpaka/mem/DataPitches.hpp"
+#include "alpaka/mem/MdForwardIter.hpp"
 #include "alpaka/onHost.hpp"
 #include "alpaka/trait.hpp"
 
@@ -81,6 +82,26 @@ namespace alpaka
         constexpr pointer data() const
         {
             return this->m_ptr;
+        }
+
+        constexpr auto begin() const
+        {
+            return MdForwardIter{*this};
+        }
+
+        constexpr auto end() const
+        {
+            return MdForwardIterEnd{*this};
+        }
+
+        constexpr auto cbegin() const
+        {
+            return MdForwardIter{this->getConstMdSpan()};
+        }
+
+        constexpr auto cend() const
+        {
+            return MdForwardIterEnd{this->getConstMdSpan()};
         }
 
         /*Object must init by copy a valid instance*/
@@ -251,6 +272,32 @@ namespace alpaka
         constexpr pointer data() const
         {
             return this->m_ptr;
+        }
+
+        constexpr auto begin() const
+        {
+            return MdForwardIter{*this};
+        }
+
+        constexpr auto end() const
+        {
+            return MdForwardIterEnd{*this};
+        }
+
+        constexpr auto getConstMdSpan() const
+        {
+            using ConstArryType = std::add_const_t<T_ArrayType>;
+            return MdSpanArray<ConstArryType>(m_ptr);
+        }
+
+        constexpr auto cbegin() const
+        {
+            return MdForwardIter{this->getConstMdSpan()};
+        }
+
+        constexpr auto cend() const
+        {
+            return MdForwardIterEnd{this->getConstMdSpan()};
         }
 
         /*Object must init by copy a valid instance*/
