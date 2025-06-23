@@ -227,6 +227,11 @@ struct CompileTimeKernel3D
         constexpr auto inner = innerJoin(m0, m1);
         static_assert(inner == Vec{1});
 
+        constexpr auto vecSrcApply = CVec<int, 1, 2>{};
+        constexpr auto vecResApply
+            = alpaka::apply([](auto const... args) constexpr { return Vec{(args + 1)...}; }, vecSrcApply);
+        static_assert(vecResApply == Vec{2, 3});
+
 #if 0
 // add this to runtime etst as soon we add them back
          auto vecRT = Vec{3, 7, 5};

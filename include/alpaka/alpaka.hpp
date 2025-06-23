@@ -12,6 +12,7 @@
 #include "alpaka/api/cpu.hpp"
 #include "alpaka/api/oneApi.hpp"
 #include "alpaka/api/unifiedCudaHip.hpp"
+#include "alpaka/apply.hpp"
 #include "alpaka/core/DemangleTypeNames.hpp"
 #include "alpaka/core/Dict.hpp"
 #include "alpaka/core/Tag.hpp"

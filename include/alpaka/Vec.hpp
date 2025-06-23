@@ -546,7 +546,7 @@ namespace alpaka
     }
 
     template<std::size_t I, typename T_Type, uint32_t T_dim, typename T_Storage>
-    constexpr auto& get(Vec<T_Type, T_dim, T_Storage>& v)
+    constexpr decltype(auto) get(Vec<T_Type, T_dim, T_Storage>& v)
     {
         return v[I];
     }
