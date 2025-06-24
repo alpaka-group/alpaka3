@@ -12,6 +12,7 @@
 #include "alpaka/onHost.hpp"
 #include "alpaka/onHost/Device.hpp"
 #include "alpaka/onHost/Handle.hpp"
+#include "alpaka/onHost/concepts.hpp"
 #include "alpaka/onHost/mem/MangedDealloc.hpp"
 
 #include <cstdint>
@@ -224,3 +225,12 @@ namespace alpaka::internal
         }
     };
 } // namespace alpaka::internal
+
+namespace alpaka::trait
+{
+    template<typename T>
+    requires(isSpecializationOf_v<std::remove_cvref_t<T>, alpaka::onHost::ManagedView>)
+    struct IsMdSpan<T> : std::true_type
+    {
+    };
+} // namespace alpaka::trait
