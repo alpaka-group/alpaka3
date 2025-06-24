@@ -14,21 +14,23 @@ using namespace alpaka::onHost;
 
 TEST_CASE("mdIterator", "")
 {
-    constexpr auto numElements = Vec<size_t, 2u>{17, 31};
-    auto span = onHost::allocHost<uint32_t>(numElements);
+    constexpr auto numElements = CVec<size_t, 17, 31>{};
+    alpaka::concepts::MdSpan auto span = onHost::allocHost<uint32_t>(numElements);
 
     size_t counter = 0u;
-    for(auto& v : span)
+    for(uint32_t& v : span)
         v = counter++;
 
     // validate by using the forward iterator
     size_t refence = 0u;
-    for(auto const& v : span)
+    for(uint32_t v : span)
     {
         CHECK(v == refence);
         ++refence;
     }
 
     // validate without using the forward iterator
-    meta::ndLoopIncIdx(numElements, [&](auto idx) { CHECK(span[idx] == linearize(numElements, idx)); });
+    meta::ndLoopIncIdx(
+        numElements,
+        [&](alpaka::concepts::Vector<size_t, 2> auto idx) { CHECK(span[idx] == linearize(numElements, idx)); });
 }
