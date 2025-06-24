@@ -54,13 +54,9 @@ public:
 // Instead, a single accelerator is selected once from the active accelerators and the kernels are executed with the
 // selected accelerator only. If you use the example as the starting point for your project, you can rename the
 // example() function to main() and move the accelerator tag to the function body.
-template<typename T_Cfg>
-auto example(T_Cfg const& cfg, size_t numElements) -> int
+auto example(auto const deviceSpec, auto const exec, size_t numElements) -> int
 {
     using IdxVec = Vec<std::size_t, 1u>;
-
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
 
     // Define problem size
     IdxVec const extent(numElements);
@@ -209,6 +205,7 @@ auto main(int argc, char* argv[]) -> int
     using namespace alpaka;
     // Execute the example once for each enabled API and executor.
     return executeForEachIfHasDevice(
-        [=](auto const& tag) { return example(tag, numElements); },
+        [=](auto const& backend)
+        { return example(backend[alpaka::object::deviceSpec], backend[alpaka::object::exec], numElements); },
         onHost::allBackends(onHost::enabledApis));
 }

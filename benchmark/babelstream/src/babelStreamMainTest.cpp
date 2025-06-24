@@ -230,16 +230,13 @@ struct DotKernel
 //! \brief The Function for testing babelstream kernels for given Acc type and data type.
 //! \tparam TAcc the accelerator type
 //! \tparam DataType The data type to differentiate single or double data type based tests.
-template<typename DataType, typename T_Cfg>
-void testKernels(T_Cfg cfg)
+template<typename DataType>
+void testKernels(auto const deviceSpec, auto const exec)
 {
     if(kernelsToBeExecuted == KernelsToRun::All)
     {
         std::cout << "Kernels: Init, Copy, Mul, Add, Triad, Dot Kernels" << std::endl;
     }
-
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
 
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
@@ -603,20 +600,20 @@ void testKernels(T_Cfg cfg)
     std::cout << metaData.serializeAsTable() << std::endl;
 }
 
-using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis))>;
+using Backends = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis))>;
 
 // Run for all Accs given by the argument
-TEMPLATE_LIST_TEST_CASE("TEST: Babelstream Kernels<Float>", "[benchmark-test]", TestApis)
+TEMPLATE_LIST_TEST_CASE("TEST: Babelstream Kernels<Float>", "[benchmark-test]", Backends)
 {
-    auto apiAndExecutors = TestType::makeDict();
+    auto backend = TestType::makeDict();
     // Run tests for the float data type
-    testKernels<float>(apiAndExecutors);
+    testKernels<float>(backend[alpaka::object::deviceSpec], backend[alpaka::object::exec]);
 }
 
 // Run for all Accs given by the argument
-TEMPLATE_LIST_TEST_CASE("TEST: Babelstream Kernels<Double>", "[benchmark-test]", TestApis)
+TEMPLATE_LIST_TEST_CASE("TEST: Babelstream Kernels<Double>", "[benchmark-test]", Backends)
 {
-    auto apiAndExecutors = TestType::makeDict();
+    auto backend = TestType::makeDict();
     // Run tests for the double data type
-    testKernels<double>(apiAndExecutors);
+    testKernels<double>(backend[alpaka::object::deviceSpec], backend[alpaka::object::exec]);
 }

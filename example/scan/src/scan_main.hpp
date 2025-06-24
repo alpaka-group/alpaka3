@@ -41,18 +41,15 @@ void printExampleHeader(ScanType const scanType, IdxType const numElements, bool
     std::cout << std::endl;
 }
 
-template<typename T_Cfg>
 auto example(
-    T_Cfg const& cfg,
+    auto const deviceSpec,
+    auto const exec,
     IdxType numElements,
     bool enableStdScan,
     bool enableCheck,
     bool enableInPlace,
     ScanType scanType) -> int
 {
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
     // Number of elements to process
     Vec1D const extent(numElements);
 
@@ -195,8 +192,17 @@ auto main(int argc, char* argv[]) -> int
 
     // Execute the example once for each enabled API and executor.
     auto result = executeForEachIfHasDevice(
-        [=](auto const& tag)
-        { return example(tag, numElements, enableStdScan, enableCheck, enableInPlace, scanType); },
+        [=](auto const& backend)
+        {
+            return example(
+                backend[alpaka::object::deviceSpec],
+                backend[alpaka::object::exec],
+                numElements,
+                enableStdScan,
+                enableCheck,
+                enableInPlace,
+                scanType);
+        },
         onHost::allBackends(onHost::enabledApis));
 
     return result;

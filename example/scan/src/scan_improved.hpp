@@ -76,7 +76,7 @@ ALPAKA_FN_ACC Data scanMiniBlock(Data* block, concepts::CVector auto const& exte
     // -- DOWN-SWEEP --
     for(IdxType d = 1, offset = extent.x() / 2_idx; d < extent.x(); d <<= 1, offset >>= 1)
     {
-        for(auto frameElem = 0; frameElem < 2_idx * d; frameElem += 2_idx)
+        for(auto frameElem = 0_idx; frameElem < 2_idx * d; frameElem += 2_idx)
         {
             IdxType left = offset * (frameElem + 1_idx) - 1_idx;
             IdxType right = offset * (frameElem + 2_idx) - 1_idx;
@@ -95,7 +95,7 @@ ALPAKA_FN_ACC Data scanMiniBlock(Data* block, concepts::CVector auto const& exte
  */
 ALPAKA_FN_ACC void addIncrements(Data* block, Data const& blockSum, concepts::CVector auto const& extent)
 {
-    for(auto i = 0; i < extent.x(); ++i)
+    for(auto i = 0_idx; i < extent.x(); ++i)
     {
         block[i] += blockSum;
     }

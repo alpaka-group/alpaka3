@@ -214,11 +214,8 @@ void testVectorAddKernel3D(alpaka::onHost::concepts::Device auto device, auto co
     std::cout << "success\n";
 }
 
-int example(auto const cfg)
+int example(auto const deviceSpec, auto const computeExec)
 {
-    auto deviceSpec = cfg[alpaka::object::deviceSpec];
-    auto computeExec = cfg[alpaka::object::exec];
-
     auto devSelector = alpaka::onHost::makeDeviceSelector(deviceSpec);
 
     // require at least one device
@@ -242,8 +239,15 @@ int example(auto const cfg)
 auto main() -> int
 {
     using namespace alpaka;
-    // Execute the example once for each enabled API and executor.
+
+    /** This example requires additionally to the device specification and executor the description how the parallelism
+     * on the compute device is organised.
+     */
+    example(onHost::DeviceSpec{api::host, deviceKind::cpu}, exec::cpuSerial);
+
+    // Execute the example once for each enabled API, device kind, and executor.
     return executeForEachIfHasDevice(
-        [=](auto const& tag) { return example(tag); },
+        [=](auto const& backend)
+        { return example(backend[alpaka::object::deviceSpec], backend[alpaka::object::exec]); },
         onHost::allBackends(onHost::enabledApis));
 }

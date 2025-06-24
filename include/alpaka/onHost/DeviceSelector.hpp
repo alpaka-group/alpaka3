@@ -10,7 +10,7 @@
 
 namespace alpaka::onHost
 {
-    template<typename T_Api, alpaka::deviceKind::concepts::DeviceKind T_DeviceKind>
+    template<alpaka::concepts::Api T_Api, alpaka::deviceKind::concepts::DeviceKind T_DeviceKind>
     struct DeviceSpec
     {
     public:
@@ -40,7 +40,7 @@ namespace alpaka::onHost
         T_DeviceKind m_deviceType;
     };
 
-    template<typename T_Api, alpaka::deviceKind::concepts::DeviceKind T_DeviceKind>
+    template<alpaka::concepts::Api T_Api, alpaka::deviceKind::concepts::DeviceKind T_DeviceKind>
     struct DeviceSelector
     {
     public:

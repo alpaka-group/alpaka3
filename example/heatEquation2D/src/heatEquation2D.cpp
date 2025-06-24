@@ -36,8 +36,7 @@
 //! Instead, a single accelerator is selected once from the active accelerators and the kernels are executed with the
 //! selected accelerator only. If you use the example as the starting point for your project, you can rename the
 //! example() function to main() and move the accelerator tag to the function body.
-template<typename T_Cfg>
-auto example(T_Cfg const& cfg) -> int
+int example(auto const deviceSpec, auto const computeExec)
 {
     using namespace alpaka;
     using namespace alpaka::onHost;
@@ -45,13 +44,10 @@ auto example(T_Cfg const& cfg) -> int
     using Idx = uint32_t;
     using IdxVec = alpaka::Vec<Idx, 2u>;
 
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
     std::cout << deviceSpec.getApi().getName() << std::endl;
 
-    std::cout << "Using alpaka accelerator: " << core::demangledName(exec) << " for " << deviceSpec.getApi().getName()
-              << std::endl;
+    std::cout << "Using alpaka accelerator: " << core::demangledName(computeExec) << " for "
+              << deviceSpec.getApi().getName() << std::endl;
 
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     onHost::Device devAcc = devSelector.makeDevice(0);
@@ -147,13 +143,13 @@ auto example(T_Cfg const& cfg) -> int
     {
         // Compute next values
         computeQueue.enqueue(
-            exec,
+            computeExec,
             dataBlockingStencil,
             KernelBundle{stencilKernel, uCurrBufAcc, uNextBufAcc, chunkSize, sharedMemExtents, numNodes, dx, dy, dt});
 
         // Apply boundaries
         computeQueue.enqueue(
-            exec,
+            computeExec,
             dataBlockingBorder,
             KernelBundle{boundaryKernel, uNextBufAcc.getMdSpan(), chunkSize, numNodesWithHalo, step, dx, dy, dt});
 
@@ -201,18 +197,9 @@ auto example(T_Cfg const& cfg) -> int
 auto main() -> int
 {
     using namespace alpaka;
-    // Execute the example once for each enabled accelerator.
-    // If you would like to execute it for a single accelerator only you can use the following code.
-    //  \code{.cpp}
-    //  auto tag = TagCpuSerial;
-    //  return example(tag);
-    //  \endcode
-    //
-    // valid tags:
-    //   TagCpuSerial, TagGpuHipRt, TagGpuCudaRt, TagCpuOmp2Blocks, TagCpuTbbBlocks,
-    //   TagCpuOmp2Threads, TagCpuSycl, TagCpuTbbBlocks, TagCpuThreads,
-    //   TagFpgaSyclIntel, TagGenericSycl, TagGpuSyclIntel
+
     return executeForEachIfHasDevice(
-        [=](auto const& tag) { return example(tag); },
+        [=](auto const& backend)
+        { return example(backend[alpaka::object::deviceSpec], backend[alpaka::object::exec]); },
         onHost::allBackends(onHost::enabledApis));
 }
