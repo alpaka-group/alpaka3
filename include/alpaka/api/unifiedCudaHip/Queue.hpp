@@ -339,9 +339,9 @@ namespace alpaka::onHost
         {
             void operator()(
                 unifiedCudaHip::Queue<T_Device>& queue,
-                T_Dest& dest,
+                auto&& dest,
                 T_Source const& source,
-                T_Extents const& extents) const
+                T_Extents const& extents) const requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
             {
                 using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
 
@@ -420,9 +420,9 @@ namespace alpaka::onHost
         {
             void operator()(
                 unifiedCudaHip::Queue<T_Device>& queue,
-                T_Dest& dest,
+                auto&& dest,
                 uint8_t byteValue,
-                T_Extents const& extents) const
+                T_Extents const& extents) const requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
             {
                 using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
                 auto extentMd = pCast<size_t>(extents);

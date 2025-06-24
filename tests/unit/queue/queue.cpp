@@ -255,3 +255,101 @@ TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
     wait(queue);
     meta::ndLoopIncIdx(numBlocks, [&](auto idx) { CHECK(idx == hBuff[idx]); });
 }
+
+/** ViewWrapper for validating the memcpy and memset interfaces.
+ *
+ * The wrapper is disabling the copy and move operations to within alpaka.
+ */
+template<alpaka::concepts::MdSpan T_Span>
+struct TestMdSpan
+{
+    using value_type = typename T_Span::value_type;
+
+    constexpr TestMdSpan(T_Span const& span) : m_span(span)
+    {
+    }
+
+    constexpr TestMdSpan() = delete;
+    constexpr TestMdSpan(TestMdSpan const&) = delete;
+    constexpr TestMdSpan& operator=(TestMdSpan const&) = delete;
+    constexpr TestMdSpan(TestMdSpan&&) = delete;
+    constexpr TestMdSpan& operator=(TestMdSpan&&) = delete;
+
+    constexpr auto* data() const
+    {
+        return m_span.data();
+    }
+
+    constexpr auto getExtents() const
+    {
+        return m_span.getExtents();
+    }
+
+    constexpr auto getPitches() const
+    {
+        return m_span.getPitches();
+    }
+
+    constexpr auto getApi() const
+    {
+        return alpaka::getApi(m_span);
+    }
+
+private:
+    T_Span m_span;
+};
+
+/** Test that memcpy and memset can be called with non copy-able and move-able data as lvalue and rvalue. */
+TEMPLATE_LIST_TEST_CASE("memcpy", "", TestApis)
+{
+    auto cfg = TestType::makeDict();
+    auto deviceSpec = cfg[object::deviceSpec];
+
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+
+    std::cout << deviceSpec.getApi().getName() << std::endl;
+    Device device = devSelector.makeDevice(0);
+
+    std::cout << device.getName() << std::endl;
+
+    Queue queue = device.makeQueue();
+    constexpr Vec problemSize = Vec{16u};
+
+    auto dBuff = onHost::alloc<size_t>(device, problemSize);
+    auto hBuff = onHost::allocHostMirror(dBuff);
+
+    // test rvalue
+    onHost::memcpy(queue, TestMdSpan{dBuff.getView()}, TestMdSpan{hBuff.getView()});
+    onHost::memset(queue, TestMdSpan{dBuff.getView()}, 0u);
+    onHost::memcpy(queue, TestMdSpan{hBuff.getView()}, TestMdSpan{dBuff.getView()});
+    onHost::wait(queue);
+    meta::ndLoopIncIdx(problemSize, [&](auto idx) { CHECK(hBuff[idx] == size_t{0}); });
+
+    size_t refence = 0u;
+    for(auto& v : hBuff)
+        v = refence++;
+
+    onHost::memcpy(queue, TestMdSpan{dBuff.getView()}, TestMdSpan{hBuff.getView()});
+    onHost::wait(queue);
+    for(auto& v : hBuff)
+        v = 42;
+
+    // test lvalue
+    auto dlvalue = TestMdSpan{dBuff.getView()};
+    auto hlvalue = TestMdSpan{hBuff.getView()};
+    onHost::memcpy(queue, hlvalue, dlvalue);
+    onHost::wait(queue);
+    meta::ndLoopIncIdx(problemSize, [&](auto idx) { CHECK(hBuff[idx] == linearize(problemSize, idx)); });
+
+    onHost::memset(queue, dlvalue, 0u);
+    onHost::memcpy(queue, hlvalue, dlvalue);
+    onHost::wait(queue);
+
+    // validate without using the forward iterator
+    meta::ndLoopIncIdx(problemSize, [&](auto idx) { CHECK(hBuff[idx] == size_t{0}); });
+}

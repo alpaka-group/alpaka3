@@ -213,7 +213,7 @@ namespace alpaka::onHost
             template<typename T_Queue, typename T_Dest, typename T_Source, typename T_Extents>
             struct Op
             {
-                void operator()(T_Queue& queue, T_Dest&, T_Source const&, T_Extents const&) const;
+                void operator()(T_Queue& queue, auto&&, T_Source const&, T_Extents const&) const;
             };
         };
 
@@ -222,7 +222,7 @@ namespace alpaka::onHost
             template<typename T_Queue, typename T_Dest, typename T_Extents>
             struct Op
             {
-                void operator()(T_Queue& queue, T_Dest&, uint8_t, T_Extents const&) const;
+                void operator()(T_Queue& queue, auto&&, uint8_t, T_Extents const&) const;
             };
         };
 

@@ -145,16 +145,16 @@ namespace alpaka::onHost
      * @{
      */
     template<typename T_Device>
-    inline auto memset(Queue<T_Device> const& queue, auto& dest, uint8_t byteValue)
+    inline auto memset(Queue<T_Device> const& queue, auto&& dest, uint8_t byteValue)
     {
-        return memset(queue, dest, byteValue, getExtents(dest));
+        return memset(queue, ALPAKA_FORWARD(dest), byteValue, internal::getExtents(dest));
     }
 
     /** @param extents M-dimensional data extents in elements, can be smaller than the container capacity */
     template<typename T_Device>
     inline auto memset(
         Queue<T_Device> const& queue,
-        auto& dest,
+        auto&& dest,
         uint8_t byteValue,
         alpaka::concepts::VectorOrScalar auto const& extents)
     {
@@ -162,7 +162,7 @@ namespace alpaka::onHost
         return internal::Memset::Op<
             std::decay_t<decltype(*queue.get())>,
             std::decay_t<decltype(dest)>,
-            std::decay_t<decltype(extentsVec)>>{}(*queue.get(), dest, byteValue, extentsVec);
+            std::decay_t<decltype(extentsVec)>>{}(*queue.get(), ALPAKA_FORWARD(dest), byteValue, extentsVec);
     }
 
     /** @} */
@@ -180,16 +180,16 @@ namespace alpaka::onHost
      * @{
      */
     template<typename T_Device>
-    inline void memcpy(Queue<T_Device> const& queue, auto& dest, auto const& source)
+    inline void memcpy(Queue<T_Device> const& queue, auto&& dest, auto const& source)
     {
-        return memcpy(queue, dest, source, getExtents(dest));
+        return memcpy(queue, ALPAKA_FORWARD(dest), source, internal::getExtents(dest));
     }
 
     /** @param extents M-dimensional data extents in elements, can be smaller than the container capacity */
     template<typename T_Device>
     inline void memcpy(
         Queue<T_Device> const& queue,
-        auto& dest,
+        auto&& dest,
         auto const& source,
         alpaka::concepts::VectorOrScalar auto const& extents)
     {
@@ -198,7 +198,7 @@ namespace alpaka::onHost
             std::decay_t<decltype(*queue.get())>,
             std::decay_t<decltype(dest)>,
             std::decay_t<decltype(source)>,
-            std::decay_t<decltype(extentsVec)>>{}(*queue.get(), dest, source, extentsVec);
+            std::decay_t<decltype(extentsVec)>>{}(*queue.get(), ALPAKA_FORWARD(dest), source, extentsVec);
     }
 
     /** @} */

@@ -156,11 +156,8 @@ namespace alpaka::onHost
         template<typename T_Device, typename T_Dest, typename T_Source, typename T_Extents>
         struct Memcpy::Op<cpu::Queue<T_Device>, T_Dest, T_Source, T_Extents>
         {
-            void operator()(
-                cpu::Queue<T_Device>& queue,
-                T_Dest& dest,
-                T_Source const& source,
-                T_Extents const& extents) const
+            void operator()(cpu::Queue<T_Device>& queue, auto&& dest, T_Source const& source, T_Extents const& extents)
+                const requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
             {
                 constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
 
@@ -211,8 +208,8 @@ namespace alpaka::onHost
         template<typename T_Device, typename T_Dest, typename T_Extents>
         struct Memset::Op<cpu::Queue<T_Device>, T_Dest, T_Extents>
         {
-            void operator()(cpu::Queue<T_Device>& queue, T_Dest& dest, uint8_t byteValue, T_Extents const& extents)
-                const
+            void operator()(cpu::Queue<T_Device>& queue, auto&& dest, uint8_t byteValue, T_Extents const& extents)
+                const requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
             {
                 constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
 

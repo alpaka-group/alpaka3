@@ -28,8 +28,8 @@ namespace alpaka::onHost::internal
     requires(alpaka::trait::getDim_v<T_Extents> > 1u)
     struct Memset::Op<syclGeneric::Queue<T_Device>, T_Dest, T_Extents>
     {
-        void operator()(syclGeneric::Queue<T_Device>& queue, T_Dest& dest, uint8_t byteValue, T_Extents const& extents)
-            const
+        void operator()(syclGeneric::Queue<T_Device>& queue, auto&& dest, uint8_t byteValue, T_Extents const& extents)
+            const requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
         {
             sycl::queue sycl_queue = queue.getNativeHandle();
 
@@ -67,9 +67,9 @@ namespace alpaka::onHost::internal
     {
         void operator()(
             syclGeneric::Queue<T_Device>& queue,
-            T_Dest& dest,
+            auto&& dest,
             T_Source const& source,
-            T_Extents const& extents) const
+            T_Extents const& extents) const requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
         {
             sycl::queue sycl_queue = queue.getNativeHandle();
 
