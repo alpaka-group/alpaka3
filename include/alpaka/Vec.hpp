@@ -537,6 +537,58 @@ namespace alpaka
             auto array = ArrayType{std::ref((*this)[T_values])...};
             return Vec<T_Type, InType::dim(), ALPAKA_TYPEOF(array)>{array};
         };
+
+        /** reduce all elements to a single value
+         *
+         * For better numerical stability a tree reduce algorithm is used.
+         *
+         * @tparam BinaryOp binary functor executed to reduce the range
+         *                  The binary operation must be associative.
+         * @return the type of the result depends on the binary functor
+         */
+        [[nodiscard]] constexpr auto reduce(auto&& reduceFunc) const
+            -> decltype(reduceFunc(std::declval<type>(), std::declval<type>()))
+        {
+            return reduce_range(ALPAKA_FORWARD(reduceFunc));
+        }
+
+    private:
+        /** reduce over a range of elements
+         *
+         * @tparam BinaryOp binary functor executed to reduce the range
+         * @tparam T_start start index
+         * @tparam T_end end index (excluded)
+         * @return the type of the result depends on the binary functor
+         */
+        template<uint32_t T_start = 0u, uint32_t T_end = dim()>
+        [[nodiscard]] constexpr auto reduce_range(auto&& reduceFunc) const
+            -> decltype(reduceFunc(std::declval<type>(), std::declval<type>()))
+        {
+            // elements in the range
+            constexpr uint32_t size = T_end - T_start;
+            // single element termination
+            if constexpr(size == 1u)
+            {
+                return (*this)[T_start];
+            }
+#if ALPAKA_LANG_SYCL
+            // SYCL can not call recursive functions
+            auto result = (*this)[T_start];
+            for(uint32_t i = T_start + 1u; i < T_end; ++i)
+            {
+                result = reduceFunc(result, (*this)[i]);
+            }
+            return result;
+#else
+            // split range at midpoint
+            constexpr uint32_t mid = T_start + size / 2u;
+
+            // recursively reduce both halves and combine
+            return reduceFunc(
+                reduce_range<T_start, mid>(ALPAKA_FORWARD(reduceFunc)),
+                reduce_range<mid, T_end>(ALPAKA_FORWARD(reduceFunc)));
+#endif
+        }
     };
 
     template<std::size_t I, typename T_Type, uint32_t T_dim, typename T_Storage>
