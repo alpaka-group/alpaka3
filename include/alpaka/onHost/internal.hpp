@@ -243,6 +243,15 @@ namespace alpaka::onHost
             };
         };
 
+        struct Fill
+        {
+            template<typename T_Queue, typename T_Dest, typename T_Value, typename T_Extents>
+            struct Op
+            {
+                void operator()(T_Queue& queue, auto&&, T_Value, T_Extents const&) const;
+            };
+        };
+
         struct GetDeviceProperties
         {
             template<typename T_Any>

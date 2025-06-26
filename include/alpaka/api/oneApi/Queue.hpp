@@ -105,6 +105,49 @@ namespace alpaka::onHost::internal
         }
     };
 
+    template<typename T_Device, typename T_Dest, typename T_Value, typename T_Extents>
+    requires(alpaka::trait::getDim_v<T_Extents> > 1u)
+    struct internal::Fill::Op<syclGeneric::Queue<T_Device>, T_Dest, T_Value, T_Extents>
+    {
+        void operator()(
+            syclGeneric::Queue<T_Device> queue,
+            auto&& dest,
+            T_Value elementValue,
+            T_Extents const& extents) const
+            requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
+                     && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
+        {
+            auto* destPtr = data(dest);
+            auto const destPitchBytesWithoutColumn = dest.getPitches().eraseBack();
+            auto extentMd = pCast<size_t>(extents);
+
+            sycl::queue sycl_queue = queue.getNativeHandle();
+
+
+            constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
+
+            if constexpr(dim == 2u)
+            {
+                sycl_queue.ext_oneapi_fill2d(
+                    destPtr,
+                    destPitchBytesWithoutColumn.back(),
+                    elementValue,
+                    extentMd.x(),
+                    extentMd.y());
+            }
+            else if constexpr(dim >= 3u)
+            {
+                auto const dstExtentWithoutColumn = extentMd.eraseBack();
+                sycl_queue.ext_oneapi_fill2d(
+                    destPtr,
+                    destPitchBytesWithoutColumn.back(),
+                    elementValue,
+                    extentMd.x(),
+                    dstExtentWithoutColumn.product());
+            }
+        }
+    };
+
     namespace detail
     {
         template<alpaka::concepts::Vector TVec>

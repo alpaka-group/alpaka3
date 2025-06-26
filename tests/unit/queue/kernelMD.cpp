@@ -59,6 +59,9 @@ void validate(auto& queue, auto& device, auto exec, auto testCase)
 
     auto hBuff = onHost::allocHostMirror(dBuff);
 
+    // fill with non-zero values
+    onHost::fill(queue, dBuff, extentMd);
+
     wait(queue);
     auto frameSize = testCase.m_frameSize;
     queue.enqueue(

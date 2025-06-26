@@ -11,6 +11,7 @@
 
 #if ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP
 #    include "alpaka/api/cuda/IdxLayer.hpp"
+#    include "alpaka/api/generic.hpp"
 #    include "alpaka/api/hip/IdxLayer.hpp"
 #    include "alpaka/api/unifiedCudaHip/ComputeApi.hpp"
 #    include "alpaka/api/unifiedCudaHip/MemcpyKind.hpp"
@@ -425,11 +426,14 @@ namespace alpaka::onHost
         template<typename T_Device, typename T_Dest, typename T_Extents>
         struct Memset::Op<unifiedCudaHip::Queue<T_Device>, T_Dest, T_Extents>
         {
+            /** @attention Do not use `requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>` here else gcc 11.X
+             * (tested 11.4 and 11.3) will run into an internal compiler segfault during the evaluation of the
+             * constraints */
             void operator()(
                 unifiedCudaHip::Queue<T_Device>& queue,
                 auto&& dest,
                 uint8_t byteValue,
-                T_Extents const& extents) const requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
+                T_Extents const& extents) const requires(std::is_same_v<ALPAKA_TYPEOF(dest), T_Dest>)
             {
                 using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
                 auto extentMd = pCast<size_t>(extents);
@@ -485,6 +489,29 @@ namespace alpaka::onHost
                             extentVal,
                             internal::getNativeHandle(queue)));
                 }
+            }
+        };
+
+        template<typename T_Device, typename T_Dest, typename T_Value, typename T_Extents>
+        struct Fill::Op<unifiedCudaHip::Queue<T_Device>, T_Dest, T_Value, T_Extents>
+        {
+            void operator()(
+                unifiedCudaHip::Queue<T_Device>& queue,
+                auto&& dest,
+                T_Value elementValue,
+                T_Extents const& extents) const
+                requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
+                         && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
+            {
+                auto executors = supportedMappings(getDevice(queue));
+                // avoid that we pass a ManagedView and convert non alpaka data views
+                auto dataView = makeView(dest);
+
+                alpaka::internal::generic::fill(
+                    queue,
+                    std::get<0>(executors),
+                    dataView.getSubView(extents),
+                    elementValue);
             }
         };
     } // namespace internal

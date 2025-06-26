@@ -7,6 +7,7 @@
 #include "alpaka/KernelBundle.hpp"
 #include "alpaka/core/DemangleTypeNames.hpp"
 #include "alpaka/core/common.hpp"
+#include "alpaka/mem/Alignment.hpp"
 #include "alpaka/onHost/Handle.hpp"
 
 namespace alpaka
@@ -74,5 +75,26 @@ namespace alpaka
             return GetDeviceType::Op<std::decay_t<decltype(any)>>{}(any);
         }
 
+        struct GetAlignment
+        {
+            template<typename T_Any>
+            struct Op
+            {
+                consteval auto operator()(auto&& any) const requires requires { any.getAlignment(); }
+                {
+                    return any.getAlignment();
+                }
+
+                consteval auto operator()(auto&& any) const
+                {
+                    return Alignment<>{};
+                }
+            };
+        };
+
+        consteval auto getAlignment(auto&& any)
+        {
+            return GetAlignment::Op<std::decay_t<decltype(any)>>{}(any);
+        }
     } // namespace internal
 } // namespace alpaka

@@ -42,6 +42,11 @@ namespace alpaka::onHost
             return m_queue.get();
         }
 
+        constexpr auto getApi() const
+        {
+            return alpaka::internal::getApi(*m_queue.get());
+        }
+
         void _()
         {
             static_assert(internal::concepts::Queue<element_type>);
@@ -154,14 +159,14 @@ namespace alpaka::onHost
      * @{
      */
     template<typename T_Device>
-    inline auto memset(Queue<T_Device> const& queue, auto&& dest, uint8_t byteValue)
+    inline void memset(Queue<T_Device> const& queue, auto&& dest, uint8_t byteValue)
     {
         return memset(queue, ALPAKA_FORWARD(dest), byteValue, internal::getExtents(dest));
     }
 
     /** @param extents M-dimensional data extents in elements, can be smaller than the container capacity */
     template<typename T_Device>
-    inline auto memset(
+    inline void memset(
         Queue<T_Device> const& queue,
         auto&& dest,
         uint8_t byteValue,
@@ -172,6 +177,48 @@ namespace alpaka::onHost
             std::decay_t<decltype(*queue.get())>,
             std::decay_t<decltype(dest)>,
             std::decay_t<decltype(extentsVec)>>{}(*queue.get(), ALPAKA_FORWARD(dest), byteValue, extentsVec);
+    }
+
+    /** @} */
+
+    /** fill memory element wise
+     *
+     * @param dest can be a container/view where the data should be written to
+     *             The caller should ensure that the memory is valid until the operation is completed not until the
+     *             execution handle is given back because alpaka is not extending the life-time until the operation
+     *             is finished.
+     * @param elementValue value to be written to each element
+     *
+     * @{
+     */
+    template<typename T_Device, typename T_Value>
+    inline void fill(Queue<T_Device> const& queue, auto&& dest, T_Value elementValue)
+        requires std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
+                 && std::same_as<
+                     ALPAKA_TYPEOF(alpaka::internal::getApi(queue)),
+                     ALPAKA_TYPEOF(alpaka::internal::getApi(dest))>
+    {
+        return fill(queue, ALPAKA_FORWARD(dest), elementValue, internal::getExtents(dest));
+    }
+
+    /** @param extents M-dimensional data extents in elements, can be smaller than the container capacity */
+    template<typename T_Device, typename T_Value>
+    inline void fill(
+        Queue<T_Device> const& queue,
+        auto&& dest,
+        T_Value elementValue,
+        alpaka::concepts::VectorOrScalar auto const& extents)
+        requires std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
+                 && std::same_as<
+                     ALPAKA_TYPEOF(alpaka::internal::getApi(queue)),
+                     ALPAKA_TYPEOF(alpaka::internal::getApi(dest))>
+    {
+        Vec const extentsVec = extents;
+        return internal::Fill::Op<
+            ALPAKA_TYPEOF(*queue.get()),
+            ALPAKA_TYPEOF(dest),
+            ALPAKA_TYPEOF(elementValue),
+            ALPAKA_TYPEOF(extentsVec)>{}(*queue.get(), ALPAKA_FORWARD(dest), elementValue, extentsVec);
     }
 
     /** @} */

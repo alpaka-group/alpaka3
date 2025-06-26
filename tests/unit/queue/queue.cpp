@@ -325,6 +325,14 @@ TEMPLATE_LIST_TEST_CASE("memcpy", "", TestApis)
 
     // test rvalue
     onHost::memcpy(queue, TestMdSpan{dBuff.getView()}, TestMdSpan{hBuff.getView()});
+
+    // check fill
+    onHost::fill(queue, TestMdSpan{dBuff.getView()}, size_t{42u});
+    onHost::memcpy(queue, TestMdSpan{hBuff.getView()}, TestMdSpan{dBuff.getView()});
+    onHost::wait(queue);
+    meta::ndLoopIncIdx(problemSize, [&](auto idx) { CHECK(hBuff[idx] == size_t{42}); });
+
+    // check memset
     onHost::memset(queue, TestMdSpan{dBuff.getView()}, 0u);
     onHost::memcpy(queue, TestMdSpan{hBuff.getView()}, TestMdSpan{dBuff.getView()});
     onHost::wait(queue);
@@ -336,6 +344,8 @@ TEMPLATE_LIST_TEST_CASE("memcpy", "", TestApis)
 
     onHost::memcpy(queue, TestMdSpan{dBuff.getView()}, TestMdSpan{hBuff.getView()});
     onHost::wait(queue);
+
+    // overwrite host values to be sure that memcpy later on updates the host values
     for(auto& v : hBuff)
         v = 42;
 
@@ -346,6 +356,13 @@ TEMPLATE_LIST_TEST_CASE("memcpy", "", TestApis)
     onHost::wait(queue);
     meta::ndLoopIncIdx(problemSize, [&](auto idx) { CHECK(hBuff[idx] == linearize(problemSize, idx)); });
 
+    // check fill
+    onHost::fill(queue, dlvalue, size_t{42u});
+    onHost::memcpy(queue, hlvalue, dlvalue);
+    onHost::wait(queue);
+    meta::ndLoopIncIdx(problemSize, [&](auto idx) { CHECK(hBuff[idx] == size_t{42}); });
+
+    // check memset
     onHost::memset(queue, dlvalue, 0u);
     onHost::memcpy(queue, hlvalue, dlvalue);
     onHost::wait(queue);

@@ -7,6 +7,7 @@
 #include "alpaka/CVec.hpp"
 #include "alpaka/Vec.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/interface.hpp"
 #include "alpaka/mem/Alignment.hpp"
 #include "alpaka/mem/DataPitches.hpp"
 #include "alpaka/mem/MdForwardIter.hpp"
@@ -42,7 +43,7 @@ namespace alpaka
 
     inline constexpr auto makeMdSpan(auto&& any)
     {
-        return MdSpan{onHost::data(any), onHost::getExtents(any), onHost::getPitches(any), any.getAlignment()};
+        return MdSpan{onHost::data(any), onHost::getExtents(any), onHost::getPitches(any), alpaka::getAlignment(any)};
     }
 
     template<

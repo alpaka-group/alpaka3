@@ -145,6 +145,23 @@ namespace alpaka::onHost
                 extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
         }
     };
+
+    template<typename T_Device, typename T_Dest, typename T_Value, typename T_Extents>
+    requires(alpaka::trait::getDim_v<T_Extents> == 1u)
+    struct internal::Fill::Op<syclGeneric::Queue<T_Device>, T_Dest, T_Value, T_Extents>
+    {
+        void operator()(
+            syclGeneric::Queue<T_Device> queue,
+            auto&& dest,
+            T_Value elementValue,
+            T_Extents const& extents) const
+            requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
+                     && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
+        {
+            sycl::queue sycl_queue = queue.getNativeHandle();
+            sycl_queue.fill(internal::Data::data(dest), elementValue, extents.x());
+        }
+    };
 } // namespace alpaka::onHost
 
 namespace alpaka::internal

@@ -92,4 +92,14 @@ namespace alpaka
         return alpaka::getNumPipelines(ALPAKA_TYPEOF(getApi(any)){}, ALPAKA_TYPEOF(getDeviceKind(any)){});
     }
 
+    /** Get the value type alignment of an object
+     *
+     * @param any type derive the alignment from
+     * @return alignment in bytes, if not defined the alignment of the value_type will be returned
+     */
+    consteval auto getAlignment(auto&& any)
+    {
+        return internal::getAlignment(ALPAKA_FORWARD(any));
+    }
+
 } // namespace alpaka
