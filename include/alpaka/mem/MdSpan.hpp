@@ -131,7 +131,7 @@ namespace alpaka
         constexpr MdSpan& operator=(MdSpan const&) = default;
         constexpr MdSpan& operator=(MdSpan&&) = default;
 
-        static consteval auto getAlignment()
+        static constexpr auto getAlignment()
         {
             return T_MemAlignment{};
         }
@@ -315,7 +315,7 @@ namespace alpaka
         constexpr MdSpanArray(MdSpanArray const&) = default;
         constexpr MdSpanArray(MdSpanArray&&) = default;
 
-        static consteval auto getAlignment()
+        static constexpr auto getAlignment()
         {
             return T_MemAlignment{};
         }

@@ -68,7 +68,7 @@ namespace alpaka
             T_Type* data,
             T_UserExtents const& extents,
             T_UserPitches const& pitches,
-            T_MemAlignment const memAlignment = Alignment{})
+            T_MemAlignment const memAlignment = T_MemAlignment{})
             : BaseMdSpan{
                 data,
                 typename ALPAKA_TYPEOF(extents)::UniVec{extents},

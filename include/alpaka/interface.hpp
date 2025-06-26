@@ -97,7 +97,7 @@ namespace alpaka
      * @param any type derive the alignment from
      * @return alignment in bytes, if not defined the alignment of the value_type will be returned
      */
-    consteval auto getAlignment(auto&& any)
+    constexpr auto getAlignment(auto&& any)
     {
         return internal::getAlignment(ALPAKA_FORWARD(any));
     }

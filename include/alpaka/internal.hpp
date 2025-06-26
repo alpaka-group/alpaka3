@@ -80,19 +80,19 @@ namespace alpaka
             template<typename T_Any>
             struct Op
             {
-                consteval auto operator()(auto&& any) const requires requires { any.getAlignment(); }
+                constexpr auto operator()(auto&& any) const requires requires { any.getAlignment(); }
                 {
                     return any.getAlignment();
                 }
 
-                consteval auto operator()(auto&& any) const
+                constexpr auto operator()(auto&& any) const
                 {
                     return Alignment<>{};
                 }
             };
         };
 
-        consteval auto getAlignment(auto&& any)
+        constexpr auto getAlignment(auto&& any)
         {
             return GetAlignment::Op<std::decay_t<decltype(any)>>{}(any);
         }

@@ -97,7 +97,7 @@ namespace alpaka
          *
          * @return the alignment of the memory (in byte) the pointer is pointing to
          */
-        static consteval auto getAlignment()
+        static constexpr auto getAlignment()
         {
             using SpanElemType = typename T_MdSpan::value_type;
             constexpr uint32_t spanAlignment = T_MdSpan::getAlignment().template get<SpanElemType>();
