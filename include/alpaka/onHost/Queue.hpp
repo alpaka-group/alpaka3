@@ -33,7 +33,7 @@ namespace alpaka::onHost
         using element_type = typename QueueHandle::element_type;
 
         template<typename T_Queue>
-        Queue(Handle<T_Queue>&& ptr) : m_queue{std::forward<Handle<T_Queue>>(ptr)}
+        Queue(Handle<T_Queue>&& queue) : m_queue{std::forward<Handle<T_Queue>>(queue)}
         {
         }
 
@@ -65,6 +65,15 @@ namespace alpaka::onHost
         bool operator!=(Queue const& other) const
         {
             return this->get() != other.get();
+        }
+
+        /** Get the device of this queue
+         *
+         * @return the device of this queue
+         */
+        auto getDevice() const
+        {
+            return Device<T_Api, T_DeviceKind>{internal::getDevice(*m_queue.get())};
         }
 
         /** Enqueue a kernel functor to a queue

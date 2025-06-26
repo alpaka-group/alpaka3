@@ -47,9 +47,9 @@ struct IotaKernelND
 };
 
 template<typename T_MemIdxType, typename T_LoopIdxType>
-void iotaTest(auto& device, auto& queue, auto exec, auto const extents, auto frameSize)
+void iotaTest(auto& queue, auto exec, auto const extents, auto frameSize)
 {
-    auto dBuff = onHost::alloc<Vec<T_MemIdxType, ALPAKA_TYPEOF(extents)::dim()>>(device, extents);
+    auto dBuff = onHost::alloc<Vec<T_MemIdxType, ALPAKA_TYPEOF(extents)::dim()>>(queue.getDevice(), extents);
     auto hBuff = onHost::allocHostMirror(dBuff);
 
     using KenelIdxScalarType = typename ALPAKA_TYPEOF(frameSize)::type;
@@ -96,15 +96,9 @@ void callTests(auto cfg)
         using LoopIdxType = std::conditional_t<T_signedLoopIdx, std::make_signed_t<uint32_t>, uint32_t>;
         using KenelIdxType = std::conditional_t<T_signedKernelIdx, std::make_signed_t<uint32_t>, uint32_t>;
 
-        iotaTest<MemIdxType, LoopIdxType>(device, queue, exec, Vec<MemIdxType, 1u>{15u}, Vec<KenelIdxType, 1u>{7u});
+        iotaTest<MemIdxType, LoopIdxType>(queue, exec, Vec<MemIdxType, 1u>{15u}, Vec<KenelIdxType, 1u>{7u});
+        iotaTest<MemIdxType, LoopIdxType>(queue, exec, Vec<MemIdxType, 2u>{8u, 16u}, Vec<KenelIdxType, 2u>{2u, 4u});
         iotaTest<MemIdxType, LoopIdxType>(
-            device,
-            queue,
-            exec,
-            Vec<MemIdxType, 2u>{8u, 16u},
-            Vec<KenelIdxType, 2u>{2u, 4u});
-        iotaTest<MemIdxType, LoopIdxType>(
-            device,
             queue,
             exec,
             Vec<MemIdxType, 3u>{3u, 8u, 16u},
@@ -116,15 +110,9 @@ void callTests(auto cfg)
         using LoopIdxType = std::conditional_t<T_signedLoopIdx, std::make_signed_t<uint32_t>, uint32_t>;
         using KenelIdxType = std::conditional_t<T_signedKernelIdx, std::make_signed_t<uint32_t>, uint32_t>;
 
-        iotaTest<MemIdxType, LoopIdxType>(device, queue, exec, Vec<MemIdxType, 1u>{15u}, Vec<KenelIdxType, 1u>{7u});
+        iotaTest<MemIdxType, LoopIdxType>(queue, exec, Vec<MemIdxType, 1u>{15u}, Vec<KenelIdxType, 1u>{7u});
+        iotaTest<MemIdxType, LoopIdxType>(queue, exec, Vec<MemIdxType, 2u>{8u, 16u}, Vec<KenelIdxType, 2u>{2u, 4u});
         iotaTest<MemIdxType, LoopIdxType>(
-            device,
-            queue,
-            exec,
-            Vec<MemIdxType, 2u>{8u, 16u},
-            Vec<KenelIdxType, 2u>{2u, 4u});
-        iotaTest<MemIdxType, LoopIdxType>(
-            device,
             queue,
             exec,
             Vec<MemIdxType, 3u>{3u, 8u, 16u},
@@ -136,15 +124,9 @@ void callTests(auto cfg)
         using LoopIdxType = std::conditional_t<T_signedLoopIdx, std::make_signed_t<uint64_t>, uint64_t>;
         using KenelIdxType = std::conditional_t<T_signedKernelIdx, std::make_signed_t<uint32_t>, uint32_t>;
 
-        iotaTest<MemIdxType, LoopIdxType>(device, queue, exec, Vec<MemIdxType, 1u>{15u}, Vec<KenelIdxType, 1u>{7u});
+        iotaTest<MemIdxType, LoopIdxType>(queue, exec, Vec<MemIdxType, 1u>{15u}, Vec<KenelIdxType, 1u>{7u});
+        iotaTest<MemIdxType, LoopIdxType>(queue, exec, Vec<MemIdxType, 2u>{8u, 16u}, Vec<KenelIdxType, 2u>{2u, 4u});
         iotaTest<MemIdxType, LoopIdxType>(
-            device,
-            queue,
-            exec,
-            Vec<MemIdxType, 2u>{8u, 16u},
-            Vec<KenelIdxType, 2u>{2u, 4u});
-        iotaTest<MemIdxType, LoopIdxType>(
-            device,
             queue,
             exec,
             Vec<MemIdxType, 3u>{3u, 8u, 16u},
@@ -156,15 +138,9 @@ void callTests(auto cfg)
         using LoopIdxType = std::conditional_t<T_signedLoopIdx, std::make_signed_t<uint64_t>, uint64_t>;
         using KenelIdxType = std::conditional_t<T_signedKernelIdx, std::make_signed_t<uint32_t>, uint32_t>;
 
-        iotaTest<MemIdxType, LoopIdxType>(device, queue, exec, Vec<MemIdxType, 1u>{15u}, Vec<KenelIdxType, 1u>{7u});
+        iotaTest<MemIdxType, LoopIdxType>(queue, exec, Vec<MemIdxType, 1u>{15u}, Vec<KenelIdxType, 1u>{7u});
+        iotaTest<MemIdxType, LoopIdxType>(queue, exec, Vec<MemIdxType, 2u>{8u, 16u}, Vec<KenelIdxType, 2u>{2u, 4u});
         iotaTest<MemIdxType, LoopIdxType>(
-            device,
-            queue,
-            exec,
-            Vec<MemIdxType, 2u>{8u, 16u},
-            Vec<KenelIdxType, 2u>{2u, 4u});
-        iotaTest<MemIdxType, LoopIdxType>(
-            device,
             queue,
             exec,
             Vec<MemIdxType, 3u>{3u, 8u, 16u},
@@ -176,15 +152,9 @@ void callTests(auto cfg)
         using LoopIdxType = std::conditional_t<T_signedLoopIdx, std::make_signed_t<uint32_t>, uint32_t>;
         using KenelIdxType = std::conditional_t<T_signedKernelIdx, std::make_signed_t<uint64_t>, uint64_t>;
 
-        iotaTest<MemIdxType, LoopIdxType>(device, queue, exec, Vec<MemIdxType, 1u>{15u}, Vec<KenelIdxType, 1u>{7u});
+        iotaTest<MemIdxType, LoopIdxType>(queue, exec, Vec<MemIdxType, 1u>{15u}, Vec<KenelIdxType, 1u>{7u});
+        iotaTest<MemIdxType, LoopIdxType>(queue, exec, Vec<MemIdxType, 2u>{8u, 16u}, Vec<KenelIdxType, 2u>{2u, 4u});
         iotaTest<MemIdxType, LoopIdxType>(
-            device,
-            queue,
-            exec,
-            Vec<MemIdxType, 2u>{8u, 16u},
-            Vec<KenelIdxType, 2u>{2u, 4u});
-        iotaTest<MemIdxType, LoopIdxType>(
-            device,
             queue,
             exec,
             Vec<MemIdxType, 3u>{3u, 8u, 16u},
@@ -196,15 +166,9 @@ void callTests(auto cfg)
         using LoopIdxType = std::conditional_t<T_signedLoopIdx, std::make_signed_t<uint32_t>, uint32_t>;
         using KenelIdxType = std::conditional_t<T_signedKernelIdx, std::make_signed_t<uint64_t>, uint64_t>;
 
-        iotaTest<MemIdxType, LoopIdxType>(device, queue, exec, Vec<MemIdxType, 1u>{15u}, Vec<KenelIdxType, 1u>{7u});
+        iotaTest<MemIdxType, LoopIdxType>(queue, exec, Vec<MemIdxType, 1u>{15u}, Vec<KenelIdxType, 1u>{7u});
+        iotaTest<MemIdxType, LoopIdxType>(queue, exec, Vec<MemIdxType, 2u>{8u, 16u}, Vec<KenelIdxType, 2u>{2u, 4u});
         iotaTest<MemIdxType, LoopIdxType>(
-            device,
-            queue,
-            exec,
-            Vec<MemIdxType, 2u>{8u, 16u},
-            Vec<KenelIdxType, 2u>{2u, 4u});
-        iotaTest<MemIdxType, LoopIdxType>(
-            device,
             queue,
             exec,
             Vec<MemIdxType, 3u>{3u, 8u, 16u},
@@ -216,15 +180,9 @@ void callTests(auto cfg)
         using LoopIdxType = std::conditional_t<T_signedLoopIdx, std::make_signed_t<uint64_t>, uint64_t>;
         using KenelIdxType = std::conditional_t<T_signedKernelIdx, std::make_signed_t<uint64_t>, uint64_t>;
 
-        iotaTest<MemIdxType, LoopIdxType>(device, queue, exec, Vec<MemIdxType, 1u>{15u}, Vec<KenelIdxType, 1u>{7u});
+        iotaTest<MemIdxType, LoopIdxType>(queue, exec, Vec<MemIdxType, 1u>{15u}, Vec<KenelIdxType, 1u>{7u});
+        iotaTest<MemIdxType, LoopIdxType>(queue, exec, Vec<MemIdxType, 2u>{8u, 16u}, Vec<KenelIdxType, 2u>{2u, 4u});
         iotaTest<MemIdxType, LoopIdxType>(
-            device,
-            queue,
-            exec,
-            Vec<MemIdxType, 2u>{8u, 16u},
-            Vec<KenelIdxType, 2u>{2u, 4u});
-        iotaTest<MemIdxType, LoopIdxType>(
-            device,
             queue,
             exec,
             Vec<MemIdxType, 3u>{3u, 8u, 16u},
@@ -236,15 +194,9 @@ void callTests(auto cfg)
         using LoopIdxType = std::conditional_t<T_signedLoopIdx, std::make_signed_t<uint64_t>, uint64_t>;
         using KenelIdxType = std::conditional_t<T_signedKernelIdx, std::make_signed_t<uint64_t>, uint64_t>;
 
-        iotaTest<MemIdxType, LoopIdxType>(device, queue, exec, Vec<MemIdxType, 1u>{15u}, Vec<KenelIdxType, 1u>{7u});
+        iotaTest<MemIdxType, LoopIdxType>(queue, exec, Vec<MemIdxType, 1u>{15u}, Vec<KenelIdxType, 1u>{7u});
+        iotaTest<MemIdxType, LoopIdxType>(queue, exec, Vec<MemIdxType, 2u>{8u, 16u}, Vec<KenelIdxType, 2u>{2u, 4u});
         iotaTest<MemIdxType, LoopIdxType>(
-            device,
-            queue,
-            exec,
-            Vec<MemIdxType, 2u>{8u, 16u},
-            Vec<KenelIdxType, 2u>{2u, 4u});
-        iotaTest<MemIdxType, LoopIdxType>(
-            device,
             queue,
             exec,
             Vec<MemIdxType, 3u>{3u, 8u, 16u},

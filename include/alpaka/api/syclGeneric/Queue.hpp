@@ -96,6 +96,13 @@ namespace alpaka::onHost
                 return alpaka::internal::getDeviceKind(*m_device.get());
             }
 
+            auto getDevice() const
+            {
+                return m_device;
+            }
+
+            friend struct onHost::internal::GetDevice;
+
             Handle<T_Device> m_device;
             uint32_t m_idx = 0u;
             sycl::queue m_queue;

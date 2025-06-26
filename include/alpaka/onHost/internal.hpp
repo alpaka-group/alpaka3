@@ -54,6 +54,23 @@ namespace alpaka::onHost
             };
         };
 
+        struct GetDevice
+        {
+            template<typename T_Any>
+            struct Op
+            {
+                auto operator()(T_Any const& any) const
+                {
+                    return any.getDevice();
+                }
+            };
+        };
+
+        inline constexpr auto getDevice(auto&& any)
+        {
+            return GetDevice::Op<std::decay_t<decltype(any)>>{}(any);
+        }
+
         struct GetNativeHandle
         {
             template<typename T_Any>

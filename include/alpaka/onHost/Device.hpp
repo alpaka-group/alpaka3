@@ -33,7 +33,8 @@ namespace alpaka::onHost
         }
 
         template<typename T_Device>
-        Device(Handle<T_Device>&& ptr) : m_device{std::forward<Handle<T_Device>>(ptr)}
+        Device(Handle<T_Device>&& internalDeviceHandle)
+            : m_device{std::forward<Handle<T_Device>>(internalDeviceHandle)}
         {
         }
 

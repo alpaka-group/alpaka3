@@ -131,6 +131,13 @@ namespace alpaka::onHost
                 return alpaka::internal::getDeviceKind(*m_device.get());
             }
 
+            auto getDevice() const
+            {
+                return m_device;
+            }
+
+            friend struct onHost::internal::GetDevice;
+
             friend struct internal::Wait;
             friend struct internal::Memcpy;
             friend struct internal::Memset;
