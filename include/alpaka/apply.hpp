@@ -34,9 +34,10 @@ namespace alpaka
     template<typename T_Func, typename T_TupleLike>
     ALPAKA_FN_INLINE constexpr decltype(auto) apply(T_Func&& func, T_TupleLike&& tuple)
     {
+        /** @attention Do not use std::tuple_size_v here because it results in compile issues with gcc11.4 */
         return detail::applyImpl(
             std::forward<T_Func>(func),
             std::forward<T_TupleLike>(tuple),
-            std::make_index_sequence<std::tuple_size_v<std::decay_t<T_TupleLike>>>{});
+            std::make_index_sequence<std::tuple_size<std::decay_t<T_TupleLike>>::value>{});
     }
 } // namespace alpaka
