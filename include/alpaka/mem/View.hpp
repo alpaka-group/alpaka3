@@ -19,6 +19,7 @@
 
 namespace alpaka
 {
+
     /** Non owning view to data
      *
      * This view is only holding a points to real data, copying the view is cheap.
@@ -29,6 +30,23 @@ namespace alpaka
         typename T_Type,
         alpaka::concepts::Vector T_Extents,
         alpaka::concepts::Alignment T_MemAlignment = Alignment<>>
+    struct View;
+
+    inline constexpr auto makeView(auto&& any)
+    {
+        return View{
+            getApi(any),
+            onHost::data(any),
+            onHost::getExtents(any),
+            onHost::getPitches(any),
+            alpaka::getAlignment(any)};
+    }
+
+    template<
+        typename T_Api,
+        typename T_Type,
+        alpaka::concepts::Vector T_Extents,
+        alpaka::concepts::Alignment T_MemAlignment>
     struct View : MdSpan<T_Type, typename T_Extents::UniVec, typename T_Extents::UniVec, T_MemAlignment>
     {
     private:
@@ -96,7 +114,7 @@ namespace alpaka
          */
         constexpr auto getSubView(alpaka::concepts::Vector auto const& extents) const
         {
-            assert(extents <= this->getExtents());
+            assert((extents <= this->getExtents()).reduce(std::logical_and{}));
             return View{T_Api{}, this->data(), extents, this->getPitches(), T_MemAlignment{}};
         }
 
@@ -111,7 +129,7 @@ namespace alpaka
             alpaka::concepts::Vector auto const& offset,
             alpaka::concepts::Vector auto const& extents) const
         {
-            assert(offset + extents <= this->getExtents());
+            assert((extents <= this->getExtents()).reduce(std::logical_and{}));
             auto shiftedPtr = &getMdSpan()[offset];
             return View{T_Api{}, shiftedPtr, extents, this->getPitches(), Alignment<>{}};
         }
