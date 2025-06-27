@@ -14,8 +14,6 @@ namespace alpaka
     template<uint32_t T_byte = std::numeric_limits<uint32_t>::max()>
     struct Alignment
     {
-        static constexpr uint32_t value = T_byte;
-
         /** Get the alignment value.
          *
          * @tparam T_Type The type for which to get the alignment.
@@ -35,6 +33,9 @@ namespace alpaka
         {
             return value;
         }
+
+    private:
+        static constexpr uint32_t value = T_byte;
     };
 
     using AutoAligned = Alignment<>;
