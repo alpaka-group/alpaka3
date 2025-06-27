@@ -41,7 +41,7 @@ namespace alpaka
             if constexpr(std::has_single_bit(alignment))
                 return alignment;
 
-            return static_cast<uint32_t>(sizeof(T_ValueType));
+            return static_cast<uint32_t>(alignof(T_ValueType));
         }
     } // namespace detail
     template<
