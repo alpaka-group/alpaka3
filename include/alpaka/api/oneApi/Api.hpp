@@ -139,7 +139,7 @@ namespace alpaka
         {
             constexpr auto operator()(T_Acc const&, api::OneApi, deviceKind::Cpu) const
             {
-                return layout::Contigious{};
+                return layout::Contiguous{};
             }
         };
     } // namespace onAcc::internal::trait

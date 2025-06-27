@@ -214,7 +214,7 @@ namespace alpaka::onAcc
 
                 return const_iterator(begin, linearCurrent, linearStride, extentMD.product(), extentMD, strideMD);
             }
-            else if constexpr(std::is_same_v<T_IdxMapperFn, layout::Contigious>)
+            else if constexpr(std::is_same_v<T_IdxMapperFn, layout::Contiguous>)
             {
                 auto groupOffset = threadIdx * m_idxRange.m_stride;
                 groupOffset.ref(selectedDims) -= groupOffset[selectedDims];
@@ -248,7 +248,7 @@ namespace alpaka::onAcc
                 auto extentMD = divCeil(m_idxRange.distance()[selectedDims], m_idxRange.m_stride[selectedDims]);
                 return const_iterator_end(extentMD.product());
             }
-            else if constexpr(std::is_same_v<T_IdxMapperFn, layout::Contigious>)
+            else if constexpr(std::is_same_v<T_IdxMapperFn, layout::Contiguous>)
             {
                 auto strideMD = m_idxRange.m_stride[selectedDims];
                 auto numElements = divCeil(

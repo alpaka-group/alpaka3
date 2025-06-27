@@ -45,7 +45,7 @@ namespace alpaka::onAcc
         };
 
         template<>
-        struct IsIdxMapping<layout::Contigious> : std::true_type
+        struct IsIdxMapping<layout::Contiguous> : std::true_type
         {
         };
 

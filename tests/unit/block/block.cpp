@@ -30,7 +30,7 @@ struct BlockIotaKernel
                 onAcc::worker::blocksInGrid,
                 IdxRange{ALPAKA_TYPEOF(numBlocks)::all(0), numBlocks * numDataElemInBlock, numDataElemInBlock},
                 onAcc::traverse::tiled,
-                onAcc::layout::contigious))
+                onAcc::layout::contiguous))
         {
             auto blockOffset = blockIdx;
             for(auto inBlockOffset : onAcc::makeIdxMap(

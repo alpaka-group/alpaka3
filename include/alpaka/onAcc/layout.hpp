@@ -16,11 +16,11 @@ namespace alpaka::onAcc
         constexpr auto strided = Strided{};
 
         /** Indices will be contiguous within each dimension for each worker thread. */
-        struct Contigious
+        struct Contiguous
         {
         };
 
-        constexpr auto contigious = Contigious{};
+        constexpr auto contiguous = Contiguous{};
 
         /** The index layout will automatically selected based on the executor. */
         struct Optimized
