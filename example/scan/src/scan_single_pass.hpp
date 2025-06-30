@@ -29,7 +29,7 @@
 
 using namespace alpaka;
 
-enum class Flag
+enum class Flag : int
 {
     Uninitialized,
     AggregateDone,
@@ -158,8 +158,7 @@ public:
         concepts::MdSpan<Data> auto const& inputVec,
         concepts::MdSpan<Data> auto outputVec,
         concepts::MdSpan auto flags,
-        concepts::MdSpan<Data volatile> auto aggregates,
-        concepts::MdSpan<Data volatile> auto prefixes,
+        concepts::MdSpan<Data volatile> auto metaData,
         concepts::MdSpan<IdxType> auto frameCounter) const
     {
         using DeviceType = ALPAKA_TYPEOF(acc.getDeviceKind());
@@ -194,8 +193,11 @@ public:
          * All thread blocks will be used to iterate over the frames. Each thread block will handle one or more
          * frames.
          */
+#if 0
         for([[maybe_unused]] auto _frameIdx :
             onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec<IdxType, 1u>{0}, numFrames}))
+#endif
+        while(true)
         {
             IdxType frameIdx = 0_idx;
 
@@ -214,12 +216,10 @@ public:
 
             onAcc::syncBlockThreads(acc);
 
-            for([[maybe_unused]] auto frameElem :
-                onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{numThreadsPerBlock}))
-            {
-                // all other threads (except the first) get their id from the shared mem
-                frameIdx = frameIdxShared;
-            }
+            // all other threads (except the first) get their id from the shared mem
+            frameIdx = frameIdxShared;
+            if(frameIdx >= numFrames.x())
+                return;
 
             bool const lastFrameFull = validElementsInLastFrame == chunkExtent;
             bool const isLastFrame = frameIdx == numFrames.x() - 1_idx;
@@ -298,58 +298,47 @@ public:
                 Data const localAggregate
                     = tmp[conflictFreeAccess<DeviceType>(miniBlocksPerChunk - 1_idx)]; // this block's sum
 
-                aggregates[frameIdx] = localAggregate;
+                metaData[frameIdx * 2u] = localAggregate;
                 memoryFence<DeviceType>();
                 flags[frameIdx] = Flag::AggregateDone;
             }
 
             Data exclusivePrefixStrided = static_cast<Data>(0);
 
-#if 1
-            // -- GET EXCLUSIVE PREFIX (MODULO N EACH THREAD) --
-            using SignedIdxType = std::make_signed_t<IdxType>;
-            for(SignedIdxType predecessorIdx = static_cast<SignedIdxType>(frameIdx) - 1 - threadIdx.x();
-                predecessorIdx >= 0;
-                predecessorIdx -= numThreadsPerBlock.x())
+            constexpr IdxType warpSize = 32;
+            auto prefixReduction = onAcc::declareSharedMdArray<Data, uniqueId()>(acc, CVec<IdxType, warpSize>{});
+            if(threadIdx.x() < warpSize)
             {
-                switch(flags[predecessorIdx])
+#if ALPAKA_ARCH_PTX
+                // -- GET EXCLUSIVE PREFIX (MODULO N EACH THREAD) --
+                using SignedIdxType = std::make_signed_t<IdxType>;
+                bool firstRount = true;
+                for(SignedIdxType predecessorIdx = static_cast<SignedIdxType>(frameIdx) - 1 - threadIdx.x();
+                    predecessorIdx >= 0;
+                    predecessorIdx -= warpSize)
                 {
-                case Flag::Uninitialized:
-                    // yield and try again
-                    predecessorIdx += numThreadsPerBlock.x();
-                    if constexpr(std::is_same_v<DeviceType, deviceKind::Cpu>)
-                        std::this_thread::yield();
-
-#    if ALPAKA_ARCH_PTX && 1
-                    if constexpr(std::is_same_v<DeviceType, deviceKind::NvidiaGpu>)
+                    __nanosleep(150);
+                    auto f = flags[predecessorIdx];
+                    if(firstRount)
                     {
-                        if(frameIdx < 500)
-                            [] __device__() { __threadfence_block(); }();
-                        else
+                        while(__ballot_sync(__activemask(), (f == Flag::Uninitialized ? 1 : 0)))
+                        {
                             __nanosleep(350);
+                            f = flags[predecessorIdx];
+                        }
+                        firstRount = false;
                     }
-#    endif
-
-
-                    break;
-                case Flag::AggregateDone:
-                    exclusivePrefixStrided += aggregates[predecessorIdx];
-                    break;
-                case Flag::PrefixDone:
-                    exclusivePrefixStrided += prefixes[predecessorIdx];
-                    predecessorIdx = 0; // break out of for loop
-                    break;
+                    exclusivePrefixStrided += metaData[predecessorIdx * 2u + (f == Flag::AggregateDone ? 0u : 1u)];
+                    if(f == Flag::PrefixDone)
+                        break;
                 }
-            }
 #endif
+                prefixReduction[threadIdx] = exclusivePrefixStrided;
+            }
 
-            onAcc::syncBlockThreads(acc);
-
-            auto prefixReduction = onAcc::declareSharedMdArray<Data, uniqueId()>(acc, numThreadsPerBlock);
-            prefixReduction[threadIdx] = exclusivePrefixStrided;
 
             // -- BLOCK REDUCE --
-            for(auto offset = numThreadsPerBlock.x() / 2; offset > 0; offset /= 2)
+            for(auto offset = warpSize / 2; offset > 0; offset /= 2)
             {
                 alpaka::onAcc::syncBlockThreads(acc);
                 if(threadIdx < offset)
@@ -358,11 +347,11 @@ public:
 
             alpaka::onAcc::syncBlockThreads(acc);
 
-            if(threadIdx.x() == numThreadsPerBlock.x() - 1_idx)
+            if(threadIdx.x() == warpSize - 1_idx)
             {
                 auto blockSum = tmp[conflictFreeAccess<DeviceType>(miniBlocksPerChunk - 1_idx)];
 
-                prefixes[frameIdx] = exclusivePrefixStrided + blockSum;
+                metaData[frameIdx * 2u + 1u] = exclusivePrefixStrided + blockSum;
                 memoryFence<DeviceType>();
                 flags[frameIdx] = Flag::PrefixDone;
 
@@ -497,27 +486,24 @@ void scan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, auto outp
     Scan_ScanBlocksKernel<SCAN_TYPE> scanBlocks;
 
     // Define chunkExtent
-    constexpr auto chunkExtent = CVec<IdxType, 2048u>{};
+    constexpr auto chunkExtent = CVec<IdxType, 2048u * 2>{};
     auto numFrames = divCeil(inputVec.getExtents(), chunkExtent);
-    auto const frameSpec = onHost::FrameSpec{numFrames, chunkExtent, CVec<IdxType, 256u>{}};
+    auto const frameSpec = onHost::FrameSpec{numFrames, chunkExtent, CVec<IdxType, 512>{}};
 
     // allocate aggregates, one per block
     auto flags = onHost::alloc<FlagType<DeviceType>>(devAcc, frameSpec.m_numFrames);
-    auto aggregates = onHost::alloc<Data volatile>(devAcc, frameSpec.m_numFrames);
-    auto prefixes = onHost::alloc<Data volatile>(devAcc, frameSpec.m_numFrames);
+    // aggregate + prefixes, one per frame
+    auto metaData = onHost::alloc<Data volatile>(devAcc, frameSpec.m_numFrames * 2u);
 
     onHost::memset(queue, flags, static_cast<uint8_t>(0));
 
     // allocate frame counter, single index type
     auto frameCounter = onHost::alloc<IdxType>(devAcc, 1);
     onHost::memset(queue, frameCounter, static_cast<uint8_t>(0));
-    onHost::wait(queue);
+    // onHost::wait(queue);
 
     // enqueue the kernel execution tasks
-    queue.enqueue(
-        exec,
-        frameSpec,
-        KernelBundle{scanBlocks, inputVec, outputVec, flags, aggregates, prefixes, frameCounter});
+    queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec, flags, metaData, frameCounter});
 
     // need to wait here until the previous call is done before we can destruct the buffers for
     // increments/blockSums when running out of scope
