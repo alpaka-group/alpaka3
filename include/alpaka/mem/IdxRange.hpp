@@ -135,4 +135,30 @@ namespace alpaka
         typename trait::getVec_t<T_End>::UniVec,
         typename trait::getVec_t<T_Stride>::UniVec>;
 
+    namespace trait
+    {
+        template<typename T>
+        struct IsIndexRange : std::false_type
+        {
+        };
+
+        template<typename T>
+        requires(isSpecializationOf_v<std::remove_cvref_t<T>, IdxRange>)
+        struct IsIndexRange<T> : std::true_type
+        {
+        };
+
+    } // namespace trait
+
+    template<typename T>
+    constexpr bool isIndexRange_v = trait::IsIndexRange<T>::value;
+
+    namespace concepts
+    {
+        template<typename T, typename T_ValueType = alpaka::NotRequired, uint32_t T_dim = alpaka::notRequiredDim>
+        concept IdxRange
+            = alpaka::isIndexRange_v<T>
+              && (std::same_as<T_ValueType, typename T::IdxType> || std::same_as<T_ValueType, alpaka::NotRequired>) &&(
+                  (T_dim == alpaka::notRequiredDim) || (T::dim() == T_dim));
+    } // namespace concepts
 } // namespace alpaka

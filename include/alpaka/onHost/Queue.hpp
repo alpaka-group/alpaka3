@@ -118,7 +118,7 @@ namespace alpaka::onHost
             onHost::concepts::ThreadOrFrameSpec auto const& specification,
             KernelBundle<TKernelFn, TArgs...> const& kernelBundle) const
         {
-            auto executor = supportedMappings(getDevice(*m_queue.get()));
+            auto executor = supportedMappings(internal::getDevice(*m_queue.get()));
             internal::enqueue(*m_queue.get(), std::get<0>(executor), specification, kernelBundle);
         }
 
