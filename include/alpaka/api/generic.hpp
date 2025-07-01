@@ -49,7 +49,7 @@ namespace alpaka::internal::generic
         auto extents = onHost::getExtents(dest);
 
         using ExtentsType = ALPAKA_TYPEOF(extents);
-        using IndexType = typename ExtentsType::index_type;
+        using IndexType = typename ExtentsType::type;
         auto virtualFrameExtent = ExtentsType::all(1u);
         // 512 is randomly chosen because it is on all devices a good value for a value assign kernel
         virtualFrameExtent.x() = std::min(static_cast<IndexType>(512u * elementsPerFrameItem), extents.x());

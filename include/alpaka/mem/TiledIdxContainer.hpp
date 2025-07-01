@@ -58,7 +58,11 @@ namespace alpaka::onAcc
         };
     } // namespace detail
 
-    template<typename T_IdxRange, typename T_ThreadSpace, typename T_IdxMapperFn, alpaka::concepts::CVector T_CSelect>
+    template<
+        alpaka::concepts::IdxRange T_IdxRange,
+        typename T_ThreadSpace,
+        typename T_IdxMapperFn,
+        alpaka::concepts::CVector T_CSelect>
     class TiledIdxContainer
     {
         void _()
