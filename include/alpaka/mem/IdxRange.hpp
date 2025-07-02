@@ -148,17 +148,44 @@ namespace alpaka
         {
         };
 
+        template<typename T>
+        struct IsLazyIndexRange : std::false_type
+        {
+        };
+
     } // namespace trait
 
     template<typename T>
     constexpr bool isIndexRange_v = trait::IsIndexRange<T>::value;
 
+    template<typename T>
+    constexpr bool isLazyIndexRange_v = trait::IsLazyIndexRange<T>::value;
+
     namespace concepts
     {
+        /** Concept to check if a type is a index range
+         *
+         * @tparam T Type to check
+         * @tparam T_ValueType enforce a value type of the index range, if not provided the type is not checked
+         * @tparam T_dim enforce a dimensionality of the index range, if not provided the value is not checked
+         */
         template<typename T, typename T_ValueType = alpaka::NotRequired, uint32_t T_dim = alpaka::notRequiredDim>
         concept IdxRange
             = alpaka::isIndexRange_v<T>
               && (std::same_as<T_ValueType, typename T::IdxType> || std::same_as<T_ValueType, alpaka::NotRequired>) &&(
                   (T_dim == alpaka::notRequiredDim) || (T::dim() == T_dim));
+
+        /** Concept to check if a type is a lazy evaluated index range
+         *
+         * @attention the value type and dimension can not be evaluated for lazy index ranges.
+         *
+         * @tparam T Type to check
+         */
+        template<typename T>
+        concept LazyIdxRange = alpaka::isLazyIndexRange_v<T>;
+
+        template<typename T>
+        concept IdxRangeDescription = alpaka::isIndexRange_v<T> || isLazyIndexRange_v<T>;
+
     } // namespace concepts
 } // namespace alpaka
