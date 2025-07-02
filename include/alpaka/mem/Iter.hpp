@@ -284,13 +284,13 @@ namespace alpaka::trait
 {
     template<typename T>
     requires(isSpecializationOf_v<std::remove_cvref_t<T>, onAcc::detail::IdxRangeLazy>)
-    struct IsIndexRange<T> : std::true_type
+    struct IsLazyIndexRange<T> : std::true_type
     {
     };
 
     template<typename T>
     requires(isSpecializationOf_v<std::remove_cvref_t<T>, onAcc::detail::IdxRangeFn>)
-    struct IsIndexRange<T> : std::true_type
+    struct IsLazyIndexRange<T> : std::true_type
     {
     };
 } // namespace alpaka::trait

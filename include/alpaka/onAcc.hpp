@@ -36,9 +36,9 @@ namespace alpaka::onAcc
     ALPAKA_FN_HOST_ACC constexpr auto makeIdxMap(
         auto const& acc,
         auto const workGroup,
-        alpaka::concepts::IdxRange auto const range,
+        auto const range,
         T_Traverse traverse = T_Traverse{},
-        T_IdxLayout idxLayout = T_IdxLayout{}) requires(ALPAKA_TYPEOF(range)::dim() > 1u)
+        T_IdxLayout idxLayout = T_IdxLayout{})
     {
         return internal::MakeIter::
             Op<void, ALPAKA_TYPEOF(acc), ALPAKA_TYPEOF(DomainSpec{workGroup, range}), T_Traverse, T_IdxLayout>{}(
@@ -55,9 +55,9 @@ namespace alpaka::onAcc
     ALPAKA_FN_HOST_ACC constexpr auto makeIdxMap(
         auto const& acc,
         auto const workGroup,
-        alpaka::concepts::IdxRange auto const range,
+        auto const range,
         T_Traverse traverse = T_Traverse{},
-        T_IdxLayout idxLayout = T_IdxLayout{}) requires(ALPAKA_TYPEOF(range)::dim() > 1u)
+        T_IdxLayout idxLayout = T_IdxLayout{})
     {
         return internal::MakeIter::Op<
             T_ScalarIdxType,
