@@ -259,19 +259,76 @@ namespace alpaka::onAcc::internal
 
             auto tmpReturn = SimdReturn::all(neutralElement);
 
-            // auto tmpReturn = SimdReturn::all(neutralElement);
-            for(; iter != simdIdxContainer.end();)
+            if constexpr(
+                domainSize.dim() > 1u && std::is_same_v<ALPAKA_TYPEOF(asParent().getTraversePolicy()), traverse::Flat>)
             {
-                tmpReturn = reduceFunc(
-                    tmpReturn,
-                    executeReduce<T_MemAlignment, T_simdWidth>(
+                /* For cases where we traverse with the flat policy, we cannot assume that we can blindly increase the
+                 * iterator later N times. This could happen in cases where we have enough concurrency. We evaluate for
+                 * SIMD operations only the fast moving dimension but with the flat policy flattening the worker group
+                 * and use all workers on a linear domain. The loop must therefore be splited into iterating over all
+                 * slow dimensions and an inner loop iterating over the fast moving dimension. For this we need to
+                 * build our own groups out of the user-provided workgroup.
+                 */
+                // build a worker group with slow-moving dimension threads for the outer loop
+                using index_type = typename IdxType::type;
+                auto wIdx = workGroup.idx(acc);
+                wIdx.back() = index_type{0};
+                auto wSize = workGroup.size(acc);
+                wSize.back() = index_type{1};
+                auto domSize = domainSize;
+                domSize.back() = index_type{1};
+
+                auto wOuter = WorkerGroup{wIdx, wSize};
+
+                for(auto rowIdx : onAcc::makeIdxMap(
                         acc,
-                        iter,
-                        std::make_integer_sequence<uint32_t, numSimdPacksPerFnCall>{},
-                        ALPAKA_FORWARD(reduceFunc),
-                        ALPAKA_FORWARD(func),
-                        ALPAKA_FORWARD(data0),
-                        ALPAKA_FORWARD(dataN)...));
+                        wOuter,
+                        IdxRange{domSize},
+                        asParent().getTraversePolicy(),
+                        asParent().getIdxLayoutPolicy()))
+                {
+                    // build a worker group with fast-moving dimension threads for the inner loop
+                    auto wIdxInner = ALPAKA_TYPEOF(domainSize)::all(0);
+                    wIdxInner.back() = workGroup.idx(acc).back();
+                    auto wSizeInner = ALPAKA_TYPEOF(domainSize)::all(1);
+                    wSizeInner.back() = workGroup.size(acc).back();
+                    auto wInner = WorkerGroup{wIdxInner, wSizeInner};
+
+                    // iterate over the fast-moving dimension
+                    auto simdIdxContainer = onAcc::makeIdxMap(
+                        acc,
+                        wInner,
+                        IdxRange{rowIdx, domainSize, stride},
+                        asParent().getTraversePolicy(),
+                        asParent().getIdxLayoutPolicy())[CVec<uint32_t, ALPAKA_TYPEOF(domainSize)::dim() - 1u>{}];
+
+                    for(auto iter = simdIdxContainer.begin(); iter != simdIdxContainer.end();)
+                    {
+                        executeReduce<T_MemAlignment, T_simdWidth>(
+                            acc,
+                            iter,
+                            std::make_integer_sequence<uint32_t, numSimdPacksPerFnCall>{},
+                            ALPAKA_FORWARD(func),
+                            ALPAKA_FORWARD(data0),
+                            ALPAKA_FORWARD(dataN)...);
+                    }
+                }
+            }
+            else
+            {
+                for(; iter != simdIdxContainer.end();)
+                {
+                    tmpReturn = reduceFunc(
+                        tmpReturn,
+                        executeReduce<T_MemAlignment, T_simdWidth>(
+                            acc,
+                            iter,
+                            std::make_integer_sequence<uint32_t, numSimdPacksPerFnCall>{},
+                            ALPAKA_FORWARD(reduceFunc),
+                            ALPAKA_FORWARD(func),
+                            ALPAKA_FORWARD(data0),
+                            ALPAKA_FORWARD(dataN)...));
+                }
             }
 
             ALPAKA_TYPEOF(numElements) remainderDomainSize = numElements.all(0);
