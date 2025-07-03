@@ -234,10 +234,8 @@ namespace alpaka::onAcc::internal
             auto const remainderBegin = numSimdPackLoops * numElementsPerFnCall * wSize;
 
             // we SIMDfy only over the fast moving dimension (columns of memory)
-            auto domainSize = numElements;
-            domainSize.back() = remainderBegin;
-            auto stride = ALPAKA_TYPEOF(numElements)::all(1);
-            stride.back() = T_simdWidth;
+            auto domainSize = numElements.rAssign(remainderBegin);
+            auto stride = ALPAKA_TYPEOF(numElements)::all(1).rAssign(T_simdWidth);
 
             using IdxType = ALPAKA_TYPEOF(numElements);
             auto simdIdxContainer = onAcc::makeIdxMap(
@@ -271,12 +269,9 @@ namespace alpaka::onAcc::internal
                  */
                 // build a worker group with slow-moving dimension threads for the outer loop
                 using index_type = typename IdxType::type;
-                auto wIdx = workGroup.idx(acc);
-                wIdx.back() = index_type{0};
-                auto wSize = workGroup.size(acc);
-                wSize.back() = index_type{1};
-                auto domSize = domainSize;
-                domSize.back() = index_type{1};
+                auto wIdx = workGroup.idx(acc).rAssign(index_type{0});
+                auto wSize = workGroup.size(acc).rAssign(index_type{1});
+                auto domSize = domainSize.rAssign(index_type{1});
 
                 auto wOuter = WorkerGroup{wIdx, wSize};
 
@@ -288,10 +283,8 @@ namespace alpaka::onAcc::internal
                         asParent().getIdxLayoutPolicy()))
                 {
                     // build a worker group with fast-moving dimension threads for the inner loop
-                    auto wIdxInner = ALPAKA_TYPEOF(domainSize)::all(0);
-                    wIdxInner.back() = workGroup.idx(acc).back();
-                    auto wSizeInner = ALPAKA_TYPEOF(domainSize)::all(1);
-                    wSizeInner.back() = workGroup.size(acc).back();
+                    auto wIdxInner = ALPAKA_TYPEOF(domainSize)::all(0).rAssign(workGroup.idx(acc).back());
+                    auto wSizeInner = ALPAKA_TYPEOF(domainSize)::all(1).rAssign(workGroup.size(acc).back());
                     auto wInner = WorkerGroup{wIdxInner, wSizeInner};
 
                     // iterate over the fast-moving dimension
@@ -331,8 +324,7 @@ namespace alpaka::onAcc::internal
                 }
             }
 
-            ALPAKA_TYPEOF(numElements) remainderDomainSize = numElements.all(0);
-            remainderDomainSize.back() = remainderBegin;
+            ALPAKA_TYPEOF(numElements) remainderDomainSize = numElements.all(0).rAssign(remainderBegin);
 
             for(auto idx : onAcc::makeIdxMap(
                     acc,

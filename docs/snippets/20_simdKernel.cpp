@@ -81,7 +81,7 @@ TEST_CASE("MD vector simd add kernel", "[docs]")
     // We only reduce the frame specification for the fast moving dimension.
     int elementsPerFrameItem = getNumElemPerThread<DataType>(computeQueue);
     concepts::Vector auto numFrames
-        = divExZero(computeViewOut.getExtents(), frameExtents * Vec{1, 1, elementsPerFrameItem});
+        = divExZero(computeViewOut.getExtents(), frameExtents * frameExtents.all(1).rAssign(elementsPerFrameItem));
     // The frame specification is not required to be a multiple of the extent, it can be smaller.
     auto frameSpec = onHost::FrameSpec{numFrames, frameExtents};
     std::cout << frameSpec << std::endl;
