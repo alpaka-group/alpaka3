@@ -94,6 +94,11 @@ struct CompileTimeKernel2D
         static_assert(Vec{7} == Vec{7, 3}.remove<1u>());
         static_assert(Vec{3} == Vec{7, 3}.remove<0u>());
 
+        // assign and rAssign
+        static_assert(Vec{1, 3} == Vec{7, 3}.assign<0u>(1));
+        static_assert(Vec{1, 3} == Vec{7, 3}.assign(CVec<uint32_t, 0>{}, Vec{1}));
+        static_assert(Vec{7, 1} == Vec{7, 3}.rAssign<1u>(1));
+
         static_assert(Vec{0, 1} == mapToND(Vec{3, 2}, 1));
         static_assert(Vec{1, 0} == mapToND(Vec{3, 2}, 2));
         static_assert(Vec{1, 1} == mapToND(Vec{3, 2}, 3));
@@ -181,6 +186,12 @@ struct CompileTimeKernel3D
 
         static_assert(Vec{7, 5} == Vec{7, 3, 5}.remove<1u>());
         static_assert(Vec{3, 5} == Vec{7, 3, 5}.remove<0u>());
+
+        // assign and rAssign
+        static_assert(Vec{7, 1, 5} == Vec{7, 3, 5}.assign<1u>(1));
+        static_assert(Vec{42, 3, 43} == Vec{7, 3, 5}.assign(CVec<uint32_t, 0, 2>{}, Vec{42, 43}));
+        static_assert(Vec{7, 3, 1} == Vec{7, 3, 5}.rAssign(1));
+        static_assert(Vec{7, 1, 5} == Vec{7, 3, 5}.rAssign<1>(1));
 
         static_assert(Vec{0, 0, 1} == mapToND(Vec{5, 3, 2}, 1));
         static_assert(Vec{0, 1, 0} == mapToND(Vec{5, 3, 2}, 2));

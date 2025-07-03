@@ -19,6 +19,68 @@
 
 namespace alpaka
 {
+    namespace trait
+    {
+        template<typename T>
+        struct IsVector : std::false_type
+        {
+        };
+
+        template<typename T>
+        struct IsCVector : std::false_type
+        {
+        };
+    } // namespace trait
+
+    template<typename T>
+    constexpr bool isVector_v = trait::IsVector<T>::value;
+
+    template<typename T>
+    constexpr bool isCVector_v = trait::IsCVector<T>::value;
+
+    namespace concepts
+    {
+
+        /** Concept to check if a type is a vector
+         *
+         * @tparam T Type to check
+         * @tparam T_ValueType enforce a value type of the vector, if not provided the value type is not checked
+         * @tparam T_dim enforce a dimensionality of the vector, if not provided the value is not checked
+         */
+        template<typename T, typename T_ValueType = alpaka::NotRequired, uint32_t T_dim = alpaka::notRequiredDim>
+        concept Vector = isVector_v<T>
+                         && (std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
+                             || std::same_as<
+                                 T_ValueType,
+                                 alpaka::NotRequired>) &&((T_dim == alpaka::notRequiredDim) || (T::dim() == T_dim));
+
+        /** Concept to check if a type is a vector or scalar variable
+         *
+         * @tparam T Type to check
+         * @tparam T_ValueType enforce a value type of T, if not provided the value type is not checked
+         */
+        template<typename T, typename T_ValueType = alpaka::NotRequired>
+        concept VectorOrScalar = (isVector_v<T> || std::integral<T>) &&(
+            std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
+            || std::same_as<T_ValueType, alpaka::NotRequired>);
+
+        template<typename T, typename T_ValueType = alpaka::NotRequired>
+        concept CVector = isCVector_v<T>
+                          && (std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
+                              || std::same_as<T_ValueType, alpaka::NotRequired>);
+
+        /** Concept to check if a type is a vector or a specific other type
+         *
+         * @tparam T Type to check
+         * @tparam T_RequiredComponent enforce that T is a vector or a specific other type
+         */
+        template<typename T, typename T_RequiredComponent>
+        concept TypeOrVector = (isVector_v<T> || std::is_same_v<T, T_RequiredComponent>);
+
+        template<typename T, typename T_RequiredComponent>
+        concept VectorOrConvertableType = (isVector_v<T> || std::is_convertible_v<T, T_RequiredComponent>);
+    } // namespace concepts
+
     /** Array storge for vector data
      *
      * This class is a workaround and is simply wrapping std::array. It is required because the dim in std::array
@@ -390,6 +452,50 @@ namespace alpaka
             Vec<type, T_numElements> result;
             for(uint32_t i = 0u; i < T_numElements; i++)
                 result[T_numElements - 1u - i] = (*this)[(T_dim + startIdx - i) % T_dim];
+            return result;
+        }
+
+        /** Assign an value to the given index position
+         *
+         * @tparam T_elementIdx Index of the element from the begin which shall be replaced; range: [ 0; T_dim - 1 ]
+         * @param value value to assign to the element at the given index position
+         * @return copy of the vector with where the index positions are updated with value
+         */
+        template<uint32_t T_elementIdx = 0>
+        constexpr Vec<T_Type, T_dim> assign(T_Type const& value) const requires(T_elementIdx < T_dim)
+        {
+            auto result = *this;
+            result[T_elementIdx] = value;
+            return result;
+        }
+
+        /** Assign an value to the given index position
+         *
+         * @param selection CVec with the indices of the elements which shall be replaced; indices range must be
+         * [0; T_dim -1]
+         * @param value value to assign to the element at the given index position
+         * @return copy of the vector with where the index positions are updated with value
+         */
+        constexpr Vec<T_Type, T_dim> assign(
+            concepts::CVector auto const selection,
+            concepts::Vector<T_Type> auto const& value) const requires(ALPAKA_TYPEOF(value)::dim() <= T_dim)
+        {
+            auto result = *this;
+            result.ref(selection) = value;
+            return result;
+        }
+
+        /** Assign an value to the given index position
+         *
+         * @tparam T_elementIdx Index of the element from the back which shall be replaced; range: [ 0; T_dim - 1 ]
+         * @param value value to assign to the element at the given index position
+         * @return copy of the vector with where the index positions are updated with value
+         */
+        template<uint32_t T_elementIdx = T_dim - 1u>
+        constexpr Vec<T_Type, T_dim> rAssign(T_Type const& value) const requires(T_elementIdx < T_dim)
+        {
+            auto result = *this;
+            result[T_elementIdx] = value;
             return result;
         }
 
@@ -808,75 +914,18 @@ namespace alpaka
 
     /** @} */
 
-
-    template<typename T>
-    struct IsVector : std::false_type
+    namespace trait
     {
-    };
+        template<typename T_Type, uint32_t T_dim, typename T_Storage>
+        struct IsVector<Vec<T_Type, T_dim, T_Storage>> : std::true_type
+        {
+        };
 
-    template<typename T_Type, uint32_t T_dim, typename T_Storage>
-    struct IsVector<Vec<T_Type, T_dim, T_Storage>> : std::true_type
-    {
-    };
-
-    template<typename T>
-    struct IsCVector : std::false_type
-    {
-    };
-
-    template<typename T_Type, uint32_t T_dim, T_Type... T_values>
-    struct IsCVector<Vec<T_Type, T_dim, detail::CVec<T_Type, T_values...>>> : std::true_type
-    {
-    };
-
-    template<typename T>
-    constexpr bool isVector_v = IsVector<T>::value;
-
-    template<typename T>
-    constexpr bool isCVector_v = IsCVector<T>::value;
-
-    namespace concepts
-    {
-
-        /** Concept to check if a type is a vector
-         *
-         * @tparam T Type to check
-         * @tparam T_ValueType enforce a value type of the vector, if not provided the value type is not checked
-         * @tparam T_dim enforce a dimensionality of the vector, if not provided the value is not checked
-         */
-        template<typename T, typename T_ValueType = alpaka::NotRequired, uint32_t T_dim = alpaka::notRequiredDim>
-        concept Vector = isVector_v<T>
-                         && (std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
-                             || std::same_as<
-                                 T_ValueType,
-                                 alpaka::NotRequired>) &&((T_dim == alpaka::notRequiredDim) || (T::dim() == T_dim));
-
-        /** Concept to check if a type is a vector or scalar variable
-         *
-         * @tparam T Type to check
-         * @tparam T_ValueType enforce a value type of T, if not provided the value type is not checked
-         */
-        template<typename T, typename T_ValueType = alpaka::NotRequired>
-        concept VectorOrScalar = (isVector_v<T> || std::integral<T>) &&(
-            std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
-            || std::same_as<T_ValueType, alpaka::NotRequired>);
-
-        template<typename T, typename T_ValueType = alpaka::NotRequired>
-        concept CVector = isCVector_v<T>
-                          && (std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
-                              || std::same_as<T_ValueType, alpaka::NotRequired>);
-
-        /** Concept to check if a type is a vector or a specific other type
-         *
-         * @tparam T Type to check
-         * @tparam T_RequiredComponent enforce that T is a vector or a specific other type
-         */
-        template<typename T, typename T_RequiredComponent>
-        concept TypeOrVector = (isVector_v<T> || std::is_same_v<T, T_RequiredComponent>);
-
-        template<typename T, typename T_RequiredComponent>
-        concept VectorOrConvertableType = (isVector_v<T> || std::is_convertible_v<T, T_RequiredComponent>);
-    } // namespace concepts
+        template<typename T_Type, uint32_t T_dim, T_Type... T_values>
+        struct IsCVector<Vec<T_Type, T_dim, detail::CVec<T_Type, T_values...>>> : std::true_type
+        {
+        };
+    } // namespace trait
 
     namespace trait
     {
