@@ -89,7 +89,7 @@ TEST_CASE("MD vector simd add kernel", "[docs]")
     auto const beginT = std::chrono::high_resolution_clock::now();
     // we enforce serial execution because this executor is always available deviceKind::cpu and api::host
     computeQueue.enqueue(
-
+        exec::cpuSerial,
         frameSpec,
         KernelBundle{MDVectorSimdAdd{}, computeViewOut, computeViewIn0, computeViewIn1});
     onHost::wait(computeQueue);
