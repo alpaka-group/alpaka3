@@ -6,6 +6,8 @@
 #include "alpaka/core/common.hpp"
 
 #include <algorithm>
+#include <bit>
+#include <climits>
 #include <type_traits>
 #include <utility>
 
@@ -68,6 +70,23 @@ namespace alpaka
                 R = M;
         }
         return L;
+    }
+
+    template<std::integral T>
+    inline constexpr T firstSetBit(T value)
+    {
+        using UnsignedValueType = std::make_unsigned_t<T>;
+        return sizeof(T) * CHAR_BIT - 1 - std::countl_zero(static_cast<UnsignedValueType>(value));
+    }
+
+    /** round to the next power of two which is equal or lower to the value
+     *
+     * @param value input value >0
+     */
+    template<std::integral T>
+    inline constexpr T roundDownToPowerOfTwo(T value)
+    {
+        return T{1} << firstSetBit(value);
     }
 
 } // namespace alpaka

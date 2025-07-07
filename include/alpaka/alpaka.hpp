@@ -35,5 +35,6 @@
 #include "alpaka/onHost/Device.hpp"
 #include "alpaka/onHost/DeviceSelector.hpp"
 #include "alpaka/onHost/Queue.hpp"
+#include "alpaka/onHost/algo/transform.hpp"
 #include "alpaka/onHost/mem/stdContainer.hpp"
 #include "alpaka/tag.hpp"
