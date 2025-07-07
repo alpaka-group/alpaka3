@@ -12,51 +12,72 @@
 #include <string>
 #include <tuple>
 
-namespace alpaka::exec
+namespace alpaka
 {
-    struct CpuSerial
+    namespace exec
     {
-        static std::string getName()
+        struct CpuSerial
         {
-            return "CpuSerial";
-        }
-    };
+            static std::string getName()
+            {
+                return "CpuSerial";
+            }
+        };
 
-    constexpr CpuSerial cpuSerial;
+        constexpr CpuSerial cpuSerial;
 
-    struct CpuOmpBlocks
-    {
-        static std::string getName()
+        struct CpuOmpBlocks
         {
-            return "CpuOmpBlocks";
-        }
-    };
+            static std::string getName()
+            {
+                return "CpuOmpBlocks";
+            }
+        };
 
-    constexpr CpuOmpBlocks cpuOmpBlocks;
+        constexpr CpuOmpBlocks cpuOmpBlocks;
 
-    struct CpuOmpBlocksAndThreads
-    {
-        static std::string getName()
+        struct CpuOmpBlocksAndThreads
         {
-            return "CpuOmpBlocksAndThreads";
-        }
-    };
+            static std::string getName()
+            {
+                return "CpuOmpBlocksAndThreads";
+            }
+        };
 
-    constexpr CpuOmpBlocksAndThreads cpuOmpBlocksAndThreads;
+        constexpr CpuOmpBlocksAndThreads cpuOmpBlocksAndThreads;
 
-    namespace traits
+        namespace trait
+        {
+            template<>
+            struct IsSeqExecutor<CpuSerial> : std::true_type
+            {
+            };
+
+            template<>
+            struct IsSeqExecutor<CpuOmpBlocks> : std::true_type
+            {
+            };
+        } // namespace trait
+    } // namespace exec
+
+    namespace trait
     {
         template<>
-        struct IsSeqExecutor<CpuSerial> : std::true_type
+        struct IsExecutor<exec::CpuSerial> : std::true_type
         {
         };
 
         template<>
-        struct IsSeqExecutor<CpuOmpBlocks> : std::true_type
+        struct IsExecutor<exec::CpuOmpBlocks> : std::true_type
         {
         };
-    } // namespace traits
-} // namespace alpaka::exec
+
+        template<>
+        struct IsExecutor<exec::CpuOmpBlocksAndThreads> : std::true_type
+        {
+        };
+    } // namespace trait
+} // namespace alpaka
 
 namespace alpaka::onAcc::trait
 {

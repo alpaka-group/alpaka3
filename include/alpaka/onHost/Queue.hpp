@@ -5,6 +5,7 @@
 #pragma once
 
 #include "Handle.hpp"
+#include "alpaka/api/trait.hpp"
 #include "alpaka/onHost/concepts.hpp"
 #include "alpaka/onHost/internal.hpp"
 
@@ -111,7 +112,7 @@ namespace alpaka::onHost
 
         /**
          * A available default executor will be selected automaticlally. The default executor is a executor with most
-         * parallelism.
+         * parallelism/performance.
          */
         template<typename TKernelFn, typename... TArgs>
         void enqueue(
@@ -127,7 +128,7 @@ namespace alpaka::onHost
          * (blocks, threads).
          */
         void enqueue(
-            auto const executor,
+            alpaka::concepts::Executor auto const executor,
             onHost::concepts::ThreadOrFrameSpec auto const& specification,
             alpaka::concepts::KernelBundle auto const& kernelBundle) const
         {

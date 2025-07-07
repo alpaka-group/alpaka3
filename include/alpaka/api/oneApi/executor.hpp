@@ -13,10 +13,22 @@ namespace alpaka
     {
         struct OneApi
         {
+            static std::string getName()
+            {
+                return "OneApi";
+            }
         };
 
         constexpr OneApi oneApi{};
     } // namespace exec
+
+    namespace trait
+    {
+        template<>
+        struct IsExecutor<exec::OneApi> : std::true_type
+        {
+        };
+    } // namespace trait
 
     namespace onAcc::trait
     {

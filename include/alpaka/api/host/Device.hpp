@@ -241,7 +241,7 @@ namespace alpaka::onHost
             typename T_Mapping,
             onHost::concepts::FrameSpec T_FrameSpec,
             alpaka::concepts::KernelBundle T_KernelBundle>
-        requires exec::traits::isSeqExecutor_v<T_Mapping>
+        requires exec::trait::isSeqExecutor_v<T_Mapping>
         struct AdjustThreadSpec::Op<cpu::Device<T_Platform>, T_Mapping, T_FrameSpec, T_KernelBundle>
         {
             using T_NumThreads = T_FrameSpec::ThreadExtentsVecType;

@@ -10,19 +10,29 @@
 
 #include <string>
 
-namespace alpaka::exec
+namespace alpaka
 {
-    struct GpuCuda
+    namespace exec
     {
-        static std::string getName()
+        struct GpuCuda
         {
-            return "GpuCuda";
-        }
-    };
+            static std::string getName()
+            {
+                return "GpuCuda";
+            }
+        };
 
-    constexpr GpuCuda gpuCuda;
+        constexpr GpuCuda gpuCuda;
+    } // namespace exec
 
-} // namespace alpaka::exec
+    namespace trait
+    {
+        template<>
+        struct IsExecutor<exec::GpuCuda> : std::true_type
+        {
+        };
+    } // namespace trait
+} // namespace alpaka
 
 namespace alpaka::onAcc::trait
 {
