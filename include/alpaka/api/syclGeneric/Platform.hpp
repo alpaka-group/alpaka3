@@ -204,7 +204,7 @@ namespace alpaka
                     prop.m_maxThreadsPerBlock = dev.get_info<sycl::info::device::max_work_group_size>();
                     std::vector<std::size_t> wrap_sizes = dev.get_info<sycl::info::device::sub_group_sizes>();
                     // @todo do not reduce wrap size to a single value, return all values
-                    prop.m_warpSize = std::reduce(
+                    prop.m_warpSize = static_cast<uint32_t>(std::reduce(
                         wrap_sizes.begin(),
                         wrap_sizes.end(),
                         std::size_t{0},
@@ -213,7 +213,7 @@ namespace alpaka
                             // The CPU runtime supports a sub-group size of 64, but the SYCL implementation
                             // currently does not
                             return std::max(a, b) <= 32 ? std::max(a, b) : 32;
-                        });
+                        }));
                     prop.m_multiProcessorCount = dev.get_info<sycl::info::device::max_compute_units>();
 
                     return prop;
