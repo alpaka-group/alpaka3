@@ -19,6 +19,7 @@ namespace alpaka
     };
 
     constexpr uint32_t notRequiredDim = std::numeric_limits<uint32_t>::max();
+    constexpr uint32_t notRequiredWidth = notRequiredDim;
 
     namespace trait
     {

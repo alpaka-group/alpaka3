@@ -2,7 +2,6 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
-
 #pragma once
 
 #include "alpaka/core/common.hpp"
@@ -75,7 +74,22 @@ namespace alpaka
                 }
             };
         };
+
+        // true for alpaka MdSpan implementations
+        template<typename T>
+        struct IsExecutor : std::false_type
+        {
+        };
     } // namespace trait
+
+    template<typename T>
+    constexpr bool isExecutor = trait::IsExecutor<T>::value;
+
+    namespace concepts
+    {
+        template<typename T>
+        concept Executor = alpaka::isExecutor<T>;
+    } // namespace concepts
 
     /** get SIMD with in bytes for the
      *

@@ -19,6 +19,37 @@
 
 namespace alpaka
 {
+    namespace trait
+    {
+        template<typename T>
+        struct IsSimdPtr : std::false_type
+        {
+        };
+
+    } // namespace trait
+
+    template<typename T>
+    constexpr bool isSimdPtr_v = trait::IsSimdPtr<T>::value;
+
+    namespace concepts
+    {
+
+        /** Concept to check if a type is a SIMD pointer
+         *
+         * @tparam T Type to check
+         * @tparam T_ValueType enforce a value type of the SIMD pointer, if not provided the value type is not checked
+         * @tparam T_width enforce lane width of the SIMD pointer, if not provided the value is not checked
+         */
+        template<typename T, typename T_ValueType = alpaka::NotRequired, uint32_t T_width = alpaka::notRequiredWidth>
+        concept SimdPtr
+            = isSimdPtr_v<T>
+              && (std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
+                  || std::same_as<
+                      T_ValueType,
+                      alpaka::NotRequired>) &&((T_width == alpaka::notRequiredWidth) || (T::width() == T_width));
+
+    } // namespace concepts
+
     /** pointer to a SIMD pack with the width T_SimdWidth
      *
      * The pointer is used to load/store data from/to memory
@@ -158,4 +189,13 @@ namespace alpaka
 
         IdxType m_idx;
     };
+
+    namespace trait
+    {
+        template<typename T>
+        requires(isSpecializationOf_v<T, SimdPtr>)
+        struct IsSimdPtr<T> : std::true_type
+        {
+        };
+    } // namespace trait
 } // namespace alpaka
