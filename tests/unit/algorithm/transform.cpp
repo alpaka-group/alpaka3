@@ -167,7 +167,7 @@ TEMPLATE_LIST_TEST_CASE("transform", "", TestBackends)
          * Memory loads and stores will be vectorized.
          */
         std::make_pair(
-            ScalarFunc{[] ALPAKA_FN_HOST_ACC(DataType const& a, DataType const& b)
+            ScalarFunc{[] ALPAKA_FN_ACC(DataType const& a, DataType const& b)
                        { return math::min(a + DataType{1}, b); }},
             [](DataType const& a, DataType const& b) { return math::min(a + DataType{1}, b); }),
         std::make_pair(

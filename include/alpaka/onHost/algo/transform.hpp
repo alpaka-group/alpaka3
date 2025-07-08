@@ -11,11 +11,12 @@ namespace alpaka::onHost
 {
     /** Transform the input data with the given function and write the result to the output data.
      *
-     * fn can be a lambda function if all arguments are specialized. Generic lambdas are for some backends e.g.
-     * CUDA/HIP not supported. A lambda must be of the following form and should capture arguments only by copy.
+     * fn can be a lambda function if all arguments are specialized. This fully specialized functor must mostly wrapped
+     * by @see ScalarFunc. Generic lambdas are for some backends e.g. CUDA/HIP not supported. A lambda must be of the
+     * following form and should capture arguments only by copy.
      *
      * @code{.cpp}
-     *   [] ALPAKA_FN_HOST_ACC(){};
+     *   [] ALPAKA_FN_ACC(){};
      * @endcode
      *
      * @param queue The queue to execute the transformation.
@@ -25,13 +26,29 @@ namespace alpaka::onHost
      *   The functor should support Simd packages. If not you can enforce the element wise execution by wrapping into
      * @see ScalarFunc. If you would like to support stencil executions wrapp fn into @see StencilFunc. StencilFunc is
      * getting all arguments as @see SimdPtr. If StencilFunc is used you should take care to not read outside of valid
-     * memory ranges by using sub-views to your input and output data.
+     * memory ranges by using sub-views to your input and output data. Optionally a fn can have a accelerator as first
+     * argument.
      * @param in The input data to transform, all input data is passed to fn.
+     *
+     * examples for a identity unary transform functor:
+     * @code{.cpp}
+     *   struct Foo {
+     *      constexpr auto operator()(onAcc::concepts::Acc auto const&, concepts::SimdPtr auto const& a) const {
+     *          return a.load();
+     *      }
+     *   };
+     *   struct Bar {
+     *      constexpr auto operator()(concepts::SimdPtr auto const& a) const {
+     *          return a.load();
+     *      }
+     *   };
+     * @endcode
      *
      * @{
      */
+    template<typename T_Device>
     inline void transform(
-        auto const& queue,
+        Queue<T_Device> const& queue,
         alpaka::concepts::Executor auto const exec,
         auto&& out,
         auto&& fn,
@@ -44,7 +61,8 @@ namespace alpaka::onHost
      * A available default executor will be selected automaticlally. The default executor is a executor with most
      * parallelism/performance.
      */
-    inline void transform(auto const& queue, auto&& out, auto&& fn, auto&&... in)
+    template<typename T_Device>
+    inline void transform(Queue<T_Device> const& queue, auto&& out, auto&& fn, auto&&... in)
     {
         auto executor = supportedMappings(queue.getDevice());
         transform(queue, std::get<0>(executor), ALPAKA_FORWARD(out), ALPAKA_FORWARD(fn), ALPAKA_FORWARD(in)...);
