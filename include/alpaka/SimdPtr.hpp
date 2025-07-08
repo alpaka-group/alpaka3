@@ -146,11 +146,18 @@ namespace alpaka
          * @{
          */
         template<typename T_Storage>
-        constexpr void storeTo(Simd<value_type, SimdPtr::width(), T_Storage> const& rhs)
+        constexpr void storeTo(Simd<value_type, SimdPtr::width(), T_Storage> const& rhs) const
         {
             auto* ptr = &T_MdSpan::operator[](m_idx);
 
             rhs.copyTo(ptr, getAlignment());
+        }
+
+        template<typename T_Storage>
+        constexpr SimdPtr const& operator=(Simd<value_type, SimdPtr::width(), T_Storage> const& rhs) const
+        {
+            storeTo(rhs);
+            return *this;
         }
 
         template<typename T_Storage>
