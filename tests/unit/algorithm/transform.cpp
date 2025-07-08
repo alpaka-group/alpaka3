@@ -146,7 +146,6 @@ void prepareTest(auto cfg, concepts::Vector auto extentMd, auto const& functorTu
         functorTuples);
 }
 
-/** Test that memcpy and memset can be called with non copy-able and move-able data as lvalue and rvalue. */
 TEMPLATE_LIST_TEST_CASE("transform", "", TestBackends)
 {
     auto cfg = TestType::makeDict();
