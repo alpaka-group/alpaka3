@@ -138,15 +138,12 @@ namespace alpaka::onAcc::internal
                             ALPAKA_FORWARD(data)...)...};
 
                     return results.reduce(ALPAKA_FORWARD(reduceFunc));
-                }
-
-                ,
+                },
                 ids);
         }
 
     private:
         constexpr auto const& asParent() const
-
         {
             return static_cast<T_Parent const&>(*this);
         }
@@ -297,13 +294,16 @@ namespace alpaka::onAcc::internal
 
                     for(auto iter = simdIdxContainer.begin(); iter != simdIdxContainer.end();)
                     {
-                        executeReduce<T_MemAlignment, T_simdWidth>(
-                            acc,
-                            iter,
-                            std::make_integer_sequence<uint32_t, numSimdPacksPerFnCall>{},
-                            ALPAKA_FORWARD(func),
-                            ALPAKA_FORWARD(data0),
-                            ALPAKA_FORWARD(dataN)...);
+                        tmpReturn = reduceFunc(
+                            tmpReturn,
+                            executeReduce<T_MemAlignment, T_simdWidth>(
+                                acc,
+                                iter,
+                                std::make_integer_sequence<uint32_t, numSimdPacksPerFnCall>{},
+                                ALPAKA_FORWARD(reduceFunc),
+                                ALPAKA_FORWARD(func),
+                                ALPAKA_FORWARD(data0),
+                                ALPAKA_FORWARD(dataN)...));
                     }
                 }
             }
