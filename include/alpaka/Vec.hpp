@@ -118,28 +118,19 @@ namespace alpaka
         template<typename T, T... T_values>
         struct CVec
         {
-            using Values = std::tuple<std::integral_constant<T, T_values>...>;
             using type = T;
 
             static consteval uint32_t dim()
             {
-                return std::tuple_size_v<Values>;
+                return sizeof...(T_values);
             }
 
             constexpr T operator[](std::integral auto const idx) const
             {
                 T result;
                 using IdxType = ALPAKA_TYPEOF(idx);
-                std::apply(
-                    [&result, idx](auto const&... v)
-                    {
-                        IdxType i{0u};
-                        /**
-                         *  sizeof() is required to return a bool which is deferred in the evaluation
-                         */
-                        (void) (((idx == i++) && (result = ALPAKA_TYPEOF(v)::value, sizeof(IdxType))) || ...);
-                    },
-                    Values{});
+                IdxType i{0u};
+                [[maybe_unused]] bool _ = ((idx == i++ && (result = T_values, true)) || ...);
                 return result;
             }
 
