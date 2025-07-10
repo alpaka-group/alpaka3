@@ -55,7 +55,9 @@ namespace alpaka::onHost
             {
             }
 
-            uint32_t operator()(auto const executor, auto const&... args) const
+            // requires (false) is disabling the function if you specialize these traits remove the require statement.
+            // Disabling is required to enable the trait evaluation only in cases where the user is defining the trait.
+            uint32_t operator()(auto const executor, auto const&... args) const requires(false)
             {
                 return 0;
             }
@@ -92,19 +94,23 @@ namespace alpaka::onHost
                 [[maybe_unused]] KernelBundle<T_KernelFn, T_Args...> const& kernelBundle) const
             {
                 if constexpr(requires {
-                                 BlockDynSharedMemBytes{kernelBundle.m_kernelFn, spec}(
+                                 BlockDynSharedMemBytes<T_KernelFn, T_Spec>{kernelBundle.m_kernelFn, spec}(
                                      executor,
                                      std::declval<remove_restrict_t<std::decay_t<T_Args>>>()...);
                              })
                 {
                     return std::apply(
                         [&](auto const&... args) {
-                            return BlockDynSharedMemBytes{kernelBundle.m_kernelFn, spec}(executor, args...);
+                            return BlockDynSharedMemBytes<T_KernelFn, T_Spec>{kernelBundle.m_kernelFn, spec}(
+                                executor,
+                                args...);
                         },
                         kernelBundle.m_args);
                 }
                 else
+                {
                     return kernelBundle.m_kernelFn.dynSharedMemBytes;
+                }
             }
         };
 
