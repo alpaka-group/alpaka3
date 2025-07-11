@@ -19,7 +19,13 @@ namespace alpaka
     template<typename T_Func>
     struct StencilFunc : T_Func
     {
+        constexpr StencilFunc(auto&& func) : T_Func{ALPAKA_FORWARD(func)}
+        {
+        }
     };
+
+    template<typename T_Func>
+    ALPAKA_FN_HOST_ACC StencilFunc(T_Func&&) -> StencilFunc<T_Func>;
 
     /** Marks a functor that can only be executed with scalar types and not SIMD packages.
      *
@@ -29,7 +35,13 @@ namespace alpaka
     template<typename T_Func>
     struct ScalarFunc : T_Func
     {
+        constexpr ScalarFunc(auto&& func) : T_Func{ALPAKA_FORWARD(func)}
+        {
+        }
     };
+
+    template<typename T_Func>
+    ALPAKA_FN_HOST_ACC ScalarFunc(T_Func&&) -> ScalarFunc<T_Func>;
 
     /** Execute the functor with or without an accelerator as first argument
      *
