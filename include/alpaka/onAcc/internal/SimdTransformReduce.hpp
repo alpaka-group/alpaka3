@@ -9,6 +9,7 @@
 #include "alpaka/Vec.hpp"
 #include "alpaka/api/trait.hpp"
 #include "alpaka/core/common.hpp"
+#include "alpaka/functor.hpp"
 #include "alpaka/mem/concepts.hpp"
 #include "alpaka/onAcc.hpp"
 
@@ -146,45 +147,6 @@ namespace alpaka::onAcc::internal
         constexpr auto const& asParent() const
         {
             return static_cast<T_Parent const&>(*this);
-        }
-
-        template<alpaka::concepts::Alignment T_MemAlignment, uint32_t T_width>
-        ALPAKA_FN_INLINE static constexpr void executeDo(
-            auto const& acc,
-            auto const& dataIdx,
-            auto&& func,
-            alpaka::concepts::MdSpan auto&&... data)
-        {
-            func(acc, SimdPtr{ALPAKA_FORWARD(data), dataIdx, T_MemAlignment{}, CVec<uint32_t, T_width>{}}...);
-        }
-
-        /** calls the functor and forward the data T_repeat times
-         *
-         * The calls to the functor are independent and compile time unrolled to support instruction parallelism.
-         *
-         * @param iter the caller must ensure tha the interator can be increased T_repeat times without jumping over
-         * iter.end()
-         */
-        template<alpaka::concepts::Alignment T_MemAlignment, uint32_t T_width, uint32_t... T_repeat>
-        ALPAKA_FN_INLINE static constexpr void execute(
-            auto const& acc,
-            auto& iter,
-            std::integer_sequence<uint32_t, T_repeat...>,
-            auto&& func,
-            alpaka::concepts::MdSpan auto&&... data)
-        {
-            /* We do not check if the iterator points to a valid element, the caller must ensure that we can
-             * safely increase the iterator without jumping over iter.end().
-             *
-             * The ternary operator is used to allow using the folding expression on iter.
-             */
-            auto ids = std::make_tuple(*(T_repeat + 1 != 0u ? iter++ : iter++)...);
-            std::apply(
-                [&](auto const&... dataIdx) constexpr {
-                    (executeDo<T_MemAlignment, T_width>(acc, dataIdx, ALPAKA_FORWARD(func), ALPAKA_FORWARD(data)...),
-                     ...);
-                },
-                ids);
         }
 
         template<uint32_t T_maxConcurrencyInByte, uint32_t T_simdWidth, alpaka::concepts::Alignment T_MemAlignment>

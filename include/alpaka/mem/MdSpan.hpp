@@ -32,13 +32,24 @@ namespace alpaka
         concepts::Alignment T_MemAlignment = Alignment<>>
     struct MdSpan;
 
+    template<concepts::Alignment T_MemAlignment = Alignment<>>
     inline constexpr auto makeMdSpan(
         auto* pointer,
         concepts::Vector auto const& extents,
         concepts::Vector auto const& pitchBytes,
-        concepts::Alignment auto const& memAlignment = Alignment{})
+        T_MemAlignment const memAlignment = T_MemAlignment{})
     {
         return MdSpan{pointer, extents, pitchBytes, memAlignment};
+    }
+
+    template<typename T_ValueType, concepts::Alignment T_MemAlignment = Alignment<>>
+    inline constexpr auto makeMdSpan(
+        T_ValueType* pointer,
+        concepts::Vector auto const& extents,
+        T_MemAlignment const memAlignment = T_MemAlignment{})
+    {
+        auto pitchMd = alpaka::mem::calculatePitchesFromExtents<T_ValueType>(extents);
+        return MdSpan{pointer, extents, pitchMd, memAlignment};
     }
 
     inline constexpr auto makeMdSpan(auto&& any)

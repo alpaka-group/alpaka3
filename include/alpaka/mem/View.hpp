@@ -32,6 +32,17 @@ namespace alpaka
         alpaka::concepts::Alignment T_MemAlignment = Alignment<>>
     struct View;
 
+    template<typename T_ValueType, concepts::Alignment T_MemAlignment = Alignment<>>
+    inline constexpr auto makeView(
+        auto&& anyWithApi,
+        T_ValueType* pointer,
+        concepts::Vector auto const& extents,
+        T_MemAlignment const memAlignment = T_MemAlignment{})
+    {
+        auto pitchMd = alpaka::mem::calculatePitchesFromExtents<T_ValueType>(extents);
+        return View{getApi(ALPAKA_FORWARD(anyWithApi)), pointer, extents, pitchMd, memAlignment};
+    }
+
     inline constexpr auto makeView(auto&& any)
     {
         return View{

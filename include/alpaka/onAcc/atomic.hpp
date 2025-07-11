@@ -181,4 +181,23 @@ namespace alpaka::onAcc
     {
         return atomicOp<AtomicCas>(acc, addr, compare, value, hier);
     }
+
+    namespace trait
+    {
+
+        template<typename T_Functor>
+        struct FunctorToAtomicOp;
+
+        template<>
+        struct FunctorToAtomicOp<std::plus<>>
+
+        {
+            using type = alpaka::onAcc::AtomicAdd;
+        };
+    } // namespace trait
+
+    // Add more functors as needed
+    template<typename T_Functor>
+    using FunctorToAtomicOp_t = typename trait::FunctorToAtomicOp<std::decay_t<T_Functor>>::type;
+
 } // namespace alpaka::onAcc

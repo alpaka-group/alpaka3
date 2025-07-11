@@ -235,7 +235,7 @@ namespace alpaka
          */
         template<typename... T_Args>
         requires(std::is_convertible_v<T_Args, T_Type> && ...)
-        constexpr Vec(T_Args... args) : Storage(static_cast<T_Type>(args)...)
+        constexpr Vec(T_Args const&... args) : Storage(static_cast<T_Type>(args)...)
         {
         }
 

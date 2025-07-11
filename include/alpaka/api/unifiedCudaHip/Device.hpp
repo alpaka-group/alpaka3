@@ -161,7 +161,7 @@ namespace alpaka::onHost
                             static_cast<std::size_t>(extents.x()) * sizeof(T_Type),
                             static_cast<std::size_t>(extents.y())));
 
-                    pitches = mem::calculatePitches<T_Type>(extents, static_cast<Idx>(rowPitchInBytes));
+                    pitches = alpaka::mem::calculatePitches<T_Type>(extents, static_cast<Idx>(rowPitchInBytes));
                 }
                 else if constexpr(dim >= 3u)
                 {
@@ -176,7 +176,7 @@ namespace alpaka::onHost
 
                     ptr = reinterpret_cast<T_Type*>(pitchedPtrVal.ptr);
                     Idx rowPitchInBytes = pitchedPtrVal.pitch;
-                    pitches = mem::calculatePitches<T_Type>(extents, static_cast<Idx>(pitchedPtrVal.pitch));
+                    pitches = alpaka::mem::calculatePitches<T_Type>(extents, static_cast<Idx>(pitchedPtrVal.pitch));
                 }
 
                 auto deviceDependency = onHost::Device{device.getSharedPtr()};

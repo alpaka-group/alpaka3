@@ -179,7 +179,7 @@ namespace alpaka::onHost
                 {
                     IdxType rowExtentInBytes = extents.x() * static_cast<IdxType>(sizeof(T_Type));
                     IdxType rowPitchInBytes = divCeil(rowExtentInBytes, alignment) * alignment;
-                    auto pitches = mem::calculatePitches<T_Type>(extents, rowPitchInBytes);
+                    auto pitches = alpaka::mem::calculatePitches<T_Type>(extents, rowPitchInBytes);
 
                     size_t memSizeInByte = pCast<size_t>(pitches)[0] * static_cast<size_t>(extents[0]);
 

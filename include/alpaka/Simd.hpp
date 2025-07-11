@@ -110,7 +110,7 @@ namespace alpaka
          * @endcode
          */
         template<typename... T_Args, typename = std::enable_if_t<(std::is_convertible_v<T_Args, T_Type> && ...)>>
-        constexpr Simd(T_Args... args) : Storage(static_cast<T_Type>(args)...)
+        constexpr Simd(T_Args const&... args) : Storage(static_cast<T_Type>(args)...)
         {
         }
 
