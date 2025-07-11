@@ -18,10 +18,10 @@ namespace alpaka::onHost
      * @param exec The executor to use for the kernel execution.
      * @param extentMd multi dimensional number of elements
      * @param fn The function to apply to each element of the input data.
-     *   The functor should support Simd packages. If not you can enforce the element wise execution by wrapping into
-     * @see ScalarFunc. If you would like to support stencil executions wrapp fn into @see StencilFunc. StencilFunc is
-     * getting all arguments as @see SimdPtr. If StencilFunc is used you should take care to not read outside of valid
-     * memory ranges by using sub-views to your input and output data. Optionally a fn can have a accelerator as first
+     *   The functor should support @see SimdPtr and therefore can be used for stencil evaluations.
+     *   It is not required to wrapp the functor with @see StencilFunc.
+     *   If a stencil lookup is executed you should take care to not read outside of valid memory ranges
+     *   by using sub-views to your input/output data. Optionally a fn can have a accelerator as first
      * argument.
      * @param inOut The input/output data, all data is passed to fn.
      *
