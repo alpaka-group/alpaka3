@@ -7,9 +7,9 @@
 
 #include "alpaka/api/unifiedCudaHip/trait.hpp"
 #include "alpaka/concepts.hpp"
-#include "alpaka/core/Utility.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/onHost/trait.hpp"
+#include "alpaka/utility.hpp"
 
 #include <memory>
 #include <sstream>

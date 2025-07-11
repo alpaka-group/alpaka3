@@ -23,7 +23,7 @@ TEST_CASE("dict mutate entry", "")
 
     int aValue = 42;
     int bValue = 43;
-    Dict dictionary = Dict{std::make_tuple(DictEntry(a_, std::ref(aValue)), DictEntry(b_, bValue))};
+    Dict dictionary = Dict{makeTuple(DictEntry(a_, std::ref(aValue)), DictEntry(b_, bValue))};
 
     static_assert(hasTag(dictionary, a_));
     static_assert(hasTag(dictionary, b_));
@@ -45,11 +45,11 @@ TEST_CASE("dict mutate entry", "")
     Dict dictionary2 = {entry0, DictEntry(b_, bValue)};
     CHECK(getTag(dictionary2, a_) == 43);
 
-    Dict dictionary4 = Dict{std::make_tuple(DictEntry(a_, std::ref(aValue)), DictEntry(b_, bValue))};
+    Dict dictionary4 = Dict{makeTuple(DictEntry(a_, std::ref(aValue)), DictEntry(b_, bValue))};
     dictionary4[a_] = 1;
     CHECK(dictionary4[a_] == 1);
 
-    Dict dictionary5 = Dict{std::make_tuple(DictEntry(c_, 5))};
+    Dict dictionary5 = Dict{makeTuple(DictEntry(c_, 5))};
     auto joinedDict = joinDict(dictionary4, dictionary5);
     CHECK(joinedDict[a_] == 1);
     CHECK(joinedDict[c_] == 5);

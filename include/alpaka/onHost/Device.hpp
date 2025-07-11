@@ -5,10 +5,10 @@
 #pragma once
 
 #include "Handle.hpp"
-#include "alpaka/core/Utility.hpp"
 #include "alpaka/onHost/Queue.hpp"
 #include "alpaka/onHost/concepts.hpp"
 #include "alpaka/onHost/internal.hpp"
+#include "alpaka/utility.hpp"
 
 #include <bit>
 #include <climits>

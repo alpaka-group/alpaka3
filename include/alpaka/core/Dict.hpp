@@ -4,8 +4,10 @@
 
 #pragma once
 
+#include "alpaka/Tuple.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/core/util.hpp"
+#include "alpaka/utility.hpp"
 
 #include <cstdio>
 #include <tuple>
@@ -26,7 +28,11 @@ namespace alpaka
         template<std::size_t... idx>
         static constexpr ssize_t find_idx(std::index_sequence<idx...>)
         {
-            return -1 + static_cast<ssize_t>(((std::is_same<X, typename T::KeyType>::value ? idx + 1 : 0) + ...));
+            ssize_t found_idx = -1;
+            // notUsed is required to avoid warning that the expression is not used
+            [[maybe_unused]] bool notUsed
+                = ((std::is_same_v<X, typename T::KeyType> && (found_idx = idx, true)) || ...);
+            return found_idx;
         }
 
     public:
@@ -65,7 +71,7 @@ namespace alpaka
         constexpr auto idx = Idx<T_Key, std::decay_t<T_Tuple>>::value;
         static_assert(idx != -1, "Member in dict missing!");
         static_assert(idx < std::tuple_size_v<std::decay_t<T_Tuple>>, "index out of range!");
-        return unWrapp(std::get<idx>(std::forward<T_Tuple>(t)).value);
+        return unWrapp(get<idx>(std::forward<T_Tuple>(t)).value);
     }
 
     template<typename T_Key, typename T_Value>
@@ -103,15 +109,16 @@ namespace alpaka
     };
 
     template<typename... T_Keys, typename... T_Values>
-    struct Dict<DictEntry<T_Keys, T_Values>...> : std::tuple<DictEntry<T_Keys, T_Values>...>
+    struct Dict<DictEntry<T_Keys, T_Values>...> : Tuple<DictEntry<T_Keys, T_Values>...>
     {
-        constexpr Dict(std::tuple<DictEntry<T_Keys, T_Values>...> const& data)
-            : std::tuple<DictEntry<T_Keys, T_Values>...>{data}
+        using TupleType = Tuple<DictEntry<T_Keys, T_Values>...>;
+
+        constexpr Dict(Tuple<DictEntry<T_Keys, T_Values>...> const& data) : Tuple<DictEntry<T_Keys, T_Values>...>{data}
         {
         }
 
         constexpr Dict(DictEntry<T_Keys, T_Values> const&... dictEntries)
-            : std::tuple<DictEntry<T_Keys, T_Values>...>{dictEntries...}
+            : Tuple<DictEntry<T_Keys, T_Values>...>{dictEntries...}
         {
         }
 
@@ -120,7 +127,7 @@ namespace alpaka
 
         static constexpr auto makeDict() requires(std::default_initializable<T_Values>, ...)
         {
-            return Dict{std::make_tuple(DictEntry<T_Keys, T_Values>{}...)};
+            return Dict{alpaka::makeTuple(DictEntry<T_Keys, T_Values>{}...)};
         }
 
         ALPAKA_NO_HOST_ACC_WARNING
@@ -136,9 +143,21 @@ namespace alpaka
         }
     };
 
+    template<size_t T_idx>
+    constexpr decltype(auto) get(auto& t) noexcept requires(alpaka::isSpecializationOf_v<ALPAKA_TYPEOF(t), Dict>)
+    {
+        return t.template get<T_idx>();
+    }
+
+    template<size_t T_idx>
+    constexpr decltype(auto) get(auto const& t) noexcept requires(alpaka::isSpecializationOf_v<ALPAKA_TYPEOF(t), Dict>)
+    {
+        return t.template get<T_idx>();
+    }
+
     // type deduction guide
     template<typename... T_Keys, typename... T_Values>
-    ALPAKA_FN_HOST_ACC Dict(std::tuple<DictEntry<T_Keys, T_Values>...> const&) -> Dict<DictEntry<T_Keys, T_Values>...>;
+    ALPAKA_FN_HOST_ACC Dict(Tuple<DictEntry<T_Keys, T_Values>...> const&) -> Dict<DictEntry<T_Keys, T_Values>...>;
 
     template<typename... T_Keys, typename... T_Values>
     ALPAKA_FN_HOST_ACC Dict(DictEntry<T_Keys, T_Values> const&...) -> Dict<DictEntry<T_Keys, T_Values>...>;
@@ -156,7 +175,7 @@ namespace std
     template<std::size_t I, typename... T_Keys, typename... T_Values>
     struct tuple_element<I, alpaka::Dict<alpaka::DictEntry<T_Keys, T_Values>...>>
     {
-        using type = decltype(std::get<I>(std::declval<std::tuple<alpaka::DictEntry<T_Keys, T_Values>...>>()));
+        using type = decltype(alpaka::get<I>(std::declval<alpaka::Tuple<alpaka::DictEntry<T_Keys, T_Values>...>>()));
     };
 } // namespace std
 
@@ -170,7 +189,7 @@ namespace alpaka
         T_Dict0 dict0,
         T_Dict1 dict1)
     {
-        return Dict{std::get<idx0>(dict0)..., std::get<idx1>(dict1)...};
+        return Dict{get<idx0>(dict0)..., get<idx1>(dict1)...};
     }
 
     template<typename... T_Entries0, typename... T_Entries1>

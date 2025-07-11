@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "alpaka/utility.hpp"
 #include "alpaka/vecConcepts.hpp"
 
 #include <concepts>
@@ -68,24 +69,51 @@ namespace alpaka
         {
         };
 
+        //! Check if a type used as kernel argument is trivially copyable
+        //!
+        //! \attention In case this trait is specialized for a user type the user should be sure that the result of
+        //! calling the copy constructor is equal to use memcpy to duplicate the object. An existing destructor should
+        //! be free of side effects.
+        //!
+        //! It's implementation defined whether the closure type of a lambda is trivially copyable.
+        //! Therefor the default implementation is true for trivially copyable or empty (stateless) types.
+        //!
+        //! @tparam T type to check
+        template<typename T, typename = void>
+        struct IsKernelArgumentTriviallyCopyable
+            : std::bool_constant<std::is_empty_v<T> || std::is_trivially_copyable_v<T>>
+        {
+        };
+
+        //! Check if the kernel type is trivially copyable
+        //!
+        //! \attention In case this trait is specialized for a user type the user should be sure that the result of
+        //! calling the copy constructor is equal to use memcpy to duplicate the object. An existing destructor should
+        //! be free of side effects.
+        //!
+        //! The default implementation is true for trivially copyable types (or for extended lambda expressions for
+        //! CUDA).
+        //!
+        //! @tparam T type to check
+        //! @{
+        template<typename T, typename = void>
+        struct IsKernelTriviallyCopyable
+#if ALPAKA_COMP_NVCC
+            : std::bool_constant<
+                  std::is_trivially_copyable_v<T> || __nv_is_extended_device_lambda_closure_type(T)
+                  || __nv_is_extended_host_device_lambda_closure_type(T)>
+#else
+            : std::is_trivially_copyable<T>
+#endif
+        {
+        };
     } // namespace trait
 
-    /** checks if T is a instance of U
-     *
-     * @tparam T full type specialization
-     * @tparam U unspecialized template type
-     *
-     * @return true if T is a specialization of U
-     *
-     * @{
-     */
-    template<typename T, template<typename...> typename U>
-    inline constexpr bool isSpecializationOf_v = std::false_type{};
+    template<typename T>
+    inline constexpr bool isKernelArgumentTriviallyCopyable_v = trait::IsKernelArgumentTriviallyCopyable<T>::value;
 
-    template<template<typename...> typename U, typename... Vs>
-    inline constexpr bool isSpecializationOf_v<U<Vs...>, U> = std::true_type{};
-
-    /** @} */
+    template<typename T>
+    inline constexpr bool isKernelTriviallyCopyable_v = trait::IsKernelTriviallyCopyable<T>::value;
 
     template<typename T>
     consteval uint32_t getDim([[maybe_unused]] T const& any)
@@ -102,4 +130,12 @@ namespace alpaka
     template<typename T>
     constexpr bool isMdSpan_v = trait::IsMdSpan<T>::value;
 
+    namespace concepts
+    {
+        template<typename T>
+        concept KernelFn = isKernelArgumentTriviallyCopyable_v<T>;
+
+        template<typename T>
+        concept KernelArg = isKernelArgumentTriviallyCopyable_v<T>;
+    } // namespace concepts
 } // namespace alpaka

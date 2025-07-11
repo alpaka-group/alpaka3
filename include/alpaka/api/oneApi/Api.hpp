@@ -8,9 +8,9 @@
 #include "alpaka/api/syclGeneric/Api.hpp"
 #include "alpaka/api/trait.hpp"
 #include "alpaka/concepts.hpp"
-#include "alpaka/core/Utility.hpp"
 #include "alpaka/mem/trait.hpp"
 #include "alpaka/onHost/trait.hpp"
+#include "alpaka/utility.hpp"
 
 #include <string>
 

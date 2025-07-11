@@ -99,7 +99,7 @@ namespace alpaka::onHost
                                      std::declval<remove_restrict_t<std::decay_t<T_Args>>>()...);
                              })
                 {
-                    return std::apply(
+                    return alpaka::apply(
                         [&](auto const&... args) {
                             return BlockDynSharedMemBytes<T_KernelFn, T_Spec>{kernelBundle.m_kernelFn, spec}(
                                 executor,

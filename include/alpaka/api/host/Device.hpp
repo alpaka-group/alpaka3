@@ -7,7 +7,6 @@
 #include "alpaka/api/host/Api.hpp"
 #include "alpaka/api/host/Queue.hpp"
 #include "alpaka/api/host/sysInfo.hpp"
-#include "alpaka/core/Utility.hpp"
 #include "alpaka/core/alignedAlloc.hpp"
 #include "alpaka/internal.hpp"
 #include "alpaka/onHost.hpp"
@@ -17,6 +16,7 @@
 #include "alpaka/onHost/Queue.hpp"
 #include "alpaka/onHost/mem/ManagedView.hpp"
 #include "alpaka/onHost/trait.hpp"
+#include "alpaka/utility.hpp"
 
 #include <cstdint>
 #include <memory>

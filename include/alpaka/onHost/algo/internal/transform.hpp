@@ -45,11 +45,10 @@ namespace alpaka::onHost::internal
                     {
                         outPtr = loadAncExecuteScalarOp(
                             std::make_integer_sequence<uint32_t, ALPAKA_TYPEOF(outPtr)::width()>{},
-                            [this](
-                                alpaka::concepts::CVector auto idx,
-                                auto const& acc,
-                                auto&& func,
-                                auto&&... data) constexpr { return callFunctor(acc, func, data[idx.x()]...); },
+                            [](alpaka::concepts::CVector auto idx,
+                               auto const& acc,
+                               auto&& func,
+                               auto&&... data) constexpr { return callFunctor(acc, func, data[idx.x()]...); },
                             acc,
                             func,
                             inPtr.load()...);

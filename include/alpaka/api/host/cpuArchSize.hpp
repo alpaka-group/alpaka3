@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "alpaka/core/Utility.hpp"
+#include "alpaka/utility.hpp"
 
 #include <cstdint>
 #include <new>

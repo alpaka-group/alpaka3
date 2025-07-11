@@ -4,9 +4,13 @@
 
 #pragma once
 
+#include "alpaka/apply.hpp"
+#include "alpaka/core/Dict.hpp"
 #include "alpaka/core/RemoveRestrict.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/trait.hpp"
+#include "alpaka/utility.hpp"
 
 #include <alpaka/mem/concepts.hpp>
 
@@ -60,13 +64,22 @@ namespace alpaka
         using KernelFn = std::decay_t<TKernelFn>;
         //! Tuple type to encapsulate kernel function argument types and argument values
         using ArgTuple
-            = std::tuple<remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>...>;
+            = alpaka::Tuple<remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>...>;
 
         // Constructor
         constexpr KernelBundle(KernelFn const& kernelFn, auto&&... args)
             : m_kernelFn{kernelFn}
             , m_args(onHost::makeAccessibleOnAcc(ALPAKA_FORWARD(args))...)
         {
+            static_assert(
+                alpaka::concepts::KernelFn<KernelFn>,
+                "Kernel functor must be trivially copyable or specialize trait::IsKernelTriviallyCopyable<>!");
+            static_assert(
+                (alpaka::concepts::KernelArg<
+                     remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>>
+                 && ...),
+                "All kernel arguments must be trivially copyable or specialize "
+                "trai::IsKernelArgumentTriviallyCopyable<>!");
         }
 
         constexpr KernelBundle(KernelBundle const& b) = default;
@@ -85,13 +98,19 @@ namespace alpaka
         /** @} */
 
         template<typename TAcc>
-        requires(std::invocable<
-                 KernelFn,
-                 TAcc,
-                 remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>...>)
+        requires(
+            alpaka::concepts::KernelFn<KernelFn>
+            && std::same_as<
+                void,
+                std::invoke_result_t<
+                    KernelFn,
+                    TAcc,
+                    remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>...>>)
         constexpr auto operator()(TAcc const& acc) const
         {
-            std::apply([&](auto const&... args) constexpr { m_kernelFn(acc, args...); }, m_args);
+            alpaka::apply(
+                [&](alpaka::concepts::KernelArg auto const&... args) constexpr { m_kernelFn(acc, args...); },
+                m_args);
         }
 
         KernelFn m_kernelFn;

@@ -16,7 +16,6 @@
 #include "alpaka/core/DemangleTypeNames.hpp"
 #include "alpaka/core/Dict.hpp"
 #include "alpaka/core/Tag.hpp"
-#include "alpaka/core/Utility.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/interface.hpp"
@@ -39,3 +38,4 @@
 #include "alpaka/onHost/algo/transform.hpp"
 #include "alpaka/onHost/mem/stdContainer.hpp"
 #include "alpaka/tag.hpp"
+#include "utility.hpp"

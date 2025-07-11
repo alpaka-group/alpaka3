@@ -8,7 +8,6 @@
 #include "alpaka/api/api.hpp"
 #include "alpaka/core/Dict.hpp"
 #include "alpaka/core/PP.hpp"
-#include "alpaka/core/Utility.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/mem/IdxRange.hpp"
 #include "alpaka/mem/ThreadSpace.hpp"
@@ -18,6 +17,7 @@
 #include "alpaka/onAcc/tag.hpp"
 #include "alpaka/onAcc/traverse.hpp"
 #include "alpaka/tag.hpp"
+#include "alpaka/utility.hpp"
 
 #include <cstdint>
 #include <functional>

@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "alpaka/core/Utility.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/onAcc/atomicHierarchy.hpp"
 #include "alpaka/onAcc/atomicOp.hpp"
+#include "alpaka/utility.hpp"
 
 #include <type_traits>
 
