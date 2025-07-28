@@ -127,10 +127,20 @@ namespace alpaka
 
             constexpr T operator[](std::integral auto const idx) const
             {
-                T result;
-                using IdxType = ALPAKA_TYPEOF(idx);
-                IdxType i{0u};
-                [[maybe_unused]] bool _ = ((idx == i++ && (result = T_values, true)) || ...);
+                // default initializes with first value
+                T result = std::get<0>(std::forward_as_tuple(T_values...));
+
+                if constexpr(dim() > 1u)
+                {
+                    [[maybe_unused]] bool _ = std::apply(
+                        [idx, &result](auto&&, auto&&... values) constexpr
+                        {
+                            using IdxType = ALPAKA_TYPEOF(idx);
+                            IdxType i{1u};
+                            return ((idx == i++ && (result = values, true)) || ...);
+                        },
+                        std::forward_as_tuple(T_values...));
+                }
                 return result;
             }
 
