@@ -100,7 +100,7 @@ void executeTest(
         computeQueue,
         exec,
         std::get<0>(functorPair),
-        computeViewOut.data(),
+        computeViewOut,
         std::get<1>(functorPair).first,
         std::get<2>(functorPair).first,
         computeViewIn0,
@@ -198,6 +198,7 @@ TEMPLATE_LIST_TEST_CASE("transformReduce", "", TestBackends)
                 ScalarFunc{[] ALPAKA_FN_ACC(DataType const& a, DataType const& b)
                            { return math::min(a + DataType{1}, b); }},
                 [](DataType const& a, DataType const& b) { return math::min(a + DataType{1}, b); }))
+
 
     );
 

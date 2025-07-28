@@ -27,13 +27,13 @@ namespace alpaka::onHost::internal
             onAcc::concepts::Acc auto const& acc,
             alpaka::concepts::Vector auto const& extentMd,
             T_DataType const& neutralElement,
-            T_DataType* output,
+            alpaka::concepts::MdSpan auto output,
             auto const& reduceFunc,
             auto const& transformFunc,
             alpaka::concepts::MdSpan auto&&... inputs) const
         {
             static_assert(
-                std::is_same_v<ALPAKA_TYPEOF(neutralElement), T_DataType>,
+                std::is_same_v<ALPAKA_TYPEOF(neutralElement), alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(output)>>,
                 "The neutral element type must match the data output type.");
 
             auto numFrames = acc[alpaka::frame::count];
@@ -137,7 +137,7 @@ namespace alpaka::onHost::internal
             if(laneIdInBlock == 0)
             {
                 using BinaryAtomicOp = onAcc::FunctorToAtomicOp_t<ALPAKA_TYPEOF(reduceFunc)>;
-                alpaka::onAcc::atomicOp<BinaryAtomicOp>(acc, output, dynS[laneIdInBlock]);
+                alpaka::onAcc::atomicOp<BinaryAtomicOp>(acc, output.data(), dynS[laneIdInBlock]);
             }
         }
 
@@ -223,7 +223,7 @@ namespace alpaka::onHost::internal
         auto const& queue,
         alpaka::concepts::Executor auto const exec,
         DataType const& neutralElement,
-        DataType* out,
+        alpaka::concepts::MdSpan auto out,
         auto&& reduceFn,
         auto&& transformFn,
         auto&& in0,
@@ -235,7 +235,7 @@ namespace alpaka::onHost::internal
         auto kernelFn
             = SimdTransformReduceKernel{static_cast<uint32_t>(frameSpec.m_frameExtent.product() * sizeof(DataType))};
 
-        onHost::fill(queue, makeView(queue, out, Vec{1}), neutralElement);
+        onHost::fill(queue, out, neutralElement, out.getExtents().all(1));
         queue.enqueue(
             exec,
             frameSpec,

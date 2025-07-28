@@ -5,6 +5,7 @@
 #pragma once
 
 #include "alpaka/api/trait.hpp"
+#include "alpaka/mem/concepts.hpp"
 #include "alpaka/onHost/algo/internal/transformReduce.hpp"
 
 namespace alpaka::onHost
@@ -22,8 +23,8 @@ namespace alpaka::onHost
      * @param queue The queue to execute the transformation.
      * @param exec The executor to use for the kernel execution.
      * @param neutralElement The neutral element in respect to binaryReduceFn.
-     * @param out Pointer to the output result. The type must be equal to neutralElement and the result of the binary
-     * reduce functor.
+     * @param out MdSpan for the result. The value_type must be equal to neutralElement and the result of the binary
+     * reduce functor type. The result is written to the first element of the output data.
      * @param binaryReduceFn Reduce binary functor, the functor operation must be transitive and commutative.
      *   The atomic trait alpaka::onAcc::trait::FunctorToAtomicOp<> must be specialized.
      *   Currently only std::plus<> is supported. The functor execution order is not specified.
@@ -58,10 +59,10 @@ namespace alpaka::onHost
         Queue<T_Device> const& queue,
         alpaka::concepts::Executor auto const exec,
         DataType const& neutralElement,
-        DataType* out,
+        alpaka::concepts::MdSpan auto out,
         auto&& binaryReduceFn,
         auto&& transformFn,
-        auto&&... in)
+        auto&&... in) requires(std::same_as<DataType, alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>>)
     {
         internal::transformReduce(
             queue,
@@ -81,10 +82,10 @@ namespace alpaka::onHost
     inline void transformReduce(
         Queue<T_Device> const& queue,
         DataType const& neutralElement,
-        DataType* out,
+        alpaka::concepts::MdSpan auto out,
         auto&& binaryReduceFn,
         auto&& transformFn,
-        auto&&... in)
+        auto&&... in) requires(std::same_as<DataType, alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>>)
     {
         auto executor = supportedMappings(queue.getDevice());
         transformReduce(
