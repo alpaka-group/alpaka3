@@ -15,15 +15,11 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <chrono>
-#include <functional>
 #include <iostream>
-#include <thread>
 
 using namespace alpaka;
-using namespace alpaka::onHost;
 
-using TestApis = std::decay_t<decltype(allBackends(enabledApis))>;
+using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis))>;
 
 struct LastSetDataBlockIdx
 {
@@ -62,21 +58,21 @@ void validate(auto& queue, auto& device, auto exec, auto testCase)
     // fill with non-zero values
     onHost::fill(queue, dBuff, extentMd);
 
-    wait(queue);
+    onHost::wait(queue);
     auto frameSize = testCase.m_frameSize;
     queue.enqueue(
         exec,
-        FrameSpec{divExZero(extentMd, frameSize), frameSize},
+        onHost::FrameSpec{divExZero(extentMd, frameSize), frameSize},
         KernelBundle{LastSetDataBlockIdx{}, dBuff, extentMd});
-    memcpy(queue, hBuff, dBuff);
-    wait(queue);
+    onHost::memcpy(queue, hBuff, dBuff);
+    onHost::wait(queue);
 
     // validate that each data entry has its corresponding MD-element index
     meta::ndLoopIncIdx(extentMd, [&](auto idx) { CHECK(hBuff[idx] == idx); });
 
-    memset(queue, dBuff, 0u);
-    memcpy(queue, hBuff, dBuff);
-    wait(queue);
+    onHost::memset(queue, dBuff, 0u);
+    onHost::memcpy(queue, hBuff, dBuff);
+    onHost::wait(queue);
     // validate that all data is zero
     meta::ndLoopIncIdx(extentMd, [&](auto idx) { CHECK(hBuff[idx] == ALPAKA_TYPEOF(extentMd)::all(0)); });
 }
@@ -95,11 +91,11 @@ TEMPLATE_LIST_TEST_CASE("kernelCallMD", "", TestApis)
     }
 
     std::cout << deviceSpec.getApi().getName() << std::endl;
-    Device device = devSelector.makeDevice(0);
+    onHost::Device device = devSelector.makeDevice(0);
 
     std::cout << device.getName() << std::endl;
 
-    Queue queue = device.makeQueue();
+    onHost::Queue queue = device.makeQueue();
 
     auto testCfg = std::make_tuple(
         Case{Vec{3u}, Vec{2u}},
