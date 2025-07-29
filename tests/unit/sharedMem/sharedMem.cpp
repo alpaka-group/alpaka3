@@ -70,7 +70,7 @@ TEMPLATE_LIST_TEST_CASE("block shared iota", "", TestApis)
     std::cout << "block shared iota exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<uint32_t>(device, dataExtent);
 
-    auto hBuff = onHost::allocHostMirror(dBuff);
+    auto hBuff = onHost::allocHostLike(dBuff);
     alpaka::onHost::wait(queue);
 
     queue.enqueue(
@@ -208,7 +208,7 @@ TEMPLATE_LIST_TEST_CASE("block shared alias", "", TestApis)
 
     auto dBuff = onHost::alloc<bool>(device, Vec{1u});
 
-    auto hBuff = onHost::allocHostMirror(dBuff);
+    auto hBuff = onHost::allocHostLike(dBuff);
     alpaka::onHost::wait(queue);
     {
         queue.enqueue(exec, onHost::FrameSpec{numBlocks, blockExtent}, KernelBundle{SharedMemAlias{}, dBuff});

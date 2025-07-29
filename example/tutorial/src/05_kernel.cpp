@@ -78,8 +78,8 @@ void testVectorAddKernel(alpaka::onHost::concepts::Device auto device, auto comp
 
     // allocate input and output host buffers in pinned memory accessible by the Platform devices
     auto in1_h = alpaka::onHost::allocHost<float>(size);
-    auto in2_h = alpaka::onHost::allocHostMirror(in1_h);
-    auto out_h = alpaka::onHost::allocHostMirror(in1_h);
+    auto in2_h = alpaka::onHost::allocHostLike(in1_h);
+    auto out_h = alpaka::onHost::allocHostLike(in1_h);
 
     // fill the input buffers with random data, and the output buffer with zeros
     for(uint32_t i = 0; i < size; ++i)
@@ -93,9 +93,9 @@ void testVectorAddKernel(alpaka::onHost::concepts::Device auto device, auto comp
     alpaka::onHost::Queue queue = device.makeQueue();
 
     // allocate input and output buffers on the device
-    auto in1_d = alpaka::onHost::allocMirror(device, in1_h);
-    auto in2_d = alpaka::onHost::allocMirror(device, in2_h);
-    auto out_d = alpaka::onHost::allocMirror(device, out_h);
+    auto in1_d = alpaka::onHost::allocLike(device, in1_h);
+    auto in2_d = alpaka::onHost::allocLike(device, in2_h);
+    auto out_d = alpaka::onHost::allocLike(device, out_h);
 
     // copy the input data to the device; the size is known from the buffer objects
     alpaka::onHost::memcpy(queue, in1_d, in1_h);
@@ -164,8 +164,8 @@ void testVectorAddKernel3D(alpaka::onHost::concepts::Device auto device, auto co
 
     // allocate input and output host buffers in pinned memory accessible by the Platform devices
     auto in1_h = alpaka::onHost::allocHost<float>(ndsize);
-    auto in2_h = alpaka::onHost::allocHostMirror(in1_h);
-    auto out_h = alpaka::onHost::allocHostMirror(in1_h);
+    auto in2_h = alpaka::onHost::allocHostLike(in1_h);
+    auto out_h = alpaka::onHost::allocHostLike(in1_h);
 
     // fill the input buffers with random data, and the output buffer with zeros
     for(uint32_t i = 0; i < size; ++i)
@@ -180,9 +180,9 @@ void testVectorAddKernel3D(alpaka::onHost::concepts::Device auto device, auto co
     alpaka::onHost::Queue queue = device.makeQueue();
 
     // allocate input and output buffers on the device
-    auto in1_d = alpaka::onHost::allocMirror(device, in1_h);
-    auto in2_d = alpaka::onHost::allocMirror(device, in2_h);
-    auto out_d = alpaka::onHost::allocMirror(device, out_h);
+    auto in1_d = alpaka::onHost::allocLike(device, in1_h);
+    auto in2_d = alpaka::onHost::allocLike(device, in2_h);
+    auto out_d = alpaka::onHost::allocLike(device, out_h);
 
     // copy the input data to the device; the size is known from the buffer objects
     alpaka::onHost::memcpy(queue, in1_d, in1_h);

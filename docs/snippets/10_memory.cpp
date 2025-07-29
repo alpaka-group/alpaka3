@@ -36,8 +36,8 @@ TEST_CASE("memory", "[docs]")
     // Allocate a managed memory view on the compute device.
     // The memory will be freed automatically when the view goes out of scope.
     onHost::ManagedView computeView = onHost::alloc<int>(computeDev, 10);
-    // Mirror the properties except the device.
-    onHost::ManagedView hostView = onHost::allocHostMirror(computeView);
+    // Derive the properties except the location.
+    onHost::ManagedView hostView = onHost::allocHostLike(computeView);
 
     // To operate on host memory views, we need a host queue. Sett all bytes to zero.
     onHost::memset(hostQueue, hostView, 0);

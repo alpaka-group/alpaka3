@@ -162,14 +162,14 @@ namespace mathtest
 
             // Every functor is executed individual on one kernel.
             auto hViewArgs = onHost::allocHost<TArgsItem>(capacity);
-            auto dViewArgs = onHost::allocMirror(device, hViewArgs);
+            auto dViewArgs = onHost::allocLike(device, hViewArgs);
 
 
             TFunctor functor;
             auto args = Buffer{queue, hViewArgs, dViewArgs};
 
             auto hViewResults = onHost::allocHost<TData>(capacity);
-            auto dViewResults = onHost::allocMirror(device, hViewResults);
+            auto dViewResults = onHost::allocLike(device, hViewResults);
             auto results = Buffer{queue, hViewResults, dViewResults};
 
             // Let alpaka calculate good block and grid sizes given our full problem extent

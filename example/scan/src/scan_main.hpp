@@ -78,8 +78,8 @@ auto example(
     }
 
     // Allocate device memory buffers for x and y
-    auto bufAccX = onHost::allocMirror(devAcc, bufHostX);
-    auto bufAccY = enableInPlace ? bufAccX : onHost::allocMirror(devAcc, bufAccX);
+    auto bufAccX = onHost::allocLike(devAcc, bufHostX);
+    auto bufAccY = enableInPlace ? bufAccX : onHost::allocLike(devAcc, bufAccX);
 
     return runExample(
         exec,

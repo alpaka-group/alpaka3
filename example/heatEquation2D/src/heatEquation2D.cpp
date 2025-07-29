@@ -97,8 +97,8 @@ int example(auto const deviceSpec, auto const computeExec)
     auto uBufHost = alpaka::onHost::allocHost<double>(extent);
 
     // Accelerator buffer
-    auto uCurrBufAcc = alpaka::onHost::allocMirror(devAcc, uBufHost);
-    auto uNextBufAcc = alpaka::onHost::allocMirror(devAcc, uBufHost);
+    auto uCurrBufAcc = alpaka::onHost::allocLike(devAcc, uBufHost);
+    auto uNextBufAcc = alpaka::onHost::allocLike(devAcc, uBufHost);
 
     // Set buffer to initial conditions
     initalizeBuffer(uBufHost.getMdSpan(), dx, dy);

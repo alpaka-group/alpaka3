@@ -78,9 +78,9 @@ void executeTest(
     using OutDataType = ALPAKA_TYPEOF(std::get<0>(functorPair));
     onHost::ManagedView computeViewOut = onHost::alloc<OutDataType>(computeDev, extentMd.all(1));
     onHost::ManagedView computeViewIn0 = onHost::alloc<DataType>(computeDev, extentMd);
-    onHost::ManagedView computeViewIn1 = onHost::allocMirror(computeDev, computeViewIn0);
-    onHost::ManagedView hostViewIota = onHost::allocHostMirror(computeViewIn0);
-    onHost::ManagedView hostViewOut = onHost::allocHostMirror(computeViewOut);
+    onHost::ManagedView computeViewIn1 = onHost::allocLike(computeDev, computeViewIn0);
+    onHost::ManagedView hostViewIota = onHost::allocHostLike(computeViewIn0);
+    onHost::ManagedView hostViewOut = onHost::allocHostLike(computeViewOut);
 
     // initialize with the linearized index
     DataType iotaCounter = 0;

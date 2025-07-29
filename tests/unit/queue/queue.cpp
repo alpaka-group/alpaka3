@@ -53,7 +53,7 @@ TEMPLATE_LIST_TEST_CASE("iota", "", TestApis)
     std::cout << "exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<uint32_t>(device, extent);
 
-    auto hBuff = onHost::allocHostMirror(dBuff);
+    auto hBuff = onHost::allocHostLike(dBuff);
 
     constexpr auto frameSize = CVec<uint32_t, 4u>{};
     queue.enqueue(
@@ -102,7 +102,7 @@ TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
     std::cout << "exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, 2u>>(device, extent);
 
-    auto hBuff = onHost::allocHostMirror(dBuff);
+    auto hBuff = onHost::allocHostLike(dBuff);
 
     onHost::wait(queue);
     constexpr auto frameSize = Vec{2u, 4u};
@@ -138,7 +138,7 @@ TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
     std::cout << "exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, 3u>>(device, extent);
 
-    auto hBuff = onHost::allocHostMirror(dBuff);
+    auto hBuff = onHost::allocHostLike(dBuff);
 
     onHost::wait(queue);
     constexpr auto frameSize = Vec{2u, 4u, 8u};
@@ -172,7 +172,7 @@ TEMPLATE_LIST_TEST_CASE("iota4D", "", TestApis)
     std::cout << "exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, 4u>>(device, extent);
 
-    auto hBuff = onHost::allocHostMirror(dBuff);
+    auto hBuff = onHost::allocHostLike(dBuff);
 
     onHost::wait(queue);
     constexpr auto frameSize = Vec{2u, 4u, 8u, 4u};
@@ -238,7 +238,7 @@ TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
     std::cout << "exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, 3u>>(device, numBlocks);
 
-    auto hBuff = onHost::allocHostMirror(dBuff);
+    auto hBuff = onHost::allocHostLike(dBuff);
     memset(queue, dBuff, 0u);
 
     onHost::wait(queue);
@@ -320,7 +320,7 @@ TEMPLATE_LIST_TEST_CASE("memcpy", "", TestApis)
     constexpr Vec problemSize = Vec{16u};
 
     auto dBuff = onHost::alloc<size_t>(device, problemSize);
-    auto hBuff = onHost::allocHostMirror(dBuff);
+    auto hBuff = onHost::allocHostLike(dBuff);
 
     // test rvalue
     onHost::memcpy(queue, TestMdSpan{dBuff.getView()}, TestMdSpan{hBuff.getView()});

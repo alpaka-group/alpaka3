@@ -62,7 +62,7 @@ TEMPLATE_LIST_TEST_CASE("CVec frame extent kernel call", "", TestApis)
 
     auto dBuff = onHost::alloc<bool>(device, Vec{1u});
 
-    auto hBuff = onHost::allocHostMirror(dBuff);
+    auto hBuff = onHost::allocHostLike(dBuff);
     onHost::wait(queue);
     {
         queue.enqueue(exec, FrameSpec{Vec{1u}, CVec<uint32_t, 43u>{}}, KernelBundle{KernelCVecFrameExtents{}, dBuff});
@@ -107,7 +107,7 @@ TEMPLATE_LIST_TEST_CASE("CVec thread extent kernel call", "", TestApis)
 
     auto dBuff = onHost::alloc<bool>(device, Vec{1u});
 
-    auto hBuff = onHost::allocHostMirror(dBuff);
+    auto hBuff = onHost::allocHostLike(dBuff);
     onHost::wait(queue);
     {
         queue.enqueue(

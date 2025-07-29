@@ -291,13 +291,13 @@ void testKernels(auto const deviceSpec, auto const exec)
 
     // Acc buffers
     auto bufAccInputA = onHost::alloc<DataType>(devAcc, arraySize);
-    auto bufAccInputB = onHost::allocMirror(devAcc, bufAccInputA);
-    auto bufAccOutputC = onHost::allocMirror(devAcc, bufAccInputA);
+    auto bufAccInputB = onHost::allocLike(devAcc, bufAccInputA);
+    auto bufAccOutputC = onHost::allocLike(devAcc, bufAccInputA);
 
     // Host buffer as the result
-    auto bufHostOutputA = onHost::allocHostMirror(bufAccInputA);
-    auto bufHostOutputB = onHost::allocHostMirror(bufAccInputB);
-    auto bufHostOutputC = onHost::allocHostMirror(bufAccOutputC);
+    auto bufHostOutputA = onHost::allocHostLike(bufAccInputA);
+    auto bufHostOutputB = onHost::allocHostLike(bufAccInputB);
+    auto bufHostOutputC = onHost::allocHostLike(bufAccOutputC);
 
     /* Each frame will have 64 elements processed by each thread.
      * The number of frames is calculated based on the array size and the number of elements processed by each thread.
@@ -425,7 +425,7 @@ void testKernels(auto const deviceSpec, auto const exec)
 
             // Vector of sums of each block
             auto bufAccSumPerBlock = onHost::alloc<DataType>(devAcc, 1u);
-            auto bufHostSumPerBlock = onHost::allocHostMirror(bufAccSumPerBlock);
+            auto bufHostSumPerBlock = onHost::allocHostLike(bufAccSumPerBlock);
 
             // Test Dot kernel with specific blocksize which is larger than one
             measureKernelExec(

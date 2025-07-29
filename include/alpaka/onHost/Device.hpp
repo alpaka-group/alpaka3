@@ -145,14 +145,14 @@ namespace alpaka::onHost
     /** allocate memory on the given device based on a view
      *
      * Derives type and extents of the memory from the view.
-     * The content of the memory is not copied to the created allocated memory.
+     * The content of the memory is NOT copied to the created allocated memory.
      *
      * @param device device handle
      * @param view memory where properties will be derived from
      *
      * @return memory owning view to the allocated memory
      */
-    inline auto allocMirror(concepts::Device auto const& device, auto const& view)
+    inline auto allocLike(concepts::Device auto const& device, auto const& view)
     {
         return alloc<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(device, getExtents(view));
     }

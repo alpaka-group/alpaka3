@@ -53,7 +53,7 @@ void validate(auto& queue, auto& device, auto exec, auto testCase)
               << " frame size=" << testCase.m_frameSize << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, extentMd.dim()>>(device, extentMd);
 
-    auto hBuff = onHost::allocHostMirror(dBuff);
+    auto hBuff = onHost::allocHostLike(dBuff);
 
     // fill with non-zero values
     onHost::fill(queue, dBuff, extentMd);

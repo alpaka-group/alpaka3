@@ -151,11 +151,11 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdForEach) -> int
 
     // Allocate host memory buffers for R, G, B, and ARGB
     auto bufHostR = onHost::allocHost<uint8_t>(extent);
-    auto bufHostG = onHost::allocHostMirror(bufHostR);
-    auto bufHostB = onHost::allocHostMirror(bufHostR);
-    auto bufHostA = onHost::allocHostMirror(bufHostR);
+    auto bufHostG = onHost::allocHostLike(bufHostR);
+    auto bufHostB = onHost::allocHostLike(bufHostR);
+    auto bufHostA = onHost::allocHostLike(bufHostR);
     auto bufHostARGB = onHost::allocHost<Data>(extent);
-    auto bufHostScalarRGB = onHost::allocHostMirror(bufHostARGB);
+    auto bufHostScalarRGB = onHost::allocHostLike(bufHostARGB);
 
     // Fill input data with random RGB values
     std::random_device rd{};
@@ -173,8 +173,8 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdForEach) -> int
     }
 
     // Allocate device memory buffers for ARGB and scalarRGB
-    auto bufAccARGB = onHost::allocMirror(devAcc, bufHostARGB);
-    auto bufAccScalarRGB = onHost::allocMirror(devAcc, bufHostScalarRGB);
+    auto bufAccARGB = onHost::allocLike(devAcc, bufHostARGB);
+    auto bufAccScalarRGB = onHost::allocLike(devAcc, bufHostScalarRGB);
 
     // optionally run for comparison but only if the executor is exec::cpuSerial
     if(std::is_same_v<ALPAKA_TYPEOF(exec), alpaka::exec::CpuSerial> && enableStdForEach)

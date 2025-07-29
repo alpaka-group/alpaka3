@@ -79,8 +79,8 @@ auto example(auto const deviceSpec, auto const exec, size_t numElements) -> int
 
     // Allocate 3 host memory buffers
     auto bufHostA = onHost::allocHost<Data>(extent);
-    auto bufHostB = onHost::allocHostMirror(bufHostA);
-    auto bufHostC = onHost::allocHostMirror(bufHostA);
+    auto bufHostB = onHost::allocHostLike(bufHostA);
+    auto bufHostC = onHost::allocHostLike(bufHostA);
 
     // C++14 random generator for uniformly distributed numbers in {1,..,42}
     std::random_device rd{};
@@ -95,9 +95,9 @@ auto example(auto const deviceSpec, auto const exec, size_t numElements) -> int
     }
 
     // Allocate 3 buffers on the accelerator
-    auto bufAccA = onHost::allocMirror(devAcc, bufHostA);
-    auto bufAccB = onHost::allocMirror(devAcc, bufHostB);
-    auto bufAccC = onHost::allocMirror(devAcc, bufHostC);
+    auto bufAccA = onHost::allocLike(devAcc, bufHostA);
+    auto bufAccB = onHost::allocLike(devAcc, bufHostB);
+    auto bufAccC = onHost::allocLike(devAcc, bufHostC);
 
     // Copy Host -> Acc
     onHost::memcpy(queue, bufAccA, bufHostA);

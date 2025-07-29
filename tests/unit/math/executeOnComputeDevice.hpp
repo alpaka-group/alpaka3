@@ -64,7 +64,7 @@ namespace alpaka::test
         INFO("device:" << device.getName());
         onHost::Queue queue = device.makeQueue();
         auto hViewResults = onHost::allocHost<bool>(1u);
-        auto dViewResults = onHost::allocMirror(device, hViewResults);
+        auto dViewResults = onHost::allocLike(device, hViewResults);
         onHost::memset(queue, dViewResults, static_cast<std::uint8_t>(true));
         // Let alpaka calculate good block and grid sizes given our full problem extent
         onHost::concepts::FrameSpec auto frameSpec = onHost::FrameSpec{1u, 1u};

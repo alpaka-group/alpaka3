@@ -50,7 +50,7 @@ template<typename T_MemIdxType, typename T_LoopIdxType>
 void iotaTest(auto& queue, auto exec, auto const extents, auto frameSize)
 {
     auto dBuff = onHost::alloc<Vec<T_MemIdxType, ALPAKA_TYPEOF(extents)::dim()>>(queue.getDevice(), extents);
-    auto hBuff = onHost::allocHostMirror(dBuff);
+    auto hBuff = onHost::allocHostLike(dBuff);
 
     using KenelIdxScalarType = typename ALPAKA_TYPEOF(frameSize)::type;
 

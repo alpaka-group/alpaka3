@@ -78,9 +78,9 @@ void executeTest(
     using OutDataType = decltype(functorPair.second(std::declval<DataType>(), std::declval<DataType>()));
     onHost::ManagedView computeViewOut = onHost::alloc<OutDataType>(computeDev, extentMd);
     onHost::ManagedView computeViewIn0 = onHost::alloc<DataType>(computeDev, extentMd);
-    onHost::ManagedView computeViewIn1 = onHost::allocMirror(computeDev, computeViewIn0);
-    onHost::ManagedView hostViewIota = onHost::allocMirror(onHost::makeHostDevice(), computeViewIn0);
-    onHost::ManagedView hostViewOut = onHost::allocMirror(onHost::makeHostDevice(), computeViewOut);
+    onHost::ManagedView computeViewIn1 = onHost::allocLike(computeDev, computeViewIn0);
+    onHost::ManagedView hostViewIota = onHost::allocLike(onHost::makeHostDevice(), computeViewIn0);
+    onHost::ManagedView hostViewOut = onHost::allocLike(onHost::makeHostDevice(), computeViewOut);
 
     // initialize with the linearized index
     DataType iotaCounter = 0;

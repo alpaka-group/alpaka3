@@ -56,10 +56,10 @@ TEST_CASE("MD vector simd add kernel", "[docs]")
     using DataType = int;
     auto extentMd = Vec{5, 7, 4097};
     onHost::ManagedView computeViewOut = onHost::alloc<DataType>(computeDev, extentMd);
-    onHost::ManagedView computeViewIn0 = onHost::allocMirror(computeDev, computeViewOut);
-    onHost::ManagedView computeViewIn1 = onHost::allocMirror(computeDev, computeViewOut);
+    onHost::ManagedView computeViewIn0 = onHost::allocLike(computeDev, computeViewOut);
+    onHost::ManagedView computeViewIn1 = onHost::allocLike(computeDev, computeViewOut);
 
-    onHost::ManagedView hostViewIota = onHost::allocMirror(onHost::makeHostDevice(), computeViewOut);
+    onHost::ManagedView hostViewIota = onHost::allocLike(onHost::makeHostDevice(), computeViewOut);
 
     // initialize with the linearized index
     DataType iotaCounter = 0;
