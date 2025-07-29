@@ -9,15 +9,11 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <chrono>
-#include <functional>
 #include <iostream>
-#include <thread>
 
 using namespace alpaka;
-using namespace alpaka::onHost;
 
-using TestApis = std::decay_t<decltype(allBackends(enabledApis))>;
+using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis))>;
 
 #if 1
 struct IotaKernel
@@ -48,11 +44,11 @@ TEMPLATE_LIST_TEST_CASE("iota", "", TestApis)
     }
     std::cout << deviceSpec.getApi().getName() << std::endl;
 
-    Device device = devSelector.makeDevice(0);
+    onHost::Device device = devSelector.makeDevice(0);
 
     std::cout << device.getName() << std::endl;
 
-    Queue queue = device.makeQueue();
+    onHost::Queue queue = device.makeQueue();
     constexpr Vec extent = Vec{12u};
     std::cout << "exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<uint32_t>(device, extent);
@@ -60,9 +56,12 @@ TEMPLATE_LIST_TEST_CASE("iota", "", TestApis)
     auto hBuff = onHost::allocHostMirror(dBuff);
 
     constexpr auto frameSize = CVec<uint32_t, 4u>{};
-    queue.enqueue(exec, FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernel{}, dBuff, extent.x()});
-    memcpy(queue, hBuff, dBuff);
-    wait(queue);
+    queue.enqueue(
+        exec,
+        onHost::FrameSpec{extent / frameSize, frameSize},
+        KernelBundle{IotaKernel{}, dBuff, extent.x()});
+    onHost::memcpy(queue, hBuff, dBuff);
+    onHost::wait(queue);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx.x() == hBuff[idx]); });
 }
 #endif
@@ -94,22 +93,22 @@ TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
     }
 
     std::cout << deviceSpec.getApi().getName() << std::endl;
-    Device device = devSelector.makeDevice(0);
+    onHost::Device device = devSelector.makeDevice(0);
 
     std::cout << device.getName() << std::endl;
 
-    Queue queue = device.makeQueue();
+    onHost::Queue queue = device.makeQueue();
     constexpr Vec extent = Vec{8u, 16u};
     std::cout << "exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, 2u>>(device, extent);
 
     auto hBuff = onHost::allocHostMirror(dBuff);
 
-    wait(queue);
+    onHost::wait(queue);
     constexpr auto frameSize = Vec{2u, 4u};
-    queue.enqueue(exec, FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff, extent});
-    memcpy(queue, hBuff, dBuff);
-    wait(queue);
+    queue.enqueue(exec, onHost::FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff, extent});
+    onHost::memcpy(queue, hBuff, dBuff);
+    onHost::wait(queue);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx == hBuff[idx]); });
 }
 #endif
@@ -130,22 +129,22 @@ TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
     }
 
     std::cout << deviceSpec.getApi().getName() << std::endl;
-    Device device = devSelector.makeDevice(0);
+    onHost::Device device = devSelector.makeDevice(0);
 
     std::cout << device.getName() << std::endl;
 
-    Queue queue = device.makeQueue();
+    onHost::Queue queue = device.makeQueue();
     constexpr Vec extent = Vec{4u, 8u, 16u};
     std::cout << "exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, 3u>>(device, extent);
 
     auto hBuff = onHost::allocHostMirror(dBuff);
 
-    wait(queue);
+    onHost::wait(queue);
     constexpr auto frameSize = Vec{2u, 4u, 8u};
-    queue.enqueue(exec, FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff, extent});
-    memcpy(queue, hBuff, dBuff);
-    wait(queue);
+    queue.enqueue(exec, onHost::FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff, extent});
+    onHost::memcpy(queue, hBuff, dBuff);
+    onHost::wait(queue);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx == hBuff[idx]); });
 }
 #endif
@@ -164,22 +163,22 @@ TEMPLATE_LIST_TEST_CASE("iota4D", "", TestApis)
     }
 
     std::cout << deviceSpec.getApi().getName() << std::endl;
-    Device device = devSelector.makeDevice(0);
+    onHost::Device device = devSelector.makeDevice(0);
 
     std::cout << device.getName() << std::endl;
 
-    Queue queue = device.makeQueue();
+    onHost::Queue queue = device.makeQueue();
     constexpr Vec extent = Vec{4u, 8u, 16, 32};
     std::cout << "exec=" << core::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, 4u>>(device, extent);
 
     auto hBuff = onHost::allocHostMirror(dBuff);
 
-    wait(queue);
+    onHost::wait(queue);
     constexpr auto frameSize = Vec{2u, 4u, 8u, 4u};
-    queue.enqueue(exec, FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff, extent});
-    memcpy(queue, hBuff, dBuff);
-    wait(queue);
+    queue.enqueue(exec, onHost::FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff, extent});
+    onHost::memcpy(queue, hBuff, dBuff);
+    onHost::wait(queue);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx == hBuff[idx]); });
 }
 
@@ -226,11 +225,11 @@ TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
     }
 
     std::cout << deviceSpec.getApi().getName() << std::endl;
-    Device device = devSelector.makeDevice(0);
+    onHost::Device device = devSelector.makeDevice(0);
 
     std::cout << device.getName() << std::endl;
 
-    Queue queue = device.makeQueue();
+    onHost::Queue queue = device.makeQueue();
     constexpr Vec numBlocks = Vec{4u, 8u, 16u};
     auto numBlocksReduced = numBlocks;
     numBlocksReduced.ref(CVec<uint32_t, 2u, 1u>{}) = 1u;
@@ -242,17 +241,17 @@ TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
     auto hBuff = onHost::allocHostMirror(dBuff);
     memset(queue, dBuff, 0u);
 
-    wait(queue);
+    onHost::wait(queue);
     constexpr auto frameSize = Vec{1u, 1u, 2u};
 
     auto selection = CVec<uint32_t, 2u, 1u>{};
 
     queue.enqueue(
         exec,
-        FrameSpec{numBlocksReduced, frameSize},
+        onHost::FrameSpec{numBlocksReduced, frameSize},
         KernelBundle{IotaKernelNDSelection<ALPAKA_TYPEOF(selection)>{}, dBuff, numBlocks});
-    memcpy(queue, hBuff, dBuff);
-    wait(queue);
+    onHost::memcpy(queue, hBuff, dBuff);
+    onHost::wait(queue);
     meta::ndLoopIncIdx(numBlocks, [&](auto idx) { CHECK(idx == hBuff[idx]); });
 }
 
@@ -313,11 +312,11 @@ TEMPLATE_LIST_TEST_CASE("memcpy", "", TestApis)
     }
 
     std::cout << deviceSpec.getApi().getName() << std::endl;
-    Device device = devSelector.makeDevice(0);
+    onHost::Device device = devSelector.makeDevice(0);
 
     std::cout << device.getName() << std::endl;
 
-    Queue queue = device.makeQueue();
+    onHost::Queue queue = device.makeQueue();
     constexpr Vec problemSize = Vec{16u};
 
     auto dBuff = onHost::alloc<size_t>(device, problemSize);
