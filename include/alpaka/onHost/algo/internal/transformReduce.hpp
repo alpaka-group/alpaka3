@@ -7,6 +7,7 @@
 
 #include "alpaka/Simd.hpp"
 #include "alpaka/Vec.hpp"
+#include "alpaka/api/util.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/functor.hpp"
 #include "alpaka/mem/MdSpan.hpp"
@@ -230,8 +231,30 @@ namespace alpaka::onHost::internal
         auto&&... in)
     {
         auto extentMd = onHost::getExtents(in0);
+        using IndexType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(extentMd)>;
         auto frameSpec = getFrameSpec<DataType>(queue.getDevice(), extentMd);
 
+        /* Adjust the number of frames to a maximum based on the number of multiprocessors of the device.
+         * The number of frames is kept as low as possible to reduce numerical issue due to long chains of reductions.
+         * Each frame is using an atomic operation to reduce the value of the full frame.
+         */
+        {
+            IndexType multiprocessorScaling = 1u;
+            if constexpr(!std::is_same_v<ALPAKA_TYPEOF(queue.getDevice().getDeviceKind()), deviceKind::Cpu>)
+            {
+                // For non-CPU devices, we scale the number of frames based on an arbitrary number derived from
+                // testing with the dot kernel of the bablestream benchmark.
+                multiprocessorScaling = 32u;
+            }
+
+            auto const numMultiProcessors = queue.getDevice().getDeviceProperties().m_multiProcessorCount;
+            auto adjsutedNumFrames = alpaka::api::util::adjustToLimit(
+                frameSpec.m_numFrames,
+                static_cast<IndexType>(numMultiProcessors * multiprocessorScaling));
+            frameSpec = FrameSpec{adjsutedNumFrames, frameSpec.m_frameExtent};
+        }
+
+        std::cout << frameSpec << std::endl;
         auto kernelFn
             = SimdTransformReduceKernel{static_cast<uint32_t>(frameSpec.m_frameExtent.product() * sizeof(DataType))};
 

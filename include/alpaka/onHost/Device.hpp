@@ -113,6 +113,11 @@ namespace alpaka::onHost
         {
             return internal::GetDeviceProperties::Op<ALPAKA_TYPEOF(*m_device.get())>{}(*m_device.get());
         }
+
+        constexpr auto getDeviceKind() const
+        {
+            return T_DeviceKind{};
+        }
     };
 
     namespace concepts

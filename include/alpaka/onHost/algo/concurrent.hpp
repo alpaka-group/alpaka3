@@ -16,7 +16,7 @@ namespace alpaka::onHost
      *
      * @param queue The queue to execute the transformation.
      * @param exec The executor to use for the kernel execution.
-     * @param extentMd multi dimensional number of elements
+     * @param extents multi dimensional or scalar number of elements
      * @param fn The function to apply to each element of the input data.
      *   The functor should support @see SimdPtr and therefore can be used for stencil evaluations.
      *   It is not required to wrapp the functor with @see StencilFunc.
@@ -45,11 +45,11 @@ namespace alpaka::onHost
     inline void concurrent(
         Queue<T_Device> const& queue,
         alpaka::concepts::Executor auto const exec,
-        alpaka::concepts::Vector auto const& extentMd,
+        alpaka::concepts::VectorOrScalar auto const& extents,
         auto&& fn,
         auto&&... inOut)
     {
-        internal::concurrent<T_DataType>(queue, exec, extentMd, ALPAKA_FORWARD(fn), ALPAKA_FORWARD(inOut)...);
+        internal::concurrent<T_DataType>(queue, exec, extents, ALPAKA_FORWARD(fn), ALPAKA_FORWARD(inOut)...);
     }
 
     /**
@@ -59,7 +59,7 @@ namespace alpaka::onHost
     template<typename T_DataType, typename T_Device>
     inline void transform(
         Queue<T_Device> const& queue,
-        alpaka::concepts::Vector auto const& extentMd,
+        alpaka::concepts::VectorOrScalar auto const& extents,
         auto&& fn,
         auto&&... inOut)
     {
@@ -67,7 +67,7 @@ namespace alpaka::onHost
         internal::concurrent<T_DataType>(
             queue,
             std::get<0>(executor),
-            extentMd,
+            extents,
             ALPAKA_FORWARD(fn),
             ALPAKA_FORWARD(inOut)...);
     }

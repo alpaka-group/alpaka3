@@ -21,10 +21,11 @@ namespace alpaka::onHost::internal
     {
         ALPAKA_FN_ACC void operator()(
             onAcc::concepts::Acc auto const& acc,
-            alpaka::concepts::Vector auto const& extentMd,
+            alpaka::concepts::VectorOrScalar auto const& extents,
             auto const& func,
             alpaka::concepts::MdSpan auto&&... inputs) const
         {
+            Vec const extentMd = extents;
             auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
 
             return simdGrid.concurrent(
@@ -45,10 +46,11 @@ namespace alpaka::onHost::internal
     inline void concurrent(
         auto const& queue,
         alpaka::concepts::Executor auto const exec,
-        alpaka::concepts::Vector auto const& extentMd,
+        alpaka::concepts::VectorOrScalar auto const& extents,
         auto&& fn,
         auto&&... in)
     {
+        Vec const extentMd = extents;
         auto frameSpec = getFrameSpec<T_DataType>(queue.getDevice(), extentMd);
 
         queue.enqueue(
