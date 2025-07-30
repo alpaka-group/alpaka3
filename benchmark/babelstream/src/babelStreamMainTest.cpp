@@ -133,97 +133,11 @@ struct SimdNStreamOp
     }
 };
 
-//! Dot product of two vectors. The result is not a scalar but a vector of block-level dot products. For the
-//! BabelStream implementation and documentation: https://github.com/UoB-HPC
-struct DotKernel
+struct DotMultiplication
 {
-    //! The kernel entry point
-    //! \tparam TAcc The accelerator environment to be executed on.
-    //! \tparam T The data type
-    //! \param acc The accelerator to be executed on.
-    //! \param a MdSpan for vector a
-    //! \param b MdSpan for vector b
-    //! \param sum Pointer for result vector consisting sums of blocks
-    //! \param arraySize the size of the array
-    template<typename TAcc>
-    ALPAKA_FN_ACC void operator()(
-        TAcc const& acc,
-        alpaka::concepts::MdSpan auto const a,
-        alpaka::concepts::MdSpan auto const b,
-        auto sum,
-        auto arraySize) const
+    constexpr auto operator()(concepts::Simd auto&& simdA, concepts::Simd auto&& simdB) const
     {
-        using T = trait::GetValueType_t<ALPAKA_TYPEOF(sum)>;
-        auto tbSum = onAcc::declareSharedMdArray<T, uniqueId()>(acc, CVec<uint32_t, blockThreadExtentMain>{});
-#if 1
-        auto numFrames = acc[frame::count];
-        auto frameExtent = acc[frame::extent];
-
-        auto traverseInFrame = onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{frameExtent});
-        /* init shared memory
-         * no need to synchronize because after the loop because the same index map will be used to access the shared
-         * memory in the tribble loop.
-         */
-        for(auto [elemIdxInFrame] : traverseInFrame)
-        {
-            tbSum[elemIdxInFrame] = T{0};
-        }
-
-        auto const frameDataExtent = numFrames * frameExtent;
-        auto traverseOverFrames = onAcc::makeIdxMap(
-            acc,
-            onAcc::worker::blocksInGrid,
-            IdxRange{alpaka::CVec<uint32_t, 0u>{}, frameDataExtent, frameExtent});
-
-        for(auto frameIdx : traverseOverFrames)
-        {
-            for(auto elemIdxInFrame : traverseInFrame)
-            {
-                auto allThreads = onAcc::SimdAlgo{onAcc::WorkerGroup{frameIdx + elemIdxInFrame, frameDataExtent}};
-                auto reducedValue = allThreads.transformReduce(
-                    acc,
-                    alpaka::Vec{arraySize},
-                    T{0},
-                    std::plus{},
-                    [&](auto const&, auto&& simdA, auto&& simdB) constexpr { return simdA.load() * simdB.load(); },
-                    a,
-                    b);
-
-                tbSum[elemIdxInFrame] += reducedValue;
-            }
-        }
-        // sync is required because we do not know which thread wrote whcih value
-        alpaka::onAcc::syncBlockThreads(acc);
-        // aggregate for each thread but skip the first shared memory slot
-        for(auto [elemIdxInFrame] :
-            onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{acc[layer::thread].count(), frameExtent}))
-        {
-            tbSum[acc[layer::thread].idx()] += tbSum[elemIdxInFrame];
-        }
-
-#else
-        // this version is shorter in code but runs into floating point stability issues due to to long aggregation of
-        // value by a single thread
-        auto threadSum = T{0};
-        for(auto [i] : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{arraySize}))
-        {
-            threadSum += a[i] * b[i];
-        }
-        for(auto [local_i] : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, onAcc::range::threadsInBlock))
-        {
-            tbSum[local_i] = threadSum;
-        }
-#endif
-        auto const [local_i] = acc[layer::thread].idx();
-        auto const [blockSize] = acc[layer::thread].count();
-        for(auto offset = blockSize / 2; offset > 0; offset /= 2)
-        {
-            alpaka::onAcc::syncBlockThreads(acc);
-            if(local_i < offset)
-                tbSum[local_i] += tbSum[local_i + offset];
-        }
-        if(local_i == 0)
-            onAcc::atomicAdd(acc, &sum[0], tbSum[local_i]);
+        return simdA * simdB;
     }
 };
 
@@ -416,13 +330,6 @@ void testKernels(auto const deviceSpec, auto const exec)
         }
         if(kernelsToBeExecuted == KernelsToRun::All)
         {
-            uint32_t elementsPerFrameItem = getNumElemPerThread<DataType>(queue);
-            auto numFrames = std::min(
-                static_cast<Idx>(dotGridBlockExtent),
-                alpaka::divExZero(arraySize, (static_cast<Idx>(blockThreadExtentMain) * elementsPerFrameItem)));
-
-            auto dataBlockingDot = onHost::FrameSpec{numFrames, static_cast<Idx>(blockThreadExtentMain)};
-
             // Vector of sums of each block
             auto bufAccSumPerBlock = onHost::alloc<DataType>(devAcc, 1u);
             auto bufHostSumPerBlock = onHost::allocHostMirror(bufAccSumPerBlock);
@@ -431,25 +338,20 @@ void testKernels(auto const deviceSpec, auto const exec)
             measureKernelExec(
                 [&]()
                 {
-                    // set initial value of the sum to 0
-                    onHost::memset(queue, bufAccSumPerBlock, 0);
-                    queue.enqueue(
+                    onHost::transformReduce(
+                        queue,
                         exec,
-                        dataBlockingDot,
-                        KernelBundle{
-                            DotKernel(), // Dot kernel
-                            bufAccInputA,
-                            bufAccInputB,
-                            bufAccSumPerBlock,
-                            arraySize});
+                        DataType{0},
+                        bufAccSumPerBlock,
+                        std::plus{},
+                        DotMultiplication{},
+                        bufAccInputA,
+                        bufAccInputB);
                     onHost::memcpy(queue, bufHostSumPerBlock, bufAccSumPerBlock);
                     onHost::wait(queue);
                     resultDot = bufHostSumPerBlock[0u];
                 },
                 "DotKernel");
-
-            // Add workdiv to the list of workdivs to print later
-            metaData.setItem(BMInfoDataType::WorkDivDot, dataBlockingDot);
         }
         // NStream kernel is run only for one command line argument
         if(kernelsToBeExecuted == KernelsToRun::NStream)
@@ -520,9 +422,17 @@ void testKernels(auto const deviceSpec, auto const exec)
 
         // Verify Dot kernel
         DataType const expectedSum = static_cast<DataType>(arraySize) * expectedA * expectedB;
+
+        // allow a summation error of 100 epsilon per 32 mega elements
+        // The original bablesteam is always checking 8 digits only.
+        Idx presicionBaseArraySize = 32 * 1024 * 1024;
+        DataType epsScaling = divExZero(arraySize, presicionBaseArraySize);
         //  Dot product should be identical to arraySize*valA*valB
-        //  Use a different equality check if floating point errors exceed precision of FuzzyEqual function
-        REQUIRE(FuzzyEqual(static_cast<float>(std::fabs(resultDot - expectedSum) / expectedSum), 0.0f));
+        //  Use a different equality check if floating point errors exceed the precision of FuzzyEqual function
+        REQUIRE(FuzzyEqual<DataType>(
+            std::fabs(resultDot - expectedSum) / expectedSum,
+            static_cast<DataType>(0.0),
+            static_cast<DataType>(100.0) * epsScaling));
 
         // Set workdivs of benchmark metadata to be displayed at the end
         metaData.setItem(BMInfoDataType::WorkDivInit, dataBlocking);

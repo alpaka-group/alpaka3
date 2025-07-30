@@ -167,14 +167,19 @@ namespace
     //! \tparam T Type of the values to compare.
     //! \param a First value to compare.
     //! \param b Second value to compare.
+    //! \param epsMultiplier Multiplier for the epsilon value used in floating-point comparisons. Default is 100.
     //! \return Returns true if the values are approximately equal (for floating-point types) or exactly equal (for
     //! integral types).
     template<typename T>
-    [[maybe_unused]] bool FuzzyEqual(T a, T b)
+    [[maybe_unused]] bool FuzzyEqual(T a, T b, T epsMultiplier = 100)
     {
         if constexpr(std::is_floating_point_v<T>)
         {
-            return std::fabs(a - b) < (std::numeric_limits<T>::epsilon() * static_cast<T>(100.0));
+            bool v = std::fabs(a - b) < (std::numeric_limits<T>::epsilon() * epsMultiplier);
+            if(!v)
+                std::cout << "FuzzyEqual: " << a << " != " << b << " with epsilon "
+                          << (std::numeric_limits<T>::epsilon() * epsMultiplier) << std::endl;
+            return v;
         }
         else if constexpr(std::is_integral_v<T>)
         {
@@ -282,7 +287,6 @@ namespace
         WorkDivAdd,
         WorkDivTriad,
         WorkDivMult,
-        WorkDivDot,
         WorkDivNStream,
         DeviceName,
         TimeUnit,
@@ -344,8 +348,6 @@ namespace
             return "WorkDivTriad";
         case BMInfoDataType::WorkDivMult:
             return "WorkDivMult ";
-        case BMInfoDataType::WorkDivDot:
-            return "WorkDivDot  ";
         case BMInfoDataType::WorkDivNStream:
             return "WorkDivNStream";
         default:
@@ -588,7 +590,6 @@ namespace
             addItemValueToSS(BMInfoDataType::WorkDivMult);
             addItemValueToSS(BMInfoDataType::WorkDivAdd);
             addItemValueToSS(BMInfoDataType::WorkDivTriad);
-            addItemValueToSS(BMInfoDataType::WorkDivDot);
             addItemValueToSS(BMInfoDataType::WorkDivNStream);
             addItemValueToSS(BMInfoDataType::CopyTimeFromAccToHost);
 
