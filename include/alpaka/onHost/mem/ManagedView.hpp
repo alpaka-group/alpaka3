@@ -132,6 +132,10 @@ namespace alpaka::onHost
             m_deleter->addAction(ALPAKA_FORWARD(action));
         }
 
+        /** Add an action to be executed when the shared_ptr is destroyed.
+         *
+         * @param action Callable to execute on destruction.
+         */
         void destructorWaitFor(auto const& any)
         {
             addDestructorAction([any]() { onHost::wait(any); });

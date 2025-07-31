@@ -225,6 +225,15 @@ namespace alpaka::onHost
             };
         };
 
+        struct AllocAsync
+        {
+            template<typename T_Type, typename T_Any, typename T_Extents>
+            struct Op
+            {
+                void operator()(T_Any& any, T_Extents const&) const;
+            };
+        };
+
         struct Memcpy
         {
             template<typename T_Queue, typename T_Dest, typename T_Source, typename T_Extents>

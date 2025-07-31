@@ -264,4 +264,45 @@ namespace alpaka::onHost
     Queue(Handle<T_Queue>&&) -> Queue<Device<
         ALPAKA_TYPEOF(alpaka::internal::getApi(std::declval<T_Queue>())),
         ALPAKA_TYPEOF(alpaka::internal::getDeviceKind(std::declval<T_Queue>()))>>;
+
+    /** allocate memory asynchronously in the given queue
+     *
+     * @attention It is allowed that the function is blocking the caller until the memory is created.
+     *
+     * The memory is allowed to be used in other queues too.
+     * To avoid that a view to the memory is still in use during the deallocation you can use @see
+     * addDestructorAction() and wait for a queue if it differs to the queue used for the allocation.
+     *
+     * @tparam T_Type type of the data elements
+     * @param queue queue handle
+     * @return Memory owning view to the allocated memory. You are not allowed to derefence the view to access the
+     * memory before the allocation within the queue is finished. The view will be freed after the last instance to the
+     * memory is destroyed. The deallocation is asynchronous performed in the the queue which is used for the
+     * allocation.
+     *
+     * @{
+     */
+
+    /**
+     * @param extents number of elements for each dimension
+     */
+    template<typename T_Type, typename T_Device>
+    inline auto allocAsync(Queue<T_Device> const& queue, alpaka::concepts::VectorOrScalar auto const& extents)
+    {
+        Vec const extentsVec = extents;
+        return internal::AllocAsync::Op<T_Type, std::decay_t<decltype(*queue.get())>, ALPAKA_TYPEOF(extentsVec)>{}(
+            *queue.get(),
+            extentsVec);
+    }
+
+    /**
+     * @param view other memory where the extents will be derived from
+     */
+    template<typename T_Device>
+    inline auto allocLikeAsync(Queue<T_Device> const& queue, auto const& view)
+    {
+        return allocAsync<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(queue, getExtents(view));
+    }
+
+    /** @} */
 } // namespace alpaka::onHost

@@ -47,7 +47,7 @@ namespace alpaka::onHost::mem
         void addAction(std::function<void()> action)
         {
             std::lock_guard<std::mutex> lock{actionGuard};
-            actions.push_back(std::move(action));
+            actions.emplace_back(std::move(action));
         }
 
         std::shared_ptr<ManagedDealloc> getSharedPtr()

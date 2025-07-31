@@ -10,6 +10,7 @@
 #include "alpaka/api/host/exec/OmpThreads.hpp"
 #include "alpaka/api/host/exec/Serial.hpp"
 #include "alpaka/core/CallbackThread.hpp"
+#include "alpaka/core/alignedAlloc.hpp"
 #include "alpaka/interface.hpp"
 #include "alpaka/internal.hpp"
 #include "alpaka/meta/NdLoop.hpp"
@@ -17,6 +18,7 @@
 #include "alpaka/onHost/FrameSpec.hpp"
 #include "alpaka/onHost/Handle.hpp"
 #include "alpaka/onHost/internal.hpp"
+#include "alpaka/onHost/mem/ManagedView.hpp"
 
 #include <cstdint>
 #include <cstring>
@@ -28,7 +30,7 @@ namespace alpaka::onHost
     namespace cpu
     {
         template<typename T_Device>
-        struct Queue
+        struct Queue : std::enable_shared_from_this<Queue<T_Device>>
         {
         public:
             Queue(internal::concepts::DeviceHandle auto device, uint32_t const idx)
@@ -137,12 +139,18 @@ namespace alpaka::onHost
                 return m_device;
             }
 
+            std::shared_ptr<Queue> getSharedPtr()
+            {
+                return this->shared_from_this();
+            }
+
             friend struct onHost::internal::GetDevice;
 
             friend struct internal::Wait;
             friend struct internal::Memcpy;
             friend struct internal::Memset;
             friend struct alpaka::internal::GetApi;
+            friend struct internal::AllocAsync;
         };
     } // namespace cpu
 
@@ -281,6 +289,92 @@ namespace alpaka::onHost
                     std::get<0>(executors),
                     dataView.getSubView(extents),
                     elementValue);
+            }
+        };
+
+        /** The code is a copy of the Alloc::Op with the difference that the memory is allocated and freed
+         * asynchronously
+         *
+         * @todo check if we can reduce the duplication by having a common function for the computation of the extents
+         * and pitches and seperate the View creation.
+         */
+        template<typename T_Type, typename T_Device, alpaka::concepts::Vector T_Extents>
+        struct AllocAsync::Op<T_Type, cpu::Queue<T_Device>, T_Extents>
+        {
+            static consteval uint32_t highestPowerOfTwo(uint32_t value)
+            {
+                uint32_t result = 1u;
+                while((result << 1u) <= value)
+                {
+                    result <<= 1u;
+                }
+                return result;
+            }
+
+            auto operator()(cpu::Queue<T_Device>& queue, T_Extents const& extents) const
+            {
+                using IdxType = typename T_Extents::type;
+
+                constexpr uint32_t typeAlignmentBytes = alignof(T_Type);
+                constexpr uint32_t simdPackBytes = alpaka::getArchSimdWidth<T_Type>(
+                                                       ALPAKA_TYPEOF(getApi(queue)){},
+                                                       ALPAKA_TYPEOF(getDeviceKind(queue)){})
+                                                   * sizeof(T_Type);
+                constexpr uint32_t bestSimdPackBytes = highestPowerOfTwo(simdPackBytes);
+                constexpr IdxType alignment = std::max(bestSimdPackBytes, typeAlignmentBytes);
+
+                constexpr auto dim = T_Extents::dim();
+
+                auto deviceDependency = onHost::Device{queue.getDevice()->getSharedPtr()};
+                auto queueDependency = onHost::Queue{queue.getSharedPtr()};
+
+                if constexpr(dim == 1u)
+                {
+                    auto* ptr = reinterpret_cast<T_Type*>(
+                        alpaka::core::alignedAlloc(alignment, extents.x() * sizeof(T_Type)));
+                    // queueDependency is captured to keep the device alive until the memory is deleted
+                    auto deleter = [ptr, queueDependency]()
+                    {
+                        internal::enqueue(
+                            *queueDependency.get(),
+                            [ptr, queueDependency]() { alpaka::core::alignedFree(alignment, ptr); });
+                    };
+
+                    auto pitches = typename T_Extents::UniVec{sizeof(T_Type)};
+                    auto buffer = onHost::ManagedView{
+                        deviceDependency,
+                        ptr,
+                        extents,
+                        pitches,
+                        std::move(deleter),
+                        Alignment<alignment>{}};
+                    return buffer;
+                }
+                else
+                {
+                    IdxType rowExtentInBytes = extents.x() * static_cast<IdxType>(sizeof(T_Type));
+                    IdxType rowPitchInBytes = divCeil(rowExtentInBytes, alignment) * alignment;
+                    auto pitches = alpaka::mem::calculatePitches<T_Type>(extents, rowPitchInBytes);
+
+                    size_t memSizeInByte = pCast<size_t>(pitches)[0] * static_cast<size_t>(extents[0]);
+
+                    auto* ptr = reinterpret_cast<T_Type*>(alpaka::core::alignedAlloc(alignment, memSizeInByte));
+                    auto deleter = [ptr, queueDependency]()
+                    {
+                        internal::enqueue(
+                            *queueDependency.get(),
+                            [ptr, queueDependency]() { alpaka::core::alignedFree(alignment, ptr); });
+                    };
+
+                    auto buffer = onHost::ManagedView{
+                        deviceDependency,
+                        ptr,
+                        extents,
+                        pitches,
+                        std::move(deleter),
+                        Alignment<alignment>{}};
+                    return buffer;
+                }
             }
         };
     } // namespace internal

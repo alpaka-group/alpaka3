@@ -76,9 +76,9 @@ void executeTest(
     auto computeDev = computeQueue.getDevice();
     using DataType = T_DataType;
     using OutDataType = decltype(functorPair.second(std::declval<DataType>(), std::declval<DataType>()));
-    onHost::ManagedView computeViewOut = onHost::alloc<OutDataType>(computeDev, extentMd);
-    onHost::ManagedView computeViewIn0 = onHost::alloc<DataType>(computeDev, extentMd);
-    onHost::ManagedView computeViewIn1 = onHost::allocLike(computeDev, computeViewIn0);
+    onHost::ManagedView computeViewOut = onHost::allocAsync<OutDataType>(computeQueue, extentMd);
+    onHost::ManagedView computeViewIn0 = onHost::allocAsync<DataType>(computeQueue, extentMd);
+    onHost::ManagedView computeViewIn1 = onHost::allocLikeAsync(computeQueue, computeViewIn0);
     onHost::ManagedView hostViewIota = onHost::allocLike(onHost::makeHostDevice(), computeViewIn0);
     onHost::ManagedView hostViewOut = onHost::allocLike(onHost::makeHostDevice(), computeViewOut);
 

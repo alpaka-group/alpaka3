@@ -14,6 +14,8 @@
 #    include "alpaka/onAcc/Acc.hpp"
 #    include "alpaka/onHost.hpp"
 #    include "alpaka/onHost/concepts.hpp"
+#    include "alpaka/onHost/internal.hpp"
+#    include "alpaka/onHost/mem/ManagedView.hpp"
 #    include "alpaka/onHost/trait.hpp"
 
 #    include <sycl/sycl.hpp>
@@ -90,6 +92,7 @@ namespace alpaka::onHost
         private:
             friend struct alpaka::internal::GetDeviceType;
             friend struct alpaka::onHost::internal::Enqueue;
+            friend struct onHost::internal::AllocAsync;
 
             auto getDeviceKind() const
             {
@@ -160,6 +163,80 @@ namespace alpaka::onHost
         {
             sycl::queue sycl_queue = queue.getNativeHandle();
             sycl_queue.fill(internal::Data::data(dest), elementValue, extents.x());
+        }
+    };
+
+    /** The code is a copy of the Alloc::Op with the difference that the memory is allocated and freed
+     * asynchronously
+     *
+     * @todo check if we can reduce the duplication by having a common function for the computation of the extents
+     * and pitches and seperate the View creation.
+     */
+    template<typename T_Type, typename T_Device, alpaka::concepts::Vector T_Extents>
+    struct internal::AllocAsync::Op<T_Type, syclGeneric::Queue<T_Device>, T_Extents>
+    {
+        static consteval uint32_t highestPowerOfTwo(uint32_t value)
+        {
+            uint32_t result = 1u;
+            while((result << 1u) <= value)
+            {
+                result <<= 1u;
+            }
+            return result;
+        }
+
+        auto operator()(syclGeneric::Queue<T_Device>& queue, T_Extents const& extents) const
+        {
+            using IdxType = typename T_Extents::type;
+
+            constexpr uint32_t typeAlignmentBytes = alignof(T_Type);
+            constexpr uint32_t simdPackBytes = alpaka::getArchSimdWidth<T_Type>(
+                                                   ALPAKA_TYPEOF(getApi(queue)){},
+                                                   ALPAKA_TYPEOF(getDeviceKind(queue)){})
+                                               * sizeof(T_Type);
+            constexpr uint32_t bestSimdPackBytes = highestPowerOfTwo(simdPackBytes);
+            constexpr IdxType alignment = std::max(bestSimdPackBytes, typeAlignmentBytes);
+
+            auto deviceDependency = onHost::Device{queue.getDevice()->getSharedPtr()};
+            sycl::queue sycl_queue = queue.getNativeHandle();
+
+            constexpr auto dim = T_Extents::dim();
+            if constexpr(dim == 1u)
+            {
+                T_Type* ptr = reinterpret_cast<T_Type*>(
+                    sycl::aligned_alloc_device(alignment, extents.x() * sizeof(T_Type), sycl_queue));
+                auto pitches = typename T_Extents::UniVec{sizeof(T_Type)};
+                auto deleter = [queue, ptr]() { sycl::free(ptr, queue.getNativeHandle()); };
+
+                auto buffer = onHost::ManagedView{
+                    deviceDependency,
+                    ptr,
+                    extents,
+                    pitches,
+                    std::move(deleter),
+                    Alignment<alignment>{}};
+                return buffer;
+            }
+            else
+            {
+                IdxType rowExtentInBytes = extents.x() * static_cast<IdxType>(sizeof(T_Type));
+                IdxType rowPitchInBytes = divCeil(rowExtentInBytes, alignment) * alignment;
+                auto pitches = alpaka::mem::calculatePitches<T_Type>(extents, rowPitchInBytes);
+
+                size_t memSizeInByte = pCast<size_t>(pitches)[0] * static_cast<size_t>(extents[0]);
+                T_Type* ptr
+                    = reinterpret_cast<T_Type*>(sycl::aligned_alloc_device(alignment, memSizeInByte, sycl_queue));
+                auto deleter = [queue, ptr]() { sycl::free(ptr, queue.getNativeHandle()); };
+
+                auto buffer = onHost::ManagedView{
+                    deviceDependency,
+                    ptr,
+                    extents,
+                    pitches,
+                    std::move(deleter),
+                    Alignment<alignment>{}};
+                return buffer;
+            }
         }
     };
 } // namespace alpaka::onHost

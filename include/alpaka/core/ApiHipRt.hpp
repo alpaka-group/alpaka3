@@ -180,10 +180,8 @@ namespace alpaka
             return ::hipFree(devPtr);
         }
 
-        static inline Error_t freeAsync([[maybe_unused]] void* devPtr, [[maybe_unused]] Stream_t stream)
+        static inline Error_t freeAsync(void* devPtr, Stream_t stream)
         {
-            // stream-ordered memory operations are fully implemented only in ROCm 5.3.0 and later.
-#    if HIP_VERSION >= 50'300'000
             // hipFreeAsync fails on a null pointer deallocation
             if(devPtr)
             {
@@ -193,10 +191,6 @@ namespace alpaka
             {
                 return ::hipSuccess;
             }
-#    else
-            // Not implemented.
-            return errorUnknown;
-#    endif
         }
 
         static inline Error_t funcGetAttributes(FuncAttributes_t* attr, void const* func)

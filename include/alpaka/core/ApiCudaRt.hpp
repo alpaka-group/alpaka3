@@ -164,14 +164,9 @@ namespace alpaka
             return ::cudaFree(devPtr);
         }
 
-        static inline Error_t freeAsync([[maybe_unused]] void* devPtr, [[maybe_unused]] Stream_t stream)
+        static inline Error_t freeAsync(void* devPtr, Stream_t stream)
         {
-#    if CUDART_VERSION >= 11020
             return ::cudaFreeAsync(devPtr, stream);
-#    else
-            // Not implemented.
-            return errorUnknown;
-#    endif
         }
 
         static inline Error_t funcGetAttributes(FuncAttributes_t* attr, void const* func)

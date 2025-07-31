@@ -254,7 +254,6 @@ namespace alpaka::onHost::internal
             frameSpec = FrameSpec{adjsutedNumFrames, frameSpec.m_frameExtent};
         }
 
-        std::cout << frameSpec << std::endl;
         auto kernelFn
             = SimdTransformReduceKernel{static_cast<uint32_t>(frameSpec.m_frameExtent.product() * sizeof(DataType))};
 

@@ -79,6 +79,7 @@ namespace alpaka::onHost
             friend struct alpaka::internal::GetApi;
             friend struct internal::GetDeviceProperties;
             friend struct internal::AdjustThreadSpec;
+            friend struct onHost::internal::AllocAsync;
         };
     } // namespace syclGeneric
 

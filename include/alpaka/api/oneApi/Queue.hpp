@@ -212,7 +212,7 @@ namespace alpaka::onHost::internal
                 = std::max(u_int32_t(1), onHost::getDynSharedMemBytes(executor, threadBlocking, kernelBundle));
             assert(
                 st_shared_mem_bytes + blockDynSharedMemBytes
-                <= m_device->getNativeHandle().first.template get_info<sycl::info::device::local_mem_size>());
+                <= queue.m_device->getNativeHandle().first.template get_info<sycl::info::device::local_mem_size>());
 
             queue.m_queue.submit(
                 [threadBlocking, kernelBundle, blockDynSharedMemBytes](sycl::handler& cgh)
@@ -286,7 +286,7 @@ namespace alpaka::onHost::internal
 
             assert(
                 st_shared_mem_bytes + blockDynSharedMemBytes
-                <= m_device->getNativeHandle().first.template get_info<sycl::info::device::local_mem_size>());
+                <= queue.m_device->getNativeHandle().first.template get_info<sycl::info::device::local_mem_size>());
 
             queue.m_queue.submit(
                 [threadBlocking, frameSpec, kernelBundle, blockDynSharedMemBytes](sycl::handler& cgh)

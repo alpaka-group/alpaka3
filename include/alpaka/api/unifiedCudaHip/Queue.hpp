@@ -24,6 +24,7 @@
 #    include "alpaka/onHost/FrameSpec.hpp"
 #    include "alpaka/onHost/Handle.hpp"
 #    include "alpaka/onHost/internal.hpp"
+#    include "alpaka/onHost/mem/ManagedView.hpp"
 
 #    include <cstdint>
 #    include <sstream>
@@ -35,7 +36,7 @@ namespace alpaka::onHost
         struct CallKernel;
 
         template<typename T_Device>
-        struct Queue
+        struct Queue : std::enable_shared_from_this<Queue<T_Device>>
         {
             using ApiInterface = typename T_Device::ApiInterface;
 
@@ -119,11 +120,17 @@ namespace alpaka::onHost
                 return m_device;
             }
 
+            std::shared_ptr<Queue> getSharedPtr()
+            {
+                return this->shared_from_this();
+            }
+
             friend struct onHost::internal::GetDevice;
 
             friend struct alpaka::internal::GetApi;
             friend struct onHost::internal::Memcpy;
             friend struct onHost::internal::Memset;
+            friend struct onHost::internal::AllocAsync;
             friend struct CallKernel;
         };
 
@@ -512,6 +519,75 @@ namespace alpaka::onHost
                     std::get<0>(executors),
                     dataView.getSubView(extents),
                     elementValue);
+            }
+        };
+
+        /** The code is a copy of the Alloc::Op with the difference that the memory is allocated and freed
+         * asynchronously
+         *
+         * @todo check if we can reduce the duplication by having a common function for the computation of the extents
+         * and pitches and seperate the View creation.
+         */
+        template<typename T_Type, typename T_Device, alpaka::concepts::Vector T_Extents>
+        struct AllocAsync::Op<T_Type, unifiedCudaHip::Queue<T_Device>, T_Extents>
+        {
+            auto operator()(unifiedCudaHip::Queue<T_Device>& queue, T_Extents const& extents) const
+            {
+                using ApiInterface = typename T_Device::ApiInterface;
+
+                /** Each CUDA/HIP allocation is aligned to at least 128 byte but typically to 256byte
+                 *
+                 * @todo check if this value can be derived from the device properties
+                 * @todo validate if memory is always aligtne dto 256 byte
+                 */
+                constexpr uint32_t alignment = 128u;
+
+                T_Type* ptr = nullptr;
+                auto pitches = typename T_Extents::UniVec{sizeof(T_Type)};
+
+                using Idx = typename T_Extents::type;
+
+                constexpr auto dim = T_Extents::dim();
+                if constexpr(dim == 1u)
+                {
+                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
+                        ApiInterface,
+                        ApiInterface::mallocAsync(
+                            (void**) &ptr,
+                            static_cast<std::size_t>(extents.x()) * sizeof(T_Type),
+                            queue.getNativeHandle()));
+                }
+                else if constexpr(dim >= 2u)
+                {
+                    Idx rowExtentInBytes = extents.x() * static_cast<Idx>(sizeof(T_Type));
+                    Idx rowPitchInBytes = divCeil(rowExtentInBytes, static_cast<Idx>(alignment)) * alignment;
+                    pitches = alpaka::mem::calculatePitches<T_Type>(extents, rowPitchInBytes);
+
+                    size_t memSizeInByte = pCast<size_t>(pitches)[0] * static_cast<size_t>(extents[0]);
+
+                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
+                        ApiInterface,
+                        ApiInterface::mallocAsync((void**) &ptr, memSizeInByte, queue.getNativeHandle()));
+                }
+
+                auto deviceDependency = onHost::Device{queue.getDevice()->getSharedPtr()};
+                auto queueDependency = onHost::Queue{queue.getSharedPtr()};
+
+                auto deleter = [ptr, queueDependency]()
+                {
+                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(
+                        ApiInterface,
+                        ApiInterface::freeAsync(ptr, queueDependency.getNativeHandle()));
+                };
+
+                auto buffer = onHost::ManagedView{
+                    deviceDependency,
+                    ptr,
+                    extents,
+                    pitches,
+                    std::move(deleter),
+                    Alignment<alignment>{}};
+                return buffer;
             }
         };
     } // namespace internal
