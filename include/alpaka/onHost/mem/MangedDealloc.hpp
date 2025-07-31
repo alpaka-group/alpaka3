@@ -18,11 +18,9 @@ namespace alpaka::onHost::mem
      */
     struct ManagedDealloc : std::enable_shared_from_this<ManagedDealloc>
     {
-        std::function<void()> freeOp;
-
         /**
          * Constructor
-         * @param freeOp Function to be called when the shared_ptr is destroyed.
+         * @param freeOp Function to be called when the shared_ptr is destroyed after all actions are executed.
          *               All dependencies required to deallocate the memory must be holed by freeOp.
          */
         ManagedDealloc(std::function<void()> freeOp) : freeOp{std::move(freeOp)}
@@ -31,12 +29,35 @@ namespace alpaka::onHost::mem
 
         ~ManagedDealloc()
         {
+            // Execute all actions before freeing the memory
+            {
+                std::lock_guard<std::mutex> lock{actionGuard};
+                for(auto& action : actions)
+                {
+                    action();
+                }
+            }
             freeOp();
+        }
+
+        /** Add an action to be executed when the shared_ptr is destroyed.
+         *
+         * @param action Callable to execute on destruction.
+         */
+        void addAction(std::function<void()> action)
+        {
+            std::lock_guard<std::mutex> lock{actionGuard};
+            actions.push_back(std::move(action));
         }
 
         std::shared_ptr<ManagedDealloc> getSharedPtr()
         {
             return this->shared_from_this();
         }
+
+    private:
+        std::function<void()> freeOp;
+        std::mutex actionGuard;
+        std::vector<std::function<void()>> actions;
     };
 } // namespace alpaka::onHost::mem

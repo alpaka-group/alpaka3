@@ -119,6 +119,24 @@ namespace alpaka::onHost
             return ManagedView{T_Api{}, shiftedPtr, extents, this->getPitches(), Alignment<>{}};
         }
 
+        /** Adds a destructor action to the managed view
+         *
+         * The action will be executed when the managed view is destroyed.
+         * This can be used to add additional cleanup actions e.g. waiting on a specific queue.
+         * Actions are executed in FIFO order.
+         *
+         * @param action callable to execute on destruction
+         */
+        void addDestructorAction(std::function<void()>&& action)
+        {
+            m_deleter->addAction(ALPAKA_FORWARD(action));
+        }
+
+        void destructorWaitFor(auto const& any)
+        {
+            addDestructorAction([any]() { onHost::wait(any); });
+        }
+
     private:
         /** @todo move this to trais or somewhere else that it can be used everywhere */
         template<alpaka::concepts::IsPointer T>
