@@ -35,7 +35,7 @@ void printExampleHeader(ScanType const scanType, IdxType const numElements, bool
     else
         std::cout << "    Not running in-place (input buffer != output buffer)" << std::endl;
     std::cout << "    Number of elements [#]: " << numElements << std::endl;
-    std::cout << "    Element type [byte]: " << core::demangledName<Data>() << std::endl;
+    std::cout << "    Element type [byte]: " << alpaka::core::demangledName<Data>() << std::endl;
     std::cout << "    Buffer size [Gbyte]: " << numElements * sizeof(Data) / 1.e9 << std::endl;
     std::cout << "================================" << std::endl;
     std::cout << std::endl;
@@ -50,6 +50,7 @@ auto example(
     bool enableInPlace,
     ScanType scanType) -> int
 {
+    using namespace alpaka;
     // Number of elements to process
     Vec1D const extent(numElements);
 

@@ -17,8 +17,6 @@
 #include <type_traits> // is_same_v
 #include <typeinfo>
 
-using namespace alpaka;
-
 /* This function introduces padding to the shared memory accesses to reduce bank conflicts between threads. The
  * template parameter is the device kind, which dictates how many memory banks are assumed. For CPU or
  * unknown/unimplemented device kinds, infinite memory banks are assumed, i.e., no padding is used.
@@ -26,11 +24,11 @@ using namespace alpaka;
 template<typename TDeviceKind>
 constexpr auto conflictFreeAccess(auto const& n)
 {
-    if constexpr(std::is_same_v<TDeviceKind, deviceKind::NvidiaGpu>)
+    if constexpr(std::is_same_v<TDeviceKind, alpaka::deviceKind::NvidiaGpu>)
         return n + n / numNvidiaBanks;
-    else if constexpr(std::is_same_v<TDeviceKind, deviceKind::AmdGpu>)
+    else if constexpr(std::is_same_v<TDeviceKind, alpaka::deviceKind::AmdGpu>)
         return n + n / numAmdBanks;
-    else if constexpr(std::is_same_v<TDeviceKind, deviceKind::IntelGpu>)
+    else if constexpr(std::is_same_v<TDeviceKind, alpaka::deviceKind::IntelGpu>)
         return n + n / numIntelBanks;
     else // cpu or unknown backend
         return n;
@@ -48,12 +46,13 @@ class Scan_ScanBlocksKernel
 public:
     ALPAKA_FN_ACC void operator()(
         auto const& acc,
-        concepts::MdSpan auto const& inputVec,
-        concepts::MdSpan auto outputVec,
+        alpaka::concepts::MdSpan auto const& inputVec,
+        alpaka::concepts::MdSpan auto outputVec,
         auto... blockSums) const
     {
+        using namespace alpaka;
         using DeviceType = ALPAKA_TYPEOF(acc.getDeviceKind());
-        concepts::Vector auto numFrames = acc[frame::count];
+        concepts::Vector auto numFrames = acc[alpaka::frame::count];
 
         concepts::CVector auto _ = acc[frame::extent];
         concepts::CVector auto frameExtent = CVec<IdxType, elsPerThread * _.x()>{};
@@ -155,9 +154,10 @@ class Scan_AddIncrementsKernel
 public:
     ALPAKA_FN_ACC void operator()(
         auto const& acc,
-        concepts::MdSpan auto const& blockSums,
-        concepts::MdSpan auto outputVec) const
+        alpaka::concepts::MdSpan auto const& blockSums,
+        alpaka::concepts::MdSpan auto outputVec) const
     {
+        using namespace alpaka;
         concepts::CVector auto frameExtent = acc[frame::extent];
         concepts::Vector auto numElements = outputVec.getExtents();
 
@@ -174,6 +174,7 @@ public:
 template<ScanType SCAN_TYPE>
 void scan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, auto outputVec)
 {
+    using namespace alpaka;
     // Instantiate the kernel function object
     Scan_ScanBlocksKernel<SCAN_TYPE> scanBlocks;
 

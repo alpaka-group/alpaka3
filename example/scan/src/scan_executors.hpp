@@ -85,6 +85,7 @@ int runExampleGeneric(
     ScanType scanType,
     bool const enableCheck)
 {
+    using namespace alpaka;
     std::cout << std::endl << std::endl;
     std::cout << "===== EXECUTOR " << core::demangledName(exec) << " =====" << std::endl;
 
@@ -133,7 +134,7 @@ int runExample(
 
 // overload for CpuSerial running std:: implementations if requested
 int runExample(
-    exec::CpuSerial exec,
+    alpaka::exec::CpuSerial exec,
     auto const& dev,
     auto const& queue,
     auto const& inputData,
@@ -211,7 +212,7 @@ int runExample(
 
 // overload for GpuCuda running cub implementations if requested
 int runExample(
-    exec::GpuCuda exec,
+    alpaka::exec::GpuCuda exec,
     auto const& dev,
     auto const& queue,
     auto const& inputData,
@@ -349,7 +350,7 @@ hipcub::CachingDeviceAllocator g_allocator; // Caching allocator for device memo
 
 // overload for GpuHip running hipcub implementations if requested
 int runExample(
-    exec::GpuHip exec,
+    alpaka::exec::GpuHip exec,
     auto const& dev,
     auto const& queue,
     auto const& inputData,
