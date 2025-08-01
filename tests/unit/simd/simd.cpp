@@ -177,6 +177,14 @@ struct CompileTimeKernelCompare2D
 
 struct CompileTimeKernelReduce
 {
+    struct MinValue
+    {
+        constexpr auto operator()(auto const& a, auto const& b) const
+        {
+            return a < b ? a : b;
+        }
+    };
+
     ALPAKA_FN_HOST_ACC void operator()() const
     {
         using namespace alpaka;
@@ -192,6 +200,13 @@ struct CompileTimeKernelReduce
         constexpr auto s3 = Simd{1, 2, 3, 4, 5};
         static_assert(120 == s3.reduce(std::multiplies{}));
         static_assert(120 == s3.product());
+
+        // check user provided functor
+        constexpr auto s4 = Simd{1, 2, 3, 4, 5};
+        static_assert(1 == s4.reduce(MinValue{}));
+
+        constexpr auto s5 = Simd{1, 2, 3, 4, 5, -10};
+        static_assert(-10 == s5.reduce(MinValue{}));
     }
 };
 

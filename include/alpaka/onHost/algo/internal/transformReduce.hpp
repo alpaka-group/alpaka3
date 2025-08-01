@@ -69,41 +69,17 @@ namespace alpaka::onHost::internal
                 {
                     auto allThreads = alpaka::onAcc::SimdAlgo{
                         alpaka::onAcc::WorkerGroup{frameIdx + elemIdxInFrame, frameDataExtent}};
-                    if constexpr(isSpecializationOf_v<ALPAKA_TYPEOF(reduceFunc), ScalarFunc>)
-                    {
-                        // reduce functor with for scalar values only
-                        callTransformFn(
-                            acc,
-                            allThreads,
-                            extentMd,
-                            neutralElement,
-                            tbSum[elemIdxInFrame],
-                            [&](auto&& a, auto&& b) constexpr
-                            {
-                                return loadAncExecuteScalarOp(
-                                    std::make_integer_sequence<uint32_t, ALPAKA_TYPEOF(a)::width()>{},
-                                    [&](alpaka::concepts::CVector auto idx, auto const& acc, auto&&... data) constexpr
-                                    { return reduceFunc(data[idx.x()]...); },
-                                    acc,
-                                    a,
-                                    b);
-                            },
-                            transformFunc,
-                            ALPAKA_FORWARD(inputs)...);
-                    }
-                    else
-                    {
-                        // reduce functor with simd package support
-                        callTransformFn(
-                            acc,
-                            allThreads,
-                            extentMd,
-                            neutralElement,
-                            tbSum[elemIdxInFrame],
-                            reduceFunc,
-                            transformFunc,
-                            ALPAKA_FORWARD(inputs)...);
-                    }
+
+                    // reduce functor with simd package support
+                    callTransformFn(
+                        acc,
+                        allThreads,
+                        extentMd,
+                        neutralElement,
+                        tbSum[elemIdxInFrame],
+                        reduceFunc,
+                        transformFunc,
+                        ALPAKA_FORWARD(inputs)...);
                 }
             }
 
@@ -137,8 +113,18 @@ namespace alpaka::onHost::internal
             // Atomic update of the global result
             if(laneIdInBlock == 0)
             {
-                using BinaryAtomicOp = onAcc::FunctorToAtomicOp_t<ALPAKA_TYPEOF(reduceFunc)>;
-                alpaka::onAcc::atomicOp<BinaryAtomicOp>(acc, output.data(), dynS[laneIdInBlock]);
+                if constexpr(requires { typename ALPAKA_TYPEOF(reduceFunc)::Functor; })
+                {
+                    // Handle wrapped reduce functors e.g. ScalarFunc
+                    using ReduceFunctor = typename ALPAKA_TYPEOF(reduceFunc)::Functor;
+                    using BinaryAtomicOp = onAcc::FunctorToAtomicOp_t<ReduceFunctor>;
+                    alpaka::onAcc::atomicOp<BinaryAtomicOp>(acc, output.data(), dynS[laneIdInBlock]);
+                }
+                else
+                {
+                    using BinaryAtomicOp = onAcc::FunctorToAtomicOp_t<ALPAKA_TYPEOF(reduceFunc)>;
+                    alpaka::onAcc::atomicOp<BinaryAtomicOp>(acc, output.data(), dynS[laneIdInBlock]);
+                }
             }
         }
 
@@ -162,7 +148,7 @@ namespace alpaka::onHost::internal
             auto& result,
             auto&& reduceFunc,
             auto&& transformFunc,
-            auto&&... inputs)
+            alpaka::concepts::MdSpan auto&&... inputs)
 
         {
             // Use the generic transformFunc and the variant reduceFunc

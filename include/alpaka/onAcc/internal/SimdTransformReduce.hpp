@@ -12,6 +12,7 @@
 #include "alpaka/functor.hpp"
 #include "alpaka/mem/concepts.hpp"
 #include "alpaka/onAcc.hpp"
+#include "alpaka/onAcc/Acc.hpp"
 
 #include <cstdint>
 #include <new>
@@ -89,7 +90,7 @@ namespace alpaka::onAcc::internal
 
     private:
         template<alpaka::concepts::Alignment T_MemAlignment, uint32_t T_width>
-        ALPAKA_FN_INLINE static constexpr auto executeDoReduce(
+        ALPAKA_FN_INLINE static constexpr auto executeDoTransform(
             auto const& acc,
             auto const& dataIdx,
             auto&& func,
@@ -126,13 +127,13 @@ namespace alpaka::onAcc::internal
                     /* It is not possible to create a Simd{Simd} due to constructor issues. Therefore we need to define
                      * the type for the result explicit.
                      */
-                    using ComponentType = ALPAKA_TYPEOF(executeDoReduce<T_MemAlignment, T_width>(
+                    using ComponentType = ALPAKA_TYPEOF(executeDoTransform<T_MemAlignment, T_width>(
                         acc,
                         std::get<0>(std::make_tuple(dataIdx...)),
                         ALPAKA_FORWARD(func),
                         ALPAKA_FORWARD(data)...));
                     auto results = Simd<ComponentType, std::tuple_size_v<ALPAKA_TYPEOF(ids)>>{
-                        executeDoReduce<T_MemAlignment, T_width>(
+                        executeDoTransform<T_MemAlignment, T_width>(
                             acc,
                             dataIdx,
                             ALPAKA_FORWARD(func),
@@ -144,6 +145,67 @@ namespace alpaka::onAcc::internal
         }
 
     private:
+        template<onAcc::concepts::Acc T_Acc, typename T_ReduceOp>
+        struct ScalarReducer
+        {
+            // using a const reference here is fine because we control the lifetime
+            T_Acc const& m_acc;
+            T_ReduceOp const& m_reduceOp;
+
+            constexpr ScalarReducer(T_Acc const& acc, auto&& func) : m_acc(acc), m_reduceOp{ALPAKA_FORWARD(func)}
+            {
+            }
+
+            constexpr auto operator()(auto&& a, auto&& b) const
+                requires(alpaka::concepts::Simd<ALPAKA_TYPEOF(a)> && alpaka::concepts::Simd<ALPAKA_TYPEOF(b)>)
+            {
+                return loadAncExecuteScalarOp(
+                    std::make_integer_sequence<uint32_t, ALPAKA_TYPEOF(a)::dim()>{},
+                    [this](alpaka::concepts::CVector auto idx, auto const& acc, auto&& func, auto&&... data) constexpr
+                    {
+                        // recursively call until no Simd type is the result
+                        return operator()(data[idx.x()]...);
+                    },
+                    m_acc,
+                    m_reduceOp,
+                    a,
+                    b);
+            }
+
+            constexpr auto operator()(auto&& a, auto&& b) const
+                requires(!alpaka::concepts::Simd<ALPAKA_TYPEOF(a)> && !alpaka::concepts::Simd<ALPAKA_TYPEOF(b)>)
+            {
+                return m_reduceOp(a, b);
+            }
+
+        private:
+            template<uint32_t... T_idx>
+            ALPAKA_FN_INLINE ALPAKA_FN_ACC static constexpr auto loadAncExecuteScalarOp(
+                std::integer_sequence<uint32_t, T_idx...>,
+                auto&& op,
+                auto const& acc,
+                auto&& func,
+                auto&&... data)
+            {
+                return Simd{op(CVec<uint32_t, T_idx>{}, acc, ALPAKA_FORWARD(func), ALPAKA_FORWARD(data)...)...};
+            }
+        };
+
+        /** Get the reducer functor
+         *
+         * @return wrapped functor in case the input is @see ScalarFunc else the identity
+         */
+        ALPAKA_FN_INLINE constexpr auto getReducer(onAcc::concepts::Acc auto const&, auto&& reduceOp) const
+        {
+            return reduceOp;
+        }
+
+        ALPAKA_FN_INLINE constexpr auto getReducer(onAcc::concepts::Acc auto const& acc, auto&& reduceOp) const
+            requires(isSpecializationOf_v<ALPAKA_TYPEOF(reduceOp), ScalarFunc>)
+        {
+            return ScalarReducer<ALPAKA_TYPEOF(acc), ALPAKA_TYPEOF(reduceOp)>{acc, reduceOp};
+        }
+
         constexpr auto const& asParent() const
         {
             return static_cast<T_Parent const&>(*this);
@@ -154,11 +216,13 @@ namespace alpaka::onAcc::internal
             auto const& acc,
             alpaka::concepts::Vector auto numElements,
             auto const& neutralElement,
-            auto&& reduceFunc,
+            auto&& userReduceFunc,
             auto&& func,
             alpaka::concepts::MdSpan auto&& data0,
             alpaka::concepts::MdSpan auto&&... dataN) const
         {
+            auto reduceFunc = getReducer(acc, userReduceFunc);
+
             using ValueType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data0)>;
             constexpr uint32_t simdWidthInByte = T_simdWidth * sizeof(ValueType);
             // number of simd packs fitting into the maxConcurrencyInByte

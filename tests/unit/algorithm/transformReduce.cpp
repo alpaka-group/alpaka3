@@ -64,6 +64,21 @@ struct ScalarOpWithAcc
     }
 };
 
+// This functor des not support Simd and must be wrapped by @see ScalarFunc
+struct MinValue
+{
+    constexpr auto operator()(auto const& a, auto const& b) const
+    {
+        return math::min(a, b);
+    }
+};
+
+template<>
+struct alpaka::onAcc::trait::FunctorToAtomicOp<MinValue>
+{
+    using type = alpaka::onAcc::AtomicMin;
+};
+
 template<typename T_DataType>
 void executeTest(
     concepts::Executor auto exec,
@@ -71,7 +86,8 @@ void executeTest(
     auto const functorPair,
     concepts::Vector auto extentMd)
 {
-    std::cout << "run func : " << core::demangledName(std::get<2>(functorPair).second) << std::endl;
+    std::cout << "run reduce(func) : " << core::demangledName(std::get<1>(functorPair).second) << "("
+              << core::demangledName(std::get<2>(functorPair).second) << ")" << std::endl;
 
     auto computeDev = computeQueue.getDevice();
     using DataType = T_DataType;
@@ -197,10 +213,12 @@ TEMPLATE_LIST_TEST_CASE("transformReduce", "", TestBackends)
             std::make_pair(
                 ScalarFunc{[] ALPAKA_FN_ACC(DataType const& a, DataType const& b)
                            { return math::min(a + DataType{1}, b); }},
-                [](DataType const& a, DataType const& b) { return math::min(a + DataType{1}, b); }))
-
-
-    );
+                [](DataType const& a, DataType const& b) { return math::min(a + DataType{1}, b); })),
+        std::make_tuple(
+            std::numeric_limits<DataType>::max(),
+            std::make_pair(ScalarFunc{MinValue{}}, MinValue{}),
+            // we use variable.load() in the functor therefore we need to wrap the functor as StencilFunc
+            std::make_pair(std::plus{}, std::plus{})));
 
     // different extents for testing
     auto extentMdList

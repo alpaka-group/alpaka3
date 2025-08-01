@@ -19,6 +19,8 @@ namespace alpaka
     template<typename T_Func>
     struct StencilFunc : T_Func
     {
+        using Functor = T_Func;
+
         constexpr StencilFunc(auto&& func) : T_Func{ALPAKA_FORWARD(func)}
         {
         }
@@ -35,6 +37,8 @@ namespace alpaka
     template<typename T_Func>
     struct ScalarFunc : T_Func
     {
+        using Functor = T_Func;
+
         constexpr ScalarFunc(auto&& func) : T_Func{ALPAKA_FORWARD(func)}
         {
         }

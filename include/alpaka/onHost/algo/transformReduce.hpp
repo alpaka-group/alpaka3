@@ -27,7 +27,9 @@ namespace alpaka::onHost
      * reduce functor type. The result is written to the first element of the output data.
      * @param binaryReduceFn Reduce binary functor, the functor operation must be transitive and commutative.
      *   The atomic trait alpaka::onAcc::trait::FunctorToAtomicOp<> must be specialized.
-     *   Currently only std::plus<> is supported. The functor execution order is not specified.
+     *   The functor execution order is not specified.
+     *   The functor should support Simd packages, if not you can enforce the element wise execution by wrapping into
+     *   @see ScalarFunc.
      * @param transformFn The function to apply to each element of the input data.
      *   The functor should support Simd packages. If not you can enforce the element wise execution by wrapping into
      * @see ScalarFunc. If you would like to support stencil executions wrapp fn into @see StencilFunc. StencilFunc is
