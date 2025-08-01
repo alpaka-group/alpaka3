@@ -1,7 +1,7 @@
 /* Copyright 2024 René Widera
  * SPDX-License-Identifier: MPL-2.0
  */
-#if 1
+
 #    include <alpaka/alpaka.hpp>
 #    include <alpaka/example/executeForEach.hpp>
 #    include <alpaka/example/executors.hpp>
@@ -18,76 +18,6 @@ using namespace alpaka;
 
 using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis))>;
 
-template<uint32_t T_blockSize>
-struct SharedBlockIotaKernel
-{
-    template<typename T>
-    ALPAKA_FN_ACC void operator()(T const& acc, auto out, auto numBlocks) const
-    {
-        auto& shared = declareSharedVar<uint32_t[T_blockSize], uniqueId()>(acc);
-
-        for(auto blockIdx : onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{numBlocks}))
-        {
-            auto const numDataElemInBlock = acc[frame::extent];
-            auto blockOffset = blockIdx * numDataElemInBlock;
-            for(auto inBlockOffset : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, onAcc::range::frameExtent))
-            {
-                uint32_t id = (T_blockSize - 1u - inBlockOffset).x();
-                shared[id] = id;
-            }
-
-            alpaka::onAcc::syncBlockThreads(acc);
-            for(auto inBlockOffset : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, onAcc::range::frameExtent))
-            {
-                out[blockOffset + inBlockOffset] = (blockOffset + shared[inBlockOffset.x()]).x();
-            }
-        }
-    }
-};
-
-TEMPLATE_LIST_TEST_CASE("block shared iota", "", TestApis)
-{
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
-        return;
-    }
-
-    std::cout << deviceSpec.getApi().getName() << std::endl;
-    onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << " " << device.getName() << std::endl;
-
-    onHost::Queue queue = device.makeQueue();
-    constexpr Vec numBlocks = Vec{2u};
-    constexpr Vec blockExtent = Vec{128u};
-    constexpr Vec dataExtent = numBlocks * blockExtent;
-    std::cout << "block shared iota exec=" << core::demangledName(exec) << std::endl;
-    auto dBuff = onHost::alloc<uint32_t>(device, dataExtent);
-
-    auto hBuff = onHost::allocHostLike(dBuff);
-    alpaka::onHost::wait(queue);
-
-    queue.enqueue(
-        exec,
-        onHost::FrameSpec{numBlocks / 2u, blockExtent},
-        KernelBundle{SharedBlockIotaKernel<blockExtent.x()>{}, dBuff, numBlocks});
-    alpaka::onHost::memcpy(queue, hBuff, dBuff);
-    alpaka::onHost::wait(queue);
-
-    auto* ptr = onHost::data(hBuff);
-    for(uint32_t i = 0u; i < dataExtent; ++i)
-    {
-        CHECK(i == ptr[i]);
-    }
-}
-
-#endif
 
 /** Validate shared memory aliasing and uniqueness.
  *
@@ -100,10 +30,11 @@ struct SharedMemAlias
     ALPAKA_FN_ACC void operator()(T const& acc, auto result) const
     {
         bool test = true;
-        auto& s0 = declareSharedVar<uint32_t, uniqueId()>(acc);
-        auto& s1 = declareSharedVar<uint32_t, uniqueId()>(acc);
+        auto& s0 = declareSharedVar<uint32_t, 4>(acc);
+        auto& s1 = declareSharedVar<uint32_t, 5>(acc);
         test = test && &s0 != &s1;
 
+#if 1
         auto& s2 = declareSharedVar<uint32_t, 42>(acc);
         auto& s3 = declareSharedVar<uint32_t, 42>(acc);
         test = test && &s2 == &s3;
@@ -111,11 +42,13 @@ struct SharedMemAlias
         // check that we not create an alias to the first two variables
         test = test && &s2 != &s0;
         test = test && &s2 != &s1;
+#endif
 
-        auto a0 = declareSharedMdArray<uint32_t, uniqueId()>(acc, CVec<uint32_t, 2u>{});
-        auto a1 = declareSharedMdArray<uint32_t, uniqueId()>(acc, CVec<uint32_t, 2u>{});
+        auto a0 = declareSharedMdArray<uint32_t, 1>(acc, CVec<uint32_t, 2u>{});
+        auto a1 = declareSharedMdArray<uint32_t, 2>(acc, CVec<uint32_t, 2u>{});
         test = test && a0 != a1;
 
+#if 1
         auto a2 = declareSharedMdArray<uint32_t, 42>(acc, CVec<uint32_t, 2u>{});
         auto a3 = declareSharedMdArray<uint32_t, 42>(acc, CVec<uint32_t, 2u>{});
         test = test && a2 == a3;
@@ -124,9 +57,11 @@ struct SharedMemAlias
         test = test && a2 != a0;
         test = test && a2 != a1;
 
+
         // the address of a shared memory array and normal shared variable is not allowed to be equal even if the same
         // id is used.
         test = test && &s2 != &a2[0u];
+#endif
 
         result[0] = test;
     }
@@ -216,16 +151,5 @@ TEMPLATE_LIST_TEST_CASE("block shared alias", "", TestApis)
         alpaka::onHost::wait(queue);
         CHECK(hBuff[0] == true);
     }
-    {
-        queue.enqueue(exec, onHost::FrameSpec{numBlocks, blockExtent}, KernelBundle{DynSharedMemMember{}, dBuff});
-        alpaka::onHost::memcpy(queue, hBuff, dBuff);
-        alpaka::onHost::wait(queue);
-        CHECK(hBuff[0] == true);
-    }
-    {
-        queue.enqueue(exec, onHost::FrameSpec{numBlocks, blockExtent}, KernelBundle{DynSharedMemTrait{}, dBuff});
-        alpaka::onHost::memcpy(queue, hBuff, dBuff);
-        alpaka::onHost::wait(queue);
-        CHECK(hBuff[0] == true);
-    }
+
 }

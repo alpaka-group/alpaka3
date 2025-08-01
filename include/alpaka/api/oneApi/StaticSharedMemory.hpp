@@ -64,11 +64,16 @@ namespace alpaka::onAcc
                     return metaDataSize * maxNumUniqueAllocations;
                 }
 
-                template<typename T>
-                T* alloc(size_t id) const
+                template<typename T, size_t id>
+                struct Foo{
+                    T data;
+                };
+
+                template<typename T, size_t id>
+                T* alloc() const
                 {
                     auto group = sycl::ext::oneapi::this_work_item::get_work_group<1>();
-                    T* data = sycl::ext::oneapi::group_local_memory_for_overwrite<T>(group);
+                    Foo<T,id>* data = sycl::ext::oneapi::group_local_memory_for_overwrite<Foo<T, id>>(group);
 
                     MetaData& metaDataEntry = m_mem[m_numEntries];
                     ++m_numEntries;
@@ -79,10 +84,11 @@ namespace alpaka::onAcc
                     {
                         // only one thread must update the pointer in shared memory
                         metaDataEntry.ptr = reinterpret_cast<uint8_t*>(data);
+                        sycl::ext::oneapi::experimental::printf("%p\n", metaDataEntry.ptr);
                     }
                     metaDataEntry.id = id;
 
-                    return data;
+                    return reinterpret_cast<T*>(data);
                 }
 
                 //! Give the pointer to an exiting variable
@@ -154,11 +160,11 @@ namespace alpaka::onAcc
             template<typename T, size_t T_unique>
             T& allocVar()
             {
-                auto* data = Base::template getVarPtr<T>(T_unique);
+                T* data = nullptr; // Base::template getVarPtr<T>(T_unique);
 
                 if(!data)
                 {
-                    data = Base::template alloc<T>(T_unique);
+                    data = Base::template alloc<T,T_unique>();
                 }
                 ALPAKA_ASSERT(data != nullptr);
                 return *data;
