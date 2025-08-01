@@ -40,15 +40,18 @@ jobs:
           - { compiler: gcc, version: "12", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: gcc, version: "13", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: gcc, version: "14", cuda: "no", hip: "no", container: "ubuntu:24.04" }
+          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0" }
           - { compiler: clang, version: "17", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: clang, version: "18", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: clang, version: "19", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: clang, version: "20", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: nvcc, version: "", cuda: "12.5", hip: "no", container: "nvidia/cuda:12.5.1-devel-ubuntu24.04" }
           - { compiler: nvcc, version: "", cuda: "12.6", hip: "no", container: "nvidia/cuda:12.6.3-devel-ubuntu24.04" }
-          - { compiler: nvcc, version: "", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.0-devel-ubuntu24.04" }
+          - { compiler: nvcc, version: "", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04" }
+          - { compiler: nvcc, version: "", cuda: "12.9", hip: "no", container: "nvidia/cuda:12.9.1-devel-ubuntu24.04" }
           - { compiler: clang, version: "18", cuda: "no", hip: "6.2.4", container: "rocm/dev-ubuntu-24.04:6.2.4" }
           - { compiler: clang, version: "18", cuda: "no", hip: "6.3.4", container: "rocm/dev-ubuntu-24.04:6.3.4" }
+          - { compiler: clang, version: "19", cuda: "no", hip: "6.4.2", container: "rocm/dev-ubuntu-24.04:6.4.2" }
           - { compiler: icpx, version: "2025.1", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.1.0-0-devel-ubuntu24.04" }
       fail-fast: false
 
@@ -72,9 +75,15 @@ jobs:
         if: matrix.config.compiler == 'gcc'
         run: |
           apt-get update
-          apt-get install -y gcc-${{ matrix.config.version }} g++-${{ matrix.config.version }}
-          update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${{ matrix.config.version }} 100 \
+          if [ $(gcc --version | awk '{print($3)}' | head -n 1 | cut -d"." -f1) -ne ${{matrix.config.version}} ] ; then
+            # install gcc only if not already available
+            if [ $(which gcc-${{ matrix.config.version }}) ] ; then
+              # if gcc is pre installed gcc can not be called with the version number as postfix
+              apt-get install -y gcc-${{ matrix.config.version }} g++-${{ matrix.config.version }}
+              update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${{ matrix.config.version }} 100 \
                               --slave /usr/bin/g++ g++ /usr/bin/g++-${{ matrix.config.version }}
+            fi
+          fi
 
       # Install Clang if specified
       - name: Install Clang
@@ -128,8 +137,14 @@ jobs:
         run: |
           mkdir build && cd build
           if [ "${{ matrix.config.compiler }}" = "gcc" ]; then
-            export CC=gcc-${{ matrix.config.version }}
-            export CXX=g++-${{ matrix.config.version }}
+            if [ $(which gcc-${{ matrix.config.version }}) ] ; then
+              export CC=gcc-${{ matrix.config.version }}
+              export CXX=g++-${{ matrix.config.version }}
+            else
+              # if gcc is pre installed gcc can not be called with the version number as postfix
+              export CC=gcc
+              export CXX=g++
+            fi
           elif [ "${{ matrix.config.compiler }}" = "clang" ]; then
             export CC=clang
             export CXX=clang++
