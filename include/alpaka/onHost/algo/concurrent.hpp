@@ -57,7 +57,7 @@ namespace alpaka::onHost
      * parallelism/performance.
      */
     template<typename T_DataType, typename T_Device>
-    inline void transform(
+    inline void concurrent(
         Queue<T_Device> const& queue,
         alpaka::concepts::VectorOrScalar auto const& extents,
         auto&& fn,
