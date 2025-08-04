@@ -71,6 +71,11 @@ namespace alpaka::onHost
                 }
             }
 
+            std::shared_ptr<Queue> getSharedPtr()
+            {
+                return this->shared_from_this();
+            }
+
             [[nodiscard]] auto getNativeHandle() const noexcept
             {
                 return m_queue;
@@ -154,7 +159,7 @@ namespace alpaka::onHost
     struct internal::Fill::Op<syclGeneric::Queue<T_Device>, T_Dest, T_Value, T_Extents>
     {
         void operator()(
-            syclGeneric::Queue<T_Device> queue,
+            syclGeneric::Queue<T_Device>& queue,
             auto&& dest,
             T_Value elementValue,
             T_Extents const& extents) const
@@ -199,6 +204,7 @@ namespace alpaka::onHost
 
             auto deviceDependency = onHost::Device{queue.getDevice()->getSharedPtr()};
             sycl::queue sycl_queue = queue.getNativeHandle();
+            auto queueDependency = queue.getSharedPtr();
 
             constexpr auto dim = T_Extents::dim();
             if constexpr(dim == 1u)
@@ -206,7 +212,16 @@ namespace alpaka::onHost
                 T_Type* ptr = reinterpret_cast<T_Type*>(
                     sycl::aligned_alloc_device(alignment, extents.x() * sizeof(T_Type), sycl_queue));
                 auto pitches = typename T_Extents::UniVec{sizeof(T_Type)};
-                auto deleter = [queue, ptr]() { sycl::free(ptr, queue.getNativeHandle()); };
+
+                auto deleter = [queueDep = std::move(queueDependency), ptr]()
+                {
+                    /* @todo: validate if this is still required
+                     * This wait is a workaround because SYCL is not enqueuing the deallocation in a queue and
+                     * therefore the free is executed during it is still in use e.g. in a kernel
+                     */
+                    internal::wait(*queueDep.get());
+                    sycl::free(ptr, queueDep->getNativeHandle());
+                };
 
                 auto buffer = onHost::ManagedView{
                     deviceDependency,
@@ -226,7 +241,16 @@ namespace alpaka::onHost
                 size_t memSizeInByte = pCast<size_t>(pitches)[0] * static_cast<size_t>(extents[0]);
                 T_Type* ptr
                     = reinterpret_cast<T_Type*>(sycl::aligned_alloc_device(alignment, memSizeInByte, sycl_queue));
-                auto deleter = [queue, ptr]() { sycl::free(ptr, queue.getNativeHandle()); };
+
+                auto deleter = [queueDep = std::move(queueDependency), ptr]()
+                {
+                    /* @todo: validate if this is still required
+                     * This wait is a workaround because SYCL is not enqueuing the deallocation in a queue and
+                     * therefore the free is executed during it is still in use e.g. in a kernel
+                     */
+                    internal::wait(*queueDep.get());
+                    sycl::free(ptr, queueDep->getNativeHandle());
+                };
 
                 auto buffer = onHost::ManagedView{
                     deviceDependency,
