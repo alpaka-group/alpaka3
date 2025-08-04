@@ -38,7 +38,7 @@ namespace alpaka::onHost
         {
         }
 
-        auto get() const
+        auto* get() const
         {
             return m_queue.get();
         }

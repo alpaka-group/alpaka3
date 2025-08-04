@@ -122,6 +122,11 @@ namespace alpaka::onHost
                     });
             }
 
+            /** execute a task in the queue
+             *
+             * @attention Do NOT enqueue a task which captures the queue internally to keep the queue alive as
+             * dependency. In this case the destructure of the queue is not called.
+             */
             void enqueue(auto const& task)
             {
                 m_workerThread.submit([task]() { task(); });
@@ -326,19 +331,15 @@ namespace alpaka::onHost
                 constexpr auto dim = T_Extents::dim();
 
                 auto deviceDependency = onHost::Device{queue.getDevice()->getSharedPtr()};
-                auto queueDependency = onHost::Queue{queue.getSharedPtr()};
+                auto queueDependency = queue.getSharedPtr();
 
                 if constexpr(dim == 1u)
                 {
                     auto* ptr = reinterpret_cast<T_Type*>(
                         alpaka::core::alignedAlloc(alignment, extents.x() * sizeof(T_Type)));
                     // queueDependency is captured to keep the device alive until the memory is deleted
-                    auto deleter = [ptr, queueDependency]()
-                    {
-                        internal::enqueue(
-                            *queueDependency.get(),
-                            [ptr, queueDependency]() { alpaka::core::alignedFree(alignment, ptr); });
-                    };
+                    auto deleter = [ptr, queueDep = std::move(queueDependency)]()
+                    { internal::enqueue(*queueDep.get(), [ptr]() { alpaka::core::alignedFree(alignment, ptr); }); };
 
                     auto pitches = typename T_Extents::UniVec{sizeof(T_Type)};
                     auto buffer = onHost::ManagedView{
@@ -359,12 +360,8 @@ namespace alpaka::onHost
                     size_t memSizeInByte = pCast<size_t>(pitches)[0] * static_cast<size_t>(extents[0]);
 
                     auto* ptr = reinterpret_cast<T_Type*>(alpaka::core::alignedAlloc(alignment, memSizeInByte));
-                    auto deleter = [ptr, queueDependency]()
-                    {
-                        internal::enqueue(
-                            *queueDependency.get(),
-                            [ptr, queueDependency]() { alpaka::core::alignedFree(alignment, ptr); });
-                    };
+                    auto deleter = [ptr, queueDep = std::move(queueDependency)]()
+                    { internal::enqueue(*queueDep.get(), [ptr]() { alpaka::core::alignedFree(alignment, ptr); }); };
 
                     auto buffer = onHost::ManagedView{
                         deviceDependency,
