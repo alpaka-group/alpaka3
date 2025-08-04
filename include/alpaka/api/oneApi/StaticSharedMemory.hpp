@@ -33,7 +33,7 @@ namespace alpaka::onAcc
                 struct MetaData
                 {
                     //! pointer to allocated data
-                    uint8_t* ptr = nullptr;
+                    std::byte* ptr = nullptr;
                     //! Unique id if the next data chunk.
                     size_t id = std::numeric_limits<size_t>::max();
                 };
@@ -42,14 +42,14 @@ namespace alpaka::onAcc
 
             public:
 #    ifndef NDEBUG
-                PtrLookupTable(std::uint8_t* mem, uint32_t capacity)
+                PtrLookupTable(std::byte* mem, uint32_t capacity)
                     : m_mem(reinterpret_cast<MetaData*>(mem))
                     , m_capacity(capacity / metaDataSize)
                 {
                     ALPAKA_ASSERT_ACC((m_mem == nullptr) == (m_capacity == 0u));
                 }
 #    else
-                PtrLookupTable(std::uint8_t* mem, uint32_t) : m_mem(reinterpret_cast<MetaData*>(mem))
+                PtrLookupTable(std::byte* mem, uint32_t) : m_mem(reinterpret_cast<MetaData*>(mem))
                 {
                 }
 #    endif
@@ -64,11 +64,23 @@ namespace alpaka::onAcc
                     return metaDataSize * maxNumUniqueAllocations;
                 }
 
-                template<typename T>
-                T* alloc(size_t id) const
+                /* With oneApi 2025.2 the behaviour of shared memory allocation has changed. IT behaves like cuda
+                 * shared memory. Therefore, we need a unique data type to avoid pointer aliasing. Using the helper
+                 * class for data alignment is backward compatible to previous versions. The reason for using std::byte
+                 * is that this guaranteed support for data types which are not trivially constructible.
+                 */
+                template<typename T, size_t T_id>
+                struct alignas(T) SharedMemData
+                {
+                    std::byte data[sizeof(T)];
+                };
+
+                template<typename T, size_t T_id>
+                T* alloc() const
                 {
                     auto group = sycl::ext::oneapi::this_work_item::get_work_group<1>();
-                    T* data = sycl::ext::oneapi::group_local_memory_for_overwrite<T>(group);
+                    SharedMemData<T, T_id>* data
+                        = sycl::ext::oneapi::group_local_memory_for_overwrite<SharedMemData<T, T_id>>(group);
 
                     MetaData& metaDataEntry = m_mem[m_numEntries];
                     ++m_numEntries;
@@ -78,11 +90,11 @@ namespace alpaka::onAcc
                     if(group.get_local_linear_id() == 0u)
                     {
                         // only one thread must update the pointer in shared memory
-                        metaDataEntry.ptr = reinterpret_cast<uint8_t*>(data);
+                        metaDataEntry.ptr = reinterpret_cast<std::byte*>(data);
                     }
-                    metaDataEntry.id = id;
+                    metaDataEntry.id = T_id;
 
-                    return data;
+                    return reinterpret_cast<T*>(data);
                 }
 
                 //! Give the pointer to an exiting variable
@@ -143,7 +155,7 @@ namespace alpaka::onAcc
              */
             StaticSharedMemory(sycl::local_accessor<std::byte> const& accessor)
                 : PtrLookupTable(
-                    reinterpret_cast<std::uint8_t*>(accessor.get_multi_ptr<sycl::access::decorated::no>().get()),
+                    reinterpret_cast<std::byte*>(accessor.get_multi_ptr<sycl::access::decorated::no>().get()),
                     static_cast<uint32_t>(accessor.size()))
 
             {
@@ -154,11 +166,11 @@ namespace alpaka::onAcc
             template<typename T, size_t T_unique>
             T& allocVar()
             {
-                auto* data = Base::template getVarPtr<T>(T_unique);
+                T* data = Base::template getVarPtr<T>(T_unique);
 
                 if(!data)
                 {
-                    data = Base::template alloc<T>(T_unique);
+                    data = Base::template alloc<T, T_unique>();
                 }
                 ALPAKA_ASSERT(data != nullptr);
                 return *data;
