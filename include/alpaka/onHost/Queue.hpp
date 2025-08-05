@@ -139,6 +139,10 @@ namespace alpaka::onHost
 
         /** Enqueue a operation which is executed on the host side
          *
+         * @attention Do NOT enqueue a task which captures the queue internally to keep the queue alive, this could
+         * lead into deadlocks. Do NOT capture @see MangedView because view actions could perform blocking operations
+         * e.g. onHost::wait() in the destructor which could lead to deadlocks too.
+         *
          * @param task task to be executed on the host side
          */
         void enqueue(auto const& task) const
