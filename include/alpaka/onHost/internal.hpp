@@ -294,6 +294,12 @@ namespace alpaka::onHost
             return GetExtents::Op<std::decay_t<decltype(any)>>{}(any);
         }
 
+        template<typename T_Any>
+        inline auto getExtents(Handle<T_Any>&& any)
+        {
+            return GetExtents::Op<ALPAKA_TYPEOF(*any.get())>{}(*any.get());
+        }
+
         struct GetPitches
         {
             template<typename T_Any>

@@ -5,6 +5,7 @@
 #pragma once
 
 #include "Handle.hpp"
+#include "alpaka/interface.hpp"
 #include "alpaka/onHost/Queue.hpp"
 #include "alpaka/onHost/concepts.hpp"
 #include "alpaka/onHost/internal.hpp"

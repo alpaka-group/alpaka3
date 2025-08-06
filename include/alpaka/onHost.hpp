@@ -137,14 +137,14 @@ namespace alpaka::onHost
      *
      * The host controller device is the deviceKind::Cpu from api::Host.
      *
-     * @param view memory where properties will be derived from
+     * @param view memory where properties will be derived from, std::vector, std::array, or any other
      *
      * @return memory owning view to the allocated memory
      */
     inline auto allocHostLike(auto const& view)
     {
         auto device = makeHostDevice<ALPAKA_TYPEOF(view)>();
-        return alloc<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(device, getExtents(view));
+        return alloc<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(device, internal::getExtents(view));
     }
 
 } // namespace alpaka::onHost
