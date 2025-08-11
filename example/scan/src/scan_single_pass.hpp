@@ -495,7 +495,7 @@ void scan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, auto outp
     // aggregate + prefixes, one per frame
     auto metaData = onHost::alloc<Data volatile>(devAcc, frameSpec.m_numFrames * 2u);
 
-    onHost::memset(queue, flags, static_cast<uint8_t>(0));
+    onHost::memset(queue, flags, 0);
 
     // allocate frame counter, single index type
     auto frameCounter = onHost::alloc<IdxType>(devAcc, 1);
