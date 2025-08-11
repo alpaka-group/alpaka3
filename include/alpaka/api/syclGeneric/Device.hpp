@@ -104,7 +104,12 @@ namespace alpaka::onHost
 
                 T_Type* ptr = reinterpret_cast<T_Type*>(
                     sycl::aligned_alloc_device(alignment, memSizeInByte, sycl_device, sycl_context));
-                auto deleter = [ctx = sycl_context, ptr]() { sycl::free(ptr, ctx); };
+                auto deleter = [ctx = sycl_context, ptr]()
+                {
+                    void* ptrToFree
+                        = reinterpret_cast<void*>(const_cast<std::remove_volatile_t<ALPAKA_TYPEOF(ptr)>>(ptr));
+                    sycl::free(ptrToFree, ctx);
+                };
 
                 auto managedView = onHost::ManagedView{
                     deviceDependency,
@@ -138,7 +143,12 @@ namespace alpaka::onHost
 
                 T_Type* ptr = reinterpret_cast<T_Type*>(
                     sycl::aligned_alloc_shared(alignment, memSizeInByte, sycl_device, sycl_context));
-                auto deleter = [ctx = sycl_context, ptr]() { sycl::free(ptr, ctx); };
+                auto deleter = [ctx = sycl_context, ptr]()
+                {
+                    void* ptrToFree
+                        = reinterpret_cast<void*>(const_cast<std::remove_volatile_t<ALPAKA_TYPEOF(ptr)>>(ptr));
+                    sycl::free(ptrToFree, ctx);
+                };
 
                 auto managedView = onHost::ManagedView{
                     deviceDependency,
@@ -166,7 +176,12 @@ namespace alpaka::onHost
 
                 T_Type* ptr
                     = reinterpret_cast<T_Type*>(sycl::aligned_alloc_host(alignment, memSizeInByte, sycl_context));
-                auto deleter = [ctx = sycl_context, ptr]() { sycl::free(ptr, ctx); };
+                auto deleter = [ctx = sycl_context, ptr]()
+                {
+                    void* ptrToFree
+                        = reinterpret_cast<void*>(const_cast<std::remove_volatile_t<ALPAKA_TYPEOF(ptr)>>(ptr));
+                    sycl::free(ptrToFree, ctx);
+                };
 
                 auto managedView = onHost::ManagedView{
                     deviceDependency,

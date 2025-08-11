@@ -24,9 +24,13 @@ namespace alpaka::core
         }
     }
 
-    ALPAKA_FN_INLINE ALPAKA_FN_HOST void alignedFree(size_t alignment, void* ptr)
+    ALPAKA_FN_INLINE ALPAKA_FN_HOST void alignedFree(size_t alignment, auto ptr)
+        requires(std::is_pointer_v<ALPAKA_TYPEOF(ptr)>)
     {
         if(ptr != nullptr)
-            ::operator delete(ptr, std::align_val_t{alignment});
+        {
+            void* ptrToFree = reinterpret_cast<void*>(const_cast<std::remove_volatile_t<ALPAKA_TYPEOF(ptr)>>(ptr));
+            ::operator delete(ptrToFree, std::align_val_t{alignment});
+        }
     }
 } // namespace alpaka::core

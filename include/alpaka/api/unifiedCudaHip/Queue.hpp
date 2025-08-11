@@ -554,9 +554,11 @@ namespace alpaka::onHost
 
                 auto deleter = [ptr, queueDependency]()
                 {
+                    void* ptrToFree
+                        = reinterpret_cast<void*>(const_cast<std::remove_volatile_t<ALPAKA_TYPEOF(ptr)>>(ptr));
                     ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(
                         ApiInterface,
-                        ApiInterface::freeAsync(ptr, queueDependency.getNativeHandle()));
+                        ApiInterface::freeAsync(ptrToFree, queueDependency.getNativeHandle()));
                 };
 
                 auto managedView = onHost::ManagedView{

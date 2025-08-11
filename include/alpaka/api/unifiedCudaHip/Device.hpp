@@ -186,7 +186,11 @@ namespace alpaka::onHost
                 auto deviceDependency = onHost::Device{device.getSharedPtr()};
 
                 auto deleter = [ptr, deviceDependency]()
-                { ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::free(ptr)); };
+                {
+                    void* ptrToFree
+                        = reinterpret_cast<void*>(const_cast<std::remove_volatile_t<ALPAKA_TYPEOF(ptr)>>(ptr));
+                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::free(ptrToFree));
+                };
 
                 /** Each CUDA/HIP allocation is aligned to at least 128 byte but typically to 256byte
                  *
@@ -229,7 +233,11 @@ namespace alpaka::onHost
                     ApiInterface::mallocManaged((void**) &ptr, memSizeInByte));
 
                 auto deleter = [ptr, deviceDependency]()
-                { ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::free(ptr)); };
+                {
+                    void* ptrToFree
+                        = reinterpret_cast<void*>(const_cast<std::remove_volatile_t<ALPAKA_TYPEOF(ptr)>>(ptr));
+                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::free(ptrToFree));
+                };
 
                 auto managedView = onHost::ManagedView{
                     deviceDependency,
@@ -268,7 +276,11 @@ namespace alpaka::onHost
                         ApiInterface::hostMallocMapped | ApiInterface::hostMallocPortable));
 
                 auto deleter = [ptr, deviceDependency]()
-                { ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::hostFree(ptr)); };
+                {
+                    void* ptrToFree
+                        = reinterpret_cast<void*>(const_cast<std::remove_volatile_t<ALPAKA_TYPEOF(ptr)>>(ptr));
+                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::hostFree(ptrToFree));
+                };
 
                 auto managedView = onHost::ManagedView{
                     deviceDependency,
