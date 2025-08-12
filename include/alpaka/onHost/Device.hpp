@@ -190,6 +190,48 @@ namespace alpaka::onHost
 
     /** @} */
 
+    /** allocate pinned memory on the host which is mapped into the adress space of the device
+     *
+     * This memory can be accessed from all devices with the same Api and device kind. Depending of the backend e.g.
+     * OneApi memory can be accessed by other device kind devices if they are using the same native context. It is not
+     * allowed to access the data on two devices at the same time, this must be avoided by explicit synchronizations.
+     * Managed memory follows the rules of UVM memory of the device backend e.g. CUDA, HIP, ...
+     *
+     * Mapped memory is located on the host and is transferred for each access via the PCIe/Nvlink bus. The performance
+     * on the device is mostly pure. Mapped memory should be used for host memory if you transfer memory between host
+     * and device via `onHost::memcpy()` because the transfer will be optimized for latency and performance.
+     *
+     * @tparam T_Type type of the data elements
+     * @param extents number of elements for each dimension
+     * @return Managed view to the allocated memory
+     *
+     * @{
+     */
+
+    /**
+     * @param device device handle
+     */
+    template<typename T_Type>
+    inline auto allocMapped(concepts::Device auto const& device, alpaka::concepts::VectorOrScalar auto const& extents)
+    {
+        Vec const extentsVec = extents;
+        return internal::AllocMapped::Op<T_Type, std::decay_t<decltype(*device.get())>, ALPAKA_TYPEOF(extentsVec)>{}(
+            *device.get(),
+            extentsVec);
+    }
+
+    /** Allocates pinned mapped memory on the device associated with the given queue.
+     *
+     * @param queue queue handle
+     */
+    template<typename T_Type, typename T_Device>
+    inline auto allocMapped(Queue<T_Device> const& queue, alpaka::concepts::VectorOrScalar auto const& extents)
+    {
+        allocMapped<T_Type>(queue.getDevice(), extents);
+    }
+
+    /** @} */
+
     /** check if the given view is accessible on the given device
      *
      * @param device device handle
