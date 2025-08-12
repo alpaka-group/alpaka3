@@ -69,7 +69,8 @@ function(checkCompilerCXXSupport language min_cxx_standard)
     endif ()
 endfunction()
 
-set(alpaka_CXX_STANDARD 20)
+set(alpaka_CXX_STANDARD 20 CACHE STRING "C++ standard")
+
 checkCompilerCXXSupport(CXX ${alpaka_CXX_STANDARD})
 set(CMAKE_CXX_STANDARD ${alpaka_CXX_STANDARD})
 
