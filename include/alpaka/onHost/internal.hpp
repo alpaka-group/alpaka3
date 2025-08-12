@@ -249,6 +249,15 @@ namespace alpaka::onHost
             };
         };
 
+        struct AllocMapped
+        {
+            template<typename T_Type, typename T_Any, typename T_Extents>
+            struct Op
+            {
+                void operator()(T_Any& any, T_Extents const&) const;
+            };
+        };
+
         /** checks if a view can be accessed from the given device
          *
          * There are two paths to check if a view is accessible:

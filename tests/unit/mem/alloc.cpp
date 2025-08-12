@@ -21,9 +21,11 @@ struct IotaValidate
     {
         for(auto [i] : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange(in.getExtents())))
         {
-            if(in[i] != i)
-                // set to false
-                onAcc::atomicExch(acc, &success[0], 0);
+            /* Each correct result increases the result by one, this avoids false positives if the kernel is not
+             * executed.
+             */
+            if(in[i] == i)
+                onAcc::atomicAdd(acc, &success[0], 1);
         }
     }
 };
@@ -34,14 +36,15 @@ void validateAccess(auto device, alpaka::concepts::Executor auto exec, concepts:
     auto hostStatus = onHost::allocHostLike(deviceStatus);
     auto deviceQueue = device.makeQueue();
     REQUIRE(onHost::isDataAccessible(deviceQueue, deviceAccessibleData) == true);
-    onHost::fill(deviceQueue, deviceStatus, 1);
+    onHost::fill(deviceQueue, deviceStatus, 0);
     deviceQueue.enqueue(
         exec,
         getFrameSpec<float>(deviceQueue.getDevice(), deviceAccessibleData.getExtents()),
         KernelBundle{IotaValidate{}, deviceStatus, deviceAccessibleData});
     onHost::memcpy(deviceQueue, hostStatus, deviceStatus);
     onHost::wait(deviceQueue);
-    REQUIRE(hostStatus[0] == 1);
+    // if the number of the result not matches the extent, a few results are wrong
+    REQUIRE(hostStatus[0] == deviceAccessibleData.getExtents().x());
 }
 
 void allocAsyncImplicitWait(auto device, alpaka::concepts::Executor auto exec)
@@ -53,16 +56,20 @@ void allocAsyncImplicitWait(auto device, alpaka::concepts::Executor auto exec)
     int dataSize = 42;
 
     auto hostView = onHost::allocHost<int>(dataSize);
+    auto hostViewMapped = onHost::allocMapped<int>(device, dataSize);
     auto deviceView = onHost::alloc<int>(device, dataSize);
     auto managedView = onHost::allocManaged<int>(device, dataSize);
 
     REQUIRE(onHost::isDataAccessible(hostDevice, hostView) == true);
     REQUIRE(onHost::isDataAccessible(hostDevice, managedView) == true);
+    REQUIRE(onHost::isDataAccessible(hostDevice, hostViewMapped) == true);
     for(int i = 0; i < hostView.getExtents().x(); ++i)
     {
         hostView[i] = i;
         // managed memory must be accessible on the host
         managedView[i] = i;
+        // is located on the host, so it must be accessible
+        hostViewMapped[i] = i;
     }
 
     auto deviceQueue = device.makeQueue();
@@ -78,6 +85,10 @@ void allocAsyncImplicitWait(auto device, alpaka::concepts::Executor auto exec)
     else
         REQUIRE(onHost::isDataAccessible(device, hostView) == false);
 
+    // mapped memory is defined to be accessible on the device
+    REQUIRE(onHost::isDataAccessible(device, hostViewMapped) == true);
+    validateAccess(device, exec, hostViewMapped);
+
     REQUIRE(onHost::isDataAccessible(device, managedView) == true);
     validateAccess(device, exec, managedView);
 
@@ -86,6 +97,10 @@ void allocAsyncImplicitWait(auto device, alpaka::concepts::Executor auto exec)
 
     REQUIRE(onHost::isDataAccessible(hostDevice, managedView) == true);
     validateAccess(hostDevice, exec::cpuSerial, managedView);
+
+    // is located on the host, so it must be accessible
+    REQUIRE(onHost::isDataAccessible(device, hostViewMapped) == true);
+    validateAccess(hostDevice, exec::cpuSerial, hostViewMapped);
 }
 
 TEMPLATE_LIST_TEST_CASE("alloc", "", TestApis)

@@ -110,6 +110,7 @@ namespace alpaka::onHost
             friend struct onHost::internal::Alloc;
             friend struct onHost::internal::AllocAsync;
             friend struct onHost::internal::AllocManaged;
+            friend struct onHost::internal::AllocMapped;
             friend struct alpaka::internal::GetApi;
             friend struct internal::GetDeviceProperties;
             friend struct internal::AdjustThreadSpec;
@@ -260,6 +261,77 @@ namespace alpaka::onHost
 
                 auto deleter = [ptr, deviceDependency]()
                 { ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::free(ptr)); };
+
+                auto buffer = onHost::ManagedView{
+                    deviceDependency,
+                    ptr,
+                    extents,
+                    pitches,
+                    std::move(deleter),
+                    Alignment<alignment>{}};
+                return buffer;
+            }
+        };
+
+        template<typename T_Type, typename T_Platform, alpaka::concepts::Vector T_Extents>
+        struct AllocMapped::Op<T_Type, unifiedCudaHip::Device<T_Platform>, T_Extents>
+        {
+            static consteval uint32_t highestPowerOfTwo(uint32_t value)
+            {
+                uint32_t result = 1u;
+                while((result << 1u) <= value)
+                {
+                    result <<= 1u;
+                }
+                return result;
+            }
+
+            auto operator()(unifiedCudaHip::Device<T_Platform>& device, T_Extents const& extents) const
+            {
+                using IdxType = typename T_Extents::type;
+
+                /** Each CUDA/HIP allocation is aligned to at least 128 byte but typically to 256byte
+                 *
+                 * @todo check if this value can be derived from the device properties
+                 * @todo validate if memory is always aligtne dto 256 byte
+                 */
+                constexpr IdxType alignment = 128u;
+
+                using ApiInterface = typename T_Platform::ApiInterface;
+
+                T_Type* ptr = nullptr;
+                auto pitches = typename T_Extents::UniVec{sizeof(T_Type)};
+
+                constexpr auto dim = T_Extents::dim();
+                if constexpr(dim == 1u)
+                {
+                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
+                        ApiInterface,
+                        ApiInterface::hostMalloc(
+                            (void**) &ptr,
+                            static_cast<std::size_t>(extents.x()) * sizeof(T_Type),
+                            ApiInterface::hostMallocMapped | ApiInterface::hostMallocPortable));
+                }
+                else
+                {
+                    IdxType rowExtentInBytes = extents.x() * static_cast<IdxType>(sizeof(T_Type));
+                    IdxType rowPitchInBytes = divCeil(rowExtentInBytes, alignment) * alignment;
+                    auto pitches = alpaka::mem::calculatePitches<T_Type>(extents, rowPitchInBytes);
+
+                    size_t memSizeInByte = pCast<size_t>(pitches)[0] * static_cast<size_t>(extents[0]);
+
+                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
+                        ApiInterface,
+                        ApiInterface::hostMalloc(
+                            (void**) &ptr,
+                            static_cast<std::size_t>(memSizeInByte),
+                            ApiInterface::hostMallocMapped | ApiInterface::hostMallocPortable));
+                }
+
+                auto deviceDependency = onHost::Device{device.getSharedPtr()};
+
+                auto deleter = [ptr, deviceDependency]()
+                { ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::hostFree(ptr)); };
 
                 auto buffer = onHost::ManagedView{
                     deviceDependency,
