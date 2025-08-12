@@ -214,6 +214,12 @@ namespace alpaka::onHost
             {
                 return Op<std::decay_t<decltype(any)>>{}(any);
             }
+
+            template<typename T_Any>
+            static decltype(auto) data(Handle<T_Any>&& anyHandle)
+            {
+                return Op<std::decay_t<decltype(*anyHandle.get())>>{}(*anyHandle.get());
+            }
         };
 
         struct Alloc
@@ -231,6 +237,41 @@ namespace alpaka::onHost
             struct Op
             {
                 void operator()(T_Any& any, T_Extents const&) const;
+            };
+        };
+
+        struct AllocManaged
+        {
+            template<typename T_Type, typename T_Any, typename T_Extents>
+            struct Op
+            {
+                void operator()(T_Any& any, T_Extents const&) const;
+            };
+        };
+
+        /** checks if a view can be accessed from the given device
+         *
+         * There are two paths to check if a view is accessible:
+         *   - first: Try to validate the view in the scope of the device.
+         *   - second: Try to validate based on soft criteria in the scope of the view's API.
+         *             This path is required because the host API does not know about view data locations.
+         *             The second path is optionally and will return always false if not specialized.
+         */
+        struct IsDataAccessible
+        {
+            template<typename T_Device, typename T_Any>
+            struct FirstPath
+            {
+                bool operator()(T_Device& device, T_Any const& any) const;
+            };
+
+            template<typename T_DataApi, alpaka::deviceKind::concepts::DeviceKind T_DeviceKind, typename T_Any>
+            struct SecondPath
+            {
+                bool operator()(T_DataApi, T_DeviceKind, T_Any const& any) const
+                {
+                    return false;
+                }
             };
         };
 
@@ -316,5 +357,12 @@ namespace alpaka::onHost
         {
             return GetPitches::Op<std::decay_t<decltype(any)>>{}(any);
         }
+
+        template<typename T_Any>
+        inline auto getPitches(Handle<T_Any>&& any)
+        {
+            return GetPitches::Op<ALPAKA_TYPEOF(*any.get())>{}(*any.get());
+        }
+
     } // namespace internal
 } // namespace alpaka::onHost

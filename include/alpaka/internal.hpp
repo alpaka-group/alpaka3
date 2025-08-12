@@ -58,6 +58,12 @@ namespace alpaka
             return GetApi::Op<std::decay_t<decltype(any)>>{}(any);
         }
 
+        template<typename T_Any>
+        inline constexpr auto getApi(onHost::Handle<T_Any>&& anyHandle)
+        {
+            return GetApi::Op<ALPAKA_TYPEOF(*anyHandle.get())>{}(*anyHandle.get());
+        }
+
         struct GetDeviceType
         {
             template<typename T_Any>

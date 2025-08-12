@@ -106,6 +106,7 @@ namespace alpaka::onHost
             friend struct internal::GetDeviceProperties;
             friend struct internal::AdjustThreadSpec;
             friend struct internal::AllocAsync;
+            friend struct internal::AllocManaged;
         };
     } // namespace cpu
 
@@ -197,6 +198,29 @@ namespace alpaka::onHost
                         Alignment<alignment>{}};
                     return buffer;
                 }
+            }
+        };
+
+        template<typename T_Type, typename T_Platform, alpaka::concepts::Vector T_Extents>
+        struct AllocManaged::Op<T_Type, cpu::Device<T_Platform>, T_Extents>
+        {
+            auto operator()(cpu::Device<T_Platform>& device, T_Extents const& extents) const
+            {
+                return Alloc::Op<T_Type, cpu::Device<T_Platform>, T_Extents>{}(device, extents);
+            }
+        };
+
+        template<typename T_Platform, typename T_Any>
+        struct IsDataAccessible::FirstPath<cpu::Device<T_Platform>, T_Any>
+        {
+            bool operator()(cpu::Device<T_Platform>& device, T_Any const& view) const
+            {
+                if constexpr(
+                    std::is_same_v<ALPAKA_TYPEOF(getApi(view)), api::Host>
+                    && std::is_same_v<ALPAKA_TYPEOF(getDeviceKind(device)), deviceKind::Cpu>)
+                    return true;
+                else
+                    return false;
             }
         };
 

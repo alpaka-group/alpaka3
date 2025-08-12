@@ -21,6 +21,8 @@ namespace alpaka
 
         // Types
         using DeviceAttr_t = ::hipDeviceAttribute_t;
+        using PointerAttr_t = ::hipPointerAttribute_t;
+        using Memory_t = ::hipMemoryType;
         using DeviceProp_t = ::hipDeviceProp_t;
         using Error_t = ::hipError_t;
         using Event_t = ::hipEvent_t;
@@ -80,6 +82,11 @@ namespace alpaka
         static constexpr DeviceAttr_t deviceAttributeMultiprocessorCount = ::hipDeviceAttributeMultiprocessorCount;
         static constexpr DeviceAttr_t deviceAttributeWarpSize = ::hipDeviceAttributeWarpSize;
 
+        static constexpr Memory_t memoryTypeUnregistered = ::hipMemoryTypeUnregistered;
+        static constexpr Memory_t memoryTypeHost = ::hipMemoryTypeHost;
+        static constexpr Memory_t memoryTypeDevice = ::hipMemoryTypeDevice;
+        static constexpr Memory_t memoryTypeManaged = ::hipMemoryTypeManaged;
+
 #    if HIP_VERSION >= 40'500'000
         static constexpr Limit_t limitPrintfFifoSize = ::hipLimitPrintfFifoSize;
 #    else
@@ -115,6 +122,11 @@ namespace alpaka
         static inline Error_t deviceGetAttribute(int* value, DeviceAttr_t attr, int device)
         {
             return ::hipDeviceGetAttribute(value, attr, device);
+        }
+
+        static inline Error_t pointerGetAttributes(PointerAttr_t* attr, void const* ptr)
+        {
+            return ::hipPointerGetAttributes(attr, ptr);
         }
 
         static inline Error_t deviceGetLimit(size_t* pValue, Limit_t limit)
@@ -287,6 +299,11 @@ namespace alpaka
         static inline Error_t malloc(void** devPtr, size_t size)
         {
             return ::hipMalloc(devPtr, size);
+        }
+
+        static inline Error_t mallocManaged(void** devPtr, size_t size)
+        {
+            return ::hipMallocManaged(devPtr, size);
         }
 
         static inline Error_t malloc3D(PitchedPtr_t* pitchedDevPtr, Extent_t extent)

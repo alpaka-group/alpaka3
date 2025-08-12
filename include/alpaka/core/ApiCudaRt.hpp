@@ -19,6 +19,8 @@ namespace alpaka
 
         // Types
         using DeviceAttr_t = ::cudaDeviceAttr;
+        using PointerAttr_t = ::cudaPointerAttributes;
+        using Memory_t = ::cudaMemoryType;
         using DeviceProp_t = ::cudaDeviceProp;
         using Error_t = ::cudaError_t;
         using Event_t = ::cudaEvent_t;
@@ -77,6 +79,11 @@ namespace alpaka
         static constexpr DeviceAttr_t deviceAttributeMultiprocessorCount = ::cudaDevAttrMultiProcessorCount;
         static constexpr DeviceAttr_t deviceAttributeWarpSize = ::cudaDevAttrWarpSize;
 
+        static constexpr Memory_t memoryTypeUnregistered = ::cudaMemoryTypeUnregistered;
+        static constexpr Memory_t memoryTypeHost = ::cudaMemoryTypeHost;
+        static constexpr Memory_t memoryTypeDevice = ::cudaMemoryTypeDevice;
+        static constexpr Memory_t memoryTypeManaged = ::cudaMemoryTypeManaged;
+
         static constexpr Limit_t limitPrintfFifoSize = ::cudaLimitPrintfFifoSize;
         static constexpr Limit_t limitMallocHeapSize = ::cudaLimitMallocHeapSize;
 
@@ -107,6 +114,11 @@ namespace alpaka
         static inline Error_t deviceGetAttribute(int* value, DeviceAttr_t attr, int device)
         {
             return ::cudaDeviceGetAttribute(value, attr, device);
+        }
+
+        static inline Error_t pointerGetAttributes(PointerAttr_t* attr, void const* ptr)
+        {
+            return ::cudaPointerGetAttributes(attr, ptr);
         }
 
         static inline Error_t deviceGetLimit(size_t* pValue, Limit_t limit)
@@ -262,6 +274,11 @@ namespace alpaka
         static inline Error_t malloc(void** devPtr, size_t size)
         {
             return ::cudaMalloc(devPtr, size);
+        }
+
+        static inline Error_t mallocManaged(void** devPtr, size_t size)
+        {
+            return ::cudaMallocManaged(devPtr, size);
         }
 
         static inline Error_t malloc3D(PitchedPtr_t* pitchedDevPtr, Extent_t extent)

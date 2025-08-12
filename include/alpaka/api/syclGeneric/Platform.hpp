@@ -174,6 +174,8 @@ namespace alpaka
                 friend struct internal::GetDeviceProperties::Op<syclGeneric::Platform<T_ApiInterface, T_DeviceKind>>;
 
             private:
+                friend struct onHost::internal::IsDataAccessible;
+
                 std::shared_ptr<alpaka::detail::Context> contextManager;
                 sycl::platform platform;
                 std::vector<std::weak_ptr<syclGeneric::Device<Platform<T_ApiInterface, T_DeviceKind>>>> devices;

@@ -80,6 +80,8 @@ namespace alpaka::onHost
             friend struct internal::GetDeviceProperties;
             friend struct internal::AdjustThreadSpec;
             friend struct onHost::internal::AllocAsync;
+            friend struct onHost::internal::AllocManaged;
+            friend struct onHost::internal::IsDataAccessible;
         };
     } // namespace syclGeneric
 
@@ -153,6 +155,124 @@ namespace alpaka::onHost
                         Alignment<alignment>{}};
                     return buffer;
                 }
+            }
+        };
+
+        template<typename T_Type, typename T_Platform, alpaka::concepts::Vector T_Extents>
+        struct AllocManaged::Op<T_Type, syclGeneric::Device<T_Platform>, T_Extents>
+        {
+            static consteval uint32_t highestPowerOfTwo(uint32_t value)
+            {
+                uint32_t result = 1u;
+                while((result << 1u) <= value)
+                {
+                    result <<= 1u;
+                }
+                return result;
+            }
+
+            auto operator()(syclGeneric::Device<T_Platform>& device, T_Extents const& extents) const
+            {
+                using IdxType = typename T_Extents::type;
+
+                constexpr uint32_t typeAlignmentBytes = alignof(T_Type);
+                constexpr uint32_t simdPackBytes = alpaka::getArchSimdWidth<T_Type>(
+                                                       ALPAKA_TYPEOF(getApi(device)){},
+                                                       ALPAKA_TYPEOF(getDeviceKind(device)){})
+                                                   * sizeof(T_Type);
+                constexpr uint32_t bestSimdPackBytes = highestPowerOfTwo(simdPackBytes);
+                constexpr IdxType alignment = std::max(bestSimdPackBytes, typeAlignmentBytes);
+
+                auto [sycl_device, sycl_context] = device.getNativeHandle();
+
+                bool isManagedMemorySupported = sycl_device.has(sycl::aspect::usm_shared_allocations);
+                if(!isManagedMemorySupported)
+                {
+                    throw std::runtime_error("Sycl device does not support managed memory allocations.");
+                }
+
+                constexpr auto dim = T_Extents::dim();
+                if constexpr(dim == 1u)
+                {
+                    T_Type* ptr = reinterpret_cast<T_Type*>(sycl::aligned_alloc_shared(
+                        alignment,
+                        extents.x() * sizeof(T_Type),
+                        sycl_device,
+                        sycl_context));
+                    auto pitches = typename T_Extents::UniVec{sizeof(T_Type)};
+                    auto deleter = [ctx = sycl_context, ptr]() { sycl::free(ptr, ctx); };
+
+                    auto buffer = onHost::ManagedView{
+                        onHost::Device{device.getSharedPtr()},
+                        ptr,
+                        extents,
+                        pitches,
+                        std::move(deleter),
+                        Alignment<alignment>{}};
+                    return buffer;
+                }
+                else
+                {
+                    IdxType rowExtentInBytes = extents.x() * static_cast<IdxType>(sizeof(T_Type));
+                    IdxType rowPitchInBytes = divCeil(rowExtentInBytes, alignment) * alignment;
+                    auto pitches = alpaka::mem::calculatePitches<T_Type>(extents, rowPitchInBytes);
+
+                    size_t memSizeInByte = pCast<size_t>(pitches)[0] * static_cast<size_t>(extents[0]);
+                    T_Type* ptr = reinterpret_cast<T_Type*>(
+                        sycl::aligned_alloc_shared(alignment, memSizeInByte, sycl_device, sycl_context));
+                    auto deleter = [ctx = sycl_context, ptr]() { sycl::free(ptr, ctx); };
+
+                    auto buffer = onHost::ManagedView{
+                        onHost::Device{device.getSharedPtr()},
+                        ptr,
+                        extents,
+                        pitches,
+                        std::move(deleter),
+                        Alignment<alignment>{}};
+                    return buffer;
+                }
+            }
+        };
+
+        template<typename T_Platform, typename T_Any>
+        struct IsDataAccessible::FirstPath<syclGeneric::Device<T_Platform>, T_Any>
+        {
+            bool operator()(syclGeneric::Device<T_Platform>& device, T_Any const& view) const
+            {
+                auto [sycl_device, sycl_context] = device.getNativeHandle();
+                auto sycl_alloc_type = sycl::get_pointer_type(data(view), sycl_context);
+
+                if(sycl_alloc_type != sycl::usm::alloc::unknown)
+                {
+                    try
+                    {
+                        sycl::device deviceAssiciatedWithData = sycl::get_pointer_device(data(view), sycl_context);
+                        if(deviceAssiciatedWithData == sycl_device)
+                        {
+                            // sycl device allocated the memory
+                            return true;
+                        }
+                    }
+                    catch(...)
+                    {
+                    }
+                }
+
+                if(sycl_alloc_type == sycl::usm::alloc::shared)
+                {
+                    // is shared within the device context
+                    return true;
+                }
+                else if(sycl_alloc_type == sycl::usm::alloc::unknown)
+                {
+                    // assume that a sycl cpu device can always access host memory
+                    if constexpr(
+                        std::is_same_v<ALPAKA_TYPEOF(getApi(view)), api::Host>
+                        && std::is_same_v<ALPAKA_TYPEOF(getDeviceKind(device)), deviceKind::Cpu>)
+                        return true;
+                }
+
+                return false;
             }
         };
 

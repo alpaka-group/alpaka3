@@ -69,6 +69,14 @@ namespace alpaka
         template<typename T>
         concept IsPointer = std::is_pointer_v<T>;
 
+
+        template<typename T, typename T_ValueType = alpaka::NotRequired>
+        concept View = MdSpan<T, T_ValueType> && requires(T t) {
+            {
+                getApi(t)
+            } -> alpaka::concepts::Api;
+        };
+
     } // namespace concepts
 
     namespace internal

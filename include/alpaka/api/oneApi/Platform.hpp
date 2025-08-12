@@ -9,6 +9,9 @@
 #if ALPAKA_LANG_ONEAPI
 #    include "alpaka/api/oneApi/Api.hpp"
 #    include "alpaka/api/syclGeneric/Platform.hpp"
+#    include "alpaka/example/executors.hpp"
+#    include "alpaka/internal.hpp"
+#    include "alpaka/onHost/internal.hpp"
 #    include "alpaka/tag.hpp"
 
 namespace alpaka
@@ -98,5 +101,48 @@ namespace alpaka
         };
     } // namespace internal
 } // namespace alpaka
+
+namespace alpaka::onHost::internal
+{
+    template<alpaka::deviceKind::concepts::DeviceKind T_DeviceKind, typename T_Any>
+    struct IsDataAccessible::SecondPath<api::OneApi, T_DeviceKind, T_Any>
+    {
+        static void getPtrType(auto const& platform, auto& sycl_data_alloc_type, auto const& view)
+        {
+            auto sycl_context = platform->getContext();
+            auto sycl_alloc_type = get_pointer_type(Data::data(view), sycl_context);
+
+            if(sycl_alloc_type != sycl::usm::alloc::unknown)
+                sycl_data_alloc_type = sycl_alloc_type;
+        }
+
+        bool operator()(api::OneApi usedApi, T_DeviceKind deviceKind, T_Any const& view) const
+        {
+            auto deviceKindList = onHost::supportedDevices(usedApi);
+            auto sycl_data_alloc_type = sycl::usm::alloc::unknown;
+            alpaka::apply(
+                [&sycl_data_alloc_type, &view](auto... devKind)
+                {
+                    (getPtrType(
+                         onHost::make_sharedSingleton<syclGeneric::Platform<api::OneApi, ALPAKA_TYPEOF(devKind)>>(),
+                         sycl_data_alloc_type,
+                         view),
+                     ...);
+                },
+                deviceKindList);
+
+            if(std::is_same_v<T_DeviceKind, deviceKind::Cpu>)
+            {
+                /* If the device kind is not CPU and usm alloc type is shared, we do not know if the memory is shared
+                 * within the same sycl context. Therefor only know we mark only shared and host alloced memory
+                 * accessible in case the device kind is CPU.
+                 */
+                if(sycl_data_alloc_type == sycl::usm::alloc::shared || sycl_data_alloc_type == sycl::usm::alloc::host)
+                    return true;
+            }
+            return false;
+        }
+    };
+} // namespace alpaka::onHost::internal
 
 #endif

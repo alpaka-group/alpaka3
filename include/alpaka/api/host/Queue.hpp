@@ -289,11 +289,18 @@ namespace alpaka::onHost
                 // avoid that we pass a ManagedView and convert non alpaka data views
                 alpaka::concepts::MdSpan<T_Value> auto dataView = makeView(dest);
 
-                alpaka::internal::generic::fill(
-                    queue,
-                    std::get<0>(executors),
-                    dataView.getSubView(extents),
-                    elementValue);
+                if constexpr(std::tuple_size_v<ALPAKA_TYPEOF(executors)> >= 1u)
+                    alpaka::internal::generic::fill(
+                        queue,
+                        std::get<0>(executors),
+                        dataView.getSubView(extents),
+                        elementValue);
+                else
+                    alpaka::internal::generic::fill(
+                        queue,
+                        exec::cpuSerial,
+                        dataView.getSubView(extents),
+                        elementValue);
             }
         };
 
