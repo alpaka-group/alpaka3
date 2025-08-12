@@ -90,11 +90,16 @@ namespace alpaka::onHost
                 ThreadSpec<T_NumBlocks, T_NumThreads> const& threadBlocking,
                 auto const& kernelBundle)
             {
+                auto deviceKind = alpaka::getDeviceKind(m_device);
                 m_workerThread.submit(
-                    [=]()
+                    [kernelBundle, executor, threadBlocking, deviceKind]()
                     {
+                        auto moreLayer = Dict{
+                            DictEntry(object::api, api::host),
+                            DictEntry(object::deviceKind, deviceKind),
+                            DictEntry(object::exec, executor)};
                         onAcc::Acc acc = makeAcc(executor, threadBlocking);
-                        acc(kernelBundle);
+                        acc(kernelBundle, moreLayer);
                     });
             }
 
@@ -109,14 +114,15 @@ namespace alpaka::onHost
                 auto const& kernelBundle)
             {
                 auto threadBlocking = internal::adjustThreadSpec(*m_device.get(), executor, frameSpec, kernelBundle);
+                auto deviceKind = alpaka::getDeviceKind(m_device);
                 m_workerThread.submit(
-                    [=, this]()
+                    [kernelBundle, executor, threadBlocking, deviceKind, frameSpec]()
                     {
                         auto moreLayer = Dict{
                             DictEntry(frame::count, frameSpec.m_numFrames),
                             DictEntry(frame::extent, frameSpec.m_frameExtent),
                             DictEntry(object::api, api::host),
-                            DictEntry(object::deviceKind, alpaka::getDeviceKind(m_device)),
+                            DictEntry(object::deviceKind, deviceKind),
                             DictEntry(object::exec, executor)};
                         onAcc::Acc acc = makeAcc(executor, threadBlocking);
                         acc(kernelBundle, moreLayer);

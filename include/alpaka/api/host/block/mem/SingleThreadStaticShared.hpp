@@ -5,7 +5,6 @@
 #pragma once
 
 #include "alpaka/api/host/block/mem/SharedStorage.hpp"
-#include "alpaka/core/Vectorize.hpp"
 #include "alpaka/core/common.hpp"
 
 #include <cstdint>
@@ -14,7 +13,7 @@ namespace alpaka::onAcc
 {
     namespace cpu
     {
-        template<std::size_t TDataAlignBytes = core::vectorization::defaultAlignment>
+        template<std::size_t TDataAlignBytes>
         struct SingleThreadStaticShared : private detail::SharedStorage<TDataAlignBytes>
         {
             using Base = detail::SharedStorage<TDataAlignBytes>;

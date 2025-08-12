@@ -4,7 +4,6 @@
 
 #pragma once
 #include "alpaka/api/host/block/mem/SharedStorage.hpp"
-#include "alpaka/core/Vectorize.hpp"
 #include "alpaka/core/common.hpp"
 
 #if ALPAKA_OMP
@@ -13,7 +12,7 @@ namespace alpaka::onAcc
 {
     namespace cpu
     {
-        template<std::size_t TDataAlignBytes = core::vectorization::defaultAlignment>
+        template<std::size_t TDataAlignBytes>
         struct OmpStaticShared : private detail::SharedStorage<TDataAlignBytes>
         {
             template<typename T, size_t T_unique>

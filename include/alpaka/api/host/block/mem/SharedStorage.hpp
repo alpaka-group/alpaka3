@@ -5,7 +5,6 @@
 #pragma once
 
 #include "alpaka/core/Assert.hpp"
-#include "alpaka/core/Vectorize.hpp"
 
 #include <algorithm>
 #include <array>
@@ -23,7 +22,7 @@ namespace alpaka::onAcc::cpu::detail
     //! Implementation of static block shared memory provider.
     //!
     //! externally allocated fixed-size memory, likely provided by BlockSharedMemDynMember.
-    template<std::size_t TMinDataAlignBytes = core::vectorization::defaultAlignment>
+    template<std::size_t TMinDataAlignBytes>
     class SharedStorage
     {
         struct alignas(TMinDataAlignBytes) MetaData

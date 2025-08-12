@@ -32,11 +32,6 @@ namespace alpaka::onHost
             {
             }
 
-            void operator()(auto const& kernelBundle) const
-            {
-                this->operator()(kernelBundle, Dict{DictEntry{alpaka::Empty{}, alpaka::Empty{}}});
-            }
-
             void operator()(auto const& kernelBundle, auto const& dict) const
             {
                 // open scope to threadsafe set omp nested and dynamic
@@ -52,7 +47,9 @@ namespace alpaka::onHost
                     {
                         // copy from num blocks to derive correct index type
                         auto blockIdx = m_threadBlocking.m_numBlocks;
-                        auto blockSharedMem = onAcc::cpu::OmpStaticShared{};
+                        constexpr uint32_t simdWidth
+                            = alpaka::getArchSimdWidth<uint8_t>(api::host, ALPAKA_TYPEOF(dict[object::deviceKind]){});
+                        auto blockSharedMem = onAcc::cpu::OmpStaticShared<simdWidth>{};
 
                         // dynamic shared mem
                         uint32_t blockDynSharedMemBytes = onHost::getDynSharedMemBytes(
