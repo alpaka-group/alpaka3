@@ -7,13 +7,13 @@
 #include "alpaka/api/host/Api.hpp"
 #include "alpaka/api/host/Queue.hpp"
 #include "alpaka/api/host/sysInfo.hpp"
+#include "alpaka/api/util.hpp"
 #include "alpaka/core/alignedAlloc.hpp"
 #include "alpaka/internal.hpp"
 #include "alpaka/onHost.hpp"
 #include "alpaka/onHost/Device.hpp"
 #include "alpaka/onHost/DeviceProperties.hpp"
 #include "alpaka/onHost/Handle.hpp"
-#include "alpaka/onHost/Queue.hpp"
 #include "alpaka/onHost/mem/ManagedView.hpp"
 #include "alpaka/onHost/trait.hpp"
 #include "alpaka/utility.hpp"
@@ -136,69 +136,27 @@ namespace alpaka::onHost
         template<typename T_Type, typename T_Platform, alpaka::concepts::Vector T_Extents>
         struct Alloc::Op<T_Type, cpu::Device<T_Platform>, T_Extents>
         {
-            static consteval uint32_t highestPowerOfTwo(uint32_t value)
-            {
-                uint32_t result = 1u;
-                while((result << 1u) <= value)
-                {
-                    result <<= 1u;
-                }
-                return result;
-            }
-
             auto operator()(cpu::Device<T_Platform>& device, T_Extents const& extents) const
             {
-                using IdxType = typename T_Extents::type;
-
-                constexpr uint32_t typeAlignmentBytes = alignof(T_Type);
-                constexpr uint32_t simdPackBytes = alpaka::getArchSimdWidth<T_Type>(
-                                                       ALPAKA_TYPEOF(getApi(device)){},
-                                                       ALPAKA_TYPEOF(getDeviceKind(device)){})
-                                                   * sizeof(T_Type);
-                constexpr uint32_t bestSimdPackBytes = highestPowerOfTwo(simdPackBytes);
-                constexpr IdxType alignment = std::max(bestSimdPackBytes, typeAlignmentBytes);
-
-                constexpr auto dim = T_Extents::dim();
+                constexpr uint32_t alignment = api::util::simdOptimizedAlignment<T_Type>(
+                    ALPAKA_TYPEOF(getApi(device)){},
+                    ALPAKA_TYPEOF(getDeviceKind(device)){});
+                auto [memSizeInByte, pitches] = api::util::emulatedAlignedMemDescription<T_Type>(alignment, extents);
 
                 auto deviceDependency = onHost::Device{device.getSharedPtr()};
 
-                if constexpr(dim == 1u)
-                {
-                    auto* ptr = reinterpret_cast<T_Type*>(
-                        alpaka::core::alignedAlloc(alignment, extents.x() * sizeof(T_Type)));
-                    // deviceDependency is captured to keep the device alive until the memory is deleted
-                    auto deleter = [ptr, deviceDependency]() { alpaka::core::alignedFree(alignment, ptr); };
-                    auto pitches = typename T_Extents::UniVec{sizeof(T_Type)};
-                    auto buffer = onHost::ManagedView{
-                        deviceDependency,
-                        ptr,
-                        extents,
-                        pitches,
-                        std::move(deleter),
-                        Alignment<alignment>{}};
-                    return buffer;
-                }
-                else
-                {
-                    IdxType rowExtentInBytes = extents.x() * static_cast<IdxType>(sizeof(T_Type));
-                    IdxType rowPitchInBytes = divCeil(rowExtentInBytes, alignment) * alignment;
-                    auto pitches = alpaka::mem::calculatePitches<T_Type>(extents, rowPitchInBytes);
+                T_Type* ptr = reinterpret_cast<T_Type*>(alpaka::core::alignedAlloc(alignment, memSizeInByte));
+                // deviceDependency is captured to keep the device alive until the memory is deleted
+                auto deleter = [ptr, deviceDependency]() { alpaka::core::alignedFree(alignment, ptr); };
 
-                    size_t memSizeInByte = pCast<size_t>(pitches)[0] * static_cast<size_t>(extents[0]);
-
-                    auto* ptr = reinterpret_cast<T_Type*>(alpaka::core::alignedAlloc(alignment, memSizeInByte));
-                    // deviceDependency is captured to keep the device alive until the memory is deleted
-                    auto deleter = [ptr, deviceDependency]() { alpaka::core::alignedFree(alignment, ptr); };
-
-                    auto buffer = onHost::ManagedView{
-                        deviceDependency,
-                        ptr,
-                        extents,
-                        pitches,
-                        std::move(deleter),
-                        Alignment<alignment>{}};
-                    return buffer;
-                }
+                auto managedView = onHost::ManagedView{
+                    deviceDependency,
+                    ptr,
+                    extents,
+                    pitches,
+                    std::move(deleter),
+                    Alignment<alignment>{}};
+                return managedView;
             }
         };
 

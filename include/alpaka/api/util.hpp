@@ -6,7 +6,11 @@
 #pragma once
 
 #include "alpaka/CVec.hpp"
+#include "alpaka/api/trait.hpp"
 #include "alpaka/core/common.hpp"
+#include "alpaka/mem/DataPitches.hpp"
+#include "alpaka/tag.hpp"
+#include "alpaka/utility.hpp"
 
 #include <cstdint>
 #include <utility>
@@ -83,5 +87,63 @@ namespace alpaka::api::util
                 input[maxIdx] = divExZero(input[maxIdx], IdxType{2u});
         }
         return input;
+    }
+
+    /** provides a memory description to create multidimensional linewise aligned memory within a one dimensional
+     * byte area
+     *
+     * @param alignment data alignment in bytes
+     * @return tuple with the linearized data blob size in bytes and multi-dimensional pitches,
+     * std::tuple(numBytes,pitcheMD)
+     */
+    template<typename T_ValueType, alpaka::concepts::Vector T_Extents>
+    inline auto emulatedAlignedMemDescription(uint32_t alignmentInByte, T_Extents extents)
+    {
+        constexpr auto dim = T_Extents::dim();
+        if constexpr(dim == 1u)
+        {
+            size_t memSizeInByte = static_cast<size_t>(extents.x()) * sizeof(T_ValueType);
+            alpaka::concepts::Vector auto pitches = typename T_Extents::UniVec{sizeof(T_ValueType)};
+            return std::make_tuple(memSizeInByte, pitches);
+        }
+        else
+        {
+            using IdxType = typename T_Extents::type;
+            auto alignment = static_cast<IdxType>(alignmentInByte);
+
+            IdxType rowExtentInBytes = extents.x() * static_cast<IdxType>(sizeof(T_ValueType));
+            IdxType rowPitchInBytes = alpaka::divCeil(rowExtentInBytes, alignment) * alignment;
+            auto pitches = alpaka::mem::calculatePitches<T_ValueType>(extents, rowPitchInBytes);
+
+            size_t memSizeInByte = static_cast<size_t>(pitches[0]) * static_cast<size_t>(extents[0]);
+            return std::make_tuple(memSizeInByte, pitches);
+        }
+    }
+
+    consteval uint32_t highestPowerOfTwo(uint32_t value)
+    {
+        uint32_t result = 1u;
+        while((result << 1u) <= value)
+        {
+            result <<= 1u;
+        }
+        return result;
+    }
+
+    /** Calculate the best alignment for SIMD optimized memory allocation
+     *
+     * @param api the API to use
+     * @param deviceKind the device kind to use
+     * @return the best alignment in bytes, will be a power of two value
+     */
+    template<typename T_ValueType>
+    inline constexpr auto simdOptimizedAlignment(auto api, alpaka::deviceKind::concepts::DeviceKind auto deviceKind)
+    {
+        constexpr uint32_t typeAlignmentBytes = alignof(T_ValueType);
+        constexpr uint32_t simdPackBytes
+            = alpaka::getArchSimdWidth<T_ValueType>(api, deviceKind) * sizeof(T_ValueType);
+        constexpr uint32_t bestSimdPackBytes = highestPowerOfTwo(simdPackBytes);
+        constexpr uint32_t alignment = std::max(bestSimdPackBytes, typeAlignmentBytes);
+        return alignment;
     }
 } // namespace alpaka::api::util

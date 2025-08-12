@@ -9,6 +9,7 @@
 #if ALPAKA_LANG_SYCL
 
 #    include "alpaka/api/syclGeneric/onAcc.hpp"
+#    include "alpaka/api/util.hpp"
 #    include "alpaka/interface.hpp"
 #    include "alpaka/internal.hpp"
 #    include "alpaka/onAcc/Acc.hpp"
@@ -180,87 +181,39 @@ namespace alpaka::onHost
     template<typename T_Type, typename T_Device, alpaka::concepts::Vector T_Extents>
     struct internal::AllocAsync::Op<T_Type, syclGeneric::Queue<T_Device>, T_Extents>
     {
-        static consteval uint32_t highestPowerOfTwo(uint32_t value)
-        {
-            uint32_t result = 1u;
-            while((result << 1u) <= value)
-            {
-                result <<= 1u;
-            }
-            return result;
-        }
-
         auto operator()(syclGeneric::Queue<T_Device>& queue, T_Extents const& extents) const
         {
-            using IdxType = typename T_Extents::type;
-
-            constexpr uint32_t typeAlignmentBytes = alignof(T_Type);
-            constexpr uint32_t simdPackBytes = alpaka::getArchSimdWidth<T_Type>(
-                                                   ALPAKA_TYPEOF(getApi(queue)){},
-                                                   ALPAKA_TYPEOF(getDeviceKind(queue)){})
-                                               * sizeof(T_Type);
-            constexpr uint32_t bestSimdPackBytes = highestPowerOfTwo(simdPackBytes);
-            constexpr IdxType alignment = std::max(bestSimdPackBytes, typeAlignmentBytes);
+            auto device = queue.getDevice();
+            constexpr uint32_t alignment = api::util::simdOptimizedAlignment<T_Type>(
+                ALPAKA_TYPEOF(getApi(device)){},
+                ALPAKA_TYPEOF(getDeviceKind(device)){});
+            auto [memSizeInByte, pitches] = api::util::emulatedAlignedMemDescription<T_Type>(alignment, extents);
 
             auto deviceDependency = onHost::Device{queue.getDevice()->getSharedPtr()};
             sycl::queue sycl_queue = queue.getNativeHandle();
             auto queueDependency = queue.getSharedPtr();
 
-            constexpr auto dim = T_Extents::dim();
-            if constexpr(dim == 1u)
+
+            T_Type* ptr = reinterpret_cast<T_Type*>(sycl::aligned_alloc_device(alignment, memSizeInByte, sycl_queue));
+            auto deleter = [queueDep = std::move(queueDependency), ptr]()
             {
-                T_Type* ptr = reinterpret_cast<T_Type*>(
-                    sycl::aligned_alloc_device(alignment, extents.x() * sizeof(T_Type), sycl_queue));
-                auto pitches = typename T_Extents::UniVec{sizeof(T_Type)};
+                /* Sycl is not executing the free in the queue, only the sycl context is taken from the queue,
+                 * therefore, we need to wait for the queue first before the memory is destroyed.
+                 * This avoids work is executed on the memory while we call the destructor because the last
+                 * managed handle is running out of a scope.
+                 */
+                internal::wait(*queueDep.get());
+                sycl::free(ptr, queueDep->getNativeHandle());
+            };
 
-                auto deleter = [queueDep = std::move(queueDependency), ptr]()
-                {
-                    /* @todo: validate if this is still required
-                     * This wait is a workaround because SYCL is not enqueuing the deallocation in a queue and
-                     * therefore the free is executed during it is still in use e.g. in a kernel
-                     */
-                    internal::wait(*queueDep.get());
-                    sycl::free(ptr, queueDep->getNativeHandle());
-                };
-
-                auto buffer = onHost::ManagedView{
-                    deviceDependency,
-                    ptr,
-                    extents,
-                    pitches,
-                    std::move(deleter),
-                    Alignment<alignment>{}};
-                return buffer;
-            }
-            else
-            {
-                IdxType rowExtentInBytes = extents.x() * static_cast<IdxType>(sizeof(T_Type));
-                IdxType rowPitchInBytes = divCeil(rowExtentInBytes, alignment) * alignment;
-                auto pitches = alpaka::mem::calculatePitches<T_Type>(extents, rowPitchInBytes);
-
-                size_t memSizeInByte = pCast<size_t>(pitches)[0] * static_cast<size_t>(extents[0]);
-                T_Type* ptr
-                    = reinterpret_cast<T_Type*>(sycl::aligned_alloc_device(alignment, memSizeInByte, sycl_queue));
-
-                auto deleter = [queueDep = std::move(queueDependency), ptr]()
-                {
-                    /* @todo: validate if this is still required
-                     * This wait is a workaround because SYCL is not enqueuing the deallocation in a queue and
-                     * therefore the free is executed during it is still in use e.g. in a kernel
-                     */
-                    internal::wait(*queueDep.get());
-                    sycl::free(ptr, queueDep->getNativeHandle());
-                };
-
-                auto buffer = onHost::ManagedView{
-                    deviceDependency,
-                    ptr,
-                    extents,
-                    pitches,
-                    std::move(deleter),
-                    Alignment<alignment>{}};
-                return buffer;
-            }
+            auto managedView = onHost::ManagedView{
+                deviceDependency,
+                ptr,
+                extents,
+                pitches,
+                std::move(deleter),
+                Alignment<alignment>{}};
+            return managedView;
         }
     };
 } // namespace alpaka::onHost

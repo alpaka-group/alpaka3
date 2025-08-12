@@ -9,6 +9,7 @@
 #include "alpaka/api/host/exec/OmpBlocks.hpp"
 #include "alpaka/api/host/exec/OmpThreads.hpp"
 #include "alpaka/api/host/exec/Serial.hpp"
+#include "alpaka/api/util.hpp"
 #include "alpaka/core/CallbackThread.hpp"
 #include "alpaka/core/alignedAlloc.hpp"
 #include "alpaka/interface.hpp"
@@ -325,60 +326,28 @@ namespace alpaka::onHost
 
             auto operator()(cpu::Queue<T_Device>& queue, T_Extents const& extents) const
             {
-                using IdxType = typename T_Extents::type;
-
-                constexpr uint32_t typeAlignmentBytes = alignof(T_Type);
-                constexpr uint32_t simdPackBytes = alpaka::getArchSimdWidth<T_Type>(
-                                                       ALPAKA_TYPEOF(getApi(queue)){},
-                                                       ALPAKA_TYPEOF(getDeviceKind(queue)){})
-                                                   * sizeof(T_Type);
-                constexpr uint32_t bestSimdPackBytes = highestPowerOfTwo(simdPackBytes);
-                constexpr IdxType alignment = std::max(bestSimdPackBytes, typeAlignmentBytes);
-
-                constexpr auto dim = T_Extents::dim();
+                auto device = queue.getDevice();
+                constexpr uint32_t alignment = api::util::simdOptimizedAlignment<T_Type>(
+                    ALPAKA_TYPEOF(getApi(device)){},
+                    ALPAKA_TYPEOF(getDeviceKind(device)){});
+                auto [memSizeInByte, pitches] = api::util::emulatedAlignedMemDescription<T_Type>(alignment, extents);
 
                 auto deviceDependency = onHost::Device{queue.getDevice()->getSharedPtr()};
                 auto queueDependency = queue.getSharedPtr();
 
-                if constexpr(dim == 1u)
-                {
-                    auto* ptr = reinterpret_cast<T_Type*>(
-                        alpaka::core::alignedAlloc(alignment, extents.x() * sizeof(T_Type)));
-                    // queueDependency is captured to keep the device alive until the memory is deleted
-                    auto deleter = [ptr, queueDep = std::move(queueDependency)]()
-                    { internal::enqueue(*queueDep.get(), [ptr]() { alpaka::core::alignedFree(alignment, ptr); }); };
+                T_Type* ptr = reinterpret_cast<T_Type*>(alpaka::core::alignedAlloc(alignment, memSizeInByte));
+                // queueDependency is captured to keep the device alive until the memory is deleted
+                auto deleter = [ptr, queueDep = std::move(queueDependency)]()
+                { internal::enqueue(*queueDep.get(), [ptr]() { alpaka::core::alignedFree(alignment, ptr); }); };
 
-                    auto pitches = typename T_Extents::UniVec{sizeof(T_Type)};
-                    auto buffer = onHost::ManagedView{
-                        deviceDependency,
-                        ptr,
-                        extents,
-                        pitches,
-                        std::move(deleter),
-                        Alignment<alignment>{}};
-                    return buffer;
-                }
-                else
-                {
-                    IdxType rowExtentInBytes = extents.x() * static_cast<IdxType>(sizeof(T_Type));
-                    IdxType rowPitchInBytes = divCeil(rowExtentInBytes, alignment) * alignment;
-                    auto pitches = alpaka::mem::calculatePitches<T_Type>(extents, rowPitchInBytes);
-
-                    size_t memSizeInByte = pCast<size_t>(pitches)[0] * static_cast<size_t>(extents[0]);
-
-                    auto* ptr = reinterpret_cast<T_Type*>(alpaka::core::alignedAlloc(alignment, memSizeInByte));
-                    auto deleter = [ptr, queueDep = std::move(queueDependency)]()
-                    { internal::enqueue(*queueDep.get(), [ptr]() { alpaka::core::alignedFree(alignment, ptr); }); };
-
-                    auto buffer = onHost::ManagedView{
-                        deviceDependency,
-                        ptr,
-                        extents,
-                        pitches,
-                        std::move(deleter),
-                        Alignment<alignment>{}};
-                    return buffer;
-                }
+                auto managedView = onHost::ManagedView{
+                    deviceDependency,
+                    ptr,
+                    extents,
+                    pitches,
+                    std::move(deleter),
+                    Alignment<alignment>{}};
+                return managedView;
             }
         };
     } // namespace internal

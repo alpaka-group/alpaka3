@@ -16,6 +16,7 @@
 #    include "alpaka/api/unifiedCudaHip/ComputeApi.hpp"
 #    include "alpaka/api/unifiedCudaHip/MemcpyKind.hpp"
 #    include "alpaka/api/unifiedCudaHip/concepts.hpp"
+#    include "alpaka/api/util.hpp"
 #    include "alpaka/core/ApiCudaRt.hpp"
 #    include "alpaka/core/UniformCudaHip.hpp"
 #    include "alpaka/internal.hpp"
@@ -541,34 +542,12 @@ namespace alpaka::onHost
                  * @todo validate if memory is always aligtne dto 256 byte
                  */
                 constexpr uint32_t alignment = 128u;
+                auto [memSizeInByte, pitches] = api::util::emulatedAlignedMemDescription<T_Type>(alignment, extents);
 
                 T_Type* ptr = nullptr;
-                auto pitches = typename T_Extents::UniVec{sizeof(T_Type)};
-
-                using Idx = typename T_Extents::type;
-
-                constexpr auto dim = T_Extents::dim();
-                if constexpr(dim == 1u)
-                {
-                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
-                        ApiInterface,
-                        ApiInterface::mallocAsync(
-                            (void**) &ptr,
-                            static_cast<std::size_t>(extents.x()) * sizeof(T_Type),
-                            queue.getNativeHandle()));
-                }
-                else if constexpr(dim >= 2u)
-                {
-                    Idx rowExtentInBytes = extents.x() * static_cast<Idx>(sizeof(T_Type));
-                    Idx rowPitchInBytes = divCeil(rowExtentInBytes, static_cast<Idx>(alignment)) * alignment;
-                    pitches = alpaka::mem::calculatePitches<T_Type>(extents, rowPitchInBytes);
-
-                    size_t memSizeInByte = pCast<size_t>(pitches)[0] * static_cast<size_t>(extents[0]);
-
-                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
-                        ApiInterface,
-                        ApiInterface::mallocAsync((void**) &ptr, memSizeInByte, queue.getNativeHandle()));
-                }
+                ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
+                    ApiInterface,
+                    ApiInterface::mallocAsync((void**) &ptr, memSizeInByte, queue.getNativeHandle()));
 
                 auto deviceDependency = onHost::Device{queue.getDevice()->getSharedPtr()};
                 auto queueDependency = onHost::Queue{queue.getSharedPtr()};
@@ -580,14 +559,14 @@ namespace alpaka::onHost
                         ApiInterface::freeAsync(ptr, queueDependency.getNativeHandle()));
                 };
 
-                auto buffer = onHost::ManagedView{
+                auto managedView = onHost::ManagedView{
                     deviceDependency,
                     ptr,
                     extents,
                     pitches,
                     std::move(deleter),
                     Alignment<alignment>{}};
-                return buffer;
+                return managedView;
             }
         };
     } // namespace internal
