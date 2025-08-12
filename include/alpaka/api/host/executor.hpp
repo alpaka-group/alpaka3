@@ -8,7 +8,6 @@
 #include "alpaka/api/trait.hpp"
 #include "alpaka/tag.hpp"
 
-#include <cassert>
 #include <string>
 #include <tuple>
 

@@ -164,7 +164,7 @@ namespace alpaka::onAcc::internal
                     [this](alpaka::concepts::CVector auto idx, auto const& acc, auto&& func, auto&&... data) constexpr
                     {
                         // recursively call until no Simd type is the result
-                        return operator()(data[idx.x()]...);
+                        return this->operator()(data[idx.x()]...);
                     },
                     m_acc,
                     m_reduceOp,

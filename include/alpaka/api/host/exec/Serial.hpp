@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "alpaka/Vec.hpp"
 #include "alpaka/api/host/IdxLayer.hpp"
 #include "alpaka/api/host/block/mem/SingleThreadStaticShared.hpp"
 #include "alpaka/api/host/block/sync/NoOp.hpp"

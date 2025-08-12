@@ -7,7 +7,6 @@
 #include "alpaka/utility.hpp"
 
 #include <cstdint>
-#include <new>
 
 namespace alpaka::onHost::internal
 {

@@ -10,7 +10,6 @@
 #include "alpaka/mem/trait.hpp"
 #include "alpaka/onHost/trait.hpp"
 
-#include <memory>
 #include <sstream>
 
 namespace alpaka

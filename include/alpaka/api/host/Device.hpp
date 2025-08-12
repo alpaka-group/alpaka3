@@ -6,11 +6,9 @@
 
 #include "alpaka/api/host/Api.hpp"
 #include "alpaka/api/host/Queue.hpp"
-#include "alpaka/api/host/sysInfo.hpp"
 #include "alpaka/api/util.hpp"
 #include "alpaka/core/alignedAlloc.hpp"
 #include "alpaka/internal.hpp"
-#include "alpaka/onHost.hpp"
 #include "alpaka/onHost/Device.hpp"
 #include "alpaka/onHost/DeviceProperties.hpp"
 #include "alpaka/onHost/Handle.hpp"
