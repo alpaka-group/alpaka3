@@ -32,11 +32,6 @@ namespace alpaka::onHost
             {
             }
 
-            void operator()(auto const& kernelBundle) const
-            {
-                this->operator()(kernelBundle, Dict{DictEntry{alpaka::Empty{}, alpaka::Empty{}}});
-            }
-
             void operator()(auto const& kernelBundle, auto const& dict) const
             {
                 using NumThreadsVecType = typename T_ThreadSpec::NumThreadsVecType;
@@ -47,7 +42,9 @@ namespace alpaka::onHost
                 {
                     // copy from num blocks to derive correct index type
                     auto blockIdx = m_threadBlocking.m_numBlocks;
-                    auto blockSharedMem = onAcc::cpu::SingleThreadStaticShared{};
+                    constexpr uint32_t simdWidth
+                        = alpaka::getArchSimdWidth<uint8_t>(api::host, ALPAKA_TYPEOF(dict[object::deviceKind]){});
+                    auto blockSharedMem = onAcc::cpu::SingleThreadStaticShared<simdWidth>{};
 
                     // dynamic shared mem
                     uint32_t blockDynSharedMemBytes
