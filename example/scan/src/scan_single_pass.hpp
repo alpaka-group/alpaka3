@@ -316,13 +316,13 @@ public:
                     predecessorIdx >= 0;
                     predecessorIdx--)
                 {
-#if ALPAKA_ARCH_PTX
+#if ALPAKA_ARCH_PTX && 0
                     __nanosleep(150);
 #endif
-                    auto f = flags[predecessorIdx];
+                    Flag f = flags[predecessorIdx];
                     while(f == Flag::Uninitialized)
                     {
-#if ALPAKA_ARCH_PTX
+#if ALPAKA_ARCH_PTX && 0
                         __nanosleep(350);
 #endif
                         f = flags[predecessorIdx];
