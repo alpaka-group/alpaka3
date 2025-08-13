@@ -118,7 +118,36 @@ TEMPLATE_LIST_TEST_CASE("alloc", "", TestApis)
 
     onHost::Device device = devSelector.makeDevice(0);
 
-    std::cout << deviceSpec.getApi().getName() << "on " << device.getName() << std::endl;
+    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
 
     allocAsyncImplicitWait(device, exec);
+}
+
+TEMPLATE_LIST_TEST_CASE("alloc zero bytes", "", TestApis)
+{
+    auto cfg = TestType::makeDict();
+    auto deviceSpec = cfg[object::deviceSpec];
+
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+
+    onHost::Device device = devSelector.makeDevice(0);
+
+    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+
+    auto hostDevice = onHost::makeHostDevice();
+
+    // test to allocate zero byte memory to validate of the allocation and free works as expected
+    int dataSize = 0;
+
+    [[maybe_unused]] auto hostView = onHost::allocHost<int>(dataSize);
+    [[maybe_unused]] auto hostViewAsync = onHost::allocAsync<int>(onHost::makeHostDevice().makeQueue(), dataSize);
+    [[maybe_unused]] auto hostViewMapped = onHost::allocMapped<int>(device, dataSize);
+    [[maybe_unused]] auto deviceView = onHost::alloc<int>(device, dataSize);
+    [[maybe_unused]] auto deviceViewAsync = onHost::allocAsync<int>(device.makeQueue(), dataSize);
+    [[maybe_unused]] auto managedView = onHost::allocManaged<int>(device, dataSize);
 }
