@@ -19,7 +19,8 @@ namespace alpaka::onHost::internal
 #elif defined(__riscv_vector)
             64u;
 #elif defined(__riscv)
-            32u;
+            // do not use vectors if the vector extension is not set
+            sizeof(T_Type);
         // ARM e.g. nvidia grace hopper
 #elif defined(__ARM_FEATURE_SVE) || defined(__ARM_FEATURE_SVE2_AES) || defined(__ARM_FEATURE_DOTPROD)
             64u;
