@@ -22,6 +22,11 @@ namespace alpaka::onHost
         return AutoDeviceMappings{};
     }
 
+    /** Get alist of supported device specifications
+     *
+     * @param api a single api
+     * @return tuple of device specifications
+     */
     constexpr auto getDeviceSpecsFor(auto const api)
     {
         return std::apply(
@@ -29,6 +34,17 @@ namespace alpaka::onHost
                 return std::make_tuple(DeviceSpec{api, devType}...);
             },
             supportedDevices(api));
+    }
+
+    /** Get alist of supported device specifications
+     *
+     * @param apiList a tuple with APIs
+     * @return tuple of device specifications
+     */
+    template<alpaka::concepts::Api... T_Apis>
+    constexpr auto getDeviceSpecsFor(std::tuple<T_Apis...> const apiList)
+    {
+        return std::apply([](auto... api) constexpr { return std::tuple_cat(getDeviceSpecsFor(api)...); }, apiList);
     }
 
     constexpr auto createBackendsFor(auto const deviceSpec)

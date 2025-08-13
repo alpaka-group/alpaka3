@@ -7,6 +7,7 @@
 #include "alpaka/api/host/Api.hpp"
 #include "alpaka/onHost/Device.hpp"
 #include "alpaka/tag.hpp"
+#include "alpaka/utility.hpp"
 
 namespace alpaka::onHost
 {
@@ -106,5 +107,11 @@ namespace alpaka::onHost
             deviceKind::cpu}
             .makeDevice(0);
     }
+
+    namespace concepts
+    {
+        template<typename T>
+        concept DeviceSpec = isSpecializationOf_v<T, onHost::DeviceSpec>;
+    } // namespace concepts
 
 } // namespace alpaka::onHost

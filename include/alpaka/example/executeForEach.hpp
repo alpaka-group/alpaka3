@@ -48,4 +48,21 @@ namespace alpaka
         // Pass the tag as first argument to the callable.
         return std::apply([=](auto const&... backends) { return (exe(backends) || ...); }, tupleOfBackends);
     }
+
+    template<onHost::concepts::DeviceSpec... T_DeviceSpecs>
+    inline auto executeForEachIfHasDevice(auto&& callable, std::tuple<T_DeviceSpecs...> const& tupleOfDeviceSpecs)
+    {
+        auto exe = [=](auto const& devSpec)
+        {
+            auto devSelector = onHost::makeDeviceSelector(devSpec);
+            if(devSelector.isAvailable())
+            {
+                callable(devSpec);
+            }
+            return EXIT_SUCCESS;
+        };
+        // Execute the callable once for each enabled accelerator.
+        // Pass the tag as first argument to the callable.
+        return std::apply([=](auto const&... devSpecs) { return (exe(devSpecs) || ...); }, tupleOfDeviceSpecs);
+    }
 } // namespace alpaka
