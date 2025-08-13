@@ -13,7 +13,7 @@
 
 using namespace alpaka;
 
-using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis))>;
+using TestBackends = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis))>;
 
 struct IotaValidate
 {
@@ -103,7 +103,7 @@ void allocAsyncImplicitWait(auto device, alpaka::concepts::Executor auto exec)
     validateAccess(hostDevice, exec::cpuSerial, hostViewMapped);
 }
 
-TEMPLATE_LIST_TEST_CASE("alloc", "", TestApis)
+TEMPLATE_LIST_TEST_CASE("alloc", "", TestBackends)
 {
     auto cfg = TestType::makeDict();
     auto deviceSpec = cfg[object::deviceSpec];
@@ -123,10 +123,11 @@ TEMPLATE_LIST_TEST_CASE("alloc", "", TestApis)
     allocAsyncImplicitWait(device, exec);
 }
 
-TEMPLATE_LIST_TEST_CASE("alloc zero bytes", "", TestApis)
+using TestDeviceSpecs = std::decay_t<decltype(onHost::getDeviceSpecsFor(onHost::enabledApis))>;
+
+TEMPLATE_LIST_TEST_CASE("alloc zero bytes", "", TestDeviceSpecs)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
+    auto deviceSpec = TestType{};
 
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
@@ -150,4 +151,69 @@ TEMPLATE_LIST_TEST_CASE("alloc zero bytes", "", TestApis)
     [[maybe_unused]] auto deviceView = onHost::alloc<int>(device, dataSize);
     [[maybe_unused]] auto deviceViewAsync = onHost::allocAsync<int>(device.makeQueue(), dataSize);
     [[maybe_unused]] auto managedView = onHost::allocManaged<int>(device, dataSize);
+}
+
+/** Evaluates on the host side that all rows start with an addresse which is an multiple of the alignment of the MdSpan
+ *
+ * @attention We evaluate device side pointer on the host side, this is ok because we never dereference the pointer and
+ * relay on pointer addressing only. If we would have at some point MdSPans where the operator[] is only accessible on
+ * the device we need to rewrite this test and perform the evaluations on the compute device.
+ *
+ * @param data multi-dimensional data which is checked
+ */
+void validateAlignment(alpaka::concepts::MdSpan auto data)
+{
+    using DataType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data)>;
+    constexpr uint32_t alignment = alpaka::getAlignment(data).template get<DataType>();
+    alpaka::concepts::Vector auto extents = alpaka::onHost::getExtents(data);
+    // set the number of columns to 1 to evaluate only the rows
+    extents.back() = 1;
+
+    meta::ndLoopIncIdx(
+        extents,
+        [&](auto idx)
+        {
+            auto* rowPtr = &data[idx];
+            CHECK((reinterpret_cast<uint64_t>(rowPtr) % alignment) == 0);
+        });
+}
+
+template<typename T_DataType>
+void prepareAlignmentValidation(auto& device, alpaka::concepts::Vector auto extents)
+{
+    auto hostView = onHost::allocHost<int>(extents);
+    validateAlignment(hostView);
+    auto hostViewAsync = onHost::allocAsync<int>(onHost::makeHostDevice().makeQueue(), extents);
+    validateAlignment(hostViewAsync);
+    auto hostViewMapped = onHost::allocMapped<int>(device, extents);
+    validateAlignment(hostViewMapped);
+    auto deviceView = onHost::alloc<int>(device, extents);
+    validateAlignment(deviceView);
+    auto deviceViewAsync = onHost::allocAsync<int>(device.makeQueue(), extents);
+    validateAlignment(deviceViewAsync);
+    auto managedView = onHost::allocManaged<int>(device, extents);
+    validateAlignment(managedView);
+}
+
+TEMPLATE_LIST_TEST_CASE("alloc alignment", "", TestDeviceSpecs)
+{
+    auto deviceSpec = TestType{};
+
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+
+    onHost::Device device = devSelector.makeDevice(0);
+
+    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+
+    using DataType = int;
+
+    auto extentMdList
+        = std::make_tuple(Vec{5, 7, 3, 11}, Vec{93, 7, 123}, Vec{5, 7, 4111}, Vec{5, 7, 3}, Vec{7, 3}, Vec{3});
+
+    std::apply([&](auto... extents) { (prepareAlignmentValidation<DataType>(device, extents), ...); }, extentMdList);
 }
