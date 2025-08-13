@@ -187,15 +187,17 @@ namespace alpaka::onHost
 
                 auto deleter = [ptr, deviceDependency]()
                 {
-                    void* ptrToFree
-                        = reinterpret_cast<void*>(const_cast<std::remove_volatile_t<ALPAKA_TYPEOF(ptr)>>(ptr));
+                    void* ptrToFree = reinterpret_cast<void*>(
+                        const_cast<
+                            std::add_pointer_t<std::remove_volatile_t<std::remove_pointer_t<ALPAKA_TYPEOF(ptr)>>>>(
+                            ptr));
                     ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::free(ptrToFree));
                 };
 
                 /** Each CUDA/HIP allocation is aligned to at least 128 byte but typically to 256byte
                  *
                  * @todo check if this value can be derived from the device properties
-                 * @todo validate if memory is always aligtne dto 256 byte
+                 * @todo validate if memory is always aligned to 256 byte
                  */
                 constexpr uint32_t alignment = 128u;
 
@@ -220,7 +222,7 @@ namespace alpaka::onHost
                 /** Each CUDA/HIP allocation is aligned to at least 128 byte but typically to 256byte
                  *
                  * @todo check if this value can be derived from the device properties
-                 * @todo validate if memory is always aligtne dto 256 byte
+                 * @todo validate if memory is always aligned to 256 byte
                  */
                 constexpr uint32_t alignment = 128u;
                 auto [memSizeInByte, pitches] = api::util::emulatedAlignedMemDescription<T_Type>(alignment, extents);
@@ -228,7 +230,7 @@ namespace alpaka::onHost
                 auto deviceDependency = onHost::Device{device.getSharedPtr()};
 
                 T_Type* ptr = nullptr;
-                // HIP is faling if zero byte managed memory is allocated, therefore we do not call the allocation
+                // HIP is failing if zero byte managed memory is allocated, therefore we do not call the allocation
                 // method for HIP
                 bool isHipZeroByteAllocation
                     = memSizeInByte == 0 && std::is_same_v<ALPAKA_TYPEOF(getApi(device)), api::Hip>;
@@ -241,8 +243,10 @@ namespace alpaka::onHost
 
                 auto deleter = [ptr, deviceDependency]()
                 {
-                    void* ptrToFree
-                        = reinterpret_cast<void*>(const_cast<std::remove_volatile_t<ALPAKA_TYPEOF(ptr)>>(ptr));
+                    void* ptrToFree = reinterpret_cast<void*>(
+                        const_cast<
+                            std::add_pointer_t<std::remove_volatile_t<std::remove_pointer_t<ALPAKA_TYPEOF(ptr)>>>>(
+                            ptr));
                     ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::free(ptrToFree));
                 };
 
@@ -267,7 +271,7 @@ namespace alpaka::onHost
                 /** Each CUDA/HIP allocation is aligned to at least 128 byte but typically to 256byte
                  *
                  * @todo check if this value can be derived from the device properties
-                 * @todo validate if memory is always aligtne dto 256 byte
+                 * @todo validate if memory is always aligned to 256 byte
                  */
                 constexpr uint32_t alignment = 128u;
                 auto [memSizeInByte, pitches] = api::util::emulatedAlignedMemDescription<T_Type>(alignment, extents);
@@ -284,8 +288,10 @@ namespace alpaka::onHost
 
                 auto deleter = [ptr, deviceDependency]()
                 {
-                    void* ptrToFree
-                        = reinterpret_cast<void*>(const_cast<std::remove_volatile_t<ALPAKA_TYPEOF(ptr)>>(ptr));
+                    void* ptrToFree = reinterpret_cast<void*>(
+                        const_cast<
+                            std::add_pointer_t<std::remove_volatile_t<std::remove_pointer_t<ALPAKA_TYPEOF(ptr)>>>>(
+                            ptr));
                     ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::hostFree(ptrToFree));
                 };
 

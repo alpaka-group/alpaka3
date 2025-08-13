@@ -153,7 +153,7 @@ TEMPLATE_LIST_TEST_CASE("alloc zero bytes", "", TestDeviceSpecs)
     [[maybe_unused]] auto managedView = onHost::allocManaged<int>(device, dataSize);
 }
 
-/** Evaluates on the host side that all rows start with an addresse which is an multiple of the alignment of the MdSpan
+/** Evaluates on the host side that all rows start with an address which is a multiple of the alignment of the MdSpan
  *
  * @attention We evaluate device side pointer on the host side, this is ok because we never dereference the pointer and
  * relay on pointer addressing only. If we would have at some point MdSPans where the operator[] is only accessible on
@@ -181,17 +181,17 @@ void validateAlignment(alpaka::concepts::MdSpan auto data)
 template<typename T_DataType>
 void prepareAlignmentValidation(auto& device, alpaka::concepts::Vector auto extents)
 {
-    auto hostView = onHost::allocHost<int>(extents);
+    auto hostView = onHost::allocHost<T_DataType>(extents);
     validateAlignment(hostView);
-    auto hostViewAsync = onHost::allocAsync<int>(onHost::makeHostDevice().makeQueue(), extents);
+    auto hostViewAsync = onHost::allocAsync<T_DataType>(onHost::makeHostDevice().makeQueue(), extents);
     validateAlignment(hostViewAsync);
-    auto hostViewMapped = onHost::allocMapped<int>(device, extents);
+    auto hostViewMapped = onHost::allocMapped<T_DataType>(device, extents);
     validateAlignment(hostViewMapped);
-    auto deviceView = onHost::alloc<int>(device, extents);
+    auto deviceView = onHost::alloc<T_DataType>(device, extents);
     validateAlignment(deviceView);
-    auto deviceViewAsync = onHost::allocAsync<int>(device.makeQueue(), extents);
+    auto deviceViewAsync = onHost::allocAsync<T_DataType>(device.makeQueue(), extents);
     validateAlignment(deviceViewAsync);
-    auto managedView = onHost::allocManaged<int>(device, extents);
+    auto managedView = onHost::allocManaged<T_DataType>(device, extents);
     validateAlignment(managedView);
 }
 
@@ -216,4 +216,39 @@ TEMPLATE_LIST_TEST_CASE("alloc alignment", "", TestDeviceSpecs)
         = std::make_tuple(Vec{5, 7, 3, 11}, Vec{93, 7, 123}, Vec{5, 7, 4111}, Vec{5, 7, 3}, Vec{7, 3}, Vec{3});
 
     std::apply([&](auto... extents) { (prepareAlignmentValidation<DataType>(device, extents), ...); }, extentMdList);
+}
+
+template<typename T_DataType>
+void volatileBuffers(auto& device, alpaka::concepts::Vector auto extents)
+{
+    // just test if they can be allocated and destructed again
+    auto hostView = onHost::allocHost<T_DataType volatile>(extents);
+    auto hostViewAsync = onHost::allocAsync<T_DataType volatile>(onHost::makeHostDevice().makeQueue(), extents);
+    auto hostViewMapped = onHost::allocMapped<T_DataType volatile>(device, extents);
+    auto deviceView = onHost::alloc<T_DataType volatile>(device, extents);
+    auto deviceViewAsync = onHost::allocAsync<T_DataType volatile>(device.makeQueue(), extents);
+    auto managedView = onHost::allocManaged<T_DataType volatile>(device, extents);
+}
+
+TEMPLATE_LIST_TEST_CASE("alloc volatile memory", "", TestDeviceSpecs)
+{
+    auto deviceSpec = TestType{};
+
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+
+    onHost::Device device = devSelector.makeDevice(0);
+
+    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+
+    using DataType = int;
+
+    auto extentMdList
+        = std::make_tuple(Vec{5, 7, 3, 11}, Vec{93, 7, 123}, Vec{5, 7, 4111}, Vec{5, 7, 3}, Vec{7, 3}, Vec{3});
+
+    std::apply([&](auto... extents) { (volatileBuffers<DataType>(device, extents), ...); }, extentMdList);
 }

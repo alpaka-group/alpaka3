@@ -67,8 +67,8 @@ namespace alpaka::onHost
                 }
                 catch(std::exception const& err)
                 {
-                    std::cerr << "The following runtime error(s) occured while destructing a SYCL queue:" << err.what()
-                              << std::endl;
+                    std::cerr << "The following runtime error(s) occurred while destructing a SYCL queue:"
+                              << err.what() << std::endl;
                 }
             }
 
@@ -176,7 +176,7 @@ namespace alpaka::onHost
      * asynchronously
      *
      * @todo check if we can reduce the duplication by having a common function for the computation of the extents
-     * and pitches and seperate the View creation.
+     * and pitches and separate the View creation.
      */
     template<typename T_Type, typename T_Device, alpaka::concepts::Vector T_Extents>
     struct internal::AllocAsync::Op<T_Type, syclGeneric::Queue<T_Device>, T_Extents>
@@ -203,7 +203,9 @@ namespace alpaka::onHost
                  * managed handle is running out of a scope.
                  */
                 internal::wait(*queueDep.get());
-                void* ptrToFree = reinterpret_cast<void*>(const_cast<std::remove_volatile_t<ALPAKA_TYPEOF(ptr)>>(ptr));
+                void* ptrToFree = reinterpret_cast<void*>(
+                    const_cast<std::add_pointer_t<std::remove_volatile_t<std::remove_pointer_t<ALPAKA_TYPEOF(ptr)>>>>(
+                        ptr));
                 sycl::free(ptrToFree, queueDep->getNativeHandle());
             };
 

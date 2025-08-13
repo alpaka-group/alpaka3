@@ -106,8 +106,10 @@ namespace alpaka::onHost
                     sycl::aligned_alloc_device(alignment, memSizeInByte, sycl_device, sycl_context));
                 auto deleter = [ctx = sycl_context, ptr]()
                 {
-                    void* ptrToFree
-                        = reinterpret_cast<void*>(const_cast<std::remove_volatile_t<ALPAKA_TYPEOF(ptr)>>(ptr));
+                    void* ptrToFree = reinterpret_cast<void*>(
+                        const_cast<
+                            std::add_pointer_t<std::remove_volatile_t<std::remove_pointer_t<ALPAKA_TYPEOF(ptr)>>>>(
+                            ptr));
                     sycl::free(ptrToFree, ctx);
                 };
 
@@ -145,8 +147,10 @@ namespace alpaka::onHost
                     sycl::aligned_alloc_shared(alignment, memSizeInByte, sycl_device, sycl_context));
                 auto deleter = [ctx = sycl_context, ptr]()
                 {
-                    void* ptrToFree
-                        = reinterpret_cast<void*>(const_cast<std::remove_volatile_t<ALPAKA_TYPEOF(ptr)>>(ptr));
+                    void* ptrToFree = reinterpret_cast<void*>(
+                        const_cast<
+                            std::add_pointer_t<std::remove_volatile_t<std::remove_pointer_t<ALPAKA_TYPEOF(ptr)>>>>(
+                            ptr));
                     sycl::free(ptrToFree, ctx);
                 };
 
@@ -178,8 +182,10 @@ namespace alpaka::onHost
                     = reinterpret_cast<T_Type*>(sycl::aligned_alloc_host(alignment, memSizeInByte, sycl_context));
                 auto deleter = [ctx = sycl_context, ptr]()
                 {
-                    void* ptrToFree
-                        = reinterpret_cast<void*>(const_cast<std::remove_volatile_t<ALPAKA_TYPEOF(ptr)>>(ptr));
+                    void* ptrToFree = reinterpret_cast<void*>(
+                        const_cast<
+                            std::add_pointer_t<std::remove_volatile_t<std::remove_pointer_t<ALPAKA_TYPEOF(ptr)>>>>(
+                            ptr));
                     sycl::free(ptrToFree, ctx);
                 };
 
@@ -206,8 +212,8 @@ namespace alpaka::onHost
                 {
                     try
                     {
-                        sycl::device deviceAssiciatedWithData = sycl::get_pointer_device(data(view), sycl_context);
-                        if(deviceAssiciatedWithData == sycl_device)
+                        sycl::device deviceAssociatedWithData = sycl::get_pointer_device(data(view), sycl_context);
+                        if(deviceAssociatedWithData == sycl_device)
                         {
                             // sycl device allocated the memory
                             return true;

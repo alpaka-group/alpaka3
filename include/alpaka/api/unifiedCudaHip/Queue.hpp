@@ -527,7 +527,7 @@ namespace alpaka::onHost
          * asynchronously
          *
          * @todo check if we can reduce the duplication by having a common function for the computation of the extents
-         * and pitches and seperate the View creation.
+         * and pitches and separate the View creation.
          */
         template<typename T_Type, typename T_Device, alpaka::concepts::Vector T_Extents>
         struct AllocAsync::Op<T_Type, unifiedCudaHip::Queue<T_Device>, T_Extents>
@@ -539,7 +539,7 @@ namespace alpaka::onHost
                 /** Each CUDA/HIP allocation is aligned to at least 128 byte but typically to 256byte
                  *
                  * @todo check if this value can be derived from the device properties
-                 * @todo validate if memory is always aligtne dto 256 byte
+                 * @todo validate if memory is always aligned to 256 byte
                  */
                 constexpr uint32_t alignment = 128u;
                 auto [memSizeInByte, pitches] = api::util::emulatedAlignedMemDescription<T_Type>(alignment, extents);
@@ -554,8 +554,10 @@ namespace alpaka::onHost
 
                 auto deleter = [ptr, queueDependency]()
                 {
-                    void* ptrToFree
-                        = reinterpret_cast<void*>(const_cast<std::remove_volatile_t<ALPAKA_TYPEOF(ptr)>>(ptr));
+                    void* ptrToFree = reinterpret_cast<void*>(
+                        const_cast<
+                            std::add_pointer_t<std::remove_volatile_t<std::remove_pointer_t<ALPAKA_TYPEOF(ptr)>>>>(
+                            ptr));
                     ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(
                         ApiInterface,
                         ApiInterface::freeAsync(ptrToFree, queueDependency.getNativeHandle()));
