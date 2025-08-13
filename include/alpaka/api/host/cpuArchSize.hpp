@@ -18,6 +18,8 @@ namespace alpaka::onHost::internal
             64u;
 #elif defined(__riscv_vector)
             64u;
+#elif defined(__riscv)
+            32u;
         // ARM e.g. nvidia grace hopper
 #elif defined(__ARM_FEATURE_SVE) || defined(__ARM_FEATURE_SVE2_AES) || defined(__ARM_FEATURE_DOTPROD)
             64u;
