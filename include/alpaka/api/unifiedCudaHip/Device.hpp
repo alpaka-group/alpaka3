@@ -275,7 +275,7 @@ namespace alpaka::onHost
                         ApiInterface::hostMallocMapped | ApiInterface::hostMallocPortable));
 
                 auto deleter = [ptr, deviceDependency]()
-                { ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::hostFree(ptrToFree)); };
+                { ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::hostFree(toVoidPtr(ptr))); };
 
                 auto managedView = onHost::ManagedView{
                     deviceDependency,

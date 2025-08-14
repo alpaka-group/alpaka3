@@ -556,7 +556,7 @@ namespace alpaka::onHost
                 {
                     ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(
                         ApiInterface,
-                        ApiInterface::freeAsync(ptrToFree, queueDependency.getNativeHandle()));
+                        ApiInterface::freeAsync(toVoidPtr(ptr), queueDependency.getNativeHandle()));
                 };
 
                 auto managedView = onHost::ManagedView{

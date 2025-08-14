@@ -166,7 +166,7 @@ namespace alpaka::onHost
 
                 T_Type* ptr
                     = reinterpret_cast<T_Type*>(sycl::aligned_alloc_host(alignment, memSizeInByte, sycl_context));
-                auto deleter = [ctx = sycl_context, ptr]() { sycl::free(ptrToFree, ctx); };
+                auto deleter = [ctx = sycl_context, ptr]() { sycl::free(toVoidPtr(ptr), ctx); };
 
                 auto managedView = onHost::ManagedView{
                     deviceDependency,

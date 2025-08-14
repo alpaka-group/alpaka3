@@ -29,7 +29,7 @@ namespace alpaka::core
     {
         if(ptr != nullptr)
         {
-            ::operator delete(ptrToFree, std::align_val_t{alignment});
+            ::operator delete(toVoidPtr(ptr), std::align_val_t{alignment});
         }
     }
 } // namespace alpaka::core

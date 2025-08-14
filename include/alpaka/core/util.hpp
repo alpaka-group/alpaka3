@@ -32,6 +32,6 @@ namespace alpaka
     void* toVoidPtr(T inPtr)
     {
         static_assert(std::is_pointer_v<T>);
-        return reinterpret_cast<void*>(const_cast < RemoveVolatileFromPointer_t<T>(inPtr));
+        return reinterpret_cast<void*>(const_cast<RemoveVolatileFromPointer_t<T>>(inPtr));
     }
 } // namespace alpaka
