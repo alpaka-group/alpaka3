@@ -29,9 +29,6 @@ namespace alpaka::core
     {
         if(ptr != nullptr)
         {
-            void* ptrToFree = reinterpret_cast<void*>(
-                const_cast<std::add_pointer_t<std::remove_volatile_t<std::remove_pointer_t<ALPAKA_TYPEOF(ptr)>>>>(
-                    ptr));
             ::operator delete(ptrToFree, std::align_val_t{alignment});
         }
     }

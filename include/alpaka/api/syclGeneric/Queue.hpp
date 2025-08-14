@@ -203,10 +203,7 @@ namespace alpaka::onHost
                  * managed handle is running out of a scope.
                  */
                 internal::wait(*queueDep.get());
-                void* ptrToFree = reinterpret_cast<void*>(
-                    const_cast<std::add_pointer_t<std::remove_volatile_t<std::remove_pointer_t<ALPAKA_TYPEOF(ptr)>>>>(
-                        ptr));
-                sycl::free(ptrToFree, queueDep->getNativeHandle());
+                sycl::free(toVoidPtr(ptr), queueDep->getNativeHandle());
             };
 
             auto managedView = onHost::ManagedView{

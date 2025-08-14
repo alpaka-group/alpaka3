@@ -186,13 +186,7 @@ namespace alpaka::onHost
                 auto deviceDependency = onHost::Device{device.getSharedPtr()};
 
                 auto deleter = [ptr, deviceDependency]()
-                {
-                    void* ptrToFree = reinterpret_cast<void*>(
-                        const_cast<
-                            std::add_pointer_t<std::remove_volatile_t<std::remove_pointer_t<ALPAKA_TYPEOF(ptr)>>>>(
-                            ptr));
-                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::free(ptrToFree));
-                };
+                { ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::free(toVoidPtr(ptr))); };
 
                 /** Each CUDA/HIP allocation is aligned to at least 128 byte but typically to 256byte
                  *
@@ -242,13 +236,7 @@ namespace alpaka::onHost
                 }
 
                 auto deleter = [ptr, deviceDependency]()
-                {
-                    void* ptrToFree = reinterpret_cast<void*>(
-                        const_cast<
-                            std::add_pointer_t<std::remove_volatile_t<std::remove_pointer_t<ALPAKA_TYPEOF(ptr)>>>>(
-                            ptr));
-                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::free(ptrToFree));
-                };
+                { ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::free(toVoidPtr(ptr))); };
 
                 auto managedView = onHost::ManagedView{
                     deviceDependency,
@@ -287,13 +275,7 @@ namespace alpaka::onHost
                         ApiInterface::hostMallocMapped | ApiInterface::hostMallocPortable));
 
                 auto deleter = [ptr, deviceDependency]()
-                {
-                    void* ptrToFree = reinterpret_cast<void*>(
-                        const_cast<
-                            std::add_pointer_t<std::remove_volatile_t<std::remove_pointer_t<ALPAKA_TYPEOF(ptr)>>>>(
-                            ptr));
-                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::hostFree(ptrToFree));
-                };
+                { ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::hostFree(ptrToFree)); };
 
                 auto managedView = onHost::ManagedView{
                     deviceDependency,
