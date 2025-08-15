@@ -30,14 +30,19 @@ struct SimdAlignment
 
         constexpr auto v1 = Vec{1.f, 2.f, 3.f};
         constexpr auto s3 = Simd{v1, v1, v1, v1};
+        static_assert(alignof(ALPAKA_TYPEOF(v1)) == 4u);
         static_assert(alignof(ALPAKA_TYPEOF(s3)) == 4u);
 
         constexpr auto v2 = Vec{1.f, 2.f};
         constexpr auto s4 = Simd{v2, v2, v2};
+        static_assert(alignof(ALPAKA_TYPEOF(v2)) == 4u);
         static_assert(alignof(ALPAKA_TYPEOF(s4)) == 4u);
 
         constexpr auto s5 = Simd{v2, v2, v2, v2};
         static_assert(alignof(ALPAKA_TYPEOF(s5)) == 32u);
+
+        constexpr auto s6 = Simd{v2, v2, v2, v2, v2};
+        static_assert(alignof(ALPAKA_TYPEOF(s6)) == 4u);
 
         struct Foo
         {
@@ -46,8 +51,8 @@ struct SimdAlignment
             char8_t c2;
         };
 
-        constexpr auto s6 = Simd{Foo{'a', 'b', 'c'}, Foo{'d', 'e', 'f'}, Foo{'g', 'h', 'i'}};
-        static_assert(alignof(ALPAKA_TYPEOF(s6)) == 1u);
+        constexpr auto s7 = Simd{Foo{'a', 'b', 'c'}, Foo{'d', 'e', 'f'}, Foo{'g', 'h', 'i'}};
+        static_assert(alignof(ALPAKA_TYPEOF(s7)) == 1u);
     }
 };
 

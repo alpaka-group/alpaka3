@@ -23,6 +23,7 @@
 #include <array>
 #include <bit>
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <iostream>
@@ -34,9 +35,14 @@ namespace alpaka
 {
     namespace detail
     {
-        template<typename T_ValueType, concepts::Alignment T_Alignment, uint32_t dataSizeInBytes>
+        template<typename T_ValueType, uint32_t T_numElements, concepts::Alignment T_Alignment>
         consteval uint32_t optimalAlignment()
         {
+            constexpr uint32_t currentTypeAlignment = static_cast<uint32_t>(alignof(T_ValueType));
+            if constexpr(T_numElements % 2 != 0u)
+                return currentTypeAlignment;
+
+            constexpr uint32_t dataSizeInBytes = static_cast<uint32_t>(sizeof(T_ValueType) * T_numElements);
             constexpr uint32_t alignment = std::min(T_Alignment::template get<T_ValueType>(), dataSizeInBytes);
             if constexpr(std::has_single_bit(alignment))
                 return alignment;
@@ -52,9 +58,7 @@ namespace alpaka
     struct Simd;
 
     template<typename T_Type, uint32_t T_dim, concepts::Alignment T_Alignment, typename T_Storage>
-    struct alignas(
-        alpaka::detail::optimalAlignment<T_Type, T_Alignment, static_cast<uint32_t>(sizeof(T_Type) * T_dim)>()) Simd
-        : private T_Storage
+    struct alignas(alpaka::detail::optimalAlignment<T_Type, T_dim, T_Alignment>()) Simd : private T_Storage
     {
         using Storage = T_Storage;
         using type = T_Type;

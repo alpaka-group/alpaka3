@@ -29,12 +29,12 @@ namespace alpaka
                 return value;
         }
 
+    private:
         static consteval uint32_t get()
         {
             return value;
         }
 
-    private:
         static constexpr uint32_t value = T_byte;
     };
 
