@@ -229,7 +229,8 @@ namespace mathtest
 
                 if(!isApproxEqual(results(i), stdExpectedResult))
                 {
-                    INFO("Idx i: " << i << " computed : " << results(i) << " vs expected: " << stdExpectedResult);
+                    std::cerr << "Idx i: " << i << " computed : " << results(i)
+                              << " vs expected: " << stdExpectedResult << " arguments:" << args(i) << std::endl;
                 }
                 // Validate
                 REQUIRE(isApproxEqual(results(i), stdExpectedResult));
