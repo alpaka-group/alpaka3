@@ -18,6 +18,7 @@
 #    include "alpaka/api/unifiedCudaHip/concepts.hpp"
 #    include "alpaka/api/util.hpp"
 #    include "alpaka/core/ApiCudaRt.hpp"
+#    include "alpaka/core/CallbackThread.hpp"
 #    include "alpaka/core/UniformCudaHip.hpp"
 #    include "alpaka/internal.hpp"
 #    include "alpaka/onAcc/Acc.hpp"
@@ -85,6 +86,7 @@ namespace alpaka::onHost
             Handle<T_Device> m_device;
             uint32_t m_idx = 0u;
             typename ApiInterface::Stream_t m_UniformCudaHipQueue;
+            core::CallbackThread m_callBackThread;
 
             friend struct alpaka::internal::GetName;
 
@@ -299,6 +301,41 @@ namespace alpaka::onHost
 {
     namespace internal
     {
+        template<typename T_Device, typename T_Task>
+        struct Enqueue::Task<unifiedCudaHip::Queue<T_Device>, T_Task>
+        {
+            struct HostFuncData
+            {
+                // We don't need to keep the queue alive, because in it's dtor it will synchronize with the CUDA/HIP
+                // stream and wait until all host functions and the CallbackThread are done. It's actually an error to
+                // copy the queue into the host function. Destroying it here would call CUDA/HIP APIs from the host
+                // function. Passing it further to the Callback thread, would make the Callback thread hold a task
+                // containing the queue with the CallbackThread itself. Destroying the task if no other queue instance
+                // exists will make the CallbackThread join itself and crash.
+                unifiedCudaHip::Queue<T_Device>& q;
+                T_Task t;
+            };
+
+            static void uniformCudaHipRtHostFunc(void* arg)
+            {
+                auto data = std::unique_ptr<HostFuncData>(reinterpret_cast<HostFuncData*>(arg));
+                auto& queue = data->q;
+                auto f = queue.m_callBackThread.submit([d = std::move(data)] { d->t(); });
+                f.wait();
+            }
+
+            void operator()(unifiedCudaHip::Queue<T_Device>& queue, T_Task const& task) const
+            {
+                using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
+
+                ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
+                    ApiInterface,
+                    ApiInterface::launchHostFunc(
+                        queue.getNativeHandle(),
+                        uniformCudaHipRtHostFunc,
+                        new HostFuncData{queue, task}));
+            }
+        };
 
         template<
             typename T_Device,

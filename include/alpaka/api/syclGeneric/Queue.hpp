@@ -10,6 +10,7 @@
 
 #    include "alpaka/api/syclGeneric/onAcc.hpp"
 #    include "alpaka/api/util.hpp"
+#    include "alpaka/core/CallbackThread.hpp"
 #    include "alpaka/interface.hpp"
 #    include "alpaka/internal.hpp"
 #    include "alpaka/onAcc/Acc.hpp"
@@ -115,10 +116,32 @@ namespace alpaka::onHost
             Handle<T_Device> m_device;
             uint32_t m_idx = 0u;
             sycl::queue m_queue;
+            core::CallbackThread m_callBackThread;
         };
 
 
     } // namespace syclGeneric
+
+    template<typename T_Device, typename T_Task>
+    struct internal::Enqueue::Task<syclGeneric::Queue<T_Device>, T_Task>
+    {
+        /** It is not allowed to execute sycl methods within a SYCL host_task therefore we use a callback host thread
+         * to execute the host function which is allowing to use sycl methods.
+         */
+        static void callHostTask(syclGeneric::Queue<T_Device>& queue, T_Task task)
+        {
+            auto f = queue.m_callBackThread.submit([t = std::move(task)] { t(); });
+            f.wait();
+        }
+
+        void operator()(syclGeneric::Queue<T_Device>& queue, T_Task const& task) const
+        {
+            // using the queue by reference is fine here, because the queue is not destroyed while the task is
+            // executed.
+            queue.m_queue.submit([&queue, task](sycl::handler& cgh)
+                                 { cgh.host_task([&queue, task]() { callHostTask(queue, task); }); });
+        }
+    };
 
     template<typename T_Device, typename T_Dest, typename T_Extents>
     requires(alpaka::trait::getDim_v<T_Extents> == 1u)
@@ -219,6 +242,7 @@ namespace alpaka::onHost
 } // namespace alpaka::onHost
 
 namespace alpaka::internal
+
 {
     template<typename T_Device>
     struct GetApi::Op<alpaka::onHost::syclGeneric::Queue<T_Device>>

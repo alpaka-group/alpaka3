@@ -1,4 +1,4 @@
-/* Copyright 2024 René Widera
+/* Copyright 2023 Axel Hübl, Benjamin Worpitz, Bernhard Manfred Gruber, Jan Stephan, René Widera
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -368,4 +368,149 @@ TEMPLATE_LIST_TEST_CASE("memcpy", "", TestApis)
 
     // validate without using the forward iterator
     meta::ndLoopIncIdx(problemSize, [&](auto idx) { CHECK(hBuff[idx] == size_t{0}); });
+}
+
+TEMPLATE_LIST_TEST_CASE("host task callback", "", TestApis)
+{
+    auto cfg = TestType::makeDict();
+    auto deviceSpec = cfg[object::deviceSpec];
+
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+
+    std::cout << deviceSpec.getApi().getName() << std::endl;
+    onHost::Device device = devSelector.makeDevice(0);
+
+    std::cout << device.getName() << std::endl;
+
+    onHost::Queue queue = device.makeQueue();
+
+    std::promise<bool> promise;
+
+    queue.enqueue(
+        [&]()
+        {
+            std::cout << "Host Callback executed!" << std::endl;
+            promise.set_value(true);
+        });
+
+    CHECK(promise.get_future().get());
+}
+
+TEMPLATE_LIST_TEST_CASE("host task", "", TestApis)
+{
+    auto cfg = TestType::makeDict();
+    auto deviceSpec = cfg[object::deviceSpec];
+
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+
+    std::cout << deviceSpec.getApi().getName() << std::endl;
+    onHost::Device device = devSelector.makeDevice(0);
+
+    std::cout << device.getName() << std::endl;
+
+    onHost::Queue queue = device.makeQueue();
+
+    bool flag = false;
+    auto task = [&] { flag = true; };
+    queue.enqueue(task); // lvalue
+    onHost::wait(queue);
+    CHECK(flag == true);
+
+    flag = false;
+    queue.enqueue(std::move(task)); // xvalue
+    onHost::wait(queue);
+    CHECK(flag == true);
+
+    flag = false;
+    queue.enqueue([&] { flag = true; }); // prvalue
+    onHost::wait(queue);
+    CHECK(flag == true);
+}
+
+TEMPLATE_LIST_TEST_CASE("queue wait should work", "", TestApis)
+{
+    auto cfg = TestType::makeDict();
+    auto deviceSpec = cfg[object::deviceSpec];
+
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+
+    std::cout << deviceSpec.getApi().getName() << std::endl;
+    onHost::Device device = devSelector.makeDevice(0);
+
+    std::cout << device.getName() << std::endl;
+
+    onHost::Queue queue = device.makeQueue();
+
+    std::atomic<bool> callbackFinished{false};
+    queue.enqueue(
+        [&callbackFinished]() noexcept
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100u));
+            callbackFinished = true;
+        });
+
+    onHost::wait(queue);
+    CHECK(callbackFinished.load() == true);
+}
+
+TEMPLATE_LIST_TEST_CASE("task is destroyed after execution", "", TestApis)
+{
+    auto cfg = TestType::makeDict();
+    auto deviceSpec = cfg[object::deviceSpec];
+
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+
+    std::cout << deviceSpec.getApi().getName() << std::endl;
+    onHost::Device device = devSelector.makeDevice(0);
+
+    std::cout << device.getName() << std::endl;
+
+    onHost::Queue queue = device.makeQueue();
+
+    struct Task
+    {
+        std::atomic<bool>* destroyed;
+
+        explicit Task(std::atomic<bool>& a) : destroyed(&a)
+        {
+        }
+
+        Task(Task const&) = default;
+
+        ~Task()
+        {
+            *destroyed = true;
+        }
+
+        void operator()() const
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1u));
+        }
+    };
+
+    std::atomic<bool> destroyed{false};
+    queue.enqueue(Task{destroyed});
+
+    onHost::wait(queue);
+    CHECK(destroyed == true);
 }

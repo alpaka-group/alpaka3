@@ -111,7 +111,7 @@ namespace alpaka::onHost::internal
     struct internal::Fill::Op<syclGeneric::Queue<T_Device>, T_Dest, T_Value, T_Extents>
     {
         void operator()(
-            syclGeneric::Queue<T_Device> queue,
+            syclGeneric::Queue<T_Device>& queue,
             auto&& dest,
             T_Value elementValue,
             T_Extents const& extents) const
