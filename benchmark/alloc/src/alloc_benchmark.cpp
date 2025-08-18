@@ -156,7 +156,6 @@ static double measureAlloc(TQueue &queue, std::size_t runs, AllocFn &&fn, uint8_
     using clock = std::chrono::high_resolution_clock;
     auto t0 = clock::now();
     uint8_t retval = uint8_t{1}; // to ensure buffer is used
-        uint8_t retval = uint8_t{1}; // init non-zero (sanity)
         for(std::size_t i = 0; i < runs; ++i)
         {
             auto buf = fn();                                // 1) allocate buffer
