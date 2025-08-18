@@ -121,7 +121,7 @@ public:
 
 // =============================================================================
 // --------------- default parameters -----------------------------------------
-inline std::size_t allocBytesMain = 64ULL * 1024 * 1024; // 64 MiB
+inline std::size_t allocBytesMain = 64ULL * 1024 * 1024; // 64 MiB
 inline std::size_t numberOfRuns   = 100;                 // iterations
 
 // ---------------- CLI parser -------------------------------------------------
@@ -147,17 +147,25 @@ static void handleAllocArgs(int &argc, char *argv[])
 }
 
 // ---------------- helper: measure total time of N allocations ---------------
+// measureAlloc:
+//   allocate buffer -> memset -> read first byte -> wait
+//   ensures the buffer is actually touched (no lazy allocation, no dead-code removal)
 template<class TQueue, class AllocFn>
-static double measureAlloc(TQueue &queue, std::size_t runs, AllocFn &&fn)
+static double measureAlloc(TQueue &queue, std::size_t runs, AllocFn &&fn, uint8_t& returnValue)
 {
     using clock = std::chrono::high_resolution_clock;
     auto t0 = clock::now();
-    for(std::size_t i = 0; i < runs; ++i)
-    {
-        auto buf = fn();               // allocate buffer
-        alpaka::onHost::wait(queue);   // ensure operation finished
-    }
+    uint8_t retval = uint8_t{1}; // to ensure buffer is used
+        uint8_t retval = uint8_t{1}; // init non-zero (sanity)
+        for(std::size_t i = 0; i < runs; ++i)
+        {
+            auto buf = fn();                                // 1) allocate buffer
+            alpaka::onHost::memset(queue, buf, uint8_t{0}); // 2) touch buffer: zero-init
+            retval = static_cast<uint8_t>(buf[0]);          // 3) read first byte to enforce use
+            alpaka::onHost::wait(queue);                    // 4) sync memset + alloc
+        }
     auto t1 = clock::now();
+    returnValue = retval; // return the last value read from the buffer
     return std::chrono::duration<double>(t1 - t0).count(); // seconds total
 }
 
@@ -210,10 +218,14 @@ void testAlloc(DeviceSpec const &spec, Exec const &exec)
     results.addKernel("HostAlloc",   allocBytesMain * 1.0e-6);
     results.addKernel("DeviceAlloc", allocBytesMain * 1.0e-6);
 
-    double tHost = measureAlloc(queue, numberOfRuns, [&]{ return onHost::allocHost<std::byte>(allocBytesMain); });
+    uint8_t resultByte = uint8_t{1}; // to ensure buffer is used
+
+    double tHost = measureAlloc(queue, numberOfRuns, [&]{ return onHost::allocHost<std::byte>(allocBytesMain); }, resultByte);
     results.pushTime("HostAlloc", tHost);
 
-    double tDev  = measureAlloc(queue, numberOfRuns, [&]{ return onHost::alloc<std::byte>(dev, allocBytesMain); });
+    uint8_t resultByteDev = uint8_t{1}; // to ensure buffer is used
+
+    double tDev  = measureAlloc(queue, numberOfRuns, [&]{ return onHost::alloc<std::byte>(dev, allocBytesMain); }, resultByteDev);
     results.pushTime("DeviceAlloc", tDev);
 
     // meta‑data summary
@@ -231,7 +243,8 @@ void testAlloc(DeviceSpec const &spec, Exec const &exec)
 
     std::cout << meta.serializeAsTable() << std::endl;
 
-    REQUIRE(FuzzyEqual(0,0)); // mark as passed
+    REQUIRE(resultByte == uint8_t{0});      // host buffer properly zero-initialized
+    REQUIRE(resultByteDev == uint8_t{0});   // device buffer properly zero-initialized
 }
 
 // ---------------- Catch2 integration  ---------------------------------------
