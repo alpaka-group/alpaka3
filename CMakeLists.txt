@@ -93,6 +93,10 @@ option(alpaka_DEP_HIP "Enable the HIP as dependency, allows the usage of api::Hi
 option(alpaka_DEP_OMP "Enable the OMP as dependency, allows the usage of exec::CpuOmpBlocks and exec::OmpBlocksAndThreads" ON)
 option(alpaka_DEP_ONEAPI "Enable the Intel OneAPI SYCL CPU dependency, allows using exec::cpuIntelSycl" OFF)
 
+# Unified compiler options
+alpaka_compiler_option(FAST_MATH "Enable fast-math" DEFAULT)
+alpaka_compiler_option(FTZ "Set flush to zero" DEFAULT)
+
 ## OpenMP
 if (alpaka_DEP_OMP)
     find_package(OpenMP REQUIRED COMPONENTS CXX)
@@ -131,6 +135,16 @@ if (alpaka_DEP_CUDA)
             alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler -rdynamic>")
         endif ()
         set(alpaka_CUDA_KEEP_FILES ON CACHE BOOL "activate keep files" FORCE)
+    endif ()
+
+    if (alpaka_FAST_MATH STREQUAL ON)
+        alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--use_fast_math>")
+    endif ()
+
+    if (alpaka_FTZ STREQUAL ON)
+        alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--ftz=true>")
+    elseif (alpaka_FTZ STREQUAL OFF)
+        alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--ftz=false>")
     endif ()
 
     enable_language(CUDA)
@@ -187,29 +201,14 @@ if (alpaka_DEP_HIP)
 
         if (alpaka_FAST_MATH STREQUAL ON)
             alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-ffast-math>")
+        elseif (alpaka_MATH STREQUAL OFF)
+            alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-fno-fast-math>")
         endif ()
 
-        if (NOT alpaka_DISABLE_VENDOR_RNG)
-            # hiprand requires ROCm implementation of random numbers by rocrand
-            # hip::hiprand is currently not expressing this dependency
-            find_package(rocrand REQUIRED CONFIG
-                    HINTS "${ROCM_ROOT_DIR}/rocrand"
-                    HINTS "/opt/rocm/rocrand")
-            if (rocrand_FOUND)
-                target_link_libraries(alpaka INTERFACE roc::rocrand)
-            else ()
-                MESSAGE(FATAL_ERROR "Could not find rocRAND (also searched in: ROCM_ROOT_DIR=${ROCM_ROOT_DIR}/rocrand).")
-            endif ()
-
-            # HIP random numbers
-            find_package(hiprand REQUIRED CONFIG
-                    HINTS "${HIP_ROOT_DIR}/hiprand"
-                    HINTS "/opt/rocm/hiprand")
-            if (hiprand_FOUND)
-                target_link_libraries(alpaka INTERFACE hip::hiprand)
-            else ()
-                MESSAGE(FATAL_ERROR "Could not find hipRAND (also searched in: HIP_ROOT_DIR=${HIP_ROOT_DIR}/hiprand).")
-            endif ()
+        if (alpaka_FTZ STREQUAL ON)
+            alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-fgpu-flush-denormals-to-zero>")
+        elseif (alpaka_FTZ STREQUAL OFF)
+            alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-fno-gpu-flush-denormals-to-zero>")
         endif ()
 
         if (alpaka_RELOCATABLE_DEVICE_CODE STREQUAL ON)
@@ -236,9 +235,9 @@ if (alpaka_DEP_ONEAPI)
     if (alpaka_ONEAPI_Cpu)
         set(alpaka_ONEAPI_Cpu_ARCH "" CACHE STRING "OneApi Cpu architecture")
         list(APPEND custom_SYCL_TARGETS spir64_x86_64)
-        if(alpaka_ONEAPI_Cpu_ARCH)
+        if (alpaka_ONEAPI_Cpu_ARCH)
             target_link_options(alpaka INTERFACE -Xsycl-target-backend=spir64_x86_64 -march=${alpaka_ONEAPI_Cpu_ARCH})
-        endif()
+        endif ()
     else ()
         target_compile_definitions(alpaka INTERFACE ALPAKA_DISABLE_OneApi_Cpu)
     endif ()
@@ -279,6 +278,18 @@ if (alpaka_DEP_ONEAPI)
         target_link_options(${CMAKE_PROJECT_NAME} INTERFACE "-fsycl-targets=${custom_SYCL_TARGETS_CONCAT}")
     else ()
         target_compile_definitions(alpaka INTERFACE ALPAKA_DISABLE_OneApi_AmdGpu)
+    endif ()
+
+    if (alpaka_FAST_MATH STREQUAL ON)
+        alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-ffast-math>")
+    elseif (alpaka_MATH STREQUAL OFF)
+        alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-fno-fast-math>")
+    endif ()
+
+    if (alpaka_FTZ STREQUAL ON)
+        alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-ftz>")
+    elseif (alpaka_FTZ STREQUAL OFF)
+        alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-no-ftz>")
     endif ()
 endif ()
 
