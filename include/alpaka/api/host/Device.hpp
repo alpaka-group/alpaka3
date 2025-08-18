@@ -37,7 +37,10 @@ namespace alpaka::onHost
             }
 
             Device(Device const&) = delete;
+            Device& operator=(Device const&) = delete;
+
             Device(Device&&) = delete;
+            Device& operator=(Device&&) = delete;
 
             bool operator==(Device const& other) const
             {

@@ -65,7 +65,10 @@ namespace alpaka::onHost
             }
 
             Queue(Queue const&) = delete;
+            Queue& operator=(Queue const&) = delete;
+
             Queue(Queue&&) = delete;
+            Queue& operator=(Queue&&) = delete;
 
             bool operator==(Queue const& other) const
             {

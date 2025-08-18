@@ -31,6 +31,12 @@ namespace alpaka::onHost
             {
             }
 
+            Device(Device const&) = delete;
+            Device& operator=(Device const&) = delete;
+
+            Device(Device&&) = delete;
+            Device& operator=(Device&&) = delete;
+
             auto getName() const
             {
                 return m_sycl_dev.get_info<sycl::info::device::name>();

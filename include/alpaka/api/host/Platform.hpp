@@ -26,7 +26,10 @@ namespace alpaka::onHost
             Platform() = default;
 
             Platform(Platform const&) = delete;
+            Platform& operator=(Platform const&) = delete;
+
             Platform(Platform&&) = delete;
+            Platform& operator=(Platform&&) = delete;
 
         private:
             void _()

@@ -115,7 +115,10 @@ namespace alpaka
                 }
 
                 Platform(Platform const&) = delete;
+                Platform& operator=(Platform const&) = delete;
+
                 Platform(Platform&&) = delete;
+                Platform& operator=(Platform&&) = delete;
 
                 std::shared_ptr<Platform<T_ApiInterface, T_DeviceKind>> getSharedPtr()
                 {
