@@ -1,0 +1,144 @@
+/* Copyright 2025 Mehmet Yusufoglu, René Widera
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
+#include <alpaka/alpaka.hpp>
+#include <alpaka/onHost/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
+
+#include <catch2/catch_template_test_macros.hpp>
+#include <catch2/catch_test_macros.hpp>
+
+using namespace alpaka;
+
+// any value for testing
+int const testValue = 49;
+
+using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors))>;
+
+// Simple write kernel used to create actual device work for testing wait(device).
+struct WaitTestWriteKernel
+{
+    template<typename TAcc, typename TBuf>
+    ALPAKA_FN_ACC void operator()(TAcc const&, TBuf out) const
+    {
+        out[0] = testValue;
+    }
+};
+
+template<typename T_DataType>
+void executeWaitTest(auto& device, auto const& exec)
+{
+    using DataType = T_DataType;
+
+    constexpr uint32_t num = 3;
+    // for multiple concurrent queues
+    constexpr uint32_t numQueues = num;
+    // for multiple ops at a single queue test
+    constexpr uint32_t numOpsPerQueue = num;
+
+    // Test 1: Multiple concurrent queues
+
+    std::vector<decltype(device.makeQueue())> queues;
+    // Create host and device buffers
+    std::vector<decltype(onHost::alloc<DataType>(device, Vec<uint32_t, 1>{1u}))> devBufs;
+    std::vector<decltype(onHost::allocHostLike(onHost::alloc<DataType>(device, Vec<uint32_t, 1>{1u})))> hostBufs;
+
+    // allocate memory and create queues
+    constexpr auto extent = Vec<uint32_t, 1>{1u};
+    for(uint32_t i = 0; i < numQueues; ++i)
+    {
+        queues.push_back(device.makeQueue());
+        devBufs.push_back(onHost::alloc<DataType>(device, extent));
+        hostBufs.push_back(onHost::allocHostLike(devBufs.back()));
+    }
+
+    // enqueue work on multiple queues concurrently
+    constexpr auto frameSize = Vec<uint32_t, 1>{1u};
+    for(uint32_t i = 0; i < numQueues; ++i)
+    {
+        auto kernelBundle = KernelBundle{WaitTestWriteKernel{}, devBufs[i]};
+        queues[i].enqueue(exec, onHost::FrameSpec{extent, frameSize}, kernelBundle);
+        // Note: We deliberately don't wait on individual queues here
+    }
+
+    // Test 2: Multiple async operations on SAME queue
+    auto singleQueue = device.makeQueue();
+
+    // Create host and device buffers
+    std::vector<decltype(onHost::alloc<DataType>(device, extent))> singleQueueBufs;
+    std::vector<decltype(onHost::allocHostLike(onHost::alloc<DataType>(device, extent)))> singleQueueHostBufs;
+
+    for(uint32_t i = 0; i < numOpsPerQueue; ++i)
+    {
+        singleQueueBufs.push_back(onHost::alloc<DataType>(device, extent));
+        singleQueueHostBufs.push_back(onHost::allocHostLike(singleQueueBufs.back()));
+
+        // Enqueue multiple operations on same queue - they queue up asynchronously
+        auto kernelBundle = KernelBundle{WaitTestWriteKernel{}, singleQueueBufs[i]};
+        singleQueue.enqueue(exec, onHost::FrameSpec{extent, frameSize}, kernelBundle);
+    }
+
+    // TEST: wait for device to complete ALL work on ALL queues (including single queue ops)
+    REQUIRE_NOTHROW(onHost::wait(device));
+
+    // copy results of device buffers to host buffers
+    for(uint32_t i = 0; i < numQueues; ++i)
+    {
+        onHost::memcpy(queues[numQueues - i - 1], hostBufs[i], devBufs[i]);
+    }
+    for(uint32_t i = 0; i < numOpsPerQueue; ++i)
+    {
+        onHost::memcpy(singleQueue, singleQueueHostBufs[i], singleQueueBufs[i]);
+    }
+
+    // TEST: wait for device to complete ALL copies on ALL queues (including single queue ops)
+    REQUIRE_NOTHROW(onHost::wait(device));
+
+    // verify results of different queues
+    for(uint32_t i = 0; i < numQueues; ++i)
+    {
+        REQUIRE(hostBufs[i][0] == testValue);
+    }
+
+    // verify results of different operations on single queue
+    for(uint32_t i = 0; i < numOpsPerQueue; ++i)
+    {
+        REQUIRE(singleQueueHostBufs[i][0] == testValue);
+    }
+
+    std::cout << "✓ wait(device) verified with " << numQueues << " concurrent queues + " << numOpsPerQueue
+              << " ops on single queue" << std::endl;
+}
+
+void prepareAndExecuteWaitTest(auto cfg)
+{
+    auto deviceSpec = cfg[object::deviceSpec];
+    auto exec = cfg[object::exec];
+
+    auto deviceSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!deviceSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+
+    auto deviceCount = deviceSelector.getDeviceCount();
+    std::cout << "device spec: " << deviceSpec.getName() << std::endl;
+    std::cout << "executor   : " << exec.getName() << std::endl;
+
+    // Test wait(device) on all available devices
+    for(uint32_t deviceIdx = 0; deviceIdx < deviceCount; ++deviceIdx)
+    {
+        auto device = deviceSelector.makeDevice(deviceIdx);
+        std::cout << "device name: " << device.getName() << " (idx=" << deviceIdx << ")" << std::endl;
+
+        executeWaitTest<uint32_t>(device, exec);
+    }
+}
+
+TEMPLATE_LIST_TEST_CASE("wait device", "[wait]", TestApis)
+{
+    auto cfg = TestType::makeDict();
+    prepareAndExecuteWaitTest(cfg);
+}

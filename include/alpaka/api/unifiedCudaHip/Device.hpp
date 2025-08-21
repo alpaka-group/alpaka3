@@ -61,6 +61,14 @@ namespace alpaka::onHost
                 return m_idx != other.m_idx;
             }
 
+            void wait()
+            {
+                // Make sure this device is the current thread device (getNativeHandle returns device index)
+                ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(ApiInterface, ApiInterface::setDevice(getNativeHandle()));
+                // Wait for all work queued on this device to finish
+                ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(ApiInterface, ApiInterface::deviceSynchronize());
+            }
+
         private:
             void _()
             {

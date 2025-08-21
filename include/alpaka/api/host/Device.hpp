@@ -53,6 +53,24 @@ namespace alpaka::onHost
                 return m_idx != other.m_idx;
             }
 
+            void wait()
+            {
+                // Host device synchronization - wait on all queues associated with this device.
+                // IMPORTANT: Do not hold queuesGuard across potentially long waits; copy weak refs first.
+                std::vector<std::weak_ptr<cpu::Queue<Device>>> tmpQueues;
+                {
+                    std::lock_guard<std::mutex> lk{queuesGuard};
+                    tmpQueues = queues; // copy weak_ptr list
+                }
+                for(auto& weakQueue : tmpQueues)
+                {
+                    if(auto queue = weakQueue.lock())
+                    {
+                        internal::wait(*queue);
+                    }
+                }
+            }
+
         private:
             void _()
             {

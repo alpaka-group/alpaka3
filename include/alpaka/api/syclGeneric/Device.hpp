@@ -64,6 +64,23 @@ namespace alpaka::onHost
                 return {m_sycl_dev, m_platform->getContext()};
             }
 
+            void wait()
+            {
+                // Copy queue weak refs under lock then release to avoid blocking other operations while waiting.
+                std::vector<std::weak_ptr<syclGeneric::Queue<Device>>> tmpQueues;
+                {
+                    std::lock_guard<std::mutex> lk{m_writeGuard};
+                    tmpQueues = queues;
+                }
+                for(auto& weakQueue : tmpQueues)
+                {
+                    if(auto queue = weakQueue.lock())
+                    {
+                        queue->wait();
+                    }
+                }
+            }
+
         private:
             friend struct internal::MakeEvent;
 
@@ -92,9 +109,11 @@ namespace alpaka::onHost
             Handle<T_Platform> m_platform;
             uint32_t m_idx = 0u;
             sycl::device m_sycl_dev;
+
             std::vector<std::weak_ptr<syclGeneric::Queue<Device>>> queues;
             std::vector<std::weak_ptr<syclGeneric::Event<Device>>> events;
             std::mutex m_writeGuard;
+
             DeviceProperties m_properties;
 
             friend struct alpaka::internal::GetApi;
