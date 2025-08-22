@@ -83,7 +83,7 @@ namespace alpaka::onHost
             };
         };
 
-        static auto getNativeHandle(auto&& any)
+        inline auto getNativeHandle(auto&& any)
         {
             return GetNativeHandle::Op<std::decay_t<decltype(any)>>{}(any);
         }
@@ -96,6 +96,18 @@ namespace alpaka::onHost
                 auto operator()(T_Device& device) const
                 {
                     return device.makeQueue();
+                }
+            };
+        };
+
+        struct MakeEvent
+        {
+            template<typename T_Device>
+            struct Op
+            {
+                auto operator()(T_Device& device) const
+                {
+                    return device.makeEvent();
                 }
             };
         };
@@ -114,7 +126,41 @@ namespace alpaka::onHost
 
         inline void wait(auto&& any)
         {
-            return Wait::Op<std::decay_t<decltype(any)>>{}(any);
+            Wait::Op<std::decay_t<decltype(any)>>{}(any);
+        }
+
+        struct WaitFor
+        {
+            template<typename T_Queue, typename T_Event>
+            struct Op
+            {
+                void operator()(T_Queue& queue, T_Event& event)
+                {
+                    queue.waitFor(event);
+                }
+            };
+        };
+
+        inline void waitFor(auto& queue, auto& event)
+        {
+            WaitFor::Op<ALPAKA_TYPEOF(queue), ALPAKA_TYPEOF(event)>{}(queue, event);
+        }
+
+        struct IsEventComplete
+        {
+            template<typename T_Any>
+            struct Op
+            {
+                bool operator()(T_Any& any)
+                {
+                    return any.isEventComplete();
+                }
+            };
+        };
+
+        inline bool isEventComplete(auto&& any)
+        {
+            return IsEventComplete::Op<ALPAKA_TYPEOF(any)>{}(any);
         }
 
         struct Enqueue
@@ -142,6 +188,15 @@ namespace alpaka::onHost
                 void operator()(T_Queue& queue, T_Task const& task) const
                 {
                     queue.enqueue(task);
+                }
+            };
+
+            template<typename T_Queue, typename T_Event>
+            struct Event
+            {
+                void operator()(T_Queue& queue, T_Event& event) const
+                {
+                    queue.enqueue(event);
                 }
             };
         };

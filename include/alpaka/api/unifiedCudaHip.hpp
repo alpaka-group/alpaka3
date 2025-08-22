@@ -7,6 +7,7 @@
 #include "alpaka/api/cuda.hpp"
 #include "alpaka/api/hip.hpp"
 #include "alpaka/api/unifiedCudaHip/Device.hpp"
+#include "alpaka/api/unifiedCudaHip/Event.hpp"
 #include "alpaka/api/unifiedCudaHip/Platform.hpp"
 #include "alpaka/api/unifiedCudaHip/Queue.hpp"
 #include "alpaka/api/unifiedCudaHip/atomic.hpp"

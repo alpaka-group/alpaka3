@@ -10,6 +10,8 @@
 
 #    include "Queue.hpp"
 #    include "alpaka/Vec.hpp"
+#    include "alpaka/api/syclGeneric/Event.hpp"
+#    include "alpaka/api/syclGeneric/Queue.hpp"
 #    include "alpaka/api/util.hpp"
 #    include "alpaka/onHost/mem/ManagedView.hpp"
 
@@ -50,7 +52,7 @@ namespace alpaka::onHost
             [[nodiscard]] Handle<syclGeneric::Queue<Device>> makeQueue()
             {
                 auto thisHandle = this->getSharedPtr();
-                std::lock_guard<std::mutex> lk{queuesGuard};
+                std::lock_guard<std::mutex> lk{m_writeGuard};
                 auto newQueue = std::make_shared<syclGeneric::Queue<Device>>(std::move(thisHandle), queues.size());
 
                 queues.emplace_back(newQueue);
@@ -63,6 +65,18 @@ namespace alpaka::onHost
             }
 
         private:
+            friend struct internal::MakeEvent;
+
+            Handle<syclGeneric::Event<Device>> makeEvent()
+            {
+                auto thisHandle = this->getSharedPtr();
+                std::lock_guard<std::mutex> lk{m_writeGuard};
+                auto newEvent = std::make_shared<syclGeneric::Event<Device>>(std::move(thisHandle), events.size());
+
+                events.emplace_back(newEvent);
+                return newEvent;
+            }
+
             void _()
             {
                 static_assert(internal::concepts::Device<Device>);
@@ -79,7 +93,8 @@ namespace alpaka::onHost
             uint32_t m_idx = 0u;
             sycl::device m_sycl_dev;
             std::vector<std::weak_ptr<syclGeneric::Queue<Device>>> queues;
-            std::mutex queuesGuard;
+            std::vector<std::weak_ptr<syclGeneric::Event<Device>>> events;
+            std::mutex m_writeGuard;
             DeviceProperties m_properties;
 
             friend struct alpaka::internal::GetApi;

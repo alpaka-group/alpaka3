@@ -7,6 +7,7 @@
 #include "alpaka/core/config.hpp"
 
 #if ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP
+#    include "alpaka/api/unifiedCudaHip/Event.hpp"
 #    include "alpaka/api/unifiedCudaHip/Queue.hpp"
 #    include "alpaka/api/util.hpp"
 #    include "alpaka/core/UniformCudaHip.hpp"
@@ -70,7 +71,8 @@ namespace alpaka::onHost
             uint32_t m_idx = 0u;
             DeviceProperties m_properties;
             std::vector<std::weak_ptr<unifiedCudaHip::Queue<Device>>> queues;
-            std::mutex queuesGuard;
+            std::vector<std::weak_ptr<unifiedCudaHip::Event<Device>>> events;
+            std::mutex m_writeGuard;
 
             std::shared_ptr<Device> getSharedPtr()
             {
@@ -96,11 +98,23 @@ namespace alpaka::onHost
             Handle<unifiedCudaHip::Queue<Device>> makeQueue()
             {
                 auto thisHandle = this->getSharedPtr();
-                std::lock_guard<std::mutex> lk{queuesGuard};
+                std::lock_guard<std::mutex> lk{m_writeGuard};
                 auto newQueue = std::make_shared<unifiedCudaHip::Queue<Device>>(std::move(thisHandle), queues.size());
 
                 queues.emplace_back(newQueue);
                 return newQueue;
+            }
+
+            friend struct onHost::internal::MakeEvent;
+
+            Handle<unifiedCudaHip::Event<Device>> makeEvent()
+            {
+                auto thisHandle = this->getSharedPtr();
+                std::lock_guard<std::mutex> lk{m_writeGuard};
+                auto newEvent = std::make_shared<unifiedCudaHip::Event<Device>>(std::move(thisHandle), events.size());
+
+                events.emplace_back(newEvent);
+                return newEvent;
             }
 
             friend struct alpaka::internal::GetDeviceType;

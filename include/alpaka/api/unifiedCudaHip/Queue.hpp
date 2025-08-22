@@ -58,7 +58,6 @@ namespace alpaka::onHost
             ~Queue()
             {
                 onHost::internal::wait(*this);
-                // setDevice is not required because wait() is setting the device
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(
                     ApiInterface,
                     ApiInterface::streamDestroy(getNativeHandle()));
@@ -129,6 +128,15 @@ namespace alpaka::onHost
             std::shared_ptr<Queue> getSharedPtr()
             {
                 return this->shared_from_this();
+            }
+
+            friend struct alpaka::onHost::internal::WaitFor;
+
+            void waitFor(unifiedCudaHip::Event<T_Device>& event)
+            {
+                ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
+                    ApiInterface,
+                    ApiInterface::streamWaitEvent(getNativeHandle(), internal::getNativeHandle(event), 0));
             }
 
             friend struct onHost::internal::GetDevice;
@@ -337,6 +345,19 @@ namespace alpaka::onHost
                         queue.getNativeHandle(),
                         uniformCudaHipRtHostFunc,
                         new HostFuncData{queue, task}));
+            }
+        };
+
+        template<typename T_Device, typename T_Event>
+        struct internal::Enqueue::Event<unifiedCudaHip::Queue<T_Device>, T_Event>
+        {
+            void operator()(unifiedCudaHip::Queue<T_Device>& queue, T_Event& event) const
+            {
+                using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
+
+                ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
+                    ApiInterface,
+                    ApiInterface::eventRecord(event.getNativeHandle(), queue.getNativeHandle()));
             }
         };
 

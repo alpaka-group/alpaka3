@@ -8,6 +8,7 @@
 
 #if ALPAKA_LANG_SYCL
 
+#    include "alpaka/api/syclGeneric//Event.hpp"
 #    include "alpaka/api/syclGeneric/onAcc.hpp"
 #    include "alpaka/api/util.hpp"
 #    include "alpaka/core/CallbackThread.hpp"
@@ -119,6 +120,14 @@ namespace alpaka::onHost
 
             friend struct onHost::internal::GetDevice;
 
+            friend struct alpaka::onHost::internal::WaitFor;
+
+            void waitFor(syclGeneric::Event<T_Device>& event)
+            {
+                sycl::event sycl_event = event.getNativeHandle();
+                m_queue.submit([sycl_event](sycl::handler& cgh) { cgh.depends_on(sycl_event); });
+            }
+
             Handle<T_Device> m_device;
             uint32_t m_idx = 0u;
             sycl::queue m_queue;
@@ -130,9 +139,10 @@ namespace alpaka::onHost
 
     template<typename T_Device, typename T_Task>
     struct internal::Enqueue::Task<syclGeneric::Queue<T_Device>, T_Task>
+
     {
-        /** It is not allowed to execute sycl methods within a SYCL host_task therefore we use a callback host thread
-         * to execute the host function which is allowing to use sycl methods.
+        /** It is not allowed to execute sycl methods within a SYCL host_task therefore we use a callback host
+         * thread to execute the host function which is allowing to use sycl methods.
          */
         static void callHostTask(syclGeneric::Queue<T_Device>& queue, T_Task task)
         {
@@ -146,6 +156,16 @@ namespace alpaka::onHost
             // executed.
             queue.m_queue.submit([&queue, task](sycl::handler& cgh)
                                  { cgh.host_task([&queue, task]() { callHostTask(queue, task); }); });
+        }
+    };
+
+    template<typename T_Device, typename T_Event>
+    struct internal::Enqueue::Event<syclGeneric::Queue<T_Device>, T_Event>
+    {
+        void operator()(syclGeneric::Queue<T_Device>& queue, T_Event& event) const
+        {
+            sycl::event emulatedEvent = queue.m_queue.submit([](sycl::handler& cgh) { cgh.single_task([]() {}); });
+            event.setEvent(emulatedEvent);
         }
     };
 

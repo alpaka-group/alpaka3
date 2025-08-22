@@ -10,5 +10,6 @@
 #include "alpaka/api/oneApi/Queue.hpp"
 #include "alpaka/api/oneApi/executor.hpp"
 #include "alpaka/api/oneApi/math.hpp"
+#include "alpaka/api/syclGeneric/Event.hpp"
 #include "alpaka/api/syclGeneric/atomic.hpp"
 #include "alpaka/api/syclGeneric/math.hpp"

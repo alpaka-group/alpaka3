@@ -6,6 +6,7 @@
 
 #include "Handle.hpp"
 #include "alpaka/interface.hpp"
+#include "alpaka/onHost/Event.hpp"
 #include "alpaka/onHost/Queue.hpp"
 #include "alpaka/onHost/concepts.hpp"
 #include "alpaka/onHost/internal.hpp"
@@ -82,6 +83,11 @@ namespace alpaka::onHost
         auto makeQueue()
         {
             return Queue{internal::MakeQueue::Op<std::decay_t<decltype(*m_device.get())>>{}(*m_device.get())};
+        }
+
+        auto makeEvent()
+        {
+            return Event{internal::MakeEvent::Op<std::decay_t<decltype(*m_device.get())>>{}(*m_device.get())};
         }
 
         /** blocks the caller until the given handle executes all work

@@ -5,6 +5,7 @@
 #pragma once
 
 #include "alpaka/api/host/Api.hpp"
+#include "alpaka/api/host/Event.hpp"
 #include "alpaka/api/host/Queue.hpp"
 #include "alpaka/api/util.hpp"
 #include "alpaka/core/alignedAlloc.hpp"
@@ -62,6 +63,7 @@ namespace alpaka::onHost
             uint32_t m_idx = 0u;
             DeviceProperties m_properties;
             std::vector<std::weak_ptr<cpu::Queue<Device>>> queues;
+            std::vector<std::weak_ptr<cpu::Event<Device>>> events;
             std::mutex queuesGuard;
 
             std::shared_ptr<Device> getSharedPtr()
@@ -93,6 +95,18 @@ namespace alpaka::onHost
 
                 queues.emplace_back(newQueue);
                 return newQueue;
+            }
+
+            friend struct internal::MakeEvent;
+
+            Handle<cpu::Event<Device>> makeEvent()
+            {
+                auto thisHandle = this->getSharedPtr();
+                std::lock_guard<std::mutex> lk{queuesGuard};
+                auto newEvent = std::make_shared<cpu::Event<Device>>(std::move(thisHandle), queues.size());
+
+                events.emplace_back(newEvent);
+                return newEvent;
             }
 
             friend struct alpaka::internal::GetDeviceType;

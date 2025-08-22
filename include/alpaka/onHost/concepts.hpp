@@ -20,9 +20,11 @@ namespace alpaka::onHost
             {
                 alpaka::internal::GetName::Op<T>{}(device)
             } -> std::convertible_to<std::string>;
-
             {
                 internal::MakeQueue::Op<T>{}(device)
+            };
+            {
+                internal::MakeEvent::Op<T>{}(device)
             };
             {
                 internal::GetNativeHandle::Op<T>{}(device)

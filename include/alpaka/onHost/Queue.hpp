@@ -6,6 +6,7 @@
 
 #include "Handle.hpp"
 #include "alpaka/api/trait.hpp"
+#include "alpaka/onHost/Event.hpp"
 #include "alpaka/onHost/concepts.hpp"
 #include "alpaka/onHost/internal.hpp"
 
@@ -150,6 +151,18 @@ namespace alpaka::onHost
             return internal::Enqueue::Task<std::decay_t<decltype(*m_queue.get())>, std::decay_t<decltype(task)>>{}(
                 *m_queue.get(),
                 task);
+        }
+
+        void enqueue(Event<Device<T_Api, T_DeviceKind>> const& event) const
+        {
+            return internal::Enqueue::Event<ALPAKA_TYPEOF(*m_queue.get()), ALPAKA_TYPEOF(*event.get())>{}(
+                *m_queue.get(),
+                *event.get());
+        }
+
+        void waitFor(Event<Device<T_Api, T_DeviceKind>> const& event) const
+        {
+            return internal::waitFor(*m_queue.get(), *event.get());
         }
     };
 

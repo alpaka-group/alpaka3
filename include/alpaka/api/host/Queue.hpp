@@ -6,6 +6,7 @@
 
 #include "alpaka/api/generic.hpp"
 #include "alpaka/api/host/Api.hpp"
+#include "alpaka/api/host/Event.hpp"
 #include "alpaka/api/host/exec/OmpBlocks.hpp"
 #include "alpaka/api/host/exec/OmpThreads.hpp"
 #include "alpaka/api/host/exec/Serial.hpp"
@@ -82,7 +83,7 @@ namespace alpaka::onHost
 
             [[nodiscard]] auto getNativeHandle() const noexcept
             {
-                return 0;
+                return m_idx;
             }
 
             friend struct internal::Enqueue;
@@ -162,6 +163,7 @@ namespace alpaka::onHost
             friend struct onHost::internal::GetDevice;
 
             friend struct internal::Wait;
+            friend struct internal::WaitFor;
             friend struct internal::Memcpy;
             friend struct internal::Memset;
             friend struct alpaka::internal::GetApi;
@@ -181,6 +183,55 @@ namespace alpaka::onHost
                 internal::enqueue(queue, [&p]() { p.set_value(); });
 
                 f.wait();
+            }
+        };
+
+        template<typename T_Device, typename T_Event>
+        struct Enqueue::Event<cpu::Queue<T_Device>, T_Event>
+        {
+            void operator()(cpu::Queue<T_Device>& queue, T_Event& event) const
+            {
+                auto sharedEvent = event.getSharedPtr();
+
+                // Setting the event state and enqueuing it has to be atomic.
+                std::lock_guard<std::mutex> lk(event.m_mutex);
+
+                ++event.m_enqueueCount;
+
+                auto const enqueueCount = event.m_enqueueCount;
+
+                // Enqueue a task that only resets the events flag if it is completed.
+                event.m_future = queue.m_workerThread.submit(
+                    [sharedEvent, enqueueCount]() mutable
+                    {
+                        std::unique_lock<std::mutex> lk2(sharedEvent->m_mutex);
+
+                        // Nothing to do if it has been re-enqueued to a later position in the queue.
+                        if(enqueueCount == sharedEvent->m_enqueueCount)
+                        {
+                            sharedEvent->m_LastReadyEnqueueCount
+                                = std::max(enqueueCount, sharedEvent->m_LastReadyEnqueueCount);
+                        }
+                    });
+            }
+        };
+
+        template<typename T_Device, typename T_Event>
+        struct WaitFor::Op<cpu::Queue<T_Device>, T_Event>
+        {
+            void operator()(cpu::Queue<T_Device>& queue, cpu::Event<T_Device>& event) const
+            {
+                // Setting the event state and enqueuing it has to be atomic.
+                std::lock_guard<std::mutex> lk(event.m_mutex);
+
+                if(!event.isReady())
+                {
+                    auto sharedEvent = event.getSharedPtr();
+                    auto oldFuture = event.m_future;
+
+                    // Enqueue a task that waits for the given future of the event.
+                    queue.m_workerThread.submit([sharedEvent, oldFuture]() { oldFuture.get(); });
+                }
             }
         };
 
