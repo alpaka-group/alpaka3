@@ -199,8 +199,8 @@ namespace alpaka::onHost
             bool operator()(cpu::Device<T_Platform>& device, T_Any const& view) const
             {
                 if constexpr(
-                    std::is_same_v<ALPAKA_TYPEOF(getApi(view)), api::Host>
-                    && std::is_same_v<ALPAKA_TYPEOF(getDeviceKind(device)), deviceKind::Cpu>)
+                    ALPAKA_TYPEOF(getApi(view)){} == api::host
+                    && ALPAKA_TYPEOF(getDeviceKind(device)){} == deviceKind::cpu)
                     return true;
                 else
                     return false;

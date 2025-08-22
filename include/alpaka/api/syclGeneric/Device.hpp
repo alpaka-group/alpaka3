@@ -233,8 +233,8 @@ namespace alpaka::onHost
                 {
                     // assume that a sycl cpu device can always access host memory
                     if constexpr(
-                        std::is_same_v<ALPAKA_TYPEOF(getApi(view)), api::Host>
-                        && std::is_same_v<ALPAKA_TYPEOF(getDeviceKind(device)), deviceKind::Cpu>)
+                        ALPAKA_TYPEOF(getApi(view)){} == api::host
+                        && ALPAKA_TYPEOF(getDeviceKind(device)){} == deviceKind::cpu)
                         return true;
                 }
 

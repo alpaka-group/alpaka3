@@ -131,7 +131,7 @@ namespace alpaka::onHost::internal
                 },
                 deviceKindList);
 
-            if(std::is_same_v<T_DeviceKind, deviceKind::Cpu>)
+            if(deviceKind == deviceKind::cpu)
             {
                 /* If the device kind is not CPU and usm alloc type is shared, we do not know if the memory is shared
                  * within the same sycl context. Therefor only know we mark only shared and host alloced memory

@@ -163,7 +163,7 @@ void testKernels(auto const deviceSpec, auto const exec)
 
 #if ALPAKA_LANG_ONEAPI
     // support for double precision is not guaranteed for sycl devices such as Intel GPUs
-    if constexpr(std::is_same_v<DataType, double> && std::is_same_v<decltype(deviceSpec.getApi()), api::OneApi>)
+    if constexpr(std::is_same_v<DataType, double> && deviceSpec.getApi() == api::oneApi)
     {
         if(devAcc.getNativeHandle().first.template get_info<sycl::info::device::double_fp_config>().size() == 0)
         {

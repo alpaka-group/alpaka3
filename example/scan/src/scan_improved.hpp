@@ -18,14 +18,14 @@
 
 using namespace alpaka;
 
-template<typename TDeviceKind>
+template<alpaka::deviceKind::concepts::DeviceKind TDeviceKind>
 consteval auto maximumMiniBlockSize()
 {
-    if constexpr(std::is_same_v<TDeviceKind, deviceKind::NvidiaGpu>)
+    if constexpr(TDeviceKind{} == deviceKind::nvidiaGpu)
         return 8_idx;
-    else if constexpr(std::is_same_v<TDeviceKind, deviceKind::AmdGpu>)
+    else if constexpr(TDeviceKind{} == deviceKind::amdGpu)
         return 8_idx;
-    else if constexpr(std::is_same_v<TDeviceKind, deviceKind::IntelGpu>)
+    else if constexpr(TDeviceKind{} == deviceKind::intelGpu)
         return 8_idx;
     else
         return 32768_idx / sizeof(Data);
@@ -38,11 +38,11 @@ consteval auto maximumMiniBlockSize()
 template<typename TDeviceKind>
 constexpr auto conflictFreeAccess(auto const& n)
 {
-    if constexpr(std::is_same_v<TDeviceKind, deviceKind::NvidiaGpu>)
+    if constexpr(TDeviceKind{} == deviceKind::nvidiaGpu)
         return n + n / numNvidiaBanks;
-    else if constexpr(std::is_same_v<TDeviceKind, deviceKind::AmdGpu>)
+    else if constexpr(TDeviceKind{} == deviceKind::amdGpu)
         return n + n / numAmdBanks;
-    else if constexpr(std::is_same_v<TDeviceKind, deviceKind::IntelGpu>)
+    else if constexpr(TDeviceKind{} == deviceKind::intelGpu)
         return n + n / numIntelBanks;
     else // cpu or unknown backend does nothing
         return n;

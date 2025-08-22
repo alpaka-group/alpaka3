@@ -226,7 +226,7 @@ namespace alpaka::onHost::internal
          */
         {
             IndexType multiprocessorScaling = 1u;
-            if constexpr(!std::is_same_v<ALPAKA_TYPEOF(queue.getDevice().getDeviceKind()), deviceKind::Cpu>)
+            if constexpr(!(ALPAKA_TYPEOF(queue.getDevice().getDeviceKind()){} == deviceKind::cpu))
             {
                 // For non-CPU devices, we scale the number of frames based on an arbitrary number derived from
                 // testing with the dot kernel of the bablestream benchmark.

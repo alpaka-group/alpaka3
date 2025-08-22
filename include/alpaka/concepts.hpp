@@ -61,9 +61,9 @@ namespace alpaka
 
 
         template<typename T>
-        concept IsGpuType = deviceKind::concepts::DeviceKind<T>
-                            && (std::is_same_v<T, deviceKind::NvidiaGpu> || std::is_same_v<T, deviceKind::AmdGpu>
-                                || std::is_same_v<T, deviceKind::IntelGpu>);
+        concept IsGpuType
+            = deviceKind::concepts::DeviceKind<T>
+              && (T{} == deviceKind::nvidiaGpu || T{} == deviceKind::amdGpu || T{} == deviceKind::intelGpu);
 
 
         template<typename T>

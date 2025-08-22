@@ -39,7 +39,7 @@ namespace alpaka::onHost::internal
 
             if(ptrAttributes.type == ApiInterface::memoryTypeManaged)
                 return true;
-            if(ptrAttributes.type == ApiInterface::memoryTypeHost && std::is_same_v<T_DeviceKind, deviceKind::Cpu>)
+            if(ptrAttributes.type == ApiInterface::memoryTypeHost && deviceKind == deviceKind::cpu)
                 return true;
 
             return false;

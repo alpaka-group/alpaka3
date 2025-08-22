@@ -64,7 +64,7 @@ void naiveToGray(auto&& buffer)
         reinterpret_cast<Pixel*>(onHost::data(buffer) + onHost::getExtents(buffer).x()),
         [](Pixel& pixel)
         {
-            const auto gray = (pixel.r * 11 + pixel.g * 16 + pixel.b * 5) / 32;
+            auto const gray = (pixel.r * 11 + pixel.g * 16 + pixel.b * 5) / 32;
             pixel.r = pixel.g = pixel.b = gray;
         });
 }
@@ -177,7 +177,7 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdForEach) -> int
     auto bufAccScalarRGB = onHost::allocLike(devAcc, bufHostScalarRGB);
 
     // optionally run for comparison but only if the executor is exec::cpuSerial
-    if(std::is_same_v<ALPAKA_TYPEOF(exec), alpaka::exec::CpuSerial> && enableStdForEach)
+    if(exec == alpaka::exec::cpuSerial && enableStdForEach)
     {
         std::cout << "Using native CPU std::for_each()" << std::endl;
         onHost::wait(queue);
