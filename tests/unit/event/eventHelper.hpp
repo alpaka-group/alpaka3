@@ -18,7 +18,7 @@ namespace alpaka::test::event
             [[maybe_unused]] int32_t rounds,
             [[maybe_unused]] int32_t roundsGuard)
         {
-#if ALPAKA_ARCH_PTX
+#if ALPAKA_ARCH_PTX && __CUDA_ARCH__ >= 700
             __nanosleep(100000);
 #elif !ALPAKA_LANG_SYCL && !ALPAKA_LANG_HIP
             std::this_thread::sleep_for(std::chrono::microseconds(100u));

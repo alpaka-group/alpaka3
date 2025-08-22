@@ -14,6 +14,7 @@
 #    include "alpaka/api/generic.hpp"
 #    include "alpaka/api/hip/IdxLayer.hpp"
 #    include "alpaka/api/unifiedCudaHip/ComputeApi.hpp"
+#    include "alpaka/api/unifiedCudaHip/Event.hpp"
 #    include "alpaka/api/unifiedCudaHip/MemcpyKind.hpp"
 #    include "alpaka/api/unifiedCudaHip/concepts.hpp"
 #    include "alpaka/api/util.hpp"
