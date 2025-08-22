@@ -214,8 +214,7 @@ TEMPLATE_LIST_TEST_CASE("eventReEnqueueShouldBePossibleIfNobodyWaitsFor", "", Te
                   << " because the device does not support concurrent queues." << std::endl;
         return;
     }
-    if(std::is_same_v<ALPAKA_TYPEOF(deviceSpec.getApi()), api::OneApi>
-       && std::is_same_v<ALPAKA_TYPEOF(deviceSpec.getDeviceKind()), deviceKind::IntelGpu>)
+    if(deviceSpec.getApi() == api::oneApi && deviceSpec.getDeviceKind() == deviceKind::intelGpu)
     {
         std::cout << "Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking."
                   << std::endl;
@@ -291,8 +290,7 @@ TEMPLATE_LIST_TEST_CASE("eventReEnqueueShouldBePossibleIfSomeoneWaitsFor", "", T
                   << " because the device does not support concurrent queues." << std::endl;
         return;
     }
-    if(std::is_same_v<ALPAKA_TYPEOF(deviceSpec.getApi()), api::OneApi>
-       && std::is_same_v<ALPAKA_TYPEOF(deviceSpec.getDeviceKind()), deviceKind::IntelGpu>)
+    if(deviceSpec.getApi() == api::oneApi && deviceSpec.getDeviceKind() == deviceKind::intelGpu)
     {
         std::cout << "Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking."
                   << std::endl;
@@ -382,8 +380,7 @@ TEMPLATE_LIST_TEST_CASE("waitForEventThatAlreadyFinishedShouldBeSkipped", "", Te
                   << " because the device does not support concurrent queues." << std::endl;
         return;
     }
-    if(std::is_same_v<ALPAKA_TYPEOF(deviceSpec.getApi()), api::OneApi>
-       && std::is_same_v<ALPAKA_TYPEOF(deviceSpec.getDeviceKind()), deviceKind::IntelGpu>)
+    if(deviceSpec.getApi() == api::oneApi && deviceSpec.getDeviceKind() == deviceKind::intelGpu)
     {
         std::cout << "Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking."
                   << std::endl;
@@ -470,8 +467,7 @@ TEMPLATE_LIST_TEST_CASE("evReEnqueueWithSomeoneWaitsForEventInOrderLifetimeRelea
                   << " because the device does not support concurrent queues." << std::endl;
         return;
     }
-    if(std::is_same_v<ALPAKA_TYPEOF(deviceSpec.getApi()), api::OneApi>
-       && std::is_same_v<ALPAKA_TYPEOF(deviceSpec.getDeviceKind()), deviceKind::IntelGpu>)
+    if(deviceSpec.getApi() == api::oneApi && deviceSpec.getDeviceKind() == deviceKind::intelGpu)
     {
         std::cout << "Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking."
                   << std::endl;
@@ -598,8 +594,7 @@ TEMPLATE_LIST_TEST_CASE("EventOutOfOrderLifetimeRelease", "", TestApis)
                   << " because the device does not support concurrent queues." << std::endl;
         return;
     }
-    if(std::is_same_v<ALPAKA_TYPEOF(deviceSpec.getApi()), api::OneApi>
-       && std::is_same_v<ALPAKA_TYPEOF(deviceSpec.getDeviceKind()), deviceKind::IntelGpu>)
+    if(deviceSpec.getApi() == api::oneApi && deviceSpec.getDeviceKind() == deviceKind::intelGpu)
     {
         std::cout << "Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking."
                   << std::endl;

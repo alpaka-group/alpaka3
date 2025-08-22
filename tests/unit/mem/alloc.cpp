@@ -77,7 +77,7 @@ void allocAsyncImplicitWait(auto device, alpaka::concepts::Executor auto exec)
     onHost::memcpy(deviceQueue, deviceView, managedView);
     onHost::wait(deviceQueue);
 
-    if(std::is_same_v<ALPAKA_TYPEOF(getDeviceKind(device)), deviceKind::Cpu>)
+    if(getDeviceKind(device) == deviceKind::cpu)
     {
         REQUIRE(onHost::isDataAccessible(device, hostView) == true);
         validateAccess(device, exec, hostView);

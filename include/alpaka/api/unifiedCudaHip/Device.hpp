@@ -243,8 +243,7 @@ namespace alpaka::onHost
                 T_Type* ptr = nullptr;
                 // HIP is failing if zero byte managed memory is allocated, therefore we do not call the allocation
                 // method for HIP
-                bool isHipZeroByteAllocation
-                    = memSizeInByte == 0 && std::is_same_v<ALPAKA_TYPEOF(getApi(device)), api::Hip>;
+                bool isHipZeroByteAllocation = memSizeInByte == 0 && getApi(device) == api::hip;
                 if(!isHipZeroByteAllocation)
                 {
                     ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(

@@ -61,6 +61,16 @@ namespace alpaka
             concept DeviceKind = isDeviceKind_v<T_DeviceKind>;
         } // namespace concepts
 
+        constexpr bool operator==(concepts::DeviceKind auto lhs, concepts::DeviceKind auto rhs)
+        {
+            return std::is_same_v<ALPAKA_TYPEOF(lhs), ALPAKA_TYPEOF(rhs)>;
+        }
+
+        constexpr bool operator!=(concepts::DeviceKind auto lhs, concepts::DeviceKind auto rhs)
+        {
+            return !(lhs == rhs);
+        }
+
         struct Cpu : detail::DeviceKindBase
         {
             static std::string getName()

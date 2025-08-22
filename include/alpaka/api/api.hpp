@@ -14,6 +14,7 @@
 #include "alpaka/onHost/trait.hpp"
 
 #include <algorithm>
+#include <type_traits>
 
 namespace alpaka
 {
@@ -41,4 +42,17 @@ namespace alpaka
 
         constexpr auto enabledApis = meta::filter([](auto api) constexpr { return isPlatformAvaiable(api); }, apis);
     } // namespace onHost
+
+    namespace api
+    {
+        constexpr bool operator==(alpaka::concepts::Api auto lhs, alpaka::concepts::Api auto rhs)
+        {
+            return std::is_same_v<ALPAKA_TYPEOF(lhs), ALPAKA_TYPEOF(rhs)>;
+        }
+
+        constexpr bool operator!=(alpaka::concepts::Api auto lhs, alpaka::concepts::Api auto rhs)
+        {
+            return !(lhs == rhs);
+        }
+    } // namespace api
 } // namespace alpaka

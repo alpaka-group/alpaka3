@@ -132,7 +132,7 @@ namespace mathtest
             // support for double precision is not guaranteed for sycl devices such as Intel GPUs
             if constexpr(
                 std::is_same_v<trait::GetValueType_t<TData>, double>
-                && std::is_same_v<decltype(deviceSpec.getApi()), api::OneApi>)
+                && ALPAKA_TYPEOF(deviceSpec.getApi()){} == api::oneApi)
             {
                 if(device.getNativeHandle().first.template get_info<sycl::info::device::double_fp_config>().size()
                    == 0)

@@ -91,6 +91,16 @@ namespace alpaka
         concept Executor = alpaka::isExecutor<T>;
     } // namespace concepts
 
+    constexpr bool operator==(concepts::Executor auto lhs, concepts::Executor auto rhs)
+    {
+        return std::is_same_v<ALPAKA_TYPEOF(lhs), ALPAKA_TYPEOF(rhs)>;
+    }
+
+    constexpr bool operator!=(concepts::Executor auto lhs, concepts::Executor auto rhs)
+    {
+        return !(lhs == rhs);
+    }
+
     /** get SIMD with in bytes for the
      *
      * @tparam T_Type data type
