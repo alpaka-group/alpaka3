@@ -19,6 +19,9 @@
  *   - gfx9xx (numeric): 9xy -> 90xy  (e.g., 908->9008, 906->9006, 942->9042)
  *   - gfx10xx / gfx11xx: stxy -> st0xy (e.g., 1036->10036, 1103->11003)
  *   - Suffix: a->+100 (90a->9100), b->+200, c->+300
+ *
+ * An overview of AMD GPU architectures can be found here:
+ * https://llvm.org/docs/AMDGPUUsage.html#processors
  */
 
 #        if defined(__gfx1153__)
