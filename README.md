@@ -7,13 +7,23 @@
 
 The **alpaka** library is a header-only C++20 abstraction library for accelerator development.
 
+Its aim is to provide performance portability across accelerators by abstracting the underlying levels of parallelism.
 
-## Disclaimer
+The library is platform-independent and supports the concurrent and cooperative use of multiple devices, including host CPUs (x86, ARM, RISC-V, and Power8+) and GPUs from different vendors (NVIDIA, AMD, and Intel).
+A variety of accelerator backends—CUDA, HIP, SYCL, OpenMP, and serial execution—are available and can be selected based on the target device.
+Only a single implementation of a user kernel is required, expressed as a function object with a standardized interface.
+This eliminates the need to write specialized CUDA, HIP, SYCL, OpenMP, or threading code.
+Moreover, multiple accelerator backends can be combined to target different vendor hardware within a single system and even within a single application.
 
-This is a prototype implementation to evaluate different concepts for the host side API, Kernel language, ...
-The code is **NOT** production ready!
-Currently, I do not follow coding standards and provide updates via pull requests.
-It is possible that the development branch history is updated via force pushed.
+The abstraction is based on a virtual index domain decomposed into equally sized chunks called frames.
+alpaka provides a uniform abstraction to traverse these frames, independent of the underlying hardware.
+Algorithms to be parallelized map the chunked index domain and native worker threads onto the data, expressing the computation as kernels that are executed in parallel threads (SIMT), thereby also leveraging SIMD units.
+Unlike native parallelism models such as CUDA, HIP, and SYCL, alpaka kernels are not restricted to three dimensions.
+Explicit caching of data within a frame via shared memory allows developers to fully unleash the performance of the compute device.
+Additionally, alpaka offers primitive functions such as iota, transform, transform-reduce, reduce, and concurrent, simplifying the development of portable high-performance applications.
+Host, device, mapped, and managed multi-dimensional views provide a natural way to operate on data.
+
+This repository separates the development of [mainline alpaka](https://github.com/alpaka-group/alpaka) from the upcoming major release, which introduces breaking changes compared to previous versions.
 
 Software License
 ----------------
