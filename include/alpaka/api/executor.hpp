@@ -20,10 +20,6 @@ namespace alpaka::exec
         ,
         cpuSerial
 #endif
-#ifndef ALPAKA_DISABLE_EXEC_CpuOmpBlocksAndThreads
-        ,
-        cpuOmpBlocksAndThreads
-#endif
 #ifndef ALPAKA_DISABLE_EXEC_GpuCuda
         ,
         gpuCuda

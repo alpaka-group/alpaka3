@@ -135,11 +135,6 @@ namespace alpaka::onHost
         };
 #if ALPAKA_OMP
         template<typename T_Platform>
-        struct IsMappingSupportedBy::Op<exec::CpuOmpBlocksAndThreads, cpu::Device<T_Platform>> : std::true_type
-        {
-        };
-
-        template<typename T_Platform>
         struct IsMappingSupportedBy::Op<exec::CpuOmpBlocks, cpu::Device<T_Platform>> : std::true_type
         {
         };
@@ -294,48 +289,6 @@ namespace alpaka::onHost
 #endif
                 auto const numThreads = Vec<typename T_NumThreads::type, T_NumThreads::dim()>::all(1);
                 return ThreadSpec{numThreadBlocks, numThreads};
-            }
-        };
-
-        template<
-            typename T_Platform,
-            onHost::concepts::FrameSpec T_FrameSpec,
-            alpaka::concepts::KernelBundle T_KernelBundle>
-        struct AdjustThreadSpec::Op<cpu::Device<T_Platform>, exec::CpuOmpBlocksAndThreads, T_FrameSpec, T_KernelBundle>
-        {
-            using T_NumThreads = T_FrameSpec::ThreadExtentsVecType;
-
-            auto operator()(
-                cpu::Device<T_Platform> const& device,
-                exec::CpuOmpBlocksAndThreads const& executor,
-                T_FrameSpec const& dataBlocking,
-                T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
-            {
-                auto numThreadBlocks = dataBlocking.getThreadSpec().m_numBlocks;
-
-                return ThreadSpec{numThreadBlocks, T_NumThreads::template all<1u>()};
-            }
-
-            auto operator()(
-                cpu::Device<T_Platform> const& device,
-                exec::CpuOmpBlocksAndThreads const& executor,
-                T_FrameSpec const& dataBlocking,
-                T_KernelBundle const& kernelBundle) const
-            {
-                // universal vector type that both return produce the same result type.
-                using UniVec = typename ALPAKA_TYPEOF(dataBlocking.getThreadSpec().m_numBlocks)::UniVec;
-
-                if(dataBlocking.getThreadSpec().m_numThreads.product() > typename UniVec::type{4u})
-                {
-                    auto const numThreads = UniVec::all(1);
-                    return ThreadSpec{UniVec{dataBlocking.getThreadSpec().m_numBlocks}, numThreads};
-                }
-                else
-                {
-                    return ThreadSpec{
-                        UniVec{dataBlocking.getThreadSpec().m_numBlocks},
-                        UniVec{dataBlocking.getThreadSpec().m_numThreads}};
-                }
             }
         };
 

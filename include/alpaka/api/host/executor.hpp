@@ -35,16 +35,6 @@ namespace alpaka
 
         constexpr CpuOmpBlocks cpuOmpBlocks;
 
-        struct CpuOmpBlocksAndThreads
-        {
-            static std::string getName()
-            {
-                return "CpuOmpBlocksAndThreads";
-            }
-        };
-
-        constexpr CpuOmpBlocksAndThreads cpuOmpBlocksAndThreads;
-
         namespace trait
         {
             template<>
@@ -71,10 +61,6 @@ namespace alpaka
         {
         };
 
-        template<>
-        struct IsExecutor<exec::CpuOmpBlocksAndThreads> : std::true_type
-        {
-        };
     } // namespace trait
 } // namespace alpaka
 
@@ -98,12 +84,4 @@ namespace alpaka::onAcc::trait
         }
     };
 
-    template<>
-    struct GetAtomicImpl::Op<alpaka::exec::CpuOmpBlocksAndThreads>
-    {
-        constexpr decltype(auto) operator()(alpaka::exec::CpuOmpBlocksAndThreads const) const
-        {
-            return alpaka::onAcc::internal::stlAtomic;
-        }
-    };
 } // namespace alpaka::onAcc::trait
