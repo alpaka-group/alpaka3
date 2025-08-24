@@ -34,9 +34,10 @@ namespace alpaka::onHost
         struct Queue : std::enable_shared_from_this<Queue<T_Device>>
         {
         public:
-            Queue(internal::concepts::DeviceHandle auto device, uint32_t const idx)
+            Queue(internal::concepts::DeviceHandle auto device, uint32_t const idx, bool isBlocking = false)
                 : m_device(std::move(device))
                 , m_idx(idx)
+                , m_isBlocking(isBlocking)
             {
             }
 
@@ -70,6 +71,33 @@ namespace alpaka::onHost
             Handle<T_Device> m_device;
             uint32_t m_idx = 0u;
             core::CallbackThread m_workerThread;
+            bool m_isBlocking{false};
+
+        public:
+            [[nodiscard]] bool isBlocking() const noexcept
+            {
+                return m_isBlocking;
+            }
+
+            // submit a task to the queue. centralizes blocking / non-blocking behavior
+            template<typename T_Fn>
+            auto submit(T_Fn&& fn)
+            {
+                if(m_isBlocking)
+                {
+                    // Execute inline for deterministic immediate visibility
+                    fn();
+                    // return a ready future-like placeholder; reuse CallbackThread interface minimally
+                    std::promise<void> p;
+                    auto f = p.get_future();
+                    p.set_value();
+                    // to keep the uniform interface with the non-blocking case,
+                    // return by moving the f since it is move-only
+                    return f;
+                }
+                // enqueue the task into the worker thread, callers can wait/chain later.
+                return m_workerThread.submit(std::forward<T_Fn>(fn));
+            }
 
             friend struct alpaka::internal::GetName;
 
@@ -94,7 +122,7 @@ namespace alpaka::onHost
                 auto const& kernelBundle)
             {
                 auto deviceKind = alpaka::getDeviceKind(m_device);
-                m_workerThread.submit(
+                submit(
                     [kernelBundle, executor, threadBlocking, deviceKind]()
                     {
                         auto moreLayer = Dict{
@@ -118,7 +146,7 @@ namespace alpaka::onHost
             {
                 auto threadBlocking = internal::adjustThreadSpec(*m_device.get(), executor, frameSpec, kernelBundle);
                 auto deviceKind = alpaka::getDeviceKind(m_device);
-                m_workerThread.submit(
+                submit(
                     [kernelBundle, executor, threadBlocking, deviceKind, frameSpec]()
                     {
                         auto moreLayer = Dict{
@@ -139,7 +167,7 @@ namespace alpaka::onHost
              */
             void enqueue(auto const& task)
             {
-                m_workerThread.submit([task]() { task(); });
+                submit([task]() { task(); });
             }
 
             friend struct alpaka::internal::GetDeviceType;
@@ -199,8 +227,23 @@ namespace alpaka::onHost
 
                 auto const enqueueCount = event.m_enqueueCount;
 
-                // Enqueue a task that only resets the events flag if it is completed.
-                event.m_future = queue.m_workerThread.submit(
+                if(queue.isBlocking())
+                {
+                    // For blocking queues we must NOT execute the completion lambda while holding the mutex
+                    // (queue.submit executes inline). Just mark the event ready immediately because the blocking
+                    // queue guarantees all prior work is complete at this point.
+                    sharedEvent->m_LastReadyEnqueueCount
+                        = std::max(enqueueCount, sharedEvent->m_LastReadyEnqueueCount);
+                    std::promise<void> p;
+                    auto f = p.get_future();
+                    p.set_value();
+                    // get the shared future to be consistent with non-blocking case
+                    event.m_future = f.share();
+                    return;
+                }
+
+                // Non-blocking queue: enqueue a task that marks the event ready when it reaches the head.
+                event.m_future = queue.submit(
                     [sharedEvent, enqueueCount]() mutable
                     {
                         std::unique_lock<std::mutex> lk2(sharedEvent->m_mutex);
@@ -220,16 +263,29 @@ namespace alpaka::onHost
         {
             void operator()(cpu::Queue<T_Device>& queue, cpu::Event<T_Device>& event) const
             {
-                // Setting the event state and enqueuing it has to be atomic.
-                std::lock_guard<std::mutex> lk(event.m_mutex);
+                std::unique_lock<std::mutex> lk(event.m_mutex);
 
-                if(!event.isReady())
+                if(event.isReady())
                 {
-                    auto sharedEvent = event.getSharedPtr();
-                    auto oldFuture = event.m_future;
+                    // nothing to do
+                    return;
+                }
 
-                    // Enqueue a task that waits for the given future of the event.
-                    queue.m_workerThread.submit([sharedEvent, oldFuture]() { oldFuture.get(); });
+                auto sharedEvent = event.getSharedPtr();
+                // copy under lock
+                auto oldFuture = event.m_future;
+                // release before potentially blocking wait
+                lk.unlock();
+
+                if(queue.m_isBlocking)
+                {
+                    // Blocking queue: perform the wait inline (run immediately) now.
+                    oldFuture.get();
+                }
+                else
+                {
+                    // Non-blocking: defer the wait to preserve async behaviour.
+                    queue.submit([sharedEvent, oldFuture]() { oldFuture.get(); });
                 }
             }
         };

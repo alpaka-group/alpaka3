@@ -31,12 +31,21 @@ namespace alpaka::onHost
                 *std::declval<DeviceInterface>().get()));
 
         QueueHandle m_queue;
+        bool m_isBlocking{false};
+
+        void conditionalWait() const
+        {
+            if(m_isBlocking)
+                internal::wait(*m_queue.get());
+        }
 
     public:
         using element_type = typename QueueHandle::element_type;
 
         template<typename T_Queue>
-        Queue(Handle<T_Queue>&& queue) : m_queue{std::forward<Handle<T_Queue>>(queue)}
+        Queue(Handle<T_Queue>&& queue, bool isBlocking = false)
+            : m_queue{std::forward<Handle<T_Queue>>(queue)}
+            , m_isBlocking(isBlocking)
         {
         }
 
@@ -84,6 +93,11 @@ namespace alpaka::onHost
             return Device<T_Api, T_DeviceKind>{internal::getDevice(*m_queue.get())};
         }
 
+        bool isBlocking() const
+        {
+            return m_isBlocking;
+        }
+
         /** Enqueue a kernel functor to a queue
          *
          * @param executor description how native worker threads will be mapped and grouped to compute grid layers
@@ -96,11 +110,12 @@ namespace alpaka::onHost
             auto const& f,
             auto&&... args) const
         {
-            return internal::enqueue(
+            internal::enqueue(
                 *m_queue.get(),
                 std::move(executor),
                 blockCfg,
                 KernelBundle{f, onHost::makeAccessibleOnAcc(ALPAKA_FORWARD(args))...});
+            conditionalWait();
         }
 
         /** Enqueue a kernel to a queue
@@ -121,6 +136,7 @@ namespace alpaka::onHost
         {
             auto executor = supportedMappings(internal::getDevice(*m_queue.get()), exec::allExecutors);
             internal::enqueue(*m_queue.get(), std::get<0>(executor), specification, kernelBundle);
+            conditionalWait();
         }
 
         /**
@@ -133,6 +149,7 @@ namespace alpaka::onHost
             alpaka::concepts::KernelBundle auto const& kernelBundle) const
         {
             internal::enqueue(*m_queue.get(), executor, specification, kernelBundle);
+            conditionalWait();
         }
 
         /** Enqueue a operation which is executed on the host side
@@ -145,9 +162,10 @@ namespace alpaka::onHost
          */
         void enqueue(auto const& task) const
         {
-            return internal::Enqueue::Task<std::decay_t<decltype(*m_queue.get())>, std::decay_t<decltype(task)>>{}(
+            internal::Enqueue::Task<std::decay_t<decltype(*m_queue.get())>, std::decay_t<decltype(task)>>{}(
                 *m_queue.get(),
                 task);
+            conditionalWait();
         }
 
         void enqueue(Event<Device<T_Api, T_DeviceKind>> const& event) const
@@ -164,7 +182,7 @@ namespace alpaka::onHost
     };
 
     template<typename T_Queue>
-    Queue(Handle<T_Queue>&&) -> Queue<Device<
+    Queue(Handle<T_Queue>&&, bool = false) -> Queue<Device<
         ALPAKA_TYPEOF(alpaka::internal::getApi(std::declval<T_Queue>())),
         ALPAKA_TYPEOF(alpaka::internal::getDeviceKind(std::declval<T_Queue>()))>>;
 
@@ -184,7 +202,7 @@ namespace alpaka::onHost
     template<typename T_Device>
     inline void memcpy(Queue<T_Device> const& queue, auto&& dest, auto const& source)
     {
-        return memcpy(queue, ALPAKA_FORWARD(dest), source, internal::getExtents(dest));
+        memcpy(queue, ALPAKA_FORWARD(dest), source, internal::getExtents(dest));
     }
 
     /** copy data byte wise from one to another container
@@ -202,11 +220,13 @@ namespace alpaka::onHost
         alpaka::concepts::VectorOrScalar auto const& extents)
     {
         Vec const extentsVec = extents;
-        return internal::Memcpy::Op<
+        internal::Memcpy::Op<
             std::decay_t<decltype(*queue.get())>,
             std::decay_t<decltype(dest)>,
             std::decay_t<decltype(source)>,
             std::decay_t<decltype(extentsVec)>>{}(*queue.get(), ALPAKA_FORWARD(dest), source, extentsVec);
+        if(queue.isBlocking())
+            internal::wait(*queue.get());
     }
 
     /** fill memory byte wise
@@ -220,7 +240,7 @@ namespace alpaka::onHost
     template<typename T_Device>
     inline void memset(Queue<T_Device> const& queue, auto&& dest, uint8_t byteValue)
     {
-        return memset(queue, ALPAKA_FORWARD(dest), byteValue, internal::getExtents(dest));
+        memset(queue, ALPAKA_FORWARD(dest), byteValue, internal::getExtents(dest));
     }
 
     /** fill memory byte wise
@@ -240,10 +260,12 @@ namespace alpaka::onHost
         alpaka::concepts::VectorOrScalar auto const& extents)
     {
         Vec const extentsVec = extents;
-        return internal::Memset::Op<
+        internal::Memset::Op<
             std::decay_t<decltype(*queue.get())>,
             std::decay_t<decltype(dest)>,
             std::decay_t<decltype(extentsVec)>>{}(*queue.get(), ALPAKA_FORWARD(dest), byteValue, extentsVec);
+        if(queue.isBlocking())
+            internal::wait(*queue.get());
     }
 
     /** fill memory element wise
@@ -259,7 +281,7 @@ namespace alpaka::onHost
         std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
         && std::same_as<ALPAKA_TYPEOF(alpaka::internal::getApi(queue)), ALPAKA_TYPEOF(alpaka::internal::getApi(dest))>)
     {
-        return fill(queue, ALPAKA_FORWARD(dest), elementValue, internal::getExtents(dest));
+        fill(queue, ALPAKA_FORWARD(dest), elementValue, internal::getExtents(dest));
     }
 
     /** fill memory element wise
@@ -271,6 +293,7 @@ namespace alpaka::onHost
      * @param elementValue value to be written to each element
      * @param extents M-dimensional data extents in elements, can be smaller than the container capacity
      */
+
     template<typename T_Device, typename T_Value>
     inline void fill(
         Queue<T_Device> const& queue,
@@ -283,11 +306,13 @@ namespace alpaka::onHost
                 same_as<ALPAKA_TYPEOF(alpaka::internal::getApi(queue)), ALPAKA_TYPEOF(alpaka::internal::getApi(dest))>)
     {
         Vec const extentsVec = extents;
-        return internal::Fill::Op<
+        internal::Fill::Op<
             ALPAKA_TYPEOF(*queue.get()),
             ALPAKA_TYPEOF(dest),
             ALPAKA_TYPEOF(elementValue),
             ALPAKA_TYPEOF(extentsVec)>{}(*queue.get(), ALPAKA_FORWARD(dest), elementValue, extentsVec);
+        if(queue.isBlocking())
+            internal::wait(*queue.get());
     }
 
     /** @} */
@@ -305,11 +330,11 @@ namespace alpaka::onHost
      *
      * @tparam T_Type type of the data elements
      * @param queue queue handle
+     * @param extents number of elements for each dimension
      * @return Memory owning view to the allocated memory. You are not allowed to derefence the view to access the
      * memory before the allocation within the queue is finished. The view will be freed after the last instance to the
      * memory is destroyed. The deallocation is asynchronous performed in the the queue which is used for the
      * allocation.
-     * @param extents number of elements for each dimension
      */
     template<typename T_Type, typename T_Device>
     inline auto allocAsync(Queue<T_Device> const& queue, alpaka::concepts::VectorOrScalar auto const& extents)
@@ -328,13 +353,12 @@ namespace alpaka::onHost
      * To avoid that a view to the memory is still in use during the deallocation you can use @see
      * addDestructorAction() and wait for a queue if it differs to the queue used for the allocation.
      *
-     * @tparam T_Type type of the data elements
      * @param queue queue handle
+     * @param[in] view other memory where the extents will be derived from
      * @return Memory owning view to the allocated memory. You are not allowed to derefence the view to access the
      * memory before the allocation within the queue is finished. The view will be freed after the last instance to the
      * memory is destroyed. The deallocation is asynchronous performed in the the queue which is used for the
      * allocation.
-     * @param[in] view other memory where the extents will be derived from
      */
     template<typename T_Device>
     inline auto allocLikeAsync(Queue<T_Device> const& queue, auto const& view)
@@ -343,4 +367,5 @@ namespace alpaka::onHost
     }
 
     /** @} */
+
 } // namespace alpaka::onHost

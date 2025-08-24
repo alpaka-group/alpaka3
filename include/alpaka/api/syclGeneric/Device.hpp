@@ -49,14 +49,22 @@ namespace alpaka::onHost
                 return this->shared_from_this();
             }
 
-            [[nodiscard]] Handle<syclGeneric::Queue<Device>> makeQueue()
+            template<typename T_BlockingPolicy>
+            [[nodiscard]] Handle<syclGeneric::Queue<Device>> makeQueue(T_BlockingPolicy)
             {
                 auto thisHandle = this->getSharedPtr();
                 std::lock_guard<std::mutex> lk{m_writeGuard};
-                auto newQueue = std::make_shared<syclGeneric::Queue<Device>>(std::move(thisHandle), queues.size());
+                bool isBlocking = std::is_same_v<T_BlockingPolicy, internal::Blocking>;
+                auto newQueue
+                    = std::make_shared<syclGeneric::Queue<Device>>(std::move(thisHandle), queues.size(), isBlocking);
 
                 queues.emplace_back(newQueue);
                 return newQueue;
+            }
+
+            [[nodiscard]] Handle<syclGeneric::Queue<Device>> makeQueue()
+            {
+                return makeQueue(internal::NonBlocking{});
             }
 
             [[nodiscard]] std::pair<sycl::device, sycl::context> getNativeHandle() const noexcept

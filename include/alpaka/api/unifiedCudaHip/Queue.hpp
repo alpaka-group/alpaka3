@@ -44,9 +44,10 @@ namespace alpaka::onHost
             using ApiInterface = typename T_Device::ApiInterface;
 
         public:
-            Queue(internal::concepts::DeviceHandle auto device, uint32_t const idx)
+            Queue(internal::concepts::DeviceHandle auto device, uint32_t const idx, bool isBlocking = false)
                 : m_device(std::move(device))
                 , m_idx(idx)
+                , m_isBlocking(isBlocking)
             {
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
                     ApiInterface,
@@ -80,6 +81,11 @@ namespace alpaka::onHost
                 return !(*this == other);
             }
 
+            [[nodiscard]] bool isBlocking() const noexcept
+            {
+                return m_isBlocking;
+            }
+
         private:
             void _()
             {
@@ -90,6 +96,17 @@ namespace alpaka::onHost
             uint32_t m_idx = 0u;
             typename ApiInterface::Stream_t m_UniformCudaHipQueue;
             core::CallbackThread m_callBackThread;
+            bool m_isBlocking{false};
+
+            template<typename T_Fn>
+            auto submit(T_Fn&& fn)
+            {
+                // Always launch asynchronously then optionally wait.
+                auto fut = m_callBackThread.submit(std::forward<T_Fn>(fn));
+                if(m_isBlocking)
+                    fut.wait();
+                return fut;
+            }
 
             friend struct alpaka::internal::GetName;
 
@@ -355,7 +372,6 @@ namespace alpaka::onHost
             void operator()(unifiedCudaHip::Queue<T_Device>& queue, T_Event& event) const
             {
                 using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
-
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
                     ApiInterface,
                     ApiInterface::eventRecord(event.getNativeHandle(), queue.getNativeHandle()));

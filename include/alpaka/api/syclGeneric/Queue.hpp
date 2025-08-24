@@ -24,6 +24,7 @@
 #    include <sycl/sycl.hpp>
 
 #    include <algorithm>
+#    include <future>
 #    include <sstream>
 
 namespace alpaka::onHost
@@ -46,14 +47,20 @@ namespace alpaka::onHost
             };
 
         public:
-            Queue(internal::concepts::DeviceHandle auto device, uint32_t const idx)
+            Queue(internal::concepts::DeviceHandle auto device, uint32_t const idx, bool isBlocking = false)
                 : m_device(std::move(device))
                 , m_idx(idx)
                 , m_queue(
                       m_device->getNativeHandle().second,
                       m_device->getNativeHandle().first,
                       {sycl::property::queue::in_order{}})
+                , m_isBlocking(isBlocking)
             {
+            }
+
+            [[nodiscard]] bool isBlocking() const noexcept
+            {
+                return m_isBlocking;
             }
 
             Queue(Queue const&) = delete;
@@ -132,6 +139,23 @@ namespace alpaka::onHost
             uint32_t m_idx = 0u;
             sycl::queue m_queue;
             core::CallbackThread m_callBackThread;
+            bool m_isBlocking{false};
+
+            template<typename T_Fn>
+            auto submit(T_Fn&& fn)
+            {
+                if(m_isBlocking)
+                {
+                    // Execute host-side functor inline (mirrors host backend blocking semantics)
+                    fn();
+                    // Return a ready future to preserve interface compatibility
+                    std::promise<void> p;
+                    auto f = p.get_future();
+                    p.set_value();
+                    return f;
+                }
+                return m_callBackThread.submit(std::forward<T_Fn>(fn));
+            }
         };
 
 
@@ -164,6 +188,20 @@ namespace alpaka::onHost
     {
         void operator()(syclGeneric::Queue<T_Device>& queue, T_Event& event) const
         {
+            // Blocking queue: ensure all prior work is complete and create an already-complete event.
+            if(queue.isBlocking())
+            {
+                // Submit a trivial task to capture ordering, then wait for it -> event is immediately complete.
+                // We need an event whose completion implies “everything before is done”. The empty kernel becomes a
+                // fence point.
+                sycl::event ev = queue.m_queue.submit([](sycl::handler& cgh) { cgh.single_task([]() {}); });
+                // We must hand back an event whose dependence enforces all prior queue work.
+                // Therefore we can not use internal::wait(*queue.get()).
+                ev.wait_and_throw();
+                event.setEvent(ev);
+                return;
+            }
+            // Non-blocking: normal async event (may still be in-flight when returned)
             sycl::event emulatedEvent = queue.m_queue.submit([](sycl::handler& cgh) { cgh.single_task([]() {}); });
             event.setEvent(emulatedEvent);
         }
@@ -182,6 +220,8 @@ namespace alpaka::onHost
                 internal::Data::data(dest),
                 byteValue,
                 extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
+            if(queue.isBlocking())
+                sycl_queue.wait_and_throw();
         }
     };
 
@@ -201,6 +241,8 @@ namespace alpaka::onHost
                 internal::Data::data(dest),
                 internal::Data::data(source),
                 extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
+            if(queue.isBlocking())
+                sycl_queue.wait_and_throw();
         }
     };
 
@@ -218,6 +260,8 @@ namespace alpaka::onHost
         {
             sycl::queue sycl_queue = queue.getNativeHandle();
             sycl_queue.fill(internal::Data::data(dest), elementValue, extents.x());
+            if(queue.isBlocking())
+                sycl_queue.wait_and_throw();
         }
     };
 

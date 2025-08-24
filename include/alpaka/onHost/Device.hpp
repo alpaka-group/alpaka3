@@ -70,7 +70,7 @@ namespace alpaka::onHost
             return this->get() != other.get();
         }
 
-        /** create a queue for a given device
+        /** Create a queue for this device.
          *
          * @attention If you call this method multiple times it is allowed that you get always the same handle
          * back. There is no guarantee that you will get independent queues.
@@ -79,13 +79,56 @@ namespace alpaka::onHost
          * Running tasks from different tasks sequential is a valid behaviour. Enqueuing into two queues only
          * providing the information that the tasks are independent of each other.
          *
-         * @return @see onHost::Queue
+         * Blocking behaviour:
+         *  - NonBlocking (default): enqueue returns immediately; completion must be ensured via onHost::wait(queue)
+         *    or by enqueuing dependent operations onto the same queue.
+         *  - Blocking: each enqueue only returns after the operation is complete and its effects are host-visible.
+         *
+         * Policy selection:
+         *  - makeQueue()                        -> NonBlocking queue (default)
+         *  - makeQueue(internal::NonBlocking{}) -> explicit NonBlocking
+         *  - makeQueue(internal::Blocking{})    -> Blocking
+         *  - Prefer the explicit policy-tag overloads for readability at call sites.
+         *
+         * @return onHost::Queue wrapper owning an underlying backend queue plus blocking flag.
          */
         auto makeQueue()
         {
-            return Queue{internal::MakeQueue::Op<std::decay_t<decltype(*m_device.get())>>{}(*m_device.get())};
+            return makeQueueImpl(false);
         }
 
+        auto makeQueue(internal::NonBlocking)
+        {
+            return makeQueueImpl(false);
+        }
+
+        auto makeQueue(internal::Blocking)
+        {
+            return makeQueueImpl(true);
+        }
+
+    private:
+        auto makeQueueImpl(bool isBlocking)
+        {
+            if(isBlocking)
+            {
+                // use blocking type
+                auto underlying
+                    = internal::MakeQueue::Op<std::decay_t<decltype(*m_device.get())>, internal::Blocking>{}(
+                        *m_device.get());
+                return onHost::Queue<Device<T_Api, T_DeviceKind>>{std::move(underlying), true};
+            }
+            else
+            {
+                // use non-blocking type
+                auto underlying
+                    = internal::MakeQueue::Op<std::decay_t<decltype(*m_device.get())>, internal::NonBlocking>{}(
+                        *m_device.get());
+                return onHost::Queue<Device<T_Api, T_DeviceKind>>{std::move(underlying), false};
+            }
+        }
+
+    public:
         auto makeEvent()
         {
             return Event{internal::MakeEvent::Op<std::decay_t<decltype(*m_device.get())>>{}(*m_device.get())};
@@ -193,7 +236,7 @@ namespace alpaka::onHost
      * @param extents number of elements for each dimension
      */
     template<typename T_Type, typename T_Device>
-    inline auto allocUnified(Queue<T_Device> const& queue, alpaka::concepts::VectorOrScalar auto const& extents)
+    inline auto allocManaged(Queue<T_Device> const& queue, alpaka::concepts::VectorOrScalar auto const& extents)
     {
         Vec const extentsVec = extents;
         return internal::AllocUnified::
