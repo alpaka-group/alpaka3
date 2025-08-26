@@ -42,4 +42,5 @@
 
 #define ALPAKA_VRP_TO_VERSION(V) ALPAKA_VERSION_NUMBER(((V) / 100llu) % 10000llu, ((V) / 10llu) % 10llu, (V) % 10llu)
 
-#define ALPAKA_VRRR_TO_VERSION(V) ALPAKA_VERSION_NUMBER(((V) / 1000llu) % 10000llu, (V) % 1000llu, 0)
+#define ALPAKA_VRRPP_TO_VERSION(V)                                                                                    \
+    ALPAKA_VERSION_NUMBER(((V) / 10000llu) % 10000llu, ((V) / 100llu) % 100llu, (V) % 100llu)

@@ -36,8 +36,8 @@ TEST_CASE("config macros", "")
     // to long major version should be cut to 4 digits
     static_assert(ALPAKA_VRP_TO_VERSION(1'234'567) == ALPAKA_VERSION_NUMBER(2345, 6, 7));
 
-    static_assert(ALPAKA_VRRR_TO_VERSION(12053) == 1'205'300'000);
-    static_assert(ALPAKA_VRRR_TO_VERSION(12053) == ALPAKA_VERSION_NUMBER(12, 53, 0));
+    static_assert(ALPAKA_VRRPP_TO_VERSION(120503) == 1'200'500'003);
+    static_assert(ALPAKA_VRRPP_TO_VERSION(120503) == ALPAKA_VERSION_NUMBER(12, 5, 3));
     // to long major version should be cut to 4 digits
-    static_assert(ALPAKA_VRRR_TO_VERSION(12'345'053) == ALPAKA_VERSION_NUMBER(2345, 53, 0));
+    static_assert(ALPAKA_VRRPP_TO_VERSION(123'451'513) == ALPAKA_VERSION_NUMBER(2345, 15, 13));
 }

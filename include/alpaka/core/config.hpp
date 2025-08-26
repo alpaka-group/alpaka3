@@ -102,16 +102,18 @@
  * On the device side unknown version will be set to ALPAKA_VERSION_NUMBER_UNKNOWN.
  *
  *  Rules:
- *   - gfx9xx (numeric): 9xy -> ALPAKA_VERSION_NUMBER(9,xy,0)
- *   - gfx10xx / gfx11xx: stxy -> ALPAKA_VERSION_NUMBER(st,xy,0)
- *   - Suffix: a->+100 (90a->9100), b->+200, c->+300
- *      - gfx90a -> ALPAKA_VERSION_NUMBER(9,100,0)
+ *   - the last two digits will be handled as HEX values and support 0-9 and a-f
+ *   - gfx9xy (numeric): 9xy -> ALPAKA_VERSION_NUMBER(9,x,y)
+ *   - gfx10xy / gfx11xy: stxy -> ALPAKA_VERSION_NUMBER(st,x,y)
+ *   - Suffix: a == 10, b == 11, c == 12
+ *      - gfx90a -> ALPAKA_VERSION_NUMBER(9,0,10)
+ *      - gfx90c -> ALPAKA_VERSION_NUMBER(9,0,12)
  */
-#if !defined(ALPAKA_ARCH_HSA)
+#if !defined(ALPAKA_ARCH_AMD)
 #    if defined(__HIP__) && defined(__HIP_DEVICE_COMPILE__) && __HIP_DEVICE_COMPILE__ == 1
-#        define ALPAKA_ARCH_HSA ALPAKA_AMDGPU_ARCH
+#        define ALPAKA_ARCH_AMD ALPAKA_AMDGPU_ARCH
 #    else
-#        define ALPAKA_ARCH_HSA ALPAKA_VERSION_NUMBER_NOT_AVAILABLE
+#        define ALPAKA_ARCH_AMD ALPAKA_VERSION_NUMBER_NOT_AVAILABLE
 #    endif
 #endif
 
