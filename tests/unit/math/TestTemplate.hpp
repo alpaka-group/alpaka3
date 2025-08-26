@@ -147,9 +147,8 @@ namespace mathtest
             }
 #endif
             INFO(
-                "testing"
-                << " data type:" << alpaka::core::demangledName<TData>()
-                << " functor:" << alpaka::core::demangledName<TWrappedFunctor>() << " seed:" << seed);
+                "testing" << " data type:" << alpaka::core::demangledName<TData>()
+                          << " functor:" << alpaka::core::demangledName<TWrappedFunctor>() << " seed:" << seed);
             INFO(deviceSpec.getApi().getName());
             INFO("exec:" << core::demangledName(exec));
             INFO("device:" << device.getName());
@@ -217,7 +216,7 @@ namespace mathtest
 
                 // Only for specific operators, the results for the test inputs can only be verified by setting the
                 // expected specific result manually.
-                if constexpr((std::is_same_v<TData, float> || std::is_same_v<TData, double>) &&isSpecialCase)
+                if constexpr((std::is_same_v<TData, float> || std::is_same_v<TData, double>) && isSpecialCase)
                 {
                     setExpectedResultForSpecificInput<TFunctor>(stdExpectedResult, i);
                 }

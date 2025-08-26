@@ -69,7 +69,7 @@
 //! ALPAKA_FN_HOST_ACC function_declaration()
 //! WARNING: Only use this method if there is no other way.
 //! Most cases can be solved by #if ALPAKA_ARCH_PTX or #if ALPAKA_LANG_CUDA.
-#if(ALPAKA_LANG_CUDA && !ALPAKA_COMP_CLANG_CUDA)
+#if (ALPAKA_LANG_CUDA && !ALPAKA_COMP_CLANG_CUDA)
 #    if ALPAKA_COMP_MSVC
 #        define ALPAKA_NO_HOST_ACC_WARNING __pragma(hd_warning_disable)
 #    else
@@ -130,7 +130,8 @@
 //!     alpaka::memcpy(queue, foo<Acc>, bufHost, extent);
 //! }
 //! \endcode
-#if((ALPAKA_LANG_CUDA && ALPAKA_COMP_CLANG_CUDA) || (ALPAKA_LANG_CUDA && ALPAKA_COMP_NVCC && ALPAKA_ARCH_PTX)         \
+#if (                                                                                                                 \
+    (ALPAKA_LANG_CUDA && ALPAKA_COMP_CLANG_CUDA) || (ALPAKA_LANG_CUDA && ALPAKA_COMP_NVCC && ALPAKA_ARCH_PTX)         \
     || ALPAKA_LANG_HIP)
 #    if defined(__CUDACC_RDC__) || defined(__CLANG_RDC__)
 #        define ALPAKA_STATIC_ACC_MEM_GLOBAL                                                                          \
@@ -185,7 +186,8 @@
 //!     alpaka::memcpy(queue, foo<Acc>, bufHost, extent);
 //! }
 //! \endcode
-#if((ALPAKA_LANG_CUDA && ALPAKA_COMP_CLANG_CUDA) || (ALPAKA_LANG_CUDA && ALPAKA_COMP_NVCC && ALPAKA_ARCH_PTX)         \
+#if (                                                                                                                 \
+    (ALPAKA_LANG_CUDA && ALPAKA_COMP_CLANG_CUDA) || (ALPAKA_LANG_CUDA && ALPAKA_COMP_NVCC && ALPAKA_ARCH_PTX)         \
     || ALPAKA_LANG_HIP)
 #    if defined(__CUDACC_RDC__) || defined(__CLANG_RDC__)
 #        define ALPAKA_STATIC_ACC_MEM_CONSTANT                                                                        \
@@ -210,7 +212,7 @@
 //! This is useful for pointers, (shared) variables and shared memory which are used in combination with
 //! the alpaka::mem_fence() function. It ensures that memory annotated with this macro will always be written directly
 //! to memory (and not to a register or cache because of compiler optimizations).
-#if(ALPAKA_LANG_CUDA && ALPAKA_ARCH_PTX)                                                                              \
+#if (ALPAKA_LANG_CUDA && ALPAKA_ARCH_PTX)                                                                             \
     || (ALPAKA_LANG_HIP && defined(__HIP_DEVICE_COMPILE__) && __HIP_DEVICE_COMPILE__ == 1)
 #    define ALPAKA_DEVICE_VOLATILE volatile
 #else

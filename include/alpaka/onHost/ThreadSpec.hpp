@@ -70,8 +70,8 @@ namespace alpaka::onHost
         template<typename T, typename T_IndexType = alpaka::NotRequired, uint32_t T_dim = alpaka::notRequiredDim>
         concept ThreadSpec
             = isThreadSpec_v<T>
-              && (std::same_as<T_IndexType, alpaka::NotRequired> || std::same_as<typename T::type, T_IndexType>) &&(
-                  (T_dim == alpaka::notRequiredDim) || (T::dim() == T_dim));
+              && (std::same_as<T_IndexType, alpaka::NotRequired> || std::same_as<typename T::type, T_IndexType>)
+              && ((T_dim == alpaka::notRequiredDim) || (T::dim() == T_dim));
     } // namespace concepts
 
     std::ostream& operator<<(std::ostream& s, concepts::ThreadSpec auto const& t)

@@ -120,8 +120,8 @@ namespace alpaka::onHost
         template<typename T, typename T_IndexType = alpaka::NotRequired, uint32_t T_dim = alpaka::notRequiredDim>
         concept FrameSpec
             = isFrameSpec_v<T>
-              && (std::same_as<T_IndexType, alpaka::NotRequired> || std::same_as<typename T::type, T_IndexType>) &&(
-                  (T_dim == alpaka::notRequiredDim) || (T::dim() == T_dim));
+              && (std::same_as<T_IndexType, alpaka::NotRequired> || std::same_as<typename T::type, T_IndexType>)
+              && ((T_dim == alpaka::notRequiredDim) || (T::dim() == T_dim));
 
         /** Concept to check if a type is a ThreadSpec or a FrameSpec
          *

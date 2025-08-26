@@ -81,10 +81,10 @@ namespace alpaka
             T_UserPitches const& pitches,
             T_MemAlignment const memAlignment = T_MemAlignment{})
             : BaseMdSpan{
-                data,
-                typename ALPAKA_TYPEOF(extents)::UniVec{extents},
-                typename ALPAKA_TYPEOF(pitches)::UniVec{pitches},
-                memAlignment}
+                  data,
+                  typename ALPAKA_TYPEOF(extents)::UniVec{extents},
+                  typename ALPAKA_TYPEOF(pitches)::UniVec{pitches},
+                  memAlignment}
         {
             static_assert(
                 isLosslessConvertible_v<typename T_UserPitches::type, typename T_UserExtents::type>,

@@ -38,9 +38,7 @@ namespace alpaka::test
             return false;
         }
 
-        INFO(
-            "testing"
-            << " functor:" << alpaka::core::demangledName(kernelFnObj));
+        INFO("testing" << " functor:" << alpaka::core::demangledName(kernelFnObj));
         INFO("api:" << deviceSpec.getApi().getName());
         onHost::Device device = devSelector.makeDevice(0);
 

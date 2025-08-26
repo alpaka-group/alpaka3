@@ -54,7 +54,7 @@ namespace alpaka
         requires(
             sizeof...(T_Args) == sizeof...(T_CArgs) && sizeof...(T_Args) > 0
             && (!std::is_same_v<std::remove_cvref_t<std::tuple_element_t<0, std::tuple<T_CArgs...>>>, Tuple>)
-            && (std::is_constructible_v<T_Args, T_CArgs&&> && ...))
+            && (std::is_constructible_v<T_Args, T_CArgs &&> && ...))
         constexpr Tuple(T_CArgs&&... us) noexcept((std::is_nothrow_constructible_v<T_Args, T_CArgs&&> && ...))
             : Base(std::forward<T_CArgs>(us)...)
         {

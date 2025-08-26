@@ -100,7 +100,8 @@ namespace alpaka::onHost
                              })
                 {
                     return alpaka::apply(
-                        [&](auto const&... args) {
+                        [&](auto const&... args)
+                        {
                             return BlockDynSharedMemBytes<T_KernelFn, T_Spec>{kernelBundle.m_kernelFn, spec}(
                                 executor,
                                 args...);

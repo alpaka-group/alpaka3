@@ -172,8 +172,8 @@ namespace alpaka
         template<typename T, typename T_ValueType = alpaka::NotRequired, uint32_t T_dim = alpaka::notRequiredDim>
         concept IdxRange
             = alpaka::isIndexRange_v<T>
-              && (std::same_as<T_ValueType, typename T::IdxType> || std::same_as<T_ValueType, alpaka::NotRequired>) &&(
-                  (T_dim == alpaka::notRequiredDim) || (T::dim() == T_dim));
+              && (std::same_as<T_ValueType, typename T::IdxType> || std::same_as<T_ValueType, alpaka::NotRequired>)
+              && ((T_dim == alpaka::notRequiredDim) || (T::dim() == T_dim));
 
         /** Concept to check if a type is a lazy evaluated index range
          *

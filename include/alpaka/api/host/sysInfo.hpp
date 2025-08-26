@@ -164,13 +164,13 @@ namespace alpaka::onHost
         // always reliable
 #    if defined(CTL_HW) && (defined(HW_MEMSIZE) || defined(HW_PHYSMEM64))
         int mib[2]
-            = { CTL_HW,
+            = {CTL_HW,
 #        if defined(HW_MEMSIZE) // OSX
-                HW_MEMSIZE
+               HW_MEMSIZE
 #        elif defined(HW_PHYSMEM64) // NetBSD, OpenBSD.
-                HW_PHYSMEM64
+               HW_PHYSMEM64
 #        endif
-              };
+            };
         std::uint64_t size(0);
         std::size_t sizeLen{sizeof(size)};
         if(sysctl(mib, 2, &size, &sizeLen, nullptr, 0) < 0)
@@ -186,13 +186,13 @@ namespace alpaka::onHost
 #    elif defined(CTL_HW)                                                                                             \
         && (defined(HW_PHYSMEM) || defined(HW_REALMEM)) // FreeBSD, DragonFly BSD, NetBSD, OpenBSD, and OSX.
         int mib[2]
-            = { CTL_HW,
+            = {CTL_HW,
 #        if defined(HW_REALMEM) // FreeBSD.
-                HW_REALMEM
+               HW_REALMEM
 #        elif defined(HW_PYSMEM) // Others.
-                HW_PHYSMEM
+               HW_PHYSMEM
 #        endif
-              };
+            };
         std::uint32_t size(0);
         std::size_t const sizeLen{sizeof(size)};
         if(sysctl(mib, 2, &size, &sizeLen, nullptr, 0) < 0)

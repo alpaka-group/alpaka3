@@ -23,8 +23,8 @@ namespace alpaka::onHost
     {
     private:
         using DeviceInterface = Device<T_Api, T_DeviceKind>;
-        using EventHandle
-            = ALPAKA_TYPEOF(internal::MakeEvent::Op<ALPAKA_TYPEOF(*std::declval<DeviceInterface>().get())>{}(
+        using EventHandle = ALPAKA_TYPEOF(
+            internal::MakeEvent::Op<ALPAKA_TYPEOF(*std::declval<DeviceInterface>().get())>{}(
                 *std::declval<DeviceInterface>().get()));
 
         EventHandle m_event;

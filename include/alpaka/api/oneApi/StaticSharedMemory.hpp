@@ -154,8 +154,8 @@ namespace alpaka::onAcc
              */
             StaticSharedMemory(sycl::local_accessor<std::byte> const& accessor)
                 : PtrLookupTable(
-                    reinterpret_cast<std::byte*>(accessor.get_multi_ptr<sycl::access::decorated::no>().get()),
-                    static_cast<uint32_t>(accessor.size()))
+                      reinterpret_cast<std::byte*>(accessor.get_multi_ptr<sycl::access::decorated::no>().get()),
+                      static_cast<uint32_t>(accessor.size()))
 
             {
             }

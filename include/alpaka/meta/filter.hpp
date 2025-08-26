@@ -13,7 +13,8 @@ namespace alpaka::meta
     consteval auto filter(auto const unaryConditionFn, auto const list)
     {
         return std::apply(
-            [=](auto... ts) constexpr {
+            [=](auto... ts) constexpr
+            {
                 return std::tuple_cat(
                     std::conditional_t<unaryConditionFn(ts), std::tuple<decltype(ts)>, std::tuple<>>{}...);
             },

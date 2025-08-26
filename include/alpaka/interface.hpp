@@ -33,9 +33,7 @@ namespace alpaka
     {
         template<typename T_Any>
         concept HasApi = requires(T_Any&& any) {
-            {
-                getApi(any)
-            } -> alpaka::concepts::Api;
+            { getApi(any) } -> alpaka::concepts::Api;
         };
     } // namespace concepts
 

@@ -136,7 +136,7 @@ namespace alpaka::onAcc::internalCompute
     struct Atomic::Op<AtomicExch, onAcc::internal::SyclAtomic, T, THierarchy>
     {
         static_assert(
-            (std::is_integral_v<T> || std::is_floating_point_v<T>) and(sizeof(T) == 4 || sizeof(T) == 8),
+            (std::is_integral_v<T> || std::is_floating_point_v<T>) and (sizeof(T) == 4 || sizeof(T) == 8),
             "SYCL atomics do not support this type");
 
         static auto atomicOp(onAcc::internal::SyclAtomic const&, T* const addr, T const& value) -> T

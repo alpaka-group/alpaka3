@@ -136,7 +136,7 @@ inline namespace alpakaGlobal
     };
 #        endif
 
-#        if(ALPAKA_LANG_HIP)
+#        if (ALPAKA_LANG_HIP)
     // HIP shows bad performance with builtin atomicAdd(float*,float) for the hierarchy threads therefore we do not
     // call the buildin method and instead use the atomicCAS emulation. For details see:
     // https://github.com/alpaka-group/alpaka/issues/1657
@@ -210,7 +210,7 @@ inline namespace alpakaGlobal
 #        endif
 
 // disable HIP atomicMin: see https://github.com/ROCm-Developer-Tools/hipamd/pull/40
-#        if(ALPAKA_LANG_HIP)
+#        if (ALPAKA_LANG_HIP)
     template<typename THierarchy>
     struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMin, float, THierarchy> : std::false_type
     {
@@ -278,7 +278,7 @@ inline namespace alpakaGlobal
 #        endif
 
     // disable HIP atomicMax: see https://github.com/ROCm-Developer-Tools/hipamd/pull/40
-#        if(ALPAKA_LANG_HIP)
+#        if (ALPAKA_LANG_HIP)
     template<typename THierarchy>
     struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMax, float, THierarchy> : std::false_type
     {

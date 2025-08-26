@@ -17,38 +17,22 @@ namespace alpaka::onHost
     {
         template<typename T>
         concept Device = requires(T device) {
-            {
-                alpaka::internal::GetName::Op<T>{}(device)
-            } -> std::convertible_to<std::string>;
-            {
-                internal::MakeQueue::Op<T>{}(device)
-            };
-            {
-                internal::MakeEvent::Op<T>{}(device)
-            };
-            {
-                internal::GetNativeHandle::Op<T>{}(device)
-            };
-            {
-                internal::GetDeviceProperties::Op<T>{}(device)
-            };
+            { alpaka::internal::GetName::Op<T>{}(device) } -> std::convertible_to<std::string>;
+            { internal::MakeQueue::Op<T>{}(device) };
+            { internal::MakeEvent::Op<T>{}(device) };
+            { internal::GetNativeHandle::Op<T>{}(device) };
+            { internal::GetDeviceProperties::Op<T>{}(device) };
         };
 
         template<typename T>
         concept Platform = requires(T platform) {
-            {
-                alpaka::internal::GetName::Op<T>{}(platform)
-            };
+            { alpaka::internal::GetName::Op<T>{}(platform) };
         };
 
         template<typename T>
         concept Queue = requires(T device) {
-            {
-                alpaka::internal::GetName::Op<T>{}(device)
-            } -> std::convertible_to<std::string>;
-            {
-                internal::GetNativeHandle::Op<T>{}(device)
-            };
+            { alpaka::internal::GetName::Op<T>{}(device) } -> std::convertible_to<std::string>;
+            { internal::GetNativeHandle::Op<T>{}(device) };
         };
 
         template<typename T>

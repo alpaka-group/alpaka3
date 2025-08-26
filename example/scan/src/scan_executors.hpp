@@ -252,49 +252,53 @@ int runExample(
         {
         case EXCLUSIVE_SCAN:
             // Determine temporary device storage requirements
-            CUDA_CHECK(cub::DeviceScan::ExclusiveSum(
-                d_temp_storage,
-                temp_storage_bytes,
-                d_in,
-                d_out,
-                numElements,
-                queue.getNativeHandle()));
+            CUDA_CHECK(
+                cub::DeviceScan::ExclusiveSum(
+                    d_temp_storage,
+                    temp_storage_bytes,
+                    d_in,
+                    d_out,
+                    numElements,
+                    queue.getNativeHandle()));
 
             alpaka::onHost::wait(queue);
 
             // Allocate temporary storage
             CUDA_CHECK(cudaMalloc(&d_temp_storage, temp_storage_bytes));
 
-            CUDA_CHECK(cub::DeviceScan::ExclusiveSum(
-                d_temp_storage,
-                temp_storage_bytes,
-                d_in,
-                d_out,
-                numElements,
-                queue.getNativeHandle()));
+            CUDA_CHECK(
+                cub::DeviceScan::ExclusiveSum(
+                    d_temp_storage,
+                    temp_storage_bytes,
+                    d_in,
+                    d_out,
+                    numElements,
+                    queue.getNativeHandle()));
             break;
         case INCLUSIVE_SCAN:
             // Determine temporary device storage requirements
-            CUDA_CHECK(cub::DeviceScan::InclusiveSum(
-                d_temp_storage,
-                temp_storage_bytes,
-                d_in,
-                d_out,
-                numElements,
-                queue.getNativeHandle()));
+            CUDA_CHECK(
+                cub::DeviceScan::InclusiveSum(
+                    d_temp_storage,
+                    temp_storage_bytes,
+                    d_in,
+                    d_out,
+                    numElements,
+                    queue.getNativeHandle()));
 
             alpaka::onHost::wait(queue);
 
             // Allocate temporary storage
             CUDA_CHECK(cudaMalloc(&d_temp_storage, temp_storage_bytes));
 
-            CUDA_CHECK(cub::DeviceScan::InclusiveSum(
-                d_temp_storage,
-                temp_storage_bytes,
-                d_in,
-                d_out,
-                numElements,
-                queue.getNativeHandle()));
+            CUDA_CHECK(
+                cub::DeviceScan::InclusiveSum(
+                    d_temp_storage,
+                    temp_storage_bytes,
+                    d_in,
+                    d_out,
+                    numElements,
+                    queue.getNativeHandle()));
             break;
         }
         alpaka::onHost::wait(queue);
@@ -387,49 +391,53 @@ int runExample(
         {
         case EXCLUSIVE_SCAN:
             // Determine temporary device storage requirements
-            HIP_CHECK(hipcub::DeviceScan::ExclusiveSum(
-                d_temp_storage,
-                temp_storage_bytes,
-                d_in,
-                d_out,
-                numElements,
-                queue.getNativeHandle()));
+            HIP_CHECK(
+                hipcub::DeviceScan::ExclusiveSum(
+                    d_temp_storage,
+                    temp_storage_bytes,
+                    d_in,
+                    d_out,
+                    numElements,
+                    queue.getNativeHandle()));
 
             alpaka::onHost::wait(queue);
 
             // Allocate temporary storage
             HIP_CHECK(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
 
-            HIP_CHECK(hipcub::DeviceScan::ExclusiveSum(
-                d_temp_storage,
-                temp_storage_bytes,
-                d_in,
-                d_out,
-                numElements,
-                queue.getNativeHandle()));
+            HIP_CHECK(
+                hipcub::DeviceScan::ExclusiveSum(
+                    d_temp_storage,
+                    temp_storage_bytes,
+                    d_in,
+                    d_out,
+                    numElements,
+                    queue.getNativeHandle()));
             break;
         case INCLUSIVE_SCAN:
             // Determine temporary device storage requirements
-            HIP_CHECK(hipcub::DeviceScan::InclusiveSum(
-                d_temp_storage,
-                temp_storage_bytes,
-                d_in,
-                d_out,
-                numElements,
-                queue.getNativeHandle()));
+            HIP_CHECK(
+                hipcub::DeviceScan::InclusiveSum(
+                    d_temp_storage,
+                    temp_storage_bytes,
+                    d_in,
+                    d_out,
+                    numElements,
+                    queue.getNativeHandle()));
 
             alpaka::onHost::wait(queue);
 
             // Allocate temporary storage
             HIP_CHECK(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
 
-            HIP_CHECK(hipcub::DeviceScan::InclusiveSum(
-                d_temp_storage,
-                temp_storage_bytes,
-                d_in,
-                d_out,
-                numElements,
-                queue.getNativeHandle()));
+            HIP_CHECK(
+                hipcub::DeviceScan::InclusiveSum(
+                    d_temp_storage,
+                    temp_storage_bytes,
+                    d_in,
+                    d_out,
+                    numElements,
+                    queue.getNativeHandle()));
             break;
         }
         alpaka::onHost::wait(queue);

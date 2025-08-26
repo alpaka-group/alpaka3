@@ -109,7 +109,8 @@ namespace alpaka::onAcc::internal
              */
             auto ids = std::make_tuple(*(T_repeat + 1 != 0u ? iter++ : iter++)...);
             std::apply(
-                [&](auto const&... dataIdx) constexpr {
+                [&](auto const&... dataIdx) constexpr
+                {
                     (executeDo<T_MemAlignment, T_width>(acc, dataIdx, ALPAKA_FORWARD(func), ALPAKA_FORWARD(data)...),
                      ...);
                 },

@@ -45,11 +45,9 @@ namespace alpaka::meta
         };
 
         template<
-            template<typename...>
-            class TList,
+            template<typename...> class TList,
             typename... X,
-            template<typename...>
-            class Head,
+            template<typename...> class Head,
             typename T,
             typename... Ts,
             typename... Rests>

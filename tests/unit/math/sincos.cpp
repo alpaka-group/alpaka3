@@ -46,12 +46,11 @@ TEMPLATE_LIST_TEST_CASE("sincos", "[sincos]", TestBackends)
 
     REQUIRE(alpaka::test::executeOnComputeDevice(cfg, kernel, 0.42f)); // float
     REQUIRE(alpaka::test::executeOnComputeDevice<double>(cfg, kernel, 0.42)); // double
-    REQUIRE(alpaka::test::executeOnComputeDevice(
-        cfg,
-        kernel,
-        alpaka::math::Complex<float>{0.35f, -0.24f})); // complex float
-    REQUIRE(alpaka::test::executeOnComputeDevice<double>(
-        cfg,
-        kernel,
-        alpaka::math::Complex<double>{0.35, -0.24})); // complex double
+    REQUIRE(alpaka::test::executeOnComputeDevice(cfg, kernel, alpaka::math::Complex<float>{0.35f, -0.24f})); // complex
+                                                                                                             // float
+    REQUIRE(
+        alpaka::test::executeOnComputeDevice<double>(
+            cfg,
+            kernel,
+            alpaka::math::Complex<double>{0.35, -0.24})); // complex double
 }

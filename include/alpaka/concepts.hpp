@@ -34,16 +34,12 @@ namespace alpaka
     {
         template<typename T>
         concept HasStaticName = requires(T t) {
-            {
-                internal::GetStaticName::Op<std::decay_t<T>>{}(t)
-            } -> std::convertible_to<std::string>;
+            { internal::GetStaticName::Op<std::decay_t<T>>{}(t) } -> std::convertible_to<std::string>;
         };
 
         template<typename T>
         concept HasName = requires(T t) {
-            {
-                internal::GetName::Op<T>{}(t)
-            } -> std::convertible_to<std::string>;
+            { internal::GetName::Op<T>{}(t) } -> std::convertible_to<std::string>;
         };
 
         template<typename T>
@@ -72,9 +68,7 @@ namespace alpaka
 
         template<typename T, typename T_ValueType = alpaka::NotRequired>
         concept View = MdSpan<T, T_ValueType> && requires(T t) {
-            {
-                getApi(t)
-            } -> alpaka::concepts::Api;
+            { getApi(t) } -> alpaka::concepts::Api;
         };
 
     } // namespace concepts

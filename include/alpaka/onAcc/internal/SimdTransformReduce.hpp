@@ -127,11 +127,12 @@ namespace alpaka::onAcc::internal
                     /* It is not possible to create a Simd{Simd} due to constructor issues. Therefore we need to define
                      * the type for the result explicit.
                      */
-                    using ComponentType = ALPAKA_TYPEOF(executeDoTransform<T_MemAlignment, T_width>(
-                        acc,
-                        std::get<0>(std::make_tuple(dataIdx...)),
-                        ALPAKA_FORWARD(func),
-                        ALPAKA_FORWARD(data)...));
+                    using ComponentType = ALPAKA_TYPEOF(
+                        executeDoTransform<T_MemAlignment, T_width>(
+                            acc,
+                            std::get<0>(std::make_tuple(dataIdx...)),
+                            ALPAKA_FORWARD(func),
+                            ALPAKA_FORWARD(data)...));
                     auto results = Simd<ComponentType, std::tuple_size_v<ALPAKA_TYPEOF(ids)>>{
                         executeDoTransform<T_MemAlignment, T_width>(
                             acc,

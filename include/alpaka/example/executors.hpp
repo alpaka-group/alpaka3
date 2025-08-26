@@ -30,9 +30,7 @@ namespace alpaka::onHost
     constexpr auto getDeviceSpecsFor(auto const api)
     {
         return std::apply(
-            [api](auto... devType) constexpr {
-                return std::make_tuple(DeviceSpec{api, devType}...);
-            },
+            [api](auto... devType) constexpr { return std::make_tuple(DeviceSpec{api, devType}...); },
             supportedDevices(api));
     }
 
@@ -50,7 +48,8 @@ namespace alpaka::onHost
     constexpr auto createBackendsFor(auto const deviceSpec)
     {
         return std::apply(
-            [deviceSpec](auto... executor) constexpr {
+            [deviceSpec](auto... executor) constexpr
+            {
                 return std::make_tuple(
                     Dict{DictEntry{object::deviceSpec, deviceSpec}, DictEntry{object::exec, executor}}...);
             },

@@ -22,9 +22,10 @@ namespace alpaka::onHost
     {
     private:
         using PlatformHandle = ALPAKA_TYPEOF(internal::makePlatform(T_Api{}, T_DeviceKind{}));
-        using DeviceHandle = ALPAKA_TYPEOF(internal::MakeDevice::Op<typename PlatformHandle::element_type>{}(
-            *std::declval<PlatformHandle>().get(),
-            0u));
+        using DeviceHandle = ALPAKA_TYPEOF(
+            internal::MakeDevice::Op<typename PlatformHandle::element_type>{}(
+                *std::declval<PlatformHandle>().get(),
+                0u));
         DeviceHandle m_device;
 
     public:

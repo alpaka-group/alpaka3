@@ -289,7 +289,8 @@ void testKernels(auto const deviceSpec, auto const exec)
         {
             // Test the copy-kernel. Copy A one by one to C.
             measureKernelExec(
-                [&]() {
+                [&]()
+                {
                     queue.enqueue(
                         exec,
                         dataBlocking,
@@ -429,10 +430,11 @@ void testKernels(auto const deviceSpec, auto const exec)
         DataType epsScaling = divExZero(arraySize, presicionBaseArraySize);
         //  Dot product should be identical to arraySize*valA*valB
         //  Use a different equality check if floating point errors exceed the precision of FuzzyEqual function
-        REQUIRE(FuzzyEqual<DataType>(
-            std::fabs(resultDot - expectedSum) / expectedSum,
-            static_cast<DataType>(0.0),
-            static_cast<DataType>(100.0) * epsScaling));
+        REQUIRE(
+            FuzzyEqual<DataType>(
+                std::fabs(resultDot - expectedSum) / expectedSum,
+                static_cast<DataType>(0.0),
+                static_cast<DataType>(100.0) * epsScaling));
 
         // Set workdivs of benchmark metadata to be displayed at the end
         metaData.setItem(BMInfoDataType::WorkDivInit, dataBlocking);
