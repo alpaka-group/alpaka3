@@ -7,7 +7,11 @@
 cmake_minimum_required(VERSION 3.20)
 project(alpaka CXX)
 
-include(cmake/buildDependencies.cmake)
+# This file's directory.
+set(_alpaka_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
+
+include(${_alpaka_ROOT_DIR}/cmake/buildDependencies.cmake)
+include(${_alpaka_ROOT_DIR}/cmake/finalize.cmake)
 
 # Add append compiler flags to a variable or target
 #
@@ -72,21 +76,9 @@ endfunction()
 set(alpaka_CXX_STANDARD 20 CACHE STRING "C++ standard")
 
 checkCompilerCXXSupport(CXX ${alpaka_CXX_STANDARD})
-set(CMAKE_CXX_STANDARD ${alpaka_CXX_STANDARD})
-
-# This file's directory.
-set(_alpaka_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
-include("${_alpaka_ROOT_DIR}/cmake/addExecutable.cmake")
-
-# Add alpaka_ADD_LIBRARY function.
-include("${_alpaka_ROOT_DIR}/cmake/addLibrary.cmake")
 
 # check for CUDA/HIP language support
 include(CheckLanguage)
-
-add_library(alpaka INTERFACE)
-target_include_directories(${PROJECT_NAME} INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_20)
 
 option(alpaka_DEP_CUDA "Enable the CUDA as dependency, allows the usage of api::Cuda and exec::GpuCuda." OFF)
 option(alpaka_DEP_HIP "Enable the HIP as dependency, allows the usage of api::Hip and exec::GpuHip" OFF)
@@ -97,72 +89,126 @@ option(alpaka_DEP_ONEAPI "Enable the Intel OneAPI SYCL CPU dependency, allows us
 alpaka_compiler_option(FAST_MATH "Enable fast-math" DEFAULT)
 alpaka_compiler_option(FTZ "Set flush to zero" DEFAULT)
 
+
+alpaka_compiler_option(RELOCATABLE_DEVICE_CODE "Enable relocatable device code for CUDA, HIP and SYCL devices" DEFAULT)
+
+if (NOT TARGET alpaka)
+    add_library(alpaka INTERFACE)
+
+    add_library(alpaka::alpaka ALIAS alpaka)
+    target_compile_definitions(alpaka INTERFACE ALPAKA_CMAKE_TARGET_ALPAKA)
+
+    ## target: alpaka::header
+    add_library(alpaka_target_headers INTERFACE)
+    add_library(alpaka::headers ALIAS alpaka_target_headers)
+    target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_CMAKE_TARGET_HEADERS)
+
+    target_include_directories(alpaka_target_headers INTERFACE
+            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    )
+    target_compile_features(alpaka_target_headers INTERFACE cxx_std_${alpaka_CXX_STANDARD})
+
+    target_link_libraries(alpaka INTERFACE alpaka_target_headers)
+endif ()
+
 ## OpenMP
 if (alpaka_DEP_OMP)
     find_package(OpenMP REQUIRED COMPONENTS CXX)
-    target_link_libraries(alpaka INTERFACE OpenMP::OpenMP_CXX)
+    target_link_libraries(alpaka_target_headers INTERFACE OpenMP::OpenMP_CXX)
     message(STATUS "OpenMP found: ${OpenMP_CXX_VERSION}")
+endif ()
+
+set(alpaka_COUNT_API_DEPS 0)
+if (alpaka_DEP_CUDA)
+    math(EXPR alpaka_COUNT_API_DEPS "${alpaka_COUNT_API_DEPS} + 1")
+endif ()
+if (alpaka_DEP_HIP)
+    math(EXPR alpaka_COUNT_API_DEPS "${alpaka_COUNT_API_DEPS} + 1")
+endif ()
+if (alpaka_DEP_ONEAPI)
+    math(EXPR alpaka_COUNT_API_DEPS "${alpaka_COUNT_API_DEPS} + 1")
+endif ()
+
+if ((NOT alpaka_SUPPRESS_TARGET_WARNING) AND alpaka_COUNT_API_DEPS GREATER 1)
+    message(WARNING "More than one dependency of alpaka_DEP_CUDA, alpaka_DEP_HIP, or alpaka_DEP_ONEAPI is activated. \
+     The cmake taget 'alpaka::alpaka' and 'alpaka' will therefore not linked against any of these. \
+     Please link your app against alpaka::cuda, alpaka::hip, or alpaka::oneapi directly. \
+     This warning can be suppressed by setting 'alpaka_SUPPRESS_TARGET_WARNING'.")
 endif ()
 
 ## CUDA
 if (alpaka_DEP_CUDA)
     check_language(CUDA)
-    alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--expt-relaxed-constexpr>")
+
+    enable_language(CUDA)
+    checkCompilerCXXSupport(CUDA ${alpaka_CXX_STANDARD})
+
+    add_library(alpaka_target_cuda INTERFACE)
+    add_library(alpaka::cuda ALIAS alpaka_target_cuda)
+    target_link_libraries(alpaka_target_cuda INTERFACE alpaka_target_headers)
+    set_property(TARGET alpaka_target_cuda PROPERTY CUDA_STANDARD ${alpaka_CXX_STANDARD})
+
+    alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--expt-relaxed-constexpr>")
 
     option(alpaka_CUDA_EXPT_EXTENDED_LAMBDA "Enable CUDA extended lambda support " ON)
     if (alpaka_CUDA_EXPT_EXTENDED_LAMBDA)
-        alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--extended-lambda>")
+        alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--extended-lambda>")
     endif ()
 
     alpaka_compiler_option(CUDA_SHOW_REGISTER "Show kernel registers and create device ASM" DEFAULT)
 
     if (alpaka_CUDA_SHOW_REGISTER STREQUAL ON)
-        alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xptxas -v>")
+        alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xptxas -v>")
     endif ()
 
     alpaka_compiler_option(CUDA_KEEP_FILES "Keep all intermediate files that are generated during internal compilation steps 'CMakeFiles/<targetname>.dir'" DEFAULT)
     if (alpaka_CUDA_KEEP_FILES STREQUAL ON)
-        alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--keep>")
+        alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--keep>")
     endif ()
 
     option(alpaka_CUDA_SHOW_CODELINES "Show kernel lines in cuda-gdb and cuda-memcheck. If alpaka_CUDA_KEEP_FILES is enabled source code will be inlined in ptx." OFF)
     if (alpaka_CUDA_SHOW_CODELINES)
-        alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--source-in-ptx -lineinfo>")
+        alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--source-in-ptx -lineinfo>")
 
         # This is shaky - We currently don't have a way of checking for the host compiler ID.
         # See https://gitlab.kitware.com/cmake/cmake/-/issues/20901
         if (NOT MSVC)
-            alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler -rdynamic>")
+            alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler -rdynamic>")
         endif ()
         set(alpaka_CUDA_KEEP_FILES ON CACHE BOOL "activate keep files" FORCE)
     endif ()
 
     if (alpaka_FAST_MATH STREQUAL ON)
-        alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--use_fast_math>")
+        alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--use_fast_math>")
     endif ()
 
     if (alpaka_FTZ STREQUAL ON)
-        alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--ftz=true>")
+        alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--ftz=true>")
     elseif (alpaka_FTZ STREQUAL OFF)
-        alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--ftz=false>")
+        alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--ftz=false>")
     endif ()
-
-    enable_language(CUDA)
-    checkCompilerCXXSupport(CUDA ${alpaka_CXX_STANDARD})
 
     if (alpaka_DEP_OMP)
         if (NOT MSVC)
-            alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler -fopenmp>")
+            alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler -fopenmp>")
 
             # See https://github.com/alpaka-group/alpaka/issues/1755
             if ((${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang") AND
             (${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 13))
                 message(STATUS "clang >= 13 detected. Force-setting OpenMP to version 4.5.")
-                alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler -fopenmp-version=45>")
+                alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler -fopenmp-version=45>")
             endif ()
         else ()
-            alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler /openmp>")
+            alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler /openmp>")
         endif ()
+    endif ()
+
+    target_compile_definitions(alpaka_target_cuda INTERFACE ALPAKA_CMAKE_TARGET_CUDA)
+    target_link_libraries(alpaka_target_cuda INTERFACE alpaka::headers)
+
+    if (alpaka_COUNT_API_DEPS EQUAL 1)
+        target_link_libraries(alpaka INTERFACE alpaka_target_cuda)
     endif ()
 endif ()
 
@@ -188,44 +234,66 @@ if (alpaka_DEP_HIP)
             message(WARNING "HIP ${_hip_MAJOR_MINOR_VERSION} is not official supported by alpaka. Supported versions: ${_alpaka_HIP_MIN_VER} - ${_alpaka_HIP_MAX_VER}")
         endif ()
 
-        # let the compiler find the HIP headers also when building host-only code
-        target_include_directories(alpaka SYSTEM INTERFACE ${hip_INCLUDE_DIR})
+        add_library(alpaka_target_hip INTERFACE)
+        target_link_libraries(alpaka_target_hip INTERFACE alpaka_target_headers)
+        add_library(alpaka::hip ALIAS alpaka_target_hip)
 
-        target_link_libraries(alpaka INTERFACE "$<$<LINK_LANGUAGE:CXX>:hip::host>")
-        alpaka_set_compiler_options(HOST_DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CXX>:-D__HIP_PLATFORM_AMD__>")
+        # let the compiler find the HIP headers also when building host-only code
+        target_include_directories(alpaka_target_hip SYSTEM INTERFACE ${hip_INCLUDE_DIR})
+
+        target_link_libraries(alpaka_target_hip INTERFACE "$<$<LINK_LANGUAGE:CXX>:hip::host>")
+        alpaka_set_compiler_options(HOST_DEVICE target alpaka_target_hip "$<$<COMPILE_LANGUAGE:CXX>:-D__HIP_PLATFORM_AMD__>")
 
         alpaka_compiler_option(HIP_KEEP_FILES "Keep all intermediate files that are generated during internal compilation steps 'CMakeFiles/<targetname>.dir'" OFF)
         if (alpaka_HIP_KEEP_FILES)
-            alpaka_set_compiler_options(HOST_DEVICE target alpaka "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-save-temps>")
+            alpaka_set_compiler_options(HOST_DEVICE target alpaka_target_hip "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-save-temps>")
         endif ()
 
         if (alpaka_FAST_MATH STREQUAL ON)
-            alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-ffast-math>")
+            alpaka_set_compiler_options(DEVICE target alpaka_target_hip "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-ffast-math>")
         elseif (alpaka_MATH STREQUAL OFF)
-            alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-fno-fast-math>")
+            alpaka_set_compiler_options(DEVICE target alpaka_target_hip "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-fno-fast-math>")
         endif ()
 
         if (alpaka_FTZ STREQUAL ON)
-            alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-fgpu-flush-denormals-to-zero>")
+            alpaka_set_compiler_options(DEVICE target alpaka_target_hip "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-fgpu-flush-denormals-to-zero>")
         elseif (alpaka_FTZ STREQUAL OFF)
-            alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-fno-gpu-flush-denormals-to-zero>")
+            alpaka_set_compiler_options(DEVICE target alpaka_target_hip "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-fno-gpu-flush-denormals-to-zero>")
         endif ()
 
         if (alpaka_RELOCATABLE_DEVICE_CODE STREQUAL ON)
-            alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-fgpu-rdc>")
-            target_link_options(alpaka INTERFACE "$<$<LINK_LANGUAGE:HIP>:SHELL:-fgpu-rdc --hip-link>")
+            alpaka_set_compiler_options(DEVICE target alpaka_target_hip "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-fgpu-rdc>")
+            target_link_options(alpaka_target_hip INTERFACE "$<$<LINK_LANGUAGE:HIP>:SHELL:-fgpu-rdc --hip-link>")
         elseif (alpaka_RELOCATABLE_DEVICE_CODE STREQUAL OFF)
-            alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-fno-gpu-rdc>")
+            alpaka_set_compiler_options(DEVICE target alpaka_target_hip "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-fno-gpu-rdc>")
         endif ()
     else ()
         message(FATAL_ERROR "Optional alpaka dependency HIP could not be found!")
     endif ()
+
+    target_compile_definitions(alpaka_target_hip INTERFACE ALPAKA_CMAKE_TARGET_HIP)
+    target_link_libraries(alpaka_target_hip INTERFACE alpaka::headers)
+
+    if (alpaka_COUNT_API_DEPS EQUAL 1)
+        target_link_libraries(alpaka INTERFACE alpaka_target_hip)
+    endif ()
 endif ()
 
 if (alpaka_DEP_ONEAPI)
-
     find_package(IntelSYCL REQUIRED)
-    target_link_libraries(alpaka INTERFACE IntelSYCL::SYCL_CXX)
+
+    add_library(alpaka_target_oneapi INTERFACE)
+    add_library(alpaka::oneapi ALIAS alpaka_target_oneapi)
+    target_link_libraries(alpaka_target_oneapi INTERFACE alpaka_target_headers)
+    target_link_libraries(alpaka_target_oneapi INTERFACE IntelSYCL::SYCL_CXX)
+
+    if (alpaka_RELOCATABLE_DEVICE_CODE STREQUAL ON)
+        alpaka_set_compiler_options(DEVICE alpaka_target_oneapi alpaka "-fsycl-rdc")
+        target_link_options(alpaka INTERFACE "-fsycl-rdc")
+    elseif (alpaka_RELOCATABLE_DEVICE_CODE STREQUAL OFF)
+        alpaka_set_compiler_options(DEVICE alpaka_target_oneapi alpaka "-fno-sycl-rdc")
+        target_link_options(alpaka INTERFACE "-fno-sycl-rdc")
+    endif ()
 
     option(alpaka_ONEAPI_Cpu "Enable ONEAPI AMD Gpu support" ON)
     option(alpaka_ONEAPI_IntelGpu "Enable ONEAPI Intel Gpu support" ON)
@@ -236,64 +304,71 @@ if (alpaka_DEP_ONEAPI)
         set(alpaka_ONEAPI_Cpu_ARCH "" CACHE STRING "OneApi Cpu architecture")
         list(APPEND custom_SYCL_TARGETS spir64_x86_64)
         if (alpaka_ONEAPI_Cpu_ARCH)
-            target_link_options(alpaka INTERFACE -Xsycl-target-backend=spir64_x86_64 -march=${alpaka_ONEAPI_Cpu_ARCH})
+            target_link_options(alpaka_target_oneapi INTERFACE -Xsycl-target-backend=spir64_x86_64 -march=${alpaka_ONEAPI_Cpu_ARCH})
         endif ()
     else ()
-        target_compile_definitions(alpaka INTERFACE ALPAKA_DISABLE_OneApi_Cpu)
+        target_compile_definitions(alpaka_target_oneapi INTERFACE ALPAKA_DISABLE_OneApi_Cpu)
     endif ()
 
     if (alpaka_ONEAPI_IntelGpu)
         # spir64 is required for Intel GPUs
         list(APPEND custom_SYCL_TARGETS spir64)
     else ()
-        target_compile_definitions(alpaka INTERFACE ALPAKA_DISABLE_OneApi_IntelGpu)
+        target_compile_definitions(alpaka_target_oneapi INTERFACE ALPAKA_DISABLE_OneApi_IntelGpu)
     endif ()
 
     if (alpaka_ONEAPI_NvidiaGpu)
         set(alpaka_ONEAPI_NvidiaGpu_ARCH "80" CACHE STRING "OneApi NVIDIA GPU architecture")
 
-        alpaka_set_compiler_options(HOST_DEVICE target alpaka -Xsycl-target-backend=nvptx64-nvidia-cuda --offload-arch=sm_${alpaka_ONEAPI_NvidiaGpu_ARCH})
-        target_link_options(alpaka INTERFACE -Xsycl-target-backend=nvptx64-nvidia-cuda --offload-arch=sm_${alpaka_ONEAPI_NvidiaGpu_ARCH})
+        alpaka_set_compiler_options(HOST_DEVICE target alpaka_target_oneapi -Xsycl-target-backend=nvptx64-nvidia-cuda --offload-arch=sm_${alpaka_ONEAPI_NvidiaGpu_ARCH})
+        target_link_options(alpaka_target_oneapi INTERFACE -Xsycl-target-backend=nvptx64-nvidia-cuda --offload-arch=sm_${alpaka_ONEAPI_NvidiaGpu_ARCH})
 
         list(APPEND custom_SYCL_TARGETS nvptx64-nvidia-cuda)
     else ()
-        target_compile_definitions(alpaka INTERFACE ALPAKA_DISABLE_OneApi_NvidiaGpu)
+        target_compile_definitions(alpaka_target_oneapi INTERFACE ALPAKA_DISABLE_OneApi_NvidiaGpu)
     endif ()
 
     if (alpaka_ONEAPI_AmdGpu)
         set(alpaka_ONEAPI_AmdGpu_ARCH "gfx1100" CACHE STRING "OneApi AMD GPU architectures")
 
         # bug if cuda and hip is used within one system: https://github.com/intel/llvm/issues/15632
-        alpaka_set_compiler_options(HOST_DEVICE target alpaka -Xsycl-target-backend=amdgcn-amd-amdhsa --offload-arch=${alpaka_ONEAPI_AmdGpu_ARCH})
-        target_link_options(alpaka INTERFACE -Xsycl-target-backend=amdgcn-amd-amdhsa --offload-arch=${alpaka_ONEAPI_AmdGpu_ARCH})
+        alpaka_set_compiler_options(HOST_DEVICE target alpaka_target_oneapi -Xsycl-target-backend=amdgcn-amd-amdhsa --offload-arch=${alpaka_ONEAPI_AmdGpu_ARCH})
+        target_link_options(alpaka_target_oneapi INTERFACE -Xsycl-target-backend=amdgcn-amd-amdhsa --offload-arch=${alpaka_ONEAPI_AmdGpu_ARCH})
         list(APPEND custom_SYCL_TARGETS amdgcn-amd-amdhsa)
     else ()
-        target_compile_definitions(alpaka INTERFACE ALPAKA_DISABLE_OneApi_AmdGpu)
+        target_compile_definitions(alpaka_target_oneapi INTERFACE ALPAKA_DISABLE_OneApi_AmdGpu)
     endif ()
 
     if (custom_SYCL_TARGETS)
         # to enable compilation for multiple GPU architectures, we need to create a list of GPU targets
         list(JOIN custom_SYCL_TARGETS "," custom_SYCL_TARGETS_CONCAT)
-        alpaka_set_compiler_options(HOST_DEVICE target alpaka INTERFACE "-fsycl-targets=${custom_SYCL_TARGETS_CONCAT}")
+        alpaka_set_compiler_options(HOST_DEVICE target alpaka_target_oneapi INTERFACE "-fsycl-targets=${custom_SYCL_TARGETS_CONCAT}")
         target_link_options(${CMAKE_PROJECT_NAME} INTERFACE "-fsycl-targets=${custom_SYCL_TARGETS_CONCAT}")
     else ()
-        target_compile_definitions(alpaka INTERFACE ALPAKA_DISABLE_OneApi_AmdGpu)
+        target_compile_definitions(alpaka_target_oneapi INTERFACE ALPAKA_DISABLE_OneApi_AmdGpu)
     endif ()
 
     if (alpaka_FAST_MATH STREQUAL ON)
-        alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-ffast-math>")
+        alpaka_set_compiler_options(DEVICE target alpaka_target_oneapi "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-ffast-math>")
     elseif (alpaka_MATH STREQUAL OFF)
-        alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-fno-fast-math>")
+        alpaka_set_compiler_options(DEVICE target alpaka_target_oneapi "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-fno-fast-math>")
     endif ()
 
     if (alpaka_FTZ STREQUAL ON)
-        alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-ftz>")
+        alpaka_set_compiler_options(DEVICE target alpaka_target_oneapi "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-ftz>")
     elseif (alpaka_FTZ STREQUAL OFF)
-        alpaka_set_compiler_options(DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-no-ftz>")
+        alpaka_set_compiler_options(DEVICE target alpaka_target_oneapi "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-no-ftz>")
+    endif ()
+
+    target_compile_definitions(alpaka_target_oneapi INTERFACE ALPAKA_CMAKE_TARGET_ONEAPI)
+    target_link_libraries(alpaka_target_oneapi INTERFACE alpaka::headers)
+
+    if (alpaka_COUNT_API_DEPS EQUAL 1)
+        target_link_libraries(alpaka INTERFACE alpaka_target_oneapi)
     endif ()
 endif ()
 
-## search for aqtomic ref
+## search for atomic ref
 
 # Check for C++20 std::atomic_ref first
 try_compile(alpaka_HAS_STD_ATOMIC_REF # Result stored here
@@ -304,7 +379,7 @@ try_compile(alpaka_HAS_STD_ATOMIC_REF # Result stored here
         CXX_EXTENSIONS FALSE)
 if (alpaka_HAS_STD_ATOMIC_REF AND (NOT alpaka_ACC_CPU_DISABLE_ATOMIC_REF))
     message(STATUS "std::atomic_ref<T> found")
-    target_compile_definitions(alpaka INTERFACE ALPAKA_HAS_STD_ATOMIC_REF)
+    target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_HAS_STD_ATOMIC_REF)
 else ()
     message(STATUS "std::atomic_ref<T> NOT found")
 endif ()
@@ -312,7 +387,7 @@ endif ()
 if (NOT alpaka_HAS_STD_ATOMIC_REF)
     if (Boost_ATOMIC_FOUND)
         message(STATUS "boost::atomic_ref<T> found")
-        target_link_libraries(alpaka INTERFACE Boost::atomic)
+        target_link_libraries(alpaka_target_headers INTERFACE Boost::atomic)
     else ()
         message(STATUS "boost::atomic_ref<T> NOT found")
     endif ()
@@ -320,11 +395,8 @@ endif ()
 
 if ((NOT alpaka_HAS_STD_ATOMIC_REF) AND (NOT Boost_ATOMIC_FOUND))
     message(STATUS "atomic_ref<T> or boost::atomic_ref<T> was not found or manually disabled. Falling back to lock-based CPU atomics.")
-    target_compile_definitions(alpaka INTERFACE ALPAKA_DISABLE_ATOMIC_ATOMICREF)
+    target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_DISABLE_ATOMIC_ATOMICREF)
 endif ()
-
-
-add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
 # alpaka IDE target to make source browsable/editable in IDEs
 file(GLOB_RECURSE alpakaSources "${CMAKE_CURRENT_SOURCE_DIR}/include/**")

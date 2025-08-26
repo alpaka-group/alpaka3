@@ -1,0 +1,201 @@
+#
+# Copyright 2025 René Widera
+# SPDX-License-Identifier: MPL-2.0
+#
+
+### Provide the alpaka target names linked to a target
+##
+## The target alpaka::alpaka and alpaka will insecurely be resolved to the actual targets linked to it.
+## target names are: ALPAKA, CUDA, HIP, ONEAPI, HEADERS
+##
+## The output will be appended to the list variable provided as alpaka_target_list.
+function(alpaka_get_targets_recursive target alpaka_target_list)
+
+    get_target_property(libs_linked ${target} LINK_LIBRARIES)
+    get_target_property(libs_linked_interface ${target} INTERFACE_LINK_LIBRARIES)
+    set(libs "${libs_linked_interface};${libs_linked}")
+
+    foreach (lib ${libs})
+        if (lib MATCHES "alpaka::alpaka|^alpaka$")
+            alpaka_get_targets_recursive(${lib} sub_targets)
+            list(APPEND ${alpaka_target_list} "ALPAKA")
+            list(APPEND ${alpaka_target_list} ${sub_targets})
+        elseif (lib MATCHES "alpaka_target_cuda|alpaka::cuda")
+            alpaka_get_targets_recursive(${lib} sub_targets)
+            list(APPEND ${alpaka_target_list} "CUDA")
+            list(APPEND ${alpaka_target_list} ${sub_targets})
+        elseif (lib MATCHES "alpaka_target_hip|alpaka::hip")
+            alpaka_get_targets_recursive(${lib} sub_targets)
+            list(APPEND ${alpaka_target_list} "HIP")
+            list(APPEND ${alpaka_target_list} ${sub_targets})
+        elseif (lib MATCHES "alpaka_target_oneapi|alpaka::oneapi")
+            alpaka_get_targets_recursive(${lib} sub_targets)
+            list(APPEND ${alpaka_target_list} "ONEAPI")
+            list(APPEND ${alpaka_target_list} ${sub_targets})
+        elseif (lib MATCHES "alpaka_target_headers|alpaka::headers")
+            list(APPEND ${alpaka_target_list} "HEADERS")
+        endif ()
+    endforeach ()
+
+    list(REMOVE_DUPLICATES alpaka_target_list)
+    # Return the list via the output variable
+    set(${alpaka_target_list} ${${alpaka_target_list}} PARENT_SCOPE)
+endfunction()
+
+### Provide the alpaka target names linked to a target
+##
+## out_var will contain a list of alpaka target names linked to the target.
+function(alpaka_get_targets target out_var)
+    alpaka_get_targets_recursive(${target} alpaka_target_list)
+    message(STATUS "alpaka targets for '${target}': ${alpaka_target_list}")
+    # Return the list via the output variable
+    set(${out_var} ${alpaka_target_list} PARENT_SCOPE)
+endfunction()
+
+### Copy a source file to the build tree
+##
+## The copied file will be placed in a subdirectory named api_name inside the original directory structure.
+## All source file properties set on the original file will be copied to the new file.
+## The path of the copied file is returned via the OUT_VAR variable.
+function(copy_with_structure SRC_FILE api_name OUT_VAR)
+    get_filename_component(SRC_DIR ${SRC_FILE} DIRECTORY)
+    string(REPLACE "${CMAKE_SOURCE_DIR}/" "" REL_PATH "${SRC_DIR}")
+
+    get_filename_component(SRC_FILE_NAME ${SRC_FILE} NAME)
+
+    # Destination file inside build tree
+    set(DEST_FILE ${CMAKE_BINARY_DIR}/${REL_PATH}/${api_name}/${SRC_FILE_NAME})
+
+    # Ensure directory exists
+    get_filename_component(DEST_DIR ${DEST_FILE} DIRECTORY)
+    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/${REL_PATH}/${api_name}/)
+
+    # Copy file
+    configure_file(${SRC_FILE} ${DEST_FILE} COPYONLY)
+
+    # Query all properties actually set on the original file
+    get_source_file_property(props ${SRC_FILE} PROPERTY_LIST)
+
+    # Copy properties ove rthe the destination file
+    if (props)
+        foreach (prop IN LISTS props)
+            get_source_file_property(val ${SRC_FILE} ${prop})
+            if (val)
+                set_source_files_properties(${DEST_FILE} PROPERTIES ${prop} "${val}")
+            endif ()
+        endforeach ()
+    endif ()
+
+    # Export the DEST_FILE path back to caller
+    set(${OUT_VAR} ${DEST_FILE} PARENT_SCOPE)
+endfunction()
+
+### Update target properties and source file properties to enable compilation with the selected alpaka targets.
+##
+## This function must be called after all alpaka targets have been linked to the target.
+## It will set the LANGUAGE property of source files to CUDA or HIP if necessary.
+## Depending on the linked targets some source files will be copied to a different location in the build tree to avoid conflicts with the LANGUAGE property.
+## All source file properties added to the original source files before the finalize call will be copied to the copied files.
+## Attention: Source file properties added to the original source files after the finalize call can not be captured and will not forward to the compiler.
+##
+## Calling this method twice for the same target will result in an undefined behaviour.
+## Linking non alpaka targets after calling this method is allowed.
+## If new source files are added to the target after calling this method they will not be handled by alpaka.
+function(alpaka_finalize target)
+    # Decide backend based on linked alpaka target
+    list(REMOVE_DUPLICATES alpaka_target_list)
+    alpaka_get_targets(${target} alpaka_target_list)
+
+    if (NOT alpaka_target_list)
+        message(FATAL_ERROR "No alpaka target linked to target '${target}'")
+    endif ()
+
+    # The index wil be -1 if the target is not in the list
+    list(FIND alpaka_target_list "CUDA" index_cuda)
+    list(FIND alpaka_target_list "HIP" index_hip)
+    list(FIND alpaka_target_list "ONEAPI" index_oneapi)
+    list(FIND alpaka_target_list "HEADERS" index_headers)
+    list(FIND alpaka_target_list "ALPAKA" index_alpaka)
+
+    # CUDA and HIP can not be used together
+    if ((NOT index_cuda EQUAL -1) AND (NOT index_hip EQUAL -1))
+        message(FATAL_ERROR "Target '${target}' links gainst both CUDA and HIP alpaka targets. Please choose only one.")
+    endif ()
+    # CUDA or HIP cannot be used together with OneAPI
+    if (((NOT index_cuda EQUAL -1) OR (NOT index_hip EQUAL -1)) AND (NOT index_oneapi EQUAL -1))
+        message(FATAL_ERROR "Target '${target}' links gainst both CUDA/HIP and OneAPi alpaka targets. Please choose only one.")
+    endif ()
+
+    # You should not call alpaka_finalize if you have not linked any alpaka target
+    if (index_cuda EQUAL -1 AND index_hip EQUAL -1 AND index_oneapi EQUAL -1 AND index_headers EQUAL -1 AND index_alpaka EQUAL -1)
+        message(FATAL_ERROR "alpaka_finalize() was called for target '${target}', but no alpaka targets are linked. Linked interface targets: '${_file_list}'")
+    endif ()
+
+    ### Get the sources files and patch their LANGUAGE
+    ##
+    ##  For CUDA and HIP the source files need to be copied to a different location in the build tree because it is not possible to set two languages for a single source file.
+    ##  File properties are globally visible, so we cannot just set the LANGUAGE property to CUDA or HIP for the original source file.
+    ##  For the target the original file list is copied. Files which need to be compiled with CUDA or HIP will be replaced by the copied file, all other files remain unchanged.
+    get_target_property(_file_list ${target} SOURCES)
+    set(_new_file_list ${_file_list})
+    foreach (_file ${_file_list})
+        if ((${_file} MATCHES "\\.cpp$") OR (${_file} MATCHES "\\.cxx$"))
+            # set the default language to CXX and overwrite it below if necessary
+            set_source_files_properties(${_file} PROPERTIES LANGUAGE CXX)
+        endif ()
+        if (NOT index_cuda EQUAL -1)
+            if ((${_file} MATCHES "\\.cpp$") OR (${_file} MATCHES "\\.cxx$") OR (${_file} MATCHES "\\.cu$"))
+                copy_with_structure(${_file} "cuda" COPIED_FILE)
+                set_source_files_properties(${COPIED_FILE} PROPERTIES LANGUAGE CUDA)
+                list(REMOVE_ITEM _new_file_list ${_file})
+                list(APPEND _new_file_list ${COPIED_FILE})
+            endif ()
+        endif ()
+        if (NOT index_hip EQUAL -1)
+            if ((${_file} MATCHES "\\.cpp$") OR (${_file} MATCHES "\\.cxx$") OR (${_file} MATCHES "\\.hip$"))
+                copy_with_structure(${_file} "hip" COPIED_FILE)
+                set_source_files_properties(${COPIED_FILE} PROPERTIES LANGUAGE HIP)
+                list(REMOVE_ITEM _new_file_list ${_file})
+                list(APPEND _new_file_list ${COPIED_FILE})
+            endif ()
+        endif ()
+    endforeach ()
+    # Update the list of files for the target
+    set_property(TARGET ${target} PROPERTY SOURCES ${_new_file_list})
+
+    ### Set target properties
+    ##
+    ##  For CUDA and HIP some target properties cannot be propagated by the alpaka targets.
+    ##  For any target the corresponding target finalize define is set to disable the alpaka_finalize guard within the alpaka include files.
+    ##  The guards avoid that a user is including alpaka headers without calling alpaka_finalize() first.
+
+    if (NOT index_cuda EQUAL -1)
+        target_compile_definitions(${target} PRIVATE ALPAKA_CMAKE_TARGET_CUDA_FINALIZE_CALLED)
+
+        # We have to set this here since CUDA_SEPARABLE_COMPILATION is not propagated by the alpaka targets.
+        # This option can also not set as file property.
+        if (alpaka_RELOCATABLE_DEVICE_CODE STREQUAL ON)
+            set_property(TARGET ${target} PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+        elseif (alpaka_RELOCATABLE_DEVICE_CODE STREQUAL OFF)
+            set_property(TARGET ${target} PROPERTY CUDA_SEPARABLE_COMPILATION OFF)
+        endif ()
+    endif ()
+    if (NOT index_hip EQUAL -1)
+        target_compile_definitions(${target} PRIVATE ALPAKA_CMAKE_TARGET_HIP_FINALIZE_CALLED)
+
+        # We have to set this here because CMake currently doesn't provide hip_std_${VERSION} for
+        # target_compile_features() and HIP_STANDARD isn't propagated by interface libraries.
+        set_target_properties(${target} PROPERTIES
+                HIP_STANDARD ${alpaka_CXX_STANDARD}
+                HIP_STANDARD_REQUIRED ON)
+    endif ()
+    if (NOT index_oneapi EQUAL -1)
+        target_compile_definitions(${target} PRIVATE ALPAKA_CMAKE_TARGET_ONEAPI_FINALIZE_CALLED)
+    endif ()
+    if (NOT index_headers EQUAL -1)
+        target_compile_definitions(${target} PRIVATE ALPAKA_CMAKE_TARGET_HEADERS_FINALIZE_CALLED)
+    endif ()
+    if (NOT index_alpaka EQUAL -1)
+        target_compile_definitions(${target} PRIVATE ALPAKA_CMAKE_TARGET_ALPAKA_FINALIZE_CALLED)
+    endif ()
+endfunction()

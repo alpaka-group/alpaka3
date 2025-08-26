@@ -21,9 +21,10 @@ set(_TARGET_NAME "babelstream")
 
 file(GLOB_RECURSE _FILES_SOURCE "./src/*.cpp")
 
-alpaka_add_executable(${_TARGET_NAME} ${_FILES_SOURCE})
+add_executable(${_TARGET_NAME} ${_FILES_SOURCE})
 target_include_directories(${_TARGET_NAME} PRIVATE "src")
 target_link_libraries(${_TARGET_NAME} PRIVATE PRIVATE alpaka::alpaka)
+alpaka_finalize(${_TARGET_NAME})
 target_link_libraries(${_TARGET_NAME} PRIVATE Catch2::Catch2WithMain)
 set_target_properties(${_TARGET_NAME} PROPERTIES FOLDER benchmarks/babelstream)
 

@@ -25,42 +25,38 @@ project(${_TARGET_NAME} LANGUAGES CXX)
 # find PNGwriter installation
 find_package(PNGwriter 0.7.0 CONFIG)
 
-if(PNGwriter_FOUND)
-  set(PNGWRITER_ENABLED True)
-else()
-  set(PNGWRITER_ENABLED False)
-endif()
+if (PNGwriter_FOUND)
+    set(PNGWRITER_ENABLED True)
+else ()
+    set(PNGWRITER_ENABLED False)
+endif ()
 
 #-------------------------------------------------------------------------------
 # Find alpaka.
 
-if(NOT TARGET alpaka::alpaka)
+if (NOT TARGET alpaka::alpaka)
     option(alpaka_USE_SOURCE_TREE "Use alpaka's source tree instead of an alpaka installation" OFF)
 
-    if(alpaka_USE_SOURCE_TREE)
+    if (alpaka_USE_SOURCE_TREE)
         # Don't build the examples recursively
         set(alpaka_BUILD_EXAMPLES OFF)
         add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../.." "${CMAKE_BINARY_DIR}/alpaka")
-    else()
+    else ()
         find_package(alpaka REQUIRED)
-    endif()
-endif()
+    endif ()
+endif ()
 
 #-------------------------------------------------------------------------------
 # Add executable.
 
-alpaka_add_executable(
-    ${_TARGET_NAME}
-    src/heatEquation2D.cpp)
-target_link_libraries(
-    ${_TARGET_NAME}
-    PUBLIC alpaka::alpaka)
-if(PNGwriter_FOUND)
-    target_link_libraries(
-        ${_TARGET_NAME}
-        PRIVATE PNGwriter::PNGwriter)
+add_executable(${_TARGET_NAME} src/heatEquation2D.cpp)
+target_include_directories(${_TARGET_NAME} PRIVATE src)
+target_link_libraries(${_TARGET_NAME} PUBLIC alpaka::alpaka)
+alpaka_finalize(${_TARGET_NAME})
+if (PNGwriter_FOUND)
+    target_link_libraries(${_TARGET_NAME} PRIVATE PNGwriter::PNGwriter)
     target_compile_definitions(${_TARGET_NAME} PRIVATE PNGWRITER_ENABLED)
-endif()
+endif ()
 
 set_target_properties(${_TARGET_NAME} PROPERTIES FOLDER example)
 

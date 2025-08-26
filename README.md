@@ -139,6 +139,81 @@ export OMP_PLACES=cores
 ctest --output-on-failure
 ```
 
+Using of alpaka with CMake for your application
+-----------------------------------------------
+
+alpaka is providing Cmake targets based on the optional activated dependencies `alpaka_DEP_*`
+
+- targets:
+    - `alpaka::headers`
+      - set include dependencies and provides access to `host` API 
+    - `alpaka`, `alpaka::alpaka`
+      - links `alpaka::headers` and provides access to an API activated the dependency switch 
+      - if at least two of the dependencies `alpaka_DEP_CUDA`, `alpaka_DEP_HIP`, or `alpaka_DEP_ONEAPI` are activated
+        - **none** of the APIs (expept `host`) will be added because these dependencies are mutual exclusive
+        - you should add the required executor targets manually
+    - `alpaka::cuda`
+      - is available if `-Dalpaka_DEP_CUDA=ON` is set
+      - activates support for NVIDIA GPUs
+    - `alpaka::hip` 
+      - is available if `-Dalpaka_DEP_HIP=ON` is set
+      - activates support for AMD GPUs
+    - `alpaka::oneapi` 
+      - available if `-Dalpaka_DEP_ONEAPI=ON` is set
+      - activates support for CPUs, NVIDIA GPUs, AMD GPUs, and Intel GPUs
+
+Note `alpaka_DEP_OMP` is linked into the target `alpaka::headers` because it influences only `host` executors but is not providing additional alpaka API support.
+
+After linking alpaka targets to your application you should call `alpaka_finalize(targetName)` for each target which is using alpaka.
+`alpaka_finalize` is a CMake function that ensures all necessary compile definitions and options are set for your target.
+Depending on the activated dependencies `alpaka_DEP_*` this call can copy your source files to a temporary folder and compile them with the appropriate compiler.
+Linking non alpaka target after calling `alpaka_finalize()` is allowed.
+You should not include header files with a relative path from your source files. The relative path can be invalidated b< `alpaka_finalize()` due to the copy of your source files.
+
+alpaka is currently not providing an installation target therefore you should use `add_subdirectory(path/to/alpaka)` in your CMakeLists.txt.
+
+- standard application enabling API's depending on the cmake dependencies selected
+    ```cmake
+    # call: cmake -Dalpaka_DEP_CUDA=ON pathToAlpaka
+    add_executable(fooTarget src/main.cpp)
+    # provides access to host and CUDA API
+    target_link_libraries(fooTarget PUBLIC alpaka)
+    alpaka_finalize(fooTarget)
+    ```
+- build a shared library
+    ```cmake
+    # call: cmake -Dalpaka_DEP_CUDA=ON pathToAlpaka
+    add_library(fooShared SHARED src/foo.cpp)
+    target_link_libraries(fooShared PUBLIC alpaka)
+    alpaka_finalize(fooShared)
+    
+    add_executable(fooTarget src/main.cpp)
+    target_link_libraries(fooTarget PRIVATE fooShared)
+    ```
+- standard application which prefer manual selection of the API's
+    ```cmake
+    # call: cmake -Dalpaka_DEP_CUDA=ON pathToAlpaka
+    add_executable(fooTarget src/main.cpp)
+    # provides access to host and CUDA API
+    target_link_libraries(fooTarget PUBLIC alpaka::headers)
+    target_link_libraries(fooTarget PUBLIC alpaka::cuda)
+    alpaka_finalize(fooTarget)
+    ```  
+- using more than one dependency 
+    ```cmake
+    # call: cmake -Dalpaka_DEP_CUDA=ON -Dalpaka_DEP_HIP=ON pathToAlpaka
+    add_executable(fooTarget src/main.cpp)
+    # provides access to host, CUDA API
+    # the target alpaka::alpaka is now equal to alpaka::headers
+    target_link_libraries(fooTarget PUBLIC alpaka alpaka::cuda)
+    alpaka_finalize(fooTarget)
+  
+    add_executable(barTarget src/main.cpp)
+    # provides access to host, HIP API
+    target_link_libraries(barTarget PUBLIC alpaka alpaka::hip)
+    alpaka_finalize(barTarget)
+    ```
+
 Coding
 ------
 

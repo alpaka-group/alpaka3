@@ -7,6 +7,27 @@
 
 #include "alpaka/core/PP.hpp"
 
+// guard cmake target alpaka
+#if defined(ALPAKA_CMAKE_TARGET_ALPAKA) && !defined(ALPAKA_CMAKE_TARGET_ALPAKA_FINALIZE_CALLED)
+#    error "After adding the cmake target alpaka or alpaka::alpaka you should call 'alpaka_finalize(targetName)'"
+#endif
+// guard cmake target alpaka::headers
+#if defined(ALPAKA_CMAKE_TARGET_HEADERS) && !defined(ALPAKA_CMAKE_TARGET_HEADERS_FINALIZE_CALLED)
+#    error "After adding the cmake target alpaka::headers you should call 'alpaka_finalize(targetName)'"
+#endif
+// guard cmake target alpaka::cuda
+#if defined(ALPAKA_CMAKE_TARGET_CUDA) && !defined(ALPAKA_CMAKE_TARGET_CUDA_FINALIZE_CALLED)
+#    error "After adding the cmake target alpaka::cuda you should call 'alpaka_finalize(targetName)'"
+#endif
+// guard cmake target alpaka::hip
+#if defined(ALPAKA_CMAKE_TARGET_HIP) && !defined(ALPAKA_CMAKE_TARGET_HIP_FINALIZE_CALLED)
+#    error "After adding the cmake target alpaka::hip you should call 'alpaka_finalize(targetName)'"
+#endif
+// guard cmake target alpaka::onapi
+#if defined(ALPAKA_CMAKE_TARGET_ONEAPI) && !defined(ALPAKA_CMAKE_TARGET_ONEAPI_FINALIZE_CALLED)
+#    error "After adding the cmake target alpaka::oneapi you should call 'alpaka_finalize(targetName)'"
+#endif
+
 #ifdef __INTEL_COMPILER
 #    warning                                                                                                          \
         "The Intel Classic compiler (icpc) is no longer supported. Please upgrade to the Intel LLVM compiler (ipcx)."
