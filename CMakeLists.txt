@@ -150,6 +150,8 @@ if(NOT TARGET alpaka)
         INTERFACE ALPAKA_CMAKE_TARGET_HEADERS
     )
 
+    add_library(alpaka::host ALIAS alpaka_target_headers)
+
     target_include_directories(
         alpaka_target_headers
         INTERFACE
@@ -477,13 +479,8 @@ if(alpaka_DEP_ONEAPI)
         list(JOIN custom_SYCL_TARGETS "," custom_SYCL_TARGETS_CONCAT)
         alpaka_set_compiler_options(HOST_DEVICE target alpaka_target_oneapi INTERFACE "-fsycl-targets=${custom_SYCL_TARGETS_CONCAT}")
         target_link_options(
-            ${CMAKE_PROJECT_NAME}
-            INTERFACE "-fsycl-targets=${custom_SYCL_TARGETS_CONCAT}"
-        )
-    else()
-        target_compile_definitions(
             alpaka_target_oneapi
-            INTERFACE ALPAKA_DISABLE_OneApi_AmdGpu
+            INTERFACE "-fsycl-targets=${custom_SYCL_TARGETS_CONCAT}"
         )
     endif()
 

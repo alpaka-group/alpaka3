@@ -147,6 +147,8 @@ alpaka is providing Cmake targets based on the optional activated dependencies `
 - targets:
     - `alpaka::headers`
       - set include dependencies and provides access to `host` API 
+    - `alpaka::host` 
+      - alias for `alpaka::headers`
     - `alpaka`, `alpaka::alpaka`
       - links `alpaka::headers` and provides access to an API activated the dependency switch 
       - if at least two of the dependencies `alpaka_DEP_CUDA`, `alpaka_DEP_HIP`, or `alpaka_DEP_ONEAPI` are activated
