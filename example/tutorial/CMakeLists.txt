@@ -17,28 +17,34 @@ set(_TARGET_NAME vectorAdd)
 
 project(tutorial LANGUAGES CXX)
 
-
 #-------------------------------------------------------------------------------
 # Find alpaka.
 
-if (NOT TARGET alpaka::alpaka)
-    option(alpaka_USE_SOURCE_TREE "Use alpaka's source tree instead of an alpaka installation" OFF)
+if(NOT TARGET alpaka::alpaka)
+    option(
+        alpaka_USE_SOURCE_TREE
+        "Use alpaka's source tree instead of an alpaka installation"
+        OFF
+    )
 
-    if (alpaka_USE_SOURCE_TREE)
+    if(alpaka_USE_SOURCE_TREE)
         # Don't build the examples recursively
         set(alpaka_BUILD_EXAMPLES OFF)
-        add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../.." "${CMAKE_BINARY_DIR}/alpaka")
-    else ()
+        add_subdirectory(
+            "${CMAKE_CURRENT_LIST_DIR}/../.."
+            "${CMAKE_BINARY_DIR}/alpaka"
+        )
+    else()
         find_package(alpaka REQUIRED)
-    endif ()
-endif ()
+    endif()
+endif()
 
 #-------------------------------------------------------------------------------
 # Add executable.
 
 file(GLOB_RECURSE tutorialSource "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 
-foreach (tutExampleFile ${tutorialSource})
+foreach(tutExampleFile ${tutorialSource})
     get_filename_component(tutFileName ${tutExampleFile} NAME)
     string(REPLACE ".cpp" "" tutName ${tutFileName})
     add_executable(${tutName} ${tutExampleFile})
@@ -49,4 +55,4 @@ foreach (tutExampleFile ${tutorialSource})
     target_compile_features(${tutName} PRIVATE cxx_std_20)
 
     add_test(NAME ${tutName} COMMAND ${tutName})
-endforeach ()
+endforeach()

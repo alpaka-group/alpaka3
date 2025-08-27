@@ -34,17 +34,24 @@ set(_GENERATED_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/src")
 
 file(REMOVE_RECURSE ${_GENERATED_SOURCE_DIR})
 
-foreach (_HEADER_FILE ${ALPAKA_FILES_HEADER})
+foreach(_HEADER_FILE ${ALPAKA_FILES_HEADER})
     # Remove the parent directory from the path.
     # NOTE: This is not correct because it does not only replace at the beginning of the string.
     #  "STRING(REGEX REPLACE" would be correct if there was an easy way to escape arbitrary strings.
     string(
-            REPLACE "${ALPAKA_SUFFIXED_INCLUDE_DIR}/" ""
-            _HEADER_FILE
-            "${_HEADER_FILE}")
+        REPLACE
+        "${ALPAKA_SUFFIXED_INCLUDE_DIR}/"
+        ""
+        _HEADER_FILE
+        "${_HEADER_FILE}"
+    )
     set(_SOURCE_FILE "${_GENERATED_SOURCE_DIR}/${_HEADER_FILE}.cpp")
-    file(WRITE "${_SOURCE_FILE}" "#include <alpaka/${_HEADER_FILE}>\n#include <alpaka/${_HEADER_FILE}>\n")
-endforeach ()
+    file(
+        WRITE
+        "${_SOURCE_FILE}"
+        "#include <alpaka/${_HEADER_FILE}>\n#include <alpaka/${_HEADER_FILE}>\n"
+    )
+endforeach()
 
 #---------------------------------------------------------------------------
 # Add executable.

@@ -19,12 +19,19 @@ project(tutorial LANGUAGES CXX)
 # -------------------------------------------------------------------------------
 # Find alpaka.
 if(NOT TARGET alpaka::alpaka)
-    option(alpaka_USE_SOURCE_TREE "Use alpaka's source tree instead of an alpaka installation" OFF)
+    option(
+        alpaka_USE_SOURCE_TREE
+        "Use alpaka's source tree instead of an alpaka installation"
+        OFF
+    )
 
     if(alpaka_USE_SOURCE_TREE)
         # Don't build the examples recursively
         set(alpaka_BUILD_EXAMPLES OFF)
-        add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../.." "${CMAKE_BINARY_DIR}/alpaka")
+        add_subdirectory(
+            "${CMAKE_CURRENT_LIST_DIR}/../.."
+            "${CMAKE_BINARY_DIR}/alpaka"
+        )
     else()
         find_package(alpaka REQUIRED)
     endif()
@@ -34,15 +41,36 @@ set(HAS_CUDA_CUB 0)
 if(alpaka_DEP_CUDA)
     find_package(CUDAToolkit)
     if(NOT CUDAToolkit_FOUND)
-        message(STATUS "Optional CUDAToolkit not found, cub scan implementation will be disabled.")
+        message(
+            STATUS
+            "Optional CUDAToolkit not found, cub scan implementation will be disabled."
+        )
     else()
-        message(STATUS "Found optional CUDAToolkit, version " ${CUDAToolkit_VERSION})
-        if (${CUDAToolkit_VERSION_MAJOR}.${CUDAToolkit_VERSION_MINOR} VERSION_EQUAL "12.5")
-            message(WARNING "Found CUDA::cub version 12.5 which is not supported for this example. Native cub execution will be disabled.")
-        elseif(${CUDAToolkit_VERSION_MAJOR}.${CUDAToolkit_VERSION_MINOR} VERSION_EQUAL "12.9")
+        message(
+            STATUS
+            "Found optional CUDAToolkit, version "
+            ${CUDAToolkit_VERSION}
+        )
+        if(
+            ${CUDAToolkit_VERSION_MAJOR}.${CUDAToolkit_VERSION_MINOR}
+                VERSION_EQUAL
+                "12.5"
+        )
+            message(
+                WARNING
+                "Found CUDA::cub version 12.5 which is not supported for this example. Native cub execution will be disabled."
+            )
+        elseif(
+            ${CUDAToolkit_VERSION_MAJOR}.${CUDAToolkit_VERSION_MINOR}
+                VERSION_EQUAL
+                "12.9"
+        )
             # error: error: "cuda" is ambiguous in include/cub/util_type.cuh(237)
             # using int_constant_t = cuda::std::integral_constant<int, Value>;
-            message(WARNING "Found CUDA::cub version 12.9 which is not supported for this example. Native cub execution will be disabled.")
+            message(
+                WARNING
+                "Found CUDA::cub version 12.9 which is not supported for this example. Native cub execution will be disabled."
+            )
         else()
             set(HAS_CUDA_CUB 1)
         endif()
@@ -54,9 +82,15 @@ if(alpaka_DEP_HIP)
     find_package(hip)
     find_package(hipCUB)
     if(NOT hip_FOUND)
-        message(STATUS "Optional hip not found, hipcub scan implementation will be disabled.")
+        message(
+            STATUS
+            "Optional hip not found, hipcub scan implementation will be disabled."
+        )
     elseif(NOT TARGET hip::hipcub)
-        message(STATUS "Found optional hip, but not hipcub; hipcub scan implementation will be disabled.")
+        message(
+            STATUS
+            "Found optional hip, but not hipcub; hipcub scan implementation will be disabled."
+        )
     else()
         set(HAS_HIP_CUB 1)
         message(STATUS "Found optional hip")
