@@ -64,10 +64,9 @@ foreach(api IN LISTS ALPAKA_API_LIST)
         )
         alpaka_finalize(${_lib_target_name})
         add_dependencies(${_TARGET_NAME} ${_lib_target_name})
-        # linker language must be CXX to support mixing of OneApi, CUDA and HIP
-        # Due to the usage of the CXX linker oneApi kernels can not be executed,
-        # the kernel symbol is not found at runtime.
-        # @todo investigate how to link OneAPi and native CUDA/HIP code correctly
+        # Linker language must be CXX to support mixing of OneApi, CUDA and HIP together.
+        # The issue is that the flag to enable OpenMP based on the CXX compiler but icpx is using '-fiopenmp' which is unknown for other compilers.
+        # @todo evaluate if this workaround can be somehow removed
         set_target_properties(
             ${_lib_target_name}
             PROPERTIES LINKER_LANGUAGE CXX
