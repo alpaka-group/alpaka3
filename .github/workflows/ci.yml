@@ -39,10 +39,12 @@ jobs:
           - { compiler: clang, version: "18", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: clang, version: "19", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: clang, version: "20", cuda: "no", hip: "no", container: "ubuntu:24.04" }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: nvcc, version: "", cuda: "12.5", hip: "no", container: "nvidia/cuda:12.5.1-devel-ubuntu24.04" }
           - { compiler: nvcc, version: "", cuda: "12.6", hip: "no", container: "nvidia/cuda:12.6.3-devel-ubuntu24.04" }
           - { compiler: nvcc, version: "", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04" }
           - { compiler: nvcc, version: "", cuda: "12.9", hip: "no", container: "nvidia/cuda:12.9.1-devel-ubuntu24.04" }
+          - { compiler: nvcc, version: "", cuda: "13.0", hip: "no", container: "nvidia/cuda:13.0.0-devel-ubuntu24.04" }
           - { compiler: clang, version: "18", cuda: "no", hip: "6.2.4", container: "rocm/dev-ubuntu-24.04:6.2.4" }
           - { compiler: clang, version: "18", cuda: "no", hip: "6.3.4", container: "rocm/dev-ubuntu-24.04:6.3.4" }
           - { compiler: clang, version: "19", cuda: "no", hip: "6.4.2", container: "rocm/dev-ubuntu-24.04:6.4.2" }
@@ -87,7 +89,14 @@ jobs:
           apt update
           apt install -y software-properties-common wget gnupg2
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
-          add-apt-repository -y "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-20 main"
+          case ${{ matrix.config.version }} in
+            20)
+                add-apt-repository -y "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-20 main"
+                ;;
+            21)
+                add-apt-repository -y "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-21 main"
+                ;;
+          esac
           apt-get update
           apt-get install -y clang-${{ matrix.config.version }}
           update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${{ matrix.config.version }} 100 \
