@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: MPL-2.0
 
-/docs/doxygen/*
-/docs/source/_build
+/docs/source/build/
+/docs/doxygen
+/docs/doxygen_dev
 /docs/cheatsheet/cheatsheet.pdf
 
 **/build*/
