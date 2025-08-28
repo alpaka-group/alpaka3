@@ -12,42 +12,71 @@ Cheatsheet
 General
 -------
 
-- Getting alpaka: https://github.com/alpaka-group/alpaka
-- Issue tracker, questions, support: https://github.com/alpaka-group/alpaka/issues
+- Getting alpaka: https://github.com/alpaka-group/alpaka3
+- Issue tracker, questions, support: https://github.com/alpaka-group/alpaka3/issues
 - All alpaka names are in namespace alpaka and header file `alpaka/alpaka.hpp`
 - This document assumes
 
   .. code-block:: c++
 
      #include <alpaka/alpaka.hpp>
-     using namespace alpaka;
+     namespace myProject {
+         using namespace alpaka;
+     }
+
+.. warning::
+
+Using ``using namespace alpaka;`` is global namespace should be avoided, due to possible side effects with other libraries.
+
+All methods and classes in the `alpaka` namespace can be called from the cpu controller thread (named `host`) and from the compute device.
+
+- `alpaka::onHost` can only be called from `host`.
+- `alpaka::onAcc` can only be called from within a kernel running on the compute device.
+
+Methods starting with `onHost::make` (e.g., `onHost::makeHostDevice()`) create handles to instances where the copy is only a shallow copy and not a deep copy.
+Methods starting with `get` (e.g., `onHost::getExtents(...)`) provide access to properties of an instance.
 
 Accelerator, Platform and Device
 --------------------------------
 
-Define in-kernel thread indexing type
+Define in-kernel thread indexing type:
   .. code-block:: c++
 
-    using Dim = DimInt<constant>;
-    using Idx = IntegerType;
+    constexpr uint32_t dim = constant; // 1u, 2u, 3u, ...
+    using IdxType = IntegerType; // uint32_t, size_t
 
-Define accelerator type (CUDA, OpenMP,etc.)
+Available apis:
   .. code-block:: c++
 
-    using Acc = AcceleratorType<Dim,Idx>;
+    api::host
+    api::cuda
+    api::hip
+    api::oneApi
 
-  AcceleratorType:
-     .. code-block:: c++
+Executors:
+  .. code-block:: c++
 
-	AccGpuCudaRt, AccGpuHipRt, AccCpuSycl, AccFpgaSyclIntel, AccGpuSyclIntel, AccCpuOmp2Blocks,
-	AccCpuOmp2Threads, AccCpuTbbBlocks, AccCpuThreads, AccCpuSerial
+     exec::cpuSerial
+     exec::ompBlocks
+     exec::gpuCuda
+     exec::gpuHip
+     exec::oneApi
 
+Device kinds:
+  .. code-block:: c++
 
-Create platform and select a device by index
+     deviceKind::cpu
+     deviceKind::amdGpu
+     deviceKind::nvidiaGpu
+     deviceKind::intelGpu
+
+Create device selector and select a device by index:
    .. code-block:: c++
 
-      auto const platform = Platform<Acc>{};
-      auto const device = getDevByIdx(platform, index);
+    auto devSelector = onHost::makeDeviceSelector(api, deviceKind);
+    if(devSelector.getDeviceCount() == 0)
+         throw std::runtime_error("No device found!");
+    auto const device = devSelector.makeDevice(index);
 
 Queue and Events
 ----------------
@@ -55,61 +84,51 @@ Queue and Events
 Create a queue for a device
   .. code-block:: c++
 
-    using Queue = Queue<Acc, Property>;
-    auto queue = Queue{device};
-
-  Property:
-     .. code-block:: c++
-
-	Blocking, NonBlocking
+    auto queue = device.makeQueue();
 
 Put a task for execution
   .. code-block:: c++
 
-    enqueue(queue, task);
+    queue.enqueue(task);
 
 Wait for all operations in the queue
   .. code-block:: c++
 
-    wait(queue);
+    onHost::wait(queue);
 
 Create an event
   .. code-block:: c++
 
-     Event<Queue> event{device};
+     auto event = device.makeEvent();
 
 Put an event to the queue
   .. code-block:: c++
 
-     enqueue(queue, event);
+     queue.enqueue(event);
 
 Check if the event is completed
   .. code-block:: c++
 
-     isComplete(event);
+     event.isComplete(event);
 
 Wait for the event (and all operations put to the same queue before it)
   .. code-block:: c++
 
-     wait(event);
+     onHost::wait(event);
 
 Memory
 ------
 
 Memory allocation and transfers are symmetric for host and devices, both done via alpaka API
 
-Create a CPU device for memory allocation on the host side
-  .. code-block:: c++
-
-     auto const platformHost = PlatformCpu{};
-     auto const devHost = getDevByIdx(platformHost, 0);
-
 Allocate a buffer in host memory
   .. code-block:: c++
 
      // Use alpaka vector as a static array for the extents
-     Vec<DimInt<1>, Idx> extent = value;
-     Vec<DimInt<2>, Idx> extent = {valueY, valueX};
+     concepts::Vec auto extent = Vec{value};
+     concepts::Vec auto extent = Vec{valueY, valueX};
+     // truly compile time known values
+     concepts::CVec auto extent = CVec<IdxType, valueZ, valueY, valueX>{};
 
      // Allocate memory for the alpaka buffer, which is a dynamic array
      using BufHost = Buf<DevHost, DataType, Dim, Idx>;
@@ -119,55 +138,64 @@ Create a view to host memory represented by a pointer
   .. code-block:: c++
 
      // Create an alpaka vector which is a static array
-     Vec<Dim, Idx> extent = size;
+     auto extent = Vec{size};
      DataType* ptr = ...;
-     auto hostView = createView(devHost, ptr, extent);
+     auto hostView = makeView(api::host, ptr, extent);
 
 Create a view to host std::vector
    .. code-block:: c++
 
      auto vec = std::vector<DataType>(42u);
-     auto hostView = createView(devHost, vec);
+     // the api is not required, std::vector is assumed to be api::host
+     auto hostView = makeView(vec);
 
 Create a view to host std::array
    .. code-block:: c++
 
      std::array<DataType, 2> array = {42u, 23};
-     auto hostView = createView(devHost, array);
+     // if call is in host code api::host is automatically assumed
+     auto hostView = makeView(array);
+     // if call is in host code api::host is automatically assumed
+     auto deviceView = makeView(array);
 
-Get a raw pointer to a buffer or view initialization, etc.
+Get a raw pointer to a view initialization, etc.
   .. code-block:: c++
 
-     DataType* raw = view::getPtrNative(hostBufOrView);
+     DataType* rawPtr = onHost::data(view);
 
 Get the pitches of a buffer or view
   .. code-block:: c++
 
      // memory in bytes to the next element in the buffer/view along the pitch dimension
-     auto pitchBufOrViewAcc = getPitchesInBytes(accBufOrView)
+     auto viewPitches = onHost:getPitches(view)
 
-Get a mdspan to a buffer or view initialization, etc.
+View initialization, etc.
   .. code-block:: c++
 
-     auto bufOrViewMdSpan = experimental::getMdSpan(bufOrViewAcc)
-     auto value = bufOrViewMdSpan(y,x); // access 2D mdspan
-     bufOrViewMdSpan(y,x) = value; // assign item to 2D mdspan
+     // the view can have any dimensionality
+     onHost::memset(queue, view, 0); // set all bytes to zero
+     onHost::fill(queue, view, 42); // element-wise fill with value
 
-Allocate a buffer in device memory
+Allocate a view
   .. code-block:: c++
 
-     auto bufDevice = allocBuf<DataType, Idx>(device, extent);
+     // the allocation is providing a managed view which will be automatically freed if the last handle runs out of a life-time
+     auto devView = onHost::alloc<DataType>(device, extent);
+     // allocate memory which lives on the host but is accessible from the device too
+     auto devMappedView = onHost::allocMapped<DataType>(device, extent);
+     // allocate memory can be accessed from host and device (unified memory), the real location depends on the native backend e.g. CUDA, OneApi, ...
+     auto devUnifiedView = onHost::allocManaged<DataType>(device, extent);
+     // allocate memory accessible from host
+     auto hostView = onHost::allocHost<DataType>(extent);
+     // the data will not be automatically freed, user must take care that the original data life-time is longer than the view
+     auto devView = devView.getView();
 
-Enqueue a memory copy from host to device
+Copy view data
   .. code-block:: c++
 
-     // arguments can be also View instances instead of Buf
-     memcpy(queue, bufDevice, bufHost, extent);
-
-Enqueue a memory copy from device to host
-  .. code-block:: c++
-
-     memcpy(queue, bufHost, bufDevice, extent);
+     onHost::memcpy(queue, dstView, srcView);
+     // providing the extent is optional and allow partial copies
+     onHost::memcpy(queue, dstView, srcView, extent);
 
 .. raw:: pdf
 
@@ -178,35 +206,18 @@ Kernel Execution
 Prepare Kernel Bundle
   .. code-block:: c++
 
-     HeatEquationKernel heatEqKernel;
+     MyOwnKernel myKernel{};
 
 Automatically select a valid kernel launch configuration
   .. code-block:: c++
 
-     Vec<Dim, Idx> const globalThreadExtent = vectorValue;
-     Vec<Dim, Idx> const elementsPerThread = vectorValue;
-
-     KernelCfg<Acc> const kernelCfg = {
-       globalThreadExtent,
-       elementsPerThread,
-       false,
-       GridBlockExtentSubDivRestrictions::Unrestricted};
-
-     auto autoWorkDiv = getValidWorkDiv(
-       kernelCfg,
-       device,
-       kernel,
-       kernelParams...);
+     // DataType is used to optimize the kernel parameters for working on data of this type
+     auto frameSpec = onHost::getFrameSpec<DataType>(device, extentMd);
 
 Manually set a kernel launch configuration
   .. code-block:: c++
 
-     Vec<Dim, Idx> const blocksPerGrid = vectorValue;
-     Vec<Dim, Idx> const threadsPerBlock = vectorValue;
-     Vec<Dim, Idx> const elementsPerThread = vectorValue;
-
-     using WorkDiv = WorkDivMembers<Dim, Idx>;
-     auto manualWorkDiv = WorkDiv{blocksPerGrid, threadsPerBlock, elementsPerThread};
+     auto frameSpec = onHost::FrameSpec{numFramesMd, frameExtentMd};
 
 Instantiate a kernel (does not launch it yet)
   .. code-block:: c++
@@ -215,16 +226,13 @@ Instantiate a kernel (does not launch it yet)
 
 acc parameter of the kernel is provided automatically, does not need to be specified here
 
-Get information about the kernel from the device (size, maxThreadsPerBlock, sharedMemSize, registers, etc.)
-  .. code-block:: c++
-
-     auto kernelFunctionAttributes = getFunctionAttributes<Acc>(devAcc, kernel, parameters...);
-
-
 Put the kernel for execution
   .. code-block:: c++
 
-     exec(queue, workDiv, kernel, parameters...);
+     // automatically deduct a fast executor for the given device
+     queue.enqueue(frameSpec, onHost::KernelBundle{kernel, parameters...});
+     // or use a specific executor
+     queue.enqueue(executor, frameSpec, onHost::KernelBundle{kernel, parameters...});
 
 Kernel Implementation
 ---------------------
@@ -233,19 +241,20 @@ Define a kernel as a C++ functor
   .. code-block:: c++
 
      struct Kernel {
-        template<typename Acc>
-        ALPAKA_FN_ACC void operator()(Acc const & acc, parameters) const { ... }
+        ALPAKA_FN_ACC void operator()(onAcc::concepts::Acc auto const & acc, parameters) const { ... }
      };
 
-``ALPAKA_FN_ACC`` is required for kernels and functions called inside, ``acc`` is mandatory first parameter, its type is the template parameter
+``ALPAKA_FN_ACC`` is required for kernels and functions called inside, ``acc`` is mandatory first parameter, its type is the template parameter.
+``acc`` must be a constant reference.
 
 Access multi-dimensional indices and extents of blocks, threads, and elements
   .. code-block:: c++
 
-     auto idx = getIdx<Origin, Unit>(acc);
-     auto extent = getWorkDiv<Origin, Unit>(acc);
-     // Origin: Grid, Block, Thread
-     // Unit: Blocks, Threads, Elems
+     // origin: grid, block
+     // unit: blocks, threads
+     auto idxMd = acc.getIdxWithin(nAcc::origin::*, onAcc::unit::*);
+     auto extentMd = acc.getExtentsOf(onAcc::origin::*, alpaka::onAcc::unit::*);
+
 
 Access components of and destructure multi-dimensional indices and extents
   .. code-block:: c++
@@ -256,12 +265,12 @@ Access components of and destructure multi-dimensional indices and extents
 Linearize multi-dimensional vectors
   .. code-block:: c++
 
-     auto linearIdx = mapIdx<1u>(idxND, extentND);
+     auto linearIdx = linearize(idxMd, extentMd);
 
-More generally, index multi-dimensional vectors with a different dimensionality
+Map linear index to multi-dimensional index
   .. code-block:: c++
 
-     auto idxND = mapIdx<N>(idxMD, extentMD);
+     auto idxMd = mapToND(extentMD, idx);
 
 .. raw:: pdf
 
@@ -270,54 +279,63 @@ More generally, index multi-dimensional vectors with a different dimensionality
 Allocate static shared memory variable
   .. code-block:: c++
 
-     Type& var = declareSharedVar<Type, __COUNTER__>(acc);       // scalar
-     auto& arr = declareSharedVar<float[256], __COUNTER__>(acc); // array
+     // two dimensional matrix with 4 columns, 3 rows with elements of the type float
+     concepts::MpSpan auto mdSpanData = alpaka::onAcc::declareSharedMdArray<float, alpaka::uniqueId()>(acc, CVec<uint32_t,3,4>{});
+     // or with a preprocessor unique id
+     concepts::MpSpan auto mdSpanData = alpaka::onAcc::declareSharedMdArray<float, __COUNTER__>(acc, CVec<uint32_t,3,4>{});
+     // a single scalar
+     DataType scalar = alpaka::onAcc::declareSharedVar<float, alpaka::uniqueId()>(acc, CVec<uint32_t,3,4>{});
 
-Get dynamic shared memory pool, requires the kernel to specialize
+Get dynamic shared memory pool, requires the kernel to have a data member with the size in bytes
   .. code-block:: c++
 
-     trait::BlockSharedMemDynSizeBytes
-       Type * dynamicSharedMemoryPool = getDynSharedMem<Type>(acc);
+     struct MyKernel
+     {
+         uint32_t dynSharedMemBytes = 32u;
+     };
+
+     // access within the kernel
+     DataType* dynS = onAcc::getDynSharedMem<DataType>(acc);
+
+Or must specialize a trait for the kernel
+  .. code-block:: c++
+
+      // specialization within the host code
+      namespace alpaka::onHost::trait {
+         template<typename T_FrameSpec>
+         struct BlockDynSharedMemBytes<DynSharedMemTrait, T_FrameSpec> {
+             BlockDynSharedMemBytes(DynSharedMemTrait const& kernel, T_FrameSpec const& spec){}
+
+             // the signature is very similar to the kernel operator() signature with the difference that the first parameter
+             // is the executor and not the accelerator
+             uint32_t operator()(auto const executor, [[maybe_unused]] auto const&... args) const
+             {
+                 return 32;
+             }
+         };
+      } // namespace alpaka::onHost::trait
+
+      // access within the kernel
+      DataType* dynS = onAcc::getDynSharedMem<DataType>(acc);
 
 Synchronize threads of the same block
   .. code-block:: c++
 
-     syncBlockThreads(acc);
+     onAcc::syncBlockThreads(acc);
 
 Atomic operations
   .. code-block:: c++
 
+     // Operation: onAcc::AtomicAdd, onAcc::AtomicSub, onAcc::AtomicMin, onAcc::AtomicMax, onAcc::AtomicExch,
+     //            onAcc::AtomicInc, onAcc::AtomicDec, onAcc::AtomicAnd, onAcc::AtomicOr, onAcc::AtomicXor, onAcc::AtomicCas
      auto result = atomicOp<Operation>(acc, arguments);
-     // Operation: AtomicAdd, AtomicSub, AtomicMin, AtomicMax, AtomicExch,
-     //            AtomicInc, AtomicDec, AtomicAnd, AtomicOr, AtomicXor, AtomicCas
      // Also dedicated functions available, e.g.:
-     auto old = atomicAdd(acc, ptr, 1);
+     auto old = onAcc::atomicAdd(acc, ptr, 1);
 
-Memory fences on block-, grid- or device level (guarantees LoadLoad and StoreStore ordering)
+Math functions
   .. code-block:: c++
 
-     mem_fence(acc, memory_scope::Block{});
-     mem_fence(acc, memory_scope::Grid{});
-     mem_fence(acc, memory_scope::Device{});
-
-Warp-level operations
-  .. code-block:: c++
-
-     uint64_t result = warp::ballot(acc, idx == 1 || idx == 4);
-     assert( result == (1<<1) + (1<<4) );
-
-     int32_t valFromSrcLane = warp::shfl(val, srcLane);
-
-Math functions take acc as additional first argument
-  .. code-block:: c++
-
-     math::sin(acc, argument);
+     math::sin(argument);
+     math::cos(argument);
 
 Similar for other math functions.
-
-Generate random numbers
-  .. code-block:: c++
-
-     auto distribution = rand::distribution::createNormalReal<double>(acc);
-     auto generator = rand::engine::createDefault(acc, seed, subsequence);
-     auto number = distribution(generator);
