@@ -30,94 +30,10 @@ Software License
 
 **alpaka** is licensed under **MPL-2.0**.
 
-Compile and Run
----------------
+Documentation
+-------------
 
-The recipies shown here assume you have installed spack packages for specific compiler versions
-and that alpaka is relative to the build folder available.
-
-### CMake variable naming and behaviour
-
-- `alpaka_DEP_*` controls whether a parallelization framework is used and introduces a dependency on third-party libraries.
-- `alpaka_EXEC_*` activates or deactivates which execution schemas will be used for examples.
-  - Execution schemas can be set to OFF in CMake, but you can still use them within your application code.
-  - Similarly, an execution schema can be set to ON, but it may not be usable in the application if the API where the executor can be used is deactivated.
-
-### compile for CPU only (serial and OpenMP)
-
-```bash
-spack load gcc@14.1.0
-spack load cmake@3.29.1
-
-# -Dalpaka_DEP_OMP=ON is implicitly set, if the compiler not support OpenMP only serial code will be generated
-cmake ../alpaka -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -DBUILD_TESTING=ON
-make -j
-ctest --output-on-failure
-```
-
-### compile for NVIDIA CUDA only
-
-```bash
-spack load cmake@3.29.1
-spack load cuda@12.4.0
-
-# use -DCMAKE_CUDA_ARCHITECTURES=80 to set the GPU architecture
-cmake ../alpaka -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_DEP_OMP=OFF -Dalpaka_DEP_CUDA=ON -Dalpaka_EXEC_CpuSerial=OFF  
-make -j
-ctest --output-on-failure
-```
-
-### compile for AMD HIP only
-
-```bash
-spack load cmake@3.29.1
-spack load hip@6.3.4
-export CXX=clang++
-
-# use -DCMAKE_HIP_ARCHITECTURES=gfx906 to set the GPU architecture
-# for older CMake version sometimes the architecture must be set with -DAMDGPU_TARGETS=gfx906
-cmake ../alpaka -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_DEP_OMP=OFF -Dalpaka_DEP_HIP=ON -Dalpaka_EXEC_CpuSerial=OFF
-make -j
-ctest --output-on-failure
-```
-
-### compile for OneApi SYCL CPU/GPU only
-
-```bash
-spack load cmake@3.29.1
-spack load intel-oneapi-compilers@2025.0.4
-spack load intel-oneapi-dpl@2022.2.0
-
-# by default all device kinds get be addressed CPU and Intel GPU will be addressed
-# You can add support for NVIDIA GPU and AMD GPU via
-#  -Dalpaka_ONEAPI_AmdGpu=ON
-#  -Dalpaka_ONEAPI_NvidiaGpu=ON
-# or deselect the device kind with 
-#  -Dalpaka_ONEAPI_Cpu=OFF
-#  -Dalpaka_ONEAPI_IntelGpu=OFF
-#
-# The architecture can be set with -Dalpaka_ONEAPI_*_ARCH=<arch>
-# Cpu ISA e.g. avx,avx2, avx512 
-# Nvidia only the sm number is needed e.g. 80
-# Amd full qualifier is required e.g. gfx906
-cmake ../alpaka -DCMAKE_CXX_COMPILER=icpx -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_DEP_ONEAPI=ON -Dalpaka_DEP_OMP=OFF -Dalpaka_EXEC_CpuSerial=OFF
-make -j
-ctest --output-on-failure
-```
-
-### optimization for benchmarking
-
-If you like to run benchmarks you should set at least the following CMake variables.
-
-```bash
--DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-ftree-vectorize -march=native"
-```
-
-You can benchmark bableStream for different number of elements e.g. with a simple loop
-
-```bash
-for((i=1;i<10;++i)) ; do  ./benchmark/babelstream/babelstream --array-size=$((33554432 * $i)) --number-runs=100; done
-```
+The documentation is available at: https://alpaka3.readthedocs.io
 
 ### cross compile on x86 for riscv
 

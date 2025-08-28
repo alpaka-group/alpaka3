@@ -11,8 +11,8 @@ Abstraction
 Parallelism and memory hierarchies at all levels need to be exploited in order to achieve performance portability across various types of accelerators.
 Within this chapter an abstraction will be derive that tries to provide a maximum of parallelism while simultaneously considering implementability and applicability in hardware.
 
-Looking at the current HPC hardware landscape, we often see nodes with multiple sockets/processors extended by accelerators like GPUs or Intel Xeon Phi, each with their own processing units.
-Within a CPU or a Intel Xeon Phi there are cores with hyper-threads, vector units and a large caching infrastructure.
+Looking at the current HPC hardware landscape, we often see nodes with multiple sockets/processors extended by accelerators like GPUs, each with their own processing units.
+Within a CPU there are cores with hyper-threads, vector units and a large caching infrastructure.
 Within a GPU there are many small cores and only few caches.
 Each entity in the hierarchy has access to different memories.
 For example, each socket / processor manages its RAM, while the cores additionally have non-explicit access to L3, L2 and L1 caches.
@@ -26,9 +26,9 @@ However, such libraries can be combined with *alpaka*.
 
 An application process always has a main thread and is by definition running on the host.
 It can access the host memory and various accelerator devices.
-Such accelerators can be GPUs, Intel Xeon Phis, the host itself or other devices.
+Such accelerators can be GPUs of different vendors e.g. Nvidia, AMD, or Intel and the host CPU itself.
 Thus, the host not necessarily has to be different from the accelerator device used for the computations.
-For instance, an Intel Xeon Phi simultaneously can be the host and the accelerator device.
+For instance, CPU simultaneously can be the host and the accelerator device.
 
 The *alpaka* library can be used to offload the parallel execution of task and data parallel work simultaneously onto different accelerator devices.
 
@@ -57,12 +57,12 @@ Tasks in the command queue with unmet dependencies are skipped and subsequent on
 The ``CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE`` property of a command queue is an optional feature only supported by few vendors.
 Therefore, it can not be assumed to be available on all systems.
 
-*CUDA* on the other hand does currently (version 7.5) not support such out-of-order queues in any way.
-The user has to define dependencies explicitly through the order the tasks are enqueued into the queues (called queues in *CUDA*).
+*CUDA*, *HIP* on the other hand does currently (version CUDA@13.0 and HIP@6.4) not support such out-of-order queues in any way.
+The user has to define dependencies explicitly through the order the tasks are enqueued into the queues (called streams in *CUDA*).
 Within a queue, tasks are always executed in sequential order, while multiple queues are executed in parallel.
 Queues can wait for events enqueued into other queues.
 
-In both APIs, *OpenCL* and *CUDA*, a task graph can be emulated by creating one queue per task and enqueuing a unique event after each task, which can be used to wait for the preceding task.
+In most APIs, a task graph can be emulated by creating one queue per task and enqueuing a unique event after each task, which can be used to wait for the preceding task.
 However, this is not feasible due to the large queue and event creation costs as well as other overheads within this process.
 
 Therefore, to be compatible with a wide range of APIs, the interface for task parallelism has to be constrained.
@@ -99,7 +99,7 @@ Thread
 ``````
 
 Theoretically, a basic data parallel task can be executed optimally by executing one thread per independent data element.
-In this context, the term thread does not correspond to a native kernel-thread, an *OpenMP* thread, a *CUDA* thread, a user-level thread or any other such threading variant.
+In this context, the term thread does not correspond to a native kernel-thread, an *OpenMP* thread, a *CUDA*/*HIP* thread, a user-level thread or any other such threading variant.
 It only represents the execution of a sequence of commands forming the desired algorithm on a per data element level.
 This ideal one-to-one mapping of data elements to threads leads to the execution of a multidimensional grid of threads corresponding to the data structure of the underlying problem.
 The uniform function executed by each of the threads is called a kernel.
@@ -181,7 +181,7 @@ All threads within a warp share a single instruction pointer (IP), and all cores
 .. image:: /images/warp.png
 
 Even threads with divergent control flows can be executed within one warp.
-*CUDA*, for example, solves this by supporting predicated execution and warp voting.
+*CUDA*/*HIP*, for example, solves this by supporting predicated execution and warp voting.
 For long conditional branches the compiler inserts code which checks if all threads in the warp take the same branch.
 For small branches, where this is too expensive, all threads always execute all branches.
 Control flow statements result in a predicate and only in those threads where it is true, the predicated instructions will have an effect.
@@ -263,8 +263,6 @@ By emulating unsupported or ignoring redundant levels of parallelism, algorithms
     | warp            | parallel              | X              |
     +-----------------+-----------------------+----------------+
     | thread          | parallel / lock-step  | X              |
-    +-----------------+-----------------------+----------------+
-    | element         | sequential            | --             |
     +-----------------+-----------------------+----------------+
 
 Depending on the queue a task is enqueued into, grids will either run in sequential order within the same queue or in parallel in different queues.
