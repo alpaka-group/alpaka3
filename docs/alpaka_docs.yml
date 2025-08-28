@@ -1,0 +1,48 @@
+## Installing the environment
+# 1. Download and install Miniforge, see (https://github.com/conda-forge/miniforge?tab=readme-ov-file#install)
+# ```
+# curl -L -O "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+# bash Miniforge3-$(uname)-$(uname -m).sh
+# ```
+#
+# 2. Activate the base environment
+#   `conda activate` (which maybe preceeded by `source ~/.bashrc`)
+#
+# 3. Install
+#   `mamba env create --file picongpu.yml`
+#
+#
+# 2025 Klaus Steiniger / CC0
+
+name: alpaka_docs
+
+channels:
+  - conda-forge
+
+dependencies:
+  # Core Python – choose the version you need
+  - python >=3.9,<3.13        # adjust as required
+
+  # ---------------------------------------------------------
+  # Sphinx and documentation tooling
+  # ---------------------------------------------------------
+  - sphinx
+  - sphinx_rtd_theme
+  - breathe
+  - sphinxcontrib-programoutput
+  - sphinxcontrib-doxylink
+
+  # ---------------------------------------------------------
+  # Miscellaneous utilities
+  # ---------------------------------------------------------
+  - pygments
+  - jinja2
+  - markupsafe
+  - rst2pdf
+
+  # ---------------------------------------------------------
+  # Optional scientific / plotting stack (currently commented)
+  # ---------------------------------------------------------
+  # - matplotlib
+  # - scipy
+  # - numpy
