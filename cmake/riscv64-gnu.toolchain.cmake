@@ -13,27 +13,17 @@ if(DEFINED ENV{RISCV_GNU_INSTALL_ROOT} AND NOT DEFINED RISCV_GNU_INSTALL_ROOT)
         "Path to GNU for RISC-V cross compiler installation directory"
     )
 else()
-    set(RISCV_GNU_INSTALL_ROOT
-        /opt/riscv
-        CACHE PATH
-        "Path to GNU for RISC-V cross compiler installation directory"
-    )
+    set(RISCV_GNU_INSTALL_ROOT /opt/riscv CACHE PATH "Path to GNU for RISC-V cross compiler installation directory")
 endif()
 set(CMAKE_SYSROOT ${RISCV_GNU_INSTALL_ROOT}/sysroot CACHE PATH "RISC-V sysroot")
 
 set(GNU_TARGET_TRIPLE riscv64-unknown-linux-gnu)
 
-set(CMAKE_C_COMPILER
-    ${RISCV_GNU_INSTALL_ROOT}/bin/riscv64-unknown-linux-gnu-gcc
-)
+set(CMAKE_C_COMPILER ${RISCV_GNU_INSTALL_ROOT}/bin/riscv64-unknown-linux-gnu-gcc)
 set(CMAKE_C_COMPILER_TARGET ${GNU_TARGET_TRIPLE})
-set(CMAKE_CXX_COMPILER
-    ${RISCV_GNU_INSTALL_ROOT}/bin/riscv64-unknown-linux-gnu-g++
-)
+set(CMAKE_CXX_COMPILER ${RISCV_GNU_INSTALL_ROOT}/bin/riscv64-unknown-linux-gnu-g++)
 set(CMAKE_CXX_COMPILER_TARGET ${GNU_TARGET_TRIPLE})
-set(CMAKE_ASM_COMPILER
-    ${RISCV_GNU_INSTALL_ROOT}/bin/riscv64-unknown-linux-gnu-as
-)
+set(CMAKE_ASM_COMPILER ${RISCV_GNU_INSTALL_ROOT}/bin/riscv64-unknown-linux-gnu-as)
 set(CMAKE_ASM_COMPILER_TARGET ${GNU_TARGET_TRIPLE})
 
 # Avoids running the linker for source files passed to add_executable because cross-compiling required special

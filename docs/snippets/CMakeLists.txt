@@ -47,27 +47,15 @@ function(alpaka_add_docs_target target_prefix folder)
 
                 if("${source_file_extension}" STREQUAL ".cpp")
                     set(_test_target_name "${target_prefix}${source_file_name}")
-                    message(
-                        DEBUG
-                        "  add test target ${_test_target_name}: ${source_file}"
-                    )
+                    message(DEBUG "  add test target ${_test_target_name}: ${source_file}")
 
                     add_executable(${_test_target_name} ${source_file})
                     if(EXISTS "${test_folder}/include")
-                        message(
-                            STATUS
-                            "  add include folder: ${test_folder}/include"
-                        )
-                        target_include_directories(
-                            ${_test_target_name}
-                            PRIVATE ${test_folder}/include
-                        )
+                        message(STATUS "  add include folder: ${test_folder}/include")
+                        target_include_directories(${_test_target_name} PRIVATE ${test_folder}/include)
                     endif()
 
-                    target_link_libraries(
-                        ${_test_target_name}
-                        PRIVATE Catch2::Catch2WithMain alpaka::alpaka
-                    )
+                    target_link_libraries(${_test_target_name} PRIVATE Catch2::Catch2WithMain alpaka::alpaka)
                     alpaka_finalize(${_test_target_name})
                     catch_discover_tests(${_test_target_name})
                 endif()

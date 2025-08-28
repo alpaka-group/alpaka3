@@ -19,19 +19,12 @@ project(tutorial LANGUAGES CXX)
 # -------------------------------------------------------------------------------
 # Find alpaka.
 if(NOT TARGET alpaka::alpaka)
-    option(
-        alpaka_USE_SOURCE_TREE
-        "Use alpaka's source tree instead of an alpaka installation"
-        OFF
-    )
+    option(alpaka_USE_SOURCE_TREE "Use alpaka's source tree instead of an alpaka installation" OFF)
 
     if(alpaka_USE_SOURCE_TREE)
         # Don't build the examples recursively
         set(alpaka_BUILD_EXAMPLES OFF)
-        add_subdirectory(
-            "${CMAKE_CURRENT_LIST_DIR}/../.."
-            "${CMAKE_BINARY_DIR}/alpaka"
-        )
+        add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../.." "${CMAKE_BINARY_DIR}/alpaka")
     else()
         find_package(alpaka REQUIRED)
     endif()
@@ -41,16 +34,9 @@ set(HAS_CUDA_CUB 0)
 if(alpaka_DEP_CUDA)
     find_package(CUDAToolkit)
     if(NOT CUDAToolkit_FOUND)
-        message(
-            STATUS
-            "Optional CUDAToolkit not found, cub scan implementation will be disabled."
-        )
+        message(STATUS "Optional CUDAToolkit not found, cub scan implementation will be disabled.")
     else()
-        message(
-            STATUS
-            "Found optional CUDAToolkit, version "
-            ${CUDAToolkit_VERSION}
-        )
+        message(STATUS "Found optional CUDAToolkit, version " ${CUDAToolkit_VERSION})
 
         set(HAS_CUDA_CUB 1)
     endif()
@@ -61,15 +47,9 @@ if(alpaka_DEP_HIP)
     find_package(hip)
     find_package(hipCUB)
     if(NOT hip_FOUND)
-        message(
-            STATUS
-            "Optional hip not found, hipcub scan implementation will be disabled."
-        )
+        message(STATUS "Optional hip not found, hipcub scan implementation will be disabled.")
     elseif(NOT TARGET hip::hipcub)
-        message(
-            STATUS
-            "Found optional hip, but not hipcub; hipcub scan implementation will be disabled."
-        )
+        message(STATUS "Found optional hip, but not hipcub; hipcub scan implementation will be disabled.")
     else()
         set(HAS_HIP_CUB 1)
         message(STATUS "Found optional hip")

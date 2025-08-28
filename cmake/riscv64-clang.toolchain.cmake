@@ -6,21 +6,14 @@
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR riscv64)
 
-if(
-    DEFINED ENV{RISCV_CLANG_INSTALL_ROOT}
-    AND NOT DEFINED RISCV_CLANG_INSTALL_ROOT
-)
+if(DEFINED ENV{RISCV_CLANG_INSTALL_ROOT} AND NOT DEFINED RISCV_CLANG_INSTALL_ROOT)
     set(RISCV_CLANG_INSTALL_ROOT
         "$ENV{RISCV_CLANG_INSTALL_ROOT}"
         CACHE PATH
         "Path to CLANG for RISC-V cross compiler installation directory"
     )
 else()
-    set(RISCV_CLANG_INSTALL_ROOT
-        /opt/riscv
-        CACHE PATH
-        "Path to CLANG for RISC-V cross compiler installation directory"
-    )
+    set(RISCV_CLANG_INSTALL_ROOT /opt/riscv CACHE PATH "Path to CLANG for RISC-V cross compiler installation directory")
 endif()
 set(RISCV_GCC_INSTALL_ROOT
     "${RISCV_CLANG_INSTALL_ROOT}"

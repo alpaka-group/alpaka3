@@ -6,43 +6,23 @@
 #------------------------------------------------------------------------------
 # Gets all recursive files with the given ending in the given directory and recursively below.
 # This makes adding files easier because we do not have to update a list each time a file is added but this prevents CMake from detecting if it should be rerun!
-function(
-    append_recursive_files
-    In_RootDir
-    In_FileExtension
-    Out_FilePathsListVariableName
-)
+function(append_recursive_files In_RootDir In_FileExtension Out_FilePathsListVariableName)
     #MESSAGE("In_RootDir: ${In_RootDir}")
     #MESSAGE("In_FileExtension: ${In_FileExtension}")
     #MESSAGE("Out_FilePathsListVariableName: ${Out_FilePathsListVariableName}")
     # Get all recursive files.
-    file(
-        GLOB_RECURSE relativeFilePathsList
-        "${In_RootDir}/*.${In_FileExtension}"
-    )
+    file(GLOB_RECURSE relativeFilePathsList "${In_RootDir}/*.${In_FileExtension}")
     #MESSAGE( "relativeFilePathsList: ${relativeFilePathsList}" )
     # Set the return value (append it to the value in the parent scope).
-    set(${Out_FilePathsListVariableName}
-        "${${Out_FilePathsListVariableName}}"
-        "${relativeFilePathsList}"
-        PARENT_SCOPE
-    )
+    set(${Out_FilePathsListVariableName} "${${Out_FilePathsListVariableName}}" "${relativeFilePathsList}" PARENT_SCOPE)
 endfunction()
 
 #------------------------------------------------------------------------------
 # Gets all recursive relative subdirectories.
-function(
-    append_recursive_relative_subdirs
-    In_RootDir
-    Out_RecursiveRelativeSubDirsVariableName
-)
+function(append_recursive_relative_subdirs In_RootDir Out_RecursiveRelativeSubDirsVariableName)
     #MESSAGE("In_RootDir: ${In_RootDir}")
     # Get all the recursive files with their relative paths.
-    file(
-        GLOB_RECURSE recursiveRelativeFiles
-        RELATIVE "${In_RootDir}/"
-        "${In_RootDir}/*"
-    )
+    file(GLOB_RECURSE recursiveRelativeFiles RELATIVE "${In_RootDir}/" "${In_RootDir}/*")
     #MESSAGE("recursiveRelativeFiles: ${recursiveRelativeFiles}")
 
     # Get the paths to all the recursive files.
@@ -73,12 +53,7 @@ endfunction()
 
 #------------------------------------------------------------------------------
 # Groups the files in the same way the directories are structured.
-function(
-    add_recursive_files_to_src_group
-    In_RootDir
-    In_SrcGroupIgnorePrefix
-    In_FileExtension
-)
+function(add_recursive_files_to_src_group In_RootDir In_SrcGroupIgnorePrefix In_FileExtension)
     #MESSAGE("In_RootDir: ${In_RootDir}")
     #MESSAGE("In_SrcGroupIgnorePrefix: ${In_SrcGroupIgnorePrefix}")
     #MESSAGE("In_FileExtension: ${In_FileExtension}")
@@ -113,13 +88,7 @@ function(
             # Remove the parent directory from the path.
             # NOTE: This is not correct because it does not only replace at the beginning of the string.
             #  "STRING(REGEX REPLACE" would be correct if there was an easy way to escape arbitrary strings.
-            string(
-                REPLACE
-                "${In_SrcGroupIgnorePrefix}"
-                ""
-                groupExpression
-                "${groupExpression}"
-            )
+            string(REPLACE "${In_SrcGroupIgnorePrefix}" "" groupExpression "${groupExpression}")
             # Remove leading slash.
             string(REGEX REPLACE "^/" "" groupExpression "${groupExpression}")
             #MESSAGE("groupExpression: ${groupExpression}")
@@ -155,11 +124,7 @@ function(
     )
     #MESSAGE( "allFilePathsList: ${allFilePathsList}" )
     # Set the return value (append it to the value in the parent scope).
-    set(${Out_FilePathsListVariableName}
-        "${${Out_FilePathsListVariableName}}"
-        "${allFilePathsList}"
-        PARENT_SCOPE
-    )
+    set(${Out_FilePathsListVariableName} "${${Out_FilePathsListVariableName}}" "${allFilePathsList}" PARENT_SCOPE)
 
     add_recursive_files_to_src_group(
         "${In_RootDir}"

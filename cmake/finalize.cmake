@@ -11,11 +11,7 @@
 ## The output will be appended to the list variable provided as alpaka_target_list.
 function(alpaka_get_targets_recursive target alpaka_target_list)
     get_target_property(libs_linked ${target} LINK_LIBRARIES)
-    get_target_property(
-        libs_linked_interface
-        ${target}
-        INTERFACE_LINK_LIBRARIES
-    )
+    get_target_property(libs_linked_interface ${target} INTERFACE_LINK_LIBRARIES)
     set(libs "${libs_linked_interface};${libs_linked}")
 
     foreach(lib ${libs})
@@ -84,10 +80,7 @@ function(copy_with_structure SRC_FILE api_name OUT_VAR)
         foreach(prop IN LISTS props)
             get_source_file_property(val ${SRC_FILE} ${prop})
             if(val)
-                set_source_files_properties(
-                    ${DEST_FILE}
-                    PROPERTIES ${prop} "${val}"
-                )
+                set_source_files_properties(${DEST_FILE} PROPERTIES ${prop} "${val}")
             endif()
         endforeach()
     endif()
@@ -125,16 +118,10 @@ function(alpaka_finalize target)
 
     # CUDA and HIP can not be used together
     if((NOT index_cuda EQUAL -1) AND (NOT index_hip EQUAL -1))
-        message(
-            FATAL_ERROR
-            "Target '${target}' links gainst both CUDA and HIP alpaka targets. Please choose only one."
-        )
+        message(FATAL_ERROR "Target '${target}' links gainst both CUDA and HIP alpaka targets. Please choose only one.")
     endif()
     # CUDA or HIP cannot be used together with OneAPI
-    if(
-        ((NOT index_cuda EQUAL -1) OR (NOT index_hip EQUAL -1))
-        AND (NOT index_oneapi EQUAL -1)
-    )
+    if(((NOT index_cuda EQUAL -1) OR (NOT index_hip EQUAL -1)) AND (NOT index_oneapi EQUAL -1))
         message(
             FATAL_ERROR
             "Target '${target}' links gainst both CUDA/HIP and OneAPi alpaka targets. Please choose only one."
@@ -168,31 +155,17 @@ function(alpaka_finalize target)
             set_source_files_properties(${_file} PROPERTIES LANGUAGE CXX)
         endif()
         if(NOT index_cuda EQUAL -1)
-            if(
-                (${_file} MATCHES "\\.cpp$")
-                OR (${_file} MATCHES "\\.cxx$")
-                OR (${_file} MATCHES "\\.cu$")
-            )
+            if((${_file} MATCHES "\\.cpp$") OR (${_file} MATCHES "\\.cxx$") OR (${_file} MATCHES "\\.cu$"))
                 copy_with_structure(${_file} "cuda" COPIED_FILE)
-                set_source_files_properties(
-                    ${COPIED_FILE}
-                    PROPERTIES LANGUAGE CUDA
-                )
+                set_source_files_properties(${COPIED_FILE} PROPERTIES LANGUAGE CUDA)
                 list(REMOVE_ITEM _new_file_list ${_file})
                 list(APPEND _new_file_list ${COPIED_FILE})
             endif()
         endif()
         if(NOT index_hip EQUAL -1)
-            if(
-                (${_file} MATCHES "\\.cpp$")
-                OR (${_file} MATCHES "\\.cxx$")
-                OR (${_file} MATCHES "\\.hip$")
-            )
+            if((${_file} MATCHES "\\.cpp$") OR (${_file} MATCHES "\\.cxx$") OR (${_file} MATCHES "\\.hip$"))
                 copy_with_structure(${_file} "hip" COPIED_FILE)
-                set_source_files_properties(
-                    ${COPIED_FILE}
-                    PROPERTIES LANGUAGE HIP
-                )
+                set_source_files_properties(${COPIED_FILE} PROPERTIES LANGUAGE HIP)
                 list(REMOVE_ITEM _new_file_list ${_file})
                 list(APPEND _new_file_list ${COPIED_FILE})
             endif()
@@ -208,56 +181,30 @@ function(alpaka_finalize target)
     ##  The guards avoid that a user is including alpaka headers without calling alpaka_finalize() first.
 
     if(NOT index_cuda EQUAL -1)
-        target_compile_definitions(
-            ${target}
-            PRIVATE ALPAKA_CMAKE_TARGET_CUDA_FINALIZE_CALLED
-        )
+        target_compile_definitions(${target} PRIVATE ALPAKA_CMAKE_TARGET_CUDA_FINALIZE_CALLED)
 
         # We have to set this here since CUDA_SEPARABLE_COMPILATION is not propagated by the alpaka targets.
         # This option can also not set as file property.
         if(alpaka_RELOCATABLE_DEVICE_CODE STREQUAL ON)
-            set_property(
-                TARGET ${target}
-                PROPERTY CUDA_SEPARABLE_COMPILATION ON
-            )
+            set_property(TARGET ${target} PROPERTY CUDA_SEPARABLE_COMPILATION ON)
         elseif(alpaka_RELOCATABLE_DEVICE_CODE STREQUAL OFF)
-            set_property(
-                TARGET ${target}
-                PROPERTY CUDA_SEPARABLE_COMPILATION OFF
-            )
+            set_property(TARGET ${target} PROPERTY CUDA_SEPARABLE_COMPILATION OFF)
         endif()
     endif()
     if(NOT index_hip EQUAL -1)
-        target_compile_definitions(
-            ${target}
-            PRIVATE ALPAKA_CMAKE_TARGET_HIP_FINALIZE_CALLED
-        )
+        target_compile_definitions(${target} PRIVATE ALPAKA_CMAKE_TARGET_HIP_FINALIZE_CALLED)
 
         # We have to set this here because CMake currently doesn't provide hip_std_${VERSION} for
         # target_compile_features() and HIP_STANDARD isn't propagated by interface libraries.
-        set_target_properties(
-            ${target}
-            PROPERTIES
-                HIP_STANDARD ${alpaka_CXX_STANDARD}
-                HIP_STANDARD_REQUIRED ON
-        )
+        set_target_properties(${target} PROPERTIES HIP_STANDARD ${alpaka_CXX_STANDARD} HIP_STANDARD_REQUIRED ON)
     endif()
     if(NOT index_oneapi EQUAL -1)
-        target_compile_definitions(
-            ${target}
-            PRIVATE ALPAKA_CMAKE_TARGET_ONEAPI_FINALIZE_CALLED
-        )
+        target_compile_definitions(${target} PRIVATE ALPAKA_CMAKE_TARGET_ONEAPI_FINALIZE_CALLED)
     endif()
     if(NOT index_headers EQUAL -1)
-        target_compile_definitions(
-            ${target}
-            PRIVATE ALPAKA_CMAKE_TARGET_HEADERS_FINALIZE_CALLED
-        )
+        target_compile_definitions(${target} PRIVATE ALPAKA_CMAKE_TARGET_HEADERS_FINALIZE_CALLED)
     endif()
     if(NOT index_alpaka EQUAL -1)
-        target_compile_definitions(
-            ${target}
-            PRIVATE ALPAKA_CMAKE_TARGET_ALPAKA_FINALIZE_CALLED
-        )
+        target_compile_definitions(${target} PRIVATE ALPAKA_CMAKE_TARGET_ALPAKA_FINALIZE_CALLED)
     endif()
 endfunction()
