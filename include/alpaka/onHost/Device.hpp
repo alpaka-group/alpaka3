@@ -234,7 +234,7 @@ namespace alpaka::onHost
     template<typename T_Type, typename T_Device>
     inline auto allocMapped(Queue<T_Device> const& queue, alpaka::concepts::VectorOrScalar auto const& extents)
     {
-        allocMapped<T_Type>(queue.getDevice(), extents);
+        return allocMapped<T_Type>(queue.getDevice(), extents);
     }
 
     /** @} */
