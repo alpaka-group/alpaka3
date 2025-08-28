@@ -35,6 +35,6 @@ repos:
   rev: 0.22.1
   hooks:
     - id: gersemi
-      args: [-c, --diff, --no-warn-about-unknown-commands]
+      args: [-c, --diff]
     - id: gersemi
-      args: [-i, --no-warn-about-unknown-commands]
+      args: [-i]
