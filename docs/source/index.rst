@@ -38,6 +38,16 @@ Individual chapters are based on the information of the chapters before.
 
    - See https://alpaka-group.github.io/alpaka3/
 
+.. toctree::
+   :caption: Basic
+   :maxdepth: 1
+
+   basic/intro.rst
+   basic/install.rst
+   basic/example.rst
+   basic/abstraction.rst
+   basic/library.rst
+   basic/cheatsheet.rst
 
 .. toctree::
    :maxdepth: 2
