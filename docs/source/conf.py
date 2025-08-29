@@ -50,6 +50,7 @@ master_doc = "index"
 
 # -- General configuration ---------------------------------------------------
 
+highlight_language = 'c++'
 on_rtd = os.environ.get("READTHEDOCS", None) == "True"
 
 show_authors = True
