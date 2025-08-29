@@ -173,23 +173,23 @@ namespace alpaka::onHost
      * @param device device handle
      */
     template<typename T_Type>
-    inline auto allocManaged(concepts::Device auto const& device, alpaka::concepts::VectorOrScalar auto const& extents)
+    inline auto allocUnified(concepts::Device auto const& device, alpaka::concepts::VectorOrScalar auto const& extents)
     {
         Vec const extentsVec = extents;
-        return internal::AllocManaged::Op<T_Type, std::decay_t<decltype(*device.get())>, ALPAKA_TYPEOF(extentsVec)>{}(
+        return internal::AllocUnified::Op<T_Type, std::decay_t<decltype(*device.get())>, ALPAKA_TYPEOF(extentsVec)>{}(
             *device.get(),
             extentsVec);
     }
 
-    /** Allocates managed memory on the device associated with the given queue.
+    /** Allocates unified memory on the device associated with the given queue.
      *
      * @param queue queue handle
      */
     template<typename T_Type, typename T_Device>
-    inline auto allocManaged(Queue<T_Device> const& queue, alpaka::concepts::VectorOrScalar auto const& extents)
+    inline auto allocUnified(Queue<T_Device> const& queue, alpaka::concepts::VectorOrScalar auto const& extents)
     {
         Vec const extentsVec = extents;
-        return internal::AllocManaged::
+        return internal::AllocUnified::
             Op<T_Type, std::decay_t<decltype(*queue.getDevice().get())>, ALPAKA_TYPEOF(extentsVec)>{}(
                 *queue.getDevice().get(),
                 extentsVec);

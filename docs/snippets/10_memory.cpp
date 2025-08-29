@@ -33,7 +33,7 @@ TEST_CASE("memory", "[docs]")
 
     onHost::Queue hostQueue = onHost::makeHostDevice().makeQueue();
 
-    // Allocate a managed memory view on the compute device.
+    // Allocate a memory view on the compute device.
     // The memory will be freed automatically when the view goes out of scope.
     onHost::ManagedView computeView = onHost::alloc<int>(computeDev, 10);
     // Derive the properties except the location.

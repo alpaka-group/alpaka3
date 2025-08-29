@@ -184,7 +184,7 @@ Allocate a view
      // allocate memory which lives on the host but is accessible from the device too
      auto devMappedView = onHost::allocMapped<DataType>(device, extent);
      // allocate memory can be accessed from host and device (unified memory), the real location depends on the native backend e.g. CUDA, OneApi, ...
-     auto devUnifiedView = onHost::allocManaged<DataType>(device, extent);
+     auto devUnifiedView = onHost::allocUnified<DataType>(device, extent);
      // allocate memory accessible from host
      auto hostView = onHost::allocHost<DataType>(extent);
      // the data will not be automatically freed, user must take care that the original data life-time is longer than the view

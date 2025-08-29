@@ -101,7 +101,7 @@ namespace alpaka::onHost
             friend struct internal::GetDeviceProperties;
             friend struct internal::AdjustThreadSpec;
             friend struct onHost::internal::AllocAsync;
-            friend struct onHost::internal::AllocManaged;
+            friend struct onHost::internal::AllocUnified;
             friend struct onHost::internal::AllocMapped;
             friend struct onHost::internal::IsDataAccessible;
         };
@@ -139,7 +139,7 @@ namespace alpaka::onHost
         };
 
         template<typename T_Type, typename T_Platform, alpaka::concepts::Vector T_Extents>
-        struct AllocManaged::Op<T_Type, syclGeneric::Device<T_Platform>, T_Extents>
+        struct AllocUnified::Op<T_Type, syclGeneric::Device<T_Platform>, T_Extents>
         {
             auto operator()(syclGeneric::Device<T_Platform>& device, T_Extents const& extents) const
             {
@@ -154,7 +154,7 @@ namespace alpaka::onHost
                 bool isManagedMemorySupported = sycl_device.has(sycl::aspect::usm_shared_allocations);
                 if(!isManagedMemorySupported)
                 {
-                    throw std::runtime_error("Sycl device does not support managed memory allocations.");
+                    throw std::runtime_error("Sycl device does not support unified memory allocations.");
                 }
 
                 T_Type* ptr = reinterpret_cast<T_Type*>(

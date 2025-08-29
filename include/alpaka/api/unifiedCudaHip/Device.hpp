@@ -126,7 +126,7 @@ namespace alpaka::onHost
 
             friend struct onHost::internal::Alloc;
             friend struct onHost::internal::AllocAsync;
-            friend struct onHost::internal::AllocManaged;
+            friend struct onHost::internal::AllocUnified;
             friend struct onHost::internal::AllocMapped;
             friend struct alpaka::internal::GetApi;
             friend struct internal::GetDeviceProperties;
@@ -224,7 +224,7 @@ namespace alpaka::onHost
         };
 
         template<typename T_Type, typename T_Platform, alpaka::concepts::Vector T_Extents>
-        struct AllocManaged::Op<T_Type, unifiedCudaHip::Device<T_Platform>, T_Extents>
+        struct AllocUnified::Op<T_Type, unifiedCudaHip::Device<T_Platform>, T_Extents>
         {
             auto operator()(unifiedCudaHip::Device<T_Platform>& device, T_Extents const& extents) const
             {
@@ -241,7 +241,7 @@ namespace alpaka::onHost
                 auto deviceDependency = onHost::Device{device.getSharedPtr()};
 
                 T_Type* ptr = nullptr;
-                // HIP is failing if zero byte managed memory is allocated, therefore we do not call the allocation
+                // HIP is failing if zero byte unified memory is allocated, therefore we do not call the allocation
                 // method for HIP
                 bool isHipZeroByteAllocation = memSizeInByte == 0 && getApi(device) == api::hip;
                 if(!isHipZeroByteAllocation)

@@ -121,7 +121,7 @@ namespace alpaka::onHost
             friend struct internal::GetDeviceProperties;
             friend struct internal::AdjustThreadSpec;
             friend struct internal::AllocAsync;
-            friend struct internal::AllocManaged;
+            friend struct internal::AllocUnified;
             friend struct internal::AllocMapped;
         };
     } // namespace cpu
@@ -171,7 +171,7 @@ namespace alpaka::onHost
         };
 
         template<typename T_Type, typename T_Platform, alpaka::concepts::Vector T_Extents>
-        struct AllocManaged::Op<T_Type, cpu::Device<T_Platform>, T_Extents>
+        struct AllocUnified::Op<T_Type, cpu::Device<T_Platform>, T_Extents>
         {
             auto operator()(cpu::Device<T_Platform>& device, T_Extents const& extents) const
             {

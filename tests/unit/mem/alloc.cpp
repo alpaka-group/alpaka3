@@ -58,23 +58,23 @@ void allocAsyncImplicitWait(auto device, alpaka::concepts::Executor auto exec)
     auto hostView = onHost::allocHost<int>(dataSize);
     auto hostViewMapped = onHost::allocMapped<int>(device, dataSize);
     auto deviceView = onHost::alloc<int>(device, dataSize);
-    auto managedView = onHost::allocManaged<int>(device, dataSize);
+    auto unifiedView = onHost::allocUnified<int>(device, dataSize);
 
     REQUIRE(onHost::isDataAccessible(hostDevice, hostView) == true);
-    REQUIRE(onHost::isDataAccessible(hostDevice, managedView) == true);
+    REQUIRE(onHost::isDataAccessible(hostDevice, unifiedView) == true);
     REQUIRE(onHost::isDataAccessible(hostDevice, hostViewMapped) == true);
     for(int i = 0; i < hostView.getExtents().x(); ++i)
     {
         hostView[i] = i;
-        // managed memory must be accessible on the host
-        managedView[i] = i;
+        // unified memory must be accessible on the host
+        unifiedView[i] = i;
         // is located on the host, so it must be accessible
         hostViewMapped[i] = i;
     }
 
     auto deviceQueue = device.makeQueue();
-    // check that we can copy from managed memory to device memory
-    onHost::memcpy(deviceQueue, deviceView, managedView);
+    // check that we can copy from unified memory to device memory
+    onHost::memcpy(deviceQueue, deviceView, unifiedView);
     onHost::wait(deviceQueue);
 
     if(getDeviceKind(device) == deviceKind::cpu)
@@ -89,14 +89,14 @@ void allocAsyncImplicitWait(auto device, alpaka::concepts::Executor auto exec)
     REQUIRE(onHost::isDataAccessible(device, hostViewMapped) == true);
     validateAccess(device, exec, hostViewMapped);
 
-    REQUIRE(onHost::isDataAccessible(device, managedView) == true);
-    validateAccess(device, exec, managedView);
+    REQUIRE(onHost::isDataAccessible(device, unifiedView) == true);
+    validateAccess(device, exec, unifiedView);
 
     REQUIRE(onHost::isDataAccessible(device, deviceView) == true);
     validateAccess(device, exec, deviceView);
 
-    REQUIRE(onHost::isDataAccessible(hostDevice, managedView) == true);
-    validateAccess(hostDevice, exec::cpuSerial, managedView);
+    REQUIRE(onHost::isDataAccessible(hostDevice, unifiedView) == true);
+    validateAccess(hostDevice, exec::cpuSerial, unifiedView);
 
     // is located on the host, so it must be accessible
     REQUIRE(onHost::isDataAccessible(device, hostViewMapped) == true);
@@ -150,7 +150,7 @@ TEMPLATE_LIST_TEST_CASE("alloc zero bytes", "", TestDeviceSpecs)
     [[maybe_unused]] auto hostViewMapped = onHost::allocMapped<int>(device, dataSize);
     [[maybe_unused]] auto deviceView = onHost::alloc<int>(device, dataSize);
     [[maybe_unused]] auto deviceViewAsync = onHost::allocAsync<int>(device.makeQueue(), dataSize);
-    [[maybe_unused]] auto managedView = onHost::allocManaged<int>(device, dataSize);
+    [[maybe_unused]] auto unifiedView = onHost::allocUnified<int>(device, dataSize);
 }
 
 /** Evaluates on the host side that all rows start with an address which is a multiple of the alignment of the MdSpan
@@ -191,8 +191,8 @@ void prepareAlignmentValidation(auto& device, alpaka::concepts::Vector auto exte
     validateAlignment(deviceView);
     auto deviceViewAsync = onHost::allocAsync<T_DataType>(device.makeQueue(), extents);
     validateAlignment(deviceViewAsync);
-    auto managedView = onHost::allocManaged<T_DataType>(device, extents);
-    validateAlignment(managedView);
+    auto unifiedView = onHost::allocUnified<T_DataType>(device, extents);
+    validateAlignment(unifiedView);
 }
 
 TEMPLATE_LIST_TEST_CASE("alloc alignment", "", TestDeviceSpecs)
@@ -227,7 +227,7 @@ void volatileBuffers(auto& device, alpaka::concepts::Vector auto extents)
     auto hostViewMapped = onHost::allocMapped<T_DataType volatile>(device, extents);
     auto deviceView = onHost::alloc<T_DataType volatile>(device, extents);
     auto deviceViewAsync = onHost::allocAsync<T_DataType volatile>(device.makeQueue(), extents);
-    auto managedView = onHost::allocManaged<T_DataType volatile>(device, extents);
+    auto unifiedView = onHost::allocUnified<T_DataType volatile>(device, extents);
 }
 
 TEMPLATE_LIST_TEST_CASE("alloc volatile memory", "", TestDeviceSpecs)

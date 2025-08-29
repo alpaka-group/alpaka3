@@ -295,7 +295,7 @@ namespace alpaka::onHost
             };
         };
 
-        struct AllocManaged
+        struct AllocUnified
         {
             template<typename T_Type, typename T_Any, typename T_Extents>
             struct Op
