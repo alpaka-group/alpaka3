@@ -47,7 +47,7 @@ namespace alpaka
 
         constexpr bool operator!=(MdForwardIterEnd const& other) const
         {
-            return not(*this == other);
+            return !(*this == other);
         }
 
     private:
@@ -128,7 +128,7 @@ namespace alpaka
 
         constexpr bool operator!=(MdForwardIter const& other) const
         {
-            return not(*this == other);
+            return !(*this == other);
         }
 
     private:
@@ -149,7 +149,7 @@ namespace alpaka
         MdForwardIter<T_MdSpan> const& mdIter,
         MdForwardIterEnd<typename T_MdSpan::index_type> const& mdIteratorEnd)
     {
-        return not(mdIteratorEnd == mdIter);
+        return !(mdIteratorEnd == mdIter);
     }
 
     template<typename T_MdSpan>
@@ -165,6 +165,6 @@ namespace alpaka
         MdForwardIterEnd<typename T_MdSpan::index_type> const& mdIteratorEnd,
         MdForwardIter<T_MdSpan> const& mdIter)
     {
-        return not(mdIteratorEnd == mdIter);
+        return !(mdIteratorEnd == mdIter);
     }
 } // namespace alpaka

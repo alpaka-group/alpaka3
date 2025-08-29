@@ -89,7 +89,7 @@ namespace alpaka::onAcc
 
             constexpr bool operator!=(const_iterator_end const& other) const
             {
-                return not(*this == other);
+                return !(*this == other);
             }
 
             constexpr bool operator==(const_iterator const& other) const
@@ -99,7 +99,7 @@ namespace alpaka::onAcc
 
             constexpr bool operator!=(const_iterator const& other) const
             {
-                return not(*this == other);
+                return !(*this == other);
             }
 
         private:
@@ -171,7 +171,7 @@ namespace alpaka::onAcc
 
             constexpr bool operator!=(const_iterator const& other) const
             {
-                return not(*this == other);
+                return !(*this == other);
             }
 
             constexpr bool operator==(const_iterator_end const& other) const
@@ -181,7 +181,7 @@ namespace alpaka::onAcc
 
             constexpr bool operator!=(const_iterator_end const& other) const
             {
-                return not(*this == other);
+                return !(*this == other);
             }
 
         private:
