@@ -48,7 +48,7 @@ namespace alpaka
         concepts::Vector auto const& extents,
         T_MemAlignment const memAlignment = T_MemAlignment{})
     {
-        auto pitchMd = alpaka::mem::calculatePitchesFromExtents<T_ValueType>(extents);
+        auto pitchMd = alpaka::calculatePitchesFromExtents<T_ValueType>(extents);
         return MdSpan{pointer, extents, pitchMd, memAlignment};
     }
 

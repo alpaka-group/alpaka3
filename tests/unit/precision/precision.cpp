@@ -89,7 +89,7 @@ void callTests(auto cfg)
 
     Queue queue = device.makeQueue();
 
-    std::cout << "exec=" << core::demangledName(exec) << std::endl;
+    std::cout << "exec=" << onHost::demangledName(exec) << std::endl;
 
     {
         using MemIdxType = std::conditional_t<T_signedMemIdx, std::make_signed_t<uint32_t>, uint32_t>;

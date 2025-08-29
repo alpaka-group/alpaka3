@@ -37,7 +37,7 @@ namespace alpaka::example::scan
         else
             std::cout << "    Not running in-place (input buffer != output buffer)" << std::endl;
         std::cout << "    Number of elements [#]: " << numElements << std::endl;
-        std::cout << "    Element type [byte]: " << core::demangledName<Data>() << std::endl;
+        std::cout << "    Element type [byte]: " << onHost::demangledName<Data>() << std::endl;
         std::cout << "    Buffer size [Gbyte]: " << numElements * sizeof(Data) / 1.e9 << std::endl;
         std::cout << "================================" << std::endl;
         std::cout << std::endl;

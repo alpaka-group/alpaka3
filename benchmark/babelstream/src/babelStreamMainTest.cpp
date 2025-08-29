@@ -179,7 +179,7 @@ void testKernels(auto const deviceSpec, auto const exec)
 
     std::cout << devAcc.getDeviceProperties() << std::endl;
 
-    std::cout << "used exec " << core::demangledName(exec) << std::endl;
+    std::cout << "used exec " << onHost::demangledName(exec) << std::endl;
 
     // A MetaData class instance to keep the benchmark info and results to print later. Does not include intermediate
     // runtime data.
@@ -485,7 +485,7 @@ void testKernels(auto const deviceSpec, auto const exec)
     metaData.setItem(BMInfoDataType::DataType, dataTypeStr);
     // Device and accelerator
     metaData.setItem(BMInfoDataType::DeviceName, onHost::getName(devAcc));
-    metaData.setItem(BMInfoDataType::AcceleratorType, core::demangledName(exec));
+    metaData.setItem(BMInfoDataType::AcceleratorType, onHost::demangledName(exec));
     // XML reporter of catch2 always converts to Nano Seconds
     metaData.setItem(BMInfoDataType::TimeUnit, "Nano Seconds");
 

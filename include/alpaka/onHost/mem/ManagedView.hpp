@@ -43,7 +43,7 @@ namespace alpaka::onHost
             T_Type* data,
             T_Extents const& extents,
             T_Extents const& pitches,
-            std::shared_ptr<mem::ManagedDealloc> managedDeleter,
+            std::shared_ptr<internal::ManagedDealloc> managedDeleter,
             T_MemAlignment const memAlignment)
             : BaseView{api, data, extents, pitches, memAlignment}
             , m_deleter{std::move(managedDeleter)}
@@ -67,7 +67,7 @@ namespace alpaka::onHost
             std::invocable<> auto deleter,
             T_MemAlignment const memAlignment = Alignment{})
             : BaseView{any, data, extents, pitches, memAlignment}
-            , m_deleter{std::make_shared<mem::ManagedDealloc>(deleter)}
+            , m_deleter{std::make_shared<internal::ManagedDealloc>(deleter)}
         {
             static_assert(
                 isLosslessConvertible_v<typename T_UserPitches::type, typename T_UserExtents::type>,
@@ -146,7 +146,7 @@ namespace alpaka::onHost
         template<alpaka::concepts::IsPointer T>
         using ConstPtr_t = std::add_pointer_t<std::add_const_t<std::remove_pointer_t<T>>>;
 
-        std::shared_ptr<mem::ManagedDealloc> m_deleter;
+        std::shared_ptr<internal::ManagedDealloc> m_deleter;
     }; // namespace alpaka::onHost
 
     template<

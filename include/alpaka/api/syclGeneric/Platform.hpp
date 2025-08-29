@@ -171,7 +171,7 @@ namespace alpaka
 
                 static constexpr auto getName()
                 {
-                    return core::demangledName<syclGeneric::Platform<T_ApiInterface, T_DeviceKind>>();
+                    return onHost::demangledName<syclGeneric::Platform<T_ApiInterface, T_DeviceKind>>();
                 }
 
                 friend struct internal::GetDeviceProperties::Op<syclGeneric::Platform<T_ApiInterface, T_DeviceKind>>;

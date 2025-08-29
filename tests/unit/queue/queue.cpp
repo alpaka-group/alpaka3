@@ -50,7 +50,7 @@ TEMPLATE_LIST_TEST_CASE("iota", "", TestApis)
 
     onHost::Queue queue = device.makeQueue();
     constexpr Vec extent = Vec{12u};
-    std::cout << "exec=" << core::demangledName(exec) << std::endl;
+    std::cout << "exec=" << onHost::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<uint32_t>(device, extent);
 
     auto hBuff = onHost::allocHostLike(dBuff);
@@ -99,7 +99,7 @@ TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
 
     onHost::Queue queue = device.makeQueue();
     constexpr Vec extent = Vec{8u, 16u};
-    std::cout << "exec=" << core::demangledName(exec) << std::endl;
+    std::cout << "exec=" << onHost::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, 2u>>(device, extent);
 
     auto hBuff = onHost::allocHostLike(dBuff);
@@ -135,7 +135,7 @@ TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
 
     onHost::Queue queue = device.makeQueue();
     constexpr Vec extent = Vec{4u, 8u, 16u};
-    std::cout << "exec=" << core::demangledName(exec) << std::endl;
+    std::cout << "exec=" << onHost::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, 3u>>(device, extent);
 
     auto hBuff = onHost::allocHostLike(dBuff);
@@ -169,7 +169,7 @@ TEMPLATE_LIST_TEST_CASE("iota4D", "", TestApis)
 
     onHost::Queue queue = device.makeQueue();
     constexpr Vec extent = Vec{4u, 8u, 16, 32};
-    std::cout << "exec=" << core::demangledName(exec) << std::endl;
+    std::cout << "exec=" << onHost::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, 4u>>(device, extent);
 
     auto hBuff = onHost::allocHostLike(dBuff);
@@ -235,7 +235,7 @@ TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
     numBlocksReduced.ref(CVec<uint32_t, 2u, 1u>{}) = 1u;
 
     std::cout << numBlocksReduced << std::endl;
-    std::cout << "exec=" << core::demangledName(exec) << std::endl;
+    std::cout << "exec=" << onHost::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, 3u>>(device, numBlocks);
 
     auto hBuff = onHost::allocHostLike(dBuff);

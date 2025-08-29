@@ -87,7 +87,7 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
     constexpr Vec numBlocks = Vec{1u};
     constexpr Vec blockExtent = Vec{4u};
     constexpr Vec dataExtent = numBlocks * blockExtent;
-    std::cout << "block shared iota exec=" << core::demangledName(exec) << std::endl;
+    std::cout << "block shared iota exec=" << onHost::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<uint32_t>(device, dataExtent);
 
     auto hBuff = onHost::allocHostLike(dBuff);

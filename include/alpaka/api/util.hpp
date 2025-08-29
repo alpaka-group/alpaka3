@@ -113,7 +113,7 @@ namespace alpaka::api::util
 
             IdxType rowExtentInBytes = extents.x() * static_cast<IdxType>(sizeof(T_ValueType));
             IdxType rowPitchInBytes = alpaka::divCeil(rowExtentInBytes, alignment) * alignment;
-            auto pitches = alpaka::mem::calculatePitches<T_ValueType>(extents, rowPitchInBytes);
+            auto pitches = alpaka::calculatePitches<T_ValueType>(extents, rowPitchInBytes);
 
             size_t memSizeInByte = static_cast<size_t>(pitches[0]) * static_cast<size_t>(extents[0]);
             return std::make_tuple(memSizeInByte, pitches);

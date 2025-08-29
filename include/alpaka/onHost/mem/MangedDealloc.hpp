@@ -7,7 +7,7 @@
 #include <functional>
 #include <memory>
 
-namespace alpaka::onHost::mem
+namespace alpaka::onHost::internal
 {
     /** Manage the deallocation of memory
      *
@@ -60,4 +60,4 @@ namespace alpaka::onHost::mem
         std::mutex actionGuard;
         std::vector<std::function<void()>> actions;
     };
-} // namespace alpaka::onHost::mem
+} // namespace alpaka::onHost::internal

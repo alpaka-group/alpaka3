@@ -137,7 +137,7 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdForEach) -> int
 
     std::cout << "Example GrayScale" << std::endl;
     std::cout << "    Number of elements [#]: " << numElements << std::endl;
-    std::cout << "    Element type [byte]: " << core::demangledName<Data>() << std::endl;
+    std::cout << "    Element type [byte]: " << onHost::demangledName<Data>() << std::endl;
     std::cout << "    Buffer size [Gbyte]: " << numElements * sizeof(Data) / 1.e9 << std::endl;
     std::cout << std::endl;
 
@@ -210,7 +210,7 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdForEach) -> int
 
     // Enqueue the kernel execution task
     {
-        std::cout << "Using alpaka accelerator: " << core::demangledName(exec) << " for "
+        std::cout << "Using alpaka accelerator: " << onHost::demangledName(exec) << " for "
                   << deviceSpec.getApi().getName() << std::endl;
         onHost::wait(queue);
         auto const beginT = std::chrono::high_resolution_clock::now();

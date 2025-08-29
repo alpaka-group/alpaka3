@@ -88,7 +88,7 @@ namespace alpaka::example::scan
         bool const enableCheck)
     {
         std::cout << std::endl << std::endl;
-        std::cout << "===== EXECUTOR " << core::demangledName(exec) << " =====" << std::endl;
+        std::cout << "===== EXECUTOR " << onHost::demangledName(exec) << " =====" << std::endl;
 
         alpaka::onHost::wait(queue);
         auto const beginT = std::chrono::high_resolution_clock::now();

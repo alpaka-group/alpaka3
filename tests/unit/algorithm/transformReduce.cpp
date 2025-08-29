@@ -86,8 +86,8 @@ void executeTest(
     auto const functorPair,
     concepts::Vector auto extentMd)
 {
-    std::cout << "run reduce(func) : " << core::demangledName(std::get<1>(functorPair).second) << "("
-              << core::demangledName(std::get<2>(functorPair).second) << ")" << std::endl;
+    std::cout << "run reduce(func) : " << onHost::demangledName(std::get<1>(functorPair).second) << "("
+              << onHost::demangledName(std::get<2>(functorPair).second) << ")" << std::endl;
 
     auto computeDev = computeQueue.getDevice();
     using DataType = T_DataType;

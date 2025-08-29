@@ -18,6 +18,7 @@
 #include "alpaka/onAcc/layout.hpp"
 #include "alpaka/onAcc/traverse.hpp"
 
+/** functionality which is usable on the accelerator compute device from within a kernel. */
 namespace alpaka::onAcc
 {
     /** Creates an index container that can be traversed with a range based for loop.

@@ -5,13 +5,19 @@
 #pragma once
 
 #include "alpaka/KernelBundle.hpp"
-#include "alpaka/core/DemangleTypeNames.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/mem/Alignment.hpp"
 #include "alpaka/onHost/Handle.hpp"
 
+#include <alpaka/onHost/demangledName.hpp>
+
 namespace alpaka
 {
+    /** alpaka internal implementations.
+     *
+     * @attention do not use any functions from this namespace in our user applications.
+     *          The interface can change at any time without further notice and is for internal use only.
+     */
     namespace internal
     {
         struct GetStaticName
@@ -24,7 +30,7 @@ namespace alpaka
                     if constexpr(requires { T_Any::getName(); })
                         return T_Any::getName();
                     else
-                        return core::demangledName(any);
+                        return onHost::demangledName(any);
                 }
             };
         };

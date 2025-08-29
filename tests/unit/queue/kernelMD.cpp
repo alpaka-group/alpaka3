@@ -49,7 +49,7 @@ struct Case
 void validate(auto& queue, auto& device, auto exec, auto testCase)
 {
     Vec extentMd = testCase.m_extents;
-    std::cout << " exec=" << core::demangledName(exec) << " extents=" << testCase.m_extents
+    std::cout << " exec=" << onHost::demangledName(exec) << " extents=" << testCase.m_extents
               << " frame size=" << testCase.m_frameSize << std::endl;
     auto dBuff = onHost::alloc<Vec<uint32_t, extentMd.dim()>>(device, extentMd);
 

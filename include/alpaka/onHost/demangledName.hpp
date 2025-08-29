@@ -15,7 +15,7 @@ struct AlpakaDemangleReferenceType
 {
 };
 
-namespace alpaka::core
+namespace alpaka::onHost
 {
     /// \file
     /// use source_location to derive the demangled type name
@@ -56,4 +56,4 @@ namespace alpaka::core
     {
         return std::string(Demangled<T>::name());
     }
-} // namespace alpaka::core
+} // namespace alpaka::onHost

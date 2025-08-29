@@ -65,10 +65,10 @@ auto example(auto const deviceSpec, auto const exec, size_t numElements) -> int
     using Data = uint32_t;
 
     std::cout << "Number of elements: " << numElements << std::endl;
-    std::cout << "Element type: " << core::demangledName<Data>() << std::endl;
+    std::cout << "Element type: " << onHost::demangledName<Data>() << std::endl;
 
-    std::cout << "Using alpaka accelerator: " << core::demangledName(exec) << " for " << deviceSpec.getApi().getName()
-              << " " << deviceSpec.getDeviceKind().getName() << std::endl;
+    std::cout << "Using alpaka accelerator: " << onHost::demangledName(exec) << " for "
+              << deviceSpec.getApi().getName() << " " << deviceSpec.getDeviceKind().getName() << std::endl;
 
     // Select a device
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);

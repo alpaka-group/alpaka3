@@ -38,7 +38,7 @@ namespace alpaka::test
             return false;
         }
 
-        INFO("testing" << " functor:" << alpaka::core::demangledName(kernelFnObj));
+        INFO("testing" << " functor:" << alpaka::onHost::demangledName(kernelFnObj));
         INFO("api:" << deviceSpec.getApi().getName());
         onHost::Device device = devSelector.makeDevice(0);
 
@@ -58,7 +58,7 @@ namespace alpaka::test
         }
 #endif
 
-        INFO("exec:" << core::demangledName(exec));
+        INFO("exec:" << onHost::demangledName(exec));
         INFO("device:" << device.getName());
         onHost::Queue queue = device.makeQueue();
         auto hViewResults = onHost::allocHost<bool>(1u);

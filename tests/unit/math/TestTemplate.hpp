@@ -9,7 +9,7 @@
 #include "Defines.hpp"
 #include "Functor.hpp"
 
-#include <alpaka/core/DemangleTypeNames.hpp>
+#include <alpaka/onHost/demangledName.hpp>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_message.hpp>
@@ -147,10 +147,10 @@ namespace mathtest
             }
 #endif
             INFO(
-                "testing" << " data type:" << alpaka::core::demangledName<TData>()
-                          << " functor:" << alpaka::core::demangledName<TWrappedFunctor>() << " seed:" << seed);
+                "testing" << " data type:" << alpaka::onHost::demangledName<TData>()
+                          << " functor:" << alpaka::onHost::demangledName<TWrappedFunctor>() << " seed:" << seed);
             INFO(deviceSpec.getApi().getName());
-            INFO("exec:" << core::demangledName(exec));
+            INFO("exec:" << onHost::demangledName(exec));
             INFO("device:" << device.getName());
             onHost::Queue queue = device.makeQueue();
 
@@ -201,7 +201,7 @@ namespace mathtest
 
 
             INFO("Operator: " << functor);
-            INFO("Type: " << alpaka::core::demangledName<TData>()); // Compiler specific.
+            INFO("Type: " << alpaka::onHost::demangledName<TData>()); // Compiler specific.
 #if ALPAKA_DEBUG_FULL
             INFO(
                 "The args buffer: \n"

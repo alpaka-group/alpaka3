@@ -13,7 +13,6 @@
 #include "alpaka/api/oneApi.hpp"
 #include "alpaka/api/unifiedCudaHip.hpp"
 #include "alpaka/apply.hpp"
-#include "alpaka/core/DemangleTypeNames.hpp"
 #include "alpaka/core/Dict.hpp"
 #include "alpaka/core/Tag.hpp"
 #include "alpaka/core/common.hpp"
@@ -42,3 +41,16 @@
 #include "alpaka/onHost/mem/stdContainer.hpp"
 #include "alpaka/tag.hpp"
 #include "utility.hpp"
+
+#include <alpaka/onHost/demangledName.hpp>
+
+/** main alpaka namespace.
+ *
+ * namespace onHost::* contains all functionality which is usable on the host CPU controller thread.
+ * namespace onAcc::* contains all functionality which is usable on the accelerator compute device from within a
+ * kernel. namespace alpaka contains all functionality which is generic and can be used from within the host controller
+ * thread and within compute device kernels.
+ */
+namespace alpaka
+{
+}

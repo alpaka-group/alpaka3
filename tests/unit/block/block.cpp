@@ -67,7 +67,7 @@ TEMPLATE_LIST_TEST_CASE("block iota", "", TestApis)
     constexpr Vec numBlocks = Vec{9u};
     constexpr Vec blockExtent = Vec{4u};
     constexpr Vec dataExtent = numBlocks * blockExtent;
-    std::cout << "block iota exec=" << core::demangledName(exec) << std::endl;
+    std::cout << "block iota exec=" << onHost::demangledName(exec) << std::endl;
     auto dBuff = onHost::alloc<uint32_t>(device, dataExtent);
 
     auto hBuff = onHost::allocHostLike(dBuff);

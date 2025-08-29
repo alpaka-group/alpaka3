@@ -46,7 +46,7 @@ int example(auto const deviceSpec, auto const computeExec)
 
     std::cout << deviceSpec.getApi().getName() << std::endl;
 
-    std::cout << "Using alpaka accelerator: " << core::demangledName(computeExec) << " for "
+    std::cout << "Using alpaka accelerator: " << onHost::demangledName(computeExec) << " for "
               << deviceSpec.getApi().getName() << std::endl;
 
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);

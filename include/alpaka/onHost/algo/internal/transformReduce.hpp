@@ -42,7 +42,7 @@ namespace alpaka::onHost::internal
 
             // Shared memory for block-wide reduction
             T_DataType* dynS = onAcc::getDynSharedMem<T_DataType>(acc);
-            auto pitchMd = alpaka::mem::calculatePitchesFromExtents<T_DataType>(frameExtent);
+            auto pitchMd = alpaka::calculatePitchesFromExtents<T_DataType>(frameExtent);
             auto tbSum = MdSpan{dynS, frameExtent, pitchMd}; // makeMdSpan(dynS, frameExtent, pitchMd);
             //  auto tbSum = onAcc::declareSharedMdArray<T_DataType, uniqueId()>(acc, CVec<uint32_t, 2>{});
             // T_DataType* dynS = &tbSum[0];

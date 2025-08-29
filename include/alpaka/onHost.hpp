@@ -11,6 +11,7 @@
 #include "alpaka/tag.hpp"
 #include "alpaka/trait.hpp"
 
+/** functionality which is usable on the host CPU controller thread */
 namespace alpaka::onHost
 {
     /** Get extents of an object
