@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include "FrameSpec.hpp"
-#include "ThreadSpec.hpp"
 #include "alpaka/KernelBundle.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/onHost/DeviceProperties.hpp"
+#include "alpaka/onHost/FrameSpec.hpp"
 #include "alpaka/onHost/Handle.hpp"
+#include "alpaka/onHost/ThreadSpec.hpp"
 #include "alpaka/tag.hpp"
 
 namespace alpaka::onHost

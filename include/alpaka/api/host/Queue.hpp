@@ -13,12 +13,12 @@
 #include "alpaka/core/CallbackThread.hpp"
 #include "alpaka/core/alignedAlloc.hpp"
 #include "alpaka/interface.hpp"
-#include "alpaka/internal.hpp"
+#include "alpaka/internal/interface.hpp"
 #include "alpaka/meta/NdLoop.hpp"
-#include "alpaka/onHost.hpp"
 #include "alpaka/onHost/FrameSpec.hpp"
 #include "alpaka/onHost/Handle.hpp"
-#include "alpaka/onHost/internal.hpp"
+#include "alpaka/onHost/interface.hpp"
+#include "alpaka/onHost/internal/interface.hpp"
 #include "alpaka/onHost/mem/ManagedView.hpp"
 
 #include <cstdint>

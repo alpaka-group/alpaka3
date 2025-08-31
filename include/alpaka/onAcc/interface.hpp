@@ -14,7 +14,7 @@
 #include "alpaka/concepts.hpp"
 #include "alpaka/mem/Iter.hpp"
 #include "alpaka/mem/MdSpan.hpp"
-#include "alpaka/onAcc/internal.hpp"
+#include "alpaka/onAcc/internal/interface.hpp"
 #include "alpaka/onAcc/layout.hpp"
 #include "alpaka/onAcc/traverse.hpp"
 

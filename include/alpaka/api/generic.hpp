@@ -5,11 +5,11 @@
 
 #pragma once
 
-#include "alpaka/internal.hpp"
-#include "alpaka/onAcc.hpp"
+#include "alpaka/internal/interface.hpp"
 #include "alpaka/onAcc/SimdAlgo.hpp"
+#include "alpaka/onAcc/interface.hpp"
 #include "alpaka/onHost/FrameSpec.hpp"
-#include "alpaka/onHost/internal.hpp"
+#include "alpaka/onHost/internal/interface.hpp"
 
 #include <algorithm>
 

@@ -11,7 +11,7 @@
 #    include "alpaka/api/generic.hpp"
 #    include "alpaka/api/oneApi/StaticSharedMemory.hpp"
 #    include "alpaka/api/syclGeneric/Queue.hpp"
-#    include "alpaka/onHost/internal.hpp"
+#    include "alpaka/onHost/internal/interface.hpp"
 
 
 #    ifndef ALPAKA_SYCL_NUM_MAX_SHARED_MEMORY_ALLOCATIONS

@@ -9,7 +9,7 @@
 #include "alpaka/Vec.hpp"
 #include "alpaka/api/api.hpp"
 #include "alpaka/core/config.hpp"
-#include "alpaka/onHost/internal.hpp"
+#include "alpaka/onHost/internal/interface.hpp"
 
 #include <array>
 #include <cstdint>

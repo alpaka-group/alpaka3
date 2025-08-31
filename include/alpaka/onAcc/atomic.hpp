@@ -9,7 +9,7 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/onAcc/atomicHierarchy.hpp"
 #include "alpaka/onAcc/atomicOp.hpp"
-#include "alpaka/onAcc/internal.hpp"
+#include "alpaka/onAcc/internal/interface.hpp"
 
 #include <type_traits>
 

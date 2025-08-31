@@ -7,9 +7,9 @@
 
 #include "alpaka/api/host/Api.hpp"
 #include "alpaka/interface.hpp"
-#include "alpaka/internal.hpp"
+#include "alpaka/internal/interface.hpp"
 #include "alpaka/onHost/Handle.hpp"
-#include "alpaka/onHost/internal.hpp"
+#include "alpaka/onHost/internal/interface.hpp"
 
 #include <cstdint>
 #include <cstring>

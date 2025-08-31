@@ -12,7 +12,7 @@
 #include "alpaka/mem/MdSpan.hpp"
 #include "alpaka/onAcc/Acc.hpp"
 #include "alpaka/onAcc/SimdAlgo.hpp"
-#include "alpaka/onHost.hpp"
+#include "alpaka/onHost/interface.hpp"
 #include "alpaka/trait.hpp"
 
 namespace alpaka::onHost::internal

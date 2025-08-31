@@ -11,8 +11,8 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/functor.hpp"
 #include "alpaka/mem/concepts.hpp"
-#include "alpaka/onAcc.hpp"
 #include "alpaka/onAcc/Acc.hpp"
+#include "alpaka/onAcc/interface.hpp"
 
 #include <cstdint>
 #include <new>

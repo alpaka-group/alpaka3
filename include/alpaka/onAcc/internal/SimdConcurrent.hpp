@@ -10,7 +10,7 @@
 #include "alpaka/api/trait.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/mem/concepts.hpp"
-#include "alpaka/onAcc.hpp"
+#include "alpaka/onAcc/interface.hpp"
 
 #include <cstdint>
 #include <new>

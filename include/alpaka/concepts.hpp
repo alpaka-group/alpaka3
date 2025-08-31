@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "alpaka/internal.hpp"
+#include "alpaka/internal/interface.hpp"
 #include "alpaka/tag.hpp"
 
 #include <concepts>

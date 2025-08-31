@@ -11,7 +11,7 @@
 #    include "Device.hpp"
 #    include "alpaka/core/Dict.hpp"
 #    include "alpaka/core/Sycl.hpp"
-#    include "alpaka/internal.hpp"
+#    include "alpaka/internal/interface.hpp"
 
 #    include <sycl/sycl.hpp>
 

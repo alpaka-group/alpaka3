@@ -12,8 +12,8 @@
 #    include "alpaka/api/unifiedCudaHip/Platform.hpp"
 #    include "alpaka/core/ApiCudaRt.hpp"
 #    include "alpaka/core/UniformCudaHip.hpp"
-#    include "alpaka/internal.hpp"
-#    include "alpaka/onHost.hpp"
+#    include "alpaka/internal/interface.hpp"
+#    include "alpaka/onHost/interface.hpp"
 
 namespace alpaka::onHost
 {

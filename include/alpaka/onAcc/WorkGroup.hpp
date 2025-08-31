@@ -5,7 +5,7 @@
 #pragma once
 
 #include "alpaka/mem/ThreadSpace.hpp"
-#include "alpaka/onAcc/internal.hpp"
+#include "alpaka/onAcc/internal/interface.hpp"
 #include "alpaka/onAcc/tag.hpp"
 #include "alpaka/tag.hpp"
 

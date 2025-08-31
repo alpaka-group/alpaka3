@@ -9,7 +9,7 @@
 #include "alpaka/core/Tag.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/meta/NdLoop.hpp"
-#include "alpaka/onAcc.hpp"
+#include "alpaka/onAcc/interface.hpp"
 #include "alpaka/tag.hpp"
 
 #include <cassert>

@@ -14,7 +14,7 @@
 #include "alpaka/onAcc/Acc.hpp"
 #include "alpaka/onAcc/SimdAlgo.hpp"
 #include "alpaka/onAcc/atomic.hpp"
-#include "alpaka/onHost.hpp"
+#include "alpaka/onHost/interface.hpp"
 #include "alpaka/trait.hpp"
 
 namespace alpaka::onHost::internal

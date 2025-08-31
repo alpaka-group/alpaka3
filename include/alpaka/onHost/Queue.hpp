@@ -9,7 +9,7 @@
 #include "alpaka/executor.hpp"
 #include "alpaka/onHost/Event.hpp"
 #include "alpaka/onHost/concepts.hpp"
-#include "alpaka/onHost/internal.hpp"
+#include "alpaka/onHost/internal/interface.hpp"
 
 #include <memory>
 

@@ -145,8 +145,8 @@ Methods starting with `onHost::make` (e.g., `onHost::makeHostDevice()`) create h
 Methods starting with `get` (e.g., `onHost::getExtents(...)`) provide access to properties of an instance.
 
 alpaka provides for generic access to objects properties free functions.
-Most free functions that can be called from `host` can be found under [onHost.hpp](include/alpaka/onHost.hpp).  
-Functions callable from within a compute kernel can be found under [onAcc.hpp](include/alpaka/onAcc.hpp).
+Most free functions that can be called from `host` can be found under [onHost](include/alpaka/onHost/).  
+Functions callable from within a compute kernel can be found under [onAcc](include/alpaka/onAcc/).
 
 A central class for M-dimensional extents, offsets, and indices is [Vec](include/alpaka/Vec.hpp).  
 There are two types of index vectors: `Vec`, which supports `constexpr` usage, but when moved around, it stores the information in a runtime instance, and `CVec`, which is a compile-time index vector that stores the indices in the template signature.  

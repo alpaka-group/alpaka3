@@ -9,7 +9,7 @@
 #include "alpaka/onHost/Event.hpp"
 #include "alpaka/onHost/Queue.hpp"
 #include "alpaka/onHost/concepts.hpp"
-#include "alpaka/onHost/internal.hpp"
+#include "alpaka/onHost/internal/interface.hpp"
 #include "alpaka/utility.hpp"
 
 #include <bit>

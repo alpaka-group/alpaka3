@@ -11,7 +11,7 @@
 #include "alpaka/mem/Alignment.hpp"
 #include "alpaka/mem/DataPitches.hpp"
 #include "alpaka/mem/MdForwardIter.hpp"
-#include "alpaka/onHost.hpp"
+#include "alpaka/onHost/interface.hpp"
 #include "alpaka/trait.hpp"
 
 #include <type_traits>

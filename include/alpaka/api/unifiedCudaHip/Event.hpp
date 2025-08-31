@@ -20,12 +20,12 @@
 #    include "alpaka/core/ApiCudaRt.hpp"
 #    include "alpaka/core/CallbackThread.hpp"
 #    include "alpaka/core/UniformCudaHip.hpp"
-#    include "alpaka/internal.hpp"
+#    include "alpaka/internal/interface.hpp"
 #    include "alpaka/onAcc/Acc.hpp"
-#    include "alpaka/onHost.hpp"
 #    include "alpaka/onHost/FrameSpec.hpp"
 #    include "alpaka/onHost/Handle.hpp"
-#    include "alpaka/onHost/internal.hpp"
+#    include "alpaka/onHost/interface.hpp"
+#    include "alpaka/onHost/internal/interface.hpp"
 #    include "alpaka/onHost/mem/ManagedView.hpp"
 
 #    include <cstdint>

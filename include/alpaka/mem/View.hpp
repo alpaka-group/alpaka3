@@ -6,11 +6,11 @@
 
 #include "alpaka/core/config.hpp"
 #include "alpaka/interface.hpp"
-#include "alpaka/internal.hpp"
+#include "alpaka/internal/interface.hpp"
 #include "alpaka/mem/MdSpan.hpp"
 #include "alpaka/mem/concepts.hpp"
-#include "alpaka/onHost.hpp"
 #include "alpaka/onHost/Handle.hpp"
+#include "alpaka/onHost/interface.hpp"
 
 #include <cstdint>
 #include <functional>

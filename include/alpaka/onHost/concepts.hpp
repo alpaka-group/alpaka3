@@ -5,8 +5,8 @@
 #pragma once
 
 #include "alpaka/concepts.hpp"
-#include "alpaka/internal.hpp"
-#include "alpaka/onHost/internal.hpp"
+#include "alpaka/internal/interface.hpp"
+#include "alpaka/onHost/internal/interface.hpp"
 
 #include <concepts>
 #include <string>

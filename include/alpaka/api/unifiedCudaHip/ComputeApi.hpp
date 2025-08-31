@@ -6,7 +6,7 @@
 
 #include "alpaka/api/unifiedCudaHip/concepts.hpp"
 #include "alpaka/core/config.hpp"
-#include "alpaka/onAcc/internal.hpp"
+#include "alpaka/onAcc/internal/interface.hpp"
 #include "alpaka/tag.hpp"
 
 #include <cstddef>

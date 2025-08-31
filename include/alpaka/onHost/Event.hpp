@@ -6,7 +6,7 @@
 
 #include "Handle.hpp"
 #include "alpaka/api/trait.hpp"
-#include "alpaka/onHost/internal.hpp"
+#include "alpaka/onHost/internal/interface.hpp"
 
 #include <memory>
 

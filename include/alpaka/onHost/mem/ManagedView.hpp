@@ -7,12 +7,12 @@
 
 #include "alpaka/Vec.hpp"
 #include "alpaka/core/config.hpp"
-#include "alpaka/internal.hpp"
+#include "alpaka/internal/interface.hpp"
 #include "alpaka/mem/View.hpp"
-#include "alpaka/onHost.hpp"
 #include "alpaka/onHost/Device.hpp"
 #include "alpaka/onHost/Handle.hpp"
 #include "alpaka/onHost/concepts.hpp"
+#include "alpaka/onHost/interface.hpp"
 #include "alpaka/onHost/mem/MangedDealloc.hpp"
 
 #include <cstdint>

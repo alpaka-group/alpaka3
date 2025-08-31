@@ -7,9 +7,9 @@
 #include "alpaka/api/host/Api.hpp"
 #include "alpaka/api/host/Device.hpp"
 #include "alpaka/api/host/sysInfo.hpp"
-#include "alpaka/internal.hpp"
-#include "alpaka/onHost.hpp"
+#include "alpaka/internal/interface.hpp"
 #include "alpaka/onHost/Handle.hpp"
+#include "alpaka/onHost/interface.hpp"
 #include "alpaka/onHost/trait.hpp"
 
 #include <memory>

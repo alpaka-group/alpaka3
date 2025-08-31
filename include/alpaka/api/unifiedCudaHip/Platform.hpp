@@ -11,9 +11,9 @@
 #    include "alpaka/api/unifiedCudaHip/Device.hpp"
 #    include "alpaka/api/unifiedCudaHip/Platform.hpp"
 #    include "alpaka/core/UniformCudaHip.hpp"
-#    include "alpaka/internal.hpp"
-#    include "alpaka/onHost.hpp"
+#    include "alpaka/internal/interface.hpp"
 #    include "alpaka/onHost/Handle.hpp"
+#    include "alpaka/onHost/interface.hpp"
 
 #    include <memory>
 #    include <mutex>
