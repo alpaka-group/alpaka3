@@ -23,10 +23,8 @@ struct Kernel
     {
     }
 
-    ALPAKA_FN_ACC void operator()(onAcc::concepts::Acc auto const& acc, auto... kernelArgs) const
+    ALPAKA_FN_ACC void operator()(onAcc::concepts::Acc auto const& acc, [[maybe_unused]] auto... kernelArgs) const
     {
-        static_assert(((!std::is_void_v<ALPAKA_TYPEOF(kernelArgs)>) && ...));
-
         using DataType = float;
 
         // BEGIN-CHEATSHEET-staticSharedMem
@@ -40,7 +38,7 @@ struct Kernel
         DataType scalar = alpaka::onAcc::declareSharedVar<float, alpaka::uniqueId()>(acc, CVec<uint32_t, 3, 4>{});
         // END-CHEATSHEET-staticSharedMem
 
-        static_assert(std::is_floating_point_v<ALPAKA_TYPEOF(scalar)>);
+        unused(scalar);
     }
 
     int m_element;
@@ -138,20 +136,15 @@ auto main() -> int
     using DataType = int;
     // END-CHEATSHEET-init
 
-    // use dim to avoid unused warning
-    static_assert(dim);
-    // use types to avoid unused warning
-    static_assert(std::is_integral_v<IdxType>);
-    static_assert(std::is_integral_v<DataType>);
+    unused(dim, IdxType{}, DataType{});
 
     constexpr uint32_t numElements = 100;
     constexpr uint32_t value = 42;
     constexpr uint32_t valueX = 42;
     constexpr uint32_t valueY = 43;
     constexpr uint32_t valueZ = 44;
-    // use values to avoid unused warning
-    static_assert(numElements);
-    static_assert(value);
+
+    unused(numElements, value);
 
     // BEGIN-CHEATSHEET-vectorCreate
     // Use alpaka vector as a static array for the extents
@@ -161,8 +154,7 @@ auto main() -> int
     concepts::CVector auto extent3D = CVec<IdxType, valueZ, valueY, valueX>{};
     // END-CHEATSHEET-vectorCreate
 
-    static_assert(requires { concepts::View<ALPAKA_TYPEOF(extent1D)>; });
-    static_assert(requires { concepts::View<ALPAKA_TYPEOF(extent2D)>; });
+    unused(extent1D, extent2D);
 
     {
         // BEGIN-CHEATSHEET-vectorAccess
@@ -170,10 +162,7 @@ auto main() -> int
         auto [z, y, x] = extent3D;
         // END-CHEATSHEET-vectorAccess
 
-        static_assert(std::is_scalar_v<ALPAKA_TYPEOF(extentX)>);
-        static_assert(std::is_scalar_v<ALPAKA_TYPEOF(x)>);
-        static_assert(std::is_scalar_v<ALPAKA_TYPEOF(y)>);
-        static_assert(std::is_scalar_v<ALPAKA_TYPEOF(z)>);
+        unused(extentX, x, y, z);
     }
 
     {
@@ -183,14 +172,15 @@ auto main() -> int
         std::integral auto linearIdx = linearize(extent3D, idx3D);
         // END-CHEATSHEET-linearize
 
-        static_assert(std::is_integral_v<ALPAKA_TYPEOF(linearIdx)>);
+        unused(linearIdx);
 
         int scalar = 2;
+        concepts::CVector auto extent4D = CVec<int, valueZ, valueZ, valueY, valueX>{};
         // BEGIN-CHEATSHEET-mapToMd
-        concepts::Vector auto idxMd = mapToND(extent3D, scalar);
+        concepts::Vector auto idxMd = mapToND(extent4D, scalar);
         // END-CHEATSHEET-mapToMd
 
-        static_assert(requires { concepts::View<ALPAKA_TYPEOF(idxMd)>; });
+        unused(idxMd);
     }
 
     concepts::Api auto const api = api::host;
@@ -242,8 +232,7 @@ auto main() -> int
             concepts::View auto hostView = onHost::allocHost<DataType>(extent3D);
             // END-CHEATSHEET-allocHostView
 
-            // avoid not used warnings
-            static_assert(requires { concepts::View<ALPAKA_TYPEOF(hostView)>; });
+            unused(hostView);
         }
 
         {
@@ -254,8 +243,7 @@ auto main() -> int
             concepts::View auto hostView = makeView(api::host, ptr, extent);
             // END-CHEATSHEET-makeViewFromPtr
 
-            // avoid not used warnings
-            static_assert(requires { concepts::View<ALPAKA_TYPEOF(hostView)>; });
+            unused(hostView);
         }
 
         {
@@ -266,8 +254,7 @@ auto main() -> int
             auto hostView = makeView(vec);
             // END-CHEATSHEET-makeViewFromStdVector
 
-            // avoid not used warnings
-            static_assert(requires { concepts::View<ALPAKA_TYPEOF(hostView)>; });
+            unused(hostView);
         }
 
         {
@@ -279,9 +266,7 @@ auto main() -> int
             concepts::View auto deviceView = makeView(array);
             // END-CHEATSHEET-makeViewStdArray
 
-            // avoid not used warnings
-            static_assert(requires { concepts::View<ALPAKA_TYPEOF(hostView)>; });
-            static_assert(requires { concepts::View<ALPAKA_TYPEOF(deviceView)>; });
+            unused(hostView, deviceView);
         }
 
         {
@@ -290,16 +275,14 @@ auto main() -> int
             DataType* rawPtr = onHost::data(view);
             // END-CHEATSHEET-dataPtr
 
-            // avoid not used warnings
-            static_assert(std::is_pointer_v<ALPAKA_TYPEOF(rawPtr)>);
+            unused(rawPtr);
 
             // BEGIN-CHEATSHEET-getPitches
             // memory in bytes to the next element in the view along the pitch dimension
             concepts::Vector auto viewPitches = onHost::getPitches(view);
             // END-CHEATSHEET-getPitches
 
-            // avoid not used warnings
-            static_assert(requires { concepts::Vector<ALPAKA_TYPEOF(viewPitches)>; });
+            unused(viewPitches);
 
             // BEGIN-CHEATSHEET-initView
             // the view can have any dimensionality
@@ -328,9 +311,7 @@ auto main() -> int
             concepts::View auto devViewUnmanaged = devView.getView();
             // END-CHEATSHEET-allocView
 
-            static_assert(requires { concepts::View<ALPAKA_TYPEOF(devMappedView)>; });
-            static_assert(requires { concepts::View<ALPAKA_TYPEOF(devUnifiedView)>; });
-            static_assert(requires { concepts::View<ALPAKA_TYPEOF(devViewUnmanaged)>; });
+            unused(devMappedView, devUnifiedView, devViewUnmanaged);
 
             auto dstView = devView;
             auto srcView = devMappedView;
@@ -349,15 +330,16 @@ auto main() -> int
         onHost::concepts::FrameSpec auto frameSpec = onHost::FrameSpec{numFramesMd, frameExtentMd};
         // END-CHEATSHEET-manualFrameSpec
 
+        unused(frameSpec);
+
         {
             // BEGIN-CHEATSHEET-autoFrameSpec
             // DataType is used to optimize the kernel parameters for working on data of this type
             onHost::concepts::FrameSpec auto frameSpec = onHost::getFrameSpec<DataType>(device, extentMd);
             // END-CHEATSHEET-autoFrameSpec
 
-            static_assert(requires { onHost::concepts::FrameSpec<ALPAKA_TYPEOF(frameSpec)>; });
+            unused(frameSpec);
         }
-        static_assert(requires { onHost::concepts::FrameSpec<ALPAKA_TYPEOF(frameSpec)>; });
 
         {
             int argumentsForConstructor = 42;
@@ -376,7 +358,7 @@ auto main() -> int
                 queue.enqueue(executor, frameSpec, KernelBundle{kernel, kernelArgs...});
                 // END-CHEATSHEET-enqueueKernel
             };
-            static_assert(!std::is_void_v<ALPAKA_TYPEOF(foo)>);
+            unused(foo);
         }
     }
     catch(...)
