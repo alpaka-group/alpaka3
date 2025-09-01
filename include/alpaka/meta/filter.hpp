@@ -10,7 +10,7 @@
 
 namespace alpaka::meta
 {
-    consteval auto filter(auto const unaryConditionFn, auto const list)
+    constexpr auto filter(auto const unaryConditionFn, auto const list)
     {
         return std::apply(
             [=](auto... ts) constexpr

@@ -11,7 +11,7 @@
 
 #pragma once
 
-namespace alpaka
+namespace alpaka::onHost
 {
     //! execute a callable for each active accelerator tag
     //
@@ -65,4 +65,4 @@ namespace alpaka
         // Pass the tag as first argument to the callable.
         return std::apply([=](auto const&... devSpecs) { return (exe(devSpecs) || ...); }, tupleOfDeviceSpecs);
     }
-} // namespace alpaka
+} // namespace alpaka::onHost

@@ -3,7 +3,7 @@
 #include "catch2/catch_session.hpp"
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/example/executors.hpp>
+#include <alpaka/onHost/example/executors.hpp>
 
 #include <catch2/benchmark/catch_benchmark.hpp>
 #include <catch2/catch_template_test_macros.hpp>
@@ -512,7 +512,7 @@ void testKernels(auto const deviceSpec, auto const exec)
     std::cout << metaData.serializeAsTable() << std::endl;
 }
 
-using Backends = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis))>;
+using Backends = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors))>;
 
 // Run for all Accs given by the argument
 TEMPLATE_LIST_TEST_CASE("TEST: Babelstream Kernels<Float>", "[benchmark-test]", Backends)

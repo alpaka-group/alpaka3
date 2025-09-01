@@ -64,7 +64,7 @@ namespace alpaka::onHost
     template<typename T_Device>
     inline void transform(Queue<T_Device> const& queue, auto&& out, auto&& fn, auto&&... in)
     {
-        auto executor = supportedMappings(queue.getDevice());
+        auto executor = supportedMappings(queue.getDevice(), exec::allExecutors);
         transform(queue, std::get<0>(executor), ALPAKA_FORWARD(out), ALPAKA_FORWARD(fn), ALPAKA_FORWARD(in)...);
     }
 

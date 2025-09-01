@@ -3,8 +3,8 @@
  */
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/example/executeForEach.hpp>
-#include <alpaka/example/executors.hpp>
+#include <alpaka/onHost/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
 
 #if ALPAKA_OS_WINDOWS
 #    include <direct.h>
@@ -120,5 +120,5 @@ auto main(int argc, char* argv[]) -> int
 
     using namespace alpaka;
     // Execute the example once for each enabled API and executor.
-    return executeForEach([=](auto const& api) { return example(argc, argv, api); }, onHost::apis);
+    return onHost::executeForEach([=](auto const& api) { return example(argc, argv, api); }, onHost::apis);
 }

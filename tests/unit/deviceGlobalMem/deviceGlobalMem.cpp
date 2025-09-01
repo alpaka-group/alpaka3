@@ -3,8 +3,8 @@
  */
 #if ALPAKA_LANG_SYCL != 0
 #    include <alpaka/alpaka.hpp>
-#    include <alpaka/example/executeForEach.hpp>
-#    include <alpaka/example/executors.hpp>
+#    include <alpaka/onHost/example/executors.hpp>
+#    include <alpaka/onHost/executeForEach.hpp>
 
 #    include <catch2/catch_template_test_macros.hpp>
 #    include <catch2/catch_test_macros.hpp>
@@ -14,7 +14,7 @@
 using namespace alpaka;
 using namespace alpaka::onHost;
 
-using TestApis = std::decay_t<decltype(allBackends(enabledApis))>;
+using TestApis = std::decay_t<decltype(allBackends(enabledApis, onHost::example::enabledExecutors))>;
 
 
 ALPAKA_DEVICE_GLOBAL(const, (alpaka::Vec<uint32_t, 2u>), initialised_vector, 42u, 43u);

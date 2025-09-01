@@ -118,7 +118,7 @@ namespace alpaka::onHost::internal
             requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
                      && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
         {
-            auto executors = supportedMappings(getDevice(queue));
+            auto executors = supportedMappings(getDevice(queue), exec::allExecutors);
             // avoid that we pass a ManagedView and convert non alpaka data views
             auto dataView = makeView(dest);
 

@@ -17,6 +17,7 @@
 #include "alpaka/core/Tag.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/executor.hpp"
 #include "alpaka/interface.hpp"
 #include "alpaka/internal.hpp"
 #include "alpaka/math.hpp"

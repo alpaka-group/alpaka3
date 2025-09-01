@@ -57,7 +57,7 @@ namespace alpaka::onHost
         auto&& binaryReduceFn,
         auto&& in) requires(std::same_as<DataType, alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>>)
     {
-        auto executor = supportedMappings(queue.getDevice());
+        auto executor = supportedMappings(queue.getDevice(), exec::allExecutors);
         reduce(queue, std::get<0>(executor), neutralElement, out, ALPAKA_FORWARD(binaryReduceFn), ALPAKA_FORWARD(in));
     }
 

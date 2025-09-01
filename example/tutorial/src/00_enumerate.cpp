@@ -49,7 +49,7 @@ auto main() -> int
 
     /** Execute the example once for each enabled API and device kind including `onHost::DeviceSpec{api::host,
      * deviceKind::cpu}` explicitly called before.*/
-    return executeForEachIfHasDevice(
+    return onHost::executeForEachIfHasDevice(
         [=](auto const& devSpec) { return example(devSpec); },
         onHost::getDeviceSpecsFor(onHost::enabledApis));
 }

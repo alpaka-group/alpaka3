@@ -148,4 +148,61 @@ namespace alpaka::onHost
         return alloc<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(device, internal::getExtents(view));
     }
 
+    constexpr auto getExecutorsList(auto const deviceSpec, auto const listOfExecutors)
+    {
+        using DevSelectorType = decltype(makeDeviceSelector(deviceSpec));
+        using DeviceType = decltype(std::declval<DevSelectorType>().makeDevice(0));
+        using AutoDeviceMappings = decltype(supportedMappings(std::declval<DeviceType>(), listOfExecutors));
+        return AutoDeviceMappings{};
+    }
+
+    /** Get alist of supported device specifications
+     *
+     * @param api a single api
+     * @return tuple of device specifications
+     */
+    constexpr auto getDeviceSpecsFor(auto const api)
+    {
+        return std::apply(
+            [api](auto... devType) constexpr { return std::make_tuple(DeviceSpec{api, devType}...); },
+            supportedDevices(api));
+    }
+
+    /** Get alist of supported device specifications
+     *
+     * @param apiList a tuple with APIs
+     * @return tuple of device specifications
+     */
+    template<alpaka::concepts::Api... T_Apis>
+    constexpr auto getDeviceSpecsFor(std::tuple<T_Apis...> const apiList)
+    {
+        return std::apply([](auto... api) constexpr { return std::tuple_cat(getDeviceSpecsFor(api)...); }, apiList);
+    }
+
+    constexpr auto createBackendsFor(auto const deviceSpec, auto const listOfExecutors)
+    {
+        return std::apply(
+            [deviceSpec](auto... executor) constexpr
+            {
+                return std::make_tuple(
+                    Dict{DictEntry{object::deviceSpec, deviceSpec}, DictEntry{object::exec, executor}}...);
+            },
+            listOfExecutors);
+    }
+
+    constexpr auto createBackendList(auto const devSpecList, auto const listOfExecutors)
+    {
+        return std::apply(
+            [listOfExecutors](auto... devSpec) constexpr
+            { return std::tuple_cat(createBackendsFor(devSpec, getExecutorsList(devSpec, listOfExecutors))...); },
+            devSpecList);
+    }
+
+    consteval auto allBackends(auto const usedApis, auto const listOfExecutors)
+    {
+        return std::apply(
+            [listOfExecutors](auto... api) constexpr
+            { return std::tuple_cat(createBackendList(getDeviceSpecsFor(api), listOfExecutors)...); },
+            usedApis);
+    }
 } // namespace alpaka::onHost

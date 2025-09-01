@@ -261,8 +261,8 @@ auto main() -> int
 {
     using namespace alpaka;
     // Execute the example once for each enabled API and executor.
-    return executeForEachIfHasDevice(
+    return onHost::executeForEachIfHasDevice(
         [=](auto const& backend)
         { return example(backend[alpaka::object::deviceSpec], backend[alpaka::object::exec]); },
-        onHost::allBackends(onHost::enabledApis));
+        onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
 }

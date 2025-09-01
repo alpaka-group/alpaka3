@@ -198,7 +198,7 @@ auto main(int argc, char* argv[]) -> int
     using namespace alpaka;
 
     // Execute the example once for each enabled API and executor.
-    auto result = executeForEachIfHasDevice(
+    auto result = onHost::executeForEachIfHasDevice(
         [=](auto const& backend)
         {
             return alpaka::example::scan::example(
@@ -210,7 +210,7 @@ auto main(int argc, char* argv[]) -> int
                 enableInPlace,
                 scanType);
         },
-        onHost::allBackends(onHost::enabledApis));
+        onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
 
     return result;
 }

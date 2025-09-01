@@ -5,8 +5,8 @@
 #include "eventHelper.hpp"
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/example/executeForEach.hpp>
-#include <alpaka/example/executors.hpp>
+#include <alpaka/onHost/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -35,7 +35,7 @@
 using namespace alpaka;
 using namespace alpaka::test::event;
 
-using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis))>;
+using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors))>;
 
 /** This test takes care that kernel in different queues can run concurrent and if we can communicate between host and
  * the device via mapped memory. Even if the concurrent queue test says true it could be that kernels can run under the

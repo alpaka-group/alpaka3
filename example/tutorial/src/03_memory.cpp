@@ -76,7 +76,7 @@ auto main() -> int
 {
     using namespace alpaka;
     // Execute the example once for each enabled API and executor.
-    return executeForEachIfHasDevice(
+    return onHost::executeForEachIfHasDevice(
         [=](auto const& devSpec) { return example(devSpec); },
         onHost::getDeviceSpecsFor(onHost::enabledApis));
 }

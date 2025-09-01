@@ -9,8 +9,8 @@
 #if ALPAKA_LANG_ONEAPI
 #    include "alpaka/api/oneApi/Api.hpp"
 #    include "alpaka/api/syclGeneric/Platform.hpp"
-#    include "alpaka/example/executors.hpp"
 #    include "alpaka/internal.hpp"
+#    include "alpaka/onHost/example/executors.hpp"
 #    include "alpaka/onHost/internal.hpp"
 #    include "alpaka/tag.hpp"
 

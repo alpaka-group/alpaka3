@@ -20,7 +20,7 @@ namespace alpaka::test::event
         {
 #if ALPAKA_ARCH_PTX && __CUDA_ARCH__ >= 700
             __nanosleep(100000);
-#elif !ALPAKA_LANG_SYCL && !ALPAKA_LANG_HIP
+#elif !ALPAKA_LANG_SYCL && !ALPAKA_LANG_HIP && !ALPAKA_LANG_CUDA
             std::this_thread::sleep_for(std::chrono::microseconds(100u));
 #else
             (*i) = 0;

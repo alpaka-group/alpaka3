@@ -7,9 +7,9 @@
 #include "alpaka/math/internal/Complex.hpp"
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/example/executeForEach.hpp>
-#include <alpaka/example/executors.hpp>
 #include <alpaka/meta/meta.hpp>
+#include <alpaka/onHost/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -18,7 +18,8 @@
 #include <tuple>
 #include <type_traits>
 
-using TestBackends = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis))>;
+using TestBackends
+    = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors))>;
 
 // This file only has unit tests for complex numbers in order to split the tests between object files and save compiler
 // memory. For the same reason single- and double-precision are done separately and not wrapped into a common template.

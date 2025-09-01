@@ -63,7 +63,7 @@ namespace alpaka::onHost
         auto&& fn,
         auto&&... inOut)
     {
-        auto executor = supportedMappings(queue.getDevice());
+        auto executor = supportedMappings(queue.getDevice(), exec::allExecutors);
         internal::concurrent<T_DataType>(
             queue,
             std::get<0>(executor),

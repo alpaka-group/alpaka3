@@ -6,6 +6,7 @@
 
 #include "Handle.hpp"
 #include "alpaka/api/trait.hpp"
+#include "alpaka/executor.hpp"
 #include "alpaka/onHost/Event.hpp"
 #include "alpaka/onHost/concepts.hpp"
 #include "alpaka/onHost/internal.hpp"
@@ -120,7 +121,7 @@ namespace alpaka::onHost
             onHost::concepts::ThreadOrFrameSpec auto const& specification,
             KernelBundle<TKernelFn, TArgs...> const& kernelBundle) const
         {
-            auto executor = supportedMappings(internal::getDevice(*m_queue.get()));
+            auto executor = supportedMappings(internal::getDevice(*m_queue.get()), exec::allExecutors);
             internal::enqueue(*m_queue.get(), std::get<0>(executor), specification, kernelBundle);
         }
 

@@ -6,8 +6,8 @@
 
 #include "Handle.hpp"
 #include "alpaka/KernelBundle.hpp"
-#include "alpaka/api/executor.hpp"
 #include "alpaka/core/common.hpp"
+#include "alpaka/executor.hpp"
 #include "alpaka/meta/filter.hpp"
 #include "alpaka/onHost/concepts.hpp"
 #include "alpaka/tag.hpp"
@@ -143,20 +143,20 @@ namespace alpaka::onHost
         return trait::IsMappingSupportedBy::Op<ALPAKA_TYPEOF(executor), ALPAKA_TYPEOF(deviceHandle)>::value;
     }
 
-    constexpr auto supportedMappings(internal::concepts::DeviceHandle auto deviceHandle)
+    constexpr auto supportedMappings(internal::concepts::DeviceHandle auto deviceHandle, auto const listOfExecutors)
     {
         return meta::filter(
-            // we can not use isExecutorSupportedBy() because gcc14 is more strict in the detection which functions can
+            // we can not use isExecutorSupportedBy() because gcc14 is stricter in the detection which functions can
             // be evaluated at compile time
             [&](auto executor) constexpr
             { return trait::IsMappingSupportedBy::Op<ALPAKA_TYPEOF(executor), ALPAKA_TYPEOF(deviceHandle)>::value; },
-            exec::availableMappings);
+            listOfExecutors);
     }
 
     constexpr auto supportedDevices(auto const api)
     {
         return meta::filter(
-            // we can not use isExecutorSupportedBy() because gcc14 is more strict in the detection which functions can
+            // we can not use isExecutorSupportedBy() because gcc14 is stricter in the detection which functions can
             // be evaluated at compile time
             [&](auto devTag) constexpr
             { return trait::IsDeviceSupportedBy::Op<ALPAKA_TYPEOF(devTag), ALPAKA_TYPEOF(api)>::value; },

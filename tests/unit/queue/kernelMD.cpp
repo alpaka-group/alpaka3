@@ -9,8 +9,8 @@
  */
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/example/executeForEach.hpp>
-#include <alpaka/example/executors.hpp>
+#include <alpaka/onHost/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -19,7 +19,7 @@
 
 using namespace alpaka;
 
-using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis))>;
+using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors))>;
 
 struct LastSetDataBlockIdx
 {
