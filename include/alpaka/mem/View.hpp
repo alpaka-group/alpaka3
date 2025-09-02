@@ -178,7 +178,7 @@ namespace alpaka
             auto shiftedPtr = &(*this)[offsetMd];
             return makeView(T_Api{}, shiftedPtr, extentMd, this->getPitches(), Alignment<>{});
         }
-        
+
         template<alpaka::concepts::Vector LowHaloVecType, alpaka::concepts::Vector UpHaloVecType>
         constexpr auto getSubView(
             alpaka::BoundaryDirection<View::dim(), LowHaloVecType, UpHaloVecType> boundaryDir) const
