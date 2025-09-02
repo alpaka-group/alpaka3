@@ -11,136 +11,189 @@
 #include "alpaka/tag.hpp"
 #include "alpaka/trait.hpp"
 
-/** functionality which is usable on the host CPU controller thread */
+/** Functionality which is usable on the host CPU controller thread. */
 namespace alpaka::onHost
 {
-    /** Get extents of an object
+    /** @{
+     * @name Query extents
+     */
+    /** Object extents
      *
-     * @param any can be a view, a data
+     * @param any can be a std::vector, std::array, ...
      * @return the extents of the object
-     *
-     * @{
      */
     inline decltype(auto) getExtents(auto&& any)
     {
         return internal::getExtents(ALPAKA_FORWARD(any));
     }
 
-    inline decltype(auto) getExtents(alpaka::concepts::HasGet auto&& any)
+    /** Handle extents
+     *
+     * @param handle can be a view, a data
+     * @return the extents of the object
+     */
+    inline decltype(auto) getExtents(alpaka::concepts::HasGet auto&& handle)
     {
-        return internal::getExtents(*any.get());
+        return internal::getExtents(*handle.get());
     }
 
     /** @} */
 
-    /** Get the number of elements of an object
+    /** @{
+     * @name Query multi-dimensional pitches
+     */
+    /** Object pitches
      *
-     * @param any can be a view, a data
+     * @param any can be a std::vector, std::array, ...
      * @return the number of elements of the object
-     *
-     * @{
      */
     inline decltype(auto) getPitches(auto&& any)
     {
         return internal::getPitches(ALPAKA_FORWARD(any));
     }
 
-    inline decltype(auto) getPitches(alpaka::concepts::HasGet auto&& any)
+    /** Handle pitches
+     *
+     * @param handle can be a view, a data
+     * @return the number of elements of the object
+     */
+    inline decltype(auto) getPitches(alpaka::concepts::HasGet auto&& handle)
     {
-        return internal::getPitches(*any.get());
+        return internal::getPitches(*handle.get());
     }
 
     /** @} */
 
+    /** @{
+     * @name Query the name
+     */
+
+    /** Compile‑time available name for a given object.
+     *
+     * @param any object whose name shall be queried
+     * @return a `std::string`‑compatible value holding the static name
+     */
     inline std::convertible_to<std::string> auto getStaticName(auto const& any)
     {
         return alpaka::internal::GetStaticName::Op<ALPAKA_TYPEOF(any)>{}(any);
     }
 
-    inline std::convertible_to<std::string> auto getStaticName(concepts::StaticNameHandle auto const& any)
+    /** Compile‑time available name of an handle
+     *
+     * @param handle object whose name shall be queried
+     * @return a `std::string`‑compatible value holding the static name
+     */
+    inline std::convertible_to<std::string> auto getStaticName(concepts::StaticNameHandle auto const& handle)
     {
-        return alpaka::internal::GetStaticName::Op<std::decay_t<decltype(*any.get())>>{}(*any.get());
+        return alpaka::internal::GetStaticName::Op<std::decay_t<decltype(*handle.get())>>{}(*handle.get());
     }
 
+    /** Runtime name for a given object.
+     *
+     * @param any object whose name shall be queried
+     * @return a `std::string`‑compatible value holding the name
+     */
     inline std::convertible_to<std::string> auto getName(auto&& any)
     {
         return alpaka::internal::GetName::Op<ALPAKA_TYPEOF(any)>{}(ALPAKA_FORWARD(any));
     }
 
-    inline std::convertible_to<std::string> auto getName(concepts::NameHandle auto const& any)
-    {
-        return alpaka::internal::GetName::Op<std::decay_t<decltype(*any.get())>>{}(*any.get());
-    }
-
-    /** Get the native handle type
+    /** Runtime name for a given handle.
      *
-     * The handle can be used with native API function from the underlying used parism library.
-     *
-     * @return the type depends on the used API
+     * @param handle object whose name shall be queried
+     * @return a `std::string`‑compatible value holding the name
      */
-    inline auto getNativeHandle(auto const& any)
+    inline std::convertible_to<std::string> auto getName(concepts::NameHandle auto const& handle)
     {
-        return internal::getNativeHandle(*any.get());
+        return alpaka::internal::GetName::Op<std::decay_t<decltype(*handle.get())>>{}(*handle.get());
     }
 
-    /** blocks the caller until the given handle executes all work
+    /** @} */
+
+    /** Get the native handle of an handle.
      *
-     * @param any currently only queue handles are supported
+     * The native handle can be passed to the underlying backend API
+     * (e.g. CUDA, HIP, OpenMP) for low‑level operations.
+     *
+     * @param handle object exposing a native handle
+     * @return the native handle returned by the backend‑specific implementation
      */
-    inline void wait(alpaka::concepts::HasGet auto& any)
+    inline auto getNativeHandle(auto const& handle)
     {
-        return internal::wait(*any.get());
+        return internal::getNativeHandle(*handle.get());
     }
 
-    /** pointer to data
+    /** wait for all work to be finished
      *
-     * For multi dimensional data the data is not required to be continues.
+     * Waits until all work submitted to any before this call has finished
      *
-     * @param any
-     * @return origin pointer to the data equal to std::data()
+     * @param handle queue/device/event
+     */
+    inline void wait(alpaka::concepts::HasGet auto& handle)
+    {
+        return internal::wait(*handle.get());
+    }
+
+    /** @{
+     * @name Query raw pointer
+     */
+    /** pointer to data of an object
      *
-     * @{
+     * For multi‑dimensional data the data is not required to be continuous.
+     *
+     * @param any object providing data access (e.g. std::vector)
+     * @return raw pointer to the underlying data (equivalent to `std::data`)
      */
     inline decltype(auto) data(auto&& any)
     {
         return internal::Data::data(ALPAKA_FORWARD(any));
     }
 
-    inline decltype(auto) data(alpaka::concepts::HasGet auto&& any)
+    /** pointer to data of an handle
+     *
+     * For multi‑dimensional data the data is not required to be continuous.
+     *
+     * @param handle handle providing data access (e.g. view)
+     * @return raw pointer to the underlying data
+     */
+    inline decltype(auto) data(alpaka::concepts::HasGet auto&& handle)
     {
-        return internal::Data::data(*any.get());
+        return internal::Data::data(*handle.get());
     }
 
     /** @} */
 
-    /** allocate memory on the given device
-     *
-     * @tparam T_Type type of the data elements
-     * @param extents number of elements for each dimension
-     * @return memory owning view to the allocated memory
-     *
-     * The host controller device is the deviceKind::Cpu from api::Host.
+    /** @{
+     * @name Host allocations
      */
-    template<typename T_Type>
+    /** Allocate host memory for a given element type and extents.
+     *
+     * The allocation is performed on the host controller device
+     * (`api::host` ans `deviceKind::cpu`).
+     * The returned view owns the allocated memory.
+     *
+     * @tparam T_ValueType type of the data elements
+     * @param extents number of elements per dimension (vector or scalar)
+     * @return a view owning the newly allocated memory
+     */
+    template<typename T_ValueType>
     inline auto allocHost(alpaka::concepts::VectorOrScalar auto const& extents)
     {
-        auto device = makeHostDevice<T_Type>();
+        auto device = makeHostDevice<T_ValueType>();
         Vec const extentsVec = extents;
-        return internal::Alloc::Op<T_Type, std::decay_t<decltype(*device.get())>, ALPAKA_TYPEOF(extentsVec)>{}(
+        return internal::Alloc::Op<T_ValueType, std::decay_t<decltype(*device.get())>, ALPAKA_TYPEOF(extentsVec)>{}(
             *device.get(),
             extentsVec);
     }
 
-    /** allocate memory on the given device based on a view
+    /** Allocate host memory with the same value type and extents as an existing view.
      *
-     * Derives type and extents of the memory from the view.
-     * The content of the memory is NOT copied to the created allocated memory.
+     * The content of the source view is **not** copied. The function deduces the
+     * element type and extents from `view` and creates a new managed view on the
+     * host controller device.
      *
-     * The host controller device is the deviceKind::Cpu from api::Host.
-     *
-     * @param view memory where properties will be derived from, std::vector, std::array, or any other
-     *
-     * @return memory owning view to the allocated memory
+     * @param view a view (e.g. `std::vector`, `std::array`, or any compatible type)
+     * @return a view owning the newly allocated memory
      */
     inline auto allocHostLike(auto const& view)
     {
@@ -148,6 +201,19 @@ namespace alpaka::onHost
         return alloc<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(device, internal::getExtents(view));
     }
 
+    /** @} */
+
+    /** @{
+     * @name Device selection utilities
+     */
+    /** Resolve the list of executors supported for a device specification.
+     *
+     * This helper is used internally to build backend dictionaries.
+     *
+     * @param deviceSpec      device specification to be used
+     * @param listOfExecutors tuple of executor types to be filtered
+     * @return a tuple containing the supported executor types
+     */
     constexpr auto getExecutorsList(auto const deviceSpec, auto const listOfExecutors)
     {
         using DevSelectorType = decltype(makeDeviceSelector(deviceSpec));
@@ -156,10 +222,13 @@ namespace alpaka::onHost
         return AutoDeviceMappings{};
     }
 
-    /** Get alist of supported device specifications
+    /** Create a tuple of device specifications for a single API.
      *
-     * @param api a single api
-     * @return tuple of device specifications
+     * Each device specifications combines the supplied API with one of the supported
+     * device types for that API.
+     *
+     * @param api a single alpaka API (e.g. `api::cuda`, `api::hip`)
+     * @return a tuple containing all device specifications for the given API
      */
     constexpr auto getDeviceSpecsFor(auto const api)
     {
@@ -168,10 +237,10 @@ namespace alpaka::onHost
             supportedDevices(api));
     }
 
-    /** Get alist of supported device specifications
+    /** Create a flattened tuple of device specification objects for a list of APIs.
      *
-     * @param apiList a tuple with APIs
-     * @return tuple of device specifications
+     * @param apiList a `std::tuple` containing the APIs
+     * @return a tuple containing all device specifications for the given API
      */
     template<alpaka::concepts::Api... T_Apis>
     constexpr auto getDeviceSpecsFor(std::tuple<T_Apis...> const apiList)
@@ -179,6 +248,16 @@ namespace alpaka::onHost
         return std::apply([](auto... api) constexpr { return std::tuple_cat(getDeviceSpecsFor(api)...); }, apiList);
     }
 
+    /** Build a tuple of backends for a single device specification.
+     *
+     * A backend is the combination of a device specification and an executor.
+     * Each dictionary stores a `deviceSpec`(query: foo[object::deviceSpec]) entry and an `exec`(query:
+     * foo[object::exec]) entry for the corresponding executor.
+     *
+     * @param deviceSpec the device specification to associate with the executors
+     * @param listOfExecutors tuple of executor types
+     * @return a tuple of backend objects, one per executor
+     */
     constexpr auto createBackendsFor(auto const deviceSpec, auto const listOfExecutors)
     {
         return std::apply(
@@ -190,6 +269,12 @@ namespace alpaka::onHost
             listOfExecutors);
     }
 
+    /** Create the complete backend list for all device specifications and executors.
+     *
+     * @param devSpecList tuple of device specifications
+     * @param listOfExecutors tuple of executor types
+     * @return a tuple of backend objects, for all executors
+     */
     constexpr auto createBackendList(auto const devSpecList, auto const listOfExecutors)
     {
         return std::apply(
@@ -198,6 +283,15 @@ namespace alpaka::onHost
             devSpecList);
     }
 
+    /** Generate the full set of backend dictionaries for a set of APIs.
+     *
+     * The result contains a backend entry for each combination of supported device
+     * specification for the APIs and executors.
+     *
+     * @param usedApis tuple of alpaka APIs to consider
+     * @param listOfExecutors tuple of executor types
+     * @return a tuple of backend dictionaries covering all APIs and executors
+     */
     consteval auto allBackends(auto const usedApis, auto const listOfExecutors)
     {
         return std::apply(
@@ -205,4 +299,6 @@ namespace alpaka::onHost
             { return std::tuple_cat(createBackendList(getDeviceSpecsFor(api), listOfExecutors)...); },
             usedApis);
     }
+
+    /** @} */
 } // namespace alpaka::onHost

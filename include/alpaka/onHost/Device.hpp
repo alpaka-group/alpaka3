@@ -139,7 +139,10 @@ namespace alpaka::onHost
         ALPAKA_TYPEOF(alpaka::internal::getApi(std::declval<T_Device>())),
         ALPAKA_TYPEOF(alpaka::internal::getDeviceKind(std::declval<T_Device>()))>;
 
-    /** allocate memory on the given device
+    /** @{
+     * @name Device allocations
+     */
+    /** Allocate memory on the given device
      *
      * @tparam T_Type type of the data elements
      * @param device device handle
@@ -155,22 +158,17 @@ namespace alpaka::onHost
             extentsVec);
     }
 
-    /** allocate memory on the given device with unified virtual memory
+    /** Allocate memory on the given device with unified virtual memory
      *
      * This memory can be accessed from all devices with the same Api and device kind. Depending of the backend e.g.
      * OneApi memory can be accessed by other device kind devices if they are using the same native context. It is not
      * allowed to access the data on two devices at the same time, this must be avoided by explicit synchronizations.
-     * Managed memory follows the rules of UVM memory of the device backend e.g. CUDA, HIP, ...
+     * Unified memory follows the rules of UVM memory of the device backend e.g. CUDA, HIP, ...
      *
      * @tparam T_Type type of the data elements
+     * @param device device handle
      * @param extents number of elements for each dimension
      * @return Managed view to the allocated memory
-     *
-     * @{
-     */
-
-    /**
-     * @param device device handle
      */
     template<typename T_Type>
     inline auto allocUnified(concepts::Device auto const& device, alpaka::concepts::VectorOrScalar auto const& extents)
@@ -183,7 +181,16 @@ namespace alpaka::onHost
 
     /** Allocates unified memory on the device associated with the given queue.
      *
+     * This memory can be accessed from all devices with the same Api and device kind. Depending of the backend e.g.
+     * OneApi memory can be accessed by other device kind devices if they are using the same native context. It is not
+     * allowed to access the data on two devices at the same time, this must be avoided by explicit synchronizations.
+     * Unified memory follows the rules of UVM memory of the device backend e.g. CUDA, HIP, ...
+     *
+     * @ingroup foo
+     *
+     * @tparam T_Type type of the data elements
      * @param queue queue handle
+     * @param extents number of elements for each dimension
      */
     template<typename T_Type, typename T_Device>
     inline auto allocUnified(Queue<T_Device> const& queue, alpaka::concepts::VectorOrScalar auto const& extents)
@@ -195,28 +202,15 @@ namespace alpaka::onHost
                 extentsVec);
     }
 
-    /** @} */
-
-    /** allocate pinned memory on the host which is mapped into the adress space of the device
-     *
-     * This memory can be accessed from all devices with the same Api and device kind. Depending of the backend e.g.
-     * OneApi memory can be accessed by other device kind devices if they are using the same native context. It is not
-     * allowed to access the data on two devices at the same time, this must be avoided by explicit synchronizations.
-     * Managed memory follows the rules of UVM memory of the device backend e.g. CUDA, HIP, ...
+    /** Allocate pinned memory on the host which is mapped into the adress space of the device
      *
      * Mapped memory is located on the host and is transferred for each access via the PCIe/Nvlink bus. The performance
      * on the device is mostly pure. Mapped memory should be used for host memory if you transfer memory between host
      * and device via `onHost::memcpy()` because the transfer will be optimized for latency and performance.
      *
      * @tparam T_Type type of the data elements
-     * @param extents number of elements for each dimension
-     * @return Managed view to the allocated memory
-     *
-     * @{
-     */
-
-    /**
      * @param device device handle
+     * @param extents number of elements for each dimension
      */
     template<typename T_Type>
     inline auto allocMapped(concepts::Device auto const& device, alpaka::concepts::VectorOrScalar auto const& extents)
@@ -227,9 +221,15 @@ namespace alpaka::onHost
             extentsVec);
     }
 
-    /** Allocates pinned mapped memory on the device associated with the given queue.
+    /** Allocate pinned memory on the host which is mapped into the adress space of the device
      *
+     * Mapped memory is located on the host and is transferred for each access via the PCIe/Nvlink bus. The performance
+     * on the device is mostly pure. Mapped memory should be used for host memory if you transfer memory between host
+     * and device via `onHost::memcpy()` because the transfer will be optimized for latency and performance.
+     *
+     * @tparam T_Type type of the data elements
      * @param queue queue handle
+     * @param extents number of elements for each dimension
      */
     template<typename T_Type, typename T_Device>
     inline auto allocMapped(Queue<T_Device> const& queue, alpaka::concepts::VectorOrScalar auto const& extents)
@@ -237,7 +237,22 @@ namespace alpaka::onHost
         return allocMapped<T_Type>(queue.getDevice(), extents);
     }
 
-    /** @} */
+    /** allocate memory on the given device based on a view
+     *
+     * Derives type and extents of the memory from the view.
+     * The content of the memory is NOT copied to the created allocated memory.
+     *
+     * @param device device handle
+     * @param[in] view memory where properties will be derived from
+     *
+     * @return memory owning view to the allocated memory
+     */
+    inline auto allocLike(concepts::Device auto const& device, auto const& view)
+    {
+        return alloc<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(device, getExtents(view));
+    }
+
+    ///@}
 
     /** check if the given view is accessible on the given device
      *
@@ -247,7 +262,6 @@ namespace alpaka::onHost
      * alpaka can not detect all memory access types therefore the result can be false even if the memory is accessible
      * because the view was allocated with a UVM allocator.
      *
-     * @{
      */
     inline bool isDataAccessible(concepts::Device auto const& device, alpaka::concepts::View auto const& view)
     {
@@ -274,23 +288,6 @@ namespace alpaka::onHost
                    ALPAKA_TYPEOF(getApi(view)),
                    ALPAKA_TYPEOF(getDeviceKind(queue.getDevice())),
                    ALPAKA_TYPEOF(view)>{}(getApi(view), getDeviceKind(queue.getDevice()), view);
-    }
-
-    /** @} */
-
-    /** allocate memory on the given device based on a view
-     *
-     * Derives type and extents of the memory from the view.
-     * The content of the memory is NOT copied to the created allocated memory.
-     *
-     * @param device device handle
-     * @param view memory where properties will be derived from
-     *
-     * @return memory owning view to the allocated memory
-     */
-    inline auto allocLike(concepts::Device auto const& device, auto const& view)
-    {
-        return alloc<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(device, getExtents(view));
     }
 
     /** provides a frame specification to operator on a given index range
