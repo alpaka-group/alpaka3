@@ -23,6 +23,7 @@
 #include "alpaka/math.hpp"
 #include "alpaka/math/constants.hpp"
 #include "alpaka/math/internal/Complex.hpp"
+#include "alpaka/mem/BoundaryIter.hpp"
 #include "alpaka/mem/Iter.hpp"
 #include "alpaka/onAcc/Acc.hpp"
 #include "alpaka/onAcc/GlobalMem.hpp"

@@ -13,6 +13,7 @@
 
 #include "alpaka/Vec.hpp"
 #include "alpaka/concepts.hpp"
+#include "alpaka/mem/BoundaryIter.hpp"
 #include "alpaka/mem/Iter.hpp"
 #include "alpaka/mem/MdSpan.hpp"
 #include "alpaka/onAcc/internal/interface.hpp"
@@ -54,6 +55,27 @@ namespace alpaka::onAcc
             Op<void, ALPAKA_TYPEOF(acc), ALPAKA_TYPEOF(DomainSpec{workGroup, range}), T_Traverse, T_IdxLayout>{}(
                 acc,
                 DomainSpec{workGroup, range},
+                traverse,
+                idxLayout);
+    }
+
+    /** Specialization for an index container with a given boundary direction of the volume described by the range.
+     */
+    template<concepts::IdxTraversing T_Traverse = traverse::Flat, concepts::IdxMapping T_IdxLayout = layout::Optimized>
+    ALPAKA_FN_HOST_ACC constexpr auto makeIdxMap(
+        auto const& acc,
+        auto const workGroup,
+        auto const range,
+        alpaka::concepts::BoundaryDirection auto const& bd,
+        T_Traverse traverse = T_Traverse{},
+        T_IdxLayout idxLayout = T_IdxLayout{})
+    {
+        static_assert(ALPAKA_TYPEOF(bd)::dim() == ALPAKA_TYPEOF(range)::dim());
+        auto const subRange = makeDirectionSubRange(range, bd);
+        return internal::MakeIter::
+            Op<void, ALPAKA_TYPEOF(acc), ALPAKA_TYPEOF(DomainSpec{workGroup, subRange}), T_Traverse, T_IdxLayout>{}(
+                acc,
+                DomainSpec{workGroup, subRange},
                 traverse,
                 idxLayout);
     }

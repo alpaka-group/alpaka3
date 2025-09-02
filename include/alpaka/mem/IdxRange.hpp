@@ -7,6 +7,7 @@
 #include "alpaka/Vec.hpp"
 #include "alpaka/core/PP.hpp"
 #include "alpaka/core/common.hpp"
+#include "alpaka/mem/BoundaryIter.hpp"
 
 #include <cstdint>
 
@@ -101,6 +102,38 @@ namespace alpaka
         using type = typename T_Begin::type;
     };
 
+    template<uint32_t Dim, alpaka::concepts::Vector LowHaloVecType, alpaka::concepts::Vector UpHaloVecType>
+    constexpr auto makeDirectionSubRange(
+        auto const range,
+        alpaka::BoundaryDirection<Dim, LowHaloVecType, UpHaloVecType> const& boundaryDir)
+    {
+        auto m_begin = Vec<uint32_t, Dim>::all(0u);
+        auto m_end = Vec<uint32_t, Dim>::all(0u);
+        for(uint32_t i = 0; i < Dim; ++i)
+        {
+            switch(boundaryDir.data[i])
+            {
+            case BoundaryType::LOWER:
+                m_begin[i] = range.m_begin[i];
+                m_end[i] = range.m_begin[i] + boundaryDir.lowerHaloSize[i];
+                break;
+            case BoundaryType::UPPER:
+                m_begin[i] = range.m_end[i] - boundaryDir.upperHaloSize[i];
+                m_end[i] = range.m_end[i];
+                break;
+            case BoundaryType::MIDDLE:
+                m_begin[i] = range.m_begin[i] + boundaryDir.lowerHaloSize[i];
+                m_end[i] = range.m_end[i] - boundaryDir.upperHaloSize[i];
+                break;
+            case BoundaryType::OOB:
+                [[fallthrough]];
+            default:
+                assert(false);
+            }
+        }
+        return IdxRange{m_begin, m_end, range.m_stride};
+    }
+
     namespace internal
     {
         template<typename T_To, concepts::Vector T_End, concepts::Vector T_Begin, concepts::Vector T_Stride>
@@ -163,7 +196,7 @@ namespace alpaka
 
     namespace concepts
     {
-        /** Concept to check if a type is a index range
+        /** Concept to check if a type is an index range
          *
          * @tparam T Type to check
          * @tparam T_ValueType enforce a value type of the index range, if not provided the type is not checked
@@ -175,7 +208,7 @@ namespace alpaka
               && (std::same_as<T_ValueType, typename T::IdxType> || std::same_as<T_ValueType, alpaka::NotRequired>)
               && ((T_dim == alpaka::notRequiredDim) || (T::dim() == T_dim));
 
-        /** Concept to check if a type is a lazy evaluated index range
+        /** Concept to check if a type is a lazy-evaluated index range
          *
          * @attention the value type and dimension can not be evaluated for lazy index ranges.
          *

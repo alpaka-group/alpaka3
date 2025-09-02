@@ -151,12 +151,12 @@ namespace alpaka
             }
 
         private:
-            template<T... T_indecies>
+            template<T... T_indices>
             static constexpr auto integerSequenceToCVec(
-                std::integer_sequence<T, T_indecies...>,
+                std::integer_sequence<T, T_indices...>,
                 auto const op = std::identity{})
             {
-                return CVec<T, op(T_indecies)...>{};
+                return CVec<T, op(T_indices)...>{};
             };
         };
 
@@ -987,7 +987,7 @@ namespace alpaka
         };
     } // namespace internal
 
-    /** @todo the function for intergral values is defined in Utils.hpp
+    /** @todo the function for integral values is defined in Utils.hpp
      * move this to a better place, e.g. math and expose this for the user too
      */
     template<concepts::Vector T_Vector0, concepts::Vector T_Vector1>

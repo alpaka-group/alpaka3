@@ -49,7 +49,7 @@ namespace alpaka::onHost
     }
 
     /**
-     * A available default executor will be selected automaticlally. The default executor is a executor with most
+     * An available default executor will be selected automatically. The default executor is the executor with the most
      * parallelism/performance.
      */
     template<typename T_DataType, typename T_Device>
@@ -61,7 +61,13 @@ namespace alpaka::onHost
                 std::is_convertible<T_DataType, typename alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(outOther)>>...>)
     {
         auto executor = supportedMappings(queue.getDevice(), exec::allExecutors);
-        internal::iota<T_DataType>(queue, std::get<0>(executor), ALPAKA_FORWARD(out0), ALPAKA_FORWARD(outOther)...);
+        internal::iota<T_DataType>(
+            queue,
+            std::get<0>(executor),
+            onHost::getExtents(out0),
+            initValue,
+            ALPAKA_FORWARD(out0),
+            ALPAKA_FORWARD(outOther)...);
     }
 
     /** @} */

@@ -79,7 +79,7 @@ namespace alpaka
                      remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>>
                  && ...),
                 "All kernel arguments must be trivially copyable or specialize "
-                "trai::IsKernelArgumentTriviallyCopyable<>!");
+                "trait::IsKernelArgumentTriviallyCopyable<>!");
         }
 
         constexpr KernelBundle(KernelBundle const& b) = default;

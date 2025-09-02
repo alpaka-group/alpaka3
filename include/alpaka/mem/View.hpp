@@ -4,22 +4,18 @@
 
 #pragma once
 
-#include "alpaka/core/config.hpp"
 #include "alpaka/interface.hpp"
 #include "alpaka/internal/interface.hpp"
+#include "alpaka/mem/BoundaryIter.hpp"
 #include "alpaka/mem/MdSpan.hpp"
 #include "alpaka/mem/concepts.hpp"
-#include "alpaka/onHost/Handle.hpp"
 #include "alpaka/onHost/interface.hpp"
 
 #include <cstdint>
 #include <functional>
-#include <memory>
-#include <sstream>
 
 namespace alpaka
 {
-
     /** Non owning view to data
      *
      * This view is only holding a points to real data, copying the view is cheap.
@@ -181,6 +177,37 @@ namespace alpaka
             assert((offsetMd + extentMd <= this->getExtents()).reduce(std::logical_and{}));
             auto shiftedPtr = &(*this)[offsetMd];
             return makeView(T_Api{}, shiftedPtr, extentMd, this->getPitches(), Alignment<>{});
+        }
+        
+         template<alpaka::concepts::Vector LowHaloVecType, alpaka::concepts::Vector UpHaloVecType>
+        constexpr auto getSubView(
+            alpaka::BoundaryDirection<View::dim(), LowHaloVecType, UpHaloVecType> boundaryDir) const
+        {
+            constexpr uint32_t dim = View::dim();
+            auto offset = alpaka::Vec<uint32_t, dim>{};
+            auto extents = alpaka::Vec<uint32_t, dim>{};
+
+            for(uint32_t i = 0; i < dim; ++i)
+            {
+                switch(boundaryDir.data[i])
+                {
+                case BoundaryType::LOWER:
+                    offset[i] = 0;
+                    extents[i] = boundaryDir.lowerHaloSize[i];
+                    break;
+                case BoundaryType::UPPER:
+                    offset[i] = this->getExtents()[i] - boundaryDir.upperHaloSize[i];
+                    extents[i] = boundaryDir.upperHaloSize[i];
+                    break;
+                case BoundaryType::MIDDLE:
+                    offset[i] = boundaryDir.lowerHaloSize[i];
+                    extents[i] = this->getExtents()[i] - boundaryDir.lowerHaloSize[i] - boundaryDir.upperHaloSize[i];
+                    break;
+                default:
+                    throw std::invalid_argument("invalid direction");
+                }
+            }
+            return getSubView(offset, extents);
         }
     };
 

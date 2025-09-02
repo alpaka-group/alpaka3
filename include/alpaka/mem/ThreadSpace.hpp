@@ -52,8 +52,9 @@ namespace alpaka
         }
 
         template<concepts::CVector T_CSelect>
-        constexpr ThreadSpace mapTo(T_CSelect selection) const requires(T_ThreadIdx::dim() == T_CSelect::dim())
+        constexpr ThreadSpace mapTo(T_CSelect selection) const requires(T_ThreadIdx::dim() <= T_CSelect::dim())
         {
+            static_assert(T_ThreadIdx::dim() == T_CSelect::dim(), "can not map to a larger dimension");
             return *this;
         }
 

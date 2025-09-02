@@ -106,4 +106,19 @@ namespace alpaka
 
     /** @} */
 
+    constexpr auto ipow(std::integral auto const base, std::integral auto const exponent)
+        requires std::same_as<ALPAKA_TYPEOF(base), ALPAKA_TYPEOF(exponent)>
+    {
+        ALPAKA_TYPEOF(base) result = 1;
+        if(exponent == 0)
+            return result;
+
+        result = ipow(base, exponent / 2);
+        result *= result;
+
+        if(exponent & 1)
+            result *= base;
+
+        return result;
+    }
 } // namespace alpaka
