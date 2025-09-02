@@ -55,7 +55,12 @@ namespace mathtest
             alpaka::onHost::memcpy(queue, m_hostView, m_deviceView);
         }
 
-        ALPAKA_FN_HOST auto operator()(size_t idx) const -> value_type&
+        ALPAKA_FN_HOST decltype(auto) operator()(size_t idx) const
+        {
+            return m_hostView[idx];
+        }
+
+        ALPAKA_FN_HOST decltype(auto) operator()(size_t idx)
         {
             return m_hostView[idx];
         }

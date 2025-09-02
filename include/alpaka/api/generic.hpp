@@ -21,8 +21,7 @@ namespace alpaka::internal::generic
      */
     struct SimdFillKernel
     {
-        ALPAKA_FN_ACC void operator()(auto const& acc, alpaka::concepts::MdSpan auto const& dest, auto const value)
-            const
+        ALPAKA_FN_ACC void operator()(auto const& acc, alpaka::concepts::MdSpan auto dest, auto const value) const
         {
             auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
             simdGrid.concurrent(

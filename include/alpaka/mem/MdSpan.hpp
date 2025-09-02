@@ -20,7 +20,7 @@ namespace alpaka
 {
     /** Lightweight view to data in a n-dimensional array
      *
-     * Const-ness of the MdSpan is NOT propagated to the data region.
+     * Const-ness of the MdSpan instance is propagated to the data region.
      * A constant MdSpan can be used to access non-const data.
      *
      * @tparam T_Type if the type is const the data is only readable
@@ -66,7 +66,9 @@ namespace alpaka
     {
         using value_type = T_Type;
         using reference = value_type&;
+        using const_reference = value_type const&;
         using pointer = value_type*;
+        using const_pointer = value_type const*;
         using index_type = typename T_Pitches::type;
 
         using ConstThis = MdSpan<std::add_const_t<value_type>, T_Extents, T_Pitches, T_MemAlignment>;
@@ -82,6 +84,11 @@ namespace alpaka
          *
          * @return value at the current location
          */
+        constexpr const_reference operator*() const
+        {
+            return *this->m_ptr;
+        }
+
         constexpr reference operator*()
         {
             return *this->m_ptr;
@@ -91,7 +98,12 @@ namespace alpaka
          *
          * If the pointer is const and therefore read only depends on T_Type and not the const-ness of MdSPan.
          */
-        constexpr pointer data() const
+        constexpr const_pointer data() const
+        {
+            return this->m_ptr;
+        }
+
+        constexpr pointer data()
         {
             return this->m_ptr;
         }
@@ -152,12 +164,22 @@ namespace alpaka
          * @param idx n-dimensional offset, relative to the origin pointer
          * @return reference to the value
          */
-        constexpr reference operator[](concepts::Vector auto const& idx) const
+        constexpr const_reference operator[](concepts::Vector auto const& idx) const
         {
             return *ptr(idx);
         }
 
-        constexpr reference operator[](std::integral auto const& idx) const requires(dim() == 1u)
+        constexpr reference operator[](concepts::Vector auto const& idx)
+        {
+            return *ptr(idx);
+        }
+
+        constexpr const_reference operator[](std::integral auto const& idx) const requires(dim() == 1u)
+        {
+            return *ptr(Vec{idx});
+        }
+
+        constexpr reference operator[](std::integral auto const& idx) requires(dim() == 1u)
         {
             return *ptr(Vec{idx});
         }
@@ -263,7 +285,9 @@ namespace alpaka
         using extentType = std::extent<T_ArrayType, std::rank_v<T_ArrayType>>;
         using value_type = std::remove_all_extents_t<T_ArrayType>;
         using reference = value_type&;
+        using const_reference = value_type const&;
         using pointer = value_type*;
+        using const_pointer = value_type const*;
         using index_type = typename extentType::value_type;
 
         static consteval uint32_t dim()
@@ -275,13 +299,23 @@ namespace alpaka
          *
          * @return value at the current location
          */
-        constexpr reference operator*() const
+        constexpr const_reference operator*() const
+        {
+            return *this->m_ptr;
+        }
+
+        constexpr reference operator*()
         {
             return *this->m_ptr;
         }
 
         /** get origin pointer */
-        constexpr pointer data() const
+        constexpr const_pointer data() const
+        {
+            return this->m_ptr;
+        }
+
+        constexpr pointer data()
         {
             return this->m_ptr;
         }
@@ -337,12 +371,22 @@ namespace alpaka
          * @return reference to the value
          * @{
          */
-        constexpr reference operator[](concepts::Vector auto const& idx) const
+        constexpr const_reference operator[](concepts::Vector auto const& idx) const
         {
             return ResolveArrayAccess<dim()>{}(*m_ptr, idx);
         }
 
-        constexpr reference operator[](index_type const& idx) const
+        constexpr reference operator[](concepts::Vector auto const& idx)
+        {
+            return ResolveArrayAccess<dim()>{}(*m_ptr, idx);
+        }
+
+        constexpr const_reference operator[](index_type const& idx) const
+        {
+            return (*m_ptr)[idx];
+        }
+
+        constexpr reference operator[](index_type const& idx)
         {
             return (*m_ptr)[idx];
         }

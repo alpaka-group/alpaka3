@@ -25,7 +25,7 @@ namespace alpaka::onHost
     /** Life time managed view with contiguous data
      *
      * This managed view owns the data and will deallocate it when the view is destroyed.
-     * Const-ness of the managed view is NOT propagated to the data region.
+     * Const-ness of the managed view instance is propagated to the data region.
      */
     template<
         alpaka::concepts::Api T_Api,
@@ -76,6 +76,11 @@ namespace alpaka::onHost
 
         auto getView() const
         {
+            return BaseView::getConstView();
+        }
+
+        auto getView()
+        {
             return static_cast<BaseView>(*this);
         }
 
@@ -100,7 +105,25 @@ namespace alpaka::onHost
         auto getManagedSubView(alpaka::concepts::Vector auto const& extents) const
         {
             assert(extents <= this->getExtents());
-            return ManagedView{T_Api{}, this->data(), extents, this->getPitches(), m_deleter, T_MemAlignment{}};
+            return ManagedView<T_Api, std::remove_pointer_t<ALPAKA_TYPEOF(this->data())>, T_Extents, T_MemAlignment>{
+                T_Api{},
+                this->data(),
+                extents,
+                this->getPitches(),
+                m_deleter,
+                T_MemAlignment{}};
+        }
+
+        auto getManagedSubView(alpaka::concepts::Vector auto const& extents)
+        {
+            assert(extents <= this->getExtents());
+            return ManagedView<T_Api, std::remove_pointer_t<ALPAKA_TYPEOF(this->data())>, T_Extents, T_MemAlignment>{
+                T_Api{},
+                this->data(),
+                extents,
+                this->getPitches(),
+                m_deleter,
+                T_MemAlignment{}};
         }
 
         /** Creates a sub managed view to a part of the memory.
@@ -116,7 +139,28 @@ namespace alpaka::onHost
         {
             assert(offset + extents <= this->getExtents());
             auto shiftedPtr = &this->getMdSpan()[offset];
-            return ManagedView{T_Api{}, shiftedPtr, extents, this->getPitches(), Alignment<>{}};
+            return ManagedView<T_Api, std::remove_pointer_t<ALPAKA_TYPEOF(shiftedPtr)>, T_Extents, Alignment<>>{
+                T_Api{},
+                shiftedPtr,
+                extents,
+                this->getPitches(),
+                m_deleter,
+                Alignment<>{}};
+        }
+
+        auto getManagedSubView(
+            alpaka::concepts::Vector auto const& offset,
+            alpaka::concepts::Vector auto const& extents)
+        {
+            assert(offset + extents <= this->getExtents());
+            auto shiftedPtr = &this->getMdSpan()[offset];
+            return ManagedView<T_Api, std::remove_pointer_t<ALPAKA_TYPEOF(shiftedPtr)>, T_Extents, Alignment<>>{
+                T_Api{},
+                shiftedPtr,
+                extents,
+                this->getPitches(),
+                m_deleter,
+                Alignment<>{}};
         }
 
         /** Adds a destructor action to the managed view

@@ -65,7 +65,10 @@ TEMPLATE_LIST_TEST_CASE("CVec frame extent kernel call", "", TestApis)
     auto hBuff = onHost::allocHostLike(dBuff);
     onHost::wait(queue);
     {
-        queue.enqueue(exec, FrameSpec{Vec{1u}, CVec<uint32_t, 43u>{}}, KernelBundle{KernelCVecFrameExtents{}, dBuff});
+        queue.enqueue(
+            exec,
+            FrameSpec{Vec{1u}, CVec<uint32_t, 43u>{}},
+            KernelBundle{KernelCVecFrameExtents{}, dBuff.getView()});
         onHost::memcpy(queue, hBuff, dBuff);
         onHost::wait(queue);
         CHECK(hBuff[0] == true);

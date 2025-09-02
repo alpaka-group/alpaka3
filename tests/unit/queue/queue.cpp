@@ -279,6 +279,11 @@ struct TestMdSpan
         return m_span.data();
     }
 
+    constexpr auto* data()
+    {
+        return m_span.data();
+    }
+
     constexpr auto getExtents() const
     {
         return m_span.getExtents();

@@ -31,7 +31,7 @@ namespace alpaka::example::scan
         int falseResults = 0;
         static constexpr int MAX_PRINT_FALSE_RESULTS = 20;
 
-        auto const& groundtruth = alpaka::onHost::allocHost<Data>(numElements);
+        auto groundtruth = alpaka::onHost::allocHost<Data>(numElements);
         switch(scanType)
         {
         case EXCLUSIVE_SCAN:
@@ -160,6 +160,7 @@ namespace alpaka::example::scan
             alpaka::onHost::wait(queue);
             auto const beginT = std::chrono::high_resolution_clock::now();
 
+            static_assert(!std::is_const_v<typename ALPAKA_TYPEOF(bufY)::value_type>);
             switch(scanType)
             {
             case EXCLUSIVE_SCAN:

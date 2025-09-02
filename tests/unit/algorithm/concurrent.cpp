@@ -30,7 +30,7 @@ struct StencilAddWithAcc
 {
     constexpr void operator()(
         onAcc::concepts::Acc auto const&,
-        concepts::SimdPtr auto const& a,
+        concepts::SimdPtr auto a,
         concepts::SimdPtr auto const& b) const
     {
         a = a.load() + b.load();
