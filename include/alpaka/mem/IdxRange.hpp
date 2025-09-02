@@ -102,14 +102,14 @@ namespace alpaka
         using type = typename T_Begin::type;
     };
 
-    template<uint32_t Dim, alpaka::concepts::Vector LowHaloVecType, alpaka::concepts::Vector UpHaloVecType>
+    template<uint32_t T_dim, alpaka::concepts::Vector T_LowHaloVec, alpaka::concepts::Vector T_UpHaloVec>
     constexpr auto makeDirectionSubRange(
         auto const range,
-        alpaka::BoundaryDirection<Dim, LowHaloVecType, UpHaloVecType> const& boundaryDir)
+        alpaka::BoundaryDirection<T_dim, T_LowHaloVec, T_UpHaloVec> const& boundaryDir)
     {
-        auto m_begin = Vec<uint32_t, Dim>::all(0u);
-        auto m_end = Vec<uint32_t, Dim>::all(0u);
-        for(uint32_t i = 0; i < Dim; ++i)
+        auto m_begin = Vec<uint32_t, T_dim>::all(0u);
+        auto m_end = Vec<uint32_t, T_dim>::all(0u);
+        for(uint32_t i = 0; i < T_dim; ++i)
         {
             switch(boundaryDir.data[i])
             {
@@ -128,7 +128,7 @@ namespace alpaka
             case BoundaryType::OOB:
                 [[fallthrough]];
             default:
-                assert(false);
+                ALPAKA_ASSERT_ACC(false);
             }
         }
         return IdxRange{m_begin, m_end, range.m_stride};

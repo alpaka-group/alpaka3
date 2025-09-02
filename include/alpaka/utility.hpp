@@ -106,17 +106,21 @@ namespace alpaka
 
     /** @} */
 
+    /**
+     * @brief Helper function calculating the integer power for the given base and exponent.
+     */
     constexpr auto ipow(std::integral auto const base, std::integral auto const exponent)
         requires std::same_as<ALPAKA_TYPEOF(base), ALPAKA_TYPEOF(exponent)>
     {
-        ALPAKA_TYPEOF(base) result = 1;
-        if(exponent == 0)
+        using T_Res = ALPAKA_TYPEOF(base);
+        T_Res result = T_Res{1};
+        if(exponent == T_Res{0})
             return result;
 
-        result = ipow(base, exponent / 2);
+        result = ipow(base, exponent / T_Res{2});
         result *= result;
 
-        if(exponent & 1)
+        if(exponent % T_Res{2})
             result *= base;
 
         return result;

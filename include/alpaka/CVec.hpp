@@ -98,16 +98,17 @@ namespace alpaka
         return detail::integerSequenceToCVec(IotaSeq{});
     }
 
-    template<typename T, uint32_t T_dim, T Val>
+    template<typename T, uint32_t T_dim, T T_val>
     consteval auto fillCVec()
     {
-        auto concatCVec = []<T... Values>(CVec<T, Values...> cvec) -> auto { return CVec<T, Values..., Val>{}; };
+        auto concatCVec
+            = []<T... T_values>(CVec<T, T_values...> cvec) -> auto { return CVec<T, T_values..., T_val>{}; };
 
         static_assert(T_dim > 0);
         if constexpr(T_dim == 1)
-            return CVec<T, Val>{};
+            return CVec<T, T_val>{};
         else
-            return concatCVec(fillCVec<T, T_dim - 1, Val>());
+            return concatCVec(fillCVec<T, T_dim - 1, T_val>());
     }
 
     /** Find all values only exists in the left vector

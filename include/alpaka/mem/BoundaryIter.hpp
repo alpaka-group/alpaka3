@@ -33,23 +33,23 @@ namespace alpaka
      * @brief An n-dimensional boundary direction. Encodes a single unique boundary of an nD volume, e.g., a specific
      * corner of a 2D plane or a side of a 3D cube.
      *
-     * @tparam Dim The dimensionality of the volume that this is a boundary direction for.
-     * @tparam LowHaloVecType The vector type used for the lower halo sizes.
-     * @tparam UpHaloVecType The vector type used for the upper halo sizes.
+     * @tparam T_dim The dimensionality of the volume that this is a boundary direction for.
+     * @tparam T_LowHaloVec The vector type used for the lower halo sizes.
+     * @tparam T_UpHaloVec The vector type used for the upper halo sizes.
      */
-    template<uint32_t Dim, alpaka::concepts::Vector LowHaloVecType, alpaka::concepts::Vector UpHaloVecType>
+    template<uint32_t T_dim, concepts::Vector T_LowHaloVec, concepts::Vector T_UpHaloVec>
     struct BoundaryDirection
     {
-        using BoundaryVecType = alpaka::Vec<BoundaryType, Dim>;
+        using T_BoundaryVec = Vec<BoundaryType, T_dim>;
 
-        BoundaryVecType data;
-        LowHaloVecType lowerHaloSize;
-        UpHaloVecType upperHaloSize;
+        T_BoundaryVec data;
+        T_LowHaloVec lowerHaloSize;
+        T_UpHaloVec upperHaloSize;
 
         constexpr BoundaryDirection(
-            alpaka::concepts::Vector auto const& boundaries,
-            LowHaloVecType const& lower_halo_sizes,
-            UpHaloVecType const& upper_halo_sizes)
+            concepts::Vector auto const& boundaries,
+            T_LowHaloVec const& lower_halo_sizes,
+            T_UpHaloVec const& upper_halo_sizes)
             : data(boundaries)
             , lowerHaloSize(lower_halo_sizes)
             , upperHaloSize(upper_halo_sizes)
@@ -58,13 +58,13 @@ namespace alpaka
 
         [[nodiscard]] static constexpr uint32_t dim()
         {
-            return Dim;
+            return T_dim;
         }
 
         [[nodiscard]] constexpr uint32_t boundaryDimensionality() const
         {
             uint32_t c = 0;
-            for(auto i = 0; i < Dim; ++i)
+            for(auto i = 0; i < T_dim; ++i)
             {
                 if(data[i] == BoundaryType::MIDDLE)
                     ++c;
@@ -98,26 +98,26 @@ namespace alpaka
     /**
      * @brief The iterator type for [`BoundaryDirectionsContainer`](@ref)
      *
-     * @tparam Dim The dimensionality of the volume that this is a boundary direction iterator for.
-     * @tparam LowHaloVecType The vector type used for the lower halo sizes.
-     * @tparam UpHaloVecType The vector type used for the upper halo sizes.
+     * @tparam T_dim The dimensionality of the volume that this is a boundary direction iterator for.
+     * @tparam T_LowHaloVec The vector type used for the lower halo sizes.
+     * @tparam T_UpHaloVec The vector type used for the upper halo sizes.
      */
-    template<uint32_t Dim, alpaka::concepts::Vector LowHaloVecType, alpaka::concepts::Vector UpHaloVecType>
+    template<uint32_t T_dim, concepts::Vector T_LowHaloVec, concepts::Vector T_UpHaloVec>
     struct BoundaryDirectionIter
     {
-        using BoundaryVecType = alpaka::Vec<BoundaryType, Dim>;
+        using T_BoundaryVec = Vec<BoundaryType, T_dim>;
 
         using difference_type = std::ptrdiff_t;
-        using value_type = BoundaryDirection<Dim, LowHaloVecType, UpHaloVecType>;
+        using value_type = BoundaryDirection<T_dim, T_LowHaloVec, T_UpHaloVec>;
         using reference = value_type&;
         using const_reference = value_type const&;
         using pointer = value_type*;
         using const_pointer = value_type const*;
 
         constexpr BoundaryDirectionIter(
-            BoundaryVecType const& boundaries,
-            LowHaloVecType const& lower_halo_sizes,
-            UpHaloVecType const& upper_halo_sizes)
+            T_BoundaryVec const& boundaries,
+            T_LowHaloVec const& lower_halo_sizes,
+            T_UpHaloVec const& upper_halo_sizes)
             : boundaries(boundaries, lower_halo_sizes, upper_halo_sizes)
             , lowerHaloSizes(lower_halo_sizes)
             , upperHaloSizes(upper_halo_sizes)
@@ -136,7 +136,7 @@ namespace alpaka
 
         constexpr auto& operator++()
         {
-            uint32_t i = Dim - 1;
+            uint32_t i = T_dim - 1;
             bool oob = true;
             while(i != static_cast<uint32_t>(-1))
             {
@@ -169,23 +169,25 @@ namespace alpaka
             if(oob)
             {
                 boundaries
-                    = {Vec<BoundaryType, Dim>([](int) { return BoundaryType::OOB; }), lowerHaloSizes, upperHaloSizes};
+                    = {Vec<BoundaryType, T_dim>([](int) { return BoundaryType::OOB; }),
+                       lowerHaloSizes,
+                       upperHaloSizes};
             }
             return *this;
         }
 
-        [[nodiscard]] static constexpr auto dim()
+        [[nodiscard]] static consteval auto dim()
         {
-            return Dim;
+            return T_dim;
         }
 
         [[nodiscard]] constexpr auto operator<=>(BoundaryDirectionIter const&) const = default;
 
     private:
-        BoundaryDirection<Dim, LowHaloVecType, UpHaloVecType> boundaries;
+        BoundaryDirection<T_dim, T_LowHaloVec, T_UpHaloVec> boundaries;
 
-        LowHaloVecType lowerHaloSizes;
-        UpHaloVecType upperHaloSizes;
+        T_LowHaloVec lowerHaloSizes;
+        T_UpHaloVec upperHaloSizes;
     };
 
     /**
@@ -194,78 +196,76 @@ namespace alpaka
      * edges, and one 2D center. In general, there are 3^n boundaries for an nD volume. This class implements begin(),
      * end(), and length(), and can be iterated over.
      *
-     * @tparam Dim The dimensionality of the volume that this contains boundaries for.
-     * @tparam LowHaloVecType The vector type used for the lower halo sizes.
-     * @tparam UpHaloVecType The vector type used for the upper halo sizes.
+     * @tparam T_dim The dimensionality of the volume that this contains boundaries for.
+     * @tparam T_LowHaloVec The vector type used for the lower halo sizes.
+     * @tparam T_UpHaloVec The vector type used for the upper halo sizes.
      */
-    template<uint32_t Dim, alpaka::concepts::Vector LowHaloVecType, alpaka::concepts::Vector UpHaloVecType>
+    template<uint32_t T_dim, concepts::Vector T_LowHaloVec, concepts::Vector T_UpHaloVec>
     struct BoundaryDirectionsContainer
     {
-        static_assert(Dim > 0, "0 Dimension Boundary Direction Container is not defined");
+        static_assert(T_dim > 0, "0 Dimension Boundary Direction Container is not defined");
 
-        constexpr BoundaryDirectionsContainer(
-            LowHaloVecType const& lowerHaloSizes,
-            UpHaloVecType const& upperHaloSizes)
+        constexpr BoundaryDirectionsContainer(T_LowHaloVec const& lowerHaloSizes, T_UpHaloVec const& upperHaloSizes)
             : lowerHaloSizes(lowerHaloSizes)
             , upperHaloSizes(upperHaloSizes)
         {
         }
 
-        [[nodiscard]] constexpr BoundaryDirectionIter<Dim, LowHaloVecType, UpHaloVecType> begin() const
+        [[nodiscard]] constexpr BoundaryDirectionIter<T_dim, T_LowHaloVec, T_UpHaloVec> begin() const
         {
-            return BoundaryDirectionIter<Dim, LowHaloVecType, UpHaloVecType>{
-                Vec<BoundaryType, Dim>([](int) { return BoundaryType::LOWER; }),
+            return BoundaryDirectionIter<T_dim, T_LowHaloVec, T_UpHaloVec>{
+                Vec<BoundaryType, T_dim>([](int) { return BoundaryType::LOWER; }),
                 lowerHaloSizes,
                 upperHaloSizes};
         }
 
-        [[nodiscard]] constexpr BoundaryDirectionIter<Dim, LowHaloVecType, UpHaloVecType> end() const
+        [[nodiscard]] constexpr BoundaryDirectionIter<T_dim, T_LowHaloVec, T_UpHaloVec> end() const
         {
-            return BoundaryDirectionIter<Dim, LowHaloVecType, UpHaloVecType>{
-                Vec<BoundaryType, Dim>([](int) { return BoundaryType::OOB; }),
+            return BoundaryDirectionIter<T_dim, T_LowHaloVec, T_UpHaloVec>{
+                Vec<BoundaryType, T_dim>([](int) { return BoundaryType::OOB; }),
                 lowerHaloSizes,
                 upperHaloSizes};
         }
 
         [[nodiscard]] static consteval uint32_t length()
         {
-            return ipow(3u, Dim);
+            return ipow(3u, T_dim);
         }
 
-        [[nodiscard]] static constexpr auto dim()
+        [[nodiscard]] static consteval auto dim()
         {
-            return Dim;
+            return T_dim;
         }
 
     private:
-        LowHaloVecType const lowerHaloSizes;
-        UpHaloVecType const upperHaloSizes;
+        T_LowHaloVec const lowerHaloSizes;
+        T_UpHaloVec const upperHaloSizes;
     };
 
-    template<alpaka::concepts::Vector LowHaloVecType, alpaka::concepts::Vector UpHaloVecType>
+    template<concepts::Vector LowHaloVecType, concepts::Vector UpHaloVecType>
     BoundaryDirectionsContainer(LowHaloVecType const& lowerHalos, UpHaloVecType const& upperHalos)
         -> BoundaryDirectionsContainer<LowHaloVecType::dim(), LowHaloVecType, UpHaloVecType>;
 
     /** @brief Construct and return a single boundary direction specifying the middle of a volume.
      */
-    template<uint32_t Dims>
+    template<uint32_t T_dim>
     [[nodiscard]] constexpr auto makeCoreBoundaryDirection(
-        alpaka::concepts::Vector auto const& lowerHalos,
-        alpaka::concepts::Vector auto const& upperHalos)
+        concepts::Vector auto const& lowerHalos,
+        concepts::Vector auto const& upperHalos)
     {
-        return BoundaryDirection<Dims, ALPAKA_TYPEOF(lowerHalos), ALPAKA_TYPEOF(upperHalos)>{
-            fillCVec<BoundaryType, Dims, BoundaryType::MIDDLE>(),
+        return BoundaryDirection<T_dim, ALPAKA_TYPEOF(lowerHalos), ALPAKA_TYPEOF(upperHalos)>{
+            fillCVec<BoundaryType, T_dim, BoundaryType::MIDDLE>(),
             lowerHalos,
             upperHalos};
     }
 
     /** @brief Construct and return a single boundary direction specifying the middle of a volume with symmetric halos.
      */
-    template<uint32_t Dims>
-    [[nodiscard]] constexpr auto makeCoreBoundaryDirection(alpaka::concepts::Vector auto const& halos)
+    template<uint32_t T_dim>
+    [[nodiscard]] constexpr auto makeCoreBoundaryDirection(concepts::Vector auto const& halos)
     {
-        return BoundaryDirection<Dims, ALPAKA_TYPEOF(halos), ALPAKA_TYPEOF(halos)>{
-            fillCVec<BoundaryType, Dims, BoundaryType::MIDDLE>(),
+        return BoundaryDirection<T_dim, ALPAKA_TYPEOF(halos), ALPAKA_TYPEOF(halos)>{
+            fillCVec<BoundaryType, T_dim, BoundaryType::MIDDLE>(),
             halos,
             halos};
     }
@@ -274,23 +274,23 @@ namespace alpaka
      * @brief Construct and return a single boundary direction specifying the middle of a volume with all halo sizes
      * set to 1.
      */
-    template<uint32_t Dims>
+    template<uint32_t T_dim>
     consteval auto makeCoreBoundaryDirection()
     {
-        return makeCoreBoundaryDirection<Dims>(fillCVec<uint32_t, Dims, 1u>());
+        return makeCoreBoundaryDirection<T_dim>(fillCVec<uint32_t, T_dim, 1u>());
     }
 
     /** @brief Construct and return a boundary direction container. This container can be iterated over. See
      * BoundaryDirectionsContainer.
      * This constructor uses a default halo size of 1 everywhere.
      *
-     * @tparam Dims The dimensionality of the container.
+     * @tparam T_dim The dimensionality of the container.
      */
-    template<uint32_t Dims>
+    template<uint32_t T_dim>
     [[nodiscard]] constexpr auto makeBoundaryDirIterator()
     {
-        auto lowerHalos = alpaka::fillCVec<uint32_t, Dims, static_cast<uint32_t>(1)>();
-        auto upperHalos = alpaka::fillCVec<uint32_t, Dims, static_cast<uint32_t>(1)>();
+        auto lowerHalos = fillCVec<uint32_t, T_dim, static_cast<uint32_t>(1)>();
+        auto upperHalos = fillCVec<uint32_t, T_dim, static_cast<uint32_t>(1)>();
         return BoundaryDirectionsContainer{lowerHalos, upperHalos};
     }
 
@@ -301,7 +301,7 @@ namespace alpaka
      * @param haloSizes The halo sizes per dimension. The halos are used for both "ends" of each dimension
      * symmetrically.
      */
-    [[nodiscard]] constexpr auto makeBoundaryDirIterator(alpaka::concepts::Vector auto const& haloSizes)
+    [[nodiscard]] constexpr auto makeBoundaryDirIterator(concepts::Vector auto const& haloSizes)
     {
         return BoundaryDirectionsContainer{haloSizes, haloSizes};
     }
@@ -314,12 +314,12 @@ namespace alpaka
      * @param upperHaloSizes The upper end halo sizes per dimension. These are the halos to `size()` in each dimension.
      */
     [[nodiscard]] constexpr auto makeBoundaryDirIterator(
-        alpaka::concepts::Vector auto const& lowerHaloSizes,
-        alpaka::concepts::Vector auto const& upperHaloSizes)
+        concepts::Vector auto const& lowerHaloSizes,
+        concepts::Vector auto const& upperHaloSizes)
     {
         static_assert(
             ALPAKA_TYPEOF(lowerHaloSizes)::dim() == ALPAKA_TYPEOF(upperHaloSizes)::dim(),
-            "Dimension mismatch");
+            "dimension mismatch");
         return BoundaryDirectionsContainer{lowerHaloSizes, upperHaloSizes};
     }
 
@@ -329,7 +329,7 @@ namespace alpaka
      *
      * @param view The given view; only the dimension of the view matters.
      */
-    [[nodiscard]] constexpr auto makeBoundaryDirIterator(alpaka::concepts::View auto const& view)
+    [[nodiscard]] constexpr auto makeBoundaryDirIterator(concepts::View auto const& view)
     {
         return makeBoundaryDirIterator<static_cast<uint32_t>(ALPAKA_TYPEOF(view)::dim())>();
     }
@@ -341,9 +341,9 @@ namespace alpaka
         {
         };
 
-        template<uint32_t Dim, alpaka::concepts::Vector LowHaloVecType, alpaka::concepts::Vector UpHaloVecType>
-        requires(Dim == LowHaloVecType::dim() && Dim == UpHaloVecType::dim())
-        struct IsBoundaryDirection<BoundaryDirection<Dim, LowHaloVecType, UpHaloVecType>> : std::true_type
+        template<uint32_t T_dim, concepts::Vector T_LowHaloVec, concepts::Vector T_UpHaloVec>
+        requires(T_dim == T_LowHaloVec::dim() && T_dim == T_UpHaloVec::dim())
+        struct IsBoundaryDirection<BoundaryDirection<T_dim, T_LowHaloVec, T_UpHaloVec>> : std::true_type
         {
         };
     } // namespace trait
