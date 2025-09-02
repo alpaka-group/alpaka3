@@ -6,8 +6,9 @@
 
 /** @file
  *
- * On some constexpr function signatures ALPAKA_FN_HOST_ACC is required for cuda else __host__ function called from
- * __host__ __device__ warning is popping up and generated code is wrong.
+ * On some constexpr function signatures `ALPAKA_FN_HOST_ACC` is required for CUDA;
+ * otherwise a `__host__` function called from a `__host__ __device__` context
+ * triggers a warning and the generated code is wrong.
  */
 
 #include "alpaka/Vec.hpp"
@@ -21,17 +22,25 @@
 /** functionality which is usable on the accelerator compute device from within a kernel. */
 namespace alpaka::onAcc
 {
-    /** Creates an index container that can be traversed with a range based for loop.
+    /**@{
+     * @name range‑based loop indexable index container
+     */
+
+    /** Creates an index container
      *
-     * @param workGroup participating thread description. More than one thread can have the same index within the
-     * group. All worker with the same id will get the same index as result.
-     * @param range Index range description.
-     * @param traverse Policy to configure the method used to find the next valid index for a worker. @see namespace
-     * traverse
-     * @param idxLayout Policy to define how indecision will be mapped to worker threads. @see namsepsace layout
-     * @return
+     * The index data type is deduced from the supplied range.
+     * The traversal policy (`T_Traverse`) defines how the next valid index is found for a worker and
+     * defaults to @c traverse::Flat.
+     * The mapping policy (`T_IdxLayout`) defines how the index is mapped to worker threads and defaults to
+     * @c layout::Optimized.
      *
-     * @{
+     * @param workGroup Description of the participating thread group.  More than one
+     *                  thread can have the same index within the group; all workers
+     *                  with the same id obtain the same index as result.
+     * @param range     Index range description.
+     * @param traverse  Policy describing how the next value can be found.
+     * @param idxLayout Policy describing how real worker threads will be mapped to the range.
+     * @return A index container that can be used in a range‑based for loop.
      */
     template<concepts::IdxTraversing T_Traverse = traverse::Flat, concepts::IdxMapping T_IdxLayout = layout::Optimized>
     ALPAKA_FN_HOST_ACC constexpr auto makeIdxMap(
@@ -49,6 +58,22 @@ namespace alpaka::onAcc
                 idxLayout);
     }
 
+    /** Creates an index container
+     *
+     * The traversal policy (`T_Traverse`) defines how the next valid index is found for a worker and
+     * defaults to @c traverse::Flat.
+     * The mapping policy (`T_IdxLayout`) defines how the index is mapped to worker threads and defaults to
+     * @c layout::Optimized.
+     *
+     * @tparam T_ScalarIdxType scalar index type sed for the indices inside the iterator
+     * @param workGroup Description of the participating thread group.  More than one
+     *                  thread can have the same index within the group; all workers
+     *                  with the same id obtain the same index as result.
+     * @param range     Index range description.
+     * @param traverse  Policy describing how the next value can be found.
+     * @param idxLayout Policy describing how real worker threads will be mapped to the range.
+     * @return A index container that can be used in a range‑based for loop.
+     */
     template<
         typename T_ScalarIdxType,
         concepts::IdxTraversing T_Traverse = traverse::Flat,
@@ -68,11 +93,8 @@ namespace alpaka::onAcc
             T_IdxLayout>{}(acc, DomainSpec{workGroup, range}, traverse, idxLayout);
     }
 
-    /** specialization for 1-dimensional ranges
-     *
-     * It is using tiled iteration because there are no multiplications or divisions involved what is reducing the
-     * register footprint and number of calculation required.
-     */
+    ///@cond NO_HTML
+    /** Specialisation for one‑dimensional ranges. */
     template<
         concepts::IdxTraversing T_Traverse = traverse::Tiled,
         concepts::IdxMapping T_IdxLayout = layout::Optimized>
@@ -91,10 +113,7 @@ namespace alpaka::onAcc
                 idxLayout);
     }
 
-    /**
-     * @tparam T_ScalarIdxType The type of the indices used within the index container. If `void` the index type will
-     * be derived from the range
-     */
+    /** Specialisation for one‑dimensional ranges. */
     template<
         typename T_ScalarIdxType,
         concepts::IdxTraversing T_Traverse = traverse::Tiled,
@@ -114,8 +133,6 @@ namespace alpaka::onAcc
             T_IdxLayout>{}(acc, DomainSpec{workGroup, range}, traverse, idxLayout);
     }
 
-    /**
-     * @}
-     */
-
+    ///@endcond NO_HTML
+    /** @} */
 } // namespace alpaka::onAcc

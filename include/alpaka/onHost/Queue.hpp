@@ -108,8 +108,6 @@ namespace alpaka::onHost
          * @param specification thread or frame specification which provides a chunked description of the thread or
          * frame index domain
          * @param kernelBundle the compute kernel and there arguments
-         *
-         * @{
          */
 
         /**
@@ -136,8 +134,6 @@ namespace alpaka::onHost
         {
             internal::enqueue(*m_queue.get(), executor, specification, kernelBundle);
         }
-
-        /** @} */
 
         /** Enqueue a operation which is executed on the host side
          *
@@ -167,92 +163,23 @@ namespace alpaka::onHost
         }
     };
 
-    /** fill memory byte wise
+    template<typename T_Queue>
+    Queue(Handle<T_Queue>&&) -> Queue<Device<
+        ALPAKA_TYPEOF(alpaka::internal::getApi(std::declval<T_Queue>())),
+        ALPAKA_TYPEOF(alpaka::internal::getDeviceKind(std::declval<T_Queue>()))>>;
+
+    /** @{
+     * @name Memory modifiers
      *
-     * @param dest can be a container/view where the data should be written to
-     *             The caller should ensure that the memory is valid until the operation is completed not until the
-     *             execution handle is given back because alpaka is not extending the life-time until the operation
-     * is finished.
-     * @param byteValue value to be written to each byte
-     *
-     * @{
-     */
-    template<typename T_Device>
-    inline void memset(Queue<T_Device> const& queue, auto&& dest, uint8_t byteValue)
-    {
-        return memset(queue, ALPAKA_FORWARD(dest), byteValue, internal::getExtents(dest));
-    }
-
-    /** @param extents M-dimensional data extents in elements, can be smaller than the container capacity */
-    template<typename T_Device>
-    inline void memset(
-        Queue<T_Device> const& queue,
-        auto&& dest,
-        uint8_t byteValue,
-        alpaka::concepts::VectorOrScalar auto const& extents)
-    {
-        Vec const extentsVec = extents;
-        return internal::Memset::Op<
-            std::decay_t<decltype(*queue.get())>,
-            std::decay_t<decltype(dest)>,
-            std::decay_t<decltype(extentsVec)>>{}(*queue.get(), ALPAKA_FORWARD(dest), byteValue, extentsVec);
-    }
-
-    /** @} */
-
-    /** fill memory element wise
-     *
-     * @param dest can be a container/view where the data should be written to
-     *             The caller should ensure that the memory is valid until the operation is completed not until the
-     *             execution handle is given back because alpaka is not extending the life-time until the operation
-     *             is finished.
-     * @param elementValue value to be written to each element
-     *
-     * @{
-     */
-    template<typename T_Device, typename T_Value>
-    inline void fill(Queue<T_Device> const& queue, auto&& dest, T_Value elementValue)
-        requires std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
-                 && std::same_as<
-                     ALPAKA_TYPEOF(alpaka::internal::getApi(queue)),
-                     ALPAKA_TYPEOF(alpaka::internal::getApi(dest))>
-    {
-        return fill(queue, ALPAKA_FORWARD(dest), elementValue, internal::getExtents(dest));
-    }
-
-    /** @param extents M-dimensional data extents in elements, can be smaller than the container capacity */
-    template<typename T_Device, typename T_Value>
-    inline void fill(
-        Queue<T_Device> const& queue,
-        auto&& dest,
-        T_Value elementValue,
-        alpaka::concepts::VectorOrScalar auto const& extents)
-        requires std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
-                 && std::same_as<
-                     ALPAKA_TYPEOF(alpaka::internal::getApi(queue)),
-                     ALPAKA_TYPEOF(alpaka::internal::getApi(dest))>
-    {
-        Vec const extentsVec = extents;
-        return internal::Fill::Op<
-            ALPAKA_TYPEOF(*queue.get()),
-            ALPAKA_TYPEOF(dest),
-            ALPAKA_TYPEOF(elementValue),
-            ALPAKA_TYPEOF(extentsVec)>{}(*queue.get(), ALPAKA_FORWARD(dest), elementValue, extentsVec);
-    }
-
-    /** @} */
-
-    /** copy data byte wise from one to another container
-     *
-     * @attention For dest and source the caller should ensure that the memory is valid until the operation is
+     * @attention For input/output memory the caller should ensure that the memory is valid until the operation is
      * completed not until the execution handle is given back because alpaka is not extending the life-time until
      * the operation is finished.
+     */
+    /** copy data byte wise from one to another container
      *
      * @param queue the copy will be executed after all previous work in this queue is finished
-     * @param dest can be a container/view where the data should be written to
-     * @param source can be a container/view from which the data will be copied
-     *
-     * @{
+     * @param[in,out] dest can be a container/view where the data should be written to
+     * @param[in] source can be a container/view from which the data will be copied
      */
     template<typename T_Device>
     inline void memcpy(Queue<T_Device> const& queue, auto&& dest, auto const& source)
@@ -260,7 +187,13 @@ namespace alpaka::onHost
         return memcpy(queue, ALPAKA_FORWARD(dest), source, internal::getExtents(dest));
     }
 
-    /** @param extents M-dimensional data extents in elements, can be smaller than the container capacity */
+    /** copy data byte wise from one to another container
+     *
+     * @param queue the copy will be executed after all previous work in this queue is finished
+     * @param[in,out] dest can be a container/view where the data should be written to
+     * @param[in] source can be a container/view from which the data will be copied
+     * @param extents M-dimensional data extents in elements, can be smaller than the container capacity
+     */
     template<typename T_Device>
     inline void memcpy(
         Queue<T_Device> const& queue,
@@ -276,12 +209,116 @@ namespace alpaka::onHost
             std::decay_t<decltype(extentsVec)>>{}(*queue.get(), ALPAKA_FORWARD(dest), source, extentsVec);
     }
 
+    /** fill memory byte wise
+     *
+     * @param[in,out] dest can be a container/view where the data should be written to
+     * The caller should ensure that the memory is valid until the operation is completed not until the
+     * execution handle is given back because alpaka is not extending the life-time until the operation
+     * is finished.
+     * @param byteValue value to be written to each byte
+     */
+    template<typename T_Device>
+    inline void memset(Queue<T_Device> const& queue, auto&& dest, uint8_t byteValue)
+    {
+        return memset(queue, ALPAKA_FORWARD(dest), byteValue, internal::getExtents(dest));
+    }
+
+    /** fill memory byte wise
+     *
+     * @param[in,out] dest can be a container/view where the data should be written to
+     * The caller should ensure that the memory is valid until the operation is completed not until the
+     * execution handle is given back because alpaka is not extending the life-time until the operation
+     * is finished.
+     * @param byteValue value to be written to each byte
+     * @param extents M-dimensional data extents in elements, can be smaller than the container capacity
+     */
+    template<typename T_Device>
+    inline void memset(
+        Queue<T_Device> const& queue,
+        auto&& dest,
+        uint8_t byteValue,
+        alpaka::concepts::VectorOrScalar auto const& extents)
+    {
+        Vec const extentsVec = extents;
+        return internal::Memset::Op<
+            std::decay_t<decltype(*queue.get())>,
+            std::decay_t<decltype(dest)>,
+            std::decay_t<decltype(extentsVec)>>{}(*queue.get(), ALPAKA_FORWARD(dest), byteValue, extentsVec);
+    }
+
+    /** fill memory element wise
+     *
+     * @param[in,out] dest can be a container/view where the data should be written to
+     * The caller should ensure that the memory is valid until the operation is completed not until the
+     * execution handle is given back because alpaka is not extending the life-time until the operation
+     * is finished.
+     * @param elementValue value to be written to each element
+     */
+    template<typename T_Device, typename T_Value>
+    inline void fill(Queue<T_Device> const& queue, auto&& dest, T_Value elementValue) requires(
+        std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
+        && std::same_as<ALPAKA_TYPEOF(alpaka::internal::getApi(queue)), ALPAKA_TYPEOF(alpaka::internal::getApi(dest))>)
+    {
+        return fill(queue, ALPAKA_FORWARD(dest), elementValue, internal::getExtents(dest));
+    }
+
+    /** fill memory element wise
+     *
+     * @param[in,out] dest can be a container/view where the data should be written to
+     * The caller should ensure that the memory is valid until the operation is completed not until the
+     * execution handle is given back because alpaka is not extending the life-time until the operation
+     * is finished.
+     * @param elementValue value to be written to each element
+     * @param extents M-dimensional data extents in elements, can be smaller than the container capacity
+     */
+    template<typename T_Device, typename T_Value>
+    inline void fill(
+        Queue<T_Device> const& queue,
+        auto&& dest,
+        T_Value elementValue,
+        alpaka::concepts::VectorOrScalar auto const& extents)
+        requires(
+            std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
+            && std::
+                same_as<ALPAKA_TYPEOF(alpaka::internal::getApi(queue)), ALPAKA_TYPEOF(alpaka::internal::getApi(dest))>)
+    {
+        Vec const extentsVec = extents;
+        return internal::Fill::Op<
+            ALPAKA_TYPEOF(*queue.get()),
+            ALPAKA_TYPEOF(dest),
+            ALPAKA_TYPEOF(elementValue),
+            ALPAKA_TYPEOF(extentsVec)>{}(*queue.get(), ALPAKA_FORWARD(dest), elementValue, extentsVec);
+    }
+
     /** @} */
 
-    template<typename T_Queue>
-    Queue(Handle<T_Queue>&&) -> Queue<Device<
-        ALPAKA_TYPEOF(alpaka::internal::getApi(std::declval<T_Queue>())),
-        ALPAKA_TYPEOF(alpaka::internal::getDeviceKind(std::declval<T_Queue>()))>>;
+    /** @{
+     * @name Async Device allocations
+     */
+    /** allocate memory asynchronously in the given queue
+     *
+     * @attention It is allowed that the function is blocking the caller until the memory is created.
+     *
+     * The memory is allowed to be used in other queues too.
+     * To avoid that a view to the memory is still in use during the deallocation you can use @see
+     * addDestructorAction() and wait for a queue if it differs to the queue used for the allocation.
+     *
+     * @tparam T_Type type of the data elements
+     * @param queue queue handle
+     * @return Memory owning view to the allocated memory. You are not allowed to derefence the view to access the
+     * memory before the allocation within the queue is finished. The view will be freed after the last instance to the
+     * memory is destroyed. The deallocation is asynchronous performed in the the queue which is used for the
+     * allocation.
+     * @param extents number of elements for each dimension
+     */
+    template<typename T_Type, typename T_Device>
+    inline auto allocAsync(Queue<T_Device> const& queue, alpaka::concepts::VectorOrScalar auto const& extents)
+    {
+        Vec const extentsVec = extents;
+        return internal::AllocAsync::Op<T_Type, std::decay_t<decltype(*queue.get())>, ALPAKA_TYPEOF(extentsVec)>{}(
+            *queue.get(),
+            extentsVec);
+    }
 
     /** allocate memory asynchronously in the given queue
      *
@@ -297,24 +334,7 @@ namespace alpaka::onHost
      * memory before the allocation within the queue is finished. The view will be freed after the last instance to the
      * memory is destroyed. The deallocation is asynchronous performed in the the queue which is used for the
      * allocation.
-     *
-     * @{
-     */
-
-    /**
-     * @param extents number of elements for each dimension
-     */
-    template<typename T_Type, typename T_Device>
-    inline auto allocAsync(Queue<T_Device> const& queue, alpaka::concepts::VectorOrScalar auto const& extents)
-    {
-        Vec const extentsVec = extents;
-        return internal::AllocAsync::Op<T_Type, std::decay_t<decltype(*queue.get())>, ALPAKA_TYPEOF(extentsVec)>{}(
-            *queue.get(),
-            extentsVec);
-    }
-
-    /**
-     * @param view other memory where the extents will be derived from
+     * @param[in] view other memory where the extents will be derived from
      */
     template<typename T_Device>
     inline auto allocLikeAsync(Queue<T_Device> const& queue, auto const& view)
