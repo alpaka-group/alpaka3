@@ -56,11 +56,17 @@ namespace alpaka
         {
         }
 
+        /** @brief The dimensionality of the whole volume that this is a boundary direction for. Not to be confused
+         * with boundaryDimensionality().
+         */
         [[nodiscard]] static constexpr uint32_t dim()
         {
             return T_dim;
         }
 
+        /** @brief The dimensionality of the boundary direction. For example, a vertex (corner) of a 3D-volume (cube)
+         * is 0-dimensional. See also the functions isVertex(), isEdge(), etc.
+         */
         [[nodiscard]] constexpr uint32_t boundaryDimensionality() const
         {
             uint32_t c = 0;
@@ -72,24 +78,41 @@ namespace alpaka
             return c;
         }
 
-        [[nodiscard]] constexpr bool isPoint() const
+        /** @brief Return true if this boundary direction describes a vertex, for example the corner of a plane.
+         */
+        [[nodiscard]] constexpr bool isVertex() const
         {
             return boundaryDimensionality() == 0;
         }
 
-        [[nodiscard]] constexpr bool isLine() const
+        /** @brief Return true if this boundary direction describes an edge, for example any of the 12 edges of a cube.
+         */
+        [[nodiscard]] constexpr bool isEdge() const
         {
             return boundaryDimensionality() == 1;
         }
 
-        [[nodiscard]] constexpr bool isPlane() const
+        /** @brief Return true if this boundary direction describes a face, for example any of the 6 sides of a cube.
+         */
+        [[nodiscard]] constexpr bool isFace() const
         {
             return boundaryDimensionality() == 2;
         }
 
-        [[nodiscard]] constexpr bool isVolume() const
+        /** @brief Return true if this boundary direction describes a cell, for example the interior of a cube or one
+         * of the 8 cells in a tesseract.
+         */
+        [[nodiscard]] constexpr bool isCell() const
         {
             return boundaryDimensionality() == 3;
+        }
+
+        /** @brief Return true if this boundary direction describes the interior of a volume, like the 2D interior of a
+         * plane or the 3D interior of a cube.
+         */
+        [[nodiscard]] constexpr bool isInterior() const
+        {
+            return boundaryDimensionality() == dim();
         }
 
         [[nodiscard]] constexpr auto operator<=>(BoundaryDirection const&) const = default;
@@ -382,14 +405,14 @@ namespace alpaka
             }
         }
 
-        if(bd.isPoint())
-            os << " (point) ";
-        if(bd.isLine())
-            os << " (line)  ";
-        if(bd.isPlane())
-            os << " (plane) ";
-        if(bd.isVolume())
-            os << " (volume)";
+        if(bd.isVertex())
+            os << " (vertex) ";
+        if(bd.isEdge())
+            os << " (edge)   ";
+        if(bd.isFace())
+            os << " (face)   ";
+        if(bd.isCell())
+            os << " (cell)   ";
         if(bd.boundaryDimensionality() >= 4)
             os << " (" << bd.boundaryDimensionality() << "D volume)";
 
