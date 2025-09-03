@@ -62,7 +62,15 @@ function(alpaka_add_test_target target_prefix folder)
                     endif()
 
                     target_link_libraries(${_test_target_name} PRIVATE Catch2::Catch2WithMain alpaka::alpaka)
+<<<<<<< HEAD
                     alpaka_finalize(${_test_target_name})
+=======
+                    # Link cuBLAS if CUDA toolkit is available (needed for tensor GEMM in CUDA path)
+                    find_package(CUDAToolkit QUIET)
+                    if(CUDAToolkit_FOUND)
+                        target_link_libraries(${_test_target_name} PRIVATE CUDA::cublas)
+                    endif()
+>>>>>>> 95abc5c (Squash: all changes after 9ef0f2f)
                     catch_discover_tests(${_test_target_name})
                 endif()
             endforeach()
