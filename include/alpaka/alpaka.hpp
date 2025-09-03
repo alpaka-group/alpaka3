@@ -44,7 +44,10 @@
 #include "alpaka/onHost/interface.hpp"
 #include "alpaka/onHost/mem/stdContainer.hpp"
 #include "alpaka/tag.hpp"
-#include "alpaka/utility.hpp"
+#include "alpaka/tensor.hpp"
+#include "utility.hpp"
+
+#include <alpaka/onHost/demangledName.hpp>
 
 /** main alpaka namespace.
  *
