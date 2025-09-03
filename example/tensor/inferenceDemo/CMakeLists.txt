@@ -11,8 +11,9 @@ if(CUDAToolkit_FOUND)
 	message(STATUS "CUDA Toolkit found for inferenceDemo")
 endif()
 
-alpaka_add_executable(inferenceDemo inferenceDemo.cpp)
+add_executable(inferenceDemo inferenceDemo.cpp)
 target_link_libraries(inferenceDemo PUBLIC alpaka::alpaka)
+alpaka_finalize(inferenceDemo)
 
 if(CUDAToolkit_FOUND)
 	# Link cuBLAS if available (Linear layers may use GEMM path)

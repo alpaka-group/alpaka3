@@ -22,47 +22,31 @@ endif()
 # High-level API examples
 ################################################################################
 
-alpaka_add_executable(
-    ${ACC_TYPE}
-    gemmHighLevel
-    gemmHighLevel.cpp)
-target_link_libraries(
-    gemmHighLevel
-    PUBLIC "alpaka::alpaka")
+add_executable(gemmHighLevel gemmHighLevel.cpp)
+target_link_libraries(gemmHighLevel PUBLIC "alpaka::alpaka")
+alpaka_finalize(gemmHighLevel)
 
 # Link cuBLAS if available
 if(CUDAToolkit_FOUND)
     target_link_libraries(gemmHighLevel PUBLIC CUDA::cublas)
 endif()
 
-alpaka_add_executable(
-    ${ACC_TYPE}
-    conv2dHighLevel
-    conv2dHighLevel.cpp)
-target_link_libraries(
-    conv2dHighLevel
-    PUBLIC "alpaka::alpaka")
+add_executable(conv2dHighLevel conv2dHighLevel.cpp)
+target_link_libraries(conv2dHighLevel PUBLIC "alpaka::alpaka")
+alpaka_finalize(conv2dHighLevel)
 
 # Link cuBLAS for Conv2D too (it might use GEMM internally)
 if(CUDAToolkit_FOUND)
     target_link_libraries(conv2dHighLevel PUBLIC CUDA::cublas)
 endif()
 
-alpaka_add_executable(
-    ${ACC_TYPE}
-    reluHighLevel
-    reluHighLevel.cpp)
-target_link_libraries(
-    reluHighLevel
-    PUBLIC "alpaka::alpaka")
+add_executable(reluHighLevel reluHighLevel.cpp)
+target_link_libraries(reluHighLevel PUBLIC "alpaka::alpaka")
+alpaka_finalize(reluHighLevel)
 
-alpaka_add_executable(
-    ${ACC_TYPE}
-    cnnHighLevel
-    cnnHighLevel.cpp)
-target_link_libraries(
-    cnnHighLevel
-    PUBLIC "alpaka::alpaka")
+add_executable(cnnHighLevel cnnHighLevel.cpp)
+target_link_libraries(cnnHighLevel PUBLIC "alpaka::alpaka")
+alpaka_finalize(cnnHighLevel)
 
 # Link cuBLAS if available for cnnHighLevel (uses GEMM via linear layer)
 if(CUDAToolkit_FOUND)

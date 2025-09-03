@@ -10,8 +10,9 @@ if(CUDAToolkit_FOUND)
     message(STATUS "CUDA Toolkit found, enabling cuBLAS support for tensorGemmExample")
 endif()
 
-alpaka_add_executable(tensorGemmExample src/tensorGemmExample.cpp)
+add_executable(tensorGemmExample src/tensorGemmExample.cpp)
 target_link_libraries(tensorGemmExample PUBLIC alpaka::alpaka)
+alpaka_finalize(tensorGemmExample)
 
 # Link cuBLAS if available
 if(CUDAToolkit_FOUND)
