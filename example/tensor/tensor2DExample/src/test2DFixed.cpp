@@ -4,38 +4,61 @@
 
 // Minimal updated tensor example using new device-bound Tensor API
 #include <alpaka/alpaka.hpp>
-#include <alpaka/example/executors.hpp>
+#include <alpaka/onHost/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
 #include <iostream>
-#include <tuple>
 
-int main(){
-    // Pick first backend (deviceSpec + executor) and construct device & queue
-    auto backends = alpaka::onHost::allBackends(alpaka::onHost::enabledApis);
-    auto backend0 = std::get<0>(backends);
-    auto deviceSpec = backend0[alpaka::object::deviceSpec];
-    auto sel = alpaka::onHost::makeDeviceSelector(deviceSpec);
-    auto device = sel.makeDevice(0);
+// Run the basic tensor checks for a backend tag (deviceSpec + executor)
+template <typename TBackend>
+auto runBasic(TBackend const& backend) -> int
+{
+    auto deviceSpec = backend[alpaka::object::deviceSpec];
+    auto selector = alpaka::onHost::makeDeviceSelector(deviceSpec);
+    if(!selector.isAvailable())
+        return 0; // skip silently
+    auto device = selector.makeDevice(0);
+    // queue only needed for future async ops; keep to validate creation
     auto queue = device.makeQueue();
+    (void)queue;
 
-    std::cout << "TensorCore device-bound API basic test" << std::endl;
-
-    try {
-        alpaka::tensor::Tensor1D<float, decltype(device)> t1(device,{10});
+    try
+    {
+        alpaka::tensor::Tensor1D<float, decltype(device)> t1(device, {10});
         t1.fill(1.23f);
-        std::cout << "1D tensor size=" << t1.size() << " first=" << t1.hostData()[0] << std::endl;
-    } catch(std::exception const& e){
-        std::cout << "1D tensor error: " << e.what() << std::endl; return 1; }
+        if(t1.size() != 10u) return 1;
+    }
+    catch(std::exception const&)
+    {
+        return 1;
+    }
 
-    try {
-        alpaka::tensor::Tensor2D<float, decltype(device)> t2(device,{3,4});
+    try
+    {
+        alpaka::tensor::Tensor2D<float, decltype(device)> t2(device, {3, 4});
         t2.fill(7.5f);
-        auto* d = t2.hostData();
-        std::cout << "2D tensor shape=[" << t2.shape()[0] << "," << t2.shape()[1] << "] sample=" << d[0] << "," << d[5] << "," << d[11] << std::endl;
+        if(t2.size() != 12u) return 1;
         auto t2copy = t2; // copy
-        std::cout << "Copy size=" << t2copy.size() << std::endl;
-    } catch(std::exception const& e){
-        std::cout << "2D tensor error: " << e.what() << std::endl; return 1; }
+        if(t2copy.size() != t2.size()) return 1;
+    }
+    catch(std::exception const&)
+    {
+        return 1;
+    }
+    return 0;
+}
 
+int main()
+{
+    using namespace alpaka;
+    std::cout << "TensorCore device-bound API basic test" << std::endl;
+    auto status = onHost::executeForEachIfHasDevice(
+        [](auto const& backend) { return runBasic(backend); },
+        onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
+    if(status != 0)
+    {
+        std::cout << "Failure." << std::endl;
+        return 1;
+    }
     std::cout << "Success." << std::endl;
     return 0;
 }

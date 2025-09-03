@@ -3,12 +3,12 @@
  * Validates: probabilities sum ~1 per sample
  */
 #include <alpaka/alpaka.hpp>
-#include <alpaka/example/executeForEach.hpp>
-#include <alpaka/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
+#include <alpaka/onHost/example/executors.hpp>
 #include <iostream>
 #include <random>
 
-using namespace alpaka;
+// Avoid global using-directives to prevent ambiguous lookups after rebase changes.
 namespace tt = alpaka::tensor;
 namespace ops = alpaka::tensor::ops;
 
@@ -16,16 +16,16 @@ template<typename Tag>
 int runInference(Tag const& tag){
     auto deviceSpec = tag[alpaka::object::deviceSpec];
     auto exec = tag[alpaka::object::exec];
-    auto sel = onHost::makeDeviceSelector(deviceSpec);
-    onHost::Device device = sel.makeDevice(0);
-    onHost::Queue queue = device.makeQueue();
+    auto sel = alpaka::onHost::makeDeviceSelector(deviceSpec);
+    alpaka::onHost::Device device = sel.makeDevice(0);
+    alpaka::onHost::Queue queue = device.makeQueue();
 
     using Device = decltype(device);
     using Exec = decltype(exec);
     using Tensor4D = tt::Tensor4D<float,Device>;
 
     std::cout << "=== Inference Demo ===\nDevice: " << deviceSpec.getApi().getName()
-              << "\nExecutor: " << core::demangledName(exec) << std::endl;
+                  << "\nExecutor: " << alpaka::onHost::demangledName(exec) << std::endl;
 
     // Dimensions
     std::size_t N=1, C_in=3, H=32, W=32;
@@ -69,6 +69,8 @@ int runInference(Tag const& tag){
 }
 
 int main(){
-    auto result = alpaka::executeForEachIfHasDevice([](auto const& tag){ return runInference(tag); }, onHost::allBackends(onHost::enabledApis));
+    auto result = alpaka::onHost::executeForEachIfHasDevice(
+        [](auto const& tag){ return runInference(tag); },
+        alpaka::onHost::allBackends(alpaka::onHost::enabledApis, alpaka::onHost::example::enabledExecutors));
     return result;
 }

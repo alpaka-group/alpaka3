@@ -4,8 +4,8 @@
  */
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/example/executors.hpp>
-#include <alpaka/example/executeForEach.hpp>
+#include <alpaka/onHost/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
 
 #include <iostream>
 #include <iomanip>
@@ -18,7 +18,7 @@ int test2DTensor(DevSpec const& devSpec, Exec const& exec)
 
     std::cout << "\n=== Testing 2D Tensor Operations ===" << std::endl;
     std::cout << "Device: " << devSpec.getApi().getName() << std::endl;
-    std::cout << "Executor: " << alpaka::core::demangledName(exec) << std::endl;
+    std::cout << "Executor: " << alpaka::onHost::demangledName(exec) << std::endl;
 
     try {
         // Create device and queue

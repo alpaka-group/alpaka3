@@ -4,8 +4,8 @@
  */
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/example/executeForEach.hpp>
-#include <alpaka/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
+#include <alpaka/onHost/example/executors.hpp>
 #include <iostream>
 #include <cstdlib>
 #include <chrono>
@@ -32,7 +32,7 @@ int runHighLevelConv2D(Cfg const& cfg){
                   << std::getenv("ALPAKA_CONV2D_FORCE_TILED") << std::endl;
     }
     std::cout << "Device: " << deviceSpec.getApi().getName() << std::endl;
-    std::cout << "Executor: " << core::demangledName(exec) << std::endl;
+    std::cout << "Executor: " << onHost::demangledName(exec) << std::endl;
     
     try {
         // Conservative dimensions for compatibility - debugging larger sizes
@@ -120,6 +120,7 @@ int runHighLevelConv2D(Cfg const& cfg){
 
 int main(){
     std::cout << "=== High-Level Conv2D API Example ===\n" << std::endl;
-    auto result = executeForEachIfHasDevice([](auto const& tag){ return runHighLevelConv2D(tag); }, onHost::allBackends(onHost::enabledApis));
-    return result;
+    return onHost::executeForEachIfHasDevice(
+        [](auto const& backend){ return runHighLevelConv2D(backend); },
+        onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
 }

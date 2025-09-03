@@ -17,8 +17,9 @@ if(CUDAToolkit_FOUND)
     endif()
 endif()
 
-alpaka_add_executable(conv2DGeneric conv2DGeneric.cpp)
+add_executable(conv2DGeneric conv2DGeneric.cpp)
 target_link_libraries(conv2DGeneric PUBLIC alpaka::alpaka)
+alpaka_finalize(conv2DGeneric)
 
 # Link CUDA libraries if available
 if(CUDAToolkit_FOUND)

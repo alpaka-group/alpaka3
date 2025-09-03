@@ -4,8 +4,8 @@
  */
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/example/executeForEach.hpp>
-#include <alpaka/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
+#include <alpaka/onHost/example/executors.hpp>
 #include <iostream>
 #include <chrono>
 #include <cassert>
@@ -23,7 +23,7 @@ int runHighLevelReLU(Cfg const& cfg){
     
     std::cout << "=== High-Level ReLU API Test ===" << std::endl;
     std::cout << "Device: " << deviceSpec.getApi().getName() << std::endl;
-    std::cout << "Executor: " << core::demangledName(exec) << std::endl;
+    std::cout << "Executor: " << onHost::demangledName(exec) << std::endl;
     
     try {
         // Test tensor dimensions
@@ -149,9 +149,7 @@ int runHighLevelReLU(Cfg const& cfg){
 
 int main(){
     std::cout << "=== High-Level ReLU API Example ===\n" << std::endl;
-    
-    // Run high-level ReLU test across all available backends
-    auto result = executeForEachIfHasDevice([](auto const& tag){ return runHighLevelReLU(tag); }, onHost::allBackends(onHost::enabledApis));
-    
-    return result;
+    return onHost::executeForEachIfHasDevice(
+        [](auto const& backend){ return runHighLevelReLU(backend); },
+        onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
 }

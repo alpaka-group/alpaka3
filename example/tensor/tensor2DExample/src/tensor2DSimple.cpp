@@ -4,8 +4,8 @@
  */
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/example/executeForEach.hpp>
-#include <alpaka/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
+#include <alpaka/onHost/example/executors.hpp>
 
 #include <iostream>
 #include <iomanip>
@@ -75,9 +75,9 @@ int test2DTensor(Cfg const& cfg)
     return 0;
 }
 
-int main()
-{
-    std::cout << "Running 2D Tensor Example" << std::endl;
+int main(){
+    return executeForEachIfHasDevice([](auto const& tag){ return test2DTensor(tag); }, onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
+}
     
     return executeForEachIfHasDevice([](auto const& tag){ return test2DTensor(tag); }, onHost::allBackends(onHost::enabledApis));
 }

@@ -5,8 +5,8 @@
  */
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/example/executeForEach.hpp>
-#include <alpaka/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
+#include <alpaka/onHost/example/executors.hpp>
 #include <iostream>
 #include <chrono>
 #include <cassert>
@@ -24,7 +24,7 @@ int runGemmBasic(Cfg const& cfg){
 
     std::cout << "=== GEMM Basic Test ===" << std::endl;
     std::cout << "Device: " << deviceSpec.getApi().getName() << std::endl;
-    std::cout << "Executor: " << core::demangledName(exec) << std::endl;
+    std::cout << "Executor: " << onHost::demangledName(exec) << std::endl;
 
     try {
         // Matrix dimensions: C[M x N] = A[M x K] * B[K x N]
@@ -121,9 +121,7 @@ int runGemmBasic(Cfg const& cfg){
 
 int main(){
     std::cout << "=== GEMM Example Tests ===\n" << std::endl;
-    
-    // Run GEMM test across all available backends
-    auto result = executeForEachIfHasDevice([](auto const& tag){ return runGemmBasic(tag); }, onHost::allBackends(onHost::enabledApis));
-    
-    return result;
+    return onHost::executeForEachIfHasDevice(
+        [](auto const& backend){ return runGemmBasic(backend); },
+        onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
 }

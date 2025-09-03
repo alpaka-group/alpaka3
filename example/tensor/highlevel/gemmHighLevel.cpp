@@ -4,8 +4,8 @@
  */
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/example/executeForEach.hpp>
-#include <alpaka/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
+#include <alpaka/onHost/example/executors.hpp>
 #include <iostream>
 #include <chrono>
 #include <cassert>
@@ -23,7 +23,7 @@ int runHighLevelGemm(Cfg const& cfg){
     
     std::cout << "=== High-Level GEMM API Test ===" << std::endl;
     std::cout << "Device: " << deviceSpec.getApi().getName() << std::endl;
-    std::cout << "Executor: " << core::demangledName(exec) << std::endl;
+    std::cout << "Executor: " << onHost::demangledName(exec) << std::endl;
     
     try {
         // Matrix dimensions (keep small for testing)
@@ -106,7 +106,7 @@ int main(){
     std::cout << "=== High-Level GEMM API Example ===\n" << std::endl;
     
     // Run high-level GEMM test across all available backends
-    auto result = executeForEachIfHasDevice([](auto const& tag){ return runHighLevelGemm(tag); }, onHost::allBackends(onHost::enabledApis));
+    auto result = executeForEachIfHasDevice([](auto const& tag){ return runHighLevelGemm(tag); }, onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
     
     return result;
 }

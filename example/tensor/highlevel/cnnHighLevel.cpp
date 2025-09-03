@@ -5,8 +5,8 @@
  */
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/example/executeForEach.hpp>
-#include <alpaka/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
+#include <alpaka/onHost/example/executors.hpp>
 #include <iostream>
 #include <random>
 #include <chrono>
@@ -33,7 +33,7 @@ int runCnn(Cfg const& cfg){
     alpaka::onHost::Queue queue = device.makeQueue();
 
     std::cout << "=== CNN High-Level Pipeline Test ===\n";
-    std::cout << "Device: " << deviceSpec.getApi().getName() << " Executor: " << alpaka::core::demangledName(exec) << "\n";
+    std::cout << "Device: " << deviceSpec.getApi().getName() << " Executor: " << alpaka::onHost::demangledName(exec) << "\n";
 
     using Clock = std::chrono::high_resolution_clock;
     auto stamp = [](){ return Clock::now(); };
@@ -130,6 +130,7 @@ int runCnn(Cfg const& cfg){
 }
 
 int main(){
-    auto result = alpaka::executeForEachIfHasDevice([](auto const& tag){ return runCnn(tag); }, alpaka::onHost::allBackends(alpaka::onHost::enabledApis));
-    return result;
+    return alpaka::onHost::executeForEachIfHasDevice(
+        [](auto const& backend){ return runCnn(backend); },
+        alpaka::onHost::allBackends(alpaka::onHost::enabledApis, alpaka::onHost::example::enabledExecutors));
 }
