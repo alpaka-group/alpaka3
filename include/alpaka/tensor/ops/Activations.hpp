@@ -48,6 +48,17 @@ namespace alpaka::tensor::ops {
         }
     };
 
+    // Generic 1D fallback kernel for elementwise ReLU (rank-agnostic flattened launch)
+    struct SimpleUnaryReluKernel {
+        template<typename Acc, typename InBuf, typename OutBuf>
+        ALPAKA_FN_ACC void operator()(Acc const& acc, InBuf in, OutBuf out, std::size_t n) const {
+            for(auto [i] : alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{n})) {
+                auto v = in[i];
+                out[i] = v > decltype(v){} ? v : decltype(v){};
+            }
+        }
+    };
+
     // ReLU operation for SIMD processing
     struct SimdReLUOp
     {
@@ -65,66 +76,47 @@ namespace alpaka::tensor::ops {
         Exec const& exec,
         Device& device,
         Queue& queue,
-        TensorIn& input,  // Remove const to allow device operations
+        TensorIn& input,
         TensorOut& output)
     {
-        std::cout << "ReLU: Checking backend type" << std::endl;
-        
-        // Ensure input and output have same size
-        if(input.size() != output.size()) {
-            throw std::runtime_error("ReLU: Input and output tensors must have same size");
+        // Generic element count check
+        if(input.size() != output.size())
+            throw std::runtime_error("ReLU: size mismatch");
+
+        // Fast path for 4D tensors (keep existing debug output & indexing)
+        if constexpr (TensorIn::rank == 4 && TensorOut::rank == 4) {
+            std::cout << "ReLU: 4D fast path" << std::endl;
+            auto n = input.size(); if(n==0) return;
+            auto extents = input.deviceBuffer(device, queue).getExtents();
+            std::cout << "ReLU: Tensor extents = [" << extents[0] << ", " << extents[1] << ", " << extents[2] << ", " << extents[3] << "]" << std::endl;
+            input.ensureOnDevice(device, queue);
+            output.ensureOnDevice(device, queue);
+            auto frameExtent = alpaka::Vec{std::size_t{1}, std::size_t{1}, std::size_t{1}, extents[3]};
+            auto numFrames   = alpaka::Vec{extents[0], extents[1], extents[2], std::size_t{1}};
+            auto frameSpec   = alpaka::onHost::FrameSpec{numFrames, frameExtent};
+            queue.enqueue(exec, frameSpec, ReLUKernel{},
+                input.deviceBuffer(device, queue),
+                output.deviceBuffer(device, queue));
+            ::alpaka::onHost::wait(queue);
+            output.markDeviceModified(device, queue);
+            output.toHost(device, queue);
+            if constexpr (std::is_same_v<Exec, alpaka::exec::CpuOmpBlocks>) ::alpaka::onHost::wait(queue);
+        } else {
+            // Fallback: use generic unary kernel (works for 1D, 2D, etc.)
+            std::cout << "ReLU: generic fallback path (rank=" << TensorIn::rank << ")" << std::endl;
+            input.ensureOnDevice(device, queue);
+            output.ensureOnDevice(device, queue);
+            auto n = input.size(); if(n==0) return;
+            // Reuse elementwise generic launcher (local minimal inline implementation)
+            unsigned threadsPerBlock = 256u;
+            unsigned blocks = static_cast<unsigned>((n + threadsPerBlock - 1) / threadsPerBlock);
+            if(blocks==0) blocks=1;
+            auto frame = alpaka::onHost::FrameSpec{alpaka::Vec<unsigned int,1u>{blocks}, alpaka::Vec<unsigned int,1u>{threadsPerBlock}};
+            queue.enqueue(exec, frame, SimpleUnaryReluKernel{}, input.deviceBuffer(device, queue), output.deviceBuffer(device, queue), n);
+            ::alpaka::onHost::wait(queue);
+            output.markDeviceModified(device, queue);
+            output.toHost(device, queue);
         }
-        // Additional debug safety: extents equality if rank matches
-        if constexpr (requires { input.extents(); output.extents(); }) {
-            auto inExt = input.extents();
-            auto outExt = output.extents();
-            bool same=true; for(std::size_t i=0;i<input.rank;i++){ if(inExt[i]!=outExt[i]) { same=false; break; } }
-            assert(same && "ReLU: input/output extents mismatch");
-        }
-        
-        std::size_t n = input.size();
-        if(n == 0) return;
-        
-        std::cout << "ReLU: Processing " << n << " elements" << std::endl;
-        
-        // Get tensor extents for proper multi-dimensional access
-    auto extents = input.deviceBuffer(device, queue).getExtents();
-        std::cout << "ReLU: Tensor extents = [" << extents[0] << ", " << extents[1] << ", " << extents[2] << ", " << extents[3] << "]" << std::endl;
-        
-        // Ensure data is on device
-    input.ensureOnDevice(device, queue);
-    output.ensureOnDevice(device, queue);
-        
-        // Setup kernel launch parameters using proper multi-dimensional frame configuration        
-        // For 4D tensors, we can configure the frames to match the tensor structure
-        // Example: for tensor [2,3,4,4], we could use frames of [1,1,4,4] with [2,3,1,1] frames
-        // Or use a simpler approach: frames of [1,1,1,extents[3]] with [extents[0],extents[1],extents[2],1] frames
-        
-        auto frameExtent = alpaka::Vec{std::size_t{1}, std::size_t{1}, std::size_t{1}, extents[3]};
-        auto numFrames = alpaka::Vec{extents[0], extents[1], extents[2], std::size_t{1}};
-        
-        auto frameSpec = alpaka::onHost::FrameSpec{numFrames, frameExtent};
-        
-        std::cout << "ReLU: Using frame spec with numFrames=[" << numFrames[0] << "," << numFrames[1] << "," << numFrames[2] << "," << numFrames[3] 
-                  << "] frameExtent=[" << frameExtent[0] << "," << frameExtent[1] << "," << frameExtent[2] << "," << frameExtent[3] << "]" << std::endl;
-        
-        // Launch ReLU kernel using proper multi-dimensional frame configuration
-        queue.enqueue(exec, frameSpec, ReLUKernel{}, 
-            input.deviceBuffer(device, queue),
-            output.deviceBuffer(device, queue));
-        
-        // Wait for completion and sync to host
-        ::alpaka::onHost::wait(queue);
-    output.markDeviceModified(device, queue);
-    output.toHost(device, queue);
-        
-        // Backend-specific synchronization workaround
-        // Some backends need additional synchronization for proper data consistency
-        if constexpr (std::is_same_v<Exec, alpaka::exec::CpuOmpBlocks>) {
-            ::alpaka::onHost::wait(queue);  // Extra wait for OpenMP blocks
-        }
-        
-        std::cout << "ReLU: Operation completed" << std::endl;
     }
 
     // In-place ReLU activation - modifies input tensor directly
