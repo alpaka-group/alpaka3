@@ -117,7 +117,10 @@ namespace alpaka::tensor::ops
                 B.deviceBuffer(device, queue).data(),
                 beta,
                 C.deviceBuffer(device, queue).data());
-            C.markDeviceModified(device, queue); // defer wait & host copy
+            // Synchronize and copy back for example validation
+            ::alpaka::onHost::wait(queue);
+            C.markDeviceModified(device, queue);
+            C.toHost(device, queue);
             return;
 #endif
         } else {
@@ -130,6 +133,10 @@ namespace alpaka::tensor::ops
             B.deviceBuffer(device, queue),
             C.deviceBuffer(device, queue),
             M, N, K, alpha, beta);
-    C.markDeviceModified(device, queue); // defer wait & host copy
+        // Ensure kernel completion before tensors go out of scope (prevents UAF segfault)
+        ::alpaka::onHost::wait(queue);
+        C.markDeviceModified(device, queue);
+        // Eagerly copy back for immediate host inspection in examples
+        C.toHost(device, queue);
     }
 }
