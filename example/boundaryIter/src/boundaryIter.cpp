@@ -36,7 +36,7 @@ int example(auto const devSpec)
     auto devSelector = onHost::makeDeviceSelector(devSpec);
 
     // require at least one device
-    std::size_t n = devSelector.getDeviceCount();
+    [[maybe_unused]] std::size_t n = devSelector.getDeviceCount();
     assert(n > 0);
     auto device = devSelector.makeDevice(0);
 
@@ -91,7 +91,7 @@ int example(auto const devSpec)
         printBoundaryContainer(view, bd_container_halo_heterogeneous);
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 auto main() -> int

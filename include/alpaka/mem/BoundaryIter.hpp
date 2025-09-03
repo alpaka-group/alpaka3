@@ -70,7 +70,7 @@ namespace alpaka
         [[nodiscard]] constexpr uint32_t boundaryDimensionality() const
         {
             uint32_t c = 0;
-            for(auto i = 0; i < T_dim; ++i)
+            for(uint32_t i = 0; i < T_dim; ++i)
             {
                 if(data[i] == BoundaryType::MIDDLE)
                     ++c;
@@ -384,7 +384,7 @@ namespace alpaka
 
     std::ostream& operator<<(std::ostream& os, concepts::BoundaryDirection auto const& bd)
     {
-        for(auto i = 0; i < bd.dim(); ++i)
+        for(uint32_t i = 0; i < bd.dim(); ++i)
         {
             switch(bd.data[i])
             {
