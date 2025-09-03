@@ -93,17 +93,37 @@ namespace detail {
                                       std::size_t M, std::size_t N) const {
             for(auto [row] : alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid,
                                                        alpaka::IdxRange{M})) {
+                // 1. Find max for numerical stability
                 T maxVal = -std::numeric_limits<T>::infinity();
-                auto rowOffset = row * N;
                 for(std::size_t j=0;j<N;++j) {
                     T v = in[alpaka::Vec<std::size_t,2>{row,j}];
-                    if(v > maxVal) maxVal = v;
+                    if(v > maxVal || alpaka::math::isnan(maxVal)) maxVal = v;
                 }
-                T sum = 0;
-                for(std::size_t j=0;j<N;++j) sum += alpaka::math::exp(in[alpaka::Vec<std::size_t,2>{row,j}] - maxVal);
-                T invSum = T{1}/sum;
+                // 2. Compute exp sum (skip NaNs, clamp extremely negative)
+                T sum = T{0};
                 for(std::size_t j=0;j<N;++j) {
-                    out[alpaka::Vec<std::size_t,2>{row,j}] = alpaka::math::exp(in[alpaka::Vec<std::size_t,2>{row,j}] - maxVal) * invSum;
+                    T shifted = in[alpaka::Vec<std::size_t,2>{row,j}] - maxVal;
+                    // Prevent overflow (large positive) and underflow to NaN
+                    if(shifted > T(80)) shifted = T(80); // exp(80) ~ 5.54e34
+                    if(shifted < T(-80)) { continue; }
+                    T e = alpaka::math::exp(shifted);
+                    if(!alpaka::math::isnan(e) && !alpaka::math::isinf(e)) sum += e;
+                }
+                if(sum == T{0} || alpaka::math::isnan(sum) || alpaka::math::isinf(sum)) {
+                    // Fallback: uniform distribution
+                    T uniform = T{1} / static_cast<T>(N);
+                    for(std::size_t j=0;j<N;++j)
+                        out[alpaka::Vec<std::size_t,2>{row,j}] = uniform;
+                    continue;
+                }
+                T invSum = T{1} / sum;
+                for(std::size_t j=0;j<N;++j) {
+                    T shifted = in[alpaka::Vec<std::size_t,2>{row,j}] - maxVal;
+                    if(shifted > T(80)) shifted = T(80);
+                    if(shifted < T(-80)) { out[alpaka::Vec<std::size_t,2>{row,j}] = T{0}; continue; }
+                    T e = alpaka::math::exp(shifted);
+                    if(alpaka::math::isnan(e) || alpaka::math::isinf(e)) e = T{0};
+                    out[alpaka::Vec<std::size_t,2>{row,j}] = e * invSum;
                 }
             }
         }

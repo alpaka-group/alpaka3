@@ -93,7 +93,7 @@ struct LeNetWeights {
 
 // Forward pass building layers dynamically
 template<typename Backend>
-int runLeNet(Backend const& backend, WeightPaths const& wPaths, int expectedLabel, bool printProbs){
+int runLeNet(Backend const& backend, WeightPaths const& wPaths, int expectedLabel, bool printProbs, bool verbose){
     auto deviceSpec = backend[alpaka::object::deviceSpec];
     auto exec       = backend[alpaka::object::exec];
     auto sel = alpaka::onHost::makeDeviceSelector(deviceSpec);
@@ -101,6 +101,9 @@ int runLeNet(Backend const& backend, WeightPaths const& wPaths, int expectedLabe
     auto device = sel.makeDevice(0);
     auto queue  = device.makeQueue();
     using Device = decltype(device);
+
+    // Backend header line
+    std::cout << "=== Backend: " << alpaka::onHost::demangledName(exec) << " / " << alpaka::onHost::demangledName(deviceSpec) << " ===\n";
 
     // Input (grayscale 32x32)
     tt::Tensor4D<float,Device> input(device,{1,1,32,32},"input");
@@ -149,17 +152,18 @@ int runLeNet(Backend const& backend, WeightPaths const& wPaths, int expectedLabe
 
 int main(int argc, char** argv){
     std::filesystem::path weightsDir;
-    int expected=-1; bool printProbs=false;
+    int expected=-1; bool printProbs=false; bool verbose=false;
     for(int i=1;i<argc;++i){
         std::string a=argv[i];
         if(a=="--weights" && i+1<argc) weightsDir=argv[++i];
         else if(a=="--expected" && i+1<argc) expected=std::stoi(argv[++i]);
-        else if(a=="--print-probs") printProbs=true;
+    else if(a=="--print-probs") printProbs=true;
+    else if(a=="--verbose") verbose=true;
         else if(a=="--help") {
             std::cout << "Usage: inferenceLeNet [--weights DIR] [--expected N] [--print-probs]\n"; return 0; }
     }
     WeightPaths w{weightsDir};
     return alpaka::onHost::executeForEachIfHasDevice(
-        [&](auto const& backend){ return runLeNet(backend, w, expected, printProbs); },
+        [&](auto const& backend){ return runLeNet(backend, w, expected, printProbs, verbose); },
         alpaka::onHost::allBackends(alpaka::onHost::enabledApis, alpaka::onHost::example::enabledExecutors));
 }
