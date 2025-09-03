@@ -177,9 +177,9 @@ namespace mathtest
                 = onHost::FrameSpec{divExZero(capacity, frameExtents), frameExtents};
             auto kernel = KernelBundle{
                 TestKernel<capacity>{},
-                results.m_deviceView.getMdSpan(),
+                results.m_deviceBuffer.getMdSpan(),
                 wrappedFunctor,
-                args.m_deviceView.getMdSpan()};
+                args.m_deviceBuffer.getMdSpan()};
 
             // Fill the buffer with random test-numbers.
             fillWithRndArgs<TData>(args, functor, seed);

@@ -55,23 +55,23 @@ TEST_CASE("MD vector simd add kernel", "[docs]")
 
     using DataType = int;
     auto extentMd = Vec{5, 7, 4097};
-    onHost::SharedBuffer computeViewOut = onHost::alloc<DataType>(computeDev, extentMd);
-    onHost::SharedBuffer computeViewIn0 = onHost::allocLike(computeDev, computeViewOut);
-    onHost::SharedBuffer computeViewIn1 = onHost::allocLike(computeDev, computeViewOut);
+    onHost::SharedBuffer computeBufferOut = onHost::alloc<DataType>(computeDev, extentMd);
+    onHost::SharedBuffer computeBufferIn0 = onHost::allocLike(computeDev, computeBufferOut);
+    onHost::SharedBuffer computeBufferIn1 = onHost::allocLike(computeDev, computeBufferOut);
 
-    onHost::SharedBuffer hostViewIota = onHost::allocLike(onHost::makeHostDevice(), computeViewOut);
+    onHost::SharedBuffer hostBufferIota = onHost::allocLike(onHost::makeHostDevice(), computeBufferOut);
 
     // initialize with the linearized index
     DataType iotaCounter = 0;
-    for(auto& value : hostViewIota)
+    for(auto& value : hostBufferIota)
     {
         value = iotaCounter;
         ++iotaCounter;
     }
 
-    onHost::fill(computeQueue, computeViewOut, DataType{42});
-    onHost::memcpy(computeQueue, computeViewIn0, hostViewIota);
-    onHost::memcpy(computeQueue, computeViewIn1, hostViewIota);
+    onHost::fill(computeQueue, computeBufferOut, DataType{42});
+    onHost::memcpy(computeQueue, computeBufferIn0, hostBufferIota);
+    onHost::memcpy(computeQueue, computeBufferIn1, hostBufferIota);
 
     // The frame extent is randomly chosen, the dimensionality of the kernel is defined by the FrameSpec dimsions.
     constexpr auto frameExtents = Vec{8, 8, 8};
@@ -81,7 +81,7 @@ TEST_CASE("MD vector simd add kernel", "[docs]")
     // We only reduce the frame specification for the fast moving dimension.
     int elementsPerFrameItem = getNumElemPerThread<DataType>(computeQueue);
     concepts::Vector auto numFrames
-        = divExZero(computeViewOut.getExtents(), frameExtents * frameExtents.all(1).rAssign(elementsPerFrameItem));
+        = divExZero(computeBufferOut.getExtents(), frameExtents * frameExtents.all(1).rAssign(elementsPerFrameItem));
     // The frame specification is not required to be a multiple of the extent, it can be smaller.
     auto frameSpec = onHost::FrameSpec{numFrames, frameExtents};
     std::cout << frameSpec << std::endl;
@@ -91,14 +91,14 @@ TEST_CASE("MD vector simd add kernel", "[docs]")
     computeQueue.enqueue(
         exec::cpuSerial,
         frameSpec,
-        KernelBundle{MDVectorSimdAdd{}, computeViewOut, computeViewIn0, computeViewIn1});
+        KernelBundle{MDVectorSimdAdd{}, computeBufferOut, computeBufferIn0, computeBufferIn1});
     onHost::wait(computeQueue);
     auto const endT = std::chrono::high_resolution_clock::now();
     std::cout << "Time for simd kernel: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-              << " data size: " << computeViewOut.getExtents() << std::endl;
+              << " data size: " << computeBufferOut.getExtents() << std::endl;
 
     // we overwrite the iota data because we are to lazy to allocate additional memory^^
-    onHost::memcpy(computeQueue, hostViewIota, computeViewOut);
+    onHost::memcpy(computeQueue, hostBufferIota, computeBufferOut);
     onHost::wait(computeQueue);
 
     // validate that all data
@@ -107,7 +107,7 @@ TEST_CASE("MD vector simd add kernel", "[docs]")
         extentMd,
         [&](auto idx)
         {
-            CHECK(hostViewIota[idx] == (resultCounter + resultCounter));
+            CHECK(hostBufferIota[idx] == (resultCounter + resultCounter));
             ++resultCounter;
         });
 }

@@ -25,24 +25,24 @@ void executeTest(concepts::Executor auto exec, auto const& computeQueue, concept
 {
     auto computeDev = computeQueue.getDevice();
     using DataType = T_DataType;
-    onHost::SharedBuffer computeViewIn0 = onHost::alloc<DataType>(computeDev, extentMd);
-    onHost::SharedBuffer hostViewOut0 = onHost::allocLike(onHost::makeHostDevice(), computeViewIn0);
+    onHost::SharedBuffer computeBufferIn0 = onHost::alloc<DataType>(computeDev, extentMd);
+    onHost::SharedBuffer hostBufferOut0 = onHost::allocLike(onHost::makeHostDevice(), computeBufferIn0);
 
     auto initValue = DataType{42};
     {
-        onHost::memset(computeQueue, computeViewIn0, 0u);
+        onHost::memset(computeQueue, computeBufferIn0, 0u);
 
         onHost::wait(computeQueue);
         auto const beginT = std::chrono::high_resolution_clock::now();
         {
-            onHost::iota<DataType>(computeQueue, exec, initValue, computeViewIn0);
+            onHost::iota<DataType>(computeQueue, exec, initValue, computeBufferIn0);
             onHost::wait(computeQueue);
         }
         auto const endT = std::chrono::high_resolution_clock::now();
         std::cout << "Time for iota: " << std::chrono::duration<double>(endT - beginT).count() << 's'
                   << " data size: " << extentMd << std::endl;
 
-        onHost::memcpy(computeQueue, hostViewOut0, computeViewIn0);
+        onHost::memcpy(computeQueue, hostBufferOut0, computeBufferIn0);
         onHost::wait(computeQueue);
 
         // validate without using the forward iterator
@@ -51,31 +51,31 @@ void executeTest(concepts::Executor auto exec, auto const& computeQueue, concept
             extentMd,
             [&](auto idx)
             {
-                CHECK(hostViewOut0[idx] == refIotaCounter);
+                CHECK(hostBufferOut0[idx] == refIotaCounter);
                 ++refIotaCounter;
             });
     }
 
     // check if iota can be called with multiple inputs
-    onHost::SharedBuffer computeViewIn1 = onHost::alloc<DataType>(computeDev, extentMd);
-    onHost::SharedBuffer hostViewOut1 = onHost::allocLike(onHost::makeHostDevice(), computeViewIn0);
-    onHost::memset(computeQueue, computeViewIn0, 0u);
-    onHost::memset(computeQueue, computeViewIn1, 0u);
+    onHost::SharedBuffer computeBufferIn1 = onHost::alloc<DataType>(computeDev, extentMd);
+    onHost::SharedBuffer hostBufferOut1 = onHost::allocLike(onHost::makeHostDevice(), computeBufferIn0);
+    onHost::memset(computeQueue, computeBufferIn0, 0u);
+    onHost::memset(computeQueue, computeBufferIn1, 0u);
     // set new initial value
     ++initValue;
     {
         onHost::wait(computeQueue);
         auto const beginT = std::chrono::high_resolution_clock::now();
         {
-            onHost::iota<DataType>(computeQueue, exec, initValue, computeViewIn0, computeViewIn1);
+            onHost::iota<DataType>(computeQueue, exec, initValue, computeBufferIn0, computeBufferIn1);
             onHost::wait(computeQueue);
         }
         auto const endT = std::chrono::high_resolution_clock::now();
         std::cout << "Time for iota two inputs: " << std::chrono::duration<double>(endT - beginT).count() << 's'
                   << " data size: " << extentMd << std::endl;
 
-        onHost::memcpy(computeQueue, hostViewOut0, computeViewIn0);
-        onHost::memcpy(computeQueue, hostViewOut1, computeViewIn1);
+        onHost::memcpy(computeQueue, hostBufferOut0, computeBufferIn0);
+        onHost::memcpy(computeQueue, hostBufferOut1, computeBufferIn1);
         onHost::wait(computeQueue);
 
         // validate without using the forward iterator
@@ -84,8 +84,8 @@ void executeTest(concepts::Executor auto exec, auto const& computeQueue, concept
             extentMd,
             [&](auto idx)
             {
-                CHECK(hostViewOut0[idx] == refIotaCounter);
-                CHECK(hostViewOut1[idx] == refIotaCounter);
+                CHECK(hostBufferOut0[idx] == refIotaCounter);
+                CHECK(hostBufferOut1[idx] == refIotaCounter);
                 ++refIotaCounter;
             });
     }

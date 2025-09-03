@@ -306,7 +306,7 @@ auto main() -> int
             // the real location depends on the native backend e.g. CUDA, OneApi, ...
             concepts::View auto devUnifiedBuffer = onHost::allocUnified<DataType>(device, extentMd);
             // allocate memory accessible from host
-            concepts::View auto hostView = onHost::allocHost<DataType>(extentMd);
+            concepts::View auto hostBuffer = onHost::allocHost<DataType>(extentMd);
             // Data will not be automatically freed, user must take care that
             // the original data life-time is longer than the non-owning view.
             concepts::View auto devNonOwningView = devBuffer.getView();

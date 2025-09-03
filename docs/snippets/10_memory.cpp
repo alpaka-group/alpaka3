@@ -35,25 +35,25 @@ TEST_CASE("memory", "[docs]")
 
     // Allocate a memory view on the compute device.
     // The memory will be freed automatically when the view goes out of scope.
-    onHost::SharedBuffer computeView = onHost::alloc<int>(computeDev, 10);
+    onHost::SharedBuffer computeBuffer = onHost::alloc<int>(computeDev, 10);
     // Derive the properties except the location.
-    onHost::SharedBuffer hostView = onHost::allocHostLike(computeView);
+    onHost::SharedBuffer hostBuffer = onHost::allocHostLike(computeBuffer);
 
     // To operate on host memory views, we need a host queue. Sett all bytes to zero.
-    onHost::memset(hostQueue, hostView, 0);
+    onHost::memset(hostQueue, hostBuffer, 0);
     onHost::wait(hostQueue);
 
     // Both memory views are not filled with valid data yet, so let us assign a value to each element and copy it to
     // the host. note: currently you cannot use a compute queue of a GPU device to fill a host memory view. @todo add
     // host task execution to any compute queue
-    onHost::fill(computeQueue, computeView, 42);
+    onHost::fill(computeQueue, computeBuffer, 42);
     // copy the data to the host
-    onHost::memcpy(computeQueue, hostView, computeView);
+    onHost::memcpy(computeQueue, hostBuffer, computeBuffer);
     // wait because all previous operations are asynchronous
     onHost::wait(computeQueue);
 
     // check that the data is valid
-    for(auto const& v : hostView)
+    for(auto const& v : hostBuffer)
         CHECK(v == 42);
 }
 
@@ -75,13 +75,13 @@ TEST_CASE("memory using std::vector", "[docs]")
     onHost::Device computeDev = computeDevSelector.makeDevice(0);
     onHost::Queue computeQueue = computeDev.makeQueue();
 
-    onHost::SharedBuffer computeView = onHost::alloc<int>(computeDev, 10);
+    onHost::SharedBuffer computeBuffer = onHost::alloc<int>(computeDev, 10);
 
     // use std::vector instead of an alpaka view
     std::vector stdVec = std::vector<int>(10, 0);
 
-    onHost::fill(computeQueue, computeView, 42);
-    onHost::memcpy(computeQueue, stdVec, computeView);
+    onHost::fill(computeQueue, computeBuffer, 42);
+    onHost::memcpy(computeQueue, stdVec, computeBuffer);
     onHost::wait(computeQueue);
 
     // check that the data is valid

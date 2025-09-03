@@ -42,23 +42,23 @@ TEST_CASE("first kernel", "[docs]")
     onHost::Device computeDev = computeDevSelector.makeDevice(0);
     onHost::Queue computeQueue = computeDev.makeQueue();
 
-    onHost::SharedBuffer computeView = onHost::alloc<int>(computeDev, 111);
+    onHost::SharedBuffer computeBuffer = onHost::alloc<int>(computeDev, 111);
 
     // use std::vector instead of an alpaka view
-    std::vector stdVec = std::vector<int>(computeView.getExtents().x(), 0);
+    std::vector stdVec = std::vector<int>(computeBuffer.getExtents().x(), 0);
     std::iota(stdVec.begin(), stdVec.end(), 0);
 
-    onHost::fill(computeQueue, computeView, 42);
-    onHost::memcpy(computeQueue, computeView, stdVec);
+    onHost::fill(computeQueue, computeBuffer, 42);
+    onHost::memcpy(computeQueue, computeBuffer, stdVec);
 
     // The frame extent is randomly chosen
     constexpr auto frameExtents = Vec{256};
-    auto frameSpec = onHost::FrameSpec{divExZero(computeView.getExtents(), frameExtents), frameExtents};
+    auto frameSpec = onHost::FrameSpec{divExZero(computeBuffer.getExtents(), frameExtents), frameExtents};
     // If no executor is given as first argument to enqueue than the default executor is used.
     // The default is the fastest for the corresponding device.
     // For deviceKind::cpu the default is exec::cpuOmpBlocks if omp is enabled, otherwise exec::cpuSerial
-    computeQueue.enqueue(frameSpec, KernelBundle{AddOne{}, computeView});
-    onHost::memcpy(computeQueue, stdVec, computeView);
+    computeQueue.enqueue(frameSpec, KernelBundle{AddOne{}, computeBuffer});
+    onHost::memcpy(computeQueue, stdVec, computeBuffer);
     onHost::wait(computeQueue);
 
     // check that the data is valid
@@ -102,27 +102,27 @@ TEST_CASE("MD vector add kernel", "[docs]")
     onHost::Queue computeQueue = computeDev.makeQueue();
 
     auto extentMd = Vec{5, 7, 4097};
-    onHost::SharedBuffer computeViewOut = onHost::alloc<int>(computeDev, extentMd);
-    onHost::SharedBuffer computeViewIn0 = onHost::allocLike(computeDev, computeViewOut);
-    onHost::SharedBuffer computeViewIn1 = onHost::allocLike(computeDev, computeViewOut);
+    onHost::SharedBuffer computeBufferOut = onHost::alloc<int>(computeDev, extentMd);
+    onHost::SharedBuffer computeBufferIn0 = onHost::allocLike(computeDev, computeBufferOut);
+    onHost::SharedBuffer computeBufferIn1 = onHost::allocLike(computeDev, computeBufferOut);
 
-    onHost::SharedBuffer hostViewIota = onHost::allocLike(onHost::makeHostDevice(), computeViewOut);
+    onHost::SharedBuffer hostBufferIota = onHost::allocLike(onHost::makeHostDevice(), computeBufferOut);
 
     // initialize with the linearized index
     int iotaCounter = 0;
-    for(auto& value : hostViewIota)
+    for(auto& value : hostBufferIota)
     {
         value = iotaCounter;
         ++iotaCounter;
     }
 
-    onHost::fill(computeQueue, computeViewOut, 42);
-    onHost::memcpy(computeQueue, computeViewIn0, hostViewIota);
-    onHost::memcpy(computeQueue, computeViewIn1, hostViewIota);
+    onHost::fill(computeQueue, computeBufferOut, 42);
+    onHost::memcpy(computeQueue, computeBufferIn0, hostBufferIota);
+    onHost::memcpy(computeQueue, computeBufferIn1, hostBufferIota);
 
     // The frame extent is randomly chosen, the dimensionality of the kernel is defined by the FrameSpec dimsions.
     constexpr auto frameExtents = Vec{8, 8, 8};
-    concepts::Vector auto numFrames = divExZero(computeViewOut.getExtents(), frameExtents);
+    concepts::Vector auto numFrames = divExZero(computeBufferOut.getExtents(), frameExtents);
     auto frameSpec = onHost::FrameSpec{numFrames, frameExtents};
 
     onHost::wait(computeQueue);
@@ -131,14 +131,14 @@ TEST_CASE("MD vector add kernel", "[docs]")
     computeQueue.enqueue(
         exec::cpuSerial,
         frameSpec,
-        KernelBundle{MDVectorAdd{}, computeViewOut, computeViewIn0, computeViewIn1});
+        KernelBundle{MDVectorAdd{}, computeBufferOut, computeBufferIn0, computeBufferIn1});
     onHost::wait(computeQueue);
     auto const endT = std::chrono::high_resolution_clock::now();
     std::cout << "Time for kernel: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-              << " data size: " << computeViewOut.getExtents() << std::endl;
+              << " data size: " << computeBufferOut.getExtents() << std::endl;
 
     // we overwrite the iota data because we are to lazy to allocate additional memory^^
-    onHost::memcpy(computeQueue, hostViewIota, computeViewOut);
+    onHost::memcpy(computeQueue, hostBufferIota, computeBufferOut);
     onHost::wait(computeQueue);
 
     // validate that all data
@@ -147,7 +147,7 @@ TEST_CASE("MD vector add kernel", "[docs]")
         extentMd,
         [&](auto idx)
         {
-            CHECK(hostViewIota[idx] == (resultCounter + resultCounter));
+            CHECK(hostBufferIota[idx] == (resultCounter + resultCounter));
             ++resultCounter;
         });
 }

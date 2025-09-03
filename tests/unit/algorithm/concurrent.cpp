@@ -65,33 +65,33 @@ void executeTest(
 
     auto computeDev = computeQueue.getDevice();
     using DataType = T_DataType;
-    onHost::SharedBuffer computeViewIn0 = onHost::alloc<DataType>(computeDev, extentMd);
-    onHost::SharedBuffer computeViewIn1 = onHost::allocLike(computeDev, computeViewIn0);
-    onHost::SharedBuffer hostViewIota = onHost::allocLike(onHost::makeHostDevice(), computeViewIn0);
-    onHost::SharedBuffer hostViewOut = onHost::allocLike(onHost::makeHostDevice(), computeViewIn0);
+    onHost::SharedBuffer computeBufferIn0 = onHost::alloc<DataType>(computeDev, extentMd);
+    onHost::SharedBuffer computeBufferIn1 = onHost::allocLike(computeDev, computeBufferIn0);
+    onHost::SharedBuffer hostBufferIota = onHost::allocLike(onHost::makeHostDevice(), computeBufferIn0);
+    onHost::SharedBuffer hostBufferOut = onHost::allocLike(onHost::makeHostDevice(), computeBufferIn0);
 
     // initialize with the linearized index
     DataType iotaCounter = 0;
-    for(auto& value : hostViewIota)
+    for(auto& value : hostBufferIota)
     {
         value = iotaCounter;
         ++iotaCounter;
     }
 
-    onHost::memcpy(computeQueue, computeViewIn0, hostViewIota);
-    onHost::memcpy(computeQueue, computeViewIn1, hostViewIota);
+    onHost::memcpy(computeQueue, computeBufferIn0, hostBufferIota);
+    onHost::memcpy(computeQueue, computeBufferIn1, hostBufferIota);
 
     onHost::wait(computeQueue);
     auto const beginT = std::chrono::high_resolution_clock::now();
 
-    onHost::concurrent<DataType>(computeQueue, exec, extentMd, functorPair.first, computeViewIn0, computeViewIn1);
+    onHost::concurrent<DataType>(computeQueue, exec, extentMd, functorPair.first, computeBufferIn0, computeBufferIn1);
 
     onHost::wait(computeQueue);
     auto const endT = std::chrono::high_resolution_clock::now();
     std::cout << "Time for concurrent: " << std::chrono::duration<double>(endT - beginT).count() << 's'
               << " data size: " << extentMd << std::endl;
 
-    onHost::memcpy(computeQueue, hostViewOut, computeViewIn0);
+    onHost::memcpy(computeQueue, hostBufferOut, computeBufferIn0);
     onHost::wait(computeQueue);
 
     // validate without using the forward iterator
@@ -100,7 +100,7 @@ void executeTest(
         extentMd,
         [&](auto idx)
         {
-            CHECK(hostViewOut[idx] == functorPair.second(refIotaCounter, refIotaCounter));
+            CHECK(hostBufferOut[idx] == functorPair.second(refIotaCounter, refIotaCounter));
             ++refIotaCounter;
         });
 };
