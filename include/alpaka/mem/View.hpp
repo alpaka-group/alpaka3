@@ -140,16 +140,18 @@ namespace alpaka
          * @param extents number of elements for each dimension
          * @return View which is pointing only to a part of the original view.
          */
-        constexpr auto getSubView(alpaka::concepts::Vector auto const& extents) const
+        constexpr auto getSubView(alpaka::concepts::VectorOrScalar auto const& extents) const
         {
-            assert((extents <= this->getExtents()).reduce(std::logical_and{}));
-            return makeView(T_Api{}, this->data(), extents, this->getPitches(), T_MemAlignment{});
+            Vec extentMd = extents;
+            assert((extentMd <= this->getExtents()).reduce(std::logical_and{}));
+            return makeView(T_Api{}, this->data(), extentMd, this->getPitches(), T_MemAlignment{});
         }
 
-        constexpr auto getSubView(alpaka::concepts::Vector auto const& extents)
+        constexpr auto getSubView(alpaka::concepts::VectorOrScalar auto const& extents)
         {
-            assert((extents <= this->getExtents()).reduce(std::logical_and{}));
-            return makeView(T_Api{}, this->data(), extents, this->getPitches(), T_MemAlignment{});
+            Vec extentMd = extents;
+            assert((extentMd <= this->getExtents()).reduce(std::logical_and{}));
+            return makeView(T_Api{}, this->data(), extentMd, this->getPitches(), T_MemAlignment{});
         }
 
         /** Creates a sub view to a part of the memory.
@@ -160,21 +162,25 @@ namespace alpaka
          *         View which pointThe alignment of the sub view is reduced to the element alignment.
          */
         constexpr auto getSubView(
-            alpaka::concepts::Vector auto const& offset,
-            alpaka::concepts::Vector auto const& extents) const
+            alpaka::concepts::VectorOrScalar auto const& offset,
+            alpaka::concepts::VectorOrScalar auto const& extents) const
         {
-            assert((extents <= this->getExtents()).reduce(std::logical_and{}));
-            auto shiftedPtr = &(*this)[offset];
-            return makeView(T_Api{}, shiftedPtr, extents, this->getPitches(), Alignment<>{});
+            Vec offsetMd = offset;
+            Vec extentMd = extents;
+            assert((offsetMd + extentMd <= this->getExtents()).reduce(std::logical_and{}));
+            auto shiftedPtr = &(*this)[offsetMd];
+            return makeView(T_Api{}, shiftedPtr, extentMd, this->getPitches(), Alignment<>{});
         }
 
         constexpr auto getSubView(
-            alpaka::concepts::Vector auto const& offset,
-            alpaka::concepts::Vector auto const& extents)
+            alpaka::concepts::VectorOrScalar auto const& offset,
+            alpaka::concepts::VectorOrScalar auto const& extents)
         {
-            assert((extents <= this->getExtents()).reduce(std::logical_and{}));
-            auto shiftedPtr = &(*this)[offset];
-            return makeView(T_Api{}, shiftedPtr, extents, this->getPitches(), Alignment<>{});
+            Vec offsetMd = offset;
+            Vec extentMd = extents;
+            assert((offsetMd + extentMd <= this->getExtents()).reduce(std::logical_and{}));
+            auto shiftedPtr = &(*this)[offsetMd];
+            return makeView(T_Api{}, shiftedPtr, extentMd, this->getPitches(), Alignment<>{});
         }
     };
 

@@ -109,6 +109,11 @@ namespace alpaka
         constexpr auto operator()(TAcc const& acc) const
         {
             alpaka::apply(
+                /* It is required to take the arguments as const reference.
+                 * The reason is that these arguments are shared between threads in a block. If the user like to mutate
+                 * these he should use a non const copy in the kernel function signature. This is the reason why we can
+                 * not keep const correctness for buffers and view within the copy-constructor of these.
+                 */
                 [&](alpaka::concepts::KernelArg auto const&... args) constexpr { m_kernelFn(acc, args...); },
                 m_args);
         }

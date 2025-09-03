@@ -50,9 +50,13 @@ namespace alpaka::onHost
         {
         }
 
-        // friend declaration is required that a non const managed view can access the private constructor
-        friend struct ManagedView<T_Api, std::remove_const_t<T_Type>, T_Extents, T_MemAlignment>;
-
+        // friend declaration is required that any type of ManagedView can access the private constructor
+        template<
+            alpaka::concepts::Api T_OtherApi,
+            typename T_OtherType,
+            alpaka::concepts::Vector T_OtherExtents,
+            alpaka::concepts::Alignment T_OtherMemAlignment2>
+        friend struct ManagedView;
 
     public:
         template<
@@ -72,6 +76,12 @@ namespace alpaka::onHost
             static_assert(
                 isLosslessConvertible_v<typename T_UserPitches::type, typename T_UserExtents::type>,
                 "extent type and pitch type must be lossless convertible");
+        }
+
+        auto& operator=(auto const& otherManagedView) const
+        {
+            *this = otherManagedView.getConstManagedView();
+            return *this;
         }
 
         auto getView() const
@@ -102,25 +112,27 @@ namespace alpaka::onHost
          * @param extents number of elements for each dimension
          * @return View which is pointing only to a part of the original managed view.
          */
-        auto getManagedSubView(alpaka::concepts::Vector auto const& extents) const
+        auto getManagedSubView(alpaka::concepts::VectorOrScalar auto const& extents) const
         {
-            assert(extents <= this->getExtents());
+            Vec extentMd = extents;
+            assert((extentMd <= this->getExtents()).reduce(std::logical_and{}));
             return ManagedView<T_Api, std::remove_pointer_t<ALPAKA_TYPEOF(this->data())>, T_Extents, T_MemAlignment>{
                 T_Api{},
                 this->data(),
-                extents,
+                extentMd,
                 this->getPitches(),
                 m_deleter,
                 T_MemAlignment{}};
         }
 
-        auto getManagedSubView(alpaka::concepts::Vector auto const& extents)
+        auto getManagedSubView(alpaka::concepts::VectorOrScalar auto const& extents)
         {
-            assert(extents <= this->getExtents());
+            Vec extentMd = extents;
+            assert((extentMd <= this->getExtents()).reduce(std::logical_and{}));
             return ManagedView<T_Api, std::remove_pointer_t<ALPAKA_TYPEOF(this->data())>, T_Extents, T_MemAlignment>{
                 T_Api{},
                 this->data(),
-                extents,
+                extentMd,
                 this->getPitches(),
                 m_deleter,
                 T_MemAlignment{}};
@@ -128,36 +140,40 @@ namespace alpaka::onHost
 
         /** Creates a sub managed view to a part of the memory.
          *
-         * @param offset offset in elements to the original managed view
+         * @param offsets offset in elements to the original managed view
          * @param extents number of elements for each dimension
          * @return View which is pointing only to a part of the original managed view with a shifted origin pointer.
          *         View which pointThe alignment of the sub view is reduced to the element alignment.
          */
         auto getManagedSubView(
-            alpaka::concepts::Vector auto const& offset,
-            alpaka::concepts::Vector auto const& extents) const
+            alpaka::concepts::VectorOrScalar auto const& offsets,
+            alpaka::concepts::VectorOrScalar auto const& extents) const
         {
-            assert(offset + extents <= this->getExtents());
-            auto shiftedPtr = &this->getMdSpan()[offset];
+            Vec offsetMd = offsets;
+            Vec extentMd = extents;
+            assert((offsetMd + extentMd <= this->getExtents()).reduce(std::logical_and{}));
+            auto shiftedPtr = &(*this)[offsetMd];
             return ManagedView<T_Api, std::remove_pointer_t<ALPAKA_TYPEOF(shiftedPtr)>, T_Extents, Alignment<>>{
                 T_Api{},
                 shiftedPtr,
-                extents,
+                extentMd,
                 this->getPitches(),
                 m_deleter,
                 Alignment<>{}};
         }
 
         auto getManagedSubView(
-            alpaka::concepts::Vector auto const& offset,
-            alpaka::concepts::Vector auto const& extents)
+            alpaka::concepts::VectorOrScalar auto const& offsets,
+            alpaka::concepts::VectorOrScalar auto const& extents)
         {
-            assert(offset + extents <= this->getExtents());
-            auto shiftedPtr = &this->getMdSpan()[offset];
+            Vec offsetMd = offsets;
+            Vec extentMd = extents;
+            assert((offsetMd + extentMd <= this->getExtents()).reduce(std::logical_and{}));
+            auto shiftedPtr = &(*this)[offsetMd];
             return ManagedView<T_Api, std::remove_pointer_t<ALPAKA_TYPEOF(shiftedPtr)>, T_Extents, Alignment<>>{
                 T_Api{},
                 shiftedPtr,
-                extents,
+                extentMd,
                 this->getPitches(),
                 m_deleter,
                 Alignment<>{}};

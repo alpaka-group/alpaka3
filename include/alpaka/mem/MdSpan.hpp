@@ -66,9 +66,9 @@ namespace alpaka
     {
         using value_type = T_Type;
         using reference = value_type&;
-        using const_reference = value_type const&;
+        using const_reference = std::add_const_t<value_type>&;
         using pointer = value_type*;
-        using const_pointer = value_type const*;
+        using const_pointer = std::add_const_t<value_type>*;
         using index_type = typename T_Pitches::type;
 
         using ConstThis = MdSpan<std::add_const_t<value_type>, T_Extents, T_Pitches, T_MemAlignment>;
@@ -210,7 +210,7 @@ namespace alpaka
          * @param idx n-dimensional offset
          * @return pointer to value
          */
-        constexpr pointer ptr(concepts::Vector auto const& idx) const requires(dim() >= 2u)
+        constexpr auto ptr(concepts::Vector auto const& idx) const requires(dim() >= 2u)
         {
             /** offset in bytes
              *
@@ -223,10 +223,16 @@ namespace alpaka
                 offset += m_pitch[d] * idx[d];
             }
             using CharPtrType = std::conditional_t<std::is_const_v<value_type>, char const*, char*>;
-            return reinterpret_cast<pointer>(reinterpret_cast<CharPtrType>(this->m_ptr) + offset);
+            using ResultPtrType = std::conditional_t<std::is_const_v<value_type>, const_pointer, pointer>;
+            return reinterpret_cast<ResultPtrType>(reinterpret_cast<CharPtrType>(this->m_ptr) + offset);
         }
 
-        constexpr pointer ptr(concepts::Vector auto const& idx) const requires(dim() == 1u)
+        constexpr const_pointer ptr(concepts::Vector auto const& idx) const requires(dim() == 1u)
+        {
+            return this->m_ptr + idx.x();
+        }
+
+        constexpr pointer ptr(concepts::Vector auto const& idx) requires(dim() == 1u)
         {
             return this->m_ptr + idx.x();
         }
