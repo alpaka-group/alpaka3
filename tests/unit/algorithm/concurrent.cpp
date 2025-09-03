@@ -65,10 +65,10 @@ void executeTest(
 
     auto computeDev = computeQueue.getDevice();
     using DataType = T_DataType;
-    onHost::ManagedView computeViewIn0 = onHost::alloc<DataType>(computeDev, extentMd);
-    onHost::ManagedView computeViewIn1 = onHost::allocLike(computeDev, computeViewIn0);
-    onHost::ManagedView hostViewIota = onHost::allocLike(onHost::makeHostDevice(), computeViewIn0);
-    onHost::ManagedView hostViewOut = onHost::allocLike(onHost::makeHostDevice(), computeViewIn0);
+    onHost::SharedBuffer computeViewIn0 = onHost::alloc<DataType>(computeDev, extentMd);
+    onHost::SharedBuffer computeViewIn1 = onHost::allocLike(computeDev, computeViewIn0);
+    onHost::SharedBuffer hostViewIota = onHost::allocLike(onHost::makeHostDevice(), computeViewIn0);
+    onHost::SharedBuffer hostViewOut = onHost::allocLike(onHost::makeHostDevice(), computeViewIn0);
 
     // initialize with the linearized index
     DataType iotaCounter = 0;

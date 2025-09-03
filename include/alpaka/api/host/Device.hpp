@@ -13,7 +13,7 @@
 #include "alpaka/onHost/Device.hpp"
 #include "alpaka/onHost/DeviceProperties.hpp"
 #include "alpaka/onHost/Handle.hpp"
-#include "alpaka/onHost/mem/ManagedView.hpp"
+#include "alpaka/onHost/mem/SharedBuffer.hpp"
 #include "alpaka/onHost/trait.hpp"
 #include "alpaka/utility.hpp"
 
@@ -159,14 +159,14 @@ namespace alpaka::onHost
                 // deviceDependency is captured to keep the device alive until the memory is deleted
                 auto deleter = [ptr, deviceDependency]() { alpaka::core::alignedFree(alignment, ptr); };
 
-                auto managedView = onHost::ManagedView{
+                auto sharedBuffer = onHost::SharedBuffer{
                     deviceDependency,
                     ptr,
                     extents,
                     pitches,
                     std::move(deleter),
                     Alignment<alignment>{}};
-                return managedView;
+                return sharedBuffer;
             }
         };
 

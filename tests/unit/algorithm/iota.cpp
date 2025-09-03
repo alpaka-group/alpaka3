@@ -25,8 +25,8 @@ void executeTest(concepts::Executor auto exec, auto const& computeQueue, concept
 {
     auto computeDev = computeQueue.getDevice();
     using DataType = T_DataType;
-    onHost::ManagedView computeViewIn0 = onHost::alloc<DataType>(computeDev, extentMd);
-    onHost::ManagedView hostViewOut0 = onHost::allocLike(onHost::makeHostDevice(), computeViewIn0);
+    onHost::SharedBuffer computeViewIn0 = onHost::alloc<DataType>(computeDev, extentMd);
+    onHost::SharedBuffer hostViewOut0 = onHost::allocLike(onHost::makeHostDevice(), computeViewIn0);
 
     auto initValue = DataType{42};
     {
@@ -57,8 +57,8 @@ void executeTest(concepts::Executor auto exec, auto const& computeQueue, concept
     }
 
     // check if iota can be called with multiple inputs
-    onHost::ManagedView computeViewIn1 = onHost::alloc<DataType>(computeDev, extentMd);
-    onHost::ManagedView hostViewOut1 = onHost::allocLike(onHost::makeHostDevice(), computeViewIn0);
+    onHost::SharedBuffer computeViewIn1 = onHost::alloc<DataType>(computeDev, extentMd);
+    onHost::SharedBuffer hostViewOut1 = onHost::allocLike(onHost::makeHostDevice(), computeViewIn0);
     onHost::memset(computeQueue, computeViewIn0, 0u);
     onHost::memset(computeQueue, computeViewIn1, 0u);
     // set new initial value

@@ -18,7 +18,7 @@
 #    include "alpaka/onHost/concepts.hpp"
 #    include "alpaka/onHost/interface.hpp"
 #    include "alpaka/onHost/internal/interface.hpp"
-#    include "alpaka/onHost/mem/ManagedView.hpp"
+#    include "alpaka/onHost/mem/SharedBuffer.hpp"
 #    include "alpaka/onHost/trait.hpp"
 
 #    include <sycl/sycl.hpp>
@@ -255,14 +255,14 @@ namespace alpaka::onHost
                 sycl::free(toVoidPtr(ptr), queueDep->getNativeHandle());
             };
 
-            auto managedView = onHost::ManagedView{
+            auto sharedBuffer = onHost::SharedBuffer{
                 deviceDependency,
                 ptr,
                 extents,
                 pitches,
                 std::move(deleter),
                 Alignment<alignment>{}};
-            return managedView;
+            return sharedBuffer;
         }
     };
 } // namespace alpaka::onHost

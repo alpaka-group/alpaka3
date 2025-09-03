@@ -37,11 +37,11 @@ TEST_CASE("buffer const correctness 1D", "")
     static_assert(!std::is_const_v<std::remove_pointer_t<decltype(buffer0.data())>>);
     // mutable views
     {
-        [[maybe_unused]] auto subBuffer0 = buffer0.getManagedSubView(2);
+        [[maybe_unused]] auto subBuffer0 = buffer0.getSubSharedBuffer(2);
         static_assert(!std::is_const_v<std::remove_pointer_t<decltype(subBuffer0.data())>>);
         static_assert(!std::is_const_v<std::remove_reference_t<decltype(subBuffer0[0])>>);
 
-        [[maybe_unused]] auto subOffsetBuffer0 = buffer0.getManagedSubView(1, 2);
+        [[maybe_unused]] auto subOffsetBuffer0 = buffer0.getSubSharedBuffer(1, 2);
         static_assert(!std::is_const_v<std::remove_pointer_t<decltype(subOffsetBuffer0.data())>>);
         static_assert(!std::is_const_v<std::remove_reference_t<decltype(subOffsetBuffer0[0])>>);
 
@@ -63,12 +63,12 @@ TEST_CASE("buffer const correctness 1D", "")
     }
     // non-mutable views
     {
-        onHost::ManagedView innerConstBuffer0 = buffer0.getConstManagedView();
-        [[maybe_unused]] auto subBuffer0 = innerConstBuffer0.getManagedSubView(2);
+        onHost::SharedBuffer innerConstBuffer0 = buffer0.getConstSharedBuffer();
+        [[maybe_unused]] auto subBuffer0 = innerConstBuffer0.getSubSharedBuffer(2);
         static_assert(std::is_const_v<std::remove_pointer_t<decltype(subBuffer0.data())>>);
         static_assert(std::is_const_v<std::remove_reference_t<decltype(subBuffer0[0])>>);
 
-        [[maybe_unused]] auto subOffsetBuffer0 = innerConstBuffer0.getManagedSubView(1, 2);
+        [[maybe_unused]] auto subOffsetBuffer0 = innerConstBuffer0.getSubSharedBuffer(1, 2);
         static_assert(std::is_const_v<std::remove_pointer_t<decltype(subOffsetBuffer0.data())>>);
         static_assert(std::is_const_v<std::remove_reference_t<decltype(subOffsetBuffer0[0])>>);
 
@@ -90,12 +90,12 @@ TEST_CASE("buffer const correctness 1D", "")
     }
     // non-mutable views (outer const)
     {
-        onHost::ManagedView const outerConstBuffer0 = buffer0;
-        [[maybe_unused]] auto subBuffer0 = outerConstBuffer0.getManagedSubView(2);
+        onHost::SharedBuffer const outerConstBuffer0 = buffer0;
+        [[maybe_unused]] auto subBuffer0 = outerConstBuffer0.getSubSharedBuffer(2);
         static_assert(std::is_const_v<std::remove_pointer_t<decltype(subBuffer0.data())>>);
         static_assert(std::is_const_v<std::remove_reference_t<decltype(subBuffer0[0])>>);
 
-        [[maybe_unused]] auto subOffsetBuffer0 = outerConstBuffer0.getManagedSubView(1, 2);
+        [[maybe_unused]] auto subOffsetBuffer0 = outerConstBuffer0.getSubSharedBuffer(1, 2);
         static_assert(std::is_const_v<std::remove_pointer_t<decltype(subOffsetBuffer0.data())>>);
         static_assert(std::is_const_v<std::remove_reference_t<decltype(subOffsetBuffer0[0])>>);
 
@@ -124,11 +124,11 @@ TEST_CASE("buffer const correctness MD", "")
     static_assert(!std::is_const_v<std::remove_pointer_t<decltype(buffer0.data())>>);
     // mutable views
     {
-        [[maybe_unused]] auto subBuffer0 = buffer0.getManagedSubView(Vec{2, 2});
+        [[maybe_unused]] auto subBuffer0 = buffer0.getSubSharedBuffer(Vec{2, 2});
         static_assert(!std::is_const_v<std::remove_pointer_t<decltype(subBuffer0.data())>>);
         static_assert(!std::is_const_v<std::remove_reference_t<decltype(subBuffer0[Vec{0, 0}])>>);
 
-        [[maybe_unused]] auto subOffsetBuffer0 = buffer0.getManagedSubView(Vec{1, 1}, Vec{2, 2});
+        [[maybe_unused]] auto subOffsetBuffer0 = buffer0.getSubSharedBuffer(Vec{1, 1}, Vec{2, 2});
         static_assert(!std::is_const_v<std::remove_pointer_t<decltype(subOffsetBuffer0.data())>>);
         static_assert(!std::is_const_v<std::remove_reference_t<decltype(subOffsetBuffer0[Vec{0, 0}])>>);
 
@@ -150,13 +150,13 @@ TEST_CASE("buffer const correctness MD", "")
     }
     // non-mutable views
     {
-        onHost::ManagedView innerConstBuffer0 = buffer0.getConstManagedView();
+        onHost::SharedBuffer innerConstBuffer0 = buffer0.getConstSharedBuffer();
 
-        [[maybe_unused]] auto subBuffer0 = innerConstBuffer0.getManagedSubView(Vec{2, 2});
+        [[maybe_unused]] auto subBuffer0 = innerConstBuffer0.getSubSharedBuffer(Vec{2, 2});
         static_assert(std::is_const_v<std::remove_pointer_t<decltype(subBuffer0.data())>>);
         static_assert(std::is_const_v<std::remove_reference_t<decltype(subBuffer0[Vec{0, 0}])>>);
 
-        [[maybe_unused]] auto subOffsetBuffer0 = innerConstBuffer0.getManagedSubView(Vec{1, 1}, Vec{2, 2});
+        [[maybe_unused]] auto subOffsetBuffer0 = innerConstBuffer0.getSubSharedBuffer(Vec{1, 1}, Vec{2, 2});
         static_assert(std::is_const_v<std::remove_pointer_t<decltype(subOffsetBuffer0.data())>>);
         static_assert(std::is_const_v<std::remove_reference_t<decltype(subOffsetBuffer0[Vec{0, 0}])>>);
 
@@ -178,14 +178,14 @@ TEST_CASE("buffer const correctness MD", "")
     }
     // non-mutable views (outer const)
     {
-        onHost::ManagedView const outerConstBuffer0 = buffer0;
+        onHost::SharedBuffer const outerConstBuffer0 = buffer0;
         requiresMutableBufferMd(outerConstBuffer0);
 
-        [[maybe_unused]] auto subBuffer0 = outerConstBuffer0.getManagedSubView(Vec{2, 2});
+        [[maybe_unused]] auto subBuffer0 = outerConstBuffer0.getSubSharedBuffer(Vec{2, 2});
         static_assert(std::is_const_v<std::remove_pointer_t<decltype(subBuffer0.data())>>);
         static_assert(std::is_const_v<std::remove_reference_t<decltype(subBuffer0[Vec{0, 0}])>>);
 
-        [[maybe_unused]] auto subOffsetBuffer0 = outerConstBuffer0.getManagedSubView(Vec{1, 1}, Vec{2, 2});
+        [[maybe_unused]] auto subOffsetBuffer0 = outerConstBuffer0.getSubSharedBuffer(Vec{1, 1}, Vec{2, 2});
         static_assert(std::is_const_v<std::remove_pointer_t<decltype(subOffsetBuffer0.data())>>);
         static_assert(std::is_const_v<std::remove_reference_t<decltype(subOffsetBuffer0[Vec{0, 0}])>>);
 

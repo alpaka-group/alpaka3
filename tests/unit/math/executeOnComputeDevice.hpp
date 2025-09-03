@@ -61,15 +61,15 @@ namespace alpaka::test
         INFO("exec:" << onHost::demangledName(exec));
         INFO("device:" << device.getName());
         onHost::Queue queue = device.makeQueue();
-        auto hViewResults = onHost::allocHost<bool>(1u);
-        auto dViewResults = onHost::allocLike(device, hViewResults);
-        onHost::memset(queue, dViewResults, static_cast<std::uint8_t>(true));
+        auto hBufferResults = onHost::allocHost<bool>(1u);
+        auto dBufferResults = onHost::allocLike(device, hBufferResults);
+        onHost::memset(queue, dBufferResults, static_cast<std::uint8_t>(true));
         // Let alpaka calculate good block and grid sizes given our full problem extent
         onHost::concepts::FrameSpec auto frameSpec = onHost::FrameSpec{1u, 1u};
-        auto kernel = KernelBundle{kernelFnObj, dViewResults, ALPAKA_FORWARD(args)...};
+        auto kernel = KernelBundle{kernelFnObj, dBufferResults, ALPAKA_FORWARD(args)...};
         queue.enqueue(exec, frameSpec, kernel);
-        onHost::memcpy(queue, hViewResults, dViewResults);
+        onHost::memcpy(queue, hBufferResults, dBufferResults);
         alpaka::onHost::wait(queue);
-        return hViewResults[0];
+        return hBufferResults[0];
     }
 } // namespace alpaka::test

@@ -27,7 +27,7 @@
 #    include "alpaka/onHost/Handle.hpp"
 #    include "alpaka/onHost/interface.hpp"
 #    include "alpaka/onHost/internal/interface.hpp"
-#    include "alpaka/onHost/mem/ManagedView.hpp"
+#    include "alpaka/onHost/mem/SharedBuffer.hpp"
 
 #    include <cstdint>
 #    include <sstream>
@@ -574,7 +574,7 @@ namespace alpaka::onHost
                          && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
             {
                 auto executors = supportedMappings(getDevice(queue), exec::allExecutors);
-                // avoid that we pass a ManagedView and convert non alpaka data views
+                // avoid that we pass a SharedBuffer and convert non alpaka data views
                 auto dataView = makeView(dest);
 
                 alpaka::internal::generic::fill(
@@ -621,14 +621,14 @@ namespace alpaka::onHost
                         ApiInterface::freeAsync(toVoidPtr(ptr), queueDependency.getNativeHandle()));
                 };
 
-                auto managedView = onHost::ManagedView{
+                auto sharedBuffer = onHost::SharedBuffer{
                     deviceDependency,
                     ptr,
                     extents,
                     pitches,
                     std::move(deleter),
                     Alignment<alignment>{}};
-                return managedView;
+                return sharedBuffer;
             }
         };
     } // namespace internal

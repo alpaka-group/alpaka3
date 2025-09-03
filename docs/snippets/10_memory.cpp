@@ -35,9 +35,9 @@ TEST_CASE("memory", "[docs]")
 
     // Allocate a memory view on the compute device.
     // The memory will be freed automatically when the view goes out of scope.
-    onHost::ManagedView computeView = onHost::alloc<int>(computeDev, 10);
+    onHost::SharedBuffer computeView = onHost::alloc<int>(computeDev, 10);
     // Derive the properties except the location.
-    onHost::ManagedView hostView = onHost::allocHostLike(computeView);
+    onHost::SharedBuffer hostView = onHost::allocHostLike(computeView);
 
     // To operate on host memory views, we need a host queue. Sett all bytes to zero.
     onHost::memset(hostQueue, hostView, 0);
@@ -75,7 +75,7 @@ TEST_CASE("memory using std::vector", "[docs]")
     onHost::Device computeDev = computeDevSelector.makeDevice(0);
     onHost::Queue computeQueue = computeDev.makeQueue();
 
-    onHost::ManagedView computeView = onHost::alloc<int>(computeDev, 10);
+    onHost::SharedBuffer computeView = onHost::alloc<int>(computeDev, 10);
 
     // use std::vector instead of an alpaka view
     std::vector stdVec = std::vector<int>(10, 0);

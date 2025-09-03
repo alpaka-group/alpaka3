@@ -26,7 +26,7 @@
 #    include "alpaka/onHost/Handle.hpp"
 #    include "alpaka/onHost/interface.hpp"
 #    include "alpaka/onHost/internal/interface.hpp"
-#    include "alpaka/onHost/mem/ManagedView.hpp"
+#    include "alpaka/onHost/mem/SharedBuffer.hpp"
 
 #    include <cstdint>
 #    include <sstream>

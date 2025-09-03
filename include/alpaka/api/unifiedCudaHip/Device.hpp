@@ -11,7 +11,7 @@
 #    include "alpaka/api/unifiedCudaHip/Queue.hpp"
 #    include "alpaka/api/util.hpp"
 #    include "alpaka/core/UniformCudaHip.hpp"
-#    include "alpaka/onHost/mem/ManagedView.hpp"
+#    include "alpaka/onHost/mem/SharedBuffer.hpp"
 
 #    include <cstdint>
 #    include <memory>
@@ -212,7 +212,7 @@ namespace alpaka::onHost
                  */
                 constexpr uint32_t alignment = 128u;
 
-                auto buffer = onHost::ManagedView{
+                auto buffer = onHost::SharedBuffer{
                     deviceDependency,
                     ptr,
                     extents,
@@ -254,14 +254,14 @@ namespace alpaka::onHost
                 auto deleter = [ptr, deviceDependency]()
                 { ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::free(toVoidPtr(ptr))); };
 
-                auto managedView = onHost::ManagedView{
+                auto sharedBuffer = onHost::SharedBuffer{
                     deviceDependency,
                     ptr,
                     extents,
                     pitches,
                     std::move(deleter),
                     Alignment<alignment>{}};
-                return managedView;
+                return sharedBuffer;
             }
         };
 
@@ -293,14 +293,14 @@ namespace alpaka::onHost
                 auto deleter = [ptr, deviceDependency]()
                 { ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::hostFree(toVoidPtr(ptr))); };
 
-                auto managedView = onHost::ManagedView{
+                auto sharedBuffer = onHost::SharedBuffer{
                     deviceDependency,
                     ptr,
                     extents,
                     pitches,
                     std::move(deleter),
                     Alignment<alignment>{}};
-                return managedView;
+                return sharedBuffer;
             }
         };
 

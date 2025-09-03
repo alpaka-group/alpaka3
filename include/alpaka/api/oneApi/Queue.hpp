@@ -119,7 +119,7 @@ namespace alpaka::onHost::internal
                      && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
         {
             auto executors = supportedMappings(getDevice(queue), exec::allExecutors);
-            // avoid that we pass a ManagedView and convert non alpaka data views
+            // avoid that we pass a SharedBuffer and convert non alpaka data views
             auto dataView = makeView(dest);
 
             alpaka::internal::generic::fill(queue, std::get<0>(executors), dataView.getSubView(extents), elementValue);

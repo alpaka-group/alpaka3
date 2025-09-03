@@ -77,11 +77,11 @@ void executeTest(
     auto computeDev = computeQueue.getDevice();
     using DataType = T_DataType;
     using OutDataType = decltype(functorPair.second(std::declval<DataType>(), std::declval<DataType>()));
-    onHost::ManagedView computeViewOut = onHost::allocAsync<OutDataType>(computeQueue, extentMd);
-    onHost::ManagedView computeViewIn0 = onHost::allocAsync<DataType>(computeQueue, extentMd);
-    onHost::ManagedView computeViewIn1 = onHost::allocLikeAsync(computeQueue, computeViewIn0);
-    onHost::ManagedView hostViewIota = onHost::allocLike(onHost::makeHostDevice(), computeViewIn0);
-    onHost::ManagedView hostViewOut = onHost::allocLike(onHost::makeHostDevice(), computeViewOut);
+    onHost::SharedBuffer computeViewOut = onHost::allocAsync<OutDataType>(computeQueue, extentMd);
+    onHost::SharedBuffer computeViewIn0 = onHost::allocAsync<DataType>(computeQueue, extentMd);
+    onHost::SharedBuffer computeViewIn1 = onHost::allocLikeAsync(computeQueue, computeViewIn0);
+    onHost::SharedBuffer hostViewIota = onHost::allocLike(onHost::makeHostDevice(), computeViewIn0);
+    onHost::SharedBuffer hostViewOut = onHost::allocLike(onHost::makeHostDevice(), computeViewOut);
 
     // initialize with the linearized index
     DataType iotaCounter = 0;

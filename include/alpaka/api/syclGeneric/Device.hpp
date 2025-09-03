@@ -13,7 +13,7 @@
 #    include "alpaka/api/syclGeneric/Event.hpp"
 #    include "alpaka/api/syclGeneric/Queue.hpp"
 #    include "alpaka/api/util.hpp"
-#    include "alpaka/onHost/mem/ManagedView.hpp"
+#    include "alpaka/onHost/mem/SharedBuffer.hpp"
 
 #    include <sycl/sycl.hpp>
 
@@ -127,14 +127,14 @@ namespace alpaka::onHost
                     sycl::aligned_alloc_device(alignment, memSizeInByte, sycl_device, sycl_context));
                 auto deleter = [ctx = sycl_context, ptr]() { sycl::free(toVoidPtr(ptr), ctx); };
 
-                auto managedView = onHost::ManagedView{
+                auto sharedBuffer = onHost::SharedBuffer{
                     deviceDependency,
                     ptr,
                     extents,
                     pitches,
                     std::move(deleter),
                     Alignment<alignment>{}};
-                return managedView;
+                return sharedBuffer;
             }
         };
 
@@ -161,14 +161,14 @@ namespace alpaka::onHost
                     sycl::aligned_alloc_shared(alignment, memSizeInByte, sycl_device, sycl_context));
                 auto deleter = [ctx = sycl_context, ptr]() { sycl::free(toVoidPtr(ptr), ctx); };
 
-                auto managedView = onHost::ManagedView{
+                auto sharedBuffer = onHost::SharedBuffer{
                     deviceDependency,
                     ptr,
                     extents,
                     pitches,
                     std::move(deleter),
                     Alignment<alignment>{}};
-                return managedView;
+                return sharedBuffer;
             }
         };
 
@@ -189,14 +189,14 @@ namespace alpaka::onHost
                     = reinterpret_cast<T_Type*>(sycl::aligned_alloc_host(alignment, memSizeInByte, sycl_context));
                 auto deleter = [ctx = sycl_context, ptr]() { sycl::free(toVoidPtr(ptr), ctx); };
 
-                auto managedView = onHost::ManagedView{
+                auto sharedBuffer = onHost::SharedBuffer{
                     deviceDependency,
                     ptr,
                     extents,
                     pitches,
                     std::move(deleter),
                     Alignment<alignment>{}};
-                return managedView;
+                return sharedBuffer;
             }
         };
 

@@ -167,9 +167,9 @@ namespace mathtest
             TFunctor functor;
             auto args = Buffer{queue, hViewArgs, dViewArgs};
 
-            auto hViewResults = onHost::allocHost<TData>(capacity);
-            auto dViewResults = onHost::allocLike(device, hViewResults);
-            auto results = Buffer{queue, hViewResults, dViewResults};
+            auto hBufferResults = onHost::allocHost<TData>(capacity);
+            auto dBufferResults = onHost::allocLike(device, hBufferResults);
+            auto results = Buffer{queue, hBufferResults, dBufferResults};
 
             // Let alpaka calculate good block and grid sizes given our full problem extent
             constexpr uint32_t frameExtents = 256;

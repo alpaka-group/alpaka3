@@ -163,11 +163,11 @@ Memory
 
 Memory allocation and transfers are symmetric for host and devices, both done via alpaka API
 
-Allocate a managed view in host memory
+Allocate a shared buffer in host memory
   .. literalinclude:: ../../snippets/cheatsheet.cpp
     :language: cpp
-    :start-after: BEGIN-CHEATSHEET-allocHostView
-    :end-before: END-CHEATSHEET-allocHostView
+    :start-after: BEGIN-CHEATSHEET-allocHostBuffer
+    :end-before: END-CHEATSHEET-allocHostBuffer
     :dedent:
 
 Create a view to host memory represented by a pointer
@@ -212,18 +212,18 @@ View initialization, etc.
     :end-before: END-CHEATSHEET-initView
     :dedent:
 
-Allocate a view
+Allocate a buffer
   .. literalinclude:: ../../snippets/cheatsheet.cpp
     :language: cpp
-    :start-after: BEGIN-CHEATSHEET-allocView
-    :end-before: END-CHEATSHEET-allocView
+    :start-after: BEGIN-CHEATSHEET-allocBuffer
+    :end-before: END-CHEATSHEET-allocBuffer
     :dedent:
 
-Copy view data
+Copy multidimensiona buffer/view or span data
   .. literalinclude:: ../../snippets/cheatsheet.cpp
     :language: cpp
-    :start-after: BEGIN-CHEATSHEET-copyView
-    :end-before: END-CHEATSHEET-copyView
+    :start-after: BEGIN-CHEATSHEET-memcpy
+    :end-before: END-CHEATSHEET-memcpy
     :dedent:
 
 Kernel Execution

@@ -226,13 +226,13 @@ auto main() -> int
         // END-CHEATSHEET-waitEvent
 
         {
-            // BEGIN-CHEATSHEET-allocHostView
+            // BEGIN-CHEATSHEET-allocHostBuffer
             // Allocate memory for the alpaka buffer, which is a dynamic 3-dimensional array
             // Memory allocations support any dimensionality
-            concepts::View auto hostView = onHost::allocHost<DataType>(extent3D);
-            // END-CHEATSHEET-allocHostView
+            concepts::View auto hostBuffer = onHost::allocHost<DataType>(extent3D);
+            // END-CHEATSHEET-allocHostBuffer
 
-            unused(hostView);
+            unused(hostBuffer);
         }
 
         {
@@ -250,7 +250,7 @@ auto main() -> int
             // BEGIN-CHEATSHEET-makeViewFromStdVector
             std::vector vec = std::vector<DataType>(42u);
             // the api is not required, std::vector is assumed to be api::host
-            // a non managed view us usable within a kernel and on the host therefore no namespace 'onHost' is required
+            // a non owning view us usable within a kernel and on the host therefore no namespace 'onHost' is required
             auto hostView = makeView(vec);
             // END-CHEATSHEET-makeViewFromStdVector
 
@@ -270,57 +270,59 @@ auto main() -> int
         }
 
         {
-            concepts::View auto view = onHost::allocHost<DataType>(numElements);
+            concepts::View auto buffer = onHost::allocHost<DataType>(numElements);
             // BEGIN-CHEATSHEET-dataPtr
-            DataType* rawPtr = onHost::data(view);
+            DataType* rawPtr = onHost::data(buffer);
             // END-CHEATSHEET-dataPtr
 
             unused(rawPtr);
 
             // BEGIN-CHEATSHEET-getPitches
-            // memory in bytes to the next element in the view along the pitch dimension
-            concepts::Vector auto viewPitches = onHost::getPitches(view);
+            // memory in bytes to the next element in the buffer along the pitch dimension
+            concepts::Vector auto bufferPitches = onHost::getPitches(buffer);
             // END-CHEATSHEET-getPitches
 
-            unused(viewPitches);
+            unused(bufferPitches);
 
             // BEGIN-CHEATSHEET-initView
-            // the view can have any dimensionality
+            // The buffer can have any dimensionality.
+            // Memory manipulation functions supporting views too.
             // set all bytes to zero
-            onHost::memset(queue, view, uint8_t{0});
+            onHost::memset(queue, buffer, uint8_t{0});
             // element-wise fill with value
-            onHost::fill(queue, view, 42);
+            onHost::fill(queue, buffer, 42);
             // END-CHEATSHEET-initView
         }
 
         concepts::Vector auto extentMd = Vec{value};
         {
-            // BEGIN-CHEATSHEET-allocView
-            // the allocation is providing a managed view which will be
+            // BEGIN-CHEATSHEET-allocBuffer
+            // the allocation is providing a shared buffer which will be
             // automatically freed if the last handle runs out of a life-time
-            concepts::View auto devView = onHost::alloc<DataType>(device, extentMd);
+            concepts::View auto devBuffer = onHost::alloc<DataType>(device, extentMd);
             // allocate memory which lives on the host but is accessible from the device too
-            concepts::View auto devMappedView = onHost::allocMapped<DataType>(device, extentMd);
+            concepts::View auto devMappedBuffer = onHost::allocMapped<DataType>(device, extentMd);
             // allocate memory can be accessed from host and device (unified memory),
             // the real location depends on the native backend e.g. CUDA, OneApi, ...
-            concepts::View auto devUnifiedView = onHost::allocUnified<DataType>(device, extentMd);
+            concepts::View auto devUnifiedBuffer = onHost::allocUnified<DataType>(device, extentMd);
             // allocate memory accessible from host
             concepts::View auto hostView = onHost::allocHost<DataType>(extentMd);
-            // data will not be automatically freed, user must take care that
-            // the original data life-time is longer than the unmanaged view
-            concepts::View auto devViewUnmanaged = devView.getView();
-            // END-CHEATSHEET-allocView
+            // Data will not be automatically freed, user must take care that
+            // the original data life-time is longer than the non-owning view.
+            concepts::View auto devNonOwningView = devBuffer.getView();
+            // END-CHEATSHEET-allocBuffer
 
-            unused(devMappedView, devUnifiedView, devViewUnmanaged);
+            unused(devMappedBuffer, devUnifiedBuffer, devNonOwningView);
 
-            auto dstView = devView;
-            auto srcView = devMappedView;
+            auto dstBuffer = devBuffer;
+            auto srcBuffer = devMappedBuffer;
 
-            // BEGIN-CHEATSHEET-copyView
-            onHost::memcpy(queue, dstView, srcView);
-            // providing the extent is optional and allow partial copies
-            onHost::memcpy(queue, dstView, srcView, extentMd);
-            // END-CHEATSHEET-copyView
+            // BEGIN-CHEATSHEET-memcpy
+            // Memory manipulation functions supporting views too.
+            onHost::memcpy(queue, dstBuffer, srcBuffer);
+            // Providing the extent is optional and allow partial copies.
+            onHost::memcpy(queue, dstBuffer, srcBuffer, extentMd);
+            // END-CHEATSHEET-memcpy
         }
 
         concepts::Vector auto numFramesMd = Vec{valueY, valueX};

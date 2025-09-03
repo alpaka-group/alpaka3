@@ -189,7 +189,7 @@ namespace alpaka::onHost
     /** Allocate host memory with the same value type and extents as an existing view.
      *
      * The content of the source view is **not** copied. The function deduces the
-     * element type and extents from `view` and creates a new managed view on the
+     * element type and extents from `view` and creates a new shared buffer on the
      * host controller device.
      *
      * @param view a view (e.g. `std::vector`, `std::array`, or any compatible type)

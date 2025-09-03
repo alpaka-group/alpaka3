@@ -42,7 +42,7 @@ TEST_CASE("first kernel", "[docs]")
     onHost::Device computeDev = computeDevSelector.makeDevice(0);
     onHost::Queue computeQueue = computeDev.makeQueue();
 
-    onHost::ManagedView computeView = onHost::alloc<int>(computeDev, 111);
+    onHost::SharedBuffer computeView = onHost::alloc<int>(computeDev, 111);
 
     // use std::vector instead of an alpaka view
     std::vector stdVec = std::vector<int>(computeView.getExtents().x(), 0);
@@ -102,11 +102,11 @@ TEST_CASE("MD vector add kernel", "[docs]")
     onHost::Queue computeQueue = computeDev.makeQueue();
 
     auto extentMd = Vec{5, 7, 4097};
-    onHost::ManagedView computeViewOut = onHost::alloc<int>(computeDev, extentMd);
-    onHost::ManagedView computeViewIn0 = onHost::allocLike(computeDev, computeViewOut);
-    onHost::ManagedView computeViewIn1 = onHost::allocLike(computeDev, computeViewOut);
+    onHost::SharedBuffer computeViewOut = onHost::alloc<int>(computeDev, extentMd);
+    onHost::SharedBuffer computeViewIn0 = onHost::allocLike(computeDev, computeViewOut);
+    onHost::SharedBuffer computeViewIn1 = onHost::allocLike(computeDev, computeViewOut);
 
-    onHost::ManagedView hostViewIota = onHost::allocLike(onHost::makeHostDevice(), computeViewOut);
+    onHost::SharedBuffer hostViewIota = onHost::allocLike(onHost::makeHostDevice(), computeViewOut);
 
     // initialize with the linearized index
     int iotaCounter = 0;
