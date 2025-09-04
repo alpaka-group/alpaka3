@@ -441,4 +441,215 @@ namespace alpaka::tensor::ops
         std::vector<Fn> nodes_{};
     };
 
+    // ---------------- Element-wise Addition for Residual Connections ----------------
+    namespace detail
+    {
+        template<typename T>
+        struct ElementwiseAddKernel
+        {
+            template<typename Acc, typename InBuf1, typename InBuf2, typename OutBuf>
+            ALPAKA_FN_ACC void operator()(
+                Acc const& acc,
+                InBuf1 in1,
+                InBuf2 in2,
+                OutBuf out,
+                std::size_t N,
+                std::size_t C,
+                std::size_t H,
+                std::size_t W,
+                std::size_t total) const
+            {
+                for(auto [idx] :
+                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{total}))
+                {
+                    auto hw = H * W;
+                    auto nStride = C * hw;
+                    auto n = idx / nStride;
+                    auto rem = idx % nStride;
+                    auto c = rem / hw;
+                    auto rem2 = rem % hw;
+                    auto h = rem2 / W;
+                    auto w = rem2 % W;
+                    auto coord = alpaka::Vec<std::size_t, 4>{n, c, h, w};
+                    out[coord] = in1[coord] + in2[coord];
+                }
+            }
+        };
+    } // namespace detail
+
+    template<typename Device>
+    struct AddLayerStruct
+    {
+        template<typename Exec, typename Queue>
+        tensor::Tensor4D<float, Device> operator()(
+            Exec const& exec,
+            Device& device,
+            Queue& queue,
+            tensor::Tensor4D<float, Device>& input1,
+            tensor::Tensor4D<float, Device>& input2) const
+        {
+            auto shape1 = input1.shape();
+            auto shape2 = input2.shape();
+            assert(shape1 == shape2 && "AddLayer: input tensors must have same shape");
+
+            tensor::Tensor4D<float, Device> output(device, shape1, "add_output");
+
+            input1.ensureOnDevice(device, queue);
+            input2.ensureOnDevice(device, queue);
+            output.ensureOnDevice(device, queue);
+
+            auto N = shape1[0], C = shape1[1], H = shape1[2], W = shape1[3];
+            std::size_t total = N * C * H * W;
+
+            auto frame = ops::detail::makeFrame<Exec, Queue>(total);
+            queue.enqueue(
+                exec,
+                frame,
+                detail::ElementwiseAddKernel<float>{},
+                input1.deviceBuffer(device, queue),
+                input2.deviceBuffer(device, queue),
+                output.deviceBuffer(device, queue),
+                N,
+                C,
+                H,
+                W,
+                total);
+
+            output.markDeviceModified(device, queue);
+            alpaka::onHost::wait(queue);
+            return output;
+        }
+    };
+
+    // ---------------- Residual Block ----------------
+    template<typename Device>
+    struct ResidualBlockStruct
+    {
+        Conv2DLayerStruct<Device> conv1;
+        ReLULayerStruct<Device> relu1;
+        Conv2DLayerStruct<Device> conv2;
+        std::optional<Conv2DLayerStruct<Device>> projection; // 1x1 conv for dimension matching
+        ReLULayerStruct<Device> final_relu;
+
+        // Basic residual block: Conv -> ReLU -> Conv -> Add(skip) -> ReLU
+        template<typename Exec, typename Queue>
+        tensor::Tensor4D<float, Device> operator()(
+            Exec const& exec,
+            Device& device,
+            Queue& queue,
+            tensor::Tensor4D<float, Device>& input) const
+        {
+            // Store original input for skip connection
+            auto skip = input;
+
+            // Forward through conv layers
+            auto x = conv1(exec, device, queue, input);
+            x = relu1(exec, device, queue, x);
+            x = conv2(exec, device, queue, x);
+
+            // Handle dimension mismatch with projection if needed
+            if(projection)
+            {
+                skip = (*projection)(exec, device, queue, skip);
+            }
+
+            // Add skip connection
+            AddLayerStruct<Device> add_layer;
+            auto output = add_layer(exec, device, queue, x, skip);
+
+            // Final activation
+            return final_relu(exec, device, queue, output);
+        }
+    };
+
+    // ---------------- Smart Helpers for Residual Networks ----------------
+    namespace smart_helpers
+    {
+
+        struct ResidualDefaults
+        {
+            static constexpr std::size_t kernel_size = 3;
+            static constexpr std::size_t stride = 1;
+            static constexpr std::size_t padding = 1;
+            static constexpr bool use_bias = false; // Typically false with BatchNorm
+        };
+
+        // Create a basic residual block with same input/output dimensions
+        template<typename Device, typename Exec, typename Queue>
+        ResidualBlockStruct<Device> createBasicBlock(
+            Exec const& exec,
+            Queue& queue,
+            Device& device,
+            std::size_t in_channels,
+            std::size_t out_channels,
+            std::size_t stride = 1)
+        {
+            ResidualBlockStruct<Device> block;
+
+            // First conv layer
+            Conv2DParams params1{};
+            params1.stride_h = stride;
+            params1.stride_w = stride;
+            params1.pad_h = ResidualDefaults::padding;
+            params1.pad_w = ResidualDefaults::padding;
+
+            // Initialize weights for conv1
+            tensor::Tensor4D<float, Device> weights1(device, {out_channels, in_channels, 3, 3}, "resblock_conv1_w");
+            auto* w1_data = weights1.hostData();
+            for(std::size_t i = 0; i < weights1.size(); ++i)
+            {
+                w1_data[i] = 0.01f; // Simple initialization
+            }
+            weights1.markHostModified();
+
+            block.conv1 = Conv2DLayerStruct<Device>{std::move(weights1), std::nullopt, params1};
+            block.relu1 = ReLULayerStruct<Device>{true};
+
+            // Second conv layer
+            Conv2DParams params2{};
+            params2.stride_h = 1; // Always 1 for second conv
+            params2.stride_w = 1;
+            params2.pad_h = ResidualDefaults::padding;
+            params2.pad_w = ResidualDefaults::padding;
+
+            tensor::Tensor4D<float, Device> weights2(device, {out_channels, out_channels, 3, 3}, "resblock_conv2_w");
+            auto* w2_data = weights2.hostData();
+            for(std::size_t i = 0; i < weights2.size(); ++i)
+            {
+                w2_data[i] = 0.01f;
+            }
+            weights2.markHostModified();
+
+            block.conv2 = Conv2DLayerStruct<Device>{std::move(weights2), std::nullopt, params2};
+
+            // Add projection if dimensions change
+            if(in_channels != out_channels || stride != 1)
+            {
+                Conv2DParams proj_params{};
+                proj_params.stride_h = stride;
+                proj_params.stride_w = stride;
+                proj_params.pad_h = 0;
+                proj_params.pad_w = 0;
+
+                tensor::Tensor4D<float, Device> proj_weights(
+                    device,
+                    {out_channels, in_channels, 1, 1},
+                    "resblock_proj_w");
+                auto* proj_data = proj_weights.hostData();
+                for(std::size_t i = 0; i < proj_weights.size(); ++i)
+                {
+                    proj_data[i] = 0.01f;
+                }
+                proj_weights.markHostModified();
+
+                block.projection = Conv2DLayerStruct<Device>{std::move(proj_weights), std::nullopt, proj_params};
+            }
+
+            block.final_relu = ReLULayerStruct<Device>{true};
+
+            return block;
+        }
+
+    } // namespace smart_helpers
+
 } // namespace alpaka::tensor::ops
