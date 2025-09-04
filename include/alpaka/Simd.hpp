@@ -49,16 +49,46 @@ namespace alpaka
 
             return static_cast<uint32_t>(alignof(T_ValueType));
         }
+
+        /** Simd array storge for vector data
+         *
+         * The storage is align for native simd usage.
+         */
+        template<typename T_Type, uint32_t T_dim, concepts::Alignment T_Alignment>
+        struct alignas(alpaka::detail::optimalAlignment<T_Type, T_dim, T_Alignment>()) SimdArrayStorage
+            : protected std::array<T_Type, T_dim>
+        {
+            using type = T_Type;
+            using BaseType = std::array<T_Type, T_dim>;
+            using BaseType::operator[];
+            using AlignmentType = Alignment<optimalAlignment<T_Type, T_dim, T_Alignment>()>;
+
+            // constructor is required because exposing the array constructors does not work
+            template<typename... T_Args>
+            constexpr SimdArrayStorage(T_Args&&... args) : BaseType{std::forward<T_Args>(args)...}
+            {
+            }
+
+            constexpr SimdArrayStorage(std::array<T_Type, T_dim> const& data) : BaseType{data}
+            {
+            }
+
+            static constexpr AlignmentType getAlignment()
+            {
+                return AlignmentType{};
+            }
+        };
     } // namespace detail
+
     template<
         typename T_Type,
         uint32_t T_dim,
         concepts::Alignment T_Alignment = Alignment<sizeof(T_Type) * T_dim>,
-        typename T_Storage = ArrayStorage<T_Type, T_dim>>
+        typename T_Storage = detail::SimdArrayStorage<T_Type, T_dim, T_Alignment>>
     struct Simd;
 
     template<typename T_Type, uint32_t T_dim, concepts::Alignment T_Alignment, typename T_Storage>
-    struct alignas(alpaka::detail::optimalAlignment<T_Type, T_dim, T_Alignment>()) Simd : private T_Storage
+    struct Simd : private T_Storage
     {
         using Storage = T_Storage;
         using type = T_Type;
@@ -261,7 +291,12 @@ namespace alpaka
 
         /** named member access
          *
+         * @attention The mapping from names x,y,z,w to memory indicies differ from the mapping of an alpaka vector @c
+         * Vec
+         *
          * index -> name [0->x,1->y,2->z,3->w]
+         *               [0->r,1->g,2->b,3->a]
+         *               [0->s0,1->s1,2->s2,...,10->sA,...,15->sF]
          * @{
          */
 #define ALPAKA_NAMED_ARRAY_ACCESS(functionName, dimValue)                                                             \
@@ -278,6 +313,26 @@ namespace alpaka
         ALPAKA_NAMED_ARRAY_ACCESS(y, 1u)
         ALPAKA_NAMED_ARRAY_ACCESS(z, 2u)
         ALPAKA_NAMED_ARRAY_ACCESS(w, 3u)
+        ALPAKA_NAMED_ARRAY_ACCESS(r, 0u)
+        ALPAKA_NAMED_ARRAY_ACCESS(g, 1u)
+        ALPAKA_NAMED_ARRAY_ACCESS(b, 2u)
+        ALPAKA_NAMED_ARRAY_ACCESS(a, 3u)
+        ALPAKA_NAMED_ARRAY_ACCESS(s0, 0u)
+        ALPAKA_NAMED_ARRAY_ACCESS(s1, 1u)
+        ALPAKA_NAMED_ARRAY_ACCESS(s2, 2u)
+        ALPAKA_NAMED_ARRAY_ACCESS(s3, 3u)
+        ALPAKA_NAMED_ARRAY_ACCESS(s4, 4u)
+        ALPAKA_NAMED_ARRAY_ACCESS(s5, 5u)
+        ALPAKA_NAMED_ARRAY_ACCESS(s6, 6u)
+        ALPAKA_NAMED_ARRAY_ACCESS(s7, 7u)
+        ALPAKA_NAMED_ARRAY_ACCESS(s8, 8u)
+        ALPAKA_NAMED_ARRAY_ACCESS(s9, 9u)
+        ALPAKA_NAMED_ARRAY_ACCESS(sA, 10u)
+        ALPAKA_NAMED_ARRAY_ACCESS(sB, 11u)
+        ALPAKA_NAMED_ARRAY_ACCESS(sC, 12u)
+        ALPAKA_NAMED_ARRAY_ACCESS(sD, 13u)
+        ALPAKA_NAMED_ARRAY_ACCESS(sE, 14u)
+        ALPAKA_NAMED_ARRAY_ACCESS(sF, 15u)
 
 #undef ALPAKA_NAMED_ARRAY_ACCESS
 
@@ -573,7 +628,10 @@ namespace alpaka
         T_1,
         uint32_t(sizeof...(T_Args) + 1u),
         Alignment<sizeof(T_1) * uint32_t(sizeof...(T_Args) + 1u)>,
-        ArrayStorage<T_1, uint32_t(sizeof...(T_Args) + 1u)>>;
+        detail::SimdArrayStorage<
+            T_1,
+            uint32_t(sizeof...(T_Args) + 1u),
+            Alignment<sizeof(T_1) * uint32_t(sizeof...(T_Args) + 1u)>>>;
 
 /** binary operators
  * @{
