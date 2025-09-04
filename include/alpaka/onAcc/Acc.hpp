@@ -10,6 +10,7 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/meta/NdLoop.hpp"
 #include "alpaka/onAcc/interface.hpp"
+#include "alpaka/onAcc/threadFence.hpp" // threadFence (non-blocking memory visibility fence)
 #include "alpaka/tag.hpp"
 
 #include <cassert>

@@ -31,6 +31,7 @@
 #include "alpaka/onAcc/atomic.hpp"
 #include "alpaka/onAcc/interface.hpp"
 #include "alpaka/onAcc/tag.hpp"
+#include "alpaka/onAcc/threadFence.hpp"
 #include "alpaka/onHost/Device.hpp"
 #include "alpaka/onHost/DeviceSelector.hpp"
 #include "alpaka/onHost/Queue.hpp"
@@ -45,6 +46,11 @@
 #include "utility.hpp"
 
 #include <alpaka/onHost/demangledName.hpp>
+
+// Thread fence backend implementations (non-blocking memory visibility fence.)
+#include "alpaka/api/host/threadFence.hpp"
+#include "alpaka/api/syclGeneric/threadFence.hpp"
+#include "alpaka/api/unifiedCudaHip/threadFence.hpp"
 
 /** main alpaka namespace.
  *
