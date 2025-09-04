@@ -16,7 +16,7 @@
 //! Writes the buffer to a png file
 //!
 //! \param currentStep the current step of the simulation
-//! \param buffer the buffer to write to the file
+//! \param dataMdSpan the buffer to write to the file
 template<typename T_MdSpan>
 auto writeImage(uint32_t const currentStep, T_MdSpan const& dataMdSpan) -> void
 {

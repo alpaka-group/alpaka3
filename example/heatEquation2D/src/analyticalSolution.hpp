@@ -20,9 +20,9 @@ ALPAKA_FN_HOST_ACC auto exactSolution(double const x, double const y, double con
     return alpaka::math::exp(-pi * pi * t) * (alpaka::math::sin(pi * x) + alpaka::math::sin(pi * y));
 }
 
-//! Valdidate calculated solution in the buffer to the analytical solution at t=tMax
+//! Validate calculated solution in the buffer to the analytical solution at t=tMax
 //!
-//! \param buffer buffer holding the solution at t=tMax
+//! \param dataMdSpan buffer holding the solution at t=tMax
 //! \param extent extents of the buffer
 //! \param dx
 //! \param dy
@@ -57,8 +57,7 @@ auto validateSolution(
 
 //! Initialize the buffer to the analytical solution at t=0
 //!
-//! \param buffer buffer holding the solution at tMax
-//! \param extent extents of the buffer
+//! \param dataMdSpan buffer holding the solution at tMax
 //! \param dx
 //! \param dy
 template<alpaka::concepts::MdSpan T_MdSpan>

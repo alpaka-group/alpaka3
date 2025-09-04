@@ -39,22 +39,22 @@ struct StencilKernel
     {
         using namespace alpaka;
 
-        for(alpaka::concepts::Dim<2u> auto blockStartIdx :
+        for(concepts::Dim<2u> auto blockStartIdx :
             onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec{0u, 0u}, numNodes, chunkSize}))
         {
             auto sdata = onAcc::declareSharedMdArray<double, uniqueId()>(acc, sharedMemExtents);
 
             // avoid data race with the stencil calculation at the end
-            alpaka::onAcc::syncBlockThreads(acc);
+            onAcc::syncBlockThreads(acc);
 
-            for(alpaka::concepts::Dim<2u> auto idx2d :
+            for(concepts::Dim<2u> auto idx2d :
                 onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{sharedMemExtents}))
             {
                 auto bufIdx = idx2d + blockStartIdx;
                 sdata[idx2d] = uCurrBuf[bufIdx];
             }
 
-            alpaka::onAcc::syncBlockThreads(acc);
+            onAcc::syncBlockThreads(acc);
 
             // Each kernel executes one element
             double const rX = dt / (dx * dx);
@@ -65,7 +65,7 @@ struct StencilKernel
 
             // go over only core cells
             // Vec{1, 1}; offset for halo above and to the left
-            for(alpaka::concepts::Dim<2u> auto idx2D : onAcc::makeIdxMap(
+            for(concepts::Dim<2u> auto idx2D : onAcc::makeIdxMap(
                     acc,
                     onAcc::worker::threadsInBlock,
                     IdxRange{chunkSize} >> 1u,

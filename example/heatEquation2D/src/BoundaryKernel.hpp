@@ -16,7 +16,6 @@
 //!
 //! \param uBuf grid values of u for each x, y and the current value of t:
 //!                 u(x, y, t)  | t = t_current
-//! \param chunkSize
 //! \param pitch
 //! \param dx step in x
 //! \param dy step in y
@@ -27,7 +26,6 @@ struct BoundaryKernel
     ALPAKA_FN_ACC auto operator()(
         TAcc const& acc,
         alpaka::concepts::MdSpan auto uBuf,
-        alpaka::concepts::Vector auto const chunkSize,
         alpaka::concepts::Vector auto numNodes,
         uint32_t step,
         double const dx,
