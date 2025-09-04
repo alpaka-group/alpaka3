@@ -89,8 +89,8 @@ namespace alpaka::tensor::ops
                     alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{total}))
                 {
                     auto hw = H * W;
-                    auto cStride = hw;
-                    auto nStride = C * hw;
+                    [[maybe_unused]] auto cStride = hw;
+                    [[maybe_unused]] auto nStride = C * hw;
                     auto n = idx / nStride;
                     auto rem = idx % nStride;
                     auto c = rem / hw;

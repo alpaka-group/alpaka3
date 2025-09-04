@@ -8,13 +8,15 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/TensorCore.hpp>
 #include <alpaka/tensor/ops/ElementwiseGeneric.hpp>
+
+#include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <stdexcept>
 #include <type_traits>
-#include <algorithm>
-#include <cmath>
 
-namespace alpaka::tensor::ops {
+namespace alpaka::tensor::ops
+{
 
     // SIMD-based ReLU kernel following alpaka3 best practices (like babelstream)
     struct SimdReLUKernel
@@ -49,10 +51,13 @@ namespace alpaka::tensor::ops {
     };
 
     // Generic 1D fallback kernel for elementwise ReLU (rank-agnostic flattened launch)
-    struct SimpleUnaryReluKernel {
+    struct SimpleUnaryReluKernel
+    {
         template<typename Acc, typename InBuf, typename OutBuf>
-        ALPAKA_FN_ACC void operator()(Acc const& acc, InBuf in, OutBuf out, std::size_t n) const {
-            for(auto [i] : alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{n})) {
+        ALPAKA_FN_ACC void operator()(Acc const& acc, InBuf in, OutBuf out, std::size_t n) const
+        {
+            for(auto [i] : alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{n}))
+            {
                 auto v = in[i];
                 out[i] = v > decltype(v){} ? v : decltype(v){};
             }
@@ -72,47 +77,63 @@ namespace alpaka::tensor::ops {
 
     // ReLU activation function - applies ReLU elementwise to separate input/output tensors
     template<typename Exec, typename Device, typename Queue, typename TensorIn, typename TensorOut>
-    void relu(
-        Exec const& exec,
-        Device& device,
-        Queue& queue,
-        TensorIn& input,
-        TensorOut& output)
+    void relu(Exec const& exec, Device& device, Queue& queue, TensorIn& input, TensorOut& output)
     {
         // Generic element count check
         if(input.size() != output.size())
             throw std::runtime_error("ReLU: size mismatch");
 
         // Fast path for 4D tensors (keep existing debug output & indexing)
-        if constexpr (TensorIn::rank == 4 && TensorOut::rank == 4) {
+        if constexpr(TensorIn::rank == 4 && TensorOut::rank == 4)
+        {
             std::cout << "ReLU: 4D fast path" << std::endl;
-            auto n = input.size(); if(n==0) return;
+            auto n = input.size();
+            if(n == 0)
+                return;
             auto extents = input.deviceBuffer(device, queue).getExtents();
-            std::cout << "ReLU: Tensor extents = [" << extents[0] << ", " << extents[1] << ", " << extents[2] << ", " << extents[3] << "]" << std::endl;
+            std::cout << "ReLU: Tensor extents = [" << extents[0] << ", " << extents[1] << ", " << extents[2] << ", "
+                      << extents[3] << "]" << std::endl;
             input.ensureOnDevice(device, queue);
             output.ensureOnDevice(device, queue);
             auto frameExtent = alpaka::Vec{std::size_t{1}, std::size_t{1}, std::size_t{1}, extents[3]};
-            auto numFrames   = alpaka::Vec{extents[0], extents[1], extents[2], std::size_t{1}};
-            auto frameSpec   = alpaka::onHost::FrameSpec{numFrames, frameExtent};
-            queue.enqueue(exec, frameSpec, ReLUKernel{},
+            auto numFrames = alpaka::Vec{extents[0], extents[1], extents[2], std::size_t{1}};
+            auto frameSpec = alpaka::onHost::FrameSpec{numFrames, frameExtent};
+            queue.enqueue(
+                exec,
+                frameSpec,
+                ReLUKernel{},
                 input.deviceBuffer(device, queue),
                 output.deviceBuffer(device, queue));
             ::alpaka::onHost::wait(queue);
             output.markDeviceModified(device, queue);
             output.toHost(device, queue);
-            if constexpr (std::is_same_v<Exec, alpaka::exec::CpuOmpBlocks>) ::alpaka::onHost::wait(queue);
-        } else {
+            if constexpr(std::is_same_v<Exec, alpaka::exec::CpuOmpBlocks>)
+                ::alpaka::onHost::wait(queue);
+        }
+        else
+        {
             // Fallback: use generic unary kernel (works for 1D, 2D, etc.)
             std::cout << "ReLU: generic fallback path (rank=" << TensorIn::rank << ")" << std::endl;
             input.ensureOnDevice(device, queue);
             output.ensureOnDevice(device, queue);
-            auto n = input.size(); if(n==0) return;
+            auto n = input.size();
+            if(n == 0)
+                return;
             // Reuse elementwise generic launcher (local minimal inline implementation)
             unsigned threadsPerBlock = 256u;
             unsigned blocks = static_cast<unsigned>((n + threadsPerBlock - 1) / threadsPerBlock);
-            if(blocks==0) blocks=1;
-            auto frame = alpaka::onHost::FrameSpec{alpaka::Vec<unsigned int,1u>{blocks}, alpaka::Vec<unsigned int,1u>{threadsPerBlock}};
-            queue.enqueue(exec, frame, SimpleUnaryReluKernel{}, input.deviceBuffer(device, queue), output.deviceBuffer(device, queue), n);
+            if(blocks == 0)
+                blocks = 1;
+            auto frame = alpaka::onHost::FrameSpec{
+                alpaka::Vec<unsigned int, 1u>{blocks},
+                alpaka::Vec<unsigned int, 1u>{threadsPerBlock}};
+            queue.enqueue(
+                exec,
+                frame,
+                SimpleUnaryReluKernel{},
+                input.deviceBuffer(device, queue),
+                output.deviceBuffer(device, queue),
+                n);
             ::alpaka::onHost::wait(queue);
             output.markDeviceModified(device, queue);
             output.toHost(device, queue);
@@ -121,13 +142,9 @@ namespace alpaka::tensor::ops {
 
     // In-place ReLU activation - modifies input tensor directly
     template<typename Exec, typename Device, typename Queue, typename Tensor>
-    void relu_inplace(
-        Exec const& exec,
-        Device& device,
-        Queue& queue,
-        Tensor& tensor)
+    void relu_inplace(Exec const& exec, Device& device, Queue& queue, Tensor& tensor)
     {
         relu(exec, device, queue, tensor, tensor);
     }
 
-}
+} // namespace alpaka::tensor::ops
