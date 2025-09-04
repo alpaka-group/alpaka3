@@ -154,10 +154,13 @@ namespace alpaka::example::heatEquation
         StencilKernel stencilKernel;
         BoundaryKernel boundaryKernel;
 
-        auto dataBlockingStencil = FrameSpec{numChunks, chunkSize};
-        auto dataBlockingEdge = FrameSpec{CVec<uint32_t, 1, 1>{}, chunkSize};
+        auto const dataBlockingStencil = FrameSpec{numChunks, chunkSize};
 
-        auto startTime = std::chrono::high_resolution_clock::now();
+        auto const longestSide = std::max(numNodesWithHalo.y(), numNodesWithHalo.x());
+        auto const dataBlockingBorder
+            = FrameSpec{Vec{longestSide / chunkSize.x()}, Vec{std::max(chunkSize.y(), chunkSize.x())}};
+
+        auto const startTime = std::chrono::high_resolution_clock::now();
 
         // Simulate
         for(uint32_t step = 1; step <= numTimeSteps; ++step)
@@ -179,7 +182,7 @@ namespace alpaka::example::heatEquation
 
             computeQueue.enqueue(
                 computeExec,
-                dataBlockingEdge,
+                dataBlockingBorder,
                 KernelBundle{boundaryKernel, uNextBufAcc.getMdSpan(), numNodesWithHalo, step, dx, dy, dt});
 
 #ifdef PNGWRITER_ENABLED
@@ -197,7 +200,7 @@ namespace alpaka::example::heatEquation
         }
 
         wait(computeQueue);
-        auto endTime = std::chrono::high_resolution_clock::now();
+        auto const endTime = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsedTime = endTime - startTime;
 
         std::cout << "Simulation took " << elapsedTime.count() << " seconds." << std::endl;
