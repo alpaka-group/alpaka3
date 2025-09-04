@@ -1,4 +1,4 @@
-// Clean minimal inference layer abstractions (Conv2D, ReLU, MaxPool, Flatten, Linear, Softmax)
+// Clean minimal inference layer abstractions (Conv2D, ReLU, MaxPool, AvgPool, GlobalAvgPool, Flatten, Linear, Softmax)
 // SPDX-License-Identifier: MPL-2.0
 
 #pragma once
@@ -91,6 +91,7 @@ namespace alpaka::tensor::ops
         }
     };
 
+    // ---- Pooling Layers ----
     template<typename Device>
     struct MaxPool2DLayerStruct
     {
@@ -104,6 +105,44 @@ namespace alpaka::tensor::ops
             tensor::Tensor4D<float, Device>& in) const
         {
             return max_pool2d<float>(exec, device, queue, in, params);
+        }
+    };
+
+    template<typename Device>
+    struct AvgPool2DLayerStruct
+    {
+        Pool2DParams params{};
+
+        template<typename Exec, typename Queue>
+        tensor::Tensor4D<float, Device> operator()(
+            Exec const& exec,
+            Device& device,
+            Queue& queue,
+            tensor::Tensor4D<float, Device>& in) const
+        {
+            return avg_pool2d<float>(exec, device, queue, in, params);
+        }
+    };
+
+    template<typename Device>
+    struct GlobalAveragePool2DLayerStruct
+    {
+        template<typename Exec, typename Queue>
+        tensor::Tensor4D<float, Device> operator()(
+            Exec const& exec,
+            Device& device,
+            Queue& queue,
+            tensor::Tensor4D<float, Device>& in) const
+        {
+            auto s = in.shape();
+            Pool2DParams p{
+                static_cast<std::uint32_t>(s[2]),
+                static_cast<std::uint32_t>(s[3]),
+                static_cast<std::uint32_t>(s[2]),
+                static_cast<std::uint32_t>(s[3]),
+                0u,
+                0u};
+            return avg_pool2d<float>(exec, device, queue, in, p);
         }
     };
 
@@ -142,6 +181,32 @@ namespace alpaka::tensor::ops
 
         template<typename Exec, typename Queue>
         void addMaxPool(Exec const&, Queue&, MaxPool2DLayerStruct<Device> l)
+        {
+            nodes_.emplace_back(
+                [l = std::move(l)](void const* e, void* d, void* q, Tensor4D& in)
+                {
+                    auto& exec = *static_cast<Exec const*>(e);
+                    auto& dev = *static_cast<Device*>(d);
+                    auto& qu = *static_cast<Queue*>(q);
+                    return l(exec, dev, qu, in);
+                });
+        }
+
+        template<typename Exec, typename Queue>
+        void addAvgPool(Exec const&, Queue&, AvgPool2DLayerStruct<Device> l)
+        {
+            nodes_.emplace_back(
+                [l = std::move(l)](void const* e, void* d, void* q, Tensor4D& in)
+                {
+                    auto& exec = *static_cast<Exec const*>(e);
+                    auto& dev = *static_cast<Device*>(d);
+                    auto& qu = *static_cast<Queue*>(q);
+                    return l(exec, dev, qu, in);
+                });
+        }
+
+        template<typename Exec, typename Queue>
+        void addGlobalAvgPool(Exec const&, Queue&, GlobalAveragePool2DLayerStruct<Device> l)
         {
             nodes_.emplace_back(
                 [l = std::move(l)](void const* e, void* d, void* q, Tensor4D& in)
@@ -365,10 +430,10 @@ namespace alpaka::tensor::ops
         }
 
         template<typename Exec, typename Queue>
-        void addFlatten(Exec const&, Queue&, FlattenLayerStruct<Device> l)
+        void addAvgPool(Exec const&, Queue&, AvgPool2DLayerStruct<Device> l)
         {
             nodes_.emplace_back(
-                [l](void const* e, void* d, void* q, Any&& in)
+                [l = std::move(l)](void const* e, void* d, void* q, Any&& in)
                 {
                     auto& exec = *static_cast<Exec const*>(e);
                     auto& dev = *static_cast<Device*>(d);
@@ -381,33 +446,17 @@ namespace alpaka::tensor::ops
         }
 
         template<typename Exec, typename Queue>
-        void addLinear(Exec const&, Queue&, LinearLayerStruct<Device> l)
+        void addGlobalAvgPool(Exec const&, Queue&, GlobalAveragePool2DLayerStruct<Device> l)
         {
             nodes_.emplace_back(
-                [l = std::move(l)](void const* e, void* d, void* q, Any&& in) mutable
+                [l = std::move(l)](void const* e, void* d, void* q, Any&& in)
                 {
                     auto& exec = *static_cast<Exec const*>(e);
                     auto& dev = *static_cast<Device*>(d);
                     auto& qu = *static_cast<Queue*>(q);
-                    auto* t1 = std::get_if<T1>(&in);
-                    assert(t1);
-                    auto out = l(exec, dev, qu, *t1);
-                    return Any{std::move(out)};
-                });
-        }
-
-        template<typename Exec, typename Queue>
-        void addSoftmax(Exec const&, Queue&, SoftmaxLayerStruct<Device> l)
-        {
-            nodes_.emplace_back(
-                [l](void const* e, void* d, void* q, Any&& in)
-                {
-                    auto& exec = *static_cast<Exec const*>(e);
-                    auto& dev = *static_cast<Device*>(d);
-                    auto& qu = *static_cast<Queue*>(q);
-                    auto* t1 = std::get_if<T1>(&in);
-                    assert(t1);
-                    auto out = l(exec, dev, qu, *t1);
+                    auto* t4 = std::get_if<T4>(&in);
+                    assert(t4);
+                    auto out = l(exec, dev, qu, *t4);
                     return Any{std::move(out)};
                 });
         }

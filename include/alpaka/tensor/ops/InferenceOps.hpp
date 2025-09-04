@@ -646,35 +646,38 @@ namespace alpaka::tensor::ops
         tensor::Tensor4D<T, Device>& input,
         Pool2DParams const& params)
     {
+        // Reference implementation (host) for correctness; TODO: restore parallel kernel once mapping fixed.
         auto inShape = input.shape();
         auto outShape = compute_pool2d_output_shape(inShape, params);
-        tensor::Tensor4D<T, Device> output(device, outShape, "maxpool");
-        input.ensureOnDevice(device, queue);
+        tensor::Tensor4D<T, Device> output(device, outShape, "maxpool_ref");
+        input.toHost(device, queue);
+        auto N = static_cast<int>(inShape[0]);
+        auto C = static_cast<int>(inShape[1]);
+        auto H = static_cast<int>(inShape[2]);
+        auto W = static_cast<int>(inShape[3]);
+        auto H_out = static_cast<int>(outShape[2]);
+        auto W_out = static_cast<int>(outShape[3]);
+        T const* inH = input.hostData();
+        T* outH = output.hostData();
+        for(int n = 0; n < N; ++n)
+            for(int c = 0; c < C; ++c)
+                for(int ho = 0; ho < H_out; ++ho)
+                    for(int wo = 0; wo < W_out; ++wo)
+                    {
+                        int h_start = ho * params.stride_h - params.pad_h;
+                        int w_start = wo * params.stride_w - params.pad_w;
+                        int h_end = std::min(h_start + (int) params.kernel_h, H);
+                        int w_end = std::min(w_start + (int) params.kernel_w, W);
+                        h_start = std::max(h_start, 0);
+                        w_start = std::max(w_start, 0);
+                        T mx = std::numeric_limits<T>::lowest();
+                        for(int ih = h_start; ih < h_end; ++ih)
+                            for(int iw = w_start; iw < w_end; ++iw)
+                                mx = std::max(mx, inH[(((n * C) + c) * H + ih) * W + iw]);
+                        outH[(((n * C) + c) * H_out + ho) * W_out + wo] = mx;
+                    }
+        output.markHostModified();
         output.ensureOnDevice(device, queue);
-        auto N = inShape[0];
-        auto C = inShape[1];
-        auto H = inShape[2];
-        auto W = inShape[3];
-        auto H_out = outShape[2];
-        auto W_out = outShape[3];
-        auto frameExtent = alpaka::Vec{std::size_t{1}, std::size_t{1}, std::size_t{1}, W_out};
-        auto numFrames = alpaka::Vec{N, C, H_out, std::size_t{1}};
-        auto frameSpec = alpaka::onHost::FrameSpec{numFrames, frameExtent};
-        queue.enqueue(
-            exec,
-            frameSpec,
-            detail::MaxPool2DKernel<T>{},
-            input.deviceBuffer(device, queue),
-            output.deviceBuffer(device, queue),
-            N,
-            C,
-            H,
-            W,
-            H_out,
-            W_out,
-            params);
-        output.markDeviceModified(device, queue);
-        alpaka::onHost::wait(queue); // synchronize to prevent use-after-free
         return output;
     }
 
@@ -689,33 +692,40 @@ namespace alpaka::tensor::ops
     {
         auto inShape = input.shape();
         auto outShape = compute_pool2d_output_shape(inShape, params);
-        tensor::Tensor4D<T, Device> output(device, outShape, "avgpool");
-        input.ensureOnDevice(device, queue);
+        tensor::Tensor4D<T, Device> output(device, outShape, "avgpool_ref");
+        input.toHost(device, queue);
+        auto N = static_cast<int>(inShape[0]);
+        auto C = static_cast<int>(inShape[1]);
+        auto H = static_cast<int>(inShape[2]);
+        auto W = static_cast<int>(inShape[3]);
+        auto H_out = static_cast<int>(outShape[2]);
+        auto W_out = static_cast<int>(outShape[3]);
+        T const* inH = input.hostData();
+        T* outH = output.hostData();
+        for(int n = 0; n < N; ++n)
+            for(int c = 0; c < C; ++c)
+                for(int ho = 0; ho < H_out; ++ho)
+                    for(int wo = 0; wo < W_out; ++wo)
+                    {
+                        int h_start = ho * params.stride_h - params.pad_h;
+                        int w_start = wo * params.stride_w - params.pad_w;
+                        int h_end = std::min(h_start + (int) params.kernel_h, H);
+                        int w_end = std::min(w_start + (int) params.kernel_w, W);
+                        h_start = std::max(h_start, 0);
+                        w_start = std::max(w_start, 0);
+                        T sum = 0;
+                        int count = 0;
+                        for(int ih = h_start; ih < h_end; ++ih)
+                            for(int iw = w_start; iw < w_end; ++iw)
+                            {
+                                sum += inH[(((n * C) + c) * H + ih) * W + iw];
+                                ++count;
+                            }
+                        outH[(((n * C) + c) * H_out + ho) * W_out + wo]
+                            = count > 0 ? sum / static_cast<T>(count) : T{};
+                    }
+        output.markHostModified();
         output.ensureOnDevice(device, queue);
-        auto N = inShape[0];
-        auto C = inShape[1];
-        auto H = inShape[2];
-        auto W = inShape[3];
-        auto H_out = outShape[2];
-        auto W_out = outShape[3];
-        auto frameExtent = alpaka::Vec{std::size_t{1}, std::size_t{1}, std::size_t{1}, W_out};
-        auto numFrames = alpaka::Vec{N, C, H_out, std::size_t{1}};
-        auto frameSpec = alpaka::onHost::FrameSpec{numFrames, frameExtent};
-        queue.enqueue(
-            exec,
-            frameSpec,
-            detail::AvgPool2DKernel<T>{},
-            input.deviceBuffer(device, queue),
-            output.deviceBuffer(device, queue),
-            N,
-            C,
-            H,
-            W,
-            H_out,
-            W_out,
-            params);
-        output.markDeviceModified(device, queue);
-        alpaka::onHost::wait(queue); // synchronize to prevent use-after-free
         return output;
     }
 
