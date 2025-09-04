@@ -170,7 +170,10 @@ int runLeNet(
 
     LeNetWeights<Device> W(device, wPaths);
 
+    // Neural Network Pipeline Construction using MultiSequential
+    // This demonstrates the LeNet-5 architecture implementation using the pipeline builder pattern
     ops::MultiSequential<Device> pipe;
+    // Layer 1: Convolutional Layer (32x32 -> 28x28, 1->6 channels)
     // conv1 (valid 5x5)
     pipe.addConv2D(
         exec,
@@ -185,7 +188,12 @@ int runLeNet(
                               /*dilation_h*/ 1,
                               /*dilation_w*/ 1}});
     pipe.addReLU(exec, queue, ops::ReLULayerStruct<Device>{true});
-    pipe.addMaxPool(exec, queue, ops::MaxPool2DLayerStruct<Device>{ops::Pool2DParams{2, 2, 2, 2, 0, 0}}); // 16x16
+    pipe.addMaxPool(
+        exec,
+        queue,
+        ops::MaxPool2DLayerStruct<Device>{ops::Pool2DParams{2, 2, 2, 2, 0, 0}}); // 28x28 -> 14x14
+
+    // Layer 2: Convolutional Layer (14x14 -> 10x10, 6->16 channels)
     // conv2 (valid 5x5)
     pipe.addConv2D(
         exec,
@@ -200,19 +208,28 @@ int runLeNet(
                               /*dilation_h*/ 1,
                               /*dilation_w*/ 1}}); // 10x10
     pipe.addReLU(exec, queue, ops::ReLULayerStruct<Device>{true});
-    pipe.addMaxPool(exec, queue, ops::MaxPool2DLayerStruct<Device>{ops::Pool2DParams{2, 2, 2, 2, 0, 0}}); // 5x5
-    // flatten (16*5*5=400)
+    pipe.addMaxPool(
+        exec,
+        queue,
+        ops::MaxPool2DLayerStruct<Device>{ops::Pool2DParams{2, 2, 2, 2, 0, 0}}); // 10x10 -> 5x5
+
+    // Transition from 4D feature maps to 1D vectors for fully connected layers
+    // flatten (16*5*5=400) - converts 4D tensor to 1D tensor
     pipe.addFlatten(exec, queue, ops::FlattenLayerStruct<Device>{}); // -> batch * 400 elements (1D)
+
+    // Fully Connected Layers (Dense/Linear layers)
     // fc1 (400 -> 120) + ReLU
     pipe.addLinear(exec, queue, ops::LinearLayerStruct<Device>{(std::size_t) batch, 120, std::nullopt, std::nullopt});
     pipe.addReLU1D(exec, queue, ops::ReLU1DLayerStruct<Device>{true});
-    // fc2 -> 84 + ReLU
+    // fc2 (120 -> 84) + ReLU
     pipe.addLinear(exec, queue, ops::LinearLayerStruct<Device>{(std::size_t) batch, 84, std::nullopt, std::nullopt});
     pipe.addReLU1D(exec, queue, ops::ReLU1DLayerStruct<Device>{true});
-    // fc3 -> 10 + softmax
+    // fc3 (84 -> 10) + softmax for classification output
     pipe.addLinear(exec, queue, ops::LinearLayerStruct<Device>{(std::size_t) batch, 10, std::nullopt, std::nullopt});
     pipe.addSoftmax(exec, queue, ops::SoftmaxLayerStruct<Device>{(std::size_t) batch, 10});
 
+    // Execute the complete neural network pipeline
+    // Input: 4D tensor (batch, 1, 32, 32), Output: 2D tensor (batch, 10) with class probabilities
     typename ops::MultiSequential<Device>::Any anyInput = std::move(input);
     auto outAny = pipe.forward(exec, device, queue, std::move(anyInput));
     auto* probs = std::get_if<tt::Tensor2D<float, Device>>(&outAny);
