@@ -1,5 +1,7 @@
 // Alpaka‑style micro‑benchmark for memory allocation
-// SPDX‑License‑Identifier: Apache‑2.0
+// SPDX‑License‑Identifier: MPL‑2.0
+// Authors: Ivan Andriievskyi, Jiří Vyskočil
+// Work funded by US NAS and ONRG (IMPRESS-U).
 
 #include <alpaka/alpaka.hpp>
 #include <alpaka/example/executors.hpp> // provides onHost::allBackends

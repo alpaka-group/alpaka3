@@ -1,5 +1,6 @@
 #
-# Copyright 2025 Andriievskyi Ivan
+# Copyright 2025 Ivan Andriievskyi
+# Work funded by US NAS and ONRG (IMPRESS-U).
 # SPDX-License-Identifier: ISC
 #
 cmake_minimum_required(VERSION 3.25)
@@ -31,13 +32,12 @@ set(_TARGET_NAME "alloc")
 # Collect all .cpp files (change the glob if you move sources)
 file(GLOB_RECURSE _FILES_SOURCE "./src/*.cpp")
 
-alpaka_add_executable(${_TARGET_NAME} ${_FILES_SOURCE})
+add_executable(${_TARGET_NAME} ${_FILES_SOURCE})
 
 target_include_directories(${_TARGET_NAME} PRIVATE "src")
 
-target_link_libraries(${_TARGET_NAME}
-    PRIVATE alpaka::alpaka
-            Catch2::Catch2WithMain)
+target_link_libraries(${_TARGET_NAME} PRIVATE alpaka::alpaka Catch2::Catch2WithMain)
+alpaka_finalize(${_TARGET_NAME})
 
 # Group inside IDE
 set_target_properties(${_TARGET_NAME} PROPERTIES FOLDER benchmarks/alloc)
