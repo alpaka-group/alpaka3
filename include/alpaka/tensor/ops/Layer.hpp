@@ -446,6 +446,64 @@ namespace alpaka::tensor::ops
         }
 
         template<typename Exec, typename Queue>
+        void addFlatten(Exec const&, Queue&, FlattenLayerStruct<Device> l)
+        {
+            nodes_.emplace_back(
+                [l = std::move(l)](void const* e, void* d, void* q, Any&& in)
+                {
+                    auto& exec = *static_cast<Exec const*>(e);
+                    auto& dev = *static_cast<Device*>(d);
+                    auto& qu = *static_cast<Queue*>(q);
+                    if(auto* t4 = std::get_if<T4>(&in))
+                    {
+                        auto out1d = l(exec, dev, qu, *t4);
+                        // Flatten returns 1D contiguous buffer of batch * features
+                        return Any{std::move(out1d)};
+                    }
+                    assert(false && "Flatten expects 4D tensor");
+                    return in;
+                });
+        }
+
+        template<typename Exec, typename Queue>
+        void addLinear(Exec const&, Queue&, LinearLayerStruct<Device> l)
+        {
+            nodes_.emplace_back(
+                [l = std::move(l)](void const* e, void* d, void* q, Any&& in) mutable
+                {
+                    auto& exec = *static_cast<Exec const*>(e);
+                    auto& dev = *static_cast<Device*>(d);
+                    auto& qu = *static_cast<Queue*>(q);
+                    if(auto* t1 = std::get_if<T1>(&in))
+                    {
+                        auto out1d = l(exec, dev, qu, *t1);
+                        return Any{std::move(out1d)};
+                    }
+                    assert(false && "Linear expects 1D tensor");
+                    return in;
+                });
+        }
+
+        template<typename Exec, typename Queue>
+        void addSoftmax(Exec const&, Queue&, SoftmaxLayerStruct<Device> l)
+        {
+            nodes_.emplace_back(
+                [l = std::move(l)](void const* e, void* d, void* q, Any&& in)
+                {
+                    auto& exec = *static_cast<Exec const*>(e);
+                    auto& dev = *static_cast<Device*>(d);
+                    auto& qu = *static_cast<Queue*>(q);
+                    if(auto* t1 = std::get_if<T1>(&in))
+                    {
+                        auto probs2d = l(exec, dev, qu, *t1);
+                        return Any{std::move(probs2d)};
+                    }
+                    assert(false && "Softmax expects 1D tensor");
+                    return in;
+                });
+        }
+
+        template<typename Exec, typename Queue>
         void addGlobalAvgPool(Exec const&, Queue&, GlobalAveragePool2DLayerStruct<Device> l)
         {
             nodes_.emplace_back(
