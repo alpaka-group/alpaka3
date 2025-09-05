@@ -133,6 +133,6 @@ TEMPLATE_LIST_TEST_CASE("AvgPool2D with padding includes padded zeros", "[tensor
     REQUIRE(s[2] == 4);
     REQUIRE(s[3] == 4);
     auto idx = [&](int hO, int wO) { return hO * s[3] + wO; };
-    requireClose(out.hostData()[idx(1, 1)], 0.25f);
-    requireClose(out.hostData()[idx(2, 2)], (1 + 2 + 3 + 4) / 4.f);
+    requireClose(out.hostData()[idx(1, 1)], (1 + 2 + 3 + 4) / 4.f);
+    requireClose(out.hostData()[idx(0, 0)], 0.25f);
 }
