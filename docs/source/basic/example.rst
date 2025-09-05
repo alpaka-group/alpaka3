@@ -25,6 +25,8 @@ The ``add_subdirectory`` method does not require alpaka to be installed. Instead
    cmake_minimum_required(VERSION 3.25)
    project("myexample" CXX)
 
+   add_subdirectory("<path to alpaka>" "${CMAKE_BINARY_DIR}/alpaka")
+
    add_executable(${PROJECT_NAME} helloWorld.cpp)
    target_link_libraries(${PROJECT_NAME} PUBLIC alpaka::alpaka)
    alpaka_finalize(${PROJECT_NAME})
