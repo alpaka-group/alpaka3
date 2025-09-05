@@ -491,3 +491,8 @@ option(alpaka_EXEC_OneApi "Enable/Disable Intel OneAPI SYCL executor" ON)
 if(NOT alpaka_EXEC_OneApi)
     target_compile_definitions(alpaka INTERFACE ALPAKA_DISABLE_EXEC_OneApi)
 endif()
+
+option(alpaka_ASAN "Enable/Disable linking the address sanitizer for cpu targets" OFF)
+option(alpaka_TSAN "Enable/Disable linking the thread sanitizer for cpu targets" OFF)
+option(alpaka_LSAN "Enable/Disable linking the memory leak sanitizer for cpu targets" OFF)
+option(alpaka_UBSAN "Enable/Disable linking the undefined behavior sanitizer for cpu targets" OFF)

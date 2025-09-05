@@ -207,4 +207,46 @@ function(alpaka_finalize target)
     if(NOT index_alpaka EQUAL -1)
         target_compile_definitions(${target} PRIVATE ALPAKA_CMAKE_TARGET_ALPAKA_FINALIZE_CALLED)
     endif()
+
+    # conditionally add sanitizers if not compiling with cuda/hip/oneapi
+    if(index_cuda EQUAL -1 AND index_hip EQUAL -1 AND index_oneapi EQUAL -1)
+        if(alpaka_ASAN)
+            message(STATUS "Linking ASAN to ${target}")
+            target_compile_options(${target} PRIVATE -fsanitize=address)
+            target_link_options(${target} PRIVATE -fsanitize=address)
+            if(alpaka_TSAN OR alpaka_LSAN OR alpaka_UBSAN)
+                message(
+                    WARNING
+                    "Multiple sanitizers are enabled, but only one can be linked at a time. Using ASAN only."
+                )
+            endif()
+        endif()
+        if(alpaka_TSAN)
+            message(STATUS "Linking TSAN to ${target}")
+            target_compile_options(${target} PRIVATE -fsanitize=thread)
+            target_link_options(${target} PRIVATE -fsanitize=thread)
+            if(alpaka_LSAN OR alpaka_UBSAN)
+                message(
+                    WARNING
+                    "Multiple sanitizers are enabled, but only one can be linked at a time. Using TSAN only."
+                )
+            endif()
+        endif()
+        if(alpaka_LSAN)
+            message(STATUS "Linking LSAN to ${target}")
+            target_compile_options(${target} PRIVATE -fsanitize=leak)
+            target_link_options(${target} PRIVATE -fsanitize=leak)
+            if(alpaka_UBSAN)
+                message(
+                    WARNING
+                    "Multiple sanitizers are enabled, but only one can be linked at a time. Using LSAN only."
+                )
+            endif()
+        endif()
+        if(alpaka_UBSAN)
+            message(STATUS "Linking UBSAN to ${target}")
+            target_compile_options(${target} PRIVATE -fsanitize=undefined)
+            target_link_options(${target} PRIVATE -fsanitize=undefined)
+        endif()
+    endif()
 endfunction()
