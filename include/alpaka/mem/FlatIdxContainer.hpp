@@ -222,9 +222,11 @@ namespace alpaka::onAcc
                 auto begin = m_idxRange.m_begin + groupOffset;
 
                 auto strideMD = m_idxRange.m_stride[selectedDims];
+
                 auto numElements = divCeil(
-                    m_idxRange.distance()[selectedDims].product(),
-                    (m_threadSpace.m_threadCount[selectedDims].product() * strideMD.product()));
+                                       m_idxRange.distance()[selectedDims],
+                                       m_threadSpace.m_threadCount[selectedDims] * strideMD)
+                                       .product();
                 auto linearCurrent
                     = linearize(m_threadSpace.m_threadCount[selectedDims], threadIdx[selectedDims]) * numElements;
                 auto extentMD = divCeil(m_idxRange.distance()[selectedDims], strideMD);
@@ -251,9 +253,8 @@ namespace alpaka::onAcc
             else if constexpr(std::is_same_v<T_IdxMapperFn, layout::Contiguous>)
             {
                 auto strideMD = m_idxRange.m_stride[selectedDims];
-                auto numElements = divCeil(
-                    m_idxRange.distance()[selectedDims].product(),
-                    (numThreads[selectedDims].product() * strideMD.product()));
+                auto numElements
+                    = divCeil(m_idxRange.distance()[selectedDims], numThreads[selectedDims] * strideMD).product();
                 auto linearCurrent = linearize(numThreads[selectedDims], threadIdx[selectedDims]) * numElements;
                 auto extentMD = divCeil(m_idxRange.distance()[selectedDims], strideMD);
                 return const_iterator_end(std::min(linearCurrent + numElements, extentMD.product()));
