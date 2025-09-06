@@ -7,6 +7,7 @@
 
 #include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/TensorCore.hpp>
+#include <alpaka/tensor/TensorGeneric.hpp>
 #include <alpaka/tensor/ops/ElementwiseGeneric.hpp>
 #include <alpaka/tensor/ops/Gemm.hpp>
 
@@ -361,7 +362,7 @@ namespace alpaka::tensor::ops
 
     // ---------------- Bias Add ----------------
 
-    // 2D: input [M,N] + bias [N] -> output [M,N]
+    // Generic bias add axis=1 entry points (preserve 2D/4D API for callers)
     template<typename T, typename Exec, typename Device, typename Queue>
     void bias_add_2d(
         Exec const& exec,
@@ -371,30 +372,8 @@ namespace alpaka::tensor::ops
         tensor::Tensor1D<T, Device>& bias,
         tensor::Tensor2D<T, Device>& output)
     {
-        auto inShape = input.shape();
-        auto biasShape = bias.shape();
-        auto outShape = output.shape();
-        assert(inShape[0] == outShape[0] && inShape[1] == outShape[1] && "bias_add_2d: output shape mismatch");
-        assert(biasShape[0] == inShape[1] && "bias_add_2d: bias length must equal N (columns)");
-        input.ensureOnDevice(device, queue);
-        bias.ensureOnDevice(device, queue);
-        output.ensureOnDevice(device, queue);
-        std::size_t M = inShape[0];
-        std::size_t N = inShape[1];
-        std::size_t total = M * N;
-        auto frame = ops::detail::makeFrame<Exec, Queue>(total);
-        queue.enqueue(
-            exec,
-            frame,
-            detail::BiasAdd2DKernel<T>{},
-            input.deviceBuffer(device, queue),
-            bias.deviceBuffer(device, queue),
-            output.deviceBuffer(device, queue),
-            M,
-            N,
-            total);
-        ::alpaka::onHost::wait(queue);
-        output.markDeviceModified(device, queue);
+        generic::bias_add_axis1<T, 2>(exec, device, queue, input, bias, output);
+        ::alpaka::onHost::wait(queue); // keep previous sync semantics
     }
 
     // 4D: input [N,C,H,W] + bias [C] -> output
@@ -407,34 +386,8 @@ namespace alpaka::tensor::ops
         tensor::Tensor1D<T, Device>& bias,
         tensor::Tensor4D<T, Device>& output)
     {
-        auto inShape = input.shape();
-        auto biasShape = bias.shape();
-        auto outShape = output.shape();
-        assert(inShape == outShape && "bias_add_4d: output shape mismatch");
-        assert(biasShape[0] == inShape[1] && "bias_add_4d: bias size must equal channels C");
-        input.ensureOnDevice(device, queue);
-        bias.ensureOnDevice(device, queue);
-        output.ensureOnDevice(device, queue);
-        std::size_t N = inShape[0];
-        std::size_t C = inShape[1];
-        std::size_t H = inShape[2];
-        std::size_t W = inShape[3];
-        std::size_t total = N * C * H * W;
-        auto frame = ops::detail::makeFrame<Exec, Queue>(total);
-        queue.enqueue(
-            exec,
-            frame,
-            detail::BiasAdd4DKernel<T>{},
-            input.deviceBuffer(device, queue),
-            bias.deviceBuffer(device, queue),
-            output.deviceBuffer(device, queue),
-            N,
-            C,
-            H,
-            W,
-            total);
-        ::alpaka::onHost::wait(queue);
-        output.markDeviceModified(device, queue);
+        generic::bias_add_axis1<T, 4>(exec, device, queue, input, bias, output);
+        ::alpaka::onHost::wait(queue); // preserve sync
     }
 
     // ---------------- Linear (GEMM + optional bias) ----------------
@@ -646,7 +599,116 @@ namespace alpaka::tensor::ops
         t.markDeviceModified(device, queue); // defer host sync
     }
 
-    // ---------------- Max Pool 2D ----------------
+    namespace detail
+    {
+        template<typename T>
+        struct PoolingMaxOp
+        {
+            static constexpr bool NeedsCount = false;
+
+            ALPAKA_FN_HOST_ACC static T init()
+            {
+                return std::numeric_limits<T>::lowest();
+            }
+
+            ALPAKA_FN_HOST_ACC static void accumulate(T& acc, T v)
+            {
+                acc = v > acc ? v : acc;
+            }
+
+            ALPAKA_FN_HOST_ACC static T finalize(T acc, std::size_t /*count*/, std::size_t /*kernelElems*/)
+            {
+                return acc;
+            }
+        };
+
+        template<typename T>
+        struct PoolingAvgOp
+        {
+            static constexpr bool NeedsCount = true; // we count implicit zero padding via kernelElems
+
+            ALPAKA_FN_HOST_ACC static T init()
+            {
+                return T{};
+            }
+
+            ALPAKA_FN_HOST_ACC static void accumulate(T& acc, T v)
+            {
+                acc += v;
+            }
+
+            ALPAKA_FN_HOST_ACC static T finalize(T acc, std::size_t /*count*/, std::size_t kernelElems)
+            {
+                return acc / static_cast<T>(kernelElems);
+            }
+        };
+
+        template<typename T, typename Op>
+        tensor::Tensor4D<T, typename OpDeviceType<T>::type> pool2d_host_impl(
+            typename OpDeviceType<T>::exec_type const& exec,
+            typename OpDeviceType<T>::device_type const& device,
+            typename OpDeviceType<T>::queue_type& queue,
+            tensor::Tensor4D<T, typename OpDeviceType<T>::type>& input,
+            Pool2DParams const& params,
+            Op)
+        {
+            // NOTE: This helper signature is complex; we will not use it. Provide simplified version below.
+            static_assert(sizeof(Op) == 0, "Unused overload");
+        }
+
+        template<typename T, typename Exec, typename Device, typename Queue, typename Op>
+        tensor::Tensor4D<T, Device> pool2d_host(
+            Exec const& exec,
+            Device const& device,
+            Queue& queue,
+            tensor::Tensor4D<T, Device>& input,
+            Pool2DParams const& params,
+            Op)
+        {
+            (void) exec; // currently host-only reference
+            auto inShape = input.shape();
+            auto outShape = compute_pool2d_output_shape(inShape, params);
+            tensor::Tensor4D<T, Device> output(device, outShape, Op::NeedsCount ? "avgpool_ref" : "maxpool_ref");
+            input.toHost(device, queue);
+            auto N = static_cast<int>(inShape[0]);
+            auto C = static_cast<int>(inShape[1]);
+            auto H = static_cast<int>(inShape[2]);
+            auto W = static_cast<int>(inShape[3]);
+            auto H_out = static_cast<int>(outShape[2]);
+            auto W_out = static_cast<int>(outShape[3]);
+            T const* inH = input.hostData();
+            T* outH = output.hostData();
+            auto kernelElems = params.kernel_h * params.kernel_w; // includes implicit zero padding for avg
+            for(int n = 0; n < N; ++n)
+                for(int c = 0; c < C; ++c)
+                    for(int ho = 0; ho < H_out; ++ho)
+                        for(int wo = 0; wo < W_out; ++wo)
+                        {
+                            int h_start = ho * params.stride_h - static_cast<int>(params.pad_h);
+                            int w_start = wo * params.stride_w - static_cast<int>(params.pad_w);
+                            int h_end = std::min(h_start + static_cast<int>(params.kernel_h), H);
+                            int w_end = std::min(w_start + static_cast<int>(params.kernel_w), W);
+                            // clamp starts (negative region considered zero for avg, ignored for max)
+                            int h_iter_start = std::max(h_start, 0);
+                            int w_iter_start = std::max(w_start, 0);
+                            T acc = Op::init();
+                            std::size_t count = 0; // actual contributing elements
+                            for(int ih = h_iter_start; ih < h_end; ++ih)
+                                for(int iw = w_iter_start; iw < w_end; ++iw)
+                                {
+                                    Op::accumulate(acc, inH[(((n * C) + c) * H + ih) * W + iw]);
+                                    ++count;
+                                }
+                            auto outIndex = (((n * C) + c) * H_out + ho) * W_out + wo;
+                            outH[outIndex] = Op::finalize(acc, count, kernelElems);
+                        }
+            output.markHostModified();
+            output.ensureOnDevice(device, queue);
+            return output;
+        }
+    } // namespace detail
+
+    // Public wrappers
     template<typename T, typename Exec, typename Device, typename Queue>
     tensor::Tensor4D<T, Device> max_pool2d(
         Exec const& exec,
@@ -655,42 +717,9 @@ namespace alpaka::tensor::ops
         tensor::Tensor4D<T, Device>& input,
         Pool2DParams const& params)
     {
-        // Reference implementation (host) for correctness; TODO: restore parallel kernel once mapping fixed.
-        auto inShape = input.shape();
-        auto outShape = compute_pool2d_output_shape(inShape, params);
-        tensor::Tensor4D<T, Device> output(device, outShape, "maxpool_ref");
-        input.toHost(device, queue);
-        auto N = static_cast<int>(inShape[0]);
-        auto C = static_cast<int>(inShape[1]);
-        auto H = static_cast<int>(inShape[2]);
-        auto W = static_cast<int>(inShape[3]);
-        auto H_out = static_cast<int>(outShape[2]);
-        auto W_out = static_cast<int>(outShape[3]);
-        T const* inH = input.hostData();
-        T* outH = output.hostData();
-        for(int n = 0; n < N; ++n)
-            for(int c = 0; c < C; ++c)
-                for(int ho = 0; ho < H_out; ++ho)
-                    for(int wo = 0; wo < W_out; ++wo)
-                    {
-                        int h_start = ho * params.stride_h - params.pad_h;
-                        int w_start = wo * params.stride_w - params.pad_w;
-                        int h_end = std::min(h_start + (int) params.kernel_h, H);
-                        int w_end = std::min(w_start + (int) params.kernel_w, W);
-                        h_start = std::max(h_start, 0);
-                        w_start = std::max(w_start, 0);
-                        T mx = std::numeric_limits<T>::lowest();
-                        for(int ih = h_start; ih < h_end; ++ih)
-                            for(int iw = w_start; iw < w_end; ++iw)
-                                mx = std::max(mx, inH[(((n * C) + c) * H + ih) * W + iw]);
-                        outH[(((n * C) + c) * H_out + ho) * W_out + wo] = mx;
-                    }
-        output.markHostModified();
-        output.ensureOnDevice(device, queue);
-        return output;
+        return detail::pool2d_host<T>(exec, device, queue, input, params, detail::PoolingMaxOp<T>{});
     }
 
-    // ---------------- Average Pool 2D ----------------
     template<typename T, typename Exec, typename Device, typename Queue>
     tensor::Tensor4D<T, Device> avg_pool2d(
         Exec const& exec,
@@ -699,53 +728,7 @@ namespace alpaka::tensor::ops
         tensor::Tensor4D<T, Device>& input,
         Pool2DParams const& params)
     {
-        auto inShape = input.shape();
-        auto outShape = compute_pool2d_output_shape(inShape, params);
-        tensor::Tensor4D<T, Device> output(device, outShape, "avgpool_ref");
-        input.toHost(device, queue);
-        auto N = static_cast<int>(inShape[0]);
-        auto C = static_cast<int>(inShape[1]);
-        auto H = static_cast<int>(inShape[2]);
-        auto W = static_cast<int>(inShape[3]);
-        auto H_out = static_cast<int>(outShape[2]);
-        auto W_out = static_cast<int>(outShape[3]);
-        T const* inH = input.hostData();
-        T* outH = output.hostData();
-        for(int n = 0; n < N; ++n)
-            for(int c = 0; c < C; ++c)
-                for(int ho = 0; ho < H_out; ++ho)
-                    for(int wo = 0; wo < W_out; ++wo)
-                    {
-                        // Calculate pooling window bounds in input space (can be negative due to padding)
-                        auto h_start_padded = static_cast<int>(ho * params.stride_h) - static_cast<int>(params.pad_h);
-                        auto h_end_padded = h_start_padded + static_cast<int>(params.kernel_h);
-                        auto w_start_padded = static_cast<int>(wo * params.stride_w) - static_cast<int>(params.pad_w);
-                        auto w_end_padded = w_start_padded + static_cast<int>(params.kernel_w);
-
-                        // Compute average over entire kernel window (including padding zeros)
-                        T sum = 0;
-                        std::size_t total_count
-                            = params.kernel_h * params.kernel_w; // Always divide by full kernel size
-
-                        for(auto h_kern = h_start_padded; h_kern < h_end_padded; ++h_kern)
-                        {
-                            for(auto w_kern = w_start_padded; w_kern < w_end_padded; ++w_kern)
-                            {
-                                // Only add to sum if within input bounds (padding is 0)
-                                if(h_kern >= 0 && h_kern < H && w_kern >= 0 && w_kern < W)
-                                {
-                                    sum += inH[(((n * C) + c) * H + h_kern) * W + w_kern];
-                                }
-                                // Else: padding value is 0, so no contribution to sum
-                            }
-                        }
-
-                        // Write output (always divide by total kernel size for proper averaging)
-                        outH[(((n * C) + c) * H_out + ho) * W_out + wo] = sum / static_cast<T>(total_count);
-                    }
-        output.markHostModified();
-        output.ensureOnDevice(device, queue);
-        return output;
+        return detail::pool2d_host<T>(exec, device, queue, input, params, detail::PoolingAvgOp<T>{});
     }
 
     // ---------------- BatchNorm Inference (N,C,H,W) ----------------
