@@ -9,9 +9,9 @@
 
 namespace alpaka::onHost
 {
-    /** Execute a n-nary function on each element of all input data.
+    /** Execute an n-nary function on each element of all input data.
      *
-     * Concurrent is is quite equal to a for-each algorithm with the difference that the functor is allowed to write to
+     * Concurrent is quite equal to a for-each algorithm with the difference that the functor is allowed to write to
      * any argument. So it allows to implement a transform with a free number of output arguments.
      *
      * @param queue The queue to execute the transformation.
@@ -21,8 +21,8 @@ namespace alpaka::onHost
      *   The functor should support @see SimdPtr and therefore can be used for stencil evaluations.
      *   It is not required to wrapp the functor with @see StencilFunc.
      *   If a stencil lookup is executed you should take care to not read outside of valid memory ranges
-     *   by using sub-views to your input/output data. Optionally a fn can have a accelerator as first
-     * argument.
+     *   by using sub-views to your input/output data. Optionally, a function can have an accelerator as its first
+     *   argument.
      * @param inOut The input/output data, all data is passed to fn.
      *
      * examples for a unary add one functor:
@@ -53,7 +53,7 @@ namespace alpaka::onHost
     }
 
     /**
-     * A available default executor will be selected automaticlally. The default executor is a executor with most
+     * An available default executor will be selected automatically. The default executor is an executor with most
      * parallelism/performance.
      */
     template<typename T_DataType, typename T_Device, queueKind::concepts::QueueKind T_QueueKind>

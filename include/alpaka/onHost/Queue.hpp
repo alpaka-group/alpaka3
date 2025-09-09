@@ -144,7 +144,7 @@ namespace alpaka::onHost
             internal::enqueue(*m_queue.get(), executor, specification, kernelBundle);
         }
 
-        /** Enqueue a operation which is executed on the host side
+        /** Enqueue an operation which is executed on the host side
          *
          * @attention Do NOT enqueue a task which captures the queue internally to keep the queue alive, this could
          * lead into deadlocks. Do NOT capture @see MangedView because view actions could perform blocking operations
