@@ -1,4 +1,4 @@
-/* Copyright 2025 Simeon Ehrig
+/* Copyright 2025 Simeon Ehrig, Mehmet Yusufoglu, Andrea Bocci, René Widera
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -11,6 +11,7 @@
 #    include "alpaka/api/generic.hpp"
 #    include "alpaka/api/oneApi/StaticSharedMemory.hpp"
 #    include "alpaka/api/syclGeneric/Queue.hpp"
+#    include "alpaka/api/syclGeneric/onAcc.hpp"
 #    include "alpaka/onHost/internal/interface.hpp"
 
 
@@ -236,21 +237,21 @@ namespace alpaka::onHost::internal
                             sycl::nd_item<syclDim> work_item)
                         {
                             onAcc::oneApi::StaticSharedMemory ssm(st_shared_accessor);
-                            onAcc::syclGeneric::DynamicSharedMemory dsm(dyn_shared_accessor);
+                            alpaka::onAcc::syclGeneric::DynamicSharedMemory dsm(dyn_shared_accessor);
 
                             static_assert(syclDim > 0);
                             static_assert(syclDim <= 3, "more the 3 dimensions are not supported");
                             auto acc = onAcc::Acc{Dict{
                                 DictEntry(
                                     layer::block,
-                                    onAcc::syclGeneric::BlockLayer{work_item, optimizedThreadSpec}),
+                                    alpaka::onAcc::syclGeneric::BlockLayer{work_item, optimizedThreadSpec}),
                                 DictEntry(
                                     layer::thread,
-                                    onAcc::syclGeneric::ThreadLayer{work_item, optimizedThreadSpec}),
+                                    alpaka::onAcc::syclGeneric::ThreadLayer{work_item, optimizedThreadSpec}),
                                 DictEntry(layer::shared, std::ref(ssm)),
                                 DictEntry(layer::dynShared, std::ref(dsm)),
                                 DictEntry(object::dynSharedMemBytes, dsm.byte_size()),
-                                DictEntry(action::threadBlockSync, onAcc::syclGeneric::Sync{work_item}),
+                                DictEntry(action::threadBlockSync, alpaka::onAcc::syclGeneric::Sync{work_item}),
                                 DictEntry(object::api, ApiType{}),
                                 DictEntry(object::deviceKind, DeviceKindType{}),
                                 DictEntry(object::exec, T_Executor{})}};
@@ -308,21 +309,21 @@ namespace alpaka::onHost::internal
                             sycl::nd_item<syclDim> work_item)
                         {
                             onAcc::oneApi::StaticSharedMemory ssm(st_shared_accessor);
-                            onAcc::syclGeneric::DynamicSharedMemory dsm(dyn_shared_accessor);
+                            alpaka::onAcc::syclGeneric::DynamicSharedMemory dsm(dyn_shared_accessor);
 
                             static_assert(syclDim > 0);
                             static_assert(syclDim <= 3, "more the 3 dimensions are not supported");
                             auto acc = onAcc::Acc{Dict{
                                 DictEntry(
                                     layer::block,
-                                    onAcc::syclGeneric::BlockLayer{work_item, optimizedThreadSpec}),
+                                    alpaka::onAcc::syclGeneric::BlockLayer{work_item, optimizedThreadSpec}),
                                 DictEntry(
                                     layer::thread,
-                                    onAcc::syclGeneric::ThreadLayer{work_item, optimizedThreadSpec}),
+                                    alpaka::onAcc::syclGeneric::ThreadLayer{work_item, optimizedThreadSpec}),
                                 DictEntry(layer::shared, std::ref(ssm)),
                                 DictEntry(layer::dynShared, std::ref(dsm)),
                                 DictEntry(object::dynSharedMemBytes, dsm.byte_size()),
-                                DictEntry(action::threadBlockSync, onAcc::syclGeneric::Sync{work_item}),
+                                DictEntry(action::threadBlockSync, alpaka::onAcc::syclGeneric::Sync{work_item}),
                                 DictEntry(object::api, ApiType{}),
                                 DictEntry(object::deviceKind, DeviceKindType{}),
                                 DictEntry(object::exec, T_Executor{}),
