@@ -1,4 +1,4 @@
 # suppression list for the thread sanitizer
 
 # the active waiting in the events unit test is detected as a data race, but is fine
-race:tests/unit/event/eventHelper.hpp
+race:unit_test_event

@@ -31,25 +31,25 @@ jobs:
     strategy:
       matrix:
         config:
-          - { compiler: gcc, version: "12", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "" }
-          - { compiler: gcc, version: "13", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "" }
-          - { compiler: gcc, version: "14", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "" }
-          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "" }
-          - { compiler: clang, version: "17", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "" }
-          - { compiler: clang, version: "18", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "" }
-          - { compiler: clang, version: "19", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "" }
-          - { compiler: clang, version: "20", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "" }
-          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "" }
-          - { compiler: nvcc, version: "", cuda: "12.5", hip: "no", container: "nvidia/cuda:12.5.1-devel-ubuntu24.04", sanitizer: "" }
-          - { compiler: nvcc, version: "", cuda: "12.6", hip: "no", container: "nvidia/cuda:12.6.3-devel-ubuntu24.04", sanitizer: "" }
-          - { compiler: nvcc, version: "", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04", sanitizer: "" }
-          - { compiler: nvcc, version: "", cuda: "12.9", hip: "no", container: "nvidia/cuda:12.9.1-devel-ubuntu24.04", sanitizer: "" }
-          - { compiler: nvcc, version: "", cuda: "13.0", hip: "no", container: "nvidia/cuda:13.0.0-devel-ubuntu24.04", sanitizer: "" }
-          - { compiler: clang, version: "18", cuda: "no", hip: "6.2.4", container: "rocm/dev-ubuntu-24.04:6.2.4", sanitizer: "" }
-          - { compiler: clang, version: "18", cuda: "no", hip: "6.3.4", container: "rocm/dev-ubuntu-24.04:6.3.4", sanitizer: "" }
-          - { compiler: clang, version: "19", cuda: "no", hip: "6.4.2", container: "rocm/dev-ubuntu-24.04:6.4.2", sanitizer: "" }
-          - { compiler: icpx, version: "2025.1", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.1.0-0-devel-ubuntu24.04", sanitizer: "" }
-          - { compiler: icpx, version: "2025.2", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.2.0-0-devel-ubuntu24.04", sanitizer: "" }
+          - { compiler: gcc, version: "12", cuda: "no", hip: "no", container: "ubuntu:24.04" }
+          - { compiler: gcc, version: "13", cuda: "no", hip: "no", container: "ubuntu:24.04" }
+          - { compiler: gcc, version: "14", cuda: "no", hip: "no", container: "ubuntu:24.04" }
+          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0" }
+          - { compiler: clang, version: "17", cuda: "no", hip: "no", container: "ubuntu:24.04" }
+          - { compiler: clang, version: "18", cuda: "no", hip: "no", container: "ubuntu:24.04" }
+          - { compiler: clang, version: "19", cuda: "no", hip: "no", container: "ubuntu:24.04" }
+          - { compiler: clang, version: "20", cuda: "no", hip: "no", container: "ubuntu:24.04" }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04" }
+          - { compiler: nvcc, version: "", cuda: "12.5", hip: "no", container: "nvidia/cuda:12.5.1-devel-ubuntu24.04" }
+          - { compiler: nvcc, version: "", cuda: "12.6", hip: "no", container: "nvidia/cuda:12.6.3-devel-ubuntu24.04" }
+          - { compiler: nvcc, version: "", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04" }
+          - { compiler: nvcc, version: "", cuda: "12.9", hip: "no", container: "nvidia/cuda:12.9.1-devel-ubuntu24.04" }
+          - { compiler: nvcc, version: "", cuda: "13.0", hip: "no", container: "nvidia/cuda:13.0.0-devel-ubuntu24.04" }
+          - { compiler: clang, version: "18", cuda: "no", hip: "6.2.4", container: "rocm/dev-ubuntu-24.04:6.2.4" }
+          - { compiler: clang, version: "18", cuda: "no", hip: "6.3.4", container: "rocm/dev-ubuntu-24.04:6.3.4" }
+          - { compiler: clang, version: "19", cuda: "no", hip: "6.4.2", container: "rocm/dev-ubuntu-24.04:6.4.2" }
+          - { compiler: icpx, version: "2025.1", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.1.0-0-devel-ubuntu24.04" }
+          - { compiler: icpx, version: "2025.2", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.2.0-0-devel-ubuntu24.04" }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "asan" }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "tsan" }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "lsan" }
@@ -74,6 +74,11 @@ jobs:
         run: |
           apt-get update
           apt-get install -y cmake build-essential ninja-build git
+          export "SANITIZERS_DIR=$(pwd)/sanitizers"
+          echo "ASAN_OPTIONS=suppressions=${SANITIZERS_DIR}/asan_suppressions.txt" >> $GITHUB_ENV
+          echo "TSAN_OPTIONS=suppressions=${SANITIZERS_DIR}/tsan_suppressions.txt,ignore_noninstrumented_modules=1" >> $GITHUB_ENV
+          echo "LSAN_OPTIONS=suppressions=${SANITIZERS_DIR}/lsan_suppressions.txt" >> $GITHUB_ENV
+          echo "UBSAN_OPTIONS=suppressions=${SANITIZERS_DIR}/ubsan_suppressions.txt" >> $GITHUB_ENV
 
       # Install GCC if specified
       - name: Install GCC
@@ -184,14 +189,5 @@ jobs:
       - name: Run Tests
         if: matrix.config.cuda == 'no' && matrix.config.hip == 'no'
         run: |
-          if [ "${{ matrix.config.sanitizer }}" = "asan" ]; then
-            export ASAN_OPTIONS="suppressions=$(pwd)/sanitizers/asan_suppressions.txt"
-          elif [ "${{ matrix.config.sanitizer }}" = "tsan" ]; then
-            export TSAN_OPTIONS="suppressions=$(pwd)/sanitizers/tsan_suppressions.txt"
-          elif [ "${{ matrix.config.sanitizer }}" = "lsan" ]; then
-            export LSAN_OPTIONS="suppressions=$(pwd)/sanitizers/lsan_suppressions.txt"
-          elif [ "${{ matrix.config.sanitizer }}" = "ubsan" ]; then
-            export UBSAN_OPTIONS="suppressions=$(pwd)/sanitizers/ubsan_suppressions.txt"
-          fi
           cd build
           ctest --output-on-failure
