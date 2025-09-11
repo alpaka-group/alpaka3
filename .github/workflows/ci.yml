@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  alpaka_cmake_flags: "-Dalpaka_DOCS=ON -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -DBUILD_TESTING=ON -Dalpaka_HEADERCHECKS=ON -Dalpaka_UBSAN=ON"
+  alpaka_cmake_flags: "-Dalpaka_DOCS=ON -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -DBUILD_TESTING=ON -Dalpaka_HEADERCHECKS=ON"
 
 jobs:
   pre-commit:
@@ -31,25 +31,34 @@ jobs:
     strategy:
       matrix:
         config:
-          - { compiler: gcc, version: "12", cuda: "no", hip: "no", container: "ubuntu:24.04" }
-          - { compiler: gcc, version: "13", cuda: "no", hip: "no", container: "ubuntu:24.04" }
-          - { compiler: gcc, version: "14", cuda: "no", hip: "no", container: "ubuntu:24.04" }
-          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0" }
-          - { compiler: clang, version: "17", cuda: "no", hip: "no", container: "ubuntu:24.04" }
-          - { compiler: clang, version: "18", cuda: "no", hip: "no", container: "ubuntu:24.04" }
-          - { compiler: clang, version: "19", cuda: "no", hip: "no", container: "ubuntu:24.04" }
-          - { compiler: clang, version: "20", cuda: "no", hip: "no", container: "ubuntu:24.04" }
-          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04" }
-          - { compiler: nvcc, version: "", cuda: "12.5", hip: "no", container: "nvidia/cuda:12.5.1-devel-ubuntu24.04" }
-          - { compiler: nvcc, version: "", cuda: "12.6", hip: "no", container: "nvidia/cuda:12.6.3-devel-ubuntu24.04" }
-          - { compiler: nvcc, version: "", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04" }
-          - { compiler: nvcc, version: "", cuda: "12.9", hip: "no", container: "nvidia/cuda:12.9.1-devel-ubuntu24.04" }
-          - { compiler: nvcc, version: "", cuda: "13.0", hip: "no", container: "nvidia/cuda:13.0.0-devel-ubuntu24.04" }
-          - { compiler: clang, version: "18", cuda: "no", hip: "6.2.4", container: "rocm/dev-ubuntu-24.04:6.2.4" }
-          - { compiler: clang, version: "18", cuda: "no", hip: "6.3.4", container: "rocm/dev-ubuntu-24.04:6.3.4" }
-          - { compiler: clang, version: "19", cuda: "no", hip: "6.4.2", container: "rocm/dev-ubuntu-24.04:6.4.2" }
-          - { compiler: icpx, version: "2025.1", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.1.0-0-devel-ubuntu24.04" }
-          - { compiler: icpx, version: "2025.2", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.2.0-0-devel-ubuntu24.04" }
+          - { compiler: gcc, version: "12", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "" }
+          - { compiler: gcc, version: "13", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "" }
+          - { compiler: gcc, version: "14", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "" }
+          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "" }
+          - { compiler: clang, version: "17", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "" }
+          - { compiler: clang, version: "18", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "" }
+          - { compiler: clang, version: "19", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "" }
+          - { compiler: clang, version: "20", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "" }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "" }
+          - { compiler: nvcc, version: "", cuda: "12.5", hip: "no", container: "nvidia/cuda:12.5.1-devel-ubuntu24.04", sanitizer: "" }
+          - { compiler: nvcc, version: "", cuda: "12.6", hip: "no", container: "nvidia/cuda:12.6.3-devel-ubuntu24.04", sanitizer: "" }
+          - { compiler: nvcc, version: "", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04", sanitizer: "" }
+          - { compiler: nvcc, version: "", cuda: "12.9", hip: "no", container: "nvidia/cuda:12.9.1-devel-ubuntu24.04", sanitizer: "" }
+          - { compiler: nvcc, version: "", cuda: "13.0", hip: "no", container: "nvidia/cuda:13.0.0-devel-ubuntu24.04", sanitizer: "" }
+          - { compiler: clang, version: "18", cuda: "no", hip: "6.2.4", container: "rocm/dev-ubuntu-24.04:6.2.4", sanitizer: "" }
+          - { compiler: clang, version: "18", cuda: "no", hip: "6.3.4", container: "rocm/dev-ubuntu-24.04:6.3.4", sanitizer: "" }
+          - { compiler: clang, version: "19", cuda: "no", hip: "6.4.2", container: "rocm/dev-ubuntu-24.04:6.4.2", sanitizer: "" }
+          - { compiler: icpx, version: "2025.1", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.1.0-0-devel-ubuntu24.04", sanitizer: "" }
+          - { compiler: icpx, version: "2025.2", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.2
+          .0-0-devel-ubuntu24.04", sanitizer: "" }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "asan" }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "tsan" }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "lsan" }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "ubsan" }
+          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "asan" }
+          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "tsan" }
+          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "lsan" }
+          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "ubsan" }
       fail-fast: false
 
     # Specify the container to use based on the matrix configuration
@@ -159,7 +168,11 @@ jobs:
                 ${{ matrix.config.compiler == 'icpx' && '-DCMAKE_CXX_COMPILER=icpx -DCMAKE_CXX_FLAGS="-fsycl -fsycl-targets=spir64_x86_64" -Dalpaka_DEP_ONEAPI=ON -Dalpaka_ONEAPI_IntelGpu=OFF -Dalpaka_EXEC_CpuSerial=OFF -Dalpaka_DEP_OMP=OFF' || '' }} \
                 ${{ matrix.config.cuda != 'no' && '-Dalpaka_DEP_CUDA=ON' || '' }} \
                 ${{ matrix.config.hip != 'no' && '-DCMAKE_CXX_COMPILER=clang++ -Dalpaka_DEP_HIP=ON -Dalpaka_DEP_OMP=OFF \
-                   -DCMAKE_HIP_ARCHITECTURES=gfx906 -DAMDGPU_TARGETS=gfx906' || '' }} ..
+                   -DCMAKE_HIP_ARCHITECTURES=gfx906 -DAMDGPU_TARGETS=gfx906' || '' }} \
+                ${{ matrix.config.sanitizer == 'asan' && '-Dalpaka_ASAN=ON' || '' }} \
+                ${{ matrix.config.sanitizer == 'tsan' && '-Dalpaka_TSAN=ON' || '' }} \
+                ${{ matrix.config.sanitizer == 'lsan' && '-Dalpaka_LSAN=ON' || '' }} \
+                ${{ matrix.config.sanitizer == 'ubsan' && '-Dalpaka_UBSAN=ON' || '' }} ..
 
       # Build the project
       - name: Build
