@@ -271,6 +271,7 @@ auto main() -> int
 
         {
             concepts::View auto buffer = onHost::allocHost<DataType>(numElements);
+            buffer.destructorWaitFor(queue);
             // BEGIN-CHEATSHEET-dataPtr
             DataType* rawPtr = onHost::data(buffer);
             // END-CHEATSHEET-dataPtr
@@ -323,6 +324,8 @@ auto main() -> int
             // Providing the extent is optional and allow partial copies.
             onHost::memcpy(queue, dstBuffer, srcBuffer, extentMd);
             // END-CHEATSHEET-memcpy
+
+            alpaka::onHost::wait(queue);
         }
 
         concepts::Vector auto numFramesMd = Vec{valueY, valueX};
