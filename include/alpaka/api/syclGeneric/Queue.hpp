@@ -155,35 +155,15 @@ namespace alpaka::onHost
             sycl::event getBlockingSyncEvent()
             {
 #    ifdef SYCL_EXT_ONEAPI_ENQUEUE_BARRIER
-                // Tier 1: Best - oneAPI barrier extension (2 µs)
+                // Tier 1: Best - oneAPI barrier extension (Intel-specific optimization)
                 return m_queue.ext_oneapi_submit_barrier();
-
-#    elif defined(SYCL_EXT_ONEAPI_IN_ORDER_QUEUE_EVENTS)
-                // Tier 2: Good - get last event from in-order queue (Intel extension)
-                sycl::event ev = m_queue.ext_oneapi_get_last_event();
-
-                // If queue is empty (no last event), create one via memset
-                if(!ev.is_valid())
-                {
-                    ev = m_queue.submit(
-                        [&](sycl::handler& cgh)
-                        {
-                            auto acc = m_syncBuffer.get_access<sycl::access::mode::write>(cgh);
-                            cgh.fill(acc, uint8_t{0});
-                        });
-                    // Cache this new event
-                    m_cachedEvent = ev;
-                }
-                return ev;
-
 #    else
-                // Tier 3: Fallback - manual event caching + memset
-                // Check if we need a new event
+                // Tier 2: Fallback - manual event caching for generic SYCL implementations
                 if(!m_cachedEvent
                    || m_cachedEvent->get_info<sycl::info::event::command_execution_status>()
                           == sycl::info::event_command_status::complete)
                 {
-                    // Create new sync event via memset (45 µs - much better than 100 µs empty kernel)
+                    // Create new sync event via memset (works on all SYCL implementations)
                     m_cachedEvent = m_queue.submit(
                         [&](sycl::handler& cgh)
                         {
