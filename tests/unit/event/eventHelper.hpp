@@ -177,7 +177,7 @@ namespace alpaka::test::event
     /** Checks if device queue can execute concurrent work.
      *
      * Some native api's alpaka is using have only a single hardware/ord driver limited compute queue, in this case all
-     * tasks enqueued in user created independent queues will me in FIFO mode.
+     * tasks enqueued in user created independent queues will be in FIFO mode.
      * The test checks only if two queues can run concurrent, it not necessary says more than two queues can run
      * concurrent.
      *
@@ -185,7 +185,7 @@ namespace alpaka::test::event
      * @param maxRepetitions number of rounds the test is executed to avoid false positives
      * @return true if the device support concurrent queues, else false. @attention: false is returned even if the
      * device is supporting concurrent queues, the reason is that the detection works with hard coded number of
-     * retries. This is required to avoid triggering the watchdog terminating long running kernels on some systems. If
+     * retries. This is required to avoid triggering the watchdog terminating long-running kernels on some systems. If
      * one of the test repetitions reports that concurrent queues are not supported the result will be false.
      */
     inline bool detectConcurrentQueue(auto& device, int maxRepetitions = 3)
@@ -210,14 +210,14 @@ namespace alpaka::test::event
         return result;
     }
 
-    // Checks if the device supports cuncurrent queue execution and if we can send via mapped memory information to a
+    // Checks if the device supports concurrent queue execution and if we can send via mapped memory information to a
     // running kernel.
     inline bool checkIfDeviceCanExecuteEventTests(auto& device, int maxRepetitions = 3)
     {
         return mappedMemTriggerDetection(device, maxRepetitions) && detectConcurrentQueue(device, maxRepetitions);
     }
 
-    /** Emulates an kernel which runs until on host side an event is triggerd to release the kernel.
+    /** Emulates a kernel which runs until an event is triggered on host side to release the kernel.
      *
      * Use mapped memory to send signals to the blocking kernels to release them.
      */
