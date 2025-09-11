@@ -245,22 +245,14 @@ namespace alpaka::onHost
             // Blocking queue: ensure all prior work is complete and create an already-complete event.
             if(queue.isBlocking())
             {
-                // Submit a trivial task to capture ordering, then wait for it -> event is immediately complete.
-                // We need an event whose completion implies “everything before is done”. The empty kernel becomes a
-                // fence point.
-                // Use oneAPI barrier extension (50x faster than empty kernels)
-#    ifdef SYCL_EXT_ONEAPI_ENQUEUE_BARRIER
-                sycl::event ev = queue.m_queue.ext_oneapi_submit_barrier();
-#    else
-                // Fallback: Host task synchronization (no empty kernels)
-                // Some SYCL implementations may not have the barrier extension
-                queue.m_queue.wait();
-                // Submit a trivial host task to act as a fence
-                sycl::event ev = queue.m_queue.submit([](sycl::handler& cgh) { cgh.host_task([](){}); });
-#    endif
-                // We must hand back an event whose dependence enforces all prior queue work.
-                ev.wait_and_throw();
+                // Get synchronization event using three-tier approach
+                sycl::event ev = queue.getBlockingSyncEvent();
+
+                // Set event state before waiting (prevents race condition)
                 event.setEvent(ev);
+
+                // Now safe to wait - other threads see proper state
+                ev.wait_and_throw();
                 return;
             }
             // Non-blocking: For consistency, also use the improved sync method but don't wait

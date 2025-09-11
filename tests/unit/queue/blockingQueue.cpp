@@ -17,7 +17,11 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <atomic>
+#include <barrier>
 #include <iostream>
+#include <thread>
+#include <vector>
 
 using namespace alpaka;
 
@@ -449,5 +453,76 @@ TEMPLATE_LIST_TEST_CASE(
         {
             CHECK(ev.isComplete());
         }
+    }
+}
+
+// Test for race condition in blocking queue event enqueue
+TEMPLATE_LIST_TEST_CASE("blocking queue event race condition fix", "[bq][event][race]", TestApis)
+{
+    auto cfg = TestType::makeDict();
+    auto deviceSpec = cfg[object::deviceSpec];
+    auto exec = cfg[object::exec];
+
+    auto sel = onHost::makeDeviceSelector(deviceSpec);
+    if(!sel.isAvailable())
+        return;
+    onHost::Device device = sel.makeDevice(0);
+
+    auto blockingQueue = device.makeQueue(alpaka::onHost::policy::blocking);
+
+    // Test concurrent event operations to detect race conditions
+    constexpr int numThreads = 4;
+    constexpr int eventsPerThread = 10;
+
+    std::vector<std::thread> threads;
+    std::vector<std::vector<decltype(device.makeEvent())>> threadEvents(numThreads);
+
+    // C++20 barrier: numThreads workers + 1 main thread = 5 total participants
+    std::barrier sync_point(numThreads + 1);
+
+    // Create threads that will enqueue events concurrently
+    for(int t = 0; t < numThreads; ++t)
+    {
+        // emplace thread with lambda that creates and enqueues events. Captures threadId by value
+        threads.emplace_back(
+            [&, threadId = t]()
+            {
+                // Worker thread waits at barrier for main thread to join
+                sync_point.arrive_and_wait();
+
+                // Each thread creates and enqueues events
+                for(int i = 0; i < eventsPerThread; ++i)
+                {
+                    auto event = device.makeEvent();
+
+                    // Ensure event is set before waiting
+                    blockingQueue.enqueue(event);
+
+                    // Event should be immediately complete for blocking queue
+                    CHECK(event.isComplete());
+
+                    threadEvents[threadId].push_back(event);
+                }
+            });
+    }
+
+    // Main thread participates in barrier - releases all threads simultaneously
+    sync_point.arrive_and_wait();
+
+    // Wait for all threads to complete
+    for(auto& thread : threads)
+    {
+        thread.join();
+    }
+
+    // Verify all events are complete and consistent
+    for(int t = 0; t < numThreads; ++t)
+    {
+        for(auto const& event : threadEvents[t])
+        {
+            CHECK(event.isComplete());
+        }
+        // Verify thread completed all expected operations (no crashes/hangs)
+        CHECK(threadEvents[t].size() == eventsPerThread);
     }
 }
