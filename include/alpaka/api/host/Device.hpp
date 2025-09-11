@@ -60,7 +60,8 @@ namespace alpaka::onHost
                 std::vector<std::weak_ptr<cpu::Queue<Device>>> tmpQueues;
                 {
                     std::lock_guard<std::mutex> lk{queuesGuard};
-                    tmpQueues = queues; // copy weak_ptr list
+                    // copy weak_ptr list
+                    tmpQueues = queues;
                 }
                 for(auto& weakQueue : tmpQueues)
                 {

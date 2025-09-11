@@ -167,7 +167,8 @@ TEMPLATE_LIST_TEST_CASE("blocking queue chained operations", "[bq][chain]", Test
     auto qBlocking = device.makeQueue(alpaka::onHost::policy::blocking);
     auto qNonBlocking = device.makeQueue(alpaka::onHost::policy::nonBlocking);
 
-    constexpr Vec extent = Vec{32u}; // keep one larger extent for coverage
+    // keep one larger extent for coverage
+    constexpr Vec extent = Vec{32u};
     constexpr auto frameSize = CVec<uint32_t, 4u>{};
     auto frameSpec = onHost::FrameSpec{extent / frameSize, frameSize};
 
@@ -238,7 +239,8 @@ TEMPLATE_LIST_TEST_CASE("allocAsync chain blocking vs non-blocking", "[bq][alloc
     qNonBlocking.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{kTestFillValue}, dBufNB});
     auto hBufNB = onHost::allocHostLike(dBufNB);
     onHost::memcpy(qNonBlocking, hBufNB, dBufNB);
-    onHost::wait(qNonBlocking); // explicit wait
+    // explicit wait
+    onHost::wait(qNonBlocking);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(hBufNB[idx] == kTestFillValue); });
 }
 
@@ -352,8 +354,8 @@ TEMPLATE_LIST_TEST_CASE("blocking queue event semantics", "[bq][event]", TestApi
     qNonBlockingProd.enqueue(e4);
     // NOTE: The non-blocking thread can execute the kernel and the event completion task before
     // the test thread reaches this point (especially on fast CI machines or tiny kernels), making
-    // the negative assertion fail. We only need to validate that waitFor on the blocking consumer
-    // provides the required synchronization and the memcpy sees the produced data.
+    // the negative assertion fail. The test only needs to validate that waitFor on the blocking
+    // consumer provides the required synchronization and the memcpy observes the produced data.
     if(!e4.isComplete())
     {
         // Non-fatal check documenting the typical expectation

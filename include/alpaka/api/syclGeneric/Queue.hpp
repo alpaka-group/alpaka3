@@ -149,7 +149,8 @@ namespace alpaka::onHost
 
             // Event caching for blocking queue synchronization
             mutable std::optional<sycl::event> m_cachedEvent;
-            mutable sycl::buffer<uint8_t, 1> m_syncBuffer{1}; // For memset fallback synchronization
+            // For memset fallback synchronization
+            mutable sycl::buffer<uint8_t, 1> m_syncBuffer{1};
 
             // Helper method for three-tier synchronization approach
             sycl::event getBlockingSyncEvent()
