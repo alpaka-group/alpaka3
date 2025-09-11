@@ -16,19 +16,19 @@
 /** @file
  *
  * This tests evaluated if events in a queue follows a defined behaviour. Events used to describe dependencies
- * between queues need to guarantee that tasks not start to early.
- * If a event is re-enqueued and used again the event is not allowed to be complete before the last enqueue of the
+ * between queues need to guarantee that tasks not start too early.
+ * If an event is re-enqueued and used again the event is not allowed to be complete before the last enqueue of the
  * event is executed on the device.
  *
- * @attention: Compared to older alpaka version the tests not using a special implementation of a emulated kernel which
- * can be triggered from the host side. For CUDA in the past a driver method `cuStreamWaitValue32()` was used and for
- * CPU there wars a different implementation. Sycl was not tested at all. This implementation is providing now a
- * unified emulated kernel which is using mapped memory to signal that a kernel which is perfroming a bussy waiting on
+ * @attention: Compared to older alpaka version the tests not using a special implementation of an emulated kernel
+ * which can be triggered from the host side. For CUDA in the past a driver method `cuStreamWaitValue32()` was used and
+ * for CPU there wars a different implementation. Sycl was not tested at all. This implementation is providing now a
+ * unified emulated kernel which is using mapped memory to signal that a kernel which is performing a busy-wait on
  * the device kernel should finish.
  * If the usage of mapped memory is making issues at some point we should switch back to the old implementation.
  *
- * For OneApi and Intel GPUs some tests will not be performed. The GPU Arc770 used for testing provides most likly only
- * a single hardware queue and therefore kernel whcih has no dependencies are not executed. Most test assumes that
+ * For OneApi and Intel GPUs some tests will not be performed. The GPU Arc770 used for testing provides most likely
+ * only a single hardware queue and therefore kernel which has no dependencies are not executed. Most test assumes that
  * queues can run tasks concurrently even if there is already a running kernel.
  */
 
