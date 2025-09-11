@@ -160,7 +160,7 @@ namespace alpaka::onHost
 
     /** Allocate memory on the given device with unified virtual memory
      *
-     * This memory can be accessed from all devices with the same Api and device kind. Depending of the backend e.g.
+     * This memory can be accessed from all devices with the same Api and device kind. Depending on the backend e.g.
      * OneApi memory can be accessed by other device kind devices if they are using the same native context. It is not
      * allowed to access the data on two devices at the same time, this must be avoided by explicit synchronizations.
      * Unified memory follows the rules of UVM memory of the device backend e.g. CUDA, HIP, ...

@@ -46,6 +46,10 @@ int example(auto const devSpec)
         std::cout << "memory buffer on " << alpaka::onHost::getStaticName(alpaka::getApi(device_buffer)) << " at "
                   << std::data(device_buffer) << "\n\n";
 
+        // once the device buffer goes out of scope, it will enqueue its free, so all other operations have finished
+        // before the memory is freed
+        device_buffer.destructorWaitFor(queue);
+
         // set the device memory to all zeros (byte-wise, not element-wise)
         alpaka::onHost::memset(queue, device_buffer, 0x00);
 
@@ -54,9 +58,6 @@ int example(auto const devSpec)
 
         // copy the contents of the device buffer to the host buffer
         alpaka::onHost::memcpy(queue, host_data, view);
-
-        // the device buffer goes out of scope, but the memory is freed only
-        // once all enqueued operations have completed
     }
 
     // wait for all operations to complete
