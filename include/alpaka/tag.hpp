@@ -35,6 +35,65 @@ namespace alpaka
         ALPAKA_TAG(dynSharedMemBytes);
     } // namespace object
 
+    namespace queueKind
+    {
+        namespace detail
+        {
+            struct QueueKindBase
+            {
+            };
+        } // namespace detail
+
+        namespace trait
+        {
+            template<typename T_QueueKind>
+            struct IsQueueKind : std::is_base_of<detail::QueueKindBase, T_QueueKind>
+            {
+            };
+        } // namespace trait
+
+        template<typename T_QueueKind>
+        constexpr bool isQueueKind_v = trait::IsQueueKind<T_QueueKind>::value;
+
+        namespace concepts
+        {
+            template<typename T_QueueKind>
+            concept QueueKind = isQueueKind_v<T_QueueKind>;
+        } // namespace concepts
+
+        constexpr bool operator==(concepts::QueueKind auto lhs, concepts::QueueKind auto rhs)
+        {
+            return std::is_same_v<ALPAKA_TYPEOF(lhs), ALPAKA_TYPEOF(rhs)>;
+        }
+
+        constexpr bool operator!=(concepts::QueueKind auto lhs, concepts::QueueKind auto rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        /// Queue should block during the task execution
+        struct Blocking : detail::QueueKindBase
+        {
+            static std::string getName()
+            {
+                return "Blocking";
+            }
+        };
+
+        constexpr auto blocking = Blocking{};
+
+        /// Queue should process task asynchronous
+        struct NonBlocking : detail::QueueKindBase
+        {
+            static std::string getName()
+            {
+                return "NonBlocking";
+            }
+        };
+
+        constexpr auto nonBlocking = NonBlocking{};
+    } // namespace queueKind
+
     namespace deviceKind
     {
         namespace detail

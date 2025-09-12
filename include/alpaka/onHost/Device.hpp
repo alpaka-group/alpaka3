@@ -10,6 +10,7 @@
 #include "alpaka/onHost/Queue.hpp"
 #include "alpaka/onHost/concepts.hpp"
 #include "alpaka/onHost/internal/interface.hpp"
+#include "alpaka/tag.hpp"
 #include "alpaka/utility.hpp"
 
 #include <bit>
@@ -79,53 +80,25 @@ namespace alpaka::onHost
          * Running tasks from different tasks sequential is a valid behaviour. Enqueuing into two queues only
          * providing the information that the tasks are independent of each other.
          *
-         * Blocking behaviour:
-         *  - NonBlocking (default): enqueue returns immediately; completion must be ensured via onHost::wait(queue)
-         *    or by enqueuing dependent operations onto the same queue.
-         *  - Blocking: each enqueue only returns after the operation is complete and its effects are host-visible.
+         * @param kind
+         *   Blocking behaviour:
+         *    - queueKind::nonBlocking (default): enqueue returns immediately; completion must be ensured via
+         * onHost::wait(queue) or by enqueuing dependent operations onto the same queue.
+         *    - queueKind::nonBlocking: each enqueue only returns after the operation is complete and its effects are
+         * host-visible.
          *
-         * Policy selection:
-         *  - makeQueue()                        -> NonBlocking queue (default)
-         *  - makeQueue(internal::NonBlocking{}) -> explicit NonBlocking
-         *  - makeQueue(internal::Blocking{})    -> Blocking
-         *  - Prefer the explicit policy-tag overloads for readability at call sites.
-         *
-         * @return onHost::Queue wrapper owning an underlying backend queue plus blocking flag.
+         * @return onHost::Queue where task and memory operations can be enqueues to
          */
+        auto makeQueue(queueKind::concepts::QueueKind auto kind)
+        {
+            return Queue{
+                internal::MakeQueue::Op<ALPAKA_TYPEOF(*m_device.get()), ALPAKA_TYPEOF(kind)>{}(*m_device.get(), kind),
+                kind};
+        }
+
         auto makeQueue()
         {
-            return makeQueueImpl(false);
-        }
-
-        auto makeQueue(internal::NonBlocking)
-        {
-            return makeQueueImpl(false);
-        }
-
-        auto makeQueue(internal::Blocking)
-        {
-            return makeQueueImpl(true);
-        }
-
-    private:
-        auto makeQueueImpl(bool isBlocking)
-        {
-            if(isBlocking)
-            {
-                // use blocking type
-                auto underlying
-                    = internal::MakeQueue::Op<std::decay_t<decltype(*m_device.get())>, internal::Blocking>{}(
-                        *m_device.get());
-                return onHost::Queue<Device<T_Api, T_DeviceKind>>{std::move(underlying), true};
-            }
-            else
-            {
-                // use non-blocking type
-                auto underlying
-                    = internal::MakeQueue::Op<std::decay_t<decltype(*m_device.get())>, internal::NonBlocking>{}(
-                        *m_device.get());
-                return onHost::Queue<Device<T_Api, T_DeviceKind>>{std::move(underlying), false};
-            }
+            return makeQueue(queueKind::nonBlocking);
         }
 
     public:
@@ -235,8 +208,10 @@ namespace alpaka::onHost
      * @param queue queue handle
      * @param extents number of elements for each dimension
      */
-    template<typename T_Type, typename T_Device>
-    inline auto allocManaged(Queue<T_Device> const& queue, alpaka::concepts::VectorOrScalar auto const& extents)
+    template<typename T_Type, typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+    inline auto allocUnified(
+        Queue<T_Device, T_QueueKind> const& queue,
+        alpaka::concepts::VectorOrScalar auto const& extents)
     {
         Vec const extentsVec = extents;
         return internal::AllocUnified::
@@ -274,8 +249,10 @@ namespace alpaka::onHost
      * @param queue queue handle
      * @param extents number of elements for each dimension
      */
-    template<typename T_Type, typename T_Device>
-    inline auto allocMapped(Queue<T_Device> const& queue, alpaka::concepts::VectorOrScalar auto const& extents)
+    template<typename T_Type, typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+    inline auto allocMapped(
+        Queue<T_Device, T_QueueKind> const& queue,
+        alpaka::concepts::VectorOrScalar auto const& extents)
     {
         return allocMapped<T_Type>(queue.getDevice(), extents);
     }
@@ -321,8 +298,8 @@ namespace alpaka::onHost
      *
      * @param queue queue handle
      */
-    template<typename T_Device>
-    inline bool isDataAccessible(Queue<T_Device> const& queue, alpaka::concepts::View auto const& view)
+    template<typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+    inline bool isDataAccessible(Queue<T_Device, T_QueueKind> const& queue, alpaka::concepts::View auto const& view)
     {
         return internal::IsDataAccessible::FirstPath<ALPAKA_TYPEOF(*queue.getDevice().get()), ALPAKA_TYPEOF(view)>{}(
                    *queue.getDevice().get(),

@@ -12,7 +12,6 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
-#include <alpaka/onHost/policy.hpp>
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -42,34 +41,6 @@ struct BlockingTestKernel
     }
 };
 
-TEMPLATE_LIST_TEST_CASE("blocking queue creation & accessor", "[bq][creation]", TestApis)
-{
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    auto exec = cfg[object::exec];
-    std::cout << "device spec: " << getName(deviceSpec) << "\n";
-    std::cout << "device name: " << device.getName() << "\n";
-    std::cout << "executor   : " << exec.getName() << std::endl;
-
-    auto blockingQueue = device.makeQueue(alpaka::onHost::policy::blocking);
-    auto nonBlockingQueue = device.makeQueue(alpaka::onHost::policy::nonBlocking);
-    auto defaultQueue = device.makeQueue();
-    CHECK(blockingQueue.get() != nullptr);
-    CHECK(nonBlockingQueue.get() != nullptr);
-    CHECK(defaultQueue.get() != nullptr);
-    CHECK(blockingQueue.isBlocking());
-    CHECK_FALSE(nonBlockingQueue.isBlocking());
-}
-
 TEMPLATE_LIST_TEST_CASE("blocking queue memory operations", "[bq][memory]", TestApis)
 {
     auto cfg = TestType::makeDict();
@@ -88,8 +59,10 @@ TEMPLATE_LIST_TEST_CASE("blocking queue memory operations", "[bq][memory]", Test
     std::cout << "device name: " << device.getName() << "\n";
     std::cout << "executor   : " << exec.getName() << std::endl;
 
-    auto blockingQueue = device.makeQueue(alpaka::onHost::policy::blocking);
-    constexpr Vec extent = Vec{8u};
+    auto blockingQueue0 = device.makeQueue(queueKind::blocking);
+    auto blockingQueue1 = device.makeQueue(queueKind::blocking);
+    auto blockingQueue2 = device.makeQueue(queueKind::blocking);
+    constexpr Vec extent = Vec{16u * 1024u * 1024u};
     constexpr uint32_t testValue = kTestFillValue;
 
     // Test memory allocation and operations with blocking queue
@@ -99,19 +72,22 @@ TEMPLATE_LIST_TEST_CASE("blocking queue memory operations", "[bq][memory]", Test
     // Initialize host buffer
     meta::ndLoopIncIdx(extent, [&](auto idx) { hBuff[idx] = 0u; });
 
-    // Test kernel execution with blocking queue
+    // Test kernel execution with blocking queue 0
     constexpr auto frameSize = CVec<uint32_t, 4u>{};
-    blockingQueue.enqueue(
+    blockingQueue0.enqueue(
         exec,
         onHost::FrameSpec{extent / frameSize, frameSize},
         KernelBundle{BlockingTestKernel{}, dBuff, testValue});
 
-    // With blocking queue, operations should be synchronous
+    // With blocking queue 1, operations should be synchronous
     // Copy data back - this should also block automatically
-    onHost::memcpy(blockingQueue, hBuff, dBuff);
+    onHost::memcpy(blockingQueue1, hBuff, dBuff);
+
+    // In cases where the blocking queue not works as expected we have a high change of a data race because we would
+    // reset the values with an action in another queue while copying the data
+    onHost::memset(blockingQueue2, dBuff, 0u);
 
     // NO explicit wait needed - blocking queue should handle this automatically
-
     // Verify the data was written correctly
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(hBuff[idx] == testValue); });
 }
@@ -148,6 +124,7 @@ struct FillKernel
     }
 };
 
+// enqueue different steps of a compute chain in independent blocking queues
 TEMPLATE_LIST_TEST_CASE("blocking queue chained operations", "[bq][chain]", TestApis)
 {
     auto cfg = TestType::makeDict();
@@ -164,8 +141,9 @@ TEMPLATE_LIST_TEST_CASE("blocking queue chained operations", "[bq][chain]", Test
     std::cout << "device spec: " << getName(deviceSpec) << "\n";
     std::cout << "device name: " << device.getName() << "\n";
     std::cout << "executor   : " << exec.getName() << std::endl;
-    auto qBlocking = device.makeQueue(alpaka::onHost::policy::blocking);
-    auto qNonBlocking = device.makeQueue(alpaka::onHost::policy::nonBlocking);
+    auto qBlocking0 = device.makeQueue(queueKind::blocking);
+    auto qBlocking1 = device.makeQueue(queueKind::blocking);
+    auto qBlocking2 = device.makeQueue(queueKind::blocking);
 
     // keep one larger extent for coverage
     constexpr Vec extent = Vec{32u};
@@ -174,78 +152,27 @@ TEMPLATE_LIST_TEST_CASE("blocking queue chained operations", "[bq][chain]", Test
 
     // Device buffers
     auto dBufBlocking = onHost::alloc<uint32_t>(device, extent);
-    auto dBufNonBlocking = onHost::alloc<uint32_t>(device, extent);
     // Host mirrors
     auto hBufBlocking = onHost::allocHostLike(dBufBlocking);
-    auto hBufNonBlocking = onHost::allocHostLike(dBufNonBlocking);
 
     // 1) Blocking queue: chain two kernels then memcpy, no wait.
     // First kernel writes 3, second overwrites with 11.
-    qBlocking.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{3u}, dBufBlocking});
-    qBlocking.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{11u}, dBufBlocking});
+    qBlocking0.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{3u}, dBufBlocking});
+    qBlocking1.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{11u}, dBufBlocking});
     // blocking finished here
-    onHost::memcpy(qBlocking, hBufBlocking, dBufBlocking);
+    onHost::memcpy(qBlocking2, hBufBlocking, dBufBlocking);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(hBufBlocking[idx] == 11u); });
 
-    // 2) Non-blocking queue: same sequence but we must wait before validating.
-    qNonBlocking.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{5u}, dBufNonBlocking});
-    qNonBlocking.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{19u}, dBufNonBlocking});
-    onHost::memcpy(qNonBlocking, hBufNonBlocking, dBufNonBlocking);
-
-    // Ensure completion explicitly
-    onHost::wait(qNonBlocking);
-    meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(hBufNonBlocking[idx] == 19u); });
-
-    // 3) allocAsync chain on blocking queue: allocate asynchronously, immediately fill then memcpy.
+    // 2) allocAsync chain on blocking queue: allocate asynchronously, immediately fill then memcpy.
     // should be ready due to blocking policy of the queue
-    auto dBufAsync = onHost::allocAsync<uint32_t>(qBlocking, extent);
-    qBlocking.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{kTestFillValue}, dBufAsync});
+    auto dBufAsync = onHost::allocAsync<uint32_t>(qBlocking0, extent);
+    qBlocking1.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{kTestFillValue}, dBufAsync});
     auto hBufAsync = onHost::allocHostLike(dBufAsync);
-    onHost::memcpy(qBlocking, hBufAsync, dBufAsync);
+    onHost::memcpy(qBlocking2, hBufAsync, dBufAsync);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(hBufAsync[idx] == kTestFillValue); });
 }
 
-//  allocAsync chain on both queue types: blocking queue requires no waits, non-blocking needs one wait before verify.
-TEMPLATE_LIST_TEST_CASE("allocAsync chain blocking vs non-blocking", "[bq][alloc]", TestApis)
-{
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-    auto sel = onHost::makeDeviceSelector(deviceSpec);
-    if(!sel.isAvailable())
-        return;
-    onHost::Device device = sel.makeDevice(0);
-    std::cout << "device spec: " << getName(deviceSpec) << "\n";
-    std::cout << "device name: " << device.getName() << "\n";
-    std::cout << "executor   : " << exec.getName() << std::endl;
-
-    constexpr Vec extent = Vec{8u};
-    constexpr auto frameSize = CVec<uint32_t, 4u>{};
-    auto frameSpec = onHost::FrameSpec{extent / frameSize, frameSize};
-
-    auto qBlocking = device.makeQueue(alpaka::onHost::policy::blocking);
-    auto qNonBlocking = device.makeQueue(alpaka::onHost::policy::nonBlocking);
-
-    // Blocking queue chain
-    auto dBufB = onHost::allocAsync<uint32_t>(qBlocking, extent);
-    qBlocking.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{kTestFillValue}, dBufB});
-    auto hBufB = onHost::allocHostLike(dBufB);
-    // no wait required after memcpy
-    onHost::memcpy(qBlocking, hBufB, dBufB);
-    meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(hBufB[idx] == kTestFillValue); });
-
-    // Non-blocking queue chain (must wait before host validation)
-    auto dBufNB = onHost::allocAsync<uint32_t>(qNonBlocking, extent);
-    qNonBlocking.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{kTestFillValue}, dBufNB});
-    auto hBufNB = onHost::allocHostLike(dBufNB);
-    onHost::memcpy(qNonBlocking, hBufNB, dBufNB);
-    // explicit wait
-    onHost::wait(qNonBlocking);
-    meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(hBufNB[idx] == kTestFillValue); });
-}
-
-// Test blocking and non-blocking queue independence
-// Blocking queues: immediate completion, non-blocking: async + explicit wait
+// Test blocking and non-blocking queue should be usable together
 TEMPLATE_LIST_TEST_CASE("mixed queues independence", "[bq][mixed]", TestApis)
 {
     auto cfg = TestType::makeDict();
@@ -260,28 +187,19 @@ TEMPLATE_LIST_TEST_CASE("mixed queues independence", "[bq][mixed]", TestApis)
     constexpr auto frameSize = CVec<uint32_t, 4u>{};
     auto frameSpec = onHost::FrameSpec{extent / frameSize, frameSize};
 
-    auto qBlocking = device.makeQueue(alpaka::onHost::policy::blocking);
-    auto qNonBlocking = device.makeQueue(alpaka::onHost::policy::nonBlocking);
+    auto qBlocking = device.makeQueue(queueKind::blocking);
+    auto qNonBlocking = device.makeQueue(queueKind::nonBlocking);
 
     // Separate buffers for each queue
-    auto dBlocking = onHost::alloc<uint32_t>(device, extent);
-    auto dNonBlocking = onHost::alloc<uint32_t>(device, extent);
-    auto hBlocking = onHost::allocHostLike(dBlocking);
-    auto hNonBlocking = onHost::allocHostLike(dNonBlocking);
+    auto dBuf = onHost::alloc<uint32_t>(device, extent);
+    auto hBuf = onHost::allocHostLike(dBuf);
 
     // Blocking queue: immediate completion guaranteed
-    qBlocking.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{3u}, dBlocking});
+    qBlocking.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{3u}, dBuf});
     // Returns after kernel done
-    onHost::memcpy(qBlocking, hBlocking, dBlocking);
-    meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(hBlocking[idx] == 3u); });
-
-    // Non-blocking queue: requires explicit wait
-    qNonBlocking.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{5u}, dNonBlocking});
-    // May return early
-    onHost::memcpy(qNonBlocking, hNonBlocking, dNonBlocking);
-    // Explicit synchronization needed
+    onHost::memcpy(qNonBlocking, hBuf, dBuf);
     onHost::wait(qNonBlocking);
-    meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(hNonBlocking[idx] == 5u); });
+    meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(hBuf[idx] == 3u); });
 }
 
 TEMPLATE_LIST_TEST_CASE("blocking queue event semantics", "[bq][event]", TestApis)
@@ -296,13 +214,15 @@ TEMPLATE_LIST_TEST_CASE("blocking queue event semantics", "[bq][event]", TestApi
     onHost::Device device = sel.makeDevice(0);
 
     // Blocking producer queue, non-blocking consumer queue
-    auto qBlocking = device.makeQueue(alpaka::onHost::policy::blocking);
-    auto qNonBlocking = device.makeQueue(alpaka::onHost::policy::nonBlocking);
+    auto qBlocking = device.makeQueue(queueKind::blocking);
+    auto qNonBlocking = device.makeQueue(queueKind::nonBlocking);
 
     // 1. Event recorded on blocking queue is immediately complete
     auto e1 = device.makeEvent();
     // recording
     qBlocking.enqueue(e1);
+
+
     // must already be signaled
     CHECK(e1.isComplete());
     // should be a no-op
@@ -312,6 +232,8 @@ TEMPLATE_LIST_TEST_CASE("blocking queue event semantics", "[bq][event]", TestApi
     constexpr Vec extent = Vec{16u};
     auto dBuf = onHost::alloc<uint32_t>(device, extent);
     auto hBuf = onHost::allocHostLike(dBuf);
+    auto hBuf2 = onHost::allocHostLike(dBuf);
+    auto hBuf3 = onHost::allocHostLike(dBuf);
 
     // Use global FillKernel (defined above)
 
@@ -326,7 +248,6 @@ TEMPLATE_LIST_TEST_CASE("blocking queue event semantics", "[bq][event]", TestApi
     // implicit sync via blocking queue
     onHost::memcpy(qBlocking, hBuf, dBuf);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(hBuf[idx] == 123u); });
-
     // 3. Blocking data generator -> non-blocking consumer/user waits on event
     //   (event already complete; consumer wait should be instantaneous)
     auto e3 = device.makeEvent();
@@ -337,14 +258,13 @@ TEMPLATE_LIST_TEST_CASE("blocking queue event semantics", "[bq][event]", TestApi
 
     // Consumer queue waits on event then copies & validates (must still work)
     qNonBlocking.waitFor(e3);
-    auto hBuf2 = onHost::allocHostLike(dBuf);
     onHost::memcpy(qNonBlocking, hBuf2, dBuf);
     onHost::wait(qNonBlocking);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(hBuf2[idx] == 77u); });
 
     // 4. Non-blocking producer -> blocking consumer not using explicit waits
-    auto qNonBlockingProd = device.makeQueue(alpaka::onHost::policy::nonBlocking);
-    auto qBlockingCons = device.makeQueue(alpaka::onHost::policy::blocking);
+    auto qNonBlockingProd = device.makeQueue(queueKind::nonBlocking);
+    auto qBlockingCons = device.makeQueue(queueKind::blocking);
     auto e4 = device.makeEvent();
     qNonBlockingProd.enqueue(
         exec,
@@ -356,40 +276,25 @@ TEMPLATE_LIST_TEST_CASE("blocking queue event semantics", "[bq][event]", TestApi
     // the test thread reaches this point (especially on fast CI machines or tiny kernels), making
     // the negative assertion fail. The test only needs to validate that waitFor on the blocking
     // consumer provides the required synchronization and the memcpy observes the produced data.
-    if(!e4.isComplete())
-    {
-        // Non-fatal check documenting the typical expectation
-        CHECK_FALSE(e4.isComplete());
-    }
-    else
+    if(e4.isComplete())
     {
         INFO("e4 completed early (acceptable: fast execution on non-blocking queue)");
     }
     // non blocking queues are ordered internally but since non-blocking the host, event must be waited.
     // enqueue wait on blocking consumer without explicit wait !!
     qBlockingCons.waitFor(e4);
-    // enqueue memcpy on blocking consumer; when it returns data must be ready
-    auto hBuf3 = onHost::allocHostLike(dBuf);
 
+    // possible data race if the command before is not executed blocking
     onHost::memcpy(qBlockingCons, hBuf3, dBuf);
     // Check for all elements of the extent
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(hBuf3[idx] == 55u); });
 }
 
-// SYCL blocking queue event-cache behavior tests
-TEMPLATE_LIST_TEST_CASE(
-    "SYCL blocking queue event cache functionality",
-    "[event][sycl][cache][blocking-queue]",
-    TestApis)
+// blocking queue event-cache behavior tests
+TEMPLATE_LIST_TEST_CASE("blocking queue event cache functionality", "[event][blocking-queue]", TestApis)
 {
     auto cfg = TestType::makeDict();
     auto deviceSpec = cfg[object::deviceSpec];
-
-    // Only test for oneAPI backend (SYCL implementation)
-    if(deviceSpec.getApi() != api::oneApi)
-    {
-        return;
-    }
 
     auto sel = onHost::makeDeviceSelector(deviceSpec);
     if(!sel.isAvailable())
@@ -399,7 +304,7 @@ TEMPLATE_LIST_TEST_CASE(
 
     SECTION("Rapid event enqueueing")
     {
-        auto blockingQueue = device.makeQueue(onHost::policy::blocking);
+        auto blockingQueue = device.makeQueue(queueKind::blocking);
 
         int const iterations = 20;
         std::vector<decltype(device.makeEvent())> events;
@@ -419,7 +324,7 @@ TEMPLATE_LIST_TEST_CASE(
         }
 
         // Create a new queue and verify it still works
-        auto finalQueue = device.makeQueue(onHost::policy::blocking);
+        auto finalQueue = device.makeQueue(queueKind::blocking);
         auto finalEvent = device.makeEvent();
         finalQueue.enqueue(finalEvent);
         CHECK(finalEvent.isComplete());
@@ -427,8 +332,8 @@ TEMPLATE_LIST_TEST_CASE(
 
     SECTION("Blocking and non-blocking queue behavior")
     {
-        auto blockingQueue = device.makeQueue(onHost::policy::blocking);
-        auto nonBlockingQueue = device.makeQueue(onHost::policy::nonBlocking);
+        auto blockingQueue = device.makeQueue(queueKind::blocking);
+        auto nonBlockingQueue = device.makeQueue(queueKind::nonBlocking);
 
         int const iterations = 10;
 
@@ -459,18 +364,16 @@ TEMPLATE_LIST_TEST_CASE(
 }
 
 // Test for race condition in blocking queue event enqueue
-TEMPLATE_LIST_TEST_CASE("blocking queue event race condition fix", "[bq][event][race]", TestApis)
+TEMPLATE_LIST_TEST_CASE("blocking queue event race condition", "[bq][event][race]", TestApis)
 {
     auto cfg = TestType::makeDict();
     auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
 
     auto sel = onHost::makeDeviceSelector(deviceSpec);
     if(!sel.isAvailable())
         return;
     onHost::Device device = sel.makeDevice(0);
-
-    auto blockingQueue = device.makeQueue(alpaka::onHost::policy::blocking);
+    auto blockingQueue = device.makeQueue(queueKind::blocking);
 
     // Test concurrent event operations to detect race conditions
     constexpr int numThreads = 4;

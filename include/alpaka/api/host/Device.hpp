@@ -60,8 +60,7 @@ namespace alpaka::onHost
                 std::vector<std::weak_ptr<cpu::Queue<Device>>> tmpQueues;
                 {
                     std::lock_guard<std::mutex> lk{queuesGuard};
-                    // copy weak_ptr list
-                    tmpQueues = queues;
+                    tmpQueues = queues; // copy weak_ptr list
                 }
                 for(auto& weakQueue : tmpQueues)
                 {
@@ -106,22 +105,19 @@ namespace alpaka::onHost
 
             friend struct internal::MakeQueue;
 
-            template<typename T_BlockingPolicy>
-            Handle<cpu::Queue<Device>> makeQueue(T_BlockingPolicy)
+            Handle<cpu::Queue<Device>> makeQueue(queueKind::concepts::QueueKind auto kind)
             {
+                static_assert(
+                    kind == queueKind::blocking || kind == queueKind::nonBlocking,
+                    "Unsupported queue kind.");
                 auto thisHandle = this->getSharedPtr();
                 std::lock_guard<std::mutex> lk{queuesGuard};
-                bool isBlocking = std::is_same_v<T_BlockingPolicy, internal::Blocking>;
+
+                constexpr bool isBlocking = kind == queueKind::blocking;
                 auto newQueue = std::make_shared<cpu::Queue<Device>>(std::move(thisHandle), queues.size(), isBlocking);
 
                 queues.emplace_back(newQueue);
                 return newQueue;
-            }
-
-            // Backward compatibility: default non-blocking
-            Handle<cpu::Queue<Device>> makeQueue()
-            {
-                return makeQueue(internal::NonBlocking{});
             }
 
             friend struct internal::MakeEvent;

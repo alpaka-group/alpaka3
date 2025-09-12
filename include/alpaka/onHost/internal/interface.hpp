@@ -88,23 +88,14 @@ namespace alpaka::onHost
             return GetNativeHandle::Op<std::decay_t<decltype(any)>>{}(any);
         }
 
-        // Runtime blocking policy tags (short names).
-        struct Blocking
-        {
-        };
-
-        struct NonBlocking
-        {
-        };
-
         struct MakeQueue
         {
-            template<typename T_Device, typename T_BlockingPolicy = NonBlocking>
+            template<typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
             struct Op
             {
-                auto operator()(T_Device& device, T_BlockingPolicy = {}) const
+                auto operator()(T_Device& device, T_QueueKind) const
                 {
-                    return device.makeQueue(T_BlockingPolicy{});
+                    return device.makeQueue(T_QueueKind{});
                 }
             };
         };

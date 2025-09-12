@@ -44,7 +44,7 @@ namespace alpaka::onHost
             using ApiInterface = typename T_Device::ApiInterface;
 
         public:
-            Queue(internal::concepts::DeviceHandle auto device, uint32_t const idx, bool isBlocking = false)
+            Queue(internal::concepts::DeviceHandle auto device, uint32_t const idx, bool isBlocking)
                 : m_device(std::move(device))
                 , m_idx(idx)
                 , m_isBlocking(isBlocking)
@@ -81,11 +81,6 @@ namespace alpaka::onHost
                 return !(*this == other);
             }
 
-            [[nodiscard]] bool isBlocking() const noexcept
-            {
-                return m_isBlocking;
-            }
-
         private:
             void _()
             {
@@ -98,14 +93,17 @@ namespace alpaka::onHost
             core::CallbackThread m_callBackThread;
             bool m_isBlocking{false};
 
-            template<typename T_Fn>
-            auto submit(T_Fn&& fn)
+            /** Waits until all operations are finished depending wather the queue is blocking or non-blocking.
+             *
+             * If the queue is a blocking queue the control flow will be blocked and the method is not returning until
+             * all work in the queue is processed. This methoid should be called after the task is enqueued into the
+             * native CUDA/HIP queue. There is no need to call this method before enqueuing because the queues are
+             * in-order queues and even if another thread is enqueued something before the order is guaranteed.
+             */
+            void conditionalWait() const noexcept
             {
-                // Always launch asynchronously then optionally wait.
-                auto fut = m_callBackThread.submit(std::forward<T_Fn>(fn));
                 if(m_isBlocking)
-                    fut.wait();
-                return fut;
+                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(ApiInterface, ApiInterface::streamSynchronize(getNativeHandle()));
             }
 
             friend struct alpaka::internal::GetName;
@@ -155,6 +153,8 @@ namespace alpaka::onHost
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
                     ApiInterface,
                     ApiInterface::streamWaitEvent(getNativeHandle(), internal::getNativeHandle(event), 0));
+
+                conditionalWait();
             }
 
             friend struct onHost::internal::GetDevice;
@@ -309,6 +309,8 @@ namespace alpaka::onHost
                     convertVecToUniformCudaHipDim(numThreadsPerBlock),
                     static_cast<std::size_t>(blockDynSharedMemBytes),
                     queue.getNativeHandle()>>>(kernelBundle, optimizedThreadSpec, args...);
+
+                queue.conditionalWait();
             }
         };
     } // namespace unifiedCudaHip
@@ -363,6 +365,8 @@ namespace alpaka::onHost
                         queue.getNativeHandle(),
                         uniformCudaHipRtHostFunc,
                         new HostFuncData{queue, task}));
+
+                queue.conditionalWait();
             }
         };
 
@@ -375,6 +379,8 @@ namespace alpaka::onHost
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
                     ApiInterface,
                     ApiInterface::eventRecord(event.getNativeHandle(), queue.getNativeHandle()));
+
+                queue.conditionalWait();
             }
         };
 
@@ -506,6 +512,8 @@ namespace alpaka::onHost
                         ApiInterface,
                         ApiInterface::memcpy3DAsync(&memCpy3DParms, internal::getNativeHandle(queue)));
                 }
+
+                queue.conditionalWait();
             }
         };
 
@@ -575,6 +583,8 @@ namespace alpaka::onHost
                             extentVal,
                             internal::getNativeHandle(queue)));
                 }
+
+                queue.conditionalWait();
             }
         };
 
@@ -627,14 +637,17 @@ namespace alpaka::onHost
                     ApiInterface,
                     ApiInterface::mallocAsync((void**) &ptr, memSizeInByte, queue.getNativeHandle()));
 
+                queue.conditionalWait();
+
                 auto deviceDependency = onHost::Device{queue.getDevice()->getSharedPtr()};
-                auto queueDependency = onHost::Queue{queue.getSharedPtr()};
+                // it is the shared pointer to the internal queue, NOT onHost::Queue
+                auto queueDependency = queue.getSharedPtr();
 
                 auto deleter = [ptr, queueDependency]()
                 {
                     ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(
                         ApiInterface,
-                        ApiInterface::freeAsync(toVoidPtr(ptr), queueDependency.getNativeHandle()));
+                        ApiInterface::freeAsync(toVoidPtr(ptr), queueDependency->getNativeHandle()));
                 };
 
                 auto sharedBuffer = onHost::SharedBuffer{

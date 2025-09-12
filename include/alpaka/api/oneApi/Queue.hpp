@@ -1,4 +1,4 @@
-/* Copyright 2025 Simeon Ehrig, Mehmet Yusufoglu, Andrea Bocci, René Widera
+/* Copyright 2025 Simeon Ehrig, René Widera
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -215,7 +215,7 @@ namespace alpaka::onHost::internal
                 st_shared_mem_bytes + blockDynSharedMemBytes
                 <= queue.m_device->getNativeHandle().first.template get_info<sycl::info::device::local_mem_size>());
 
-            queue.m_queue.submit(
+            [[maybe_unused]] sycl::event ev = queue.m_queue.submit(
                 [threadBlocking, kernelBundle, blockDynSharedMemBytes](sycl::handler& cgh)
                 {
                     using ApiType = decltype(getApi(queue));
@@ -237,21 +237,21 @@ namespace alpaka::onHost::internal
                             sycl::nd_item<syclDim> work_item)
                         {
                             onAcc::oneApi::StaticSharedMemory ssm(st_shared_accessor);
-                            alpaka::onAcc::syclGeneric::DynamicSharedMemory dsm(dyn_shared_accessor);
+                            onAcc::syclGeneric::DynamicSharedMemory dsm(dyn_shared_accessor);
 
                             static_assert(syclDim > 0);
                             static_assert(syclDim <= 3, "more the 3 dimensions are not supported");
                             auto acc = onAcc::Acc{Dict{
                                 DictEntry(
                                     layer::block,
-                                    alpaka::onAcc::syclGeneric::BlockLayer{work_item, optimizedThreadSpec}),
+                                    onAcc::syclGeneric::BlockLayer{work_item, optimizedThreadSpec}),
                                 DictEntry(
                                     layer::thread,
-                                    alpaka::onAcc::syclGeneric::ThreadLayer{work_item, optimizedThreadSpec}),
+                                    onAcc::syclGeneric::ThreadLayer{work_item, optimizedThreadSpec}),
                                 DictEntry(layer::shared, std::ref(ssm)),
                                 DictEntry(layer::dynShared, std::ref(dsm)),
                                 DictEntry(object::dynSharedMemBytes, dsm.byte_size()),
-                                DictEntry(action::threadBlockSync, alpaka::onAcc::syclGeneric::Sync{work_item}),
+                                DictEntry(action::threadBlockSync, onAcc::syclGeneric::Sync{work_item}),
                                 DictEntry(object::api, ApiType{}),
                                 DictEntry(object::deviceKind, DeviceKindType{}),
                                 DictEntry(object::exec, T_Executor{})}};
@@ -259,6 +259,9 @@ namespace alpaka::onHost::internal
                             kernelBundle(acc);
                         });
                 });
+
+            if(queue.isBlocking())
+                ev.wait_and_throw();
         }
     };
 
@@ -289,7 +292,7 @@ namespace alpaka::onHost::internal
                 st_shared_mem_bytes + blockDynSharedMemBytes
                 <= queue.m_device->getNativeHandle().first.template get_info<sycl::info::device::local_mem_size>());
 
-            queue.m_queue.submit(
+            [[maybe_unused]] sycl::event ev = queue.m_queue.submit(
                 [threadBlocking, frameSpec, kernelBundle, blockDynSharedMemBytes](sycl::handler& cgh)
                 {
                     using ApiType = decltype(getApi(queue));
@@ -309,21 +312,21 @@ namespace alpaka::onHost::internal
                             sycl::nd_item<syclDim> work_item)
                         {
                             onAcc::oneApi::StaticSharedMemory ssm(st_shared_accessor);
-                            alpaka::onAcc::syclGeneric::DynamicSharedMemory dsm(dyn_shared_accessor);
+                            onAcc::syclGeneric::DynamicSharedMemory dsm(dyn_shared_accessor);
 
                             static_assert(syclDim > 0);
                             static_assert(syclDim <= 3, "more the 3 dimensions are not supported");
                             auto acc = onAcc::Acc{Dict{
                                 DictEntry(
                                     layer::block,
-                                    alpaka::onAcc::syclGeneric::BlockLayer{work_item, optimizedThreadSpec}),
+                                    onAcc::syclGeneric::BlockLayer{work_item, optimizedThreadSpec}),
                                 DictEntry(
                                     layer::thread,
-                                    alpaka::onAcc::syclGeneric::ThreadLayer{work_item, optimizedThreadSpec}),
+                                    onAcc::syclGeneric::ThreadLayer{work_item, optimizedThreadSpec}),
                                 DictEntry(layer::shared, std::ref(ssm)),
                                 DictEntry(layer::dynShared, std::ref(dsm)),
                                 DictEntry(object::dynSharedMemBytes, dsm.byte_size()),
-                                DictEntry(action::threadBlockSync, alpaka::onAcc::syclGeneric::Sync{work_item}),
+                                DictEntry(action::threadBlockSync, onAcc::syclGeneric::Sync{work_item}),
                                 DictEntry(object::api, ApiType{}),
                                 DictEntry(object::deviceKind, DeviceKindType{}),
                                 DictEntry(object::exec, T_Executor{}),
@@ -333,6 +336,8 @@ namespace alpaka::onHost::internal
                             kernelBundle(acc);
                         });
                 });
+            if(queue.isBlocking())
+                ev.wait_and_throw();
         }
     };
 

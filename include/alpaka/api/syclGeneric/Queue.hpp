@@ -46,7 +46,7 @@ namespace alpaka::onHost
             };
 
         public:
-            Queue(internal::concepts::DeviceHandle auto device, uint32_t const idx, bool isBlocking = false)
+            Queue(internal::concepts::DeviceHandle auto device, uint32_t const idx, bool isBlocking)
                 : m_device(std::move(device))
                 , m_idx(idx)
                 , m_queue(
@@ -72,13 +72,6 @@ namespace alpaka::onHost
             {
                 try
                 {
-                    // Clean up cached event before waiting on queue
-                    if(m_cachedEvent
-                       && m_cachedEvent->get_info<sycl::info::event::command_execution_status>()
-                              != sycl::info::event_command_status::complete)
-                    {
-                        m_cachedEvent->wait();
-                    }
                     m_queue.wait_and_throw();
                 }
                 catch(sycl::exception const& err)
@@ -138,7 +131,10 @@ namespace alpaka::onHost
             void waitFor(syclGeneric::Event<T_Device>& event)
             {
                 sycl::event sycl_event = event.getNativeHandle();
-                m_queue.submit([sycl_event](sycl::handler& cgh) { cgh.depends_on(sycl_event); });
+                [[maybe_unused]] sycl::event ev
+                    = m_queue.submit([sycl_event](sycl::handler& cgh) { cgh.depends_on(sycl_event); });
+                if(isBlocking())
+                    ev.wait_and_throw();
             }
 
             Handle<T_Device> m_device;
@@ -146,51 +142,6 @@ namespace alpaka::onHost
             sycl::queue m_queue;
             core::CallbackThread m_callBackThread;
             bool m_isBlocking{false};
-
-            // Event caching for blocking queue synchronization
-            mutable std::optional<sycl::event> m_cachedEvent;
-            // For memset fallback synchronization
-            mutable sycl::buffer<uint8_t, 1> m_syncBuffer{1};
-
-            // Helper method for three-tier synchronization approach
-            sycl::event getBlockingSyncEvent()
-            {
-#    ifdef SYCL_EXT_ONEAPI_ENQUEUE_BARRIER
-                // Tier 1: Best - oneAPI barrier extension (Intel-specific optimization)
-                return m_queue.ext_oneapi_submit_barrier();
-#    else
-                // Tier 2: Fallback - manual event caching for generic SYCL implementations
-                if(!m_cachedEvent
-                   || m_cachedEvent->get_info<sycl::info::event::command_execution_status>()
-                          == sycl::info::event_command_status::complete)
-                {
-                    // Create new sync event via memset (works on all SYCL implementations)
-                    m_cachedEvent = m_queue.submit(
-                        [&](sycl::handler& cgh)
-                        {
-                            auto acc = m_syncBuffer.get_access<sycl::access::mode::write>(cgh);
-                            cgh.fill(acc, uint8_t{0});
-                        });
-                }
-                return *m_cachedEvent;
-#    endif
-            }
-
-            template<typename T_Fn>
-            auto submit(T_Fn&& fn)
-            {
-                if(m_isBlocking)
-                {
-                    // Execute host-side functor inline (mirrors host backend blocking semantics)
-                    fn();
-                    // Return a ready future to preserve interface compatibility
-                    std::promise<void> p;
-                    auto f = p.get_future();
-                    p.set_value();
-                    return f;
-                }
-                return m_callBackThread.submit(std::forward<T_Fn>(fn));
-            }
         };
 
 
@@ -213,8 +164,11 @@ namespace alpaka::onHost
         {
             // using the queue by reference is fine here, because the queue is not destroyed while the task is
             // executed.
-            queue.m_queue.submit([&queue, task](sycl::handler& cgh)
-                                 { cgh.host_task([&queue, task]() { callHostTask(queue, task); }); });
+            [[maybe_unused]] sycl::event ev
+                = queue.m_queue.submit([&queue, task](sycl::handler& cgh)
+                                       { cgh.host_task([&queue, task]() { callHostTask(queue, task); }); });
+            if(queue.isBlocking())
+                ev.wait_and_throw();
         }
     };
 
@@ -223,22 +177,11 @@ namespace alpaka::onHost
     {
         void operator()(syclGeneric::Queue<T_Device>& queue, T_Event& event) const
         {
-            // Blocking queue: ensure all prior work is complete and create an already-complete event.
+            sycl::event emulatedEvent = queue.m_queue.submit([](sycl::handler& cgh) { cgh.single_task([]() {}); });
+            event.setEvent(emulatedEvent);
+
             if(queue.isBlocking())
-            {
-                // Get synchronization event using three-tier approach
-                sycl::event ev = queue.getBlockingSyncEvent();
-
-                // Set event state before waiting (prevents race condition)
-                event.setEvent(ev);
-
-                // Now safe to wait - other threads see proper state
-                ev.wait_and_throw();
-                return;
-            }
-            // Non-blocking: For consistency, also use the improved sync method but don't wait
-            sycl::event ev = queue.getBlockingSyncEvent();
-            event.setEvent(ev);
+                emulatedEvent.wait_and_throw();
         }
     };
 
@@ -251,12 +194,12 @@ namespace alpaka::onHost
         {
             // TODO: implement generic version for multidimensional memory
             sycl::queue sycl_queue = queue.getNativeHandle();
-            sycl_queue.memset(
+            [[maybe_unused]] sycl::event ev = sycl_queue.memset(
                 internal::Data::data(dest),
                 byteValue,
                 extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
             if(queue.isBlocking())
-                sycl_queue.wait_and_throw();
+                ev.wait_and_throw();
         }
     };
 
@@ -272,12 +215,12 @@ namespace alpaka::onHost
         {
             // TODO: implement generic version for multidimensional memory
             sycl::queue sycl_queue = queue.getNativeHandle();
-            sycl_queue.memcpy(
+            [[maybe_unused]] sycl::event ev = sycl_queue.memcpy(
                 internal::Data::data(dest),
                 internal::Data::data(source),
                 extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
             if(queue.isBlocking())
-                sycl_queue.wait_and_throw();
+                ev.wait_and_throw();
         }
     };
 
@@ -294,9 +237,9 @@ namespace alpaka::onHost
                      && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
         {
             sycl::queue sycl_queue = queue.getNativeHandle();
-            sycl_queue.fill(internal::Data::data(dest), elementValue, extents.x());
+            [[maybe_unused]] sycl::event ev = sycl_queue.fill(internal::Data::data(dest), elementValue, extents.x());
             if(queue.isBlocking())
-                sycl_queue.wait_and_throw();
+                ev.wait_and_throw();
         }
     };
 
@@ -323,6 +266,10 @@ namespace alpaka::onHost
 
 
             T_Type* ptr = reinterpret_cast<T_Type*>(sycl::aligned_alloc_device(alignment, memSizeInByte, sycl_queue));
+
+            if(queue.isBlocking())
+                sycl_queue.wait_and_throw();
+
             auto deleter = [queueDep = std::move(queueDependency), ptr]()
             {
                 /* Sycl is not executing the free in the queue, only the sycl context is taken from the queue,

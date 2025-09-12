@@ -198,7 +198,10 @@ auto main() -> int
         // END-CHEATSHEET-makeDevice
 
         // BEGIN-CHEATSHEET-makeQueue
+        // default queue is non blocking
         auto queue = device.makeQueue();
+        auto nonBlockingQueue = device.makeQueue(queueKind::nonBlocking);
+        auto blockingQueue = device.makeQueue(queueKind::blocking);
         // END-CHEATSHEET-makeQueue
 
         // BEGIN-CHEATSHEET-enqueueTask

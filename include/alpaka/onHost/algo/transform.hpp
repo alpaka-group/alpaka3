@@ -46,9 +46,9 @@ namespace alpaka::onHost
      *
      * @{
      */
-    template<typename T_Device>
+    template<typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
     inline void transform(
-        Queue<T_Device> const& queue,
+        Queue<T_Device, T_QueueKind> const& queue,
         alpaka::concepts::Executor auto const exec,
         auto&& out,
         auto&& fn,
@@ -61,8 +61,8 @@ namespace alpaka::onHost
      * A available default executor will be selected automaticlally. The default executor is a executor with most
      * parallelism/performance.
      */
-    template<typename T_Device>
-    inline void transform(Queue<T_Device> const& queue, auto&& out, auto&& fn, auto&&... in)
+    template<typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+    inline void transform(Queue<T_Device, T_QueueKind> const& queue, auto&& out, auto&& fn, auto&&... in)
     {
         auto executor = supportedMappings(queue.getDevice(), exec::allExecutors);
         transform(queue, std::get<0>(executor), ALPAKA_FORWARD(out), ALPAKA_FORWARD(fn), ALPAKA_FORWARD(in)...);

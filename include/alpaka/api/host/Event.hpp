@@ -99,6 +99,8 @@ namespace alpaka::onHost
 
             /** Check if the event is ready.
              *
+             * @attention Do not call this method without holding the event lock.
+             *
              * @return true if the event is ready, false otherwise
              */
             bool isReady() noexcept

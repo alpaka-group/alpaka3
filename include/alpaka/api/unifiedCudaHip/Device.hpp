@@ -103,12 +103,15 @@ namespace alpaka::onHost
 
             friend struct onHost::internal::MakeQueue;
 
-            template<typename T_BlockingPolicy>
-            Handle<unifiedCudaHip::Queue<Device>> makeQueue(T_BlockingPolicy)
+            Handle<unifiedCudaHip::Queue<Device>> makeQueue(queueKind::concepts::QueueKind auto kind)
             {
+                static_assert(
+                    kind == queueKind::blocking || kind == queueKind::nonBlocking,
+                    "Unsupported queue kind.");
                 auto thisHandle = this->getSharedPtr();
                 std::lock_guard<std::mutex> lk{m_writeGuard};
-                bool isBlocking = std::is_same_v<T_BlockingPolicy, internal::Blocking>;
+
+                constexpr bool isBlocking = kind == queueKind::blocking;
                 auto newQueue = std::make_shared<unifiedCudaHip::Queue<Device>>(
                     std::move(thisHandle),
                     queues.size(),
@@ -116,11 +119,6 @@ namespace alpaka::onHost
 
                 queues.emplace_back(newQueue);
                 return newQueue;
-            }
-
-            Handle<unifiedCudaHip::Queue<Device>> makeQueue()
-            {
-                return makeQueue(internal::NonBlocking{});
             }
 
             friend struct onHost::internal::MakeEvent;
