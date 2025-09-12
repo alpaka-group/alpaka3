@@ -72,7 +72,6 @@ int example(auto const devSpec, auto const computeExec)
 
     auto blockingQueue = device.makeQueue(queueKind::blocking);
     onHost::iota(blockingQueue, 1.f, buffer);
-    onHost::wait(blockingQueue);
 
     std::cout << "Running on device: " << device.getName() << std::endl;
     std::cout << Dimensions << "D volume" << std::endl;
