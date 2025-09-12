@@ -229,8 +229,8 @@ namespace alpaka
         static_assert(T_dim > 0, "0 Dimension Boundary Direction Container is not defined");
 
         constexpr BoundaryDirectionsContainer(T_LowHaloVec const& lowerHaloSizes, T_UpHaloVec const& upperHaloSizes)
-            : lowerHaloSizes(lowerHaloSizes)
-            , upperHaloSizes(upperHaloSizes)
+            : m_lowerHaloSizes(lowerHaloSizes)
+            , m_upperHaloSizes(upperHaloSizes)
         {
         }
 
@@ -238,16 +238,16 @@ namespace alpaka
         {
             return BoundaryDirectionIter<T_dim, T_LowHaloVec, T_UpHaloVec>{
                 Vec<BoundaryType, T_dim>([](int) { return BoundaryType::LOWER; }),
-                lowerHaloSizes,
-                upperHaloSizes};
+                m_lowerHaloSizes,
+                m_upperHaloSizes};
         }
 
         [[nodiscard]] constexpr BoundaryDirectionIter<T_dim, T_LowHaloVec, T_UpHaloVec> end() const
         {
             return BoundaryDirectionIter<T_dim, T_LowHaloVec, T_UpHaloVec>{
                 Vec<BoundaryType, T_dim>([](int) { return BoundaryType::OOB; }),
-                lowerHaloSizes,
-                upperHaloSizes};
+                m_lowerHaloSizes,
+                m_upperHaloSizes};
         }
 
         [[nodiscard]] static consteval uint32_t length()
@@ -261,8 +261,8 @@ namespace alpaka
         }
 
     private:
-        T_LowHaloVec const lowerHaloSizes;
-        T_UpHaloVec const upperHaloSizes;
+        T_LowHaloVec const m_lowerHaloSizes;
+        T_UpHaloVec const m_upperHaloSizes;
     };
 
     template<concepts::Vector LowHaloVecType, concepts::Vector UpHaloVecType>

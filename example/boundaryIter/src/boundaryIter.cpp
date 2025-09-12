@@ -2,6 +2,8 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
+#include "alpaka/onHost/example/executors.hpp"
+
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
 
@@ -10,6 +12,23 @@
 using IdxType = uint32_t;
 
 using namespace alpaka;
+
+/** @brief An example boundary kernel that copies only the values in the given boundary direction
+ */
+struct BoundaryExampleKernel
+{
+    ALPAKA_FN_ACC auto operator()(
+        auto const& acc,
+        concepts::MdSpan auto const view,
+        concepts::MdSpan auto viewTarget,
+        concepts::BoundaryDirection auto const& bd) const
+    {
+        for(auto idx : onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, IdxRange{view.getExtents()}, bd))
+        {
+            viewTarget[idx] = view[idx];
+        }
+    }
+};
 
 auto printBoundaryContainer(auto view, auto bd_container)
 {
@@ -30,7 +49,7 @@ auto printBoundaryContainer(auto view, auto bd_container)
     std::cout << "End of Boundaries\n\n" << std::endl;
 }
 
-int example(auto const devSpec)
+int example(auto const devSpec, auto const computeExec)
 {
     // initialise the accelerator platform
     auto devSelector = onHost::makeDeviceSelector(devSpec);
@@ -48,47 +67,86 @@ int example(auto const devSpec)
     auto buffer = onHost::alloc<float>(device, size);
     auto const view = buffer.getView();
 
-    auto hostDev = onHost::makeHostDevice();
-    auto deviceQueue = hostDev.makeQueue();
-    onHost::iota(deviceQueue, 1.f, buffer);
-    onHost::wait(deviceQueue);
+    auto bufferTarget = onHost::allocLike(device, buffer);
+    auto viewTarget = buffer.getView();
 
+    auto blockingQueue = device.makeQueue(queueKind::blocking);
+    onHost::iota(blockingQueue, 1.f, buffer);
+    onHost::wait(blockingQueue);
+
+    std::cout << "Running on device: " << device.getName() << std::endl;
     std::cout << Dimensions << "D volume" << std::endl;
     std::cout << "Volume Extents: " << view.getExtents() << std::endl;
 
     // show all values once
-    for(auto& el : view)
-        std::cout << el << " ";
-    std::cout << std::endl;
+    if constexpr(std::is_same_v<ALPAKA_TYPEOF(device), onHost::Device<api::Host, deviceKind::Cpu>>)
+    {
+        for(auto& el : view)
+            std::cout << el << " ";
+        std::cout << std::endl;
+    }
+
+    auto chunkSize = alpaka::fillCVec<IdxType, Dimensions, 2>();
+    auto frameSpec = onHost::FrameSpec{divCeil(size, chunkSize), chunkSize};
+
+    auto exampleKernel = BoundaryExampleKernel{};
+
 
     {
         std::cout << "Halo size 1 (default) for " << Dimensions << "D" << std::endl;
 
-        constexpr auto bd_container = makeBoundaryDirIterator<Dimensions>();
-        printBoundaryContainer(view, bd_container);
+        constexpr auto bdContainer = makeBoundaryDirIterator<Dimensions>();
+
+        if constexpr(std::is_same_v<ALPAKA_TYPEOF(device), onHost::Device<api::Host, deviceKind::Cpu>>)
+        {
+            printBoundaryContainer(view, bdContainer);
+        }
+
+        auto const bd = makeCoreBoundaryDirection<Dimensions>();
+        blockingQueue.enqueue(computeExec, frameSpec, KernelBundle{exampleKernel, view, viewTarget, bd});
     }
 
     {
         std::cout << "Halo size 1 (default), constructed directly from the view" << std::endl;
 
-        constexpr auto bd_container = makeBoundaryDirIterator(view);
-        printBoundaryContainer(view, bd_container);
+        constexpr auto bdContainer = makeBoundaryDirIterator(view);
+
+        if constexpr(std::is_same_v<ALPAKA_TYPEOF(device), onHost::Device<api::Host, deviceKind::Cpu>>)
+        {
+            printBoundaryContainer(view, bdContainer);
+        }
     }
 
     {
         std::cout << "Halo size 2" << std::endl;
 
-        constexpr auto bd_container_halo = makeBoundaryDirIterator(alpaka::fillCVec<IdxType, Dimensions, 2>());
-        printBoundaryContainer(view, bd_container_halo);
+        auto const halo = alpaka::fillCVec<IdxType, Dimensions, 2>();
+
+        constexpr auto bdContainerHalo = makeBoundaryDirIterator(halo);
+        if constexpr(std::is_same_v<ALPAKA_TYPEOF(device), onHost::Device<api::Host, deviceKind::Cpu>>)
+        {
+            printBoundaryContainer(view, bdContainerHalo);
+        }
+
+        auto const bd = makeCoreBoundaryDirection<Dimensions>(halo);
+        blockingQueue.enqueue(computeExec, frameSpec, KernelBundle{exampleKernel, view, viewTarget, bd});
     }
 
     {
         std::cout << "Lower halo sizes = 1, upper halo sizes = 2" << std::endl;
 
-        constexpr auto bd_container_halo_heterogeneous = makeBoundaryDirIterator(
-            alpaka::fillCVec<IdxType, Dimensions, 1>(),
-            alpaka::fillCVec<IdxType, Dimensions, 2>());
-        printBoundaryContainer(view, bd_container_halo_heterogeneous);
+        auto const lowerHalo = alpaka::fillCVec<IdxType, Dimensions, 1>();
+        auto const upperHalo = alpaka::fillCVec<IdxType, Dimensions, 2>();
+
+        constexpr auto bdContainerHaloHeterogeneous = makeBoundaryDirIterator(lowerHalo, upperHalo);
+
+        if constexpr(std::is_same_v<ALPAKA_TYPEOF(device), onHost::Device<api::Host, deviceKind::Cpu>>)
+        {
+            printBoundaryContainer(view, bdContainerHaloHeterogeneous);
+        }
+
+        auto const bd = makeCoreBoundaryDirection<Dimensions>(lowerHalo, upperHalo);
+        blockingQueue.enqueue(computeExec, frameSpec, KernelBundle{exampleKernel, view, viewTarget, bd});
     }
 
     return EXIT_SUCCESS;
@@ -97,7 +155,7 @@ int example(auto const devSpec)
 auto main() -> int
 {
     // Execute the example once for each enabled API and executor.
-    return executeForEachIfHasDevice(
-        [=](auto const& devSpec) { return example(devSpec); },
-        onHost::getDeviceSpecsFor(onHost::enabledApis));
+    return onHost::executeForEachIfHasDevice(
+        [=](auto const& backend) { return example(backend[object::deviceSpec], backend[object::exec]); },
+        onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
 }
