@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <bit>
 #include <climits>
+#include <concepts>
 #include <type_traits>
 #include <utility>
 

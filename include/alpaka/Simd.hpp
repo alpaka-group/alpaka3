@@ -747,6 +747,12 @@ namespace alpaka
         {
             static constexpr uint32_t value = T_dim;
         };
+
+        template<typename T_Type, uint32_t T_dim, concepts::Alignment T_Alignment, typename T_Storage>
+        struct GetValueType<alpaka::Simd<T_Type, T_dim, T_Alignment, T_Storage>>
+        {
+            using type = T_Type;
+        };
     } // namespace trait
 
     namespace internal
