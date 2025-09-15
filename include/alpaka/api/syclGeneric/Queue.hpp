@@ -267,18 +267,20 @@ namespace alpaka::onHost
 
             T_Type* ptr = reinterpret_cast<T_Type*>(sycl::aligned_alloc_device(alignment, memSizeInByte, sycl_queue));
 
+            // guarantees that the allocation is blocking the queue if necessary.
             if(queue.isBlocking())
                 sycl_queue.wait_and_throw();
 
             auto deleter = [queueDep = std::move(queueDependency), ptr]()
             {
-                /* Sycl is not executing the free in the queue, only the sycl context is taken from the queue,
-                 * therefore, we need to wait for the queue first before the memory is destroyed.
-                 * This avoids work is executed on the memory while we call the destructor because the last
-                 * managed handle is running out of a scope.
+                sycl::queue sycl_queue = queueDep->getNativeHandle();
+                /* Always enqueue into a queue, even if the queue is blocking, to track possible in queue dependencies.
+                 * sycl::free() is safe to be called within a hast_task
                  */
-                internal::wait(*queueDep.get());
-                sycl::free(toVoidPtr(ptr), queueDep->getNativeHandle());
+                [[maybe_unused]] sycl::event ev = sycl_queue.submit(
+                    [&](sycl::handler& cgh) { cgh.host_task([=]() { sycl::free(toVoidPtr(ptr), sycl_queue); }); });
+                if(queueDep->isBlocking())
+                    ev.wait_and_throw();
             };
 
             auto sharedBuffer = onHost::SharedBuffer{
