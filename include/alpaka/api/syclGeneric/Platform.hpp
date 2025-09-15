@@ -18,6 +18,7 @@
 #    include <map>
 #    include <memory>
 #    include <numeric>
+#    include <optional>
 
 namespace alpaka
 {
@@ -60,6 +61,7 @@ namespace alpaka
                 }
                 catch(...)
                 {
+                    devices.clear();
                 }
                 if(devices.size())
                 {
@@ -104,14 +106,18 @@ namespace alpaka
                 {
                     try
                     {
-                        platform = sycl::platform{detail::SYCLDeviceSelector<T_DeviceKind>{}};
-                        std::vector<sycl::device> syclDevs = platform.get_devices();
-                        devices.resize(syclDevs.size());
+                        syclPlatform = sycl::platform{detail::SYCLDeviceSelector<T_DeviceKind>{}};
+                        syclDevices = syclPlatform->get_devices();
+                        devices.resize(syclDevices.size());
+                        syclContext = contextManager->getContext(syclPlatform.value());
                     }
                     catch(...)
                     {
+                        syclContext.reset();
+                        syclPlatform.reset();
+                        syclDevices.clear();
+                        devices.clear();
                     }
-                    context = contextManager->getContext(platform);
                 }
 
                 Platform(Platform const&) = delete;
@@ -127,10 +133,12 @@ namespace alpaka
 
                 auto getContext() const
                 {
-                    return context;
+                    if(!syclContext.has_value())
+                        throw std::runtime_error("The underlying SYCL context is invalid.");
+                    return syclContext.value();
                 }
 
-                uint32_t getDeviceCount()
+                uint32_t getDeviceCount() const
                 {
                     constexpr bool isSupportedDev = trait::IsDeviceSupportedBy::
                         Op<T_DeviceKind, ALPAKA_TYPEOF(alpaka::internal::getApi(std::declval<Platform>()))>::value;
@@ -139,7 +147,7 @@ namespace alpaka
                         auto numDevices = devices.size();
                         return static_cast<uint32_t>(numDevices);
                     }
-                    return 0;
+                    return 0u;
                 }
 
                 Handle<syclGeneric::Device<Platform<T_ApiInterface, T_DeviceKind>>> makeDevice(uint32_t const& idx)
@@ -160,10 +168,9 @@ namespace alpaka
                         return sharedPtr;
                     }
 
-                    auto devPlatform = sycl::platform{detail::SYCLDeviceSelector<T_DeviceKind>{}};
                     auto newDevice = std::make_shared<syclGeneric::Device<Platform<T_ApiInterface, T_DeviceKind>>>(
                         std::move(getSharedPtr()),
-                        devPlatform.get_devices()[idx],
+                        syclDevices[idx],
                         idx);
                     devices[idx] = newDevice;
                     return newDevice;
@@ -178,12 +185,18 @@ namespace alpaka
 
             private:
                 friend struct onHost::internal::IsDataAccessible;
+                friend struct GetDeviceProperties;
 
+                // The context manager is required to be able to use the same sycl context for different device types
                 std::shared_ptr<alpaka::detail::Context> contextManager;
-                sycl::platform platform;
+                std::optional<sycl::context> syclContext;
+                // native sycl platform for the corresponding device kind this platform is representing
+                std::optional<sycl::platform> syclPlatform;
+                // native sycl devices for the corresponding device kind this platform is representing
+                std::vector<sycl::device> syclDevices;
+                // alpaka devices for the internal hierarchy
                 std::vector<std::weak_ptr<syclGeneric::Device<Platform<T_ApiInterface, T_DeviceKind>>>> devices;
 
-                sycl::context context;
                 std::mutex deviceGuard;
 
                 void _()
@@ -202,8 +215,14 @@ namespace alpaka
                     syclGeneric::Platform<T_ApiInterface, T_DeviceKind> const& platform,
                     uint32_t deviceIdx) const
                 {
-                    auto devPlatform = sycl::platform{detail::SYCLDeviceSelector<T_DeviceKind>{}};
-                    sycl::device const dev = devPlatform.get_devices()[deviceIdx];
+                    if(deviceIdx >= platform.syclDevices.size())
+                    {
+                        std::stringstream ssErr;
+                        ssErr << "Unable to return device properties for SYCL device with index " << deviceIdx
+                              << " because there are only " << platform.getDeviceCount() << " devices!";
+                        throw std::runtime_error(ssErr.str());
+                    }
+                    sycl::device const dev = platform.syclDevices[deviceIdx];
 
                     auto prop = DeviceProperties{};
                     prop.m_name = dev.get_info<sycl::info::device::name>();
