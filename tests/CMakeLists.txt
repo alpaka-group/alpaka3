@@ -44,9 +44,13 @@ function(alpaka_add_test_target target_prefix folder)
 
                 get_filename_component(source_file_extension ${source_file} EXT)
                 get_filename_component(source_file_name ${source_file} NAME_WE)
+                # get absolute path of the folder of the source file
+                get_filename_component(test_folder_name ${source_file} DIRECTORY)
+                # get name of the folder
+                get_filename_component(test_folder_name ${test_folder_name} NAME)
 
                 if("${source_file_extension}" STREQUAL ".cpp")
-                    set(_test_target_name "${target_prefix}${source_file_name}")
+                    set(_test_target_name "${target_prefix}${test_folder_name}_${source_file_name}")
                     message(DEBUG "  add test target ${_test_target_name}: ${source_file}")
 
                     add_executable(${_test_target_name} ${source_file})
