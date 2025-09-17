@@ -51,6 +51,12 @@ Individual chapters are based on the information of the chapters before.
    basic/cheatsheet.rst
 
 .. toctree::
+   :caption: Contribution
+   :maxdepth: 1
+
+   contribution/tools.rst
+
+.. toctree::
    :maxdepth: 2
    :caption: API Reference
 
