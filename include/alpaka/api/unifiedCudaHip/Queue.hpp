@@ -31,6 +31,7 @@
 
 #    include <cstdint>
 #    include <sstream>
+#    include <cstring> // for std::memcpy / std::memset used in host->host fallbacks
 
 namespace alpaka::onHost
 {
@@ -454,63 +455,112 @@ namespace alpaka::onHost
                 auto* destPtr = (void*) onHost::data(dest);
                 auto* const srcPtr = (void*) onHost::data(source);
 
-                auto copyKind = unifiedCudaHip::MemcpyKind<
-                    ApiInterface,
-                    ALPAKA_TYPEOF(alpaka::internal::getApi(dest)),
-                    ALPAKA_TYPEOF(alpaka::internal::getApi(source))>::kind;
+                // HIP runtime may not support host->host directly; fall back to std::memcpy on HIP only.
+                // CUDA can handle host->host via native memcpyAsync/memcpy2DAsync/3D, so we do not force fallback there.
+                if constexpr(
+                    std::is_same_v<ALPAKA_TYPEOF(alpaka::internal::getApi(dest)), api::Host>
+                    && std::is_same_v<ALPAKA_TYPEOF(alpaka::internal::getApi(source)), api::Host>
+                    && std::is_same_v<ALPAKA_TYPEOF(alpaka::internal::getApi(queue)), api::Hip>)
+                {
+                    // Perform host copy synchronously (pitched nd-loop)
+                    constexpr auto dimHH = alpaka::trait::getDim_v<T_Extents>;
+                    auto const valueSize = sizeof(alpaka::trait::GetValueType_t<T_Dest>);
+                    if constexpr(dimHH == 1u)
+                    {
+                        std::memcpy(destPtr, srcPtr, extentMd.x() * valueSize);
+                    }
+                    else
+                    {
+                        auto const rowBytes = extentMd.back() * valueSize;
+                        auto const dstPitchBytesWithoutColumn = dest.getPitches().eraseBack();
+                        auto const srcPitchBytesWithoutColumn = source.getPitches().eraseBack();
+                        auto const extentWithoutColumn = extentMd.eraseBack();
 
-                constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
-                if constexpr(dim == 1u)
-                {
-                    // Initiate the memory copy.
-                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
-                        ApiInterface,
-                        ApiInterface::memcpyAsync(
-                            destPtr,
-                            srcPtr,
-                            extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
-                            copyKind,
-                            internal::getNativeHandle(queue)));
+                        auto* d0 = reinterpret_cast<std::uint8_t*>(destPtr);
+                        auto const* s0 = reinterpret_cast<std::uint8_t const*>(srcPtr);
+                        if(static_cast<std::size_t>(extentMd.product()) != 0u)
+                        {
+                            meta::ndLoopIncIdx(
+                                extentWithoutColumn,
+                                [&](auto const& idx)
+                                {
+                                    auto const dstBase = (
+                                                              pCast<std::size_t>(idx)
+                                                              * pCast<std::size_t>(dstPitchBytesWithoutColumn))
+                                                             .sum();
+                                    auto const srcBase = (
+                                                              pCast<std::size_t>(idx)
+                                                              * pCast<std::size_t>(srcPitchBytesWithoutColumn))
+                                                             .sum();
+                                    std::memcpy(d0 + dstBase, s0 + srcBase, rowBytes);
+                                });
+                        }
+                    }
+
+                    queue.conditionalWait();
+                    return;
                 }
-                else if constexpr(dim == 2u)
+
+                else
                 {
-                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
+                    auto copyKind = unifiedCudaHip::MemcpyKind<
                         ApiInterface,
-                        ApiInterface::memcpy2DAsync(
-                            destPtr,
-                            dest.getPitches().y(),
+                        ALPAKA_TYPEOF(alpaka::internal::getApi(dest)),
+                        ALPAKA_TYPEOF(alpaka::internal::getApi(source))>::kind;
+
+                    constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
+                    if constexpr(dim == 1u)
+                    {
+                        // Initiate the memory copy.
+                        ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
+                            ApiInterface,
+                            ApiInterface::memcpyAsync(
+                                destPtr,
+                                srcPtr,
+                                extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                                copyKind,
+                                internal::getNativeHandle(queue)));
+                    }
+                    else if constexpr(dim == 2u)
+                    {
+                        ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
+                            ApiInterface,
+                            ApiInterface::memcpy2DAsync(
+                                destPtr,
+                                dest.getPitches().y(),
+                                srcPtr,
+                                source.getPitches().y(),
+                                extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                                extentMd.y(),
+                                copyKind,
+                                internal::getNativeHandle(queue)));
+                    }
+                    else if constexpr(dim >= 3u)
+                    {
+                        auto const extentMdNoXY = extentMd.eraseBack().eraseBack();
+                        // zero-init required per CUDA documentation
+                        typename ApiInterface::Memcpy3DParms_t memCpy3DParms{};
+
+                        memCpy3DParms.srcPtr = ApiInterface::makePitchedPtr(
                             srcPtr,
                             source.getPitches().y(),
+                            source.getExtents().x(),
+                            source.getExtents().y());
+                        memCpy3DParms.dstPtr = ApiInterface::makePitchedPtr(
+                            destPtr,
+                            dest.getPitches().y(),
+                            dest.getExtents().x(),
+                            dest.getExtents().y());
+                        memCpy3DParms.extent = ApiInterface::makeExtent(
                             extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
                             extentMd.y(),
-                            copyKind,
-                            internal::getNativeHandle(queue)));
-                }
-                else if constexpr(dim >= 3u)
-                {
-                    auto const extentMdNoXY = extentMd.eraseBack().eraseBack();
-                    // zero-init required per CUDA documentation
-                    typename ApiInterface::Memcpy3DParms_t memCpy3DParms{};
+                            extentMdNoXY.product());
+                        memCpy3DParms.kind = copyKind;
 
-                    memCpy3DParms.srcPtr = ApiInterface::makePitchedPtr(
-                        srcPtr,
-                        source.getPitches().y(),
-                        source.getExtents().x(),
-                        source.getExtents().y());
-                    memCpy3DParms.dstPtr = ApiInterface::makePitchedPtr(
-                        destPtr,
-                        dest.getPitches().y(),
-                        dest.getExtents().x(),
-                        dest.getExtents().y());
-                    memCpy3DParms.extent = ApiInterface::makeExtent(
-                        extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
-                        extentMd.y(),
-                        extentMdNoXY.product());
-                    memCpy3DParms.kind = copyKind;
-
-                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
-                        ApiInterface,
-                        ApiInterface::memcpy3DAsync(&memCpy3DParms, internal::getNativeHandle(queue)));
+                        ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
+                            ApiInterface,
+                            ApiInterface::memcpy3DAsync(&memCpy3DParms, internal::getNativeHandle(queue)));
+                    }
                 }
 
                 queue.conditionalWait();
@@ -537,6 +587,42 @@ namespace alpaka::onHost
                     ApiInterface::setDevice(onHost::getNativeHandle(queue.m_device)));
 
                 auto* destPtr = (void*) onHost::data(dest);
+
+                // HIP runtime may not support host memset; if destination is host API, emulate via std::memset
+                if constexpr(std::is_same_v<ALPAKA_TYPEOF(alpaka::internal::getApi(dest)), api::Host>)
+                {
+                    constexpr auto dimHH = alpaka::trait::getDim_v<T_Extents>;
+                    auto const valueSize = sizeof(alpaka::trait::GetValueType_t<T_Dest>);
+                    if constexpr(dimHH == 1u)
+                    {
+                        std::memset(destPtr, static_cast<int>(byteValue), extentMd.x() * valueSize);
+                    }
+                    else if constexpr(dimHH >= 2u)
+                    {
+                        // General pitched memset for dim >= 2, mirroring host::Queue implementation style
+                        auto const rowBytes = extentMd.back() * valueSize; // number of bytes in the innermost dim
+                        auto const pitchBytesWithoutColumn = dest.getPitches().eraseBack();
+                        auto const extentWithoutColumn = extentMd.eraseBack();
+
+                        auto* d0 = reinterpret_cast<std::uint8_t*>(destPtr);
+                        if(static_cast<std::size_t>(extentMd.product()) != 0u)
+                        {
+                            meta::ndLoopIncIdx(
+                                extentWithoutColumn,
+                                [&](auto const& idx)
+                                {
+                                    auto const base = (
+                                                            pCast<std::size_t>(idx)
+                                                            * pCast<std::size_t>(pitchBytesWithoutColumn))
+                                                           .sum();
+                                    std::memset(d0 + base, static_cast<int>(byteValue), rowBytes);
+                                });
+                        }
+                    }
+
+                    queue.conditionalWait();
+                    return;
+                }
 
                 constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
                 if constexpr(dim == 1u)

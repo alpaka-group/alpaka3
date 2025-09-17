@@ -246,14 +246,10 @@ if(alpaka_DEP_HIP)
         # the next minor level, e.g. 6.1, would have to be used.
         set(_hip_MAJOR_MINOR_VERSION "${hip_VERSION_MAJOR}.${hip_VERSION_MINOR}")
 
-        if(
-            ${_hip_MAJOR_MINOR_VERSION} VERSION_LESS ${_alpaka_HIP_MIN_VER}
-            OR ${_hip_MAJOR_MINOR_VERSION} VERSION_GREATER ${_alpaka_HIP_MAX_VER}
-        )
-            message(
-                WARNING
-                "HIP ${_hip_MAJOR_MINOR_VERSION} is not official supported by alpaka. Supported versions: ${_alpaka_HIP_MIN_VER} - ${_alpaka_HIP_MAX_VER}"
-            )
+        if(${_hip_MAJOR_MINOR_VERSION} VERSION_LESS ${_alpaka_HIP_MIN_VER})
+            message(FATAL_ERROR "Detected HIP ${_hip_MAJOR_MINOR_VERSION} but minimum required is ${_alpaka_HIP_MIN_VER}. Please load a ROCm >= ${_alpaka_HIP_MIN_VER} (e.g. module load rocm-6.0.2) and reconfigure.")
+        elseif(${_hip_MAJOR_MINOR_VERSION} VERSION_GREATER ${_alpaka_HIP_MAX_VER})
+            message(WARNING "HIP ${_hip_MAJOR_MINOR_VERSION} is newer than officially tested range ${_alpaka_HIP_MIN_VER} - ${_alpaka_HIP_MAX_VER}. Proceeding, but results may vary.")
         endif()
 
         add_library(alpaka_target_hip INTERFACE)
