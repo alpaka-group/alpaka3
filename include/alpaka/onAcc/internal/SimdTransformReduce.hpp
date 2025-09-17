@@ -197,6 +197,7 @@ namespace alpaka::onAcc::internal
          * @return wrapped functor in case the input is @see ScalarFunc else the identity
          */
         ALPAKA_FN_INLINE constexpr auto getReducer(onAcc::concepts::Acc auto const&, auto&& reduceOp) const
+            requires(!isSpecializationOf_v<ALPAKA_TYPEOF(reduceOp), ScalarFunc>)
         {
             return reduceOp;
         }

@@ -10,3 +10,4 @@
 #include "alpaka/api/host/Platform.hpp"
 #include "alpaka/api/host/Queue.hpp"
 #include "alpaka/api/host/atomic.hpp"
+#include "alpaka/api/host/memoryFence.hpp"

@@ -166,5 +166,15 @@ namespace alpaka::onAcc
                 }
             };
         };
+
+        struct MemoryFence
+        {
+            // Backend specializations provide the definition.
+            template<typename T_Acc, typename T_Scope>
+            struct Op
+            {
+                constexpr void operator()(T_Acc const& acc, T_Scope const scope) const;
+            };
+        };
     } // namespace internalCompute
 } // namespace alpaka::onAcc

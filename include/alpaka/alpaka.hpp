@@ -30,8 +30,8 @@
 #include "alpaka/onAcc/SimdAlgo.hpp"
 #include "alpaka/onAcc/atomic.hpp"
 #include "alpaka/onAcc/interface.hpp"
+#include "alpaka/onAcc/memoryFence.hpp"
 #include "alpaka/onAcc/tag.hpp"
-#include "alpaka/onAcc/threadFence.hpp"
 #include "alpaka/onHost/Device.hpp"
 #include "alpaka/onHost/DeviceSelector.hpp"
 #include "alpaka/onHost/Queue.hpp"
@@ -40,17 +40,11 @@
 #include "alpaka/onHost/algo/reduce.hpp"
 #include "alpaka/onHost/algo/transform.hpp"
 #include "alpaka/onHost/algo/transformReduce.hpp"
+#include "alpaka/onHost/demangledName.hpp"
 #include "alpaka/onHost/interface.hpp"
 #include "alpaka/onHost/mem/stdContainer.hpp"
 #include "alpaka/tag.hpp"
-#include "utility.hpp"
-
-#include <alpaka/onHost/demangledName.hpp>
-
-// Thread fence backend implementations (non-blocking memory visibility fence.)
-#include "alpaka/api/host/threadFence.hpp"
-#include "alpaka/api/syclGeneric/threadFence.hpp"
-#include "alpaka/api/unifiedCudaHip/threadFence.hpp"
+#include "alpaka/utility.hpp"
 
 /** main alpaka namespace.
  *

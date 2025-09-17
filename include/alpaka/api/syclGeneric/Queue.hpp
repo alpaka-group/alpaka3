@@ -216,8 +216,8 @@ namespace alpaka::onHost
             // TODO: implement generic version for multidimensional memory
             sycl::queue sycl_queue = queue.getNativeHandle();
             [[maybe_unused]] sycl::event ev = sycl_queue.memcpy(
-                internal::Data::data(dest),
-                internal::Data::data(source),
+                toVoidPtr(internal::Data::data(dest)),
+                toVoidPtr(internal::Data::data(source)),
                 extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
             if(queue.isBlocking())
                 ev.wait_and_throw();

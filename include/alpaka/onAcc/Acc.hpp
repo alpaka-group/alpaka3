@@ -10,7 +10,6 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/meta/NdLoop.hpp"
 #include "alpaka/onAcc/interface.hpp"
-#include "alpaka/onAcc/threadFence.hpp" // threadFence (non-blocking memory visibility fence)
 #include "alpaka/tag.hpp"
 
 #include <cassert>
@@ -69,8 +68,15 @@ namespace alpaka::onAcc
 
     namespace concepts
     {
-        template<typename T_Acc>
-        concept Acc = alpaka::isSpecializationOf_v<T_Acc, alpaka::onAcc::Acc>;
+        /** Concept to check if a type is a accelerator
+         *
+         * @tparam T_Acc Type to check
+         * @tparam T_Api enforce an api type, if not provided api type is not checked
+         */
+        template<typename T_Acc, typename T_Api = alpaka::NotRequired>
+        concept Acc = alpaka::isSpecializationOf_v<T_Acc, alpaka::onAcc::Acc>
+                      && (std::same_as<T_Api, ALPAKA_TYPEOF(std::declval<T_Acc>().getApi())>
+                          || std::same_as<T_Api, alpaka::NotRequired>);
     } // namespace concepts
 
     /** synchronize all threads within a given scope */

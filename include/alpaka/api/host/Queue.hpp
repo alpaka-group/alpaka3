@@ -316,8 +316,8 @@ namespace alpaka::onHost
                 /* Get all required properties outside the lambda function to not extend the life-time of the data.
                  * The life-time is not extended to have some life-time behaviours with all backends.
                  */
-                void* destPtr = static_cast<void*>(alpaka::onHost::data(ALPAKA_FORWARD(dest)));
-                auto const* srcPtr = alpaka::onHost::data(source);
+                auto* destPtr = toVoidPtr(alpaka::onHost::data(ALPAKA_FORWARD(dest)));
+                auto const* srcPtr = toVoidPtr(alpaka::onHost::data(source));
 
                 if constexpr(dim == 1u)
                 {

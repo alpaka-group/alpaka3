@@ -23,15 +23,19 @@ namespace alpaka
     using RemoveVolatileFromPointer_t = std::add_pointer_t<std::remove_volatile_t<std::remove_pointer_t<T>>>;
 
     /**
-     * @brief Cast a pointer that may or may not point to volatile memory to a (void*). Useful for freeing the memory.
+     * @brief Cast a pointer that may or may not point to volatile memory to a (void*) or (void const*).
+     *
+     * Useful for freeing the memory.
      *
      * @param inPtr The pointer to convert.
      * @tparam T The type of the given pointer.
      */
     template<typename T>
-    void* toVoidPtr(T inPtr)
+    auto* toVoidPtr(T inPtr)
     {
         static_assert(std::is_pointer_v<T>);
-        return reinterpret_cast<void*>(const_cast<RemoveVolatileFromPointer_t<T>>(inPtr));
+        using DataType = std::remove_pointer_t<T>;
+        using VoidPtrType = std::conditional_t<std::is_const_v<DataType>, void const*, void*>;
+        return reinterpret_cast<VoidPtrType>(const_cast<RemoveVolatileFromPointer_t<T>>(inPtr));
     }
 } // namespace alpaka

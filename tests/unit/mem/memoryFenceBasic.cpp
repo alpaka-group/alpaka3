@@ -20,7 +20,7 @@ using namespace alpaka;
 using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors))>;
 
 // Compilation and stability test kernel. Does not validate correctness of the fence implementations.
-struct ThreadFenceTestKernel
+struct MemoryFenceTestKernel
 {
     ALPAKA_FN_ACC void operator()(auto const& acc, auto out) const
     {
@@ -31,11 +31,11 @@ struct ThreadFenceTestKernel
             // Initial write; any subsequent fence must not block, just enforce visibility / ordering.
             out[idx.x()] = static_cast<uint32_t>(idx.x());
             // Explicit scope form.
-            threadFence(acc, memoryScope::block);
-            threadFence(acc, memoryScope::device);
+            memoryFence(acc, memoryScope::block);
+            memoryFence(acc, memoryScope::device);
             // Convenience helper forms (should map to identical implementations).
-            threadFenceBlock(acc);
-            threadFenceDevice(acc);
+            onAcc::memoryFence(acc, onAcc::memoryScope::Block{});
+            onAcc::memoryFence(acc, onAcc::memoryScope::Device{});
             // Post‑fence update. If fences caused unintended reordering, test value would mismatch.
             out[idx.x()] += 1u;
         }
@@ -43,7 +43,7 @@ struct ThreadFenceTestKernel
 };
 
 // Run over all enabled backend+executor combinations exposed via TestApis.
-TEMPLATE_LIST_TEST_CASE("thread fence operations", "[threadFence][basic]", TestApis)
+TEMPLATE_LIST_TEST_CASE("thread fence operations", "[memoryFence][basic]", TestApis)
 {
     auto cfg = TestType::makeDict();
     auto deviceSpec = cfg[object::deviceSpec];
@@ -71,7 +71,7 @@ TEMPLATE_LIST_TEST_CASE("thread fence operations", "[threadFence][basic]", TestA
     queue.enqueue(
         exec,
         onHost::FrameSpec{extent / frameSize, frameSize},
-        KernelBundle{ThreadFenceTestKernel{}, dBuff});
+        KernelBundle{MemoryFenceTestKernel{}, dBuff});
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);
 

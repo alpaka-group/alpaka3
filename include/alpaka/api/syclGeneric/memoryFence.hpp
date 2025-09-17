@@ -8,8 +8,8 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/onAcc/Acc.hpp"
-#include "alpaka/onAcc/concepts.hpp"
-#include "alpaka/onAcc/threadFence.hpp"
+#include "alpaka/onAcc/memoryScope.hpp"
+
 // Top-level guard needed because including sycl headers is needed
 #if ALPAKA_LANG_SYCL
 #    include <sycl/sycl.hpp>
@@ -18,11 +18,11 @@
 
 namespace alpaka::onAcc::internalCompute
 {
-    template<typename T_Acc, typename T_Scope>
-    requires alpaka::onAcc::concepts::OneApiAcc<T_Acc>
-    struct ThreadFence::Op<T_Acc, T_Scope>
+    template<typename T_Api, typename T_Scope>
+    requires(std::is_base_of_v<api::GenericSycl<T_Api>, T_Api>)
+    struct MemoryFence::Op<T_Api, T_Scope>
     {
-        ALPAKA_FN_ACC void operator()(auto const&, T_Scope const) const
+        constexpr void operator()(onAcc::concepts::Acc auto const&, T_Scope const) const
         {
             if constexpr(std::is_same_v<T_Scope, memoryScope::Block>)
             {
@@ -35,7 +35,7 @@ namespace alpaka::onAcc::internalCompute
             else if constexpr(std::is_same_v<T_Scope, memoryScope::System>)
             {
                 // System fences map to device scope for SYCL backends
-                sycl::atomic_fence(sycl::memory_order::acq_rel, sycl::memory_scope::device);
+                sycl::atomic_fence(sycl::memory_order::acq_rel, sycl::memory_scope::system);
             }
         }
     };

@@ -7,26 +7,26 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/onAcc/Acc.hpp"
-#include "alpaka/onAcc/concepts.hpp"
-#include "alpaka/onAcc/threadFence.hpp"
+#include "alpaka/onAcc/memoryScope.hpp"
 
 #include <type_traits>
-// Specializations should not have to be enabled for backend combinations without CUDA or HIP
-// Removing this top level guard will not cause issues if intrinsics like __threadfence_block are protected inside the
-// specialization.
+
 #if ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP
 
 namespace alpaka::onAcc::internalCompute
 {
-    // Device backends (CUDA or HIP) selected by the executor kind
-    template<typename T_Acc, typename T_Scope>
-    requires(alpaka::onAcc::concepts::CudaAcc<T_Acc> || alpaka::onAcc::concepts::HipAcc<T_Acc>)
-    struct ThreadFence::Op<T_Acc, T_Scope>
+    /** Specializations should not have to be enabled for backend combinations without CUDA or HIP
+     * Removing this top level guard will not cause issues if intrinsics like __threadfence_block are protected inside
+     * the specialization.
+     */
+    template<typename T_Api, typename T_Scope>
+    requires(std::same_as<T_Api, api::Cuda> || std::same_as<T_Api, api::Hip>)
+    struct MemoryFence::Op<T_Api, T_Scope>
     {
-        ALPAKA_FN_ACC void operator()(auto const&, T_Scope const) const
+        ALPAKA_FN_ACC constexpr void operator()(onAcc::concepts::Acc auto const&, T_Scope const) const
         {
             // Host pass is not allowed.
-#    if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)
+#    if ALPAKA_ARCH_PTX || ALPAKA_ARCH_AMD
             if constexpr(std::is_same_v<T_Scope, memoryScope::Block>)
             {
                 __threadfence_block();
