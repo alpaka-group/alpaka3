@@ -287,7 +287,28 @@ auto main(int argc, char* argv[]) -> int
     }
 
     using namespace alpaka;
-    // Execute the example once for each enabled API and executor.
+
+    /* Execute the example once for each backend (device specification + executor)
+     *
+     * If you would like to execute it for a single accelerator only you can use the following code.
+     *  @code{.cpp}
+     *  auto deviceSpec = onHost::DeviceSpec{api::cuda, deviceKind::nvidiaGpu};
+     *  auto executor = exec::gpuCuda;
+     *  return example(deviceSpec, executor, enableStdForEach);
+     *  @endcode
+     *
+     * Some examples for device specifications (depending on the active dependencies).
+     *
+     *   onHost::DeviceSpec{api::host, deviceKind::cpu}
+     *   onHost::DeviceSpec{api::cuda, deviceKind::nvidiaGpu}
+     *   onHost::DeviceSpec{api::hip, deviceKind::amdGpu}
+     *   onHost::DeviceSpec{api::oneApi, deviceKind::intelGpu}
+     *
+     * A list of api's and device kinds can be found
+     * https://alpaka3.readthedocs.io/en/latest/basic/cheatsheet.html##available-apis
+     * A list of executors can be found
+     * https://alpaka3.readthedocs.io/en/latest/basic/cheatsheet.html#executors
+     */
     return onHost::executeForEachIfHasDevice(
         [=](auto const& tag) { return example(tag, numElements, enableStdForEach); },
         onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));

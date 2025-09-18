@@ -73,7 +73,24 @@ int example(auto const devSpec)
 auto main() -> int
 {
     using namespace alpaka;
-    // Execute the example once for each enabled API and executor.
+    /* Execute the example once for each device specification
+     *
+     * If you would like to execute it for a single device only you can use the following code.
+     *  @code{.cpp}
+     *  auto deviceSpec = onHost::DeviceSpec{api::cuda, deviceKind::nvidiaGpu};
+     *  return example(deviceSpec);
+     *  @endcode
+     *
+     * Some examples for device specifications (depending on the active dependencies).
+     *
+     *   onHost::DeviceSpec{api::host, deviceKind::cpu}
+     *   onHost::DeviceSpec{api::cuda, deviceKind::nvidiaGpu}
+     *   onHost::DeviceSpec{api::hip, deviceKind::amdGpu}
+     *   onHost::DeviceSpec{api::oneApi, deviceKind::intelGpu}
+     *
+     * A list of api's and device kinds can be found
+     * https://alpaka3.readthedocs.io/en/latest/basic/cheatsheet.html##available-apis
+     */
     return onHost::executeForEachIfHasDevice(
         [=](auto const& devSpec) { return example(devSpec); },
         onHost::getDeviceSpecsFor(onHost::enabledApis));
