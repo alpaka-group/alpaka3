@@ -5,6 +5,10 @@ import os
 import subprocess
 import shutil
 
+def build_doxygen():
+    subprocess.call("cd ..; doxygen", shell=True)
+    subprocess.call("cd ..; doxygen Doxyfile_dev", shell=True)
+
 def copy_doxygen(dst, src):
     print("Copying from:", src)
     print("Copying to:", dst)
@@ -14,6 +18,7 @@ def copy_doxygen(dst, src):
         shutil.copytree(src, dst)
     else:
         print("Doxygen HTML not found at:", src)
+
 def copy_doxygen_html(app, exception):
     # confdir = …/repo-root/docs/source
     confdir = os.path.dirname(app.confdir)
@@ -197,13 +202,22 @@ cpp_id_attributes = [
 # -- processing --
 
 if on_rtd:
-    subprocess.call("cd ..; doxygen", shell=True)
-    subprocess.call("cd ..; doxygen Doxyfile_dev", shell=True)
+    build_doxygen()
     #subprocess.call(
     #    "cd ../cheatsheet; rst2pdf -s cheatsheet.style ../source/basic/cheatsheet.rst -o cheatsheet.pdf", shell=True
     #)
 else:
     import sphinx_rtd_theme
+    from sphinx.util import logging
+
+    logger = logging.getLogger(__name__)
 
     html_theme = "sphinx_rtd_theme"
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+
+    if shutil.which("doxygen"):
+        if not "ALPAKA_NO_DOXYGEN" in os.environ:
+            build_doxygen()
+        logger.info("doxygen build can be skipped with the environment variable 'ALPAKA_NO_DOXYGEN=1'")
+    else:
+        logger.warning("could not find 'doxygen' executable. Skip building doxygen documentation.")

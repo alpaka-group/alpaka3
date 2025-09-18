@@ -311,8 +311,8 @@ Synchronize threads of the same block
 Atomic operations
   .. literalinclude:: ../../snippets/cheatsheet.cpp
     :language: cpp
-    :start-after: BEGIN-CHEATSHEET-atomciAdd
-    :end-before: END-CHEATSHEET-atomciAdd
+    :start-after: BEGIN-CHEATSHEET-atomicAdd
+    :end-before: END-CHEATSHEET-atomicAdd
     :dedent:
 
 Math functions
