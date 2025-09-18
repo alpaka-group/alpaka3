@@ -74,6 +74,7 @@ namespace alpaka
         using ConstThis = MdSpan<std::add_const_t<value_type>, T_Extents, T_Pitches, T_MemAlignment>;
 
         static_assert(std::is_convertible_v<index_type, typename T_Extents::type>);
+        static_assert(T_Extents::dim() == T_Pitches::dim());
 
         static consteval uint32_t dim()
         {

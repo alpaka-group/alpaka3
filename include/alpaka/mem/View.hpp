@@ -90,8 +90,8 @@ namespace alpaka
             T_MemAlignment const memAlignment = T_MemAlignment{})
             : BaseMdSpan{
                   data,
-                  typename ALPAKA_TYPEOF(extents)::UniVec{extents},
-                  typename ALPAKA_TYPEOF(pitches)::UniVec{pitches},
+                  typename T_UserExtents::UniVec{extents},
+                  typename T_UserPitches::UniVec{pitches},
                   memAlignment}
         {
             static_assert(

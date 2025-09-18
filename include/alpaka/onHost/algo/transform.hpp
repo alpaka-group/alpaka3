@@ -50,7 +50,7 @@ namespace alpaka::onHost
     inline void transform(
         Queue<T_Device, T_QueueKind> const& queue,
         alpaka::concepts::Executor auto const exec,
-        auto&& out,
+        alpaka::concepts::IMdSpan auto&& out,
         auto&& fn,
         auto&&... in)
     {

@@ -30,9 +30,9 @@ public:
     //! \param numElements The number of elements.
     ALPAKA_FN_ACC auto operator()(
         auto const& acc,
-        alpaka::concepts::MdSpan auto const A,
-        alpaka::concepts::MdSpan auto const B,
-        alpaka::concepts::MdSpan auto C,
+        alpaka::concepts::IMdSpan auto const A,
+        alpaka::concepts::IMdSpan auto const B,
+        alpaka::concepts::IMdSpan auto C,
         auto const& numElements) const -> void
     {
         using namespace alpaka;

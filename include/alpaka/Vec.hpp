@@ -175,9 +175,6 @@ namespace alpaka
     } // namespace detail
 
     template<typename T_Type, uint32_t T_dim, typename T_Storage = ArrayStorage<T_Type, T_dim>>
-    struct Vec;
-
-    template<typename T_Type, uint32_t T_dim, typename T_Storage>
     struct Vec : private T_Storage
     {
         using Storage = T_Storage;
