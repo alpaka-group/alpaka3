@@ -46,9 +46,12 @@ The recipies shown here assume you have installed spack packages for specific co
 
 .. code-block::
 
+  # In a directory beside the alpaka source directory (for example in "build-alpaka3")
+  # ├── alpaka3
+  # └── build-alpaka3
   # ..
-  cmake -Dalpaka_EXAMPLES=ON ..
-  cmake --build ../alpaka3 -j -t vectorAdd
+  cmake ../alpaka3 -Dalpaka_EXAMPLES=ON
+  cmake --build . --parallel -t vectorAdd
   ./example/vectorAdd/vectorAdd # execution
 
 **Build and run tests:**
@@ -56,8 +59,8 @@ The recipies shown here assume you have installed spack packages for specific co
 .. code-block::
 
   # ..
-  cmake -Dalpaka_TESTING=ON ..
-  cmake --build ../alpaka3 -j
+  cmake ../alpaka3 -Dalpaka_TESTING=ON
+  cmake --build . --parallel
   ctest
 
 **Enable accelerators:**
@@ -82,8 +85,10 @@ This allows the usage of the coresponding executor e.g. `gpuCuda`, `gpuHip` or `
   spack load cmake@3.29.1
 
   # -Dalpaka_DEP_OMP=ON is implicitly set, if the compiler not support OpenMP only serial code will be generated
-  cmake ../alpaka -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -DBUILD_TESTING=ON
-  cmake --build ../alpaka3./alpaka3 -j
+  # Assuming alpaka source is in ../alpaka3 with respect to the current directory
+  #
+  cmake ../alpaka3 -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -DBUILD_TESTING=ON
+  cmake --build . --parallel
   ctest --output-on-failure
 
 **compile for NVIDIA CUDA only:**
@@ -94,8 +99,8 @@ This allows the usage of the coresponding executor e.g. `gpuCuda`, `gpuHip` or `
   spack load cuda@12.4.0
 
   # use -DCMAKE_CUDA_ARCHITECTURES=80 to set the GPU architecture
-  cmake ../alpaka -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_DEP_OMP=OFF -Dalpaka_DEP_CUDA=ON -Dalpaka_EXEC_CpuSerial=OFF
-  cmake --build ../alpaka3./alpaka3 -j
+  cmake ../alpaka3 -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_DEP_OMP=OFF -Dalpaka_DEP_CUDA=ON -Dalpaka_EXEC_CpuSerial=OFF
+  cmake --build . --parallel
   ctest --output-on-failure
 
 **compile for AMD HIP only:**
@@ -108,8 +113,8 @@ This allows the usage of the coresponding executor e.g. `gpuCuda`, `gpuHip` or `
 
   # use -DCMAKE_HIP_ARCHITECTURES=gfx906 to set the GPU architecture
   # for older CMake version sometimes the architecture must be set with -DAMDGPU_TARGETS=gfx906
-  cmake ../alpaka -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_DEP_OMP=OFF -Dalpaka_DEP_HIP=ON -Dalpaka_EXEC_CpuSerial=OFF
-  cmake --build ../alpaka3./alpaka3 -j
+  cmake ../alpaka3 -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_DEP_OMP=OFF -Dalpaka_DEP_HIP=ON -Dalpaka_EXEC_CpuSerial=OFF
+  cmake --build . --parallel
   ctest --output-on-failure
 
 **compile for OneApi SYCL CPU/GPU only**
@@ -132,8 +137,8 @@ This allows the usage of the coresponding executor e.g. `gpuCuda`, `gpuHip` or `
   # Cpu ISA e.g. avx,avx2, avx512
   # Nvidia only the sm number is needed e.g. 80
   # Amd full qualifier is required e.g. gfx906
-  cmake ../alpaka -DCMAKE_CXX_COMPILER=icpx -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_DEP_ONEAPI=ON -Dalpaka_DEP_OMP=OFF -Dalpaka_EXEC_CpuSerial=OFF
-  cmake --build ../alpaka3 -jmake -j
+  cmake ../alpaka3 -DCMAKE_CXX_COMPILER=icpx -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_DEP_ONEAPI=ON -Dalpaka_DEP_OMP=OFF -Dalpaka_EXEC_CpuSerial=OFF
+  cmake --build . --parallel
   ctest --output-on-failure
 
 .. warning::
