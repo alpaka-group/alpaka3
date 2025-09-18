@@ -92,10 +92,20 @@ namespace alpaka::onHost
                 {
                     std::lock_guard<std::mutex> lk(m_mutex);
                     fn();
+                    // silent tsan warnings: The promise is fulfilled directly and only a future which is true is
+                    // returned, there can not be a data race in between.
+#if defined(__GNUC__) && !defined(__clang__)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wtsan"
+#endif
                     // return a ready future-like placeholder; reuse CallbackThread interface minimally
                     std::promise<void> p;
-                    auto f = p.get_future();
                     p.set_value();
+#if defined(__GNUC__) && !defined(__clang__)
+#    pragma GCC diagnostic pop
+#endif
+                    auto f = p.get_future();
+
                     // to keep the uniform interface with the non-blocking case,
                     // return by moving the f since it is move-only
                     return f;

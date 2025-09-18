@@ -497,3 +497,10 @@ option(alpaka_ASAN "Enable/Disable linking the address sanitizer for cpu targets
 option(alpaka_TSAN "Enable/Disable linking the thread sanitizer for cpu targets" OFF)
 option(alpaka_LSAN "Enable/Disable linking the memory leak sanitizer for cpu targets" OFF)
 option(alpaka_UBSAN "Enable/Disable linking the undefined behavior sanitizer for cpu targets" OFF)
+
+if(alpaka_TSAN)
+    message(
+        WARNING
+        "Threadsanitizers enabled: You should reduce mmap rnd bits to avoid compile issues: call as root 'sysctl vm.mmap_rnd_bits=28'"
+    )
+endif()

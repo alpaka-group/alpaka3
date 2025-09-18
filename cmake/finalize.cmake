@@ -224,6 +224,8 @@ function(alpaka_finalize target)
             message(STATUS "Linking TSAN to ${target}")
             target_compile_options(${target} PRIVATE -fsanitize=thread)
             target_link_options(${target} PRIVATE -fsanitize=thread)
+            # - to get nicer stack-traces:
+            target_link_options(${target} PRIVATE -fno-omit-frame-pointer)
             if(alpaka_LSAN OR alpaka_UBSAN)
                 message(
                     WARNING
