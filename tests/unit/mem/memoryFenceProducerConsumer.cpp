@@ -19,77 +19,74 @@ using namespace alpaka;
 
 using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors))>;
 
-namespace
+// Producer-Consumer kernel documentation:
+//  - Producer (thread 0) publishes a payload (value = iteration index) to global memory,
+//    then issues a device-scope memoryFence to ensure the data write becomes visible
+//    before setting the corresponding ready flag to 1.
+//  - Consumer (thread 1) busy-waits on the ready flag becoming 1, then issues its own
+//    device-scope fence before reading the payload. This is like a typical acquire
+//    after producer's release.
+//
+// If the fence were missing on producer side, a reordering (or visibility delay) could
+// allow the consumer to observe ready==1 but still see an old payload value. This would
+// not be caught by a simple correctness test, so we count mismatches. Reordering is not
+// guaranteed to manifest every run on all hardware; this encodes the canonical
+// correctness pattern and will fail if a backend ever weakens ordering.
+struct ProducerConsumerKernel
 {
-    // Producer-Consumer kernel documentation:
-    //  - Producer (thread 0) publishes a payload (value = iteration index) to global memory,
-    //    then issues a device-scope memoryFence to ensure the data write becomes visible
-    //    before setting the corresponding ready flag to 1.
-    //  - Consumer (thread 1) busy-waits on the ready flag becoming 1, then issues its own
-    //    device-scope fence before reading the payload. This is like a typical acquire
-    //    after producer's release.
-    //
-    // If the fence were missing on producer side, a reordering (or visibility delay) could
-    // allow the consumer to observe ready==1 but still see an old payload value. This would
-    // not be caught by a simple correctness test, so we count mismatches. Reordering is not
-    // guaranteed to manifest every run on all hardware; this encodes the canonical
-    // correctness pattern and will fail if a backend ever weakens ordering.
-    struct ProducerConsumerKernel
+    template<class Acc, class TVal, class TFlag, class TMis>
+    ALPAKA_FN_ACC void operator()(
+        Acc const& acc,
+        TVal payload,
+        TFlag readyFlags,
+        TMis mismatches,
+        uint32_t const iterations) const
     {
-        template<class Acc, class TVal, class TFlag, class TMis>
-        ALPAKA_FN_ACC void operator()(
-            Acc const& acc,
-            TVal payload,
-            TFlag readyFlags,
-            TMis mismatches,
-            uint32_t const iterations) const
+        using namespace alpaka::onAcc;
+        auto [tid] = acc.getIdxWithin(alpaka::onAcc::origin::grid, alpaka::onAcc::unit::threads);
+
+        // Only two active participants: 0 = producer, 1 = consumer.
+        if(!(tid == 0 || tid == 2))
+            // other threads exit fast.
+            return;
+
+        for(uint32_t i = 0; i < iterations; ++i)
         {
-            using namespace alpaka::onAcc;
-            auto [tid] = acc.getIdxWithin(alpaka::onAcc::origin::grid, alpaka::onAcc::unit::threads);
-
-            // Only two active participants: 0 = producer, 1 = consumer.
-            if(!(tid == 0 || tid == 2))
-                // other threads exit fast.
-                return;
-
-            for(uint32_t i = 0; i < iterations; ++i)
+            // only for tid == 0, first thread is producer
+            if(tid == 0u)
             {
-                // only for tid == 0, first thread is producer
-                if(tid == 0u)
-                {
-                    // Publish payload value first.
-                    atomicExch(acc, &payload[i], i);
-                    // Ensure payload write is visible before flag store.
-                    memoryFence(acc, memoryScope::device);
-                    readyFlags[i] = 1u;
+                // Publish payload value first.
+                atomicExch(acc, &payload[i], i);
+                // Ensure payload write is visible before flag store.
+                memoryFence(acc, memoryScope::device);
+                atomicExch(acc, &readyFlags[i], 1u);
+            }
+            // consumer, only for tid == 1, second thread is consumer
+            else
+            {
+                // Spin until flag is set at each iteration.
+                while(atomicCas(acc, &readyFlags[i], 0u, 0u) == 0u)
+                { /* busy wait */
                 }
-                // consumer, only for tid == 1, second thread is consumer
-                else
-                {
-                    // Spin until flag is set at each iteration.
-                    while(atomicCas(acc, &readyFlags[i], 0u, 0u) == 0u)
-                    { /* busy wait */
-                    }
-                    // Acquire fence: prevents compiler/hardware from speculatively reading
-                    // payload before observing the flag. This is the "Acquire" part; which is completing the
-                    // release-acquire pair The busy‑wait loop guarantees thread 1 doesn’t leave the loop until it
-                    // has observed flag==1, but it does not by itself force any refresh/invalidation of the cache
-                    // line holding payload array values, nor prevent the compiler from reordering a payload-read
-                    // above the while-loop unless the flag read is treated as a dependency (atomic/volatile) and
-                    // an acquire fence follows.
+                // Acquire fence: prevents compiler/hardware from speculatively reading
+                // payload before observing the flag. This is the "Acquire" part; which is completing the
+                // release-acquire pair The busy‑wait loop guarantees thread 1 doesn’t leave the loop until it
+                // has observed flag==1, but it does not by itself force any refresh/invalidation of the cache
+                // line holding payload array values, nor prevent the compiler from reordering a payload-read
+                // above the while-loop unless the flag read is treated as a dependency (atomic/volatile) and
+                // an acquire fence follows.
 
-                    memoryFence(acc, memoryScope::device);
-                    auto v = payload[i];
-                    if(v != i)
-                    {
-                        // Increment mismatch counter (benign race: only consumer writes on mismatch).
-                        mismatches[0] += 1u;
-                    }
+                memoryFence(acc, memoryScope::device);
+                auto v = payload[i];
+                if(v != i)
+                {
+                    // Increment mismatch counter (benign race: only consumer writes on mismatch).
+                    onAcc::atomicAdd(acc, mismatches.data(), 1u);
                 }
             }
         }
-    };
-} // namespace
+    }
+};
 
 TEMPLATE_LIST_TEST_CASE("memoryFence producer-consumer publication", "[memoryFence][producer-consumer]", TestApis)
 {
@@ -107,7 +104,7 @@ TEMPLATE_LIST_TEST_CASE("memoryFence producer-consumer publication", "[memoryFen
     auto queue = device.makeQueue();
 
     // modest to keep test fast.
-    constexpr uint32_t iterations = 1u;
+    constexpr uint32_t iterations = 10u;
 
     auto payload = onHost::alloc<uint32_t>(device, Vec{iterations});
     auto flags = onHost::alloc<uint32_t>(device, Vec{iterations});
@@ -123,8 +120,15 @@ TEMPLATE_LIST_TEST_CASE("memoryFence producer-consumer publication", "[memoryFen
     onHost::memcpy(queue, flags, hFlags);
     onHost::memcpy(queue, mis, hMis);
 
-    // Launch with exactly two logical threads using a FrameSpec (extent = 2, frameSize = 1) so mapping mirrors other
-    // tests. Use a larger extent for CUDA validity; only threads 0 and 1 participate.
+    /* Launch with exactly three logical threads using a FrameSpec (extent = 3, frameSize = 1).
+     * We would for the test only require 2 threads but for unknown reason on OneAPi with an Intel GPU (tested with ARC
+     * A770 + icpx 2025.2) the code deadlock. The reason for it is that it looks like that OneApi is starting 2 native
+     * sycl threads blocked groups of 1 thread within a single group and not two independent groups. Due to the reason
+     * that if conditions are executed lock step first the branch with the busy wait is executed and then never the
+     * branch for thread with id zero. Using 3 groups aka 3 thread blocks and working with thread 0 and 2 worked fine.
+     *
+     * @todo: find out if this strange behaviour is an bug (most likely) or somewhere documented in SYCL or OneApi.
+     */
     queue.enqueue(
         exec,
         onHost::ThreadSpec{3, 1},
@@ -141,7 +145,7 @@ TEMPLATE_LIST_TEST_CASE("memoryFence producer-consumer publication", "[memoryFen
 struct DeviceFenceTestKernelWriter
 {
     template<typename TAcc>
-    ALPAKA_FN_ACC auto operator()(TAcc const& acc, ALPAKA_DEVICE_VOLATILE int* vars) const -> void
+    ALPAKA_FN_ACC auto operator()(TAcc const& acc, int volatile* vars) const -> void
     {
         auto const [idx] = acc.getIdxWithin(alpaka::onAcc::origin::grid, alpaka::onAcc::unit::threads);
 
@@ -158,7 +162,7 @@ struct DeviceFenceTestKernelWriter
 struct DeviceFenceTestKernelReader
 {
     template<typename TAcc>
-    ALPAKA_FN_ACC auto operator()(TAcc const& acc, auto successFlag, ALPAKA_DEVICE_VOLATILE int* vars) const -> void
+    ALPAKA_FN_ACC auto operator()(TAcc const& acc, auto successFlag, int volatile* vars) const -> void
     {
         auto const [idx] = acc.getIdxWithin(alpaka::onAcc::origin::grid, alpaka::onAcc::unit::threads);
 
@@ -172,8 +176,8 @@ struct DeviceFenceTestKernelReader
             // If the fence is working correctly, the following case can never happen
             if(a == 1 && b == 20)
             {
-                // mark failure
-                successFlag[0] = 0u;
+                // mark failure atomically to handle concurrent writes
+                onAcc::atomicExch(acc, &successFlag[0], 0u);
             }
         }
     }
@@ -182,7 +186,7 @@ struct DeviceFenceTestKernelReader
 struct DeviceFenceTestKernel
 {
     template<typename TAcc>
-    ALPAKA_FN_ACC auto operator()(TAcc const& acc, auto successFlag, ALPAKA_DEVICE_VOLATILE int* vars) const -> void
+    ALPAKA_FN_ACC auto operator()(TAcc const& acc, auto successFlag, int volatile* vars) const -> void
     {
         auto const [idx] = acc.getIdxWithin(alpaka::onAcc::origin::grid, alpaka::onAcc::unit::threads);
 
@@ -201,8 +205,8 @@ struct DeviceFenceTestKernel
         // If the fence is working correctly, the following case can never happen
         if(a == 1 && b == 20)
         {
-            // mark failure
-            successFlag[0] = 0u;
+            // mark failure atomically to handle concurrent writes
+            onAcc::atomicExch(acc, &successFlag[0], 0u);
         }
     }
 };
@@ -257,8 +261,8 @@ struct BlockSharedMemOrderKernel
         // Forbidden outcome: observe updated B (20) but stale A (1)
         if(a == 1 && b == 20)
         {
-            // mark failure
-            successFlag[0] = 0u;
+            // mark failure atomically to handle concurrent writes
+            onAcc::atomicExch(acc, &successFlag[0], 0u);
         }
     }
 };
@@ -299,6 +303,7 @@ TEMPLATE_LIST_TEST_CASE("memoryFence block shared-memory ordering", "[memoryFenc
         onHost::memcpy(queue, vars_dev, vars_host);
         onHost::wait(queue);
         flag[0u] = 1u;
+        // Device-scope variant
         queue.enqueue(exec, onHost::FrameSpec{2, 1}, KernelBundle{DeviceFenceTestKernel{}, flag, vars_dev.data()});
         onHost::wait(queue);
         CHECK(flag[0u] == 1u);
