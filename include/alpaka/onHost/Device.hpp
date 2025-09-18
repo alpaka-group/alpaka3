@@ -239,7 +239,7 @@ namespace alpaka::onHost
             extentsVec);
     }
 
-    /** Allocate pinned memory on the host which is mapped into the adress space of the device
+    /** Allocate pinned memory on the host which is mapped into the address space of the device
      *
      * Mapped memory is located on the host and is transferred for each access via the PCIe/Nvlink bus. The performance
      * on the device is mostly pure. Mapped memory should be used for host memory if you transfer memory between host

@@ -23,7 +23,7 @@ namespace alpaka::onHost
     /// https://www.reddit.com/r/cpp/comments/lfi6jt/finally_a_possibly_portable_way_to_convert_types/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
 
     template<typename T>
-    inline auto EmbedTypeIntoSignature()
+    constexpr auto EmbedTypeIntoSignature()
     {
         return std::string_view{std::source_location::current().function_name()};
     }
@@ -31,7 +31,7 @@ namespace alpaka::onHost
     template<typename T>
     struct Demangled
     {
-        static auto name()
+        static constexpr auto name()
         {
             constexpr size_t testSignatureLength = sizeof("AlpakaDemangleReferenceType") - 1;
             auto const DummySignature = EmbedTypeIntoSignature<AlpakaDemangleReferenceType>();
@@ -46,13 +46,13 @@ namespace alpaka::onHost
     };
 
     template<typename T>
-    inline auto demangledName()
+    constexpr auto demangledName()
     {
         return std::string(Demangled<T>::name());
     }
 
     template<typename T>
-    inline auto demangledName(T const&)
+    constexpr auto demangledName(T const&)
     {
         return std::string(Demangled<T>::name());
     }

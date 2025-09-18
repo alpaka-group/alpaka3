@@ -11,6 +11,7 @@
 #include "alpaka/core/config.hpp"
 #include "alpaka/trait.hpp"
 #include "alpaka/utility.hpp"
+#include "onHost/demangledName.hpp"
 
 #include <alpaka/mem/concepts.hpp>
 
@@ -100,14 +101,26 @@ namespace alpaka
         template<typename TAcc>
         requires(
             alpaka::concepts::KernelFn<KernelFn>
-            && std::same_as<
-                void,
-                std::invoke_result_t<
-                    KernelFn,
-                    TAcc,
-                    remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>...>>)
+            && std::is_invocable_v<
+                std::remove_const_t<KernelFn>,
+                TAcc,
+                remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>...>)
         constexpr auto operator()(TAcc const& acc) const
         {
+            static_assert(
+                std::is_invocable_v<
+                    std::add_const_t<KernelFn>,
+                    TAcc,
+                    remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>...>,
+                "the operator() function of a kernel must be marked const");
+            static_assert(
+                std::same_as<
+                    void,
+                    std::invoke_result_t<
+                        std::add_const_t<KernelFn>,
+                        TAcc,
+                        remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>...>>,
+                "the return type of the operator() function of a kernel must be void");
             alpaka::apply(
                 /* It is required to take the arguments as const reference.
                  * The reason is that these arguments are shared between threads in a block. If the user like to mutate
