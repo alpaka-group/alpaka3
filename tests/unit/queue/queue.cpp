@@ -15,7 +15,41 @@ using namespace alpaka;
 
 using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors))>;
 
-#if 1
+struct NoArgumentsKernel
+{
+    ALPAKA_FN_ACC void operator()(onAcc::concepts::Acc auto const& acc) const
+    {
+    }
+};
+
+/** test that we can execute a kernel which has no arguments
+ *
+ * All arguments could be stored e.g. as members.
+ */
+TEMPLATE_LIST_TEST_CASE("kernel no arguments", "", TestApis)
+{
+    auto cfg = TestType::makeDict();
+    auto deviceSpec = cfg[object::deviceSpec];
+    auto exec = cfg[object::exec];
+
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+    std::cout << deviceSpec.getApi().getName() << std::endl;
+
+    onHost::Device device = devSelector.makeDevice(0);
+
+    std::cout << device.getName() << std::endl;
+
+    onHost::Queue queue = device.makeQueue(queueKind::blocking);
+    std::cout << "exec=" << onHost::demangledName(exec) << std::endl;
+
+    queue.enqueue(exec, onHost::FrameSpec{1, 1}, KernelBundle{NoArgumentsKernel{}});
+}
+
 struct IotaKernel
 {
     ALPAKA_FN_ACC void operator()(auto const& acc, auto out, uint32_t outSize) const
@@ -64,7 +98,6 @@ TEMPLATE_LIST_TEST_CASE("iota", "", TestApis)
     onHost::wait(queue);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx.x() == hBuff[idx]); });
 }
-#endif
 
 struct IotaKernelND
 {
