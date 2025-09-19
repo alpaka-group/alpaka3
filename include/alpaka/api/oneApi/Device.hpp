@@ -13,7 +13,7 @@ namespace alpaka::onHost::trait
 {
 #if ALPAKA_LANG_ONEAPI
     template<typename T_Platform>
-    struct IsMappingSupportedBy::Op<alpaka::exec::OneApi, alpaka::onHost::syclGeneric::Device<T_Platform>>
+    struct IsExecutorSupportedBy::Op<alpaka::exec::OneApi, alpaka::onHost::syclGeneric::Device<T_Platform>>
         : std::true_type
     {
     };

@@ -64,7 +64,7 @@ namespace alpaka::onHost
             && std::conjunction_v<
                 std::is_convertible<T_DataType, typename alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(outOther)>>...>)
     {
-        auto executor = supportedMappings(queue.getDevice(), exec::allExecutors);
+        auto executor = supportedExecutors(queue.getDevice(), exec::allExecutors);
         internal::iota<T_DataType>(
             queue,
             std::get<0>(executor),

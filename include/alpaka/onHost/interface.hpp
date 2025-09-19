@@ -218,8 +218,8 @@ namespace alpaka::onHost
     {
         using DevSelectorType = decltype(makeDeviceSelector(deviceSpec));
         using DeviceType = decltype(std::declval<DevSelectorType>().makeDevice(0));
-        using AutoDeviceMappings = decltype(supportedMappings(std::declval<DeviceType>(), listOfExecutors));
-        return AutoDeviceMappings{};
+        using ExecutorListType = decltype(supportedExecutors(std::declval<DeviceType>(), listOfExecutors));
+        return ExecutorListType{};
     }
 
     /** Create a tuple of device specifications for a single API.

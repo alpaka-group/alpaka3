@@ -231,17 +231,19 @@ namespace alpaka
     {
     };
 
-    namespace exec::trait
+    namespace exec
     {
-        template<typename T_Mapping>
-        struct IsSeqExecutor : std::false_type
+        namespace trait
         {
-        };
+            template<typename T_Executor>
+            struct IsSeqExecutor : std::false_type
+            {
+            };
+        } // namespace trait
 
         template<typename T_Exec>
-        constexpr bool isSeqExecutor_v = IsSeqExecutor<T_Exec>::value;
-
-    } // namespace exec::trait
+        constexpr bool isSeqExecutor_v = trait::IsSeqExecutor<T_Exec>::value;
+    } // namespace exec
 
     /** check if a executor can only be used with a single thred per block
      *
@@ -250,6 +252,6 @@ namespace alpaka
     template<typename T_Exec>
     consteval bool isSeqExecutor(T_Exec exec)
     {
-        return exec::trait::isSeqExecutor_v<T_Exec>;
+        return exec::isSeqExecutor_v<T_Exec>;
     }
 } // namespace alpaka

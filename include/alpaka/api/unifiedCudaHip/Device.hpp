@@ -354,16 +354,16 @@ namespace alpaka::onHost
 
         template<
             typename T_Platform,
-            typename T_Mapping,
+            alpaka::concepts::Executor T_Executor,
             onHost::concepts::FrameSpec T_FrameSpec,
             alpaka::concepts::KernelBundle T_KernelBundle>
-        struct AdjustThreadSpec::Op<unifiedCudaHip::Device<T_Platform>, T_Mapping, T_FrameSpec, T_KernelBundle>
+        struct AdjustThreadSpec::Op<unifiedCudaHip::Device<T_Platform>, T_Executor, T_FrameSpec, T_KernelBundle>
         {
             using T_NumThreads = T_FrameSpec::ThreadExtentsVecType;
 
             auto operator()(
                 unifiedCudaHip::Device<T_Platform> const& device,
-                T_Mapping const& executor,
+                T_Executor const& executor,
                 T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
             {
@@ -382,7 +382,7 @@ namespace alpaka::onHost
 
             auto operator()(
                 unifiedCudaHip::Device<T_Platform> const& device,
-                T_Mapping const& executor,
+                T_Executor const& executor,
                 T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const
             {

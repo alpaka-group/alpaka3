@@ -5,6 +5,7 @@
 #pragma once
 
 #include "alpaka/KernelBundle.hpp"
+#include "alpaka/api/trait.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/onHost/DeviceProperties.hpp"
 #include "alpaka/onHost/FrameSpec.hpp"
@@ -167,14 +168,14 @@ namespace alpaka::onHost
         {
             template<
                 typename T_Queue,
-                typename T_Mapping,
+                alpaka::concepts::Executor T_Executor,
                 onHost::concepts::ThreadOrFrameSpec T_BlockCfg,
                 alpaka::concepts::KernelBundle T_KernelBundle>
             struct Kernel
             {
                 void operator()(
                     T_Queue& queue,
-                    T_Mapping const executor,
+                    T_Executor const executor,
                     T_BlockCfg const& blockCfg,
                     T_KernelBundle const& kernelBundle) const
                 {
@@ -224,14 +225,14 @@ namespace alpaka::onHost
         {
             template<
                 typename T_Device,
-                typename T_Mapping,
+                alpaka::concepts::Executor T_Executor,
                 onHost::concepts::FrameSpec T_FrameSpec,
                 alpaka::concepts::KernelBundle T_KernelBundle>
             struct Op
             {
                 auto operator()(
                     T_Device const&,
-                    T_Mapping const& executor,
+                    T_Executor const& executor,
                     T_FrameSpec const& frameSpec,
                     T_KernelBundle const& kernelBundle) const
                 {

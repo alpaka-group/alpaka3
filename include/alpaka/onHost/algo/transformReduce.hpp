@@ -89,7 +89,7 @@ namespace alpaka::onHost
         auto&& transformFn,
         auto&&... in) requires(std::same_as<DataType, alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>>)
     {
-        auto executor = supportedMappings(queue.getDevice(), exec::allExecutors);
+        auto executor = supportedExecutors(queue.getDevice(), exec::allExecutors);
         transformReduce(
             queue,
             std::get<0>(executor),

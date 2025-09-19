@@ -26,17 +26,17 @@ namespace alpaka::onHost
             };
         };
 
-        struct IsMappingSupportedBy
+        struct IsExecutorSupportedBy
         {
-            template<typename T_Mapping, typename T_Device>
+            template<alpaka::concepts::Executor T_Executor, typename T_Device>
             struct Op : std::false_type
             {
             };
         };
 
-        template<typename T_Mapping, internal::concepts::DeviceHandle T_DeviceHandle>
-        struct IsMappingSupportedBy::Op<T_Mapping, T_DeviceHandle>
-            : IsMappingSupportedBy::Op<T_Mapping, typename T_DeviceHandle::element_type>
+        template<alpaka::concepts::Executor T_Executor, internal::concepts::DeviceHandle T_DeviceHandle>
+        struct IsExecutorSupportedBy::Op<T_Executor, T_DeviceHandle>
+            : IsExecutorSupportedBy::Op<T_Executor, typename T_DeviceHandle::element_type>
         {
         };
 
@@ -64,7 +64,7 @@ namespace alpaka::onHost
         };
 
         template<
-            typename T_Executor,
+            alpaka::concepts::Executor T_Executor,
             onHost::concepts::ThreadSpec T_ThreadSpec,
             alpaka::concepts::KernelBundle T_KernelBundle>
         struct GetDynSharedMemBytes
@@ -80,7 +80,7 @@ namespace alpaka::onHost
             }
         };
 
-        template<typename T_Executor, typename T_Spec, typename T_KernelFn, typename... T_Args>
+        template<alpaka::concepts::Executor T_Executor, typename T_Spec, typename T_KernelFn, typename... T_Args>
         requires requires() { std::declval<T_KernelFn>().dynSharedMemBytes; } || requires() {
             BlockDynSharedMemBytes<T_KernelFn, T_Spec>{std::declval<T_KernelFn>(), std::declval<T_Spec>()}(
                 std::declval<T_Executor>(),
@@ -116,7 +116,7 @@ namespace alpaka::onHost
         };
 
         template<
-            typename T_Executor,
+            alpaka::concepts::Executor T_Executor,
             onHost::concepts::ThreadSpec T_ThreadSpec,
             alpaka::concepts::KernelBundle T_KernelBundle>
         struct HasUserDefinedDynSharedMemBytes : std::true_type
@@ -124,7 +124,7 @@ namespace alpaka::onHost
         };
 
         template<
-            typename T_Executor,
+            alpaka::concepts::Executor T_Executor,
             onHost::concepts::ThreadSpec T_ThreadSpec,
             alpaka::concepts::KernelBundle T_KernelBundle>
         requires(trait::GetDynSharedMemBytes<T_Executor, T_ThreadSpec, T_KernelBundle>::zeroSharedMemory == true)
@@ -140,16 +140,16 @@ namespace alpaka::onHost
 
     consteval bool isExecutorSupportedBy(auto executor, internal::concepts::DeviceHandle auto const& deviceHandle)
     {
-        return trait::IsMappingSupportedBy::Op<ALPAKA_TYPEOF(executor), ALPAKA_TYPEOF(deviceHandle)>::value;
+        return trait::IsExecutorSupportedBy::Op<ALPAKA_TYPEOF(executor), ALPAKA_TYPEOF(deviceHandle)>::value;
     }
 
-    constexpr auto supportedMappings(internal::concepts::DeviceHandle auto deviceHandle, auto const listOfExecutors)
+    constexpr auto supportedExecutors(internal::concepts::DeviceHandle auto deviceHandle, auto const listOfExecutors)
     {
         return meta::filter(
             // we can not use isExecutorSupportedBy() because gcc14 is stricter in the detection which functions can
             // be evaluated at compile time
             [&](auto executor) constexpr
-            { return trait::IsMappingSupportedBy::Op<ALPAKA_TYPEOF(executor), ALPAKA_TYPEOF(deviceHandle)>::value; },
+            { return trait::IsExecutorSupportedBy::Op<ALPAKA_TYPEOF(executor), ALPAKA_TYPEOF(deviceHandle)>::value; },
             listOfExecutors);
     }
 
@@ -164,7 +164,7 @@ namespace alpaka::onHost
     }
 
     template<
-        typename T_Executor,
+        alpaka::concepts::Executor T_Executor,
         onHost::concepts::ThreadSpec T_ThreadSpec,
         alpaka::concepts::KernelBundle T_KernelBundle>
     constexpr uint32_t getDynSharedMemBytes(
@@ -176,7 +176,7 @@ namespace alpaka::onHost
     }
 
     template<
-        typename T_Executor,
+        alpaka::concepts::Executor T_Executor,
         onHost::concepts::ThreadSpec T_ThreadSpec,
         alpaka::concepts::KernelBundle T_KernelBundle>
     consteval bool hasUserDefinedDynSharedMemBytes(

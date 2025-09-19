@@ -153,12 +153,12 @@ namespace alpaka::onHost
 
     {
         template<typename T_Platform>
-        struct IsMappingSupportedBy::Op<exec::CpuSerial, cpu::Device<T_Platform>> : std::true_type
+        struct IsExecutorSupportedBy::Op<exec::CpuSerial, cpu::Device<T_Platform>> : std::true_type
         {
         };
 #if ALPAKA_OMP
         template<typename T_Platform>
-        struct IsMappingSupportedBy::Op<exec::CpuOmpBlocks, cpu::Device<T_Platform>> : std::true_type
+        struct IsExecutorSupportedBy::Op<exec::CpuOmpBlocks, cpu::Device<T_Platform>> : std::true_type
         {
         };
 #endif
@@ -264,17 +264,17 @@ namespace alpaka::onHost
 
         template<
             typename T_Platform,
-            typename T_Mapping,
+            alpaka::concepts::Executor T_Executor,
             onHost::concepts::FrameSpec T_FrameSpec,
             alpaka::concepts::KernelBundle T_KernelBundle>
-        requires exec::trait::isSeqExecutor_v<T_Mapping>
-        struct AdjustThreadSpec::Op<cpu::Device<T_Platform>, T_Mapping, T_FrameSpec, T_KernelBundle>
+        requires exec::isSeqExecutor_v<T_Executor>
+        struct AdjustThreadSpec::Op<cpu::Device<T_Platform>, T_Executor, T_FrameSpec, T_KernelBundle>
         {
             using T_NumThreads = T_FrameSpec::ThreadExtentsVecType;
 
             auto operator()(
                 cpu::Device<T_Platform> const& device,
-                T_Mapping const& executor,
+                T_Executor const& executor,
                 T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
             {
@@ -284,7 +284,7 @@ namespace alpaka::onHost
 
             auto operator()(
                 cpu::Device<T_Platform> const& device,
-                T_Mapping const& executor,
+                T_Executor const& executor,
                 T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const
             {

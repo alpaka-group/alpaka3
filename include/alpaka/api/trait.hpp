@@ -148,7 +148,7 @@ namespace alpaka
         /** Defines the implementation used for atomic operations toghether with the used executor */
         struct GetAtomicImpl
         {
-            template<typename T_Executor>
+            template<alpaka::concepts::Executor T_Executor>
             struct Op
             {
                 constexpr decltype(auto) operator()(T_Executor const) const
@@ -161,7 +161,7 @@ namespace alpaka
             };
         };
 
-        template<typename T_Executor>
+        template<alpaka::concepts::Executor T_Executor>
         constexpr decltype(auto) getAtomicImpl(T_Executor const executor)
         {
             return GetAtomicImpl::Op<T_Executor>{}(executor);

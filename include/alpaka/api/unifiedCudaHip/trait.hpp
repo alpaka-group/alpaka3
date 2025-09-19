@@ -5,11 +5,13 @@
 
 #pragma once
 
+#include "alpaka/api/trait.hpp"
+
 #include <type_traits>
 
 namespace alpaka::unifiedCudaHip::trait
 {
-    template<typename T_Executor>
+    template<alpaka::concepts::Executor T_Executor>
     struct IsUnifiedExecutor : std::false_type
     {
     };

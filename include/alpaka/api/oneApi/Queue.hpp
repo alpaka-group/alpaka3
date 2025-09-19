@@ -119,7 +119,7 @@ namespace alpaka::onHost::internal
             requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
                      && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
         {
-            auto executors = supportedMappings(getDevice(queue), exec::allExecutors);
+            auto executors = supportedExecutors(getDevice(queue), exec::allExecutors);
             // avoid that we pass a SharedBuffer and convert non alpaka data views
             auto dataView = makeView(dest);
 
@@ -195,7 +195,7 @@ namespace alpaka::onHost::internal
 
     template<
         typename T_Device,
-        typename T_Executor,
+        alpaka::concepts::Executor T_Executor,
         onHost::concepts::ThreadSpec T_ThreadSpec,
         alpaka::concepts::KernelBundle T_KernelBundle>
     struct Enqueue::Kernel<syclGeneric::Queue<T_Device>, T_Executor, T_ThreadSpec, T_KernelBundle>
@@ -267,7 +267,7 @@ namespace alpaka::onHost::internal
 
     template<
         typename T_Device,
-        typename T_Executor,
+        alpaka::concepts::Executor T_Executor,
         onHost::concepts::FrameSpec T_FrameSpec,
         alpaka::concepts::KernelBundle T_KernelBundle>
     struct Enqueue::Kernel<syclGeneric::Queue<T_Device>, T_Executor, T_FrameSpec, T_KernelBundle>

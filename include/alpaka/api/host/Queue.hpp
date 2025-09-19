@@ -150,12 +150,12 @@ namespace alpaka::onHost
             }
 
             template<
-                typename T_Mapping,
+                alpaka::concepts::Executor T_Executor,
                 alpaka::concepts::Vector T_NumFrames,
                 alpaka::concepts::Vector T_FrameExtents,
                 alpaka::concepts::Vector T_ThreadExtents>
             void enqueue(
-                T_Mapping const executor,
+                T_Executor const executor,
                 FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents> const& frameSpec,
                 auto const& kernelBundle)
             {
@@ -415,7 +415,7 @@ namespace alpaka::onHost
                 const requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
                                && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
             {
-                auto executors = supportedMappings(getDevice(queue), exec::allExecutors);
+                auto executors = supportedExecutors(getDevice(queue), exec::allExecutors);
                 // avoid that we pass a SharedBuffer and convert non alpaka data views
                 alpaka::concepts::MdSpan<T_Value> auto dataView = makeView(dest);
 

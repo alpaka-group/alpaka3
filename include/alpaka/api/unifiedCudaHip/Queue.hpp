@@ -169,7 +169,7 @@ namespace alpaka::onHost
         template<
             typename T_Api,
             deviceKind::concepts::DeviceKind T_DeviceKind,
-            typename T_Executor,
+            alpaka::concepts::Executor T_Executor,
             typename TKernelBundle,
             typename T_OptimizedThreadSpec,
             typename T_NumFrames,
@@ -197,7 +197,7 @@ namespace alpaka::onHost
         template<
             typename T_Api,
             deviceKind::concepts::DeviceKind T_DeviceKind,
-            typename T_Executor,
+            alpaka::concepts::Executor T_Executor,
             typename TKernelBundle,
             typename T_OptimizedThreadSpec>
         __global__ void gpuKernel(TKernelBundle const kernelBundle, T_OptimizedThreadSpec const optimizedThreadSpec)
@@ -247,7 +247,7 @@ namespace alpaka::onHost
             };
 
             template<
-                typename T_Executor,
+                alpaka::concepts::Executor T_Executor,
                 typename T_Device,
                 typename T_NumBlocks,
                 typename T_NumThreads,
@@ -599,7 +599,7 @@ namespace alpaka::onHost
                 requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
                          && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
             {
-                auto executors = supportedMappings(getDevice(queue), exec::allExecutors);
+                auto executors = supportedExecutors(getDevice(queue), exec::allExecutors);
                 // avoid that we pass a SharedBuffer and convert non alpaka data views
                 auto dataView = makeView(dest);
 
