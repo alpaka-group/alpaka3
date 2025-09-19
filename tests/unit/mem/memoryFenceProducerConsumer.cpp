@@ -227,42 +227,44 @@ struct BlockSharedMemOrderKernel
         // need space for 2 ints
         auto* shared = getDynSharedMem<int>(acc);
 
-        auto [tid] = acc.getIdxWithin(alpaka::onAcc::origin::grid, alpaka::onAcc::unit::threads);
-        // Initialize once by the producer thread with id 0.
-        if(tid == 0u)
+        for(auto [tid] : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, onAcc::range::threadsInGrid))
         {
-            // A
-            shared[0] = 1;
-            // B
-            shared[1] = 2;
-        }
-        syncBlockThreads(acc);
+            // Initialize once by the producer thread with id 0.
+            if(tid == 0u)
+            {
+                // A
+                shared[0] = 1;
+                // B
+                shared[1] = 2;
+            }
+            syncBlockThreads(acc);
 
-        // Producer thread with id 0 updates A then fences then updates B.
-        if(tid == 0u)
-        {
-            // publish new A
-            shared[0] = 10;
-            // ensure visibility of A before B write
+            // Producer thread with id 0 updates A then fences then updates B.
+            if(tid == 0u)
+            {
+                // publish new A
+                shared[0] = 10;
+                // ensure visibility of A before B write
+                memoryFence(acc, memoryScope::block);
+                // publish B
+                shared[1] = 20;
+            }
+
+            // allow consumer threads to observe writes after fence ordering
+            syncBlockThreads(acc);
+
+            // All threads perform the read/validation (any non-producer could be consumer)
+            auto b = shared[1];
+            // acquire side
             memoryFence(acc, memoryScope::block);
-            // publish B
-            shared[1] = 20;
-        }
+            auto a = shared[0];
 
-        // allow consumer threads to observe writes after fence ordering
-        syncBlockThreads(acc);
-
-        // All threads perform the read/validation (any non-producer could be consumer)
-        auto b = shared[1];
-        // acquire side
-        memoryFence(acc, memoryScope::block);
-        auto a = shared[0];
-
-        // Forbidden outcome: observe updated B (20) but stale A (1)
-        if(a == 1 && b == 20)
-        {
-            // mark failure atomically to handle concurrent writes
-            onAcc::atomicExch(acc, &successFlag[0], 0u);
+            // Forbidden outcome: observe updated B (20) but stale A (1)
+            if(a == 1 && b == 20)
+            {
+                // mark failure atomically to handle concurrent writes
+                onAcc::atomicExch(acc, &successFlag[0], 0u);
+            }
         }
     }
 };
@@ -303,8 +305,9 @@ TEMPLATE_LIST_TEST_CASE("memoryFence block shared-memory ordering", "[memoryFenc
         onHost::memcpy(queue, vars_dev, vars_host);
         onHost::wait(queue);
         flag[0u] = 1u;
-        // Device-scope variant
-        queue.enqueue(exec, onHost::FrameSpec{2, 1}, KernelBundle{DeviceFenceTestKernel{}, flag, vars_dev.data()});
+        // Device-scope variant, use thread specification to guarantee that we have two thread blocks
+        // A frame specification is allowed silently to change the number of real thread blocks and the block size
+        queue.enqueue(exec, onHost::ThreadSpec{2, 1}, KernelBundle{DeviceFenceTestKernel{}, flag, vars_dev.data()});
         onHost::wait(queue);
         CHECK(flag[0u] == 1u);
     }
@@ -317,10 +320,10 @@ TEMPLATE_LIST_TEST_CASE("memoryFence block shared-memory ordering", "[memoryFenc
         auto queue1 = device.makeQueue();
 
         flag[0u] = 1u;
-        queue.enqueue(exec, onHost::FrameSpec{1, 1}, KernelBundle{DeviceFenceTestKernelWriter{}, vars_dev.data()});
+        queue.enqueue(exec, onHost::ThreadSpec{1, 1}, KernelBundle{DeviceFenceTestKernelWriter{}, vars_dev.data()});
         queue1.enqueue(
             exec,
-            onHost::FrameSpec{1, 1},
+            onHost::ThreadSpec{1, 1},
             KernelBundle{DeviceFenceTestKernelReader{}, flag, vars_dev.data()});
         onHost::wait(queue);
         onHost::wait(queue1);
