@@ -41,9 +41,11 @@ namespace alpaka::onHost::internal
 
             constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
 
+            [[maybe_unused]] sycl::event ev;
+
             if constexpr(dim == 2u)
             {
-                sycl_queue.ext_oneapi_memset2d(
+                ev = sycl_queue.ext_oneapi_memset2d(
                     destPtr,
                     destPitchBytesWithoutColumn.back(),
                     byteValue,
@@ -53,13 +55,16 @@ namespace alpaka::onHost::internal
             else if constexpr(dim >= 3u)
             {
                 auto const dstExtentWithoutColumn = extentMd.eraseBack();
-                sycl_queue.ext_oneapi_memset2d(
+                ev = sycl_queue.ext_oneapi_memset2d(
                     destPtr,
                     destPitchBytesWithoutColumn.back(),
                     byteValue,
                     extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
                     dstExtentWithoutColumn.product());
             }
+
+            if(queue.isBlocking())
+                ev.wait_and_throw();
         }
     };
 
@@ -83,9 +88,11 @@ namespace alpaka::onHost::internal
 
             constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
 
+            [[maybe_unused]] sycl::event ev;
+
             if constexpr(dim == 2u)
             {
-                sycl_queue.ext_oneapi_memcpy2d(
+                ev = sycl_queue.ext_oneapi_memcpy2d(
                     destPtr,
                     destPitchBytesWithoutColumn.back(),
                     sourcePtr,
@@ -96,7 +103,7 @@ namespace alpaka::onHost::internal
             else if constexpr(dim >= 3u)
             {
                 auto const dstExtentWithoutColumn = extentMd.eraseBack();
-                sycl_queue.ext_oneapi_memcpy2d(
+                ev = sycl_queue.ext_oneapi_memcpy2d(
                     destPtr,
                     destPitchBytesWithoutColumn.back(),
                     sourcePtr,
@@ -104,6 +111,9 @@ namespace alpaka::onHost::internal
                     extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
                     dstExtentWithoutColumn.product());
             }
+
+            if(queue.isBlocking())
+                ev.wait_and_throw();
         }
     };
 
