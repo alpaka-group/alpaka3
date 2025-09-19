@@ -57,17 +57,21 @@ endfunction()
 ## All source file properties set on the original file will be copied to the new file.
 ## The path of the copied file is returned via the OUT_VAR variable.
 function(copy_with_structure SRC_FILE api_name OUT_VAR)
-    get_filename_component(SRC_DIR ${SRC_FILE} DIRECTORY)
+    # get the absolut path to derive in the next command the relative path to CMAKE_CURRENT_LIST_DIR
+    get_filename_component(SRC_FILE_ABSOLUTE "${SRC_FILE}" REALPATH)
+    file(RELATIVE_PATH SRC_FILE_RELATIVE ${CMAKE_CURRENT_LIST_DIR} ${SRC_FILE_ABSOLUTE})
+
+    get_filename_component(SRC_DIR ${SRC_FILE_RELATIVE} DIRECTORY)
     string(REPLACE "${CMAKE_SOURCE_DIR}/" "" REL_PATH "${SRC_DIR}")
 
     get_filename_component(SRC_FILE_NAME ${SRC_FILE} NAME)
 
     # Destination file inside build tree
-    set(DEST_FILE ${CMAKE_BINARY_DIR}/${REL_PATH}/${api_name}/${SRC_FILE_NAME})
+    set(DEST_FILE ${CMAKE_BINARY_DIR}/alpaka_build_files/${api_name}/${PROJECT_NAME}/${REL_PATH}/${SRC_FILE_NAME})
 
     # Ensure directory exists
     get_filename_component(DEST_DIR ${DEST_FILE} DIRECTORY)
-    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/${REL_PATH}/${api_name}/)
+    file(MAKE_DIRECTORY ${DEST_DIR})
 
     # Copy file
     configure_file(${SRC_FILE} ${DEST_FILE} COPYONLY)
