@@ -77,8 +77,8 @@ void executeTest(
     auto computeDev = computeQueue.getDevice();
     using DataType = T_DataType;
     using OutDataType = decltype(functorPair.second(std::declval<DataType>(), std::declval<DataType>()));
-    onHost::SharedBuffer computeBufferOut = onHost::allocAsync<OutDataType>(computeQueue, extentMd);
-    onHost::SharedBuffer computeBufferIn0 = onHost::allocAsync<DataType>(computeQueue, extentMd);
+    onHost::SharedBuffer computeBufferOut = onHost::allocDeferred<OutDataType>(computeQueue, extentMd);
+    onHost::SharedBuffer computeBufferIn0 = onHost::allocDeferred<DataType>(computeQueue, extentMd);
     onHost::SharedBuffer computeBufferIn1 = onHost::allocLikeAsync(computeQueue, computeBufferIn0);
     onHost::SharedBuffer hostBufferIota = onHost::allocLike(onHost::makeHostDevice(), computeBufferIn0);
     onHost::SharedBuffer hostBufferOut = onHost::allocLike(onHost::makeHostDevice(), computeBufferOut);

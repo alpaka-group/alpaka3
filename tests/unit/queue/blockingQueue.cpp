@@ -95,7 +95,7 @@ TEMPLATE_LIST_TEST_CASE("blocking queue memory operations", "[bq][memory]", Test
 // -----------------------------------------------------------------------------
 // Test validates that a blocking-queue guarantees host-visible completion after each
 // enqueue (kernel -> kernel -> memcpy) and produces the final result without calling wait().
-// Also exercises allocAsync under the blocking policy.
+// Also exercises allocDeferred under the blocking policy.
 // -----------------------------------------------------------------------------
 struct WriteValueKernel
 {
@@ -163,9 +163,9 @@ TEMPLATE_LIST_TEST_CASE("blocking queue chained operations", "[bq][chain]", Test
     onHost::memcpy(qBlocking2, hBufBlocking, dBufBlocking);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(hBufBlocking[idx] == 11u); });
 
-    // 2) allocAsync chain on blocking queue: allocate asynchronously, immediately fill then memcpy.
+    // 2) allocDeferred chain on blocking queue: allocate asynchronously, immediately fill then memcpy.
     // should be ready due to blocking policy of the queue
-    auto dBufAsync = onHost::allocAsync<uint32_t>(qBlocking0, extent);
+    auto dBufAsync = onHost::allocDeferred<uint32_t>(qBlocking0, extent);
     qBlocking1.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{kTestFillValue}, dBufAsync});
     auto hBufAsync = onHost::allocHostLike(dBufAsync);
     onHost::memcpy(qBlocking2, hBufAsync, dBufAsync);

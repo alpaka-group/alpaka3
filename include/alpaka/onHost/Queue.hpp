@@ -305,54 +305,60 @@ namespace alpaka::onHost
     /** @} */
 
     /** @{
-     * @name Async Device allocations
+     * @name Deferred device allocations
      */
-    /** allocate memory asynchronously in the given queue
+    /** allocate memory that is accessible after it is processed in the queue
+     *
+     * Deferred allocation means that the pointer in the returned buffer is valid after the function is returning.
+     * It is allowed to slice the buffer or use the encapsulated pointer for address calculations.
+     * In any cases the pointer is not allowed to be dereferenced before the memory allocation is processed in the
+     * queue. All tasks performing any memory access must be executed after the memory allocation is processed in the
+     * queue. This can be archived by waiting on the queue or describing queue dependencies via @c waitFor(). The
+     * memory is allowed to be used in other queues too. To avoid that a view to the memory is still in use during the
+     * deallocation you can use @see addDestructorAction() and wait for a queue if it **differs** to the queue used for
+     * the allocation.
      *
      * @attention It is allowed that the function is blocking the caller until the memory is created.
-     *
-     * The memory is allowed to be used in other queues too.
-     * To avoid that a view to the memory is still in use during the deallocation you can use @see
-     * addDestructorAction() and wait for a queue if it differs to the queue used for the allocation.
      *
      * @tparam T_Type type of the data elements
      * @param queue queue handle
      * @param extents number of elements for each dimension
-     * @return Memory owning view to the allocated memory. You are not allowed to derefence the view to access the
-     * memory before the allocation within the queue is finished. The view will be freed after the last instance to the
+     * @return Shared buffer to the allocated memory. The buffer will be freed after the last instance to the
      * memory is destroyed. The deallocation is asynchronous performed in the the queue which is used for the
      * allocation.
      */
     template<typename T_Type, typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
-    inline auto allocAsync(
+    inline auto allocDeferred(
         Queue<T_Device, T_QueueKind> const& queue,
         alpaka::concepts::VectorOrScalar auto const& extents)
     {
         Vec const extentsVec = extents;
-        return internal::AllocAsync::Op<T_Type, std::decay_t<decltype(*queue.get())>, ALPAKA_TYPEOF(extentsVec)>{}(
+        return internal::AllocDeferred::Op<T_Type, std::decay_t<decltype(*queue.get())>, ALPAKA_TYPEOF(extentsVec)>{}(
             *queue.get(),
             extentsVec);
     }
 
-    /** allocate memory asynchronously in the given queue
+    /** allocate memory that is accessible after it is processed in the queue
+     *
+     * In any cases the pointer is not allowed to be dereferenced before the memory allocation is processed in the
+     * queue. All tasks performing any memory access must be executed after the memory allocation is processed in the
+     * queue. This can be archived by waiting on the queue or describing queue dependencies via @c waitFor(). The
+     * memory is allowed to be used in other queues too. To avoid that a view to the memory is still in use during the
+     * deallocation you can use @see addDestructorAction() and wait for a queue if it **differs** to the queue used for
+     * the allocation.
      *
      * @attention It is allowed that the function is blocking the caller until the memory is created.
      *
-     * The memory is allowed to be used in other queues too.
-     * To avoid that a view to the memory is still in use during the deallocation you can use @see
-     * addDestructorAction() and wait for a queue if it differs to the queue used for the allocation.
-     *
      * @param queue queue handle
      * @param[in] view other memory where the extents will be derived from
-     * @return Memory owning view to the allocated memory. You are not allowed to derefence the view to access the
-     * memory before the allocation within the queue is finished. The view will be freed after the last instance to the
+     * @return Shared buffer to the allocated memory. The buffer will be freed after the last instance to the
      * memory is destroyed. The deallocation is asynchronous performed in the the queue which is used for the
      * allocation.
      */
     template<typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
     inline auto allocLikeAsync(Queue<T_Device, T_QueueKind> const& queue, auto const& view)
     {
-        return allocAsync<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(queue, getExtents(view));
+        return allocDeferred<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(queue, getExtents(view));
     }
 
     /** @} */

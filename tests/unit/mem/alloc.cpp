@@ -48,7 +48,7 @@ void validateAccess(auto device, alpaka::concepts::Executor auto exec, concepts:
     REQUIRE(hostStatus[0] == deviceAccessibleData.getExtents().x());
 }
 
-void allocAsyncImplicitWait(auto device, alpaka::concepts::Executor auto exec)
+void allocDeferredImplicitWait(auto device, alpaka::concepts::Executor auto exec)
 {
     onHost::Queue queue0 = device.makeQueue();
 
@@ -121,7 +121,7 @@ TEMPLATE_LIST_TEST_CASE("alloc", "", TestBackends)
 
     std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
 
-    allocAsyncImplicitWait(device, exec);
+    allocDeferredImplicitWait(device, exec);
 }
 
 using TestDeviceSpecs = std::decay_t<decltype(onHost::getDeviceSpecsFor(onHost::enabledApis))>;
@@ -147,10 +147,10 @@ TEMPLATE_LIST_TEST_CASE("alloc zero bytes", "", TestDeviceSpecs)
     int dataSize = 0;
 
     [[maybe_unused]] auto hostBuffer = onHost::allocHost<int>(dataSize);
-    [[maybe_unused]] auto hostBufferAsync = onHost::allocAsync<int>(onHost::makeHostDevice().makeQueue(), dataSize);
+    [[maybe_unused]] auto hostBufferAsync = onHost::allocDeferred<int>(onHost::makeHostDevice().makeQueue(), dataSize);
     [[maybe_unused]] auto hostBufferMapped = onHost::allocMapped<int>(device, dataSize);
     [[maybe_unused]] auto deviceView = onHost::alloc<int>(device, dataSize);
-    [[maybe_unused]] auto deviceViewAsync = onHost::allocAsync<int>(device.makeQueue(), dataSize);
+    [[maybe_unused]] auto deviceViewAsync = onHost::allocDeferred<int>(device.makeQueue(), dataSize);
     [[maybe_unused]] auto unifiedView = onHost::allocUnified<int>(device, dataSize);
 }
 
@@ -184,13 +184,13 @@ void prepareAlignmentValidation(auto& device, alpaka::concepts::Vector auto exte
 {
     auto hostBuffer = onHost::allocHost<T_DataType>(extents);
     validateAlignment(hostBuffer);
-    auto hostBufferAsync = onHost::allocAsync<T_DataType>(onHost::makeHostDevice().makeQueue(), extents);
+    auto hostBufferAsync = onHost::allocDeferred<T_DataType>(onHost::makeHostDevice().makeQueue(), extents);
     validateAlignment(hostBufferAsync);
     auto hostBufferMapped = onHost::allocMapped<T_DataType>(device, extents);
     validateAlignment(hostBufferMapped);
     auto deviceView = onHost::alloc<T_DataType>(device, extents);
     validateAlignment(deviceView);
-    auto deviceViewAsync = onHost::allocAsync<T_DataType>(device.makeQueue(), extents);
+    auto deviceViewAsync = onHost::allocDeferred<T_DataType>(device.makeQueue(), extents);
     validateAlignment(deviceViewAsync);
     auto unifiedView = onHost::allocUnified<T_DataType>(device, extents);
     validateAlignment(unifiedView);
@@ -224,10 +224,10 @@ void volatileBuffers(auto& device, alpaka::concepts::Vector auto extents)
 {
     // just test if they can be allocated and destructed again
     auto hostBuffer = onHost::allocHost<T_DataType volatile>(extents);
-    auto hostBufferAsync = onHost::allocAsync<T_DataType volatile>(onHost::makeHostDevice().makeQueue(), extents);
+    auto hostBufferAsync = onHost::allocDeferred<T_DataType volatile>(onHost::makeHostDevice().makeQueue(), extents);
     auto hostBufferMapped = onHost::allocMapped<T_DataType volatile>(device, extents);
     auto deviceView = onHost::alloc<T_DataType volatile>(device, extents);
-    auto deviceViewAsync = onHost::allocAsync<T_DataType volatile>(device.makeQueue(), extents);
+    auto deviceViewAsync = onHost::allocDeferred<T_DataType volatile>(device.makeQueue(), extents);
     auto unifiedView = onHost::allocUnified<T_DataType volatile>(device, extents);
 }
 

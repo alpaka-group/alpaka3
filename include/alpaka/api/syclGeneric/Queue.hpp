@@ -112,7 +112,7 @@ namespace alpaka::onHost
         private:
             friend struct alpaka::internal::GetDeviceType;
             friend struct alpaka::onHost::internal::Enqueue;
-            friend struct onHost::internal::AllocAsync;
+            friend struct onHost::internal::AllocDeferred;
 
             auto getDeviceKind() const
             {
@@ -244,13 +244,10 @@ namespace alpaka::onHost
     };
 
     /** The code is a copy of the Alloc::Op with the difference that the memory is allocated and freed
-     * asynchronously
-     *
-     * @todo check if we can reduce the duplication by having a common function for the computation of the extents
-     * and pitches and separate the View creation.
+     * within a queue
      */
     template<typename T_Type, typename T_Device, alpaka::concepts::Vector T_Extents>
-    struct internal::AllocAsync::Op<T_Type, syclGeneric::Queue<T_Device>, T_Extents>
+    struct internal::AllocDeferred::Op<T_Type, syclGeneric::Queue<T_Device>, T_Extents>
     {
         auto operator()(syclGeneric::Queue<T_Device>& queue, T_Extents const& extents) const
         {

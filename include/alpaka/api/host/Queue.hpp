@@ -209,7 +209,7 @@ namespace alpaka::onHost
             friend struct internal::Memcpy;
             friend struct internal::Memset;
             friend struct alpaka::internal::GetApi;
-            friend struct internal::AllocAsync;
+            friend struct internal::AllocDeferred;
         };
     } // namespace cpu
 
@@ -428,13 +428,10 @@ namespace alpaka::onHost
         };
 
         /** The code is a copy of the Alloc::Op with the difference that the memory is allocated and freed
-         * asynchronously
-         *
-         * @todo check if we can reduce the duplication by having a common function for the computation of the extents
-         * and pitches and seperate the View creation.
+         * within a queue
          */
         template<typename T_Type, typename T_Device, alpaka::concepts::Vector T_Extents>
-        struct AllocAsync::Op<T_Type, cpu::Queue<T_Device>, T_Extents>
+        struct AllocDeferred::Op<T_Type, cpu::Queue<T_Device>, T_Extents>
         {
             static consteval uint32_t highestPowerOfTwo(uint32_t value)
             {

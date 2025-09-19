@@ -62,8 +62,8 @@ void executeTest(
     auto computeDev = computeQueue.getDevice();
     using DataType = T_DataType;
     using OutDataType = ALPAKA_TYPEOF(std::get<0>(functorPair));
-    onHost::SharedBuffer computeBufferOut = onHost::allocAsync<OutDataType>(computeQueue, extentMd.all(1));
-    onHost::SharedBuffer computeBufferIn = onHost::allocAsync<DataType>(computeQueue, extentMd);
+    onHost::SharedBuffer computeBufferOut = onHost::allocDeferred<OutDataType>(computeQueue, extentMd.all(1));
+    onHost::SharedBuffer computeBufferIn = onHost::allocDeferred<DataType>(computeQueue, extentMd);
     onHost::SharedBuffer hostBufferIota = onHost::allocHostLike(computeBufferIn);
     onHost::SharedBuffer hostBufferOut = onHost::allocHostLike(computeBufferOut);
 

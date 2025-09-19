@@ -309,6 +309,8 @@ auto main() -> int
             // allocate memory can be accessed from host and device (unified memory),
             // the real location depends on the native backend e.g. CUDA, OneApi, ...
             concepts::View auto devUnifiedBuffer = onHost::allocUnified<DataType>(device, extentMd);
+            // allocate memory that is accessible after it is processed in the queue
+            concepts::View auto devDeferredBuffer = onHost::allocDeferred<DataType>(queue, extentMd);
             // allocate memory accessible from host
             concepts::View auto hostBuffer = onHost::allocHost<DataType>(extentMd);
             // Data will not be automatically freed, user must take care that
@@ -316,7 +318,7 @@ auto main() -> int
             concepts::View auto devNonOwningView = devBuffer.getView();
             // END-CHEATSHEET-allocBuffer
 
-            unused(devMappedBuffer, devUnifiedBuffer, devNonOwningView);
+            unused(devMappedBuffer, devUnifiedBuffer, devNonOwningView, devDeferredBuffer);
 
             auto dstBuffer = devBuffer;
             auto srcBuffer = devMappedBuffer;

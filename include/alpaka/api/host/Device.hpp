@@ -143,7 +143,7 @@ namespace alpaka::onHost
             friend struct alpaka::internal::GetApi;
             friend struct internal::GetDeviceProperties;
             friend struct internal::AdjustThreadSpec;
-            friend struct internal::AllocAsync;
+            friend struct internal::AllocDeferred;
             friend struct internal::AllocUnified;
             friend struct internal::AllocMapped;
         };

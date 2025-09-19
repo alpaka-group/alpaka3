@@ -286,7 +286,7 @@ namespace alpaka::onHost
             };
         };
 
-        struct AllocAsync
+        struct AllocDeferred
         {
             template<typename T_Type, typename T_Any, typename T_Extents>
             struct Op

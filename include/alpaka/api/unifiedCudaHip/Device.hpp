@@ -141,7 +141,7 @@ namespace alpaka::onHost
             }
 
             friend struct onHost::internal::Alloc;
-            friend struct onHost::internal::AllocAsync;
+            friend struct onHost::internal::AllocDeferred;
             friend struct onHost::internal::AllocUnified;
             friend struct onHost::internal::AllocMapped;
             friend struct alpaka::internal::GetApi;
