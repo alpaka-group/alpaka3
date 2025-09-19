@@ -33,6 +33,12 @@ namespace alpaka::onHost
             static constexpr auto kind = T_ApiInterface::memcpyDeviceToDevice;
         };
 
+        template<typename T_ApiInterface>
+        struct MemcpyKind<T_ApiInterface, api::Host, api::Host>
+        {
+            static constexpr auto kind = T_ApiInterface::memcpyHostToHost;
+        };
+
         template<typename T_ApiInterface, alpaka::concepts::UnifiedCudaHipApi T_Dest>
         struct MemcpyKind<T_ApiInterface, T_Dest, api::Host>
         {

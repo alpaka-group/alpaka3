@@ -64,6 +64,7 @@ namespace alpaka
         static constexpr MemcpyKind_t memcpyDeviceToDevice = ::cudaMemcpyDeviceToDevice;
         static constexpr MemcpyKind_t memcpyDeviceToHost = ::cudaMemcpyDeviceToHost;
         static constexpr MemcpyKind_t memcpyHostToDevice = ::cudaMemcpyHostToDevice;
+        static constexpr MemcpyKind_t memcpyHostToHost = ::cudaMemcpyHostToHost;
 
         static constexpr Flag_t streamDefault = cudaStreamDefault;
         static constexpr Flag_t streamNonBlocking = cudaStreamNonBlocking;

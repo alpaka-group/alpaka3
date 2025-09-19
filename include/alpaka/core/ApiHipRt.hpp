@@ -66,6 +66,7 @@ namespace alpaka
         static constexpr MemcpyKind_t memcpyDeviceToDevice = ::hipMemcpyDeviceToDevice;
         static constexpr MemcpyKind_t memcpyDeviceToHost = ::hipMemcpyDeviceToHost;
         static constexpr MemcpyKind_t memcpyHostToDevice = ::hipMemcpyHostToDevice;
+        static constexpr MemcpyKind_t memcpyHostToHost = ::hipMemcpyHostToHost;
 
         static constexpr Flag_t streamDefault = hipStreamDefault;
         static constexpr Flag_t streamNonBlocking = hipStreamNonBlocking;
