@@ -100,11 +100,13 @@ alpaka_compiler_option(FTZ "Set flush to zero" DEFAULT)
 
 alpaka_compiler_option(RELOCATABLE_DEVICE_CODE "Enable relocatable device code for CUDA, HIP and SYCL devices" DEFAULT)
 
-set(alpaka_GCC_CONCEPT_DEPTH
-    5
-    CACHE STRING
-    "Setup for GCC: How many nested concepts are displayed in the event of an error?"
-)
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+    set(alpaka_GCC_CONCEPT_DEPTH
+        5
+        CACHE STRING
+        "Setup for GCC: How many nested concepts are displayed in the event of an error?"
+    )
+endif()
 
 if(NOT TARGET alpaka)
     add_library(alpaka INTERFACE)
@@ -130,7 +132,7 @@ endif()
 
 ## GCC compiler
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-    alpaka_set_compiler_options(HOST target alpaka "-fconcepts-diagnostics-depth=${alpaka_GCC_CONCEPT_DEPTH}")
+    alpaka_set_compiler_options(HOST target alpaka_target_headers "-fconcepts-diagnostics-depth=${alpaka_GCC_CONCEPT_DEPTH}")
 endif()
 
 ## OpenMP
