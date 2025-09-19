@@ -6,6 +6,7 @@
 #pragma once
 
 #include <alpaka/alpaka.hpp>
+#include <alpaka/tensor/SyncDebug.hpp>
 #include <alpaka/tensor/TensorCore.hpp>
 #include <alpaka/tensor/ops/ElementwiseGeneric.hpp>
 
@@ -70,7 +71,7 @@ namespace alpaka::tensor::ops
         constexpr void operator()(auto const&, auto const input, auto output) const
         {
             using SimdType = ALPAKA_TYPEOF(input.load());
-            using ValueType = trait::GetValueType_t<SimdType>;
+            using ValueType = alpaka::trait::GetValueType_t<SimdType>;
             output = alpaka::math::max(input.load(), SimdType::all(ValueType{0}));
         }
     };
@@ -86,13 +87,16 @@ namespace alpaka::tensor::ops
         // Fast path for 4D tensors (keep existing debug output & indexing)
         if constexpr(TensorIn::rank == 4 && TensorOut::rank == 4)
         {
-            std::cout << "ReLU: 4D fast path" << std::endl;
+            bool const verbose = std::getenv("ALPAKA_OPS_VERBOSE") != nullptr;
+            if(verbose)
+                std::cout << "ReLU: 4D fast path" << std::endl;
             auto n = input.size();
             if(n == 0)
                 return;
             auto extents = input.deviceBuffer(device, queue).getExtents();
-            std::cout << "ReLU: Tensor extents = [" << extents[0] << ", " << extents[1] << ", " << extents[2] << ", "
-                      << extents[3] << "]" << std::endl;
+            if(verbose)
+                std::cout << "ReLU: Tensor extents = [" << extents[0] << ", " << extents[1] << ", " << extents[2]
+                          << ", " << extents[3] << "]" << std::endl;
             input.ensureOnDevice(device, queue);
             output.ensureOnDevice(device, queue);
             auto frameExtent = alpaka::Vec{std::size_t{1}, std::size_t{1}, std::size_t{1}, extents[3]};
@@ -104,16 +108,22 @@ namespace alpaka::tensor::ops
                 ReLUKernel{},
                 input.deviceBuffer(device, queue),
                 output.deviceBuffer(device, queue));
-            ::alpaka::onHost::wait(queue);
+            // Removed unconditional wait (can be re-enabled with ALPAKA_DEBUG_SYNC)
+            // ::alpaka::onHost::wait(queue);
             output.markDeviceModified(device, queue);
-            output.toHost(device, queue);
+            if(detail::eagerHostEnabled())
+                output.toHost(device, queue);
             if constexpr(std::is_same_v<Exec, alpaka::exec::CpuOmpBlocks>)
-                ::alpaka::onHost::wait(queue);
+            {
+                // omit extra wait; host copy already synchronizes
+            }
         }
         else
         {
+            bool const verbose = std::getenv("ALPAKA_OPS_VERBOSE") != nullptr;
             // Fallback: use generic unary kernel (works for 1D, 2D, etc.)
-            std::cout << "ReLU: generic fallback path (rank=" << TensorIn::rank << ")" << std::endl;
+            if(verbose)
+                std::cout << "ReLU: generic fallback path (rank=" << TensorIn::rank << ")" << std::endl;
             input.ensureOnDevice(device, queue);
             output.ensureOnDevice(device, queue);
             auto n = input.size();
@@ -134,9 +144,10 @@ namespace alpaka::tensor::ops
                 input.deviceBuffer(device, queue),
                 output.deviceBuffer(device, queue),
                 n);
-            ::alpaka::onHost::wait(queue);
+            // Removed unconditional wait (can be re-enabled with ALPAKA_DEBUG_SYNC)
             output.markDeviceModified(device, queue);
-            output.toHost(device, queue);
+            if(detail::eagerHostEnabled())
+                output.toHost(device, queue);
         }
     }
 

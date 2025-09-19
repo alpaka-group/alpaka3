@@ -12,6 +12,7 @@ set(_alpaka_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
 
 include(${_alpaka_ROOT_DIR}/cmake/buildDependencies.cmake)
 include(${_alpaka_ROOT_DIR}/cmake/finalize.cmake)
+include(${_alpaka_ROOT_DIR}/cmake/CudaSupport.cmake)
 
 # Add append compiler flags to a variable or target
 #

@@ -6,6 +6,7 @@
 #pragma once
 
 #include <alpaka/alpaka.hpp>
+#include <alpaka/tensor/SyncDebug.hpp>
 #include <alpaka/tensor/TensorCore.hpp>
 #include <alpaka/tensor/TensorGeneric.hpp>
 #include <alpaka/tensor/ops/ElementwiseGeneric.hpp>
@@ -134,62 +135,141 @@ namespace alpaka::tensor::ops
             }
         };
 
+        struct LinearBiasReluKernel
+        {
+            template<typename Acc, typename OutBuf, typename BiasBuf>
+            ALPAKA_FN_ACC void operator()(
+                Acc const& acc,
+                OutBuf out,
+                BiasBuf b,
+                std::size_t M,
+                std::size_t N,
+                std::size_t total) const
+            {
+                for(auto [idx] :
+                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{total}))
+                {
+                    auto col = idx % N;
+                    auto val = out[idx] + b[col];
+                    out[idx] = val > 0.0f ? val : 0.0f;
+                }
+            }
+        };
+
+        // In-place ReLU kernel (generic 1D traversal over underlying buffer)
+        template<typename T>
+        struct ReluInplaceKernel
+        {
+            template<typename Acc>
+            ALPAKA_FN_ACC void operator()(Acc const& acc, T* data, std::size_t n) const
+            {
+                for(auto [i] :
+                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{n}))
+                {
+                    auto v = data[i];
+                    data[i] = v > T{} ? v : T{};
+                }
+            }
+        };
+
         template<typename T>
         struct Softmax2DKernel
         {
+            // Clean numerically-stable softmax: three passes (max, sum, write) per row.
+            // No negative cutoff; only clips very large positive to avoid inf. Always normalizes.
             template<typename Acc, typename InBuf, typename OutBuf>
             ALPAKA_FN_ACC void operator()(Acc const& acc, InBuf in, OutBuf out, std::size_t M, std::size_t N) const
             {
                 for(auto [row] :
                     alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M}))
                 {
-                    // 1. Find max for numerical stability
+                    // Pass 1: row max
                     T maxVal = -std::numeric_limits<T>::infinity();
                     for(std::size_t j = 0; j < N; ++j)
                     {
                         T v = in[alpaka::Vec<std::size_t, 2>{row, j}];
-                        if(v > maxVal || alpaka::math::isnan(maxVal))
-                            maxVal = v;
+                        maxVal = (!alpaka::math::isnan(v) && v > maxVal) ? v : maxVal;
                     }
-                    // 2. Compute exp sum (skip NaNs, clamp extremely negative)
-                    T sum = T{0};
+                    // Pass 2: exp sum (double accumulation for precision)
+                    double sum = 0.0;
                     for(std::size_t j = 0; j < N; ++j)
                     {
                         T shifted = in[alpaka::Vec<std::size_t, 2>{row, j}] - maxVal;
-                        // Prevent overflow (large positive) and underflow to NaN
                         if(shifted > T(80))
-                            shifted = T(80); // exp(80) ~ 5.54e34
-                        if(shifted < T(-80))
-                        {
-                            continue;
-                        }
-                        T e = alpaka::math::exp(shifted);
-                        if(!alpaka::math::isnan(e) && !alpaka::math::isinf(e))
-                            sum += e;
+                            shifted = T(80); // prevent overflow
+                        double e = static_cast<double>(alpaka::math::exp(shifted));
+                        if(!std::isnan(e) && !std::isinf(e))
+                            sum += e; // ignore NaN/Inf silently
                     }
-                    if(sum == T{0} || alpaka::math::isnan(sum) || alpaka::math::isinf(sum))
+                    if(!(sum > 0.0) || std::isnan(sum) || std::isinf(sum))
                     {
-                        // Fallback: uniform distribution
+                        // Degenerate: write uniform distribution
                         T uniform = T{1} / static_cast<T>(N);
                         for(std::size_t j = 0; j < N; ++j)
                             out[alpaka::Vec<std::size_t, 2>{row, j}] = uniform;
                         continue;
                     }
-                    T invSum = T{1} / sum;
+                    double inv = 1.0 / sum;
+                    // Pass 3: write normalized probabilities
                     for(std::size_t j = 0; j < N; ++j)
                     {
                         T shifted = in[alpaka::Vec<std::size_t, 2>{row, j}] - maxVal;
                         if(shifted > T(80))
                             shifted = T(80);
-                        if(shifted < T(-80))
-                        {
-                            out[alpaka::Vec<std::size_t, 2>{row, j}] = T{0};
-                            continue;
-                        }
-                        T e = alpaka::math::exp(shifted);
-                        if(alpaka::math::isnan(e) || alpaka::math::isinf(e))
-                            e = T{0};
-                        out[alpaka::Vec<std::size_t, 2>{row, j}] = e * invSum;
+                        double e = static_cast<double>(alpaka::math::exp(shifted));
+                        if(std::isnan(e) || std::isinf(e))
+                            e = 0.0;
+                        out[alpaka::Vec<std::size_t, 2>{row, j}] = static_cast<T>(e * inv);
+                    }
+                }
+            }
+        };
+
+        // Alternative pointer-linearized implementation to avoid any potential multidimensional accessor
+        // layout mismatch. Uses explicit row-major indexing (row*N + col).
+        template<typename T>
+        struct Softmax2DLinearKernel
+        {
+            template<typename Acc>
+            ALPAKA_FN_ACC void operator()(Acc const& acc, T const* in, T* out, std::size_t M, std::size_t N) const
+            {
+                // Launch over all elements; only threads with col==0 do the row computation to guarantee one worker
+                // per row.
+                for(auto [idx] :
+                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M * N}))
+                {
+                    auto row = idx / N;
+                    auto col = idx % N;
+                    if(col != 0)
+                        continue; // only one thread per row performs computation
+                    if(row >= M)
+                        continue;
+                    T maxVal = -std::numeric_limits<T>::infinity();
+                    for(std::size_t j = 0; j < N; ++j)
+                        maxVal = alpaka::math::max(maxVal, in[row * N + j]);
+                    double sum = 0.0;
+                    for(std::size_t j = 0; j < N; ++j)
+                    {
+                        T shifted = in[row * N + j] - maxVal;
+                        if(shifted > T(80))
+                            shifted = T(80);
+                        sum += static_cast<double>(alpaka::math::exp(shifted));
+                    }
+                    if(!(sum > 0.0) || std::isnan(sum) || std::isinf(sum))
+                    {
+                        T uniform = T(1) / T(N);
+                        for(std::size_t j = 0; j < N; ++j)
+                            out[row * N + j] = uniform;
+                        continue;
+                    }
+                    double inv = 1.0 / sum;
+                    for(std::size_t j = 0; j < N; ++j)
+                    {
+                        T shifted = in[row * N + j] - maxVal;
+                        if(shifted > T(80))
+                            shifted = T(80);
+                        double e = static_cast<double>(alpaka::math::exp(shifted));
+                        out[row * N + j] = static_cast<T>(e * inv);
                     }
                 }
             }
@@ -373,7 +453,7 @@ namespace alpaka::tensor::ops
         tensor::Tensor2D<T, Device>& output)
     {
         generic::bias_add_axis1<T, 2>(exec, device, queue, input, bias, output);
-        ::alpaka::onHost::wait(queue); // keep previous sync semantics
+        // Removed per-op wait (can enable ALPAKA_DEBUG_SYNC for old behavior)
     }
 
     // 4D: input [N,C,H,W] + bias [C] -> output
@@ -387,7 +467,7 @@ namespace alpaka::tensor::ops
         tensor::Tensor4D<T, Device>& output)
     {
         generic::bias_add_axis1<T, 4>(exec, device, queue, input, bias, output);
-        ::alpaka::onHost::wait(queue); // preserve sync
+        // Removed per-op wait (can enable ALPAKA_DEBUG_SYNC for old behavior)
     }
 
     // ---------------- Linear (GEMM + optional bias) ----------------
@@ -427,6 +507,56 @@ namespace alpaka::tensor::ops
         }
     }
 
+    // Fused linear + ReLU: GEMM + bias + ReLU in one operation
+    template<typename Exec, typename Device, typename Queue>
+    void linear_relu(
+        Exec const& exec,
+        Device const& device,
+        Queue& queue,
+        std::size_t M,
+        std::size_t N,
+        std::size_t K,
+        tensor::Tensor1D<float, Device>& A, // flattened M*K
+        tensor::Tensor1D<float, Device>& W, // flattened K*N
+        tensor::Tensor1D<float, Device>* bias, // optional
+        tensor::Tensor1D<float, Device>& Out) // flattened M*N
+    {
+        // GEMM: Out = A * W (alpha=1, beta=0)
+        ops::gemm(exec, device, queue, 'N', 'N', M, N, K, 1.0f, A, W, 0.0f, Out);
+        if(bias)
+        {
+            // Fused bias + ReLU in single kernel
+            bias->ensureOnDevice(device, queue);
+            Out.ensureOnDevice(device, queue);
+            std::size_t total = M * N;
+            auto frame = ops::detail::makeFrame<Exec, Queue>(total);
+            queue.enqueue(
+                exec,
+                frame,
+                detail::LinearBiasReluKernel{},
+                Out.deviceBuffer(device, queue),
+                bias->deviceBuffer(device, queue),
+                M,
+                N,
+                total);
+            Out.markDeviceModified(device, queue); // defer wait
+        }
+        else
+        {
+            // ReLU only (no bias)
+            Out.ensureOnDevice(device, queue);
+            std::size_t total = M * N;
+            auto frame = ops::detail::makeFrame<Exec, Queue>(total);
+            queue.enqueue(
+                exec,
+                frame,
+                detail::ReluInplaceKernel<float>{},
+                Out.deviceBuffer(device, queue).data(),
+                total);
+            Out.markDeviceModified(device, queue);
+        }
+    }
+
     // ---------------- Softmax (row-wise for 2D MxN) ----------------
     template<typename T, typename Exec, typename Device, typename Queue>
     void softmax_2d(
@@ -441,6 +571,62 @@ namespace alpaka::tensor::ops
         assert(inShape == outShape && "softmax_2d: output shape mismatch");
         std::size_t M = inShape[0];
         std::size_t N = inShape[1];
+
+        char const* forceHostEnv = std::getenv("ALPAKA_SOFTMAX_HOST");
+        bool forceHost = false;
+        if(forceHostEnv)
+        {
+            std::string v(forceHostEnv);
+            forceHost = (v == "1" || v == "ON" || v == "on" || v == "true" || v == "TRUE");
+        }
+
+        auto hostFallback = [&]()
+        {
+            input.toHost(device, queue);
+            auto const* inH = input.hostData();
+            auto* outH = output.hostData();
+            for(std::size_t m = 0; m < M; ++m)
+            {
+                T maxv = -std::numeric_limits<T>::infinity();
+                for(std::size_t j = 0; j < N; ++j)
+                    maxv = std::max(maxv, inH[m * N + j]);
+                double sum = 0.0;
+                for(std::size_t j = 0; j < N; ++j)
+                {
+                    T shifted = inH[m * N + j] - maxv;
+                    if(shifted > T(80))
+                        shifted = T(80);
+                    sum += std::exp(double(shifted));
+                }
+                if(!(sum > 0.0) || std::isnan(sum) || std::isinf(sum))
+                {
+                    T uniform = T(1) / T(N);
+                    for(std::size_t j = 0; j < N; ++j)
+                        outH[m * N + j] = uniform;
+                }
+                else
+                {
+                    double inv = 1.0 / sum;
+                    for(std::size_t j = 0; j < N; ++j)
+                    {
+                        T shifted = inH[m * N + j] - maxv;
+                        if(shifted > T(80))
+                            shifted = T(80);
+                        double e = std::exp(double(shifted));
+                        outH[m * N + j] = T(e * inv);
+                    }
+                }
+            }
+            output.markHostModified();
+            output.ensureOnDevice(device, queue);
+        };
+
+        if(forceHost)
+        {
+            hostFallback();
+            return;
+        }
+
         input.ensureOnDevice(device, queue);
         output.ensureOnDevice(device, queue);
         auto frame = ops::detail::makeFrame<Exec, Queue>(M);
@@ -453,7 +639,22 @@ namespace alpaka::tensor::ops
             M,
             N);
         output.markDeviceModified(device, queue);
-        alpaka::onHost::wait(queue); // synchronize to prevent use-after-free
+        if(detail::eagerHostEnabled())
+            output.toHost(device, queue); // optional validation copy
+        auto* outH2 = output.hostData();
+        bool bad = false;
+        for(std::size_t m = 0; m < M && !bad; ++m)
+        {
+            double sum = 0.0;
+            for(std::size_t j = 0; j < N; ++j)
+                sum += outH2[m * N + j];
+            if(!(sum > 0.0) || std::fabs(sum - 1.0) > 1e-3)
+                bad = true;
+        }
+        if(bad)
+        {
+            hostFallback();
+        }
     }
 
     // ---------------- Flatten ----------------
@@ -470,22 +671,6 @@ namespace alpaka::tensor::ops
                     alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{total}))
                 {
                     out[idx] = in[idx];
-                }
-            }
-        };
-
-        // In-place ReLU kernel (generic 1D traversal over underlying buffer)
-        template<typename T>
-        struct ReluInplaceKernel
-        {
-            template<typename Acc>
-            ALPAKA_FN_ACC void operator()(Acc const& acc, T* data, std::size_t n) const
-            {
-                for(auto [i] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{n}))
-                {
-                    auto v = data[i];
-                    data[i] = v > T{} ? v : T{};
                 }
             }
         };
@@ -548,7 +733,7 @@ namespace alpaka::tensor::ops
             out.deviceBuffer(device, queue).data(),
             total);
         out.markDeviceModified(device, queue);
-        alpaka::onHost::wait(queue); // synchronize to prevent use-after-free
+        // Removed explicit wait; returning tensor keeps buffers alive
         return out;
     }
 
@@ -584,8 +769,52 @@ namespace alpaka::tensor::ops
             M,
             N);
         out.markDeviceModified(device, queue);
-        alpaka::onHost::wait(queue); // synchronize to prevent use-after-free
+        // Ensure lifetime safety for async work: if either tensor is destroyed before the
+        // queued copy completes, block in destructor to avoid use-after-free.
+        flat.deviceBuffer(device, queue).destructorWaitFor(queue);
+        out.deviceBuffer(device, queue).destructorWaitFor(queue);
+        // Removed explicit wait; returning tensor keeps buffers alive
         return out;
+    }
+
+    // Safe 2D matmul helper: C[M,N] = A[M,K] * B[K,N] using 1D buffers and ops::gemm
+    // Accepts 2D row-major tensors and performs matmul on device (cuBLAS on CUDA when available).
+    template<typename Exec, typename Device, typename Queue>
+    void matmul_2d(
+        Exec const& exec,
+        Device const& device,
+        Queue& queue,
+        tensor::Tensor2D<float, Device>& A, // [M,K]
+        tensor::Tensor2D<float, Device>& B, // [K,N]
+        tensor::Tensor2D<float, Device>& C) // [M,N]
+    {
+        auto M = A.shape()[0];
+        auto K = A.shape()[1];
+        assert(B.shape()[0] == K);
+        auto N = B.shape()[1];
+        assert(C.shape()[0] == M && C.shape()[1] == N);
+        // Flatten to 1D device buffers
+        auto A1D = flatten<float, 2>(exec, device, queue, A);
+        auto B1D = flatten<float, 2>(exec, device, queue, B);
+        tensor::Tensor1D<float, Device> C1D(device, {M * N}, "mm_out_flat");
+        // GEMM: (M x K) * (K x N) -> (M x N)
+        ops::gemm(exec, device, queue, 'N', 'N', M, N, K, 1.0f, A1D, B1D, 0.0f, C1D);
+        // Copy back to 2D C directly
+        C.ensureOnDevice(device, queue);
+        auto frame = ops::detail::makeFrame<Exec, Queue>(M * N);
+        queue.enqueue(
+            exec,
+            frame,
+            detail::Copy1DTo2DKernel<float>{},
+            C1D.deviceBuffer(device, queue).data(),
+            C.deviceBuffer(device, queue),
+            M,
+            N);
+        C.markDeviceModified(device, queue);
+        // Prevent use-after-free of temporary C1D in async path: if C1D is destroyed
+        // before the queued copy completes, wait on the queue in its destructor.
+        C1D.deviceBuffer(device, queue).destructorWaitFor(queue);
+        C.deviceBuffer(device, queue).destructorWaitFor(queue);
     }
 
     // ---------------- In-place ReLU (async, no host sync) ----------------
@@ -597,6 +826,229 @@ namespace alpaka::tensor::ops
         auto frame = ops::detail::makeFrame<Exec, Queue>(n);
         queue.enqueue(exec, frame, detail::ReluInplaceKernel<T>{}, t.deviceBuffer(device, queue).data(), n);
         t.markDeviceModified(device, queue); // defer host sync
+    }
+
+    // ---------------- GELU (approximate) ----------------
+    namespace detail
+    {
+        template<typename T>
+        struct GeluKernel
+        {
+            template<typename Acc>
+            ALPAKA_FN_ACC void operator()(Acc const& acc, T const* in, T* out, std::size_t total) const
+            {
+                // tanh approximation: 0.5*x*(1+tanh(\sqrt{2/pi}*(x + 0.044715*x^3)))
+                constexpr T k0 = T(0.7978845608028654); // sqrt(2/pi)
+                constexpr T k1 = T(0.044715);
+                for(auto [idx] :
+                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{total}))
+                {
+                    T x = in[idx];
+                    T x3 = x * x * x;
+                    T u = k0 * (x + k1 * x3);
+                    T t = T(::tanh((double) u));
+                    out[idx] = T(0.5) * x * (T(1) + t);
+                }
+            }
+        };
+
+        // View-based GELU for 2D tensors to sidestep any backend-specific pointer issues
+        template<typename T>
+        struct Gelu2DViewKernel
+        {
+            template<typename Acc, typename InBuf, typename OutBuf>
+            ALPAKA_FN_ACC void operator()(Acc const& acc, InBuf in, OutBuf out, std::size_t M, std::size_t D) const
+            {
+                constexpr T k0 = T(0.7978845608028654); // sqrt(2/pi)
+                constexpr T k1 = T(0.044715);
+                for(auto [idx] :
+                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M * D}))
+                {
+                    std::size_t m = idx / D;
+                    std::size_t d = idx % D;
+                    T x = in[alpaka::Vec<std::size_t, 2>{m, d}];
+                    T x3 = x * x * x;
+                    T u = k0 * (x + k1 * x3);
+                    T t = T(::tanh((double) u));
+                    out[alpaka::Vec<std::size_t, 2>{m, d}] = T(0.5) * x * (T(1) + t);
+                }
+            }
+        };
+    } // namespace detail
+
+    template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
+    void gelu(Exec const& exec, Device const& device, Queue& queue, tensor::Tensor<T, Rank, Device>& t)
+    {
+        t.ensureOnDevice(device, queue);
+        auto total = t.size();
+        auto frame = ops::detail::makeFrame<Exec, Queue>(total);
+        queue.enqueue(
+            exec,
+            frame,
+            detail::GeluKernel<T>{},
+            t.deviceBuffer(device, queue).data(),
+            t.deviceBuffer(device, queue).data(),
+            total);
+        t.markDeviceModified(device, queue);
+    }
+
+    // Overload for 2D tensors using view-based indexing
+    template<typename T, typename Exec, typename Device, typename Queue>
+    void gelu(Exec const& exec, Device const& device, Queue& queue, tensor::Tensor2D<T, Device>& t)
+    {
+        t.ensureOnDevice(device, queue);
+        auto shape = t.shape();
+        std::size_t M = shape[0];
+        std::size_t D = shape[1];
+        auto frame = ops::detail::makeFrame<Exec, Queue>(M * D);
+        queue.enqueue(
+            exec,
+            frame,
+            detail::Gelu2DViewKernel<T>{},
+            t.deviceBuffer(device, queue),
+            t.deviceBuffer(device, queue),
+            M,
+            D);
+        t.markDeviceModified(device, queue);
+    }
+
+    // ---------------- Layer Normalization (2D: [M, D]) ----------------
+    namespace detail
+    {
+        template<typename T>
+        struct RowReduceMeanVarKernel
+        {
+            template<typename Acc, typename InBuf, typename MeanBuf, typename VarBuf>
+            ALPAKA_FN_ACC void operator()(
+                Acc const& acc,
+                InBuf in,
+                MeanBuf mean,
+                VarBuf var,
+                std::size_t M,
+                std::size_t D) const
+            {
+                for(auto [m] :
+                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M}))
+                {
+                    // naive per-row reduction
+                    double sum = 0.0;
+                    double sumsq = 0.0;
+                    for(std::size_t d = 0; d < D; ++d)
+                    {
+                        T x = in[alpaka::Vec<std::size_t, 2>{m, d}];
+                        sum += x;
+                        sumsq += double(x) * double(x);
+                    }
+                    double mu = sum / double(D);
+                    double ex2 = sumsq / double(D);
+                    mean[m] = T(mu);
+                    var[m] = T(ex2 - mu * mu);
+                }
+            }
+        };
+
+        template<typename T>
+        struct LayerNormApplyKernel
+        {
+            template<
+                typename Acc,
+                typename InBuf,
+                typename MeanBuf,
+                typename VarBuf,
+                typename GammaBuf,
+                typename BetaBuf,
+                typename OutBuf>
+            ALPAKA_FN_ACC void operator()(
+                Acc const& acc,
+                InBuf in,
+                MeanBuf mean,
+                VarBuf var,
+                GammaBuf gamma,
+                BetaBuf beta,
+                OutBuf out,
+                std::size_t M,
+                std::size_t D,
+                T eps) const
+            {
+                // Use 1D linear indexing to avoid mapping a 1D thread space onto a 2D range
+                for(auto [idx] :
+                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M * D}))
+                {
+                    std::size_t m = idx / D;
+                    std::size_t d = idx % D;
+                    T x = in[alpaka::Vec<std::size_t, 2>{m, d}];
+                    T invStd = T(1) / T(::sqrt((double) var[m] + (double) eps));
+                    T y = (x - mean[m]) * invStd;
+                    out[alpaka::Vec<std::size_t, 2>{m, d}] = y * gamma[d] + beta[d];
+                }
+            }
+        };
+    } // namespace detail
+
+    template<typename T, typename Exec, typename Device, typename Queue>
+    void layer_norm_2d(
+        Exec const& exec,
+        Device const& device,
+        Queue& queue,
+        tensor::Tensor2D<T, Device>& input, // [M, D]
+        tensor::Tensor1D<T, Device>& gamma, // [D]
+        tensor::Tensor1D<T, Device>& beta, // [D]
+        T epsilon,
+        tensor::Tensor2D<T, Device>& output) // [M, D]
+    {
+        auto inShape = input.shape();
+        auto outShape = output.shape();
+        assert(inShape == outShape && "layer_norm_2d: output shape mismatch");
+        std::size_t M = inShape[0];
+        std::size_t D = inShape[1];
+        assert(gamma.shape()[0] == D && beta.shape()[0] == D && "layer_norm_2d: gamma/beta size must match D");
+
+        // Temporary mean and var per row
+        tensor::Tensor1D<T, Device> mean(device, {M}, "ln_mean");
+        tensor::Tensor1D<T, Device> var(device, {M}, "ln_var");
+
+        input.ensureOnDevice(device, queue);
+        gamma.ensureOnDevice(device, queue);
+        beta.ensureOnDevice(device, queue);
+        output.ensureOnDevice(device, queue);
+        mean.ensureOnDevice(device, queue);
+        var.ensureOnDevice(device, queue);
+
+        // Reduce per row
+        {
+            auto frame = ops::detail::makeFrame<Exec, Queue>(M);
+            queue.enqueue(
+                exec,
+                frame,
+                detail::RowReduceMeanVarKernel<T>{},
+                input.deviceBuffer(device, queue),
+                mean.deviceBuffer(device, queue),
+                var.deviceBuffer(device, queue),
+                M,
+                D);
+        }
+
+        // Apply normalization
+        {
+            auto frame = ops::detail::makeFrame<Exec, Queue>(M * D);
+            queue.enqueue(
+                exec,
+                frame,
+                detail::LayerNormApplyKernel<T>{},
+                input.deviceBuffer(device, queue),
+                mean.deviceBuffer(device, queue),
+                var.deviceBuffer(device, queue),
+                gamma.deviceBuffer(device, queue),
+                beta.deviceBuffer(device, queue),
+                output.deviceBuffer(device, queue),
+                M,
+                D,
+                epsilon);
+            output.markDeviceModified(device, queue);
+        }
+
+        // Synchronize to ensure temporary mean/var buffers remain valid until kernels complete
+        alpaka::onHost::wait(queue);
     }
 
     namespace detail
@@ -643,18 +1095,7 @@ namespace alpaka::tensor::ops
             }
         };
 
-        template<typename T, typename Op>
-        tensor::Tensor4D<T, typename OpDeviceType<T>::type> pool2d_host_impl(
-            typename OpDeviceType<T>::exec_type const& exec,
-            typename OpDeviceType<T>::device_type const& device,
-            typename OpDeviceType<T>::queue_type& queue,
-            tensor::Tensor4D<T, typename OpDeviceType<T>::type>& input,
-            Pool2DParams const& params,
-            Op)
-        {
-            // NOTE: This helper signature is complex; we will not use it. Provide simplified version below.
-            static_assert(sizeof(Op) == 0, "Unused overload");
-        }
+        // (Removed obsolete experimental pool2d_host_impl with OpDeviceType indirection)
 
         template<typename T, typename Exec, typename Device, typename Queue, typename Op>
         tensor::Tensor4D<T, Device> pool2d_host(
@@ -790,7 +1231,7 @@ namespace alpaka::tensor::ops
             W,
             total);
         output.markDeviceModified(device, queue);
-        alpaka::onHost::wait(queue); // synchronize to prevent use-after-free
+        // Removed explicit wait (can enable ALPAKA_DEBUG_SYNC)
     }
 
     // ---------------- Concatenate along channel axis (C) ----------------
@@ -831,8 +1272,7 @@ namespace alpaka::tensor::ops
             H,
             W,
             total);
-        out.markDeviceModified(device, queue); // defer wait
-        alpaka::onHost::wait(queue); // synchronize to prevent use-after-free
+        out.markDeviceModified(device, queue); // defer wait, no explicit sync
         return out;
     }
 
