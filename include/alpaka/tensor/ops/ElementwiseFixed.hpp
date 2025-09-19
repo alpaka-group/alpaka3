@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <alpaka/tensor/TensorCore.hpp>
 #include <alpaka/alpaka.hpp>
+#include <alpaka/tensor/TensorCore.hpp>
 
 namespace alpaka
 {
@@ -14,22 +14,30 @@ namespace alpaka
         namespace ops
         {
             // Elementwise addition kernel (following tutorial patterns)
-            class ElementwiseAddKernel {
+            class ElementwiseAddKernel
+            {
             public:
                 template<typename Acc, typename TBufA, typename TBufB, typename TBufR>
-                ALPAKA_FN_ACC void operator()(Acc const& acc, TBufA a, TBufB b, TBufR result, ::std::size_t n) const {
-                    for(auto [index] : alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{n})) {
+                ALPAKA_FN_ACC void operator()(Acc const& acc, TBufA a, TBufB b, TBufR result, ::std::size_t n) const
+                {
+                    for(auto [index] :
+                        alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{n}))
+                    {
                         result[index] = a[index] + b[index];
                     }
                 }
             };
 
             // Elementwise ReLU kernel (activation function)
-            class ElementwiseReluKernel {
+            class ElementwiseReluKernel
+            {
             public:
                 template<typename Acc, typename TBufIn, typename TBufOut>
-                ALPAKA_FN_ACC void operator()(Acc const& acc, TBufIn in, TBufOut out, ::std::size_t n) const {
-                    for(auto [index] : alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{n})) {
+                ALPAKA_FN_ACC void operator()(Acc const& acc, TBufIn in, TBufOut out, ::std::size_t n) const
+                {
+                    for(auto [index] :
+                        alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{n}))
+                    {
                         auto v = in[index];
                         out[index] = v > decltype(v){} ? v : decltype(v){};
                     }

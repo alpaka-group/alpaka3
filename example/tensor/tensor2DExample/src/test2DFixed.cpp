@@ -6,10 +6,11 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
+
 #include <iostream>
 
 // Run the basic tensor checks for a backend tag (deviceSpec + executor)
-template <typename TBackend>
+template<typename TBackend>
 auto runBasic(TBackend const& backend) -> int
 {
     auto deviceSpec = backend[alpaka::object::deviceSpec];
@@ -19,13 +20,14 @@ auto runBasic(TBackend const& backend) -> int
     auto device = selector.makeDevice(0);
     // queue only needed for future async ops; keep to validate creation
     auto queue = device.makeQueue();
-    (void)queue;
+    (void) queue;
 
     try
     {
         alpaka::tensor::Tensor1D<float, decltype(device)> t1(device, {10});
         t1.fill(1.23f);
-        if(t1.size() != 10u) return 1;
+        if(t1.size() != 10u)
+            return 1;
     }
     catch(std::exception const&)
     {
@@ -36,9 +38,11 @@ auto runBasic(TBackend const& backend) -> int
     {
         alpaka::tensor::Tensor2D<float, decltype(device)> t2(device, {3, 4});
         t2.fill(7.5f);
-        if(t2.size() != 12u) return 1;
+        if(t2.size() != 12u)
+            return 1;
         auto t2copy = t2; // copy
-        if(t2copy.size() != t2.size()) return 1;
+        if(t2copy.size() != t2.size())
+            return 1;
     }
     catch(std::exception const&)
     {

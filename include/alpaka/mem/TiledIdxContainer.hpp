@@ -252,7 +252,10 @@ namespace alpaka::onAcc
         ALPAKA_FN_ACC inline const_iterator begin() const
         {
             constexpr auto selectedDims = T_CSelect{};
-            auto [threadIdx, numThreads] = m_threadSpace.mapTo(selectedDims);
+            // Map to selected dimensions and project to those dims
+            auto mapped = m_threadSpace.mapTo(selectedDims);
+            auto threadIdx = mapped.idx()[selectedDims];
+            auto numThreads = mapped.size()[selectedDims];
 
             if constexpr(std::is_same_v<T_IdxMapperFn, layout::Strided>)
             {
@@ -279,7 +282,10 @@ namespace alpaka::onAcc
         ALPAKA_FN_ACC inline const_iterator_end end() const
         {
             constexpr auto selectedDims = T_CSelect{};
-            auto [threadIdx, numThreads] = m_threadSpace.mapTo(selectedDims);
+            // Map to selected dimensions and project to those dims
+            auto mapped = m_threadSpace.mapTo(selectedDims);
+            auto threadIdx = mapped.idx()[selectedDims];
+            auto numThreads = mapped.size()[selectedDims];
 
             if constexpr(std::is_same_v<T_IdxMapperFn, layout::Strided>)
             {

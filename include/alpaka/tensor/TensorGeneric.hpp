@@ -26,12 +26,12 @@ namespace alpaka::tensor::generic
         template<typename T, std::size_t Rank>
         struct BiasAddAxis1Kernel
         {
-            template<typename Acc, typename InBuf, typename BiasBuf, typename OutBuf>
+            template<typename Acc>
             ALPAKA_FN_ACC void operator()(
                 Acc const& acc,
-                InBuf in,
-                BiasBuf bias,
-                OutBuf out,
+                T const* inPtr,
+                T const* biasPtr,
+                T* outPtr,
                 alpaka::Vec<std::size_t, Rank> shape,
                 std::size_t total) const
             {
@@ -46,10 +46,9 @@ namespace alpaka::tensor::generic
                 for(auto [idx] :
                     alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{total}))
                 {
-                    // Remove batch component first (division keeps compiler strength-reduction friendly)
-                    auto withinBatch = idx % batchSpan; // drop leading batch multiples
-                    auto c = withinBatch / channelSpan; // channel index
-                    out[idx] = in[idx] + bias[c];
+                    auto withinBatch = idx % batchSpan;
+                    auto c = withinBatch / channelSpan;
+                    outPtr[idx] = inPtr[idx] + biasPtr[c];
                 }
             }
         };
@@ -79,13 +78,16 @@ namespace alpaka::tensor::generic
         for(auto v : inShape)
             total *= v;
         auto frame = ::alpaka::tensor::ops::detail::makeFrame<Exec, Queue>(total);
+        auto& inBuf = input.deviceBuffer(device, queue);
+        auto& bBuf = bias.deviceBuffer(device, queue);
+        auto& outBuf = output.deviceBuffer(device, queue);
         queue.enqueue(
             exec,
             frame,
             detail::BiasAddAxis1Kernel<T, Rank>{},
-            input.deviceBuffer(device, queue),
-            bias.deviceBuffer(device, queue),
-            output.deviceBuffer(device, queue),
+            inBuf.data(),
+            bBuf.data(),
+            outBuf.data(),
             alpaka::Vec<std::size_t, Rank>{inShape},
             total);
         output.markDeviceModified(device, queue); // async; caller may decide on wait

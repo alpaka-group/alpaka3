@@ -8,9 +8,11 @@
 
 #include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/TensorCore.hpp>
+#include <alpaka/tensor/TensorDescriptor.hpp>
 
 #include <array>
 #include <cassert>
+#include <cstddef>
 #include <cstdlib>
 
 // CUDA/cuDNN support
@@ -21,6 +23,7 @@
 
 namespace alpaka::tensor::ops
 {
+    // (Trait definition moved below detail namespace; no forward decl needed.)
 
     // Conv2D parameters structure
     struct Conv2DParams
@@ -72,52 +75,39 @@ namespace alpaka::tensor::ops
             std::size_t K_w,
             Conv2DParams params) const
         {
-            // Use 4D multi-dimensional approach for output tensor [N, C_out, H_out, W_out]
+            // Use 4D mapping to match frameSpec: [N, C_out, H_out, W_out]
             for(auto [n, c_out, h_out, w_out] : alpaka::onAcc::makeIdxMap(
                     acc,
                     alpaka::onAcc::worker::threadsInGrid,
                     alpaka::IdxRange{alpaka::Vec{N, C_out, H_out, W_out}}))
             {
                 float sum = 0.f;
-
-                // Convolution computation
                 for(std::size_t c_in = 0; c_in < C_in; ++c_in)
                 {
                     for(std::size_t kh = 0; kh < K_h; ++kh)
                     {
                         for(std::size_t kw = 0; kw < K_w; ++kw)
                         {
-                            // Compute input coordinates
                             int h_in = static_cast<int>(h_out * params.stride_h + kh * params.dilation_h)
                                        - static_cast<int>(params.pad_h);
                             int w_in = static_cast<int>(w_out * params.stride_w + kw * params.dilation_w)
                                        - static_cast<int>(params.pad_w);
-
-                            // Check bounds (padding) and tensor extents
                             if(h_in >= 0 && h_in < static_cast<int>(H_in) && w_in >= 0
                                && w_in < static_cast<int>(W_in))
                             {
-                                alpaka::Vec<std::size_t, 4> input_idx{
+                                auto input_idx = alpaka::Vec<std::size_t, 4>{
                                     n,
                                     c_in,
                                     static_cast<std::size_t>(h_in),
                                     static_cast<std::size_t>(w_in)};
-
-                                alpaka::Vec<std::size_t, 4> weight_idx{c_out, c_in, kh, kw};
+                                auto weight_idx = alpaka::Vec<std::size_t, 4>{c_out, c_in, kh, kw};
 
                                 sum += input[input_idx] * weight[weight_idx];
                             }
                         }
                     }
                 }
-
-                // Write output with bounds checking
-                // Output bounds already ensured by iteration space, but guard anyway
-                if(n < N && c_out < C_out && h_out < H_out && w_out < W_out)
-                {
-                    alpaka::Vec<std::size_t, 4> output_idx{n, c_out, h_out, w_out};
-                    output[output_idx] = sum;
-                }
+                output[alpaka::Vec<std::size_t, 4>{n, c_out, h_out, w_out}] = sum;
             }
         }
     };
@@ -178,7 +168,7 @@ namespace alpaka::tensor::ops
                             int w_in = static_cast<int>(blockStartIdx[1] * params.stride_w)
                                        - static_cast<int>(params.pad_w) + static_cast<int>(idx2d[1]);
 
-                            // Bounds checking with extra safety
+                            // Bounds checking
                             if(h_in >= 0 && h_in < static_cast<int>(H_in) && w_in >= 0 && w_in < static_cast<int>(W_in)
                                && n < N && c_in < C_in)
                             {
@@ -216,7 +206,6 @@ namespace alpaka::tensor::ops
                                     std::size_t patch_h = outIdx[0] * params.stride_h + kh * params.dilation_h;
                                     std::size_t patch_w = outIdx[1] * params.stride_w + kw * params.dilation_w;
 
-                                    // Enhanced bounds checking for shared memory access
                                     if(patch_h < static_cast<std::size_t>(TILE_H)
                                        && patch_w < static_cast<std::size_t>(TILE_W))
                                     {
@@ -227,18 +216,15 @@ namespace alpaka::tensor::ops
                                 }
                             }
 
-                            // Accumulate to output with bounds checking
-                            if(n < N && c_out < C_out && globalOutIdx[0] < H_out && globalOutIdx[1] < W_out)
+                            // Accumulate to output
+                            Vec<std::size_t, 4> output_idx{n, c_out, globalOutIdx[0], globalOutIdx[1]};
+                            if(c_in == 0)
                             {
-                                Vec<std::size_t, 4> output_idx{n, c_out, globalOutIdx[0], globalOutIdx[1]};
-                                if(c_in == 0)
-                                {
-                                    output[output_idx] = partialSum;
-                                }
-                                else
-                                {
-                                    output[output_idx] += partialSum;
-                                }
+                                output[output_idx] = partialSum;
+                            }
+                            else
+                            {
+                                output[output_idx] += partialSum;
                             }
                         }
                     }
@@ -423,6 +409,16 @@ namespace alpaka::tensor::ops
         }
     } // namespace detail
 
+    template<typename Exec>
+    struct Conv2DBackendCapabilities
+    {
+        // Tiled Option B is currently enabled by default only for CUDA backends.
+        // CPU backends (CpuOmpBlocks, CpuSerial) fall back to the naive kernel by default
+        // due to stability concerns. You can still force the tiled path on any backend
+        // via the ALPAKA_CONV2D_FORCE_TILED=1 environment variable for debugging.
+        static constexpr bool supportsTiledOptionB = detail::is_conv2d_cuda_backend<Exec>();
+    };
+
     // Compute output shape for Conv2D
     template<typename Shape>
     auto compute_conv2d_output_shape(
@@ -461,6 +457,21 @@ namespace alpaka::tensor::ops
         assert(weight_shape.size() == 4 && "Weight must be 4D tensor [C_out, C_in, K_h, K_w]");
         assert(input_shape[1] == weight_shape[1] && "Input and weight channel dimensions must match");
 
+        // (Step 2) Cheap layout/dtype assertions (no behavior change)
+#ifdef ALPAKA_TENSOR_DESC_DEBUG
+        {
+            auto inDesc = tensor::makeDescriptor(input);
+            auto wDesc = tensor::makeDescriptor(weight);
+            tensor::debugAssertContiguous(inDesc, "Conv2D: input tensor must be contiguous row-major");
+            tensor::debugAssertContiguous(wDesc, "Conv2D: weight tensor must be contiguous row-major");
+            assert(inDesc.layout == tensor::LayoutTag::NCHW && "Conv2D expects NCHW input layout");
+            assert(
+                wDesc.layout == tensor::LayoutTag::NCHW && "Conv2D expects NCHW weight layout (C_out,C_in,K_h,K_w)");
+            (void) inDesc;
+            (void) wDesc; // silence unused in release
+        }
+#endif
+
         // Compute output shape
         auto output_shape = compute_conv2d_output_shape(input_shape, weight_shape, params);
         assert(weight_shape[2] > 0 && weight_shape[3] > 0 && "Conv2D: kernel dimensions must be > 0");
@@ -493,11 +504,13 @@ namespace alpaka::tensor::ops
         auto H_out = output_shape[2];
         auto W_out = output_shape[3];
 
-        std::cout << "Conv2D: Processing 4D convolution with output shape [" << N << "," << C_out << "," << H_out
-                  << "," << W_out << "]" << std::endl;
-
-        // Use alpaka kernel for all backends including GPU
-        std::cout << "Conv2D: Using alpaka 4D kernel for backend acceleration" << std::endl;
+        bool const verbose = std::getenv("ALPAKA_OPS_VERBOSE") != nullptr;
+        if(verbose)
+        {
+            std::cout << "Conv2D: Processing 4D convolution with output shape [" << N << "," << C_out << "," << H_out
+                      << "," << W_out << "]" << std::endl;
+            std::cout << "Conv2D: Using alpaka 4D kernel for backend acceleration" << std::endl;
+        }
 
         // Heuristic: attempt tiled Option B path when conditions satisfied (stride/dilation == 1 and kernel size
         // within template bounds) Compile-time configuration defaults (can be hoisted to a config header later)
@@ -507,31 +520,25 @@ namespace alpaka::tensor::ops
         constexpr int MAX_KW = 7; // supports runtime K_w up to 7
 
         bool canTile
-            = (params.stride_h == 1 && params.stride_w == 1 && params.dilation_h == 1 && params.dilation_w == 1
-               && K_h <= static_cast<std::size_t>(MAX_KH) && K_w <= static_cast<std::size_t>(MAX_KW));
+            = Conv2DBackendCapabilities<Exec>::supportsTiledOptionB
+              && (params.stride_h == 1 && params.stride_w == 1 && params.dilation_h == 1 && params.dilation_w == 1
+                  && K_h <= static_cast<std::size_t>(MAX_KH) && K_w <= static_cast<std::size_t>(MAX_KW));
 
-        // Disable tiled path for single-thread CpuSerial executor (no benefit + prior instability)
-        if constexpr(std::is_same_v<std::remove_cvref_t<Exec>, alpaka::exec::CpuSerial>)
-        {
-            if(canTile)
-            {
-                std::cout << "Conv2D: Disabling tiled kernel for CpuSerial executor" << std::endl;
-            }
-            canTile = false;
-        }
         if(char const* forceEnv = std::getenv("ALPAKA_CONV2D_FORCE_TILED"))
         {
             if(forceEnv[0] == '1')
             {
-                std::cout << "Conv2D: Env override forcing tiled path" << std::endl;
+                if(verbose)
+                    std::cout << "Conv2D: Env override forcing tiled path" << std::endl;
                 canTile = true;
             }
         }
 
         if(canTile)
         {
-            std::cout << "Conv2D: Using Option B tiled kernel (tile=" << TILE_H << "x" << TILE_W << ", maxK=" << MAX_KH
-                      << "x" << MAX_KW << ")" << std::endl;
+            if(verbose)
+                std::cout << "Conv2D: Using Option B tiled kernel (tile=" << TILE_H << "x" << TILE_W
+                          << ", maxK=" << MAX_KH << "x" << MAX_KW << ")" << std::endl;
 
             // Frame spec: one frame (all work in single kernel invocation); threads selection managed by alpaka
             // backend config. Thread block extent = tile dims; blocksInGrid now spans 4D (N,C_out,H_out,W_out) with
@@ -558,40 +565,47 @@ namespace alpaka::tensor::ops
                 K_h,
                 K_w,
                 params);
+            // Ensure kernel completion to avoid lifetime races with returned tensor and subsequent ops
+            ::alpaka::onHost::wait(queue);
         }
         else
         {
+            if(verbose && !Conv2DBackendCapabilities<Exec>::supportsTiledOptionB)
+                std::cout << "Conv2D: Backend does not (yet) advertise safe tiled Option B support -> naive path"
+                          << std::endl;
             if(!(params.stride_h == 1 && params.stride_w == 1))
             {
-                std::cout << "Conv2D: Falling back to naive (stride!=1)" << std::endl;
+                if(verbose)
+                    std::cout << "Conv2D: Falling back to naive (stride!=1)" << std::endl;
             }
             else if(!(params.dilation_h == 1 && params.dilation_w == 1))
             {
-                std::cout << "Conv2D: Falling back to naive (dilation!=1)" << std::endl;
+                if(verbose)
+                    std::cout << "Conv2D: Falling back to naive (dilation!=1)" << std::endl;
             }
             else if(K_h > static_cast<std::size_t>(MAX_KH) || K_w > static_cast<std::size_t>(MAX_KW))
             {
-                std::cout << "Conv2D: Falling back to naive (kernel size exceeds MAX_K)" << std::endl;
+                if(verbose)
+                    std::cout << "Conv2D: Falling back to naive (kernel size exceeds MAX_K)" << std::endl;
             }
             else
             {
-                std::cout << "Conv2D: Falling back to naive (other condition)" << std::endl;
+                if(verbose)
+                    std::cout << "Conv2D: Falling back to naive (other condition)" << std::endl;
             }
-            std::cout << "Conv2D: Using naive kernel for this problem size (Alpaka universal kernel)" << std::endl;
+            if(verbose)
+                std::cout << "Conv2D: Using naive kernel for this problem size (Alpaka universal kernel)" << std::endl;
 
-            // Setup proper 4D frame configuration for tensor dimensions [N, C_out, H_out, W_out]
-            auto frameExtent = alpaka::Vec{
-                std::size_t{1},
-                std::size_t{1},
-                std::size_t{1},
-                W_out}; // Process one row with W_out columns
-            auto numFrames = alpaka::Vec{N, C_out, H_out, std::size_t{1}}; // N * C_out * H_out frames total
+            // Setup 4D frame configuration matching kernel's 4D iteration
+            auto frameExtent = alpaka::Vec{std::size_t{1}, std::size_t{1}, std::size_t{1}, std::size_t{1}};
+            auto numFrames = alpaka::Vec{N, C_out, H_out, W_out};
 
             auto frameSpec = alpaka::onHost::FrameSpec{numFrames, frameExtent};
 
-            std::cout << "Conv2D: Using frame spec with numFrames=[" << numFrames[0] << "," << numFrames[1] << ","
-                      << numFrames[2] << "," << numFrames[3] << "] frameExtent=[" << frameExtent[0] << ","
-                      << frameExtent[1] << "," << frameExtent[2] << "," << frameExtent[3] << "]" << std::endl;
+            if(verbose)
+                std::cout << "Conv2D: Using frame spec with numFrames=[" << numFrames[0] << "," << numFrames[1] << ","
+                          << numFrames[2] << "," << numFrames[3] << "] frameExtent=[" << frameExtent[0] << ","
+                          << frameExtent[1] << "," << frameExtent[2] << "," << frameExtent[3] << "]" << std::endl;
 
             queue.enqueue(
                 exec,
@@ -610,13 +624,12 @@ namespace alpaka::tensor::ops
                 K_h,
                 K_w,
                 params);
+            // Ensure kernel completion to avoid lifetime races with returned tensor and subsequent ops
+            ::alpaka::onHost::wait(queue);
         }
 
-        // Mark device modified but do NOT wait or copy back (caller decides)
+        // Mark device modified after kernel completed
         output.markDeviceModified(device, queue);
-
-        // FORCE queue synchronization to prevent use-after-free
-        alpaka::onHost::wait(queue);
 
         return output;
     }

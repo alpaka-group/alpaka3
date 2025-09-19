@@ -5,17 +5,20 @@
  */
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/onHost/executeForEach.hpp>
 #include <alpaka/onHost/example/executors.hpp>
-#include <iostream>
-#include <chrono>
+#include <alpaka/onHost/executeForEach.hpp>
+
 #include <cassert>
+#include <chrono>
+#include <cstdlib>
+#include <iostream>
 #include <random>
 
 using namespace alpaka;
 
 template<typename Cfg>
-int runGemmBasic(Cfg const& cfg){
+int runGemmBasic(Cfg const& cfg)
+{
     auto deviceSpec = cfg[alpaka::object::deviceSpec];
     auto exec = cfg[alpaka::object::exec];
     auto sel = onHost::makeDeviceSelector(deviceSpec);
@@ -26,102 +29,146 @@ int runGemmBasic(Cfg const& cfg){
     std::cout << "Device: " << deviceSpec.getApi().getName() << std::endl;
     std::cout << "Executor: " << onHost::demangledName(exec) << std::endl;
 
-    try {
+    // Force verbose backend reporting inside GEMM implementation so it prints
+    // exactly which backend is used (cuBLAS vs generic alpaka kernel).
+    // This ensures the example always reports the kernel/provider in use.
+    setenv("ALPAKA_OPS_VERBOSE", "1", 1);
+
+    // Provide an expected-backend hint based on executor and env toggles.
+    // Actual backend will be printed by GEMM itself.
+    bool cublasDisabled = false;
+    if(char const* d = std::getenv("ALPAKA_DISABLE_CUBLAS"))
+    {
+        std::string v(d);
+        cublasDisabled = (v == "1" || v == "ON" || v == "on" || v == "true" || v == "TRUE");
+    }
+    if constexpr(std::is_same_v<decltype(exec), alpaka::exec::GpuCuda>)
+    {
+        std::cout << "Backend expected: "
+                  << (cublasDisabled ? "Generic alpaka kernel (cuBLAS disabled)" : "cuBLAS (CUDA)") << std::endl;
+    }
+    else
+    {
+        std::cout << "Backend expected: Generic alpaka kernel (non-CUDA backend)" << std::endl;
+    }
+
+    try
+    {
         // Matrix dimensions: C[M x N] = A[M x K] * B[K x N]
         std::size_t M = 256;
         std::size_t N = 256;
         std::size_t K = 256;
         // Temporary workaround: reduce problem size for CpuSerial to avoid known performance/heap issue
-        if constexpr(std::is_same_v<decltype(exec), alpaka::exec::CpuSerial>) {
+        if constexpr(std::is_same_v<decltype(exec), alpaka::exec::CpuSerial>)
+        {
             M = N = K = 64;
             std::cout << "(CpuSerial detected -> using reduced size 64^3 for stability)" << std::endl;
         }
-        
+
         std::cout << "Matrix A: " << M << "x" << K << std::endl;
         std::cout << "Matrix B: " << K << "x" << N << std::endl;
         std::cout << "Matrix C: " << M << "x" << N << std::endl;
-        
+
         // GEMM parameters
         float alpha = 1.0f;
         float beta = 0.0f;
-        char transA = 'N';  // No transpose
-        char transB = 'N';  // No transpose
-        
-    // Create matrices as 1D tensors (device-bound)
-    tensor::Tensor1D<float, decltype(device)> A(device, {M * K});
-    tensor::Tensor1D<float, decltype(device)> B(device, {K * N});
-    tensor::Tensor1D<float, decltype(device)> C(device, {M * N});
-        
+        char transA = 'N'; // No transpose
+        char transB = 'N'; // No transpose
+
+        // Create matrices as 1D tensors (device-bound)
+        tensor::Tensor1D<float, decltype(device)> A(device, {M * K});
+        tensor::Tensor1D<float, decltype(device)> B(device, {K * N});
+        tensor::Tensor1D<float, decltype(device)> C(device, {M * N});
+
         // Initialize with test data
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_real_distribution<float> dis(0.0f, 1.0f);
-        
+
         // Fill matrices with random data
-    auto A_data = A.hostData();
-    auto B_data = B.hostData();
-    auto C_data = C.hostData();
-        
-        for (std::size_t i = 0; i < A.size(); ++i) {
+        auto A_data = A.hostData();
+        auto B_data = B.hostData();
+        auto C_data = C.hostData();
+
+        for(std::size_t i = 0; i < A.size(); ++i)
+        {
             A_data[i] = dis(gen);
         }
-        for (std::size_t i = 0; i < B.size(); ++i) {
+        for(std::size_t i = 0; i < B.size(); ++i)
+        {
             B_data[i] = dis(gen);
         }
-        for (std::size_t i = 0; i < C.size(); ++i) {
-            C_data[i] = 0.0f;  // Initialize to zero
+        for(std::size_t i = 0; i < C.size(); ++i)
+        {
+            C_data[i] = 0.0f; // Initialize to zero
         }
-        
+        A.markHostModified();
+        B.markHostModified();
+        C.markHostModified();
+
         std::cout << "✓ Test data initialized" << std::endl;
-        
+
         // Perform GEMM operation with correct signature
         auto t0 = std::chrono::high_resolution_clock::now();
-    tensor::ops::gemm(exec, device, queue, transA, transB, M, N, K, alpha, A, B, beta, C);
+        tensor::ops::gemm(exec, device, queue, transA, transB, M, N, K, alpha, A, B, beta, C);
+        // Synchronize & copy back for host inspection
+        alpaka::onHost::wait(queue);
+        C.toHost(device, queue);
+        alpaka::onHost::wait(queue);
         auto t1 = std::chrono::high_resolution_clock::now();
-        double ms = std::chrono::duration<double,std::milli>(t1-t0).count();
-        
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
         std::cout << "✓ GEMM completed in " << ms << " ms" << std::endl;
-        
+        std::cout << "Backend used (see above GEMM log): cuBLAS vs generic reported by implementation" << std::endl;
+
         // Basic validation - check that result has correct shape
         assert(C.size() == M * N);
         std::cout << "✓ Output size validation passed" << std::endl;
-        
+
         // Check that computation produced reasonable results (non-zero)
         auto result_data = C.hostData();
         bool has_nonzero = false;
         std::size_t check_count = std::min(static_cast<std::size_t>(100), C.size());
-        for (std::size_t i = 0; i < check_count; ++i) {
-            if (std::abs(result_data[i]) > 1e-6) {
+        for(std::size_t i = 0; i < check_count; ++i)
+        {
+            if(std::abs(result_data[i]) > 1e-6)
+            {
                 has_nonzero = true;
                 break;
             }
         }
-        
-        if (has_nonzero) {
+
+        if(has_nonzero)
+        {
             std::cout << "✓ GEMM produced non-zero results as expected" << std::endl;
-        } else {
+        }
+        else
+        {
             std::cout << "⚠ Warning: GEMM result appears to be all zeros" << std::endl;
         }
-        
+
         // Print sample results
         std::cout << "Sample results (first 4 elements): ";
         std::size_t sample_count = std::min(static_cast<std::size_t>(4), C.size());
-        for (std::size_t i = 0; i < sample_count; ++i) {
+        for(std::size_t i = 0; i < sample_count; ++i)
+        {
             std::cout << result_data[i] << " ";
         }
         std::cout << std::endl;
-        
+
         return 0;
-        
-    } catch (std::exception const& e) {
+    }
+    catch(std::exception const& e)
+    {
         std::cerr << "Error in GEMM test: " << e.what() << std::endl;
         return 1;
     }
 }
 
-int main(){
+int main()
+{
     std::cout << "=== GEMM Example Tests ===\n" << std::endl;
     return onHost::executeForEachIfHasDevice(
-        [](auto const& backend){ return runGemmBasic(backend); },
+        [](auto const& backend) { return runGemmBasic(backend); },
         onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
 }
