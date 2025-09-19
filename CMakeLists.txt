@@ -313,6 +313,9 @@ if(alpaka_DEP_HIP)
     if(alpaka_COUNT_API_DEPS EQUAL 1)
         target_link_libraries(alpaka INTERFACE alpaka_target_hip)
     endif()
+
+    # Detect and wire ROCm provider libraries (rocBLAS/MIOpen) if present
+    include(${_alpaka_ROOT_DIR}/cmake/RocmSupport.cmake)
 endif()
 
 if(alpaka_DEP_ONEAPI)

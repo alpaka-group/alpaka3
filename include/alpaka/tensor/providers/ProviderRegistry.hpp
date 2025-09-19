@@ -15,6 +15,13 @@
 #    include <alpaka/tensor/providers/CuDNNProvider.hpp>
 #endif
 
+#ifdef ALPAKA_HAS_ROCBLAS
+#    include <alpaka/tensor/providers/RocBLASProvider.hpp>
+#endif
+#ifdef ALPAKA_HAS_MIOPEN
+#    include <alpaka/tensor/providers/MIOpenProvider.hpp>
+#endif
+
 #include <cstdlib>
 #include <memory>
 #include <type_traits>
@@ -50,10 +57,18 @@ namespace alpaka::tensor
     struct select_conv_provider
     {
 #if defined(ALPAKA_HAS_CUDNN)
-        using type = std::conditional_t<std::is_same_v<Exec, alpaka::exec::GpuCuda>, CuDNNProvider, DefaultProvider>;
+    using type = std::conditional_t<std::is_same_v<Exec, alpaka::exec::GpuCuda>, CuDNNProvider,
+#    if defined(ALPAKA_HAS_MIOPEN)
+                     std::conditional_t<std::is_same_v<Exec, alpaka::exec::GpuHip>, MIOpenProvider,
+                                DefaultProvider>
+#    else
+                     DefaultProvider
+#    endif
+                     >;
+#elif defined(ALPAKA_HAS_MIOPEN)
+    using type = std::conditional_t<std::is_same_v<Exec, alpaka::exec::GpuHip>, MIOpenProvider, DefaultProvider>;
 #else
-        // TODO(ROCM): when MIOpen provider lands, map alpaka::exec::GpuHip -> MiOpenProvider
-        using type = DefaultProvider;
+    using type = DefaultProvider;
 #endif
     };
 
@@ -65,10 +80,18 @@ namespace alpaka::tensor
     struct select_gemm_provider
     {
 #if defined(ALPAKA_HAS_CUBLAS)
-        using type = std::conditional_t<std::is_same_v<Exec, alpaka::exec::GpuCuda>, CuBLASProvider, DefaultProvider>;
+    using type = std::conditional_t<std::is_same_v<Exec, alpaka::exec::GpuCuda>, CuBLASProvider,
+#    if defined(ALPAKA_HAS_ROCBLAS)
+                     std::conditional_t<std::is_same_v<Exec, alpaka::exec::GpuHip>, RocBLASProvider,
+                                DefaultProvider>
+#    else
+                     DefaultProvider
+#    endif
+                     >;
+#elif defined(ALPAKA_HAS_ROCBLAS)
+    using type = std::conditional_t<std::is_same_v<Exec, alpaka::exec::GpuHip>, RocBLASProvider, DefaultProvider>;
 #else
-        // TODO(ROCM): when RocBLAS provider lands, map alpaka::exec::GpuHip -> RocBLASProvider
-        using type = DefaultProvider;
+    using type = DefaultProvider;
 #endif
     };
 
