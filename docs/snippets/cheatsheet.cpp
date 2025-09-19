@@ -126,6 +126,20 @@ struct KernelWait
     }
 };
 
+// Minimal example demonstrating memory fences at different scopes
+struct MemoryFenceKernel
+{
+    ALPAKA_FN_ACC void operator()(onAcc::concepts::Acc auto const& acc) const
+    {
+        // BEGIN-CHEATSHEET-memoryFence
+        // Scopes: All threads of the block, the device and the system(host and peer devices)
+        onAcc::memoryFence(acc, onAcc::memoryScope::block);
+        onAcc::memoryFence(acc, onAcc::memoryScope::device);
+        onAcc::memoryFence(acc, onAcc::memoryScope::system);
+        // END-CHEATSHEET-memoryFence
+    }
+};
+
 auto main() -> int
 {
     // BEGIN-CHEATSHEET-init
@@ -370,6 +384,9 @@ auto main() -> int
             };
             unused(foo);
         }
+
+        // Enqueue the memory fence kernel to ensure it compiles and links
+        queue.enqueue(frameSpec, KernelBundle{MemoryFenceKernel{}});
     }
     catch(...)
 
