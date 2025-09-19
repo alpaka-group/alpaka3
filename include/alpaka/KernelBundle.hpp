@@ -64,8 +64,18 @@ namespace alpaka
         //! The function object type
         using KernelFn = std::decay_t<TKernelFn>;
         //! Tuple type to encapsulate kernel function argument types and argument values
-        using ArgTuple
-            = alpaka::Tuple<remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>...>;
+        using ArgTuple = std::conditional_t<
+            sizeof...(TArgs) == 0,
+            std::tuple<>,
+            alpaka::Tuple<remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>...>>;
+
+        // Constructor
+        constexpr KernelBundle(KernelFn const& kernelFn) : m_kernelFn{kernelFn}, m_args(std::tuple<>{})
+        {
+            static_assert(
+                alpaka::concepts::KernelFn<KernelFn>,
+                "Kernel functor must be trivially copyable or specialize trait::IsKernelTriviallyCopyable<>!");
+        }
 
         // Constructor
         constexpr KernelBundle(KernelFn const& kernelFn, auto&&... args)
