@@ -332,7 +332,7 @@ void testKernels(auto const deviceSpec, auto const exec)
         if(kernelsToBeExecuted == KernelsToRun::All)
         {
             // Vector of sums of each block
-            auto bufAccSumPerBlock = onHost::allocAsync<DataType>(queue, 1u);
+            auto bufAccSumPerBlock = onHost::allocDeferred<DataType>(queue, 1u);
             auto bufHostSumPerBlock = onHost::allocHostLike(bufAccSumPerBlock);
 
             // Test Dot kernel with specific blocksize which is larger than one

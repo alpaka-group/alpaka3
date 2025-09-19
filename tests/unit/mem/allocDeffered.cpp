@@ -28,7 +28,7 @@ struct RaceCheckKernel
     }
 };
 
-void allocAsyncImplicitWait(auto device, auto exec)
+void allocDeferredImplicitWait(auto device, auto exec)
 {
     onHost::Queue queue0 = device.makeQueue();
 
@@ -39,7 +39,7 @@ void allocAsyncImplicitWait(auto device, auto exec)
     onHost::wait(queue0);
     {
         // Asynchronous allocation memory is in the destructor waiting for all work enqueued in the creator queue.
-        auto sharedBuffer = onHost::allocAsync<float>(queue0, 10ul);
+        auto sharedBuffer = onHost::allocDeferred<float>(queue0, 10ul);
         onHost::fill(queue0, sharedBuffer, 3.14159265f);
         queue0.enqueue(
             exec,
@@ -52,7 +52,7 @@ void allocAsyncImplicitWait(auto device, auto exec)
          */
     }
     {
-        auto sharedBuffer = onHost::allocAsync<float>(queue0, 10ul);
+        auto sharedBuffer = onHost::allocDeferred<float>(queue0, 10ul);
         onHost::fill(queue0, sharedBuffer, 42.0f);
     }
 
@@ -61,7 +61,7 @@ void allocAsyncImplicitWait(auto device, auto exec)
     REQUIRE(hBufferResults[0] == 1);
 }
 
-void allocAsyncExplicitWait(auto device, auto exec)
+void allocDeferredExplicitWait(auto device, auto exec)
 {
     onHost::Queue queue0 = device.makeQueue();
     onHost::Queue queue1 = device.makeQueue();
@@ -72,7 +72,7 @@ void allocAsyncExplicitWait(auto device, auto exec)
     onHost::fill(queue0, dBufferResults, 1);
     onHost::wait(queue0);
     {
-        auto sharedBuffer = onHost::allocAsync<float>(queue1, 10ul);
+        auto sharedBuffer = onHost::allocDeferred<float>(queue1, 10ul);
         // set an action that the destructor is waiting for all work enqueued in queue0
         sharedBuffer.destructorWaitFor(queue0);
         // wait for the allocation
@@ -95,7 +95,7 @@ void allocAsyncExplicitWait(auto device, auto exec)
     REQUIRE(hBufferResults[0] == 1);
 }
 
-TEMPLATE_LIST_TEST_CASE("allocAsync", "", TestApis)
+TEMPLATE_LIST_TEST_CASE("allocDeferred", "", TestApis)
 {
     auto cfg = TestType::makeDict();
     auto deviceSpec = cfg[object::deviceSpec];
@@ -115,8 +115,8 @@ TEMPLATE_LIST_TEST_CASE("allocAsync", "", TestApis)
     // repeat the test multiple times to increase the change to trigger data races
     constexpr int testRounds = 10;
     for(int i = 0; i < testRounds; ++i)
-        allocAsyncImplicitWait(device, exec);
+        allocDeferredImplicitWait(device, exec);
 
     for(int i = 0; i < testRounds; ++i)
-        allocAsyncExplicitWait(device, exec);
+        allocDeferredExplicitWait(device, exec);
 }
