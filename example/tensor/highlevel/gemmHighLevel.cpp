@@ -16,7 +16,7 @@
 using namespace alpaka;
 
 template<typename Cfg>
-int runHighLevelGemm(Cfg const& cfg)
+int runHighLevelGemm(Cfg const& cfg, bool verbose)
 {
     auto deviceSpec = cfg[alpaka::object::deviceSpec];
     auto exec = cfg[alpaka::object::exec];
@@ -28,20 +28,15 @@ int runHighLevelGemm(Cfg const& cfg)
     std::cout << "Device: " << deviceSpec.getApi().getName() << std::endl;
     std::cout << "Executor: " << onHost::demangledName(exec) << std::endl;
 
-    // Optional: print provider diagnostics if requested
-    if(char const* p = std::getenv("ALPAKA_PRINT_PROVIDERS"))
+    // Optional: print provider diagnostics when verbose
+    if(verbose)
     {
-        std::string v(p);
-        bool on = (v == "1" || v == "ON" || v == "on" || v == "true" || v == "TRUE");
-        if(on)
+        alpaka::tensor::CleanTensorOpContext<decltype(exec), decltype(device), decltype(queue)> ctx(exec, device, queue);
+        auto active = ctx.getActiveProviders();
+        std::cout << "Active providers: ";
+        for(std::size_t i = 0; i < active.size(); ++i)
         {
-            alpaka::tensor::CleanTensorOpContext<decltype(exec), decltype(device), decltype(queue)> ctx(exec, device, queue);
-            auto active = ctx.getActiveProviders();
-            std::cout << "Active providers: ";
-            for(std::size_t i = 0; i < active.size(); ++i)
-            {
-                std::cout << active[i] << (i + 1 < active.size() ? ' ' : '\n');
-            }
+            std::cout << active[i] << (i + 1 < active.size() ? ' ' : '\n');
         }
     }
 
@@ -136,13 +131,27 @@ int runHighLevelGemm(Cfg const& cfg)
     }
 }
 
-int main()
+int main(int argc, char** argv)
 {
     std::cout << "=== High-Level GEMM API Example ===\n" << std::endl;
 
+    // Parse simple CLI flags
+    bool verbose = false;
+    for(int i = 1; i < argc; ++i)
+    {
+        std::string a(argv[i]);
+        if(a == "-v" || a == "--verbose")
+            verbose = true;
+        else if(a == "-h" || a == "--help")
+        {
+            std::cout << "Usage: gemmHighLevel [-v|--verbose]" << std::endl;
+            return 0;
+        }
+    }
+
     // Run high-level GEMM test across all available backends
     auto result = executeForEachIfHasDevice(
-        [](auto const& tag) { return runHighLevelGemm(tag); },
+        [verbose](auto const& tag) { return runHighLevelGemm(tag, verbose); },
         onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
 
     return result;

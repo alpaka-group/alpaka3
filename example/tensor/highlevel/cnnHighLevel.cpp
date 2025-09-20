@@ -32,7 +32,7 @@ void fillRandom(TTensor& t)
 }
 
 template<typename Cfg>
-int runCnn(Cfg const& cfg)
+int runCnn(Cfg const& cfg, bool verbose)
 {
     auto deviceSpec = cfg[alpaka::object::deviceSpec];
     auto exec = cfg[alpaka::object::exec];
@@ -44,20 +44,15 @@ int runCnn(Cfg const& cfg)
     std::cout << "Device: " << deviceSpec.getApi().getName() << " Executor: " << alpaka::onHost::demangledName(exec)
               << "\n";
 
-    // Optional: print provider diagnostics when requested via env var
-    if(char const* p = std::getenv("ALPAKA_PRINT_PROVIDERS"))
+    // Optional: print provider diagnostics when verbose
+    if(verbose)
     {
-        std::string v(p);
-        bool on = (v == "1" || v == "ON" || v == "on" || v == "true" || v == "TRUE");
-        if(on)
+        alpaka::tensor::CleanTensorOpContext<decltype(exec), decltype(device), decltype(queue)> ctx(exec, device, queue);
+        auto active = ctx.getActiveProviders();
+        std::cout << "Active providers: ";
+        for(std::size_t i = 0; i < active.size(); ++i)
         {
-            alpaka::tensor::CleanTensorOpContext<decltype(exec), decltype(device), decltype(queue)> ctx(exec, device, queue);
-            auto active = ctx.getActiveProviders();
-            std::cout << "Active providers: ";
-            for(std::size_t i = 0; i < active.size(); ++i)
-            {
-                std::cout << active[i] << (i + 1 < active.size() ? ' ' : '\n');
-            }
+            std::cout << active[i] << (i + 1 < active.size() ? ' ' : '\n');
         }
     }
 
@@ -186,9 +181,21 @@ int runCnn(Cfg const& cfg)
     return 0;
 }
 
-int main()
+int main(int argc, char** argv)
 {
+    bool verbose = false;
+    for(int i = 1; i < argc; ++i)
+    {
+        std::string a(argv[i]);
+        if(a == "-v" || a == "--verbose")
+            verbose = true;
+        else if(a == "-h" || a == "--help")
+        {
+            std::cout << "Usage: cnnHighLevel [-v|--verbose]" << std::endl;
+            return 0;
+        }
+    }
     return alpaka::onHost::executeForEachIfHasDevice(
-        [](auto const& backend) { return runCnn(backend); },
+        [verbose](auto const& backend) { return runCnn(backend, verbose); },
         alpaka::onHost::allBackends(alpaka::onHost::enabledApis, alpaka::onHost::example::enabledExecutors));
 }
