@@ -18,7 +18,7 @@
 using namespace alpaka;
 
 template<typename Cfg>
-int runGemmBasic(Cfg const& cfg)
+int runGemmBasic(Cfg const& cfg, bool verbose)
 {
     auto deviceSpec = cfg[alpaka::object::deviceSpec];
     auto exec = cfg[alpaka::object::exec];
@@ -30,10 +30,9 @@ int runGemmBasic(Cfg const& cfg)
     std::cout << "Device: " << deviceSpec.getApi().getName() << std::endl;
     std::cout << "Executor: " << onHost::demangledName(exec) << std::endl;
 
-    // Force verbose backend reporting inside GEMM implementation so it prints
-    // exactly which backend is used (cuBLAS vs generic alpaka kernel).
-    // This ensures the example always reports the kernel/provider in use.
-    setenv("ALPAKA_OPS_VERBOSE", "1", 1);
+    // Enable verbose backend reporting inside GEMM implementation only if requested
+    if(verbose)
+        setenv("ALPAKA_OPS_VERBOSE", "1", 1);
 
     // Provide an expected-backend hint based on executor and env toggles.
     // Actual backend will be printed by provider diagnostics below if enabled.
@@ -119,18 +118,13 @@ int runGemmBasic(Cfg const& cfg)
         std::cout << "✓ Test data initialized" << std::endl;
 
         // Optional: print provider diagnostics so we can see selected backend
-        if(char const* p = std::getenv("ALPAKA_PRINT_PROVIDERS"))
+        if(verbose)
         {
-            std::string v(p);
-            bool on = (v == "1" || v == "ON" || v == "on" || v == "true" || v == "TRUE");
-            if(on)
-            {
-                alpaka::tensor::CleanTensorOpContext<decltype(exec), decltype(device), decltype(queue)> ctx(exec, device, queue);
-                auto active = ctx.getActiveProviders();
-                std::cout << "Active providers: ";
-                for(std::size_t i = 0; i < active.size(); ++i)
-                    std::cout << active[i] << (i + 1 < active.size() ? ' ' : '\n');
-            }
+            alpaka::tensor::CleanTensorOpContext<decltype(exec), decltype(device), decltype(queue)> ctx(exec, device, queue);
+            auto active = ctx.getActiveProviders();
+            std::cout << "Active providers: ";
+            for(std::size_t i = 0; i < active.size(); ++i)
+                std::cout << active[i] << (i + 1 < active.size() ? ' ' : '\n');
         }
 
         // Perform GEMM via provider-aware context to enable rocBLAS/cuBLAS when available
@@ -195,10 +189,22 @@ int runGemmBasic(Cfg const& cfg)
     }
 }
 
-int main()
+int main(int argc, char** argv)
 {
     std::cout << "=== GEMM Example Tests ===\n" << std::endl;
+    bool verbose = false;
+    for(int i = 1; i < argc; ++i)
+    {
+        std::string a(argv[i]);
+        if(a == "-v" || a == "--verbose")
+            verbose = true;
+        else if(a == "-h" || a == "--help")
+        {
+            std::cout << "Usage: tensorGemmExample [-v|--verbose]" << std::endl;
+            return 0;
+        }
+    }
     return onHost::executeForEachIfHasDevice(
-        [](auto const& backend) { return runGemmBasic(backend); },
+        [verbose](auto const& backend) { return runGemmBasic(backend, verbose); },
         onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
 }

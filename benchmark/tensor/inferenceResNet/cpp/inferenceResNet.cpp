@@ -57,6 +57,7 @@ int runResNet18(
     bool onlyGpu,
     bool onlySerial,
     bool profileLayers,
+    bool verbose,
     int numClasses)
 {
     auto deviceSpec = backend[alpaka::object::deviceSpec];
@@ -70,7 +71,8 @@ int runResNet18(
 
     auto backendName = alpaka::onHost::demangledName(deviceSpec);
     auto execName = alpaka::onHost::demangledName(exec);
-    bool isGpu = backendName.find("Cuda") != std::string::npos || backendName.find("GPU") != std::string::npos;
+    // Detect GPU backends from executor demangled name (covers GpuHip, GpuCuda, etc.)
+    bool isGpu = execName.find("Gpu") != std::string::npos;
     bool isOmpBlocks = execName.find("CpuOmpBlocks") != std::string::npos;
     bool isSerial = execName.find("CpuSerial") != std::string::npos;
 
@@ -104,18 +106,14 @@ int runResNet18(
     if(profileLayers)
         pipe.enableProfiling(true);
 
-    // Optional provider diagnostics (mirrors inferenceBERT style). Enable with env ALPAKA_TENSOR_CTX_INFO=1
-    if(char const* info = std::getenv("ALPAKA_TENSOR_CTX_INFO"))
+    // Optional provider diagnostics via --verbose
+    if(verbose && pipe.hasCleanTensorOpContext())
     {
-        (void) info; // silence unused warning
-        if(pipe.hasCleanTensorOpContext())
+        if(auto* ctx = pipe.getCleanTensorOpContext())
         {
-            if(auto* ctx = pipe.getCleanTensorOpContext())
-            {
-                std::cout << "[inferenceResNet] Active tensor providers for backend: "
-                          << alpaka::onHost::demangledName(exec) << "\n";
-                ctx->printProviderInfo();
-            }
+            std::cout << "[inferenceResNet] Active tensor providers for backend: "
+                      << alpaka::onHost::demangledName(exec) << "\n";
+            ctx->printProviderInfo();
         }
     }
 
@@ -239,6 +237,7 @@ int main(int argc, char** argv)
     bool onlySerial = false;
     bool profile = false;
     int classes = 10;
+    bool verbose = false;
     for(int i = 1; i < argc; ++i)
     {
         std::string a = argv[i];
@@ -259,19 +258,21 @@ int main(int argc, char** argv)
             onlySerial = true;
         else if(a == "--profile-layers")
             profile = true;
+        else if(a == "-v" || a == "--verbose")
+            verbose = true;
         else if(a == "--classes" && i + 1 < argc)
             classes = std::stoi(argv[++i]);
         else if(a == "--help")
         {
             std::puts(
                 "Usage: inferenceResNet [--batch N] [--iters N] [--warmup W] [--timing] [--only-gpu] "
-                "[--only-serial] [--profile-layers] [--classes K]");
+                "[--only-serial] [--profile-layers] [--classes K] [-v|--verbose]");
             return 0;
         }
     }
 
     return alpaka::onHost::executeForEachIfHasDevice(
         [&](auto const& backend)
-        { return runResNet18(backend, batch, iters, warmup, timing, onlyGpu, onlySerial, profile, classes); },
+        { return runResNet18(backend, batch, iters, warmup, timing, onlyGpu, onlySerial, profile, verbose, classes); },
         alpaka::onHost::allBackends(alpaka::onHost::enabledApis, alpaka::onHost::example::enabledExecutors));
 }
