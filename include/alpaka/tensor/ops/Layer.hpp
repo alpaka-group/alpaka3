@@ -462,18 +462,30 @@ namespace alpaka::tensor::ops
             std::size_t C_out,
             bool downsample)
         {
+            auto dbg = std::getenv("ALPAKA_RESNET_DEBUG") != nullptr;
+            auto printShape = [&](char const* name, auto const& t) {
+                if(!dbg) return;
+                auto s = t.shape();
+                std::cerr << name << " shape=[" << s[0] << "," << s[1] << "," << s[2] << "," << s[3] << "]\n";
+            };
             ensureInit(exec, dev, q, C_in, C_out, downsample);
             Conv2DLayerStruct<Device> c1{w1, std::nullopt, conv1Params};
+            printShape("[BB] in", in);
             auto x = c1(exec, dev, q, in);
+            printShape("[BB] after conv1", x);
             BatchNorm2DLayerStruct<Device> bn1{bn1Mean, bn1Var, bn1Gamma, bn1Beta, bnEps};
             x = bn1(exec, dev, q, x);
+            printShape("[BB] after bn1", x);
             ReLULayerStruct<Device> relu{};
             relu.inPlace = true;
             relu(exec, dev, q, x);
+            printShape("[BB] after relu1", x);
             Conv2DLayerStruct<Device> c2{w2, std::nullopt, conv2Params};
             x = c2(exec, dev, q, x);
+            printShape("[BB] after conv2", x);
             BatchNorm2DLayerStruct<Device> bn2{bn2Mean, bn2Var, bn2Gamma, bn2Beta, bnEps};
             x = bn2(exec, dev, q, x);
+            printShape("[BB] after bn2", x);
             tensor::Tensor4D<float, Device> identity = in;
             if(hasProj)
             {
@@ -482,30 +494,14 @@ namespace alpaka::tensor::ops
                 BatchNorm2DLayerStruct<Device> bnp{projMean, projVar, projGamma, projBeta, bnEps};
                 identity = bnp(exec, dev, q, identity);
             }
-            // Elementwise residual add (in-place on x)
-            auto s = x.shape();
-            auto N = s[0];
-            auto C = s[1];
-            auto H = s[2];
-            auto W = s[3];
-            // Use 4D frame specification to match kernel's 4D iteration
-            auto frameExtent = alpaka::Vec{std::size_t{1}, std::size_t{1}, std::size_t{1}, std::size_t{1}};
-            auto numFrames = alpaka::Vec{N, C, H, W};
-            auto frameSpec = alpaka::onHost::FrameSpec{numFrames, frameExtent};
-            q.enqueue(
-                exec,
-                frameSpec,
-                AddInPlaceKernel{},
-                x.deviceBuffer(dev, q),
-                identity.deviceBuffer(dev, q),
-                N,
-                C,
-                H,
-                W);
-            x.markDeviceModified(dev, q);
-            // Ensure addition completes before in-place ReLU uses 'x'
+            printShape("[BB] identity", identity);
+            // Elementwise residual add using generic, safe add (allocates output)
+            auto y = tensor::ops::add<float, 4>(exec, dev, q, x, identity);
+            if(dbg) std::cerr << "[BB] after add()" << "\n";
             ::alpaka::onHost::wait(q);
+            x = std::move(y);
             relu(exec, dev, q, x);
+            if(dbg) printShape("[BB] after relu2", x);
             return x;
         }
     };

@@ -26,10 +26,14 @@ namespace alpaka
                 template<typename Acc, typename InBuf, typename OutBuf, typename Functor>
                 ALPAKA_FN_ACC void operator()(Acc const& acc, InBuf in, OutBuf out, std::size_t n, Functor f) const
                 {
+                    // For rank > 1 views, operator[](integral) is not available.
+                    // Use raw pointers for linearized access which is valid for contiguous buffers.
+                    auto const* inPtr = in.data();
+                    auto* outPtr = out.data();
                     for(auto [i] :
                         alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{n}))
                     {
-                        out[i] = f(in[i]);
+                        outPtr[i] = f(inPtr[i]);
                     }
                 }
             };
@@ -42,10 +46,15 @@ namespace alpaka
                 ALPAKA_FN_ACC void operator()(Acc const& acc, ABuf a, BBuf b, OutBuf out, std::size_t n, Functor f)
                     const
                 {
+                    // For rank > 1 views, operator[](integral) is not available.
+                    // Use raw pointers for linearized access which is valid for contiguous buffers.
+                    auto const* aPtr = a.data();
+                    auto const* bPtr = b.data();
+                    auto* outPtr = out.data();
                     for(auto [i] :
                         alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{n}))
                     {
-                        out[i] = f(a[i], b[i]);
+                        outPtr[i] = f(aPtr[i], bPtr[i]);
                     }
                 }
             };
