@@ -5,6 +5,8 @@
 #pragma once
 
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
+#include <alpaka/onHost/interface.hpp>
+#include <stdexcept>
 
 #ifdef ALPAKA_HAS_ROCBLAS
 #    include <rocblas/rocblas.h>
@@ -92,12 +94,52 @@ namespace alpaka::tensor
         {
 #ifdef ALPAKA_HAS_ROCBLAS
             static_assert(std::is_same_v<Exec, alpaka::exec::GpuHip>, "RocBLAS supports only HIP backend");
-            // Ensure tensors on device; the actual hip stream/handle wiring will be added later.
+            // Ensure tensors on device
             A.ensureOnDevice(device, queue);
             B.ensureOnDevice(device, queue);
             C.ensureOnDevice(device, queue);
-            // TODO: implement rocBLAS sgemm; for now throw to route to fallback.
-            throw std::runtime_error("RocBLAS GEMM not yet implemented");
+
+            ensureInitialized();
+            if(!handle_)
+                throw std::runtime_error("rocBLAS handle not initialized");
+
+            // Bind handle to the Alpaka HIP stream
+            auto hipStream = alpaka::onHost::getNativeHandle(queue);
+            auto sStream = rocblas_set_stream(handle_, hipStream);
+            if(sStream != rocblas_status_success)
+                throw std::runtime_error("rocBLAS set_stream failed");
+
+            // Row-major GEMM via column-major: C^T = B^T * A^T
+            int const m_col = static_cast<int>(N);
+            int const n_col = static_cast<int>(M);
+            int const k_col = static_cast<int>(K);
+            int const lda = static_cast<int>(N); // leading dim of B^T
+            int const ldb = static_cast<int>(K); // leading dim of A^T
+            int const ldc = static_cast<int>(N); // leading dim of C^T
+
+            const float* dB = B.deviceBuffer(device, queue).data();
+            const float* dA = A.deviceBuffer(device, queue).data();
+            float* dC = C.deviceBuffer(device, queue).data();
+
+            auto st = rocblas_sgemm(
+                handle_,
+                rocblas_operation_none,
+                rocblas_operation_none,
+                m_col,
+                n_col,
+                k_col,
+                &alpha,
+                dB,
+                lda,
+                dA,
+                ldb,
+                &beta,
+                dC,
+                ldc);
+            if(st != rocblas_status_success)
+                throw std::runtime_error("rocBLAS sgemm failed");
+
+            C.markDeviceModified(device, queue);
 #else
             (void)M; (void)N; (void)K; (void)alpha; (void)A; (void)B; (void)beta; (void)C; (void)device; (void)queue;
             throw std::runtime_error("RocBLAS not available at build time");

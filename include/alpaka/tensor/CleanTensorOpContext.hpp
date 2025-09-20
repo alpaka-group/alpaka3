@@ -7,6 +7,9 @@
 #include <alpaka/tensor/ops/Gemm.hpp>
 #include <alpaka/tensor/ops/InferenceOps.hpp>
 #include <alpaka/tensor/providers/CuDNNProvider.hpp>
+#include <alpaka/tensor/providers/CuBLASProvider.hpp>
+#include <alpaka/tensor/providers/RocBLASProvider.hpp>
+#include <alpaka/tensor/providers/MIOpenProvider.hpp>
 #include <alpaka/tensor/providers/DefaultProvider.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
 #include <alpaka/tensor/providers/ProviderRegistry.hpp>
@@ -265,6 +268,36 @@ namespace alpaka::tensor
             // Try specialized provider first
             if(provider.supportsOperation(OpType::GEMM))
             {
+                // Prefer typed provider calls when available
+                bool usedTyped = false;
+                try
+                {
+                    if constexpr(std::is_same_v<TExec, alpaka::exec::GpuCuda>)
+                    {
+                        if(auto* cu = dynamic_cast<CuBLASProvider*>(&provider))
+                        {
+                            cu->template gemm<TExec, TDevice, TQueue>(
+                                *exec_, *device_, *queue_, M, N, K, alpha, A, B, beta, C);
+                            return;
+                        }
+                    }
+#ifdef ALPAKA_LANG_HIP
+                    if constexpr(std::is_same_v<TExec, alpaka::exec::GpuHip>)
+                    {
+                        if(auto* rb = dynamic_cast<RocBLASProvider*>(&provider))
+                        {
+                            rb->template gemm<TExec, TDevice, TQueue>(
+                                *exec_, *device_, *queue_, M, N, K, alpha, A, B, beta, C);
+                            return;
+                        }
+                    }
+#endif
+                }
+                catch(...)
+                {
+                    // swallow and try status path
+                }
+
                 auto status = provider.gemm_status(*exec_, *device_, *queue_, M, N, K, alpha, A, B, beta, C);
                 if(status == OpStatus::Success)
                     return;
@@ -298,6 +331,24 @@ namespace alpaka::tensor
             // Try specialized provider first
             if(provider.supportsOperation(OpType::Conv2D))
             {
+                // Typed fast-path where available
+                try
+                {
+#ifdef ALPAKA_LANG_HIP
+                    if constexpr(std::is_same_v<TExec, alpaka::exec::GpuHip>)
+                    {
+                        if(auto* mi = dynamic_cast<MIOpenProvider*>(&provider))
+                        {
+                            return mi->template conv2d<T, TExec, TDevice, TQueue>(
+                                *exec_, *device_, *queue_, input, weight, params);
+                        }
+                    }
+#endif
+                }
+                catch(...)
+                {
+                    // ignore and try status/generic fallback
+                }
                 auto status = provider.conv2d_status(*exec_, *device_, *queue_, input, weight, params, output);
                 if(status == OpStatus::Success)
                     return output;

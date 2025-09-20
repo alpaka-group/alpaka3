@@ -5,6 +5,8 @@
 #pragma once
 
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
+#include <alpaka/onHost/interface.hpp>
+#include <stdexcept>
 
 #ifdef ALPAKA_HAS_MIOPEN
 #    include <miopen/miopen.h>
@@ -29,6 +31,182 @@ namespace alpaka::tensor
 #endif
 
     public:
+        // Typed convenience API (float32 only for now)
+        template<typename T, typename Exec, typename Device, typename Queue>
+        auto conv2d(
+            Exec const& /*exec*/,
+            Device const& device,
+            Queue& queue,
+            tensor::Tensor4D<T, Device> const& input,
+            tensor::Tensor4D<T, Device> const& weight,
+            ops::Conv2DParams const& params) const -> tensor::Tensor4D<T, Device>
+        {
+#ifdef ALPAKA_HAS_MIOPEN
+            static_assert(std::is_same_v<Exec, alpaka::exec::GpuHip>, "MIOpen supports only HIP backend");
+            static_assert(std::is_same_v<T, float>, "MIOpen typed path currently implemented for float only");
+
+            ensureInitialized();
+            if(!handle_)
+                throw std::runtime_error("MIOpen handle not initialized");
+
+            // Bind handle to HIP stream
+            auto hipStream = alpaka::onHost::getNativeHandle(queue);
+            auto stStream = miopenSetStream(handle_, hipStream);
+            if(stStream != miopenStatusSuccess)
+                throw std::runtime_error("MIOpen set stream failed");
+
+            // Ensure device data
+            const_cast<tensor::Tensor4D<T, Device>&>(input).ensureOnDevice(device, queue);
+            const_cast<tensor::Tensor4D<T, Device>&>(weight).ensureOnDevice(device, queue);
+
+            // Compute output shape
+            auto inShape = input.shape();
+            auto wShape = weight.shape();
+            std::size_t N = inShape[0];
+            std::size_t C_in = inShape[1];
+            std::size_t H = inShape[2];
+            std::size_t W = inShape[3];
+            std::size_t C_out = wShape[0];
+            std::size_t K_h = wShape[2];
+            std::size_t K_w = wShape[3];
+
+            std::size_t outH = (H + 2 * params.pad_h - params.dilation_h * (K_h - 1) - 1) / params.stride_h + 1;
+            std::size_t outW = (W + 2 * params.pad_w - params.dilation_w * (K_w - 1) - 1) / params.stride_w + 1;
+
+            tensor::Tensor4D<T, Device> output(device, {N, C_out, outH, outW});
+            output.ensureOnDevice(device, queue);
+
+            // Create descriptors
+            miopenTensorDescriptor_t xDesc, yDesc, wDesc;
+            miopenConvolutionDescriptor_t convDesc;
+            miopenCreateTensorDescriptor(&xDesc);
+            miopenCreateTensorDescriptor(&yDesc);
+            miopenCreateTensorDescriptor(&wDesc);
+            miopenCreateConvolutionDescriptor(&convDesc);
+
+            auto cleanup = [&]() {
+                miopenDestroyTensorDescriptor(xDesc);
+                miopenDestroyTensorDescriptor(yDesc);
+                miopenDestroyTensorDescriptor(wDesc);
+                miopenDestroyConvolutionDescriptor(convDesc);
+            };
+
+            miopenSet4dTensorDescriptor(
+                xDesc,
+                miopenFloat,
+                static_cast<int>(N),
+                static_cast<int>(C_in),
+                static_cast<int>(H),
+                static_cast<int>(W));
+            miopenSet4dTensorDescriptor(
+                yDesc,
+                miopenFloat,
+                static_cast<int>(N),
+                static_cast<int>(C_out),
+                static_cast<int>(outH),
+                static_cast<int>(outW));
+            // Filter layout: K(C_out), C(C_in), Y(K_h), X(K_w)
+            miopenSet4dTensorDescriptor(
+                wDesc,
+                miopenFloat,
+                static_cast<int>(C_out),
+                static_cast<int>(C_in),
+                static_cast<int>(K_h),
+                static_cast<int>(K_w));
+
+            miopenInitConvolutionDescriptor(
+                convDesc,
+                miopenConvolution,
+                static_cast<int>(params.pad_h),
+                static_cast<int>(params.pad_w),
+                static_cast<int>(params.stride_h),
+                static_cast<int>(params.stride_w),
+                static_cast<int>(params.dilation_h),
+                static_cast<int>(params.dilation_w));
+
+            // Workspace
+            size_t wsSize = 0;
+            miopenConvolutionForwardGetWorkSpaceSize(handle_, wDesc, xDesc, convDesc, yDesc, &wsSize);
+            void* workspace = nullptr;
+            if(wsSize > 0)
+            {
+                hipError_t hst = hipMalloc(&workspace, wsSize);
+                if(hst != hipSuccess)
+                {
+                    cleanup();
+                    throw std::runtime_error("hipMalloc workspace failed");
+                }
+            }
+
+            // Let MIOpen pick/prepare an algorithm (registers invoker internally)
+            miopenConvAlgoPerf_t perf{};
+            int returnedAlgoCount = 0;
+            auto findStatus = miopenFindConvolutionForwardAlgorithm(
+                handle_,
+                xDesc,
+                input.deviceBufferNoSync(device).data(),
+                wDesc,
+                weight.deviceBufferNoSync(device).data(),
+                convDesc,
+                yDesc,
+                output.deviceBuffer(device, queue).data(),
+                1, // request one algo
+                &returnedAlgoCount,
+                &perf,
+                workspace,
+                wsSize,
+                false // exhaustiveSearch
+            );
+
+            if(findStatus != miopenStatusSuccess || returnedAlgoCount == 0)
+            {
+                cleanup();
+                if(workspace)
+                {
+                    hipError_t freeStatus = hipFree(workspace);
+                    (void)freeStatus;
+                }
+                throw std::runtime_error("MIOpen FindConvolutionForwardAlgorithm failed or returned no algo");
+            }
+
+            float alpha = 1.0f;
+            float beta = 0.0f;
+
+            auto st = miopenConvolutionForward(
+                handle_,
+                &alpha,
+                xDesc,
+                // input/weight are const; after ensureOnDevice use const-accessor without sync
+                input.deviceBufferNoSync(device).data(),
+                wDesc,
+                weight.deviceBufferNoSync(device).data(),
+                convDesc,
+                perf.fwd_algo,
+                &beta,
+                yDesc,
+                // output is mutable and may be written by MIOpen
+                output.deviceBuffer(device, queue).data(),
+                workspace,
+                wsSize);
+
+            if(workspace)
+            {
+                // hipFree is [[nodiscard]]; capture and ignore explicitly to silence warnings
+                hipError_t freeStatus = hipFree(workspace);
+                (void)freeStatus;
+            }
+            cleanup();
+
+            if(st != miopenStatusSuccess)
+                throw std::runtime_error("MIOpen ConvolutionForward failed");
+
+            output.markDeviceModified(device, queue);
+            return output;
+#else
+            (void)device; (void)queue; (void)input; (void)weight; (void)params;
+            throw std::runtime_error("MIOpen not available at build time");
+#endif
+        }
         ~MIOpenProvider() override
         {
 #ifdef ALPAKA_HAS_MIOPEN
@@ -78,15 +256,17 @@ namespace alpaka::tensor
 
     protected:
         OpStatus conv2d_impl(
-            void const*,
-            void const*,
-            void*,
-            void const*,
-            void const*,
-            ops::Conv2DParams const&,
-            void*) override
+            void const* exec_ptr,
+            void const* device_ptr,
+            void* queue_ptr,
+            void const* input_ptr,
+            void const* weight_ptr,
+            ops::Conv2DParams const& params,
+            void* out_ptr) override
         {
-            return OpStatus::Unsupported; // Not yet implemented
+            (void)exec_ptr; (void)device_ptr; (void)queue_ptr; (void)input_ptr; (void)weight_ptr; (void)params; (void)out_ptr;
+            // We cannot safely cast via void* without RTTI across template Device. Use higher-level typed path.
+            return OpStatus::Unsupported;
         }
 
         OpStatus gemm_impl(
