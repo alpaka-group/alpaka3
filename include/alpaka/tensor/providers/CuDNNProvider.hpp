@@ -6,6 +6,7 @@
 
 #include <alpaka/tensor/ops/Conv2D.hpp>
 #include <alpaka/tensor/providers/DefaultProvider.hpp>
+#include <alpaka/tensor/ops/InferenceOps.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
 
 #include <string>
@@ -225,17 +226,25 @@ namespace alpaka::tensor
             switch(op)
             {
             case OpType::Conv2D:
-            case OpType::BatchNorm:
             case OpType::Activation:
                 return true;
             default:
                 return false;
             }
 #else
-            (void) op;
-            return false;
+        (void) op;
+        return false;
 #endif
-        }
+    }
+
+#ifdef ALPAKA_HAS_CUDNN
+    // TODO: Re-enable BatchNorm once cudnnBatchNormalizationForwardInference is fully wired
+    // and validated. For now, we explicitly report BN as unsupported to force a reliable
+    // fallback path and avoid placeholder behavior.
+    bool supportsBatchNormTemporarilyDisabled() const { return false; }
+#else
+    bool supportsBatchNormTemporarilyDisabled() const { return false; }
+#endif
 
 #ifdef ALPAKA_HAS_CUDNN
         char const* failureReason() const noexcept
@@ -547,6 +556,24 @@ namespace alpaka::tensor
             ops::Conv2DParams const& params) const
         {
             return ops::conv2d<T>(exec, device, queue, input, weight, params);
+        }
+#endif
+
+    public:
+#ifdef ALPAKA_HAS_CUDNN
+        // Pooling typed stubs (delegate to generic until wired)
+        template<typename T, typename Exec, typename Device, typename Queue>
+        auto max_pool2d(Exec const& exec, Device const& device, Queue& queue, tensor::Tensor4D<T, Device>& input, ops::Pool2DParams const& params) const
+            -> tensor::Tensor4D<T, Device>
+        {
+            return ::alpaka::tensor::ops::max_pool2d<T>(exec, device, queue, input, params);
+        }
+
+        template<typename T, typename Exec, typename Device, typename Queue>
+        auto avg_pool2d(Exec const& exec, Device const& device, Queue& queue, tensor::Tensor4D<T, Device>& input, ops::Pool2DParams const& params) const
+            -> tensor::Tensor4D<T, Device>
+        {
+            return ::alpaka::tensor::ops::avg_pool2d<T>(exec, device, queue, input, params);
         }
 #endif
     };

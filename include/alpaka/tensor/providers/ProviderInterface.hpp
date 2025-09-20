@@ -28,6 +28,7 @@ namespace alpaka::tensor
     namespace ops
     {
         struct Conv2DParams;
+        struct Pool2DParams;
     } // namespace ops
 
     // Forward declare Tensor templates to avoid heavy includes
