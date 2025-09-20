@@ -6,13 +6,13 @@
 
 #include <alpaka/tensor/ops/Gemm.hpp>
 #include <alpaka/tensor/ops/InferenceOps.hpp>
-#include <alpaka/tensor/providers/CuDNNProvider.hpp>
 #include <alpaka/tensor/providers/CuBLASProvider.hpp>
-#include <alpaka/tensor/providers/RocBLASProvider.hpp>
-#include <alpaka/tensor/providers/MIOpenProvider.hpp>
+#include <alpaka/tensor/providers/CuDNNProvider.hpp>
 #include <alpaka/tensor/providers/DefaultProvider.hpp>
+#include <alpaka/tensor/providers/MIOpenProvider.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
 #include <alpaka/tensor/providers/ProviderRegistry.hpp>
+#include <alpaka/tensor/providers/RocBLASProvider.hpp>
 
 #include <cmath>
 #include <iostream>
@@ -40,7 +40,7 @@ namespace alpaka::tensor
         std::unique_ptr<IOpProvider> convProvider_;
         std::unique_ptr<IOpProvider> batchnormProvider_;
         std::unique_ptr<IOpProvider> activationProvider_;
-    std::unique_ptr<IOpProvider> poolingProvider_;
+        std::unique_ptr<IOpProvider> poolingProvider_;
         std::unique_ptr<IOpProvider> fallbackProvider_;
 
         // Non-owning references to alpaka context objects
@@ -62,10 +62,17 @@ namespace alpaka::tensor
             if constexpr(std::is_same_v<TExec, alpaka::exec::GpuCuda>)
             {
 #ifdef ALPAKA_HAS_CUDNN
-                // Temporarily disable cuDNN BatchNorm path until fully implemented
-                batchnormProvider_ = std::make_unique<DefaultProvider>();
+                // Use cuDNN for BatchNorm on CUDA when available
+                {
+                    auto probe = std::make_unique<CuDNNProvider>();
+                    if(probe->isActive())
+                        batchnormProvider_ = std::move(probe);
+                    else
+                        batchnormProvider_ = std::make_unique<DefaultProvider>();
+                }
                 activationProvider_ = std::make_unique<CuDNNProvider>();
-                poolingProvider_ = std::make_unique<DefaultProvider>();
+                // Route pooling to cuDNN when available
+                poolingProvider_ = std::make_unique<CuDNNProvider>();
 #else
                 batchnormProvider_ = std::make_unique<DefaultProvider>();
                 activationProvider_ = std::make_unique<DefaultProvider>();
@@ -215,8 +222,7 @@ namespace alpaka::tensor
                         && activationProvider_->supportsOperation(op))
                        || fallbackProvider_->supportsOperation(op);
             case OpType::Pooling:
-                return (poolingProvider_ && poolingProvider_->isActive()
-                        && poolingProvider_->supportsOperation(op))
+                return (poolingProvider_ && poolingProvider_->isActive() && poolingProvider_->supportsOperation(op))
                        || fallbackProvider_->supportsOperation(op);
             default:
                 return fallbackProvider_->supportsOperation(op);
@@ -309,7 +315,17 @@ namespace alpaka::tensor
                         if(auto* cu = dynamic_cast<CuBLASProvider*>(&provider))
                         {
                             cu->template gemm<TExec, TDevice, TQueue>(
-                                *exec_, *device_, *queue_, M, N, K, alpha, A, B, beta, C);
+                                *exec_,
+                                *device_,
+                                *queue_,
+                                M,
+                                N,
+                                K,
+                                alpha,
+                                A,
+                                B,
+                                beta,
+                                C);
                             return;
                         }
                     }
@@ -319,7 +335,17 @@ namespace alpaka::tensor
                         if(auto* rb = dynamic_cast<RocBLASProvider*>(&provider))
                         {
                             rb->template gemm<TExec, TDevice, TQueue>(
-                                *exec_, *device_, *queue_, M, N, K, alpha, A, B, beta, C);
+                                *exec_,
+                                *device_,
+                                *queue_,
+                                M,
+                                N,
+                                K,
+                                alpha,
+                                A,
+                                B,
+                                beta,
+                                C);
                             return;
                         }
                     }
@@ -372,7 +398,12 @@ namespace alpaka::tensor
                         if(auto* mi = dynamic_cast<MIOpenProvider*>(&provider))
                         {
                             return mi->template conv2d<T, TExec, TDevice, TQueue>(
-                                *exec_, *device_, *queue_, input, weight, params);
+                                *exec_,
+                                *device_,
+                                *queue_,
+                                input,
+                                weight,
+                                params);
                         }
                     }
 #endif
@@ -435,7 +466,15 @@ namespace alpaka::tensor
                         try
                         {
                             return mi->template batchnorm<T, TExec, TDevice, TQueue>(
-                                *exec_, *device_, *queue_, input, mean, variance, gamma, beta, epsilon);
+                                *exec_,
+                                *device_,
+                                *queue_,
+                                input,
+                                mean,
+                                variance,
+                                gamma,
+                                beta,
+                                epsilon);
                         }
                         catch(...)
                         {
@@ -571,22 +610,105 @@ namespace alpaka::tensor
             ::alpaka::tensor::ops::relu_inplace(*exec_, *device_, *queue_, t);
         }
 
-        // Pooling delegation (generic for now)
+        // Pooling delegation: try vendor providers first, then fallback to generic
         template<typename T>
         auto max_pool2d(tensor::Tensor4D<T, TDevice> const& input, ops::Pool2DParams const& params)
             -> tensor::Tensor4D<T, TDevice>
         {
-            // TODO: Dispatch to vendor providers when wired; const_cast due to API expecting non-const input
+            // Try CUDA/cuDNN
+            if(poolingProvider_ && poolingProvider_->isActive())
+            {
+#ifdef ALPAKA_HAS_CUDNN
+                if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(poolingProvider_.get()))
+                {
+                    try
+                    {
+                        return cudnnProv->template max_pool2d<T>(
+                            *exec_,
+                            *device_,
+                            *queue_,
+                            const_cast<tensor::Tensor4D<T, TDevice>&>(input),
+                            params);
+                    }
+                    catch(...)
+                    {
+                        // fall through to generic
+                    }
+                }
+#endif
+#ifdef ALPAKA_LANG_HIP
+                if(auto mi = dynamic_cast<MIOpenProvider*>(poolingProvider_.get()))
+                {
+                    try
+                    {
+                        return mi->template max_pool2d<T>(
+                            *exec_,
+                            *device_,
+                            *queue_,
+                            const_cast<tensor::Tensor4D<T, TDevice>&>(input),
+                            params);
+                    }
+                    catch(...)
+                    {
+                    }
+                }
+#endif
+            }
             return ::alpaka::tensor::ops::max_pool2d<T>(
-                *exec_, *device_, *queue_, const_cast<tensor::Tensor4D<T, TDevice>&>(input), params);
+                *exec_,
+                *device_,
+                *queue_,
+                const_cast<tensor::Tensor4D<T, TDevice>&>(input),
+                params);
         }
 
         template<typename T>
         auto avg_pool2d(tensor::Tensor4D<T, TDevice> const& input, ops::Pool2DParams const& params)
             -> tensor::Tensor4D<T, TDevice>
         {
+            if(poolingProvider_ && poolingProvider_->isActive())
+            {
+#ifdef ALPAKA_HAS_CUDNN
+                if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(poolingProvider_.get()))
+                {
+                    try
+                    {
+                        return cudnnProv->template avg_pool2d<T>(
+                            *exec_,
+                            *device_,
+                            *queue_,
+                            const_cast<tensor::Tensor4D<T, TDevice>&>(input),
+                            params);
+                    }
+                    catch(...)
+                    {
+                    }
+                }
+#endif
+#ifdef ALPAKA_LANG_HIP
+                if(auto mi = dynamic_cast<MIOpenProvider*>(poolingProvider_.get()))
+                {
+                    try
+                    {
+                        return mi->template avg_pool2d<T>(
+                            *exec_,
+                            *device_,
+                            *queue_,
+                            const_cast<tensor::Tensor4D<T, TDevice>&>(input),
+                            params);
+                    }
+                    catch(...)
+                    {
+                    }
+                }
+#endif
+            }
             return ::alpaka::tensor::ops::avg_pool2d<T>(
-                *exec_, *device_, *queue_, const_cast<tensor::Tensor4D<T, TDevice>&>(input), params);
+                *exec_,
+                *device_,
+                *queue_,
+                const_cast<tensor::Tensor4D<T, TDevice>&>(input),
+                params);
         }
 
     private:

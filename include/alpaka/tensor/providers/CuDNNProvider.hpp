@@ -5,8 +5,8 @@
 #pragma once
 
 #include <alpaka/tensor/ops/Conv2D.hpp>
-#include <alpaka/tensor/providers/DefaultProvider.hpp>
 #include <alpaka/tensor/ops/InferenceOps.hpp>
+#include <alpaka/tensor/providers/DefaultProvider.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
 
 #include <string>
@@ -193,7 +193,7 @@ namespace alpaka::tensor
         CuDNNProvider(CuDNNProvider const&) = delete;
         CuDNNProvider& operator=(CuDNNProvider const&) = delete;
 
-        std::string getBackendName() const override
+        ::std::string getBackendName() const override
         {
 #ifdef ALPAKA_HAS_CUDNN
             return isActive() ? "cuDNN" : "cuDNN (Unavailable)";
@@ -227,24 +227,31 @@ namespace alpaka::tensor
             {
             case OpType::Conv2D:
             case OpType::Activation:
+            case OpType::BatchNorm:
             case OpType::Pooling:
                 return true;
             default:
                 return false;
             }
 #else
-        (void) op;
-        return false;
+            (void) op;
+            return false;
 #endif
-    }
+        }
 
 #ifdef ALPAKA_HAS_CUDNN
-    // TODO: Re-enable BatchNorm once cudnnBatchNormalizationForwardInference is fully wired
-    // and validated. For now, we explicitly report BN as unsupported to force a reliable
-    // fallback path and avoid placeholder behavior.
-    bool supportsBatchNormTemporarilyDisabled() const { return false; }
+        // TODO: Re-enable BatchNorm once cudnnBatchNormalizationForwardInference is fully wired
+        // and validated. For now, we explicitly report BN as unsupported to force a reliable
+        // fallback path and avoid placeholder behavior.
+        bool supportsBatchNormTemporarilyDisabled() const
+        {
+            return false;
+        }
 #else
-    bool supportsBatchNormTemporarilyDisabled() const { return false; }
+        bool supportsBatchNormTemporarilyDisabled() const
+        {
+            return false;
+        }
 #endif
 
 #ifdef ALPAKA_HAS_CUDNN
@@ -355,21 +362,21 @@ namespace alpaka::tensor
 #endif
         }
 
-    template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
-    void relu_inplace(Exec const& exec, Device const& device, Queue& queue, tensor::Tensor<T, Rank, Device>& t)
-        const
-    {
+        template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
+        void relu_inplace(Exec const& exec, Device const& device, Queue& queue, tensor::Tensor<T, Rank, Device>& t)
+            const
+        {
 #ifdef ALPAKA_HAS_CUDNN
-        // Placeholder: delegate to generic ReLU for now
-        ::alpaka::tensor::ops::relu_inplace(exec, device, queue, t);
+            // Placeholder: delegate to generic ReLU for now
+            ::alpaka::tensor::ops::relu_inplace(exec, device, queue, t);
 #else
-        (void) exec;
-        (void) device;
-        (void) queue;
-        (void) t;
-        throw std::runtime_error("cuDNN not built");
+            (void) exec;
+            (void) device;
+            (void) queue;
+            (void) t;
+            throw std::runtime_error("cuDNN not built");
 #endif
-    }
+        }
 
     protected:
         // IOpProvider interface (type-erased paths currently unsupported -> request typed)
@@ -526,7 +533,7 @@ namespace alpaka::tensor
 
         template<typename Exec, typename Device, typename Queue>
         tensor::Tensor4D<float, Device> batchnorm_impl_typed(
-            Exec const& exec,
+            Exec const& /*exec*/,
             Device const& device,
             Queue& queue,
             tensor::Tensor4D<float, Device> const& input,
@@ -536,23 +543,85 @@ namespace alpaka::tensor
             tensor::Tensor1D<float, Device> const& beta,
             float epsilon) const
         {
-            // Minimal placeholder: fall back to generic (no optimized BN yet)
-            // Real cuDNN forward inference BatchNorm can be wired here later.
-            // For now, allocate output and copy input (identity) to keep pipeline moving.
-            auto& in_mut = const_cast<tensor::Tensor4D<float, Device>&>(input);
-            in_mut.ensureOnDevice(device, queue);
-            tensor::Tensor4D<float, Device> out(device, input.shape(), "cudnn_bn_out");
-            out.ensureOnDevice(device, queue);
-            cudaMemcpyAsync(
-                out.deviceBuffer(device, queue).data(),
-                in_mut.deviceBuffer(device, queue).data(),
-                sizeof(float) * input.size(),
-                cudaMemcpyDeviceToDevice,
-                queue.getNativeHandle());
-            out.markDeviceModified(device, queue);
+            // Preconditions
+            ensureInitialized();
+            if(!initialized_)
+                throw std::runtime_error("cuDNN provider inactive (BatchNorm)");
+
+            // Bind handle to Alpaka queue's CUDA stream
+            cudnnSetStream(handle_, queue.getNativeHandle());
+
+            // Ensure tensors are on device
+            auto& inMut = const_cast<tensor::Tensor4D<float, Device>&>(input);
+            inMut.ensureOnDevice(device, queue);
+            const_cast<tensor::Tensor1D<float, Device>&>(mean).ensureOnDevice(device, queue);
+            const_cast<tensor::Tensor1D<float, Device>&>(variance).ensureOnDevice(device, queue);
+            const_cast<tensor::Tensor1D<float, Device>&>(gamma).ensureOnDevice(device, queue);
+            const_cast<tensor::Tensor1D<float, Device>&>(beta).ensureOnDevice(device, queue);
+
+            // Output tensor (same shape as input)
+            tensor::Tensor4D<float, Device> output(device, input.shape(), "cudnn_bn_out");
+            output.ensureOnDevice(device, queue);
+
+            // Descriptors
+            detail::CudnnTensorDesc xDesc;
+            detail::CudnnTensorDesc yDesc;
+            cudnnTensorDescriptor_t bnDesc{};
+            cudnnCreateTensorDescriptor(&bnDesc);
+
+            auto inShape = input.shape();
+            int N = static_cast<int>(inShape[0]);
+            int C = static_cast<int>(inShape[1]);
+            int H = static_cast<int>(inShape[2]);
+            int W = static_cast<int>(inShape[3]);
+
+            cudnnSetTensor4dDescriptor(xDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, N, C, H, W);
+            cudnnSetTensor4dDescriptor(yDesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, N, C, H, W);
+
+            // Derive BN descriptor (per-activation/channel)
+            auto deriveStatus = cudnnDeriveBNTensorDescriptor(bnDesc, xDesc, CUDNN_BATCHNORM_SPATIAL);
+            if(deriveStatus != CUDNN_STATUS_SUCCESS)
+            {
+                cudnnDestroyTensorDescriptor(bnDesc);
+                throw std::runtime_error("cuDNN derive BN descriptor failed");
+            }
+
+            float alpha = 1.0f;
+            float betaScalar = 0.0f;
+
+            // Raw pointers
+            auto* xPtr = static_cast<void const*>(inMut.deviceBuffer(device, queue).data());
+            auto* yPtr = static_cast<void*>(output.deviceBuffer(device, queue).data());
+            auto* scalePtr = static_cast<void const*>(gamma.deviceBufferNoSync(device).data());
+            auto* biasPtr = static_cast<void const*>(beta.deviceBufferNoSync(device).data());
+            auto* meanPtr = static_cast<void const*>(mean.deviceBufferNoSync(device).data());
+            auto* varPtr = static_cast<void const*>(variance.deviceBufferNoSync(device).data());
+
+            auto st = cudnnBatchNormalizationForwardInference(
+                handle_,
+                CUDNN_BATCHNORM_SPATIAL,
+                &alpha,
+                &betaScalar,
+                xDesc,
+                xPtr,
+                yDesc,
+                yPtr,
+                bnDesc,
+                scalePtr,
+                biasPtr,
+                meanPtr,
+                varPtr,
+                static_cast<double>(epsilon));
+
+            cudnnDestroyTensorDescriptor(bnDesc);
+
+            if(st != CUDNN_STATUS_SUCCESS)
+                throw std::runtime_error("cuDNN BatchNormalizationForwardInference failed");
+
+            output.markDeviceModified(device, queue);
             if(std::getenv("ALPAKA_EAGER_HOST"))
-                out.toHost(device, queue);
-            return out;
+                output.toHost(device, queue);
+            return output;
         }
 
         template<typename Exec, typename Device, typename Queue, typename T, std::size_t Rank>
@@ -578,19 +647,191 @@ namespace alpaka::tensor
 
     public:
 #ifdef ALPAKA_HAS_CUDNN
-        // Pooling typed stubs (delegate to generic until wired)
+        // Pooling typed implementations (cuDNN). Fallback to generic when not supported.
         template<typename T, typename Exec, typename Device, typename Queue>
-        auto max_pool2d(Exec const& exec, Device const& device, Queue& queue, tensor::Tensor4D<T, Device>& input, ops::Pool2DParams const& params) const
-            -> tensor::Tensor4D<T, Device>
+        auto max_pool2d(
+            Exec const& exec,
+            Device const& device,
+            Queue& queue,
+            tensor::Tensor4D<T, Device>& input,
+            ops::Pool2DParams const& params) const -> tensor::Tensor4D<T, Device>
         {
-            return ::alpaka::tensor::ops::max_pool2d<T>(exec, device, queue, input, params);
+#    ifdef ALPAKA_HAS_CUDNN
+            if(!isActive())
+                return ::alpaka::tensor::ops::max_pool2d<T>(exec, device, queue, input, params);
+            if constexpr(!std::is_same_v<Exec, alpaka::exec::GpuCuda> || !std::is_same_v<T, float>)
+            {
+                return ::alpaka::tensor::ops::max_pool2d<T>(exec, device, queue, input, params);
+            }
+            else
+            {
+                auto inShape = input.shape();
+                auto outShape = ::alpaka::tensor::ops::compute_pool2d_output_shape(inShape, params);
+                tensor::Tensor4D<T, Device> output(device, outShape, "cudnn_maxpool_out");
+
+                // Ensure residency
+                input.ensureOnDevice(device, queue);
+                output.ensureOnDevice(device, queue);
+
+                // Descriptors
+                cudnnTensorDescriptor_t inDesc{}, outDesc{};
+                cudnnPoolingDescriptor_t poolDesc{};
+                cudnnCreateTensorDescriptor(&inDesc);
+                cudnnCreateTensorDescriptor(&outDesc);
+                cudnnCreatePoolingDescriptor(&poolDesc);
+
+                // Set descriptors (NCHW, float)
+                cudnnSetTensor4dDescriptor(
+                    inDesc,
+                    CUDNN_TENSOR_NCHW,
+                    CUDNN_DATA_FLOAT,
+                    (int) inShape[0],
+                    (int) inShape[1],
+                    (int) inShape[2],
+                    (int) inShape[3]);
+                cudnnSetTensor4dDescriptor(
+                    outDesc,
+                    CUDNN_TENSOR_NCHW,
+                    CUDNN_DATA_FLOAT,
+                    (int) outShape[0],
+                    (int) outShape[1],
+                    (int) outShape[2],
+                    (int) outShape[3]);
+
+                cudnnSetPooling2dDescriptor(
+                    poolDesc,
+                    CUDNN_POOLING_MAX,
+                    CUDNN_NOT_PROPAGATE_NAN,
+                    (int) params.kernel_h,
+                    (int) params.kernel_w,
+                    (int) params.pad_h,
+                    (int) params.pad_w,
+                    (int) params.stride_h,
+                    (int) params.stride_w);
+
+                float alpha = 1.0f, beta = 0.0f;
+                cudnnSetStream(handle_, queue.getNativeHandle());
+                cudnnPoolingForward(
+                    handle_,
+                    poolDesc,
+                    &alpha,
+                    inDesc,
+                    input.deviceBuffer(device, queue).data(),
+                    &beta,
+                    outDesc,
+                    output.deviceBuffer(device, queue).data());
+
+                // Cleanup descriptors
+                cudnnDestroyPoolingDescriptor(poolDesc);
+                cudnnDestroyTensorDescriptor(outDesc);
+                cudnnDestroyTensorDescriptor(inDesc);
+
+                output.markDeviceModified(device, queue);
+                if(std::getenv("ALPAKA_EAGER_HOST"))
+                    output.toHost(device, queue);
+                return output;
+            }
+#    else
+            (void) exec;
+            (void) device;
+            (void) queue;
+            (void) input;
+            (void) params;
+            throw std::runtime_error("cuDNN not built");
+#    endif
         }
 
         template<typename T, typename Exec, typename Device, typename Queue>
-        auto avg_pool2d(Exec const& exec, Device const& device, Queue& queue, tensor::Tensor4D<T, Device>& input, ops::Pool2DParams const& params) const
-            -> tensor::Tensor4D<T, Device>
+        auto avg_pool2d(
+            Exec const& exec,
+            Device const& device,
+            Queue& queue,
+            tensor::Tensor4D<T, Device>& input,
+            ops::Pool2DParams const& params) const -> tensor::Tensor4D<T, Device>
         {
-            return ::alpaka::tensor::ops::avg_pool2d<T>(exec, device, queue, input, params);
+#    ifdef ALPAKA_HAS_CUDNN
+            if(!isActive())
+                return ::alpaka::tensor::ops::avg_pool2d<T>(exec, device, queue, input, params);
+            if constexpr(!std::is_same_v<Exec, alpaka::exec::GpuCuda> || !std::is_same_v<T, float>)
+            {
+                return ::alpaka::tensor::ops::avg_pool2d<T>(exec, device, queue, input, params);
+            }
+            else
+            {
+                auto inShape = input.shape();
+                auto outShape = ::alpaka::tensor::ops::compute_pool2d_output_shape(inShape, params);
+                tensor::Tensor4D<T, Device> output(device, outShape, "cudnn_avgpool_out");
+
+                // Ensure residency
+                input.ensureOnDevice(device, queue);
+                output.ensureOnDevice(device, queue);
+
+                // Descriptors
+                cudnnTensorDescriptor_t inDesc{}, outDesc{};
+                cudnnPoolingDescriptor_t poolDesc{};
+                cudnnCreateTensorDescriptor(&inDesc);
+                cudnnCreateTensorDescriptor(&outDesc);
+                cudnnCreatePoolingDescriptor(&poolDesc);
+
+                // Set descriptors (NCHW, float)
+                cudnnSetTensor4dDescriptor(
+                    inDesc,
+                    CUDNN_TENSOR_NCHW,
+                    CUDNN_DATA_FLOAT,
+                    (int) inShape[0],
+                    (int) inShape[1],
+                    (int) inShape[2],
+                    (int) inShape[3]);
+                cudnnSetTensor4dDescriptor(
+                    outDesc,
+                    CUDNN_TENSOR_NCHW,
+                    CUDNN_DATA_FLOAT,
+                    (int) outShape[0],
+                    (int) outShape[1],
+                    (int) outShape[2],
+                    (int) outShape[3]);
+
+                cudnnSetPooling2dDescriptor(
+                    poolDesc,
+                    CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING,
+                    CUDNN_NOT_PROPAGATE_NAN,
+                    (int) params.kernel_h,
+                    (int) params.kernel_w,
+                    (int) params.pad_h,
+                    (int) params.pad_w,
+                    (int) params.stride_h,
+                    (int) params.stride_w);
+
+                float alpha = 1.0f, beta = 0.0f;
+                cudnnSetStream(handle_, queue.getNativeHandle());
+                cudnnPoolingForward(
+                    handle_,
+                    poolDesc,
+                    &alpha,
+                    inDesc,
+                    input.deviceBuffer(device, queue).data(),
+                    &beta,
+                    outDesc,
+                    output.deviceBuffer(device, queue).data());
+
+                // Cleanup descriptors
+                cudnnDestroyPoolingDescriptor(poolDesc);
+                cudnnDestroyTensorDescriptor(outDesc);
+                cudnnDestroyTensorDescriptor(inDesc);
+
+                output.markDeviceModified(device, queue);
+                if(std::getenv("ALPAKA_EAGER_HOST"))
+                    output.toHost(device, queue);
+                return output;
+            }
+#    else
+            (void) exec;
+            (void) device;
+            (void) queue;
+            (void) input;
+            (void) params;
+            throw std::runtime_error("cuDNN not built");
+#    endif
         }
 #endif
     };
