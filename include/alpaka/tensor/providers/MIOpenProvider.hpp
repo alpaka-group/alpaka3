@@ -5,6 +5,7 @@
 #pragma once
 
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
+#include <alpaka/tensor/ops/InferenceOps.hpp>
 #include <alpaka/onHost/interface.hpp>
 #include <stdexcept>
 
@@ -207,6 +208,116 @@ namespace alpaka::tensor
             throw std::runtime_error("MIOpen not available at build time");
 #endif
         }
+
+        // Typed BatchNorm Inference (float, NCHW)
+        template<typename T, typename Exec, typename Device, typename Queue>
+        auto batchnorm(
+            Exec const& /*exec*/,
+            Device const& device,
+            Queue& queue,
+            tensor::Tensor4D<T, Device> const& input,
+            tensor::Tensor1D<T, Device> const& runningMean,
+            tensor::Tensor1D<T, Device> const& runningVar,
+            tensor::Tensor1D<T, Device> const& gamma,
+            tensor::Tensor1D<T, Device> const& beta,
+            T epsilon) const -> tensor::Tensor4D<T, Device>
+        {
+#ifdef ALPAKA_HAS_MIOPEN
+            static_assert(std::is_same_v<Exec, alpaka::exec::GpuHip>, "MIOpen supports only HIP backend");
+            static_assert(std::is_same_v<T, float>, "MIOpen BatchNorm currently implemented for float only");
+
+            ensureInitialized();
+            if(!handle_)
+                throw std::runtime_error("MIOpen handle not initialized");
+
+            // Bind handle to HIP stream
+            auto hipStream = alpaka::onHost::getNativeHandle(queue);
+            auto stStream = miopenSetStream(handle_, hipStream);
+            if(stStream != miopenStatusSuccess)
+                throw std::runtime_error("MIOpen set stream failed");
+
+            // Ensure device data
+            auto& inMut = const_cast<tensor::Tensor4D<T, Device>&>(input);
+            inMut.ensureOnDevice(device, queue);
+            const_cast<tensor::Tensor1D<T, Device>&>(runningMean).ensureOnDevice(device, queue);
+            const_cast<tensor::Tensor1D<T, Device>&>(runningVar).ensureOnDevice(device, queue);
+            const_cast<tensor::Tensor1D<T, Device>&>(gamma).ensureOnDevice(device, queue);
+            const_cast<tensor::Tensor1D<T, Device>&>(beta).ensureOnDevice(device, queue);
+
+            // Output tensor with same shape as input
+            tensor::Tensor4D<T, Device> output(device, input.shape(), "miopen_bn_out");
+            output.ensureOnDevice(device, queue);
+
+            // Descriptors
+            miopenTensorDescriptor_t xDesc, yDesc, bnDesc;
+            miopenCreateTensorDescriptor(&xDesc);
+            miopenCreateTensorDescriptor(&yDesc);
+            miopenCreateTensorDescriptor(&bnDesc);
+            auto cleanup = [&]() {
+                miopenDestroyTensorDescriptor(xDesc);
+                miopenDestroyTensorDescriptor(yDesc);
+                miopenDestroyTensorDescriptor(bnDesc);
+            };
+
+            auto inShape = input.shape();
+            int N = static_cast<int>(inShape[0]);
+            int C = static_cast<int>(inShape[1]);
+            int H = static_cast<int>(inShape[2]);
+            int W = static_cast<int>(inShape[3]);
+
+            miopenSet4dTensorDescriptor(xDesc, miopenFloat, N, C, H, W);
+            miopenSet4dTensorDescriptor(yDesc, miopenFloat, N, C, H, W);
+            // Derive BN descriptor from input for per-activation (channel-wise) mode
+            auto deriveSt = miopenDeriveBNTensorDescriptor(bnDesc, xDesc, miopenBNPerActivation);
+            if(deriveSt != miopenStatusSuccess)
+            {
+                cleanup();
+                throw std::runtime_error("MIOpen derive BN descriptor failed");
+            }
+
+            float alpha = 1.0f;
+            float betaScalar = 0.0f;
+
+            // Prepare pointers with proper cv-qualification casts expected by MIOpen C API
+            const void* xPtr = static_cast<const void*>(inMut.deviceBuffer(device, queue).data());
+            void* yPtr = static_cast<void*>(output.deviceBuffer(device, queue).data());
+            auto gammaConst = gamma.deviceBufferNoSync(device).data();
+            auto betaConst = beta.deviceBufferNoSync(device).data();
+            auto meanConst = runningMean.deviceBufferNoSync(device).data();
+            auto varConst = runningVar.deviceBufferNoSync(device).data();
+            void* gammaPtr = static_cast<void*>(const_cast<T*>(gammaConst));
+            void* betaPtr = static_cast<void*>(const_cast<T*>(betaConst));
+            void* meanPtr = static_cast<void*>(const_cast<T*>(meanConst));
+            void* varPtr = static_cast<void*>(const_cast<T*>(varConst));
+
+            auto st = miopenBatchNormalizationForwardInference(
+                handle_,
+                miopenBNPerActivation,
+                static_cast<void*>(&alpha),
+                static_cast<void*>(&betaScalar),
+                xDesc,
+                xPtr,
+                yDesc,
+                yPtr,
+                bnDesc,
+                gammaPtr,
+                betaPtr,
+                meanPtr,
+                varPtr,
+                static_cast<double>(epsilon));
+
+            cleanup();
+
+            if(st != miopenStatusSuccess)
+                throw std::runtime_error("MIOpen BatchNormalizationForwardInference failed");
+
+            output.markDeviceModified(device, queue);
+            return output;
+#else
+            (void)device; (void)queue; (void)input; (void)runningMean; (void)runningVar; (void)gamma; (void)beta; (void)epsilon;
+            throw std::runtime_error("MIOpen not available at build time");
+#endif
+        }
         ~MIOpenProvider() override
         {
 #ifdef ALPAKA_HAS_MIOPEN
@@ -216,6 +327,29 @@ namespace alpaka::tensor
                 handle_ = nullptr;
             }
 #endif
+        }
+
+        // Pooling typed stubs (generic fallback for now)
+        template<typename T, typename Exec, typename Device, typename Queue>
+        auto max_pool2d(
+            Exec const& exec,
+            Device const& device,
+            Queue& queue,
+            tensor::Tensor4D<T, Device>& input,
+            ops::Pool2DParams const& params) const -> tensor::Tensor4D<T, Device>
+        {
+            return ::alpaka::tensor::ops::max_pool2d<T>(exec, device, queue, input, params);
+        }
+
+        template<typename T, typename Exec, typename Device, typename Queue>
+        auto avg_pool2d(
+            Exec const& exec,
+            Device const& device,
+            Queue& queue,
+            tensor::Tensor4D<T, Device>& input,
+            ops::Pool2DParams const& params) const -> tensor::Tensor4D<T, Device>
+        {
+            return ::alpaka::tensor::ops::avg_pool2d<T>(exec, device, queue, input, params);
         }
 
         std::string getBackendName() const override

@@ -218,8 +218,21 @@ int runResNet18(
             std::size_t idx = (std::size_t) (p * (times.size() - 1) + 0.5);
             return times[idx];
         };
-        double throughput = static_cast<double>(batch) / (mean / 1000.0);
-        std::cout << "ResNet18 (" << (isGpu ? "CUDA" : "CPU") << ", batch " << batch << ")\n";
+    double throughput = static_cast<double>(batch) / (mean / 1000.0);
+    const char* backendLabel = "CPU";
+    if(isGpu)
+    {
+#ifdef ALPAKA_LANG_HIP
+        backendLabel = "HIP";
+#endif
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+        // If both compiled, prefer CUDA label for CUDA exec; else HIP label already set
+        std::string execName = typeid(exec).name();
+        if(execName.find("GpuCuda") != std::string::npos)
+        backendLabel = "CUDA";
+#endif
+    }
+    std::cout << "ResNet18 (" << backendLabel << ", batch " << batch << ")\n";
         std::cout << "  Mean: " << std::fixed << std::setprecision(3) << mean << " ms  Median: " << pct(0.5)
                   << " ms  P95: " << pct(0.95) << " ms\n";
         std::cout << "  Throughput: " << std::setprecision(2) << throughput << " samples/s\n";

@@ -6,6 +6,7 @@
 
 #include <alpaka/tensor/ops/Conv2D.hpp>
 #include <alpaka/tensor/ops/Gemm.hpp>
+#include <alpaka/tensor/ops/InferenceOps.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
 
 namespace alpaka::tensor
@@ -119,6 +120,28 @@ namespace alpaka::tensor
             tensor::Tensor1D<float, Device>& C)
         {
             ::alpaka::tensor::ops::gemm(exec, device, queue, 'N', 'N', M, N, K, alpha, A, B, beta, C);
+        }
+
+        template<typename T, typename Exec, typename Device, typename Queue>
+        auto max_pool2d(
+            Exec const& exec,
+            Device const& device,
+            Queue& queue,
+            tensor::Tensor4D<T, Device>& input,
+            ops::Pool2DParams const& params) -> tensor::Tensor4D<T, Device>
+        {
+            return ::alpaka::tensor::ops::max_pool2d<T>(exec, device, queue, input, params);
+        }
+
+        template<typename T, typename Exec, typename Device, typename Queue>
+        auto avg_pool2d(
+            Exec const& exec,
+            Device const& device,
+            Queue& queue,
+            tensor::Tensor4D<T, Device>& input,
+            ops::Pool2DParams const& params) -> tensor::Tensor4D<T, Device>
+        {
+            return ::alpaka::tensor::ops::avg_pool2d<T>(exec, device, queue, input, params);
         }
     };
 
