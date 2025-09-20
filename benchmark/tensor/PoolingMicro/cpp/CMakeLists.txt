@@ -19,6 +19,7 @@ alpaka_add_tensor_cuda_support(PoolingMicro)
 set_target_properties(PoolingMicro PROPERTIES FOLDER benchmark)
 
 # ctest smoke: one small shape, quick run
-add_test(NAME PoolingMicro
-    COMMAND PoolingMicro --backend=auto --iters=1 --warmup=0 --op=max --N=1 --C=1 --H=4 --W=4 --kH=2 --kW=2 --sH=2 --sW=2 --verbose
+add_test(
+    NAME PoolingMicro
+    COMMAND PoolingMicro --iters=1 --warmup=0 --op=max --N=1 --C=1 --H=4 --W=4 --kH=2 --kW=2 --sH=2 --sW=2 --verbose
 )
