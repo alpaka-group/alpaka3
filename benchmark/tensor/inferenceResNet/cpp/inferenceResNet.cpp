@@ -31,9 +31,7 @@
 #include <type_traits>
 #include <vector>
 
-#ifdef _OPENMP
-#    include <omp.h>
-#endif
+// (OpenMP-specific headers removed to keep code generic)
 
 namespace tt = alpaka::tensor;
 namespace ops = alpaka::tensor::ops;
@@ -67,7 +65,6 @@ int runResNet18(
     bool profileLayers,
     bool verbose,
     int numClasses,
-    int ompThreads,
     int limitStages)
 {
     auto deviceSpec = backend[alpaka::object::deviceSpec];
@@ -103,37 +100,11 @@ int runResNet18(
     if(!sel.isAvailable())
         return 0;
     auto device = sel.makeDevice(0);
-    // Host queues default to non-blocking; for CPU backends this can cause UAF if temporaries
-    // are destroyed before async work finishes. Use blocking on CPU, keep non-blocking on GPU.
-    auto queue = [&]()
-    {
-        if constexpr(isGpuCexpr)
-        {
-            return device.makeQueue(alpaka::queueKind::nonBlocking);
-        }
-        else
-        {
-            return device.makeQueue(alpaka::queueKind::blocking);
-        }
-    }();
+    // Use non-blocking queue for all backends
+    auto queue = device.makeQueue(alpaka::queueKind::nonBlocking);
     using Device = decltype(device);
 
     std::cout << "=== Backend: " << alpaka::onHost::demangledName(exec) << " / " << backendName << " ===\n";
-    if constexpr(isOmpExec)
-    {
-#ifdef _OPENMP
-        if(ompThreads > 0)
-        {
-            omp_set_dynamic(0);
-            omp_set_num_threads(ompThreads);
-        }
-        if(verbose)
-            std::cout << "[inferenceResNet] OpenMP threads: " << omp_get_max_threads() << "\n";
-#else
-        if(ompThreads > 0 && verbose)
-            std::cout << "[inferenceResNet] Warning: built without OpenMP, --omp-threads ignored.\n";
-#endif
-    }
 
     // Input tensor [N,3,32,32]
     tt::Tensor4D<float, Device> input(device, {(std::size_t) batch, 3, 32, 32}, "input");
@@ -324,7 +295,6 @@ int main(int argc, char** argv)
     int classes = 10;
     bool verbose = false;
     bool dryRun = false;
-    int ompThreads = 0;
     int limitStages = 0;
     for(int i = 1; i < argc; ++i)
     {
@@ -356,8 +326,6 @@ int main(int argc, char** argv)
             verbose = true;
         else if(a == "--classes" && i + 1 < argc)
             classes = std::stoi(argv[++i]);
-        else if((a == "--omp-threads" || a == "--threads") && i + 1 < argc)
-            ompThreads = std::stoi(argv[++i]);
         else if(a == "--limit-stages" && i + 1 < argc)
             limitStages = std::stoi(argv[++i]);
         else if(a == "--shallow")
@@ -369,8 +337,7 @@ int main(int argc, char** argv)
             std::puts(
                 "Usage: inferenceResNet [--batch N] [--iters N] [--warmup W] [--timing] [--only-gpu] "
                 "[--only-cuda|--only-hip] [--only-serial|--only-omp] [--profile-layers] [--classes K] [-v|--verbose] "
-                "[--dry-run] "
-                "[--omp-threads N] [--limit-stages N|--shallow]");
+                "[--dry-run] [--limit-stages N|--shallow]");
             return 0;
         }
     }
@@ -392,7 +359,6 @@ int main(int argc, char** argv)
                 profile,
                 verbose,
                 classes,
-                ompThreads,
                 limitStages);
         },
         alpaka::onHost::allBackends(alpaka::onHost::enabledApis, alpaka::onHost::example::enabledExecutors));

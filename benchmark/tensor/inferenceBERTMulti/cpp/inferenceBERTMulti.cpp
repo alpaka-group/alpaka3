@@ -17,6 +17,7 @@
 #include <limits>
 #include <random>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace tt = alpaka::tensor;
@@ -53,8 +54,14 @@ int runBertMulti(
 
     auto backendName = alpaka::onHost::demangledName(deviceSpec);
     auto execName = alpaka::onHost::demangledName(exec);
-    bool isGpu = backendName.find("Cuda") != std::string::npos || backendName.find("GPU") != std::string::npos;
-    bool isSerial = execName.find("CpuSerial") != std::string::npos;
+    using ExecT = std::decay_t<decltype(exec)>;
+    constexpr bool isCudaExec = std::is_same_v<ExecT, alpaka::exec::GpuCuda>;
+    constexpr bool isHipExec = std::is_same_v<ExecT, alpaka::exec::GpuHip>;
+    constexpr bool isOmpExec = std::is_same_v<ExecT, alpaka::exec::CpuOmpBlocks>;
+    constexpr bool isSerExec = std::is_same_v<ExecT, alpaka::exec::CpuSerial>;
+    constexpr bool isGpuCexpr = isCudaExec || isHipExec;
+    bool isGpu = isGpuCexpr;
+    bool isSerial = isSerExec;
 
     if(onlyGpu && !isGpu)
         return 0;
