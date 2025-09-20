@@ -6,6 +6,7 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
+#include <alpaka/tensor/CleanTensorOpContext.hpp>
 
 #include <cassert>
 #include <chrono>
@@ -26,6 +27,23 @@ int runHighLevelGemm(Cfg const& cfg)
     std::cout << "=== High-Level GEMM API Test ===" << std::endl;
     std::cout << "Device: " << deviceSpec.getApi().getName() << std::endl;
     std::cout << "Executor: " << onHost::demangledName(exec) << std::endl;
+
+    // Optional: print provider diagnostics if requested
+    if(char const* p = std::getenv("ALPAKA_PRINT_PROVIDERS"))
+    {
+        std::string v(p);
+        bool on = (v == "1" || v == "ON" || v == "on" || v == "true" || v == "TRUE");
+        if(on)
+        {
+            alpaka::tensor::CleanTensorOpContext<decltype(exec), decltype(device), decltype(queue)> ctx(exec, device, queue);
+            auto active = ctx.getActiveProviders();
+            std::cout << "Active providers: ";
+            for(std::size_t i = 0; i < active.size(); ++i)
+            {
+                std::cout << active[i] << (i + 1 < active.size() ? ' ' : '\n');
+            }
+        }
+    }
 
     try
     {
