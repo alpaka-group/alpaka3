@@ -28,7 +28,12 @@
 #include <iomanip>
 #include <iostream>
 #include <random>
+#include <type_traits>
 #include <vector>
+
+#ifdef _OPENMP
+#    include <omp.h>
+#endif
 
 namespace tt = alpaka::tensor;
 namespace ops = alpaka::tensor::ops;
@@ -55,33 +60,80 @@ int runResNet18(
     int warmup,
     bool timing,
     bool onlyGpu,
+    bool onlyCuda,
+    bool onlyHip,
     bool onlySerial,
+    bool onlyOmp,
     bool profileLayers,
     bool verbose,
-    int numClasses)
+    int numClasses,
+    int ompThreads,
+    int limitStages)
 {
     auto deviceSpec = backend[alpaka::object::deviceSpec];
     auto exec = backend[alpaka::object::exec];
-    auto sel = alpaka::onHost::makeDeviceSelector(deviceSpec);
-    if(!sel.isAvailable())
-        return 0;
-    auto device = sel.makeDevice(0);
-    auto queue = device.makeQueue();
-    using Device = decltype(device);
-
+    // Compute exec/Backend names and apply filters BEFORE touching the device selector to avoid hangs
     auto backendName = alpaka::onHost::demangledName(deviceSpec);
     auto execName = alpaka::onHost::demangledName(exec);
-    // Detect GPU backends from executor demangled name (covers GpuHip, GpuCuda, etc.)
-    bool isGpu = execName.find("Gpu") != std::string::npos;
-    bool isOmpBlocks = execName.find("CpuOmpBlocks") != std::string::npos;
-    bool isSerial = execName.find("CpuSerial") != std::string::npos;
+    // Detect backend via executor type at compile time
+    using ExecT = std::decay_t<decltype(exec)>;
+    constexpr bool isCudaExec = std::is_same_v<ExecT, alpaka::exec::GpuCuda>;
+    constexpr bool isHipExec = std::is_same_v<ExecT, alpaka::exec::GpuHip>;
+    constexpr bool isOmpExec = std::is_same_v<ExecT, alpaka::exec::CpuOmpBlocks>;
+    constexpr bool isSerExec = std::is_same_v<ExecT, alpaka::exec::CpuSerial>;
+    constexpr bool isGpuCexpr = isCudaExec || isHipExec;
+    bool isGpu = isGpuCexpr;
+    bool isOmpBlocks = isOmpExec;
+    bool isSerial = isSerExec;
 
+    // Apply user filters early (no runtime/HW probing yet)
     if(onlyGpu && !isGpu)
         return 0;
     if(onlySerial && !isSerial)
         return 0;
+    if(onlyOmp && !isOmpExec)
+        return 0;
+    if(onlyCuda && !isCudaExec)
+        return 0;
+    if(onlyHip && !isHipExec)
+        return 0;
+
+    // Now safely probe availability and create device/queue
+    auto sel = alpaka::onHost::makeDeviceSelector(deviceSpec);
+    if(!sel.isAvailable())
+        return 0;
+    auto device = sel.makeDevice(0);
+    // Host queues default to non-blocking; for CPU backends this can cause UAF if temporaries
+    // are destroyed before async work finishes. Use blocking on CPU, keep non-blocking on GPU.
+    auto queue = [&]()
+    {
+        if constexpr(isGpuCexpr)
+        {
+            return device.makeQueue(alpaka::queueKind::nonBlocking);
+        }
+        else
+        {
+            return device.makeQueue(alpaka::queueKind::blocking);
+        }
+    }();
+    using Device = decltype(device);
 
     std::cout << "=== Backend: " << alpaka::onHost::demangledName(exec) << " / " << backendName << " ===\n";
+    if constexpr(isOmpExec)
+    {
+#ifdef _OPENMP
+        if(ompThreads > 0)
+        {
+            omp_set_dynamic(0);
+            omp_set_num_threads(ompThreads);
+        }
+        if(verbose)
+            std::cout << "[inferenceResNet] OpenMP threads: " << omp_get_max_threads() << "\n";
+#else
+        if(ompThreads > 0 && verbose)
+            std::cout << "[inferenceResNet] Warning: built without OpenMP, --omp-threads ignored.\n";
+#endif
+    }
 
     // Input tensor [N,3,32,32]
     tt::Tensor4D<float, Device> input(device, {(std::size_t) batch, 3, 32, 32}, "input");
@@ -117,6 +169,10 @@ int runResNet18(
         }
     }
 
+    // If user only wants provider info or a dry run, skip execution.
+    if(iters == 0 && warmup == 0)
+        return 0;
+
     // Stem: Conv -> BatchNorm -> ReLU
     pipe.add(layers::conv2d<Device>(std::move(convW), std::nullopt, ops::Conv2DParams{1, 1, 1, 1}));
     // BN for stem: allocate tensors (64)
@@ -147,16 +203,25 @@ int runResNet18(
         bool downsample;
     } stages[] = {{2, 64, 64, false}, {2, 64, 128, true}, {2, 128, 256, true}, {2, 256, 512, true}};
 
-    for(auto const& st : stages)
     {
-        int currentIn = st.inC;
-        for(int b = 0; b < st.blocks; ++b)
+        int stageIdx = 0;
+        for(auto const& st : stages)
         {
-            bool down = (b == 0) && st.downsample;
-            ops::BasicBlockLayerStruct<Device> block{};
-            pipe.addBasicBlock(std::move(block), currentIn, st.outC, down);
-            currentIn = st.outC; // subsequent block input
+            if(limitStages > 0 && stageIdx >= limitStages)
+                break;
+            int currentIn = st.inC;
+            for(int b = 0; b < st.blocks; ++b)
+            {
+                bool down = (b == 0) && st.downsample;
+                ops::BasicBlockLayerStruct<Device> block{};
+                pipe.addBasicBlock(std::move(block), currentIn, st.outC, down);
+                currentIn = st.outC; // subsequent block input
+            }
+            ++stageIdx;
         }
+    }
+    {
+        // (removed duplicate block)
     }
 
     // Head
@@ -189,13 +254,16 @@ int runResNet18(
             times.push_back(std::chrono::duration<double, std::milli>(e - s).count());
     }
 
-    auto* probs = std::get_if<tt::Tensor2D<float, Device>>(&outAny);
-    if(!probs)
+    if(iters > 0)
     {
-        std::cerr << "Unexpected output variant";
-        return 1;
+        auto* probs = std::get_if<tt::Tensor2D<float, Device>>(&outAny);
+        if(!probs)
+        {
+            std::cerr << "Unexpected output variant";
+            return 1;
+        }
+        probs->toHost(device, queue);
     }
-    probs->toHost(device, queue);
 
     if(profileLayers)
     {
@@ -218,21 +286,22 @@ int runResNet18(
             std::size_t idx = (std::size_t) (p * (times.size() - 1) + 0.5);
             return times[idx];
         };
-    double throughput = static_cast<double>(batch) / (mean / 1000.0);
-    const char* backendLabel = "CPU";
-    if(isGpu)
-    {
-#ifdef ALPAKA_LANG_HIP
-        backendLabel = "HIP";
-#endif
-#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-        // If both compiled, prefer CUDA label for CUDA exec; else HIP label already set
-        std::string execName = typeid(exec).name();
-        if(execName.find("GpuCuda") != std::string::npos)
-        backendLabel = "CUDA";
-#endif
-    }
-    std::cout << "ResNet18 (" << backendLabel << ", batch " << batch << ")\n";
+        double throughput = static_cast<double>(batch) / (mean / 1000.0);
+        std::string backendLabel = "CPU";
+        if(isGpu)
+        {
+            if(isCudaExec)
+                backendLabel = "CUDA";
+            else if(isHipExec)
+                backendLabel = "HIP";
+            else
+                backendLabel = "GPU";
+        }
+        else if(isOmpBlocks)
+        {
+            backendLabel = "CPU-OMP";
+        }
+        std::cout << "ResNet18 (" << backendLabel << ", batch " << batch << ")\n";
         std::cout << "  Mean: " << std::fixed << std::setprecision(3) << mean << " ms  Median: " << pct(0.5)
                   << " ms  P95: " << pct(0.95) << " ms\n";
         std::cout << "  Throughput: " << std::setprecision(2) << throughput << " samples/s\n";
@@ -242,15 +311,21 @@ int runResNet18(
 
 int main(int argc, char** argv)
 {
-    int batch = 32;
-    int warmup = 5;
-    int iters = 5;
+    int batch = 1;
+    int warmup = 0;
+    int iters = 1;
     bool timing = false;
     bool onlyGpu = false;
     bool onlySerial = false;
+    bool onlyCuda = false;
+    bool onlyHip = false;
+    bool onlyOmp = false;
     bool profile = false;
     int classes = 10;
     bool verbose = false;
+    bool dryRun = false;
+    int ompThreads = 0;
+    int limitStages = 0;
     for(int i = 1; i < argc; ++i)
     {
         std::string a = argv[i];
@@ -267,25 +342,58 @@ int main(int argc, char** argv)
             timing = true;
         else if(a == "--only-gpu")
             onlyGpu = true;
+        else if(a == "--only-cuda")
+            onlyCuda = true, onlyGpu = true; // imply GPU
+        else if(a == "--only-hip")
+            onlyHip = true, onlyGpu = true; // imply GPU
         else if(a == "--only-serial")
             onlySerial = true;
+        else if(a == "--only-omp")
+            onlyOmp = true;
         else if(a == "--profile-layers")
             profile = true;
         else if(a == "-v" || a == "--verbose")
             verbose = true;
         else if(a == "--classes" && i + 1 < argc)
             classes = std::stoi(argv[++i]);
+        else if((a == "--omp-threads" || a == "--threads") && i + 1 < argc)
+            ompThreads = std::stoi(argv[++i]);
+        else if(a == "--limit-stages" && i + 1 < argc)
+            limitStages = std::stoi(argv[++i]);
+        else if(a == "--shallow")
+            limitStages = 1;
+        else if(a == "--dry-run" || a == "--providers-only")
+            dryRun = true;
         else if(a == "--help")
         {
             std::puts(
                 "Usage: inferenceResNet [--batch N] [--iters N] [--warmup W] [--timing] [--only-gpu] "
-                "[--only-serial] [--profile-layers] [--classes K] [-v|--verbose]");
+                "[--only-cuda|--only-hip] [--only-serial|--only-omp] [--profile-layers] [--classes K] [-v|--verbose] "
+                "[--dry-run] "
+                "[--omp-threads N] [--limit-stages N|--shallow]");
             return 0;
         }
     }
 
     return alpaka::onHost::executeForEachIfHasDevice(
         [&](auto const& backend)
-        { return runResNet18(backend, batch, iters, warmup, timing, onlyGpu, onlySerial, profile, verbose, classes); },
+        {
+            return runResNet18(
+                backend,
+                batch,
+                dryRun ? 0 : iters,
+                dryRun ? 0 : warmup,
+                timing,
+                onlyGpu,
+                onlyCuda,
+                onlyHip,
+                onlySerial,
+                onlyOmp,
+                profile,
+                verbose,
+                classes,
+                ompThreads,
+                limitStages);
+        },
         alpaka::onHost::allBackends(alpaka::onHost::enabledApis, alpaka::onHost::example::enabledExecutors));
 }
