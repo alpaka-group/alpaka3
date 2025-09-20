@@ -7,6 +7,7 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
+#include <alpaka/tensor/CleanTensorOpContext.hpp>
 
 #include <cassert>
 #include <chrono>
@@ -35,22 +36,31 @@ int runGemmBasic(Cfg const& cfg)
     setenv("ALPAKA_OPS_VERBOSE", "1", 1);
 
     // Provide an expected-backend hint based on executor and env toggles.
-    // Actual backend will be printed by GEMM itself.
+    // Actual backend will be printed by provider diagnostics below if enabled.
+    auto expectMsg = std::string("Generic alpaka kernel (no vendor BLAS)");
     bool cublasDisabled = false;
+    bool rocblasDisabled = false;
     if(char const* d = std::getenv("ALPAKA_DISABLE_CUBLAS"))
     {
         std::string v(d);
         cublasDisabled = (v == "1" || v == "ON" || v == "on" || v == "true" || v == "TRUE");
     }
+    if(char const* d = std::getenv("ALPAKA_DISABLE_ROCBLAS"))
+    {
+        std::string v(d);
+        rocblasDisabled = (v == "1" || v == "ON" || v == "on" || v == "true" || v == "TRUE");
+    }
     if constexpr(std::is_same_v<decltype(exec), alpaka::exec::GpuCuda>)
     {
-        std::cout << "Backend expected: "
-                  << (cublasDisabled ? "Generic alpaka kernel (cuBLAS disabled)" : "cuBLAS (CUDA)") << std::endl;
+        expectMsg = cublasDisabled ? "Generic alpaka kernel (cuBLAS disabled)" : "cuBLAS (CUDA)";
     }
-    else
+#ifdef ALPAKA_LANG_HIP
+    else if constexpr(std::is_same_v<decltype(exec), alpaka::exec::GpuHip>)
     {
-        std::cout << "Backend expected: Generic alpaka kernel (non-CUDA backend)" << std::endl;
+        expectMsg = rocblasDisabled ? "Generic alpaka kernel (rocBLAS disabled)" : "rocBLAS (HIP)";
     }
+#endif
+    std::cout << "Backend expected: " << expectMsg << std::endl;
 
     try
     {
@@ -108,9 +118,29 @@ int runGemmBasic(Cfg const& cfg)
 
         std::cout << "✓ Test data initialized" << std::endl;
 
-        // Perform GEMM operation with correct signature
+        // Optional: print provider diagnostics so we can see selected backend
+        if(char const* p = std::getenv("ALPAKA_PRINT_PROVIDERS"))
+        {
+            std::string v(p);
+            bool on = (v == "1" || v == "ON" || v == "on" || v == "true" || v == "TRUE");
+            if(on)
+            {
+                alpaka::tensor::CleanTensorOpContext<decltype(exec), decltype(device), decltype(queue)> ctx(exec, device, queue);
+                auto active = ctx.getActiveProviders();
+                std::cout << "Active providers: ";
+                for(std::size_t i = 0; i < active.size(); ++i)
+                    std::cout << active[i] << (i + 1 < active.size() ? ' ' : '\n');
+            }
+        }
+
+        // Perform GEMM via provider-aware context to enable rocBLAS/cuBLAS when available
         auto t0 = std::chrono::high_resolution_clock::now();
-        tensor::ops::gemm(exec, device, queue, transA, transB, M, N, K, alpha, A, B, beta, C);
+        {
+            alpaka::tensor::CleanTensorOpContext<decltype(exec), decltype(device), decltype(queue)> ctx(exec, device, queue);
+            // Our context API expects row-major non-transposed inputs (we keep transA/transB as hints in case of extension)
+            (void)transA; (void)transB;
+            ctx.gemm(M, N, K, alpha, A, B, beta, C);
+        }
         // Synchronize & copy back for host inspection
         alpaka::onHost::wait(queue);
         C.toHost(device, queue);
@@ -118,8 +148,8 @@ int runGemmBasic(Cfg const& cfg)
         auto t1 = std::chrono::high_resolution_clock::now();
         double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
 
-        std::cout << "✓ GEMM completed in " << ms << " ms" << std::endl;
-        std::cout << "Backend used (see above GEMM log): cuBLAS vs generic reported by implementation" << std::endl;
+    std::cout << "✓ GEMM completed in " << ms << " ms" << std::endl;
+    std::cout << "Backend used: see 'Active providers' line above (rocBLAS/cuBLAS vs Default)" << std::endl;
 
         // Basic validation - check that result has correct shape
         assert(C.size() == M * N);
