@@ -329,6 +329,17 @@ namespace alpaka::tensor
 #endif
         }
 
+        // Activation (ReLU) typed stub for parity; delegates to generic for now
+        template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
+        void relu_inplace(
+            Exec const& exec,
+            Device const& device,
+            Queue& queue,
+            tensor::Tensor<T, Rank, Device>& t) const
+        {
+            ::alpaka::tensor::ops::relu_inplace(exec, device, queue, t);
+        }
+
         // Pooling typed stubs (generic fallback for now)
         template<typename T, typename Exec, typename Device, typename Queue>
         auto max_pool2d(
@@ -364,7 +375,8 @@ namespace alpaka::tensor
         bool supportsOperation(OpType op) const override
         {
 #ifdef ALPAKA_HAS_MIOPEN
-            return op == OpType::Conv2D || op == OpType::BatchNorm || op == OpType::Activation;
+         return op == OpType::Conv2D || op == OpType::BatchNorm || op == OpType::Activation
+             || op == OpType::Pooling;
 #else
             (void)op;
             return false;
