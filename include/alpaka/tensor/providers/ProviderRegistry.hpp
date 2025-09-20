@@ -8,6 +8,15 @@
 #include <alpaka/tensor/providers/DefaultProvider.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
 
+// Forward declarations for provider types to allow conditional type references
+namespace alpaka::tensor
+{
+    class CuBLASProvider;
+    class CuDNNProvider;
+    class RocBLASProvider;
+    class MIOpenProvider;
+}
+
 #ifdef ALPAKA_HAS_CUBLAS
 #    include <alpaka/tensor/providers/CuBLASProvider.hpp>
 #endif
@@ -26,50 +35,21 @@
 #include <memory>
 #include <type_traits>
 
+#include <alpaka/tensor/providers/BuildCaps.hpp>
+
 namespace alpaka::tensor
 {
-    // Device execution tags (abbreviated mapping to Exec types)
-    enum class DeviceExecKind
-    {
-        CPU,
-        GPU_CUDA,
-        GPU_HIP,
-        GPU_SYCL
-    };
-
-    template<typename Exec>
-    consteval DeviceExecKind deduceExecKind()
-    {
-#if ALPAKA_LANG_CUDA
-        if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda>)
-            return DeviceExecKind::GPU_CUDA;
-#endif
-#if ALPAKA_LANG_HIP
-        if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip>)
-            return DeviceExecKind::GPU_HIP;
-#endif
-        // TODO: SYCL mapping when available
-        return DeviceExecKind::CPU;
-    }
-
     // Compile-time provider selection (Conv2D)
     template<typename Exec>
     struct select_conv_provider
     {
-#if defined(ALPAKA_HAS_CUDNN)
-    using type = std::conditional_t<std::is_same_v<Exec, alpaka::exec::GpuCuda>, CuDNNProvider,
-#    if defined(ALPAKA_HAS_MIOPEN)
-                     std::conditional_t<std::is_same_v<Exec, alpaka::exec::GpuHip>, MIOpenProvider,
-                                DefaultProvider>
-#    else
-                     DefaultProvider
-#    endif
-                     >;
-#elif defined(ALPAKA_HAS_MIOPEN)
-    using type = std::conditional_t<std::is_same_v<Exec, alpaka::exec::GpuHip>, MIOpenProvider, DefaultProvider>;
-#else
-    using type = DefaultProvider;
-#endif
+        using type = std::conditional_t<
+            (std::is_same_v<Exec, alpaka::exec::GpuCuda> && BuildCaps::hasCUDNN),
+            CuDNNProvider,
+            std::conditional_t<
+                (std::is_same_v<Exec, alpaka::exec::GpuHip> && BuildCaps::hasMIOPEN),
+                MIOpenProvider,
+                DefaultProvider>>;
     };
 
     template<typename Exec>
@@ -79,20 +59,13 @@ namespace alpaka::tensor
     template<typename Exec>
     struct select_gemm_provider
     {
-#if defined(ALPAKA_HAS_CUBLAS)
-    using type = std::conditional_t<std::is_same_v<Exec, alpaka::exec::GpuCuda>, CuBLASProvider,
-#    if defined(ALPAKA_HAS_ROCBLAS)
-                     std::conditional_t<std::is_same_v<Exec, alpaka::exec::GpuHip>, RocBLASProvider,
-                                DefaultProvider>
-#    else
-                     DefaultProvider
-#    endif
-                     >;
-#elif defined(ALPAKA_HAS_ROCBLAS)
-    using type = std::conditional_t<std::is_same_v<Exec, alpaka::exec::GpuHip>, RocBLASProvider, DefaultProvider>;
-#else
-    using type = DefaultProvider;
-#endif
+        using type = std::conditional_t<
+            (std::is_same_v<Exec, alpaka::exec::GpuCuda> && BuildCaps::hasCUBLAS),
+            CuBLASProvider,
+            std::conditional_t<
+                (std::is_same_v<Exec, alpaka::exec::GpuHip> && BuildCaps::hasROCBLAS),
+                RocBLASProvider,
+                DefaultProvider>>;
     };
 
     template<typename Exec>
@@ -120,7 +93,8 @@ namespace alpaka::tensor
         static std::unique_ptr<IOpProvider> makeGemm()
         {
             using P = select_gemm_provider_t<Exec>;
-            return std::make_unique<P>();
+            static_assert(std::is_base_of_v<IOpProvider, P>, "Selected provider must implement IOpProvider");
+            return std::unique_ptr<IOpProvider>(new P());
         }
     };
 } // namespace alpaka::tensor
