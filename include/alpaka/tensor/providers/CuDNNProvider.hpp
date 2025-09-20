@@ -227,6 +227,7 @@ namespace alpaka::tensor
             {
             case OpType::Conv2D:
             case OpType::Activation:
+            case OpType::Pooling:
                 return true;
             default:
                 return false;
@@ -353,6 +354,22 @@ namespace alpaka::tensor
             throw std::runtime_error("cuDNN not built");
 #endif
         }
+
+    template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
+    void relu_inplace(Exec const& exec, Device const& device, Queue& queue, tensor::Tensor<T, Rank, Device>& t)
+        const
+    {
+#ifdef ALPAKA_HAS_CUDNN
+        // Placeholder: delegate to generic ReLU for now
+        ::alpaka::tensor::ops::relu_inplace(exec, device, queue, t);
+#else
+        (void) exec;
+        (void) device;
+        (void) queue;
+        (void) t;
+        throw std::runtime_error("cuDNN not built");
+#endif
+    }
 
     protected:
         // IOpProvider interface (type-erased paths currently unsupported -> request typed)

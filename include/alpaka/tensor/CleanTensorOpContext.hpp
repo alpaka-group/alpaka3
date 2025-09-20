@@ -529,6 +529,48 @@ namespace alpaka::tensor
             ::alpaka::tensor::ops::gelu<T>(*exec_, *device_, *queue_, t);
         }
 
+        // ReLU activation delegation (in-place)
+        template<typename T, std::size_t Rank>
+        void relu_inplace(tensor::Tensor<T, Rank, TDevice>& t)
+        {
+            auto& provider = getActivationProvider();
+            if(provider.supportsOperation(OpType::Activation))
+            {
+                if constexpr(std::is_same_v<TExec, alpaka::exec::GpuCuda>)
+                {
+                    if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(&provider))
+                    {
+                        try
+                        {
+                            cudnnProv->template relu_inplace<T, Rank>(*exec_, *device_, *queue_, t);
+                            return;
+                        }
+                        catch(...)
+                        {
+                            // fall through
+                        }
+                    }
+                }
+#ifdef ALPAKA_LANG_HIP
+                if constexpr(std::is_same_v<TExec, alpaka::exec::GpuHip>)
+                {
+                    if(auto mi = dynamic_cast<MIOpenProvider*>(&provider))
+                    {
+                        try
+                        {
+                            mi->template relu_inplace<T, Rank>(*exec_, *device_, *queue_, t);
+                            return;
+                        }
+                        catch(...)
+                        {
+                        }
+                    }
+                }
+#endif
+            }
+            ::alpaka::tensor::ops::relu_inplace(*exec_, *device_, *queue_, t);
+        }
+
         // Pooling delegation (generic for now)
         template<typename T>
         auto max_pool2d(tensor::Tensor4D<T, TDevice> const& input, ops::Pool2DParams const& params)
