@@ -5,6 +5,8 @@
 #include <alpaka/tensor/TensorCore.hpp>
 #include <alpaka/tensor/TensorDescriptor.hpp>
 #include <alpaka/tensor/ops/ElementwiseGeneric.hpp>
+// Split: include generic kernels from separate header
+#include <alpaka/tensor/ops/kernels/GemmKernels.hpp>
 
 // Include cuBLAS when compiling with CUDA
 #ifdef __CUDACC__
@@ -136,58 +138,6 @@ namespace alpaka::tensor::ops
         }
 #endif
     } // namespace detail
-
-    class GemmKernel
-    {
-    public:
-        // GEMM Kernel: Tensor Core / TF32 usage controlled via env vars ALPAKA_ALLOW_TF32 /
-        // ALPAKA_DISABLE_TENSOR_CORES. Mixed precision path uses cublasGemmEx (FP16->FP32 accumulate) when inputs
-        // prepared; otherwise TF32 (Ampere+).
-        template<typename Acc, typename TBufA, typename TBufB, typename TBufC>
-        ALPAKA_FN_ACC void operator()(
-            Acc const& acc,
-            TBufA a,
-            TBufB b,
-            TBufC c,
-            std::size_t M,
-            std::size_t N,
-            std::size_t K,
-            float alpha,
-            float beta) const
-        {
-            // Use grid-stride loop pattern for better performance and correctness
-            for(auto [index] :
-                alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M * N}))
-            {
-                // Convert linear index to 2D coordinates
-                std::size_t i = index / N; // row index in matrix C
-                std::size_t j = index % N; // col index in matrix C
-
-                // Double-check bounds to prevent corruption
-                if(i >= M || j >= N)
-                    continue;
-                if(index >= M * N)
-                    continue;
-
-                // Compute matrix multiplication: C[i,j] = sum over k of A[i,k] * B[k,j]
-                float sum = 0.0f;
-                for(std::size_t k = 0; k < K; ++k)
-                {
-                    // Ensure valid indices for A and B
-                    std::size_t a_idx = i * K + k; // A is M x K
-                    std::size_t b_idx = k * N + j; // B is K x N
-
-                    if(a_idx < M * K && b_idx < K * N)
-                    {
-                        sum += a[a_idx] * b[b_idx];
-                    }
-                }
-
-                // Apply alpha and beta: C = alpha * A * B + beta * C
-                c[index] = alpha * sum + beta * c[index];
-            }
-        }
-    };
 
     // Legacy implementation kept in detail::gemm_impl; public API now delegates through CleanTensorOpContext.
     namespace detail
@@ -331,7 +281,7 @@ namespace alpaka::tensor::ops
             queue.enqueue(
                 exec,
                 frame,
-                GemmKernel{},
+                kernels::GemmKernel{},
                 A.deviceBuffer(device, queue),
                 B.deviceBuffer(device, queue),
                 C.deviceBuffer(device, queue),

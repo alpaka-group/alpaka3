@@ -11,6 +11,11 @@
 #include <alpaka/tensor/TensorGeneric.hpp>
 #include <alpaka/tensor/ops/ElementwiseGeneric.hpp>
 #include <alpaka/tensor/ops/Gemm.hpp>
+// Split pooling: shared types and kernels
+#include <alpaka/tensor/ops/PoolingTypes.hpp>
+#include <alpaka/tensor/ops/kernels/PoolingKernels.hpp>
+// BatchNorm kernels
+#include <alpaka/tensor/ops/kernels/BatchNormKernels.hpp>
 
 #include <array>
 #include <cassert>
@@ -21,39 +26,7 @@
 namespace alpaka::tensor::ops
 {
 
-    // ---------------- Pooling Params (moved up so kernels can use it) ----------------
-    struct Pool2DParams
-    {
-        std::size_t kernel_h{2};
-        std::size_t kernel_w{2};
-        std::size_t stride_h{2};
-        std::size_t stride_w{2};
-        std::size_t pad_h{0};
-        std::size_t pad_w{0};
-    };
-
-    inline std::array<std::size_t, 4> compute_pool2d_output_shape(
-        std::array<std::size_t, 4> const& inShape,
-        Pool2DParams const& p)
-    {
-        auto N = inShape[0], C = inShape[1], H = inShape[2], W = inShape[3];
-        assert(
-            p.kernel_h > 0 && p.kernel_w > 0 && p.stride_h > 0 && p.stride_w > 0
-            && "Pool2D: kernel/stride must be >0");
-        // Standard formula (no padding): floor((H - kernel)/stride)+1.
-        // Padding case (tests expect extended coverage): for pad>0 allow every start inside padded tensor length
-        // Example: H=2,k=2,pad=1,stride=1 -> (2 + 2*1 - 1)/1 + 1 = 4
-        auto calcDim = [](std::size_t dim, std::size_t k, std::size_t s, std::size_t pad)
-        {
-            if(pad == 0)
-                return (dim - k) / s + 1; // classic
-            return (dim + 2 * pad - 1) / s + 1; // extended sliding
-        };
-        std::size_t H_out = calcDim(H, p.kernel_h, p.stride_h, p.pad_h);
-        std::size_t W_out = calcDim(W, p.kernel_w, p.stride_w, p.pad_w);
-        assert((long) H_out > 0 && (long) W_out > 0 && "Pool2D: invalid output size");
-        return {N, C, H_out, W_out};
-    }
+    // Pooling types moved to PoolingTypes.hpp
 
     // Internal kernel functors (namespace-scope: local classes cannot have member templates)
     namespace detail
@@ -275,129 +248,9 @@ namespace alpaka::tensor::ops
             }
         };
 
-        template<typename T>
-        struct MaxPool2DKernel
-        {
-            template<typename Acc, typename InBuf, typename OutBuf>
-            ALPAKA_FN_ACC void operator()(
-                Acc const& acc,
-                InBuf in,
-                OutBuf out,
-                std::size_t N,
-                std::size_t C,
-                std::size_t H,
-                std::size_t W,
-                std::size_t H_out,
-                std::size_t W_out,
-                Pool2DParams p) const
-            {
-                for(auto [n, c, h_out, w_out] : alpaka::onAcc::makeIdxMap(
-                        acc,
-                        alpaka::onAcc::worker::threadsInGrid,
-                        alpaka::IdxRange{alpaka::Vec{N, C, H_out, W_out}}))
-                {
-                    int h_start = int(h_out * p.stride_h) - int(p.pad_h);
-                    int w_start = int(w_out * p.stride_w) - int(p.pad_w);
-                    int h_end = std::min(h_start + int(p.kernel_h), int(H));
-                    int w_end = std::min(w_start + int(p.kernel_w), int(W));
-                    h_start = std::max(h_start, 0);
-                    w_start = std::max(w_start, 0);
-                    T mx = std::numeric_limits<T>::lowest();
-                    for(int ih = h_start; ih < h_end; ++ih)
-                        for(int iw = w_start; iw < w_end; ++iw)
-                            mx = alpaka::math::max(
-                                mx,
-                                in[alpaka::Vec<std::size_t, 4>{n, c, (std::size_t) ih, (std::size_t) iw}]);
-                    out[alpaka::Vec<std::size_t, 4>{n, c, h_out, w_out}] = mx;
-                }
-            }
-        };
+        // Pooling kernels moved to kernels/PoolingKernels.hpp
 
-        template<typename T>
-        struct AvgPool2DKernel
-        {
-            template<typename Acc, typename InBuf, typename OutBuf>
-            ALPAKA_FN_ACC void operator()(
-                Acc const& acc,
-                InBuf in,
-                OutBuf out,
-                std::size_t N,
-                std::size_t C,
-                std::size_t H,
-                std::size_t W,
-                std::size_t H_out,
-                std::size_t W_out,
-                Pool2DParams p) const
-            {
-                for(auto [n, c, h_out, w_out] : alpaka::onAcc::makeIdxMap(
-                        acc,
-                        alpaka::onAcc::worker::threadsInGrid,
-                        alpaka::IdxRange{alpaka::Vec{N, C, H_out, W_out}}))
-                {
-                    int h_start = int(h_out * p.stride_h) - int(p.pad_h);
-                    int w_start = int(w_out * p.stride_w) - int(p.pad_w);
-                    int h_end = std::min(h_start + int(p.kernel_h), int(H));
-                    int w_end = std::min(w_start + int(p.kernel_w), int(W));
-                    h_start = std::max(h_start, 0);
-                    w_start = std::max(w_start, 0);
-                    T sum = 0;
-                    int count = 0;
-                    for(int ih = h_start; ih < h_end; ++ih)
-                        for(int iw = w_start; iw < w_end; ++iw)
-                        {
-                            sum += in[alpaka::Vec<std::size_t, 4>{n, c, (std::size_t) ih, (std::size_t) iw}];
-                            ++count;
-                        }
-                    out[alpaka::Vec<std::size_t, 4>{n, c, h_out, w_out}]
-                        = count > 0 ? sum / static_cast<T>(count) : T{};
-                }
-            }
-        };
-
-        template<typename T>
-        struct BatchNormInferenceKernel
-        {
-            // Expects invStd[c] = 1 / sqrt(var[c] + eps) precomputed on host/device
-            template<
-                typename Acc,
-                typename InBuf,
-                typename ScaleBuf,
-                typename BiasBuf,
-                typename MeanBuf,
-                typename InvStdBuf,
-                typename OutBuf>
-            ALPAKA_FN_ACC void operator()(
-                Acc const& acc,
-                InBuf in,
-                ScaleBuf gamma,
-                BiasBuf beta,
-                MeanBuf mean,
-                InvStdBuf invStd,
-                OutBuf out,
-                std::size_t N,
-                std::size_t C,
-                std::size_t H,
-                std::size_t W,
-                std::size_t total) const
-            {
-                for(auto [idx] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{total}))
-                {
-                    auto hw = H * W;
-                    auto nStride = C * hw;
-                    auto n = idx / nStride;
-                    auto rem = idx % nStride;
-                    auto c = rem / hw;
-                    auto rem2 = rem % hw;
-                    auto h = rem2 / W;
-                    auto w = rem2 % W;
-                    auto coord = alpaka::Vec<std::size_t, 4>{n, c, h, w};
-                    T x = in[coord];
-                    T norm = (x - mean[c]) * invStd[c];
-                    out[coord] = norm * gamma[c] + beta[c];
-                }
-            }
-        };
+        // BatchNorm kernel moved to kernels/BatchNormKernels.hpp
 
         template<typename T>
         struct ConcatChannelsKernel
@@ -1218,7 +1071,7 @@ namespace alpaka::tensor::ops
         queue.enqueue(
             exec,
             frame,
-            detail::BatchNormInferenceKernel<T>{},
+            kernels::BatchNormInferenceKernel<T>{},
             input.deviceBuffer(device, queue),
             scale.deviceBuffer(device, queue),
             bias.deviceBuffer(device, queue),
