@@ -160,14 +160,15 @@ namespace alpaka::tensor::ops
                     T maxVal = -std::numeric_limits<T>::infinity();
                     for(std::size_t j = 0; j < N; ++j)
                     {
-                        T v = in[alpaka::Vec<std::size_t, 2>{row, j}];
+                        // Note: Alpaka 2D buffers index as [col, row] for contiguous row-major layout
+                        T v = in[alpaka::Vec<std::size_t, 2>{j, row}];
                         maxVal = (!alpaka::math::isnan(v) && v > maxVal) ? v : maxVal;
                     }
                     // Pass 2: exp sum (double accumulation for precision)
                     double sum = 0.0;
                     for(std::size_t j = 0; j < N; ++j)
                     {
-                        T shifted = in[alpaka::Vec<std::size_t, 2>{row, j}] - maxVal;
+                        T shifted = in[alpaka::Vec<std::size_t, 2>{j, row}] - maxVal;
                         if(shifted > T(80))
                             shifted = T(80); // prevent overflow
                         double e = static_cast<double>(alpaka::math::exp(shifted));
@@ -179,20 +180,86 @@ namespace alpaka::tensor::ops
                         // Degenerate: write uniform distribution
                         T uniform = T{1} / static_cast<T>(N);
                         for(std::size_t j = 0; j < N; ++j)
-                            out[alpaka::Vec<std::size_t, 2>{row, j}] = uniform;
+                            out[alpaka::Vec<std::size_t, 2>{j, row}] = uniform;
                         continue;
                     }
                     double inv = 1.0 / sum;
                     // Pass 3: write normalized probabilities
                     for(std::size_t j = 0; j < N; ++j)
                     {
-                        T shifted = in[alpaka::Vec<std::size_t, 2>{row, j}] - maxVal;
+                        T shifted = in[alpaka::Vec<std::size_t, 2>{j, row}] - maxVal;
                         if(shifted > T(80))
                             shifted = T(80);
                         double e = static_cast<double>(alpaka::math::exp(shifted));
                         if(std::isnan(e) || std::isinf(e))
                             e = 0.0;
-                        out[alpaka::Vec<std::size_t, 2>{row, j}] = static_cast<T>(e * inv);
+                        out[alpaka::Vec<std::size_t, 2>{j, row}] = static_cast<T>(e * inv);
+                    }
+                }
+            }
+        };
+
+        // Device-side post-pass to fix degenerate rows: if a row sum is invalid (<=0, NaN/Inf) or deviates
+        // significantly from 1 due to numeric corner cases, rewrite the row as a uniform distribution.
+        template<typename T>
+        struct SoftmaxRowFixupKernel
+        {
+            template<typename Acc, typename OutBuf>
+            ALPAKA_FN_ACC void operator()(Acc const& acc, OutBuf out, std::size_t M, std::size_t N) const
+            {
+                for(auto [row] :
+                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M}))
+                {
+                    double sum = 0.0;
+                    bool bad = false;
+                    for(std::size_t j = 0; j < N; ++j)
+                    {
+                        double v = static_cast<double>(out[alpaka::Vec<std::size_t, 2>{j, row}]);
+                        if(std::isnan(v) || std::isinf(v))
+                        {
+                            bad = true;
+                            break;
+                        }
+                        sum += v;
+                    }
+                    if(bad || !(sum > 0.0) || std::fabs(sum - 1.0) > 1e-4)
+                    {
+                        T uniform = T{1} / static_cast<T>(N);
+                        for(std::size_t j = 0; j < N; ++j)
+                            out[alpaka::Vec<std::size_t, 2>{j, row}] = uniform;
+                    }
+                }
+            }
+        };
+
+        // Same fix-up but using linearized pointers to avoid any accessor/layout mismatches.
+        template<typename T>
+        struct SoftmaxRowFixupLinearKernel
+        {
+            template<typename Acc>
+            ALPAKA_FN_ACC void operator()(Acc const& acc, T* out, std::size_t M, std::size_t N) const
+            {
+                for(auto [row] :
+                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M}))
+                {
+                    double sum = 0.0;
+                    bool bad = false;
+                    auto base = row * N;
+                    for(std::size_t j = 0; j < N; ++j)
+                    {
+                        double v = static_cast<double>(out[base + j]);
+                        if(std::isnan(v) || std::isinf(v))
+                        {
+                            bad = true;
+                            break;
+                        }
+                        sum += v;
+                    }
+                    if(bad || !(sum > 0.0) || std::fabs(sum - 1.0) > 1e-4)
+                    {
+                        T uniform = T{1} / static_cast<T>(N);
+                        for(std::size_t j = 0; j < N; ++j)
+                            out[base + j] = uniform;
                     }
                 }
             }
@@ -244,6 +311,93 @@ namespace alpaka::tensor::ops
                         double e = static_cast<double>(alpaka::math::exp(shifted));
                         out[row * N + j] = static_cast<T>(e * inv);
                     }
+                }
+            }
+        };
+
+        // Row-parallel linear kernel: one worker per row computes the entire row
+        template<typename T>
+        struct Softmax2DRowLinearKernel
+        {
+            template<typename Acc>
+            ALPAKA_FN_ACC void operator()(Acc const& acc, T const* in, T* out, std::size_t M, std::size_t N) const
+            {
+                for(auto [row] :
+                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M}))
+                {
+                    // Pass 1: row max
+                    T maxVal = -std::numeric_limits<T>::infinity();
+                    auto base = row * N;
+                    for(std::size_t j = 0; j < N; ++j)
+                        maxVal = alpaka::math::max(maxVal, in[base + j]);
+
+                    // Pass 2: sum exp(shifted)
+                    double sum = 0.0;
+                    for(std::size_t j = 0; j < N; ++j)
+                    {
+                        T shifted = in[base + j] - maxVal;
+                        if(shifted > T(80))
+                            shifted = T(80);
+                        sum += static_cast<double>(alpaka::math::exp(shifted));
+                    }
+                    if(!(sum > 0.0) || std::isnan(sum) || std::isinf(sum))
+                    {
+                        T uniform = T(1) / T(N);
+                        for(std::size_t j = 0; j < N; ++j)
+                            out[base + j] = uniform;
+                        continue;
+                    }
+                    double inv = 1.0 / sum;
+                    // Pass 3: write normalized
+                    for(std::size_t j = 0; j < N; ++j)
+                    {
+                        T shifted = in[base + j] - maxVal;
+                        if(shifted > T(80))
+                            shifted = T(80);
+                        double e = static_cast<double>(alpaka::math::exp(shifted));
+                        out[base + j] = static_cast<T>(e * inv);
+                    }
+                }
+            }
+        };
+
+        // Diagnostics: compute per-row sum of probabilities and flag rows with NaN/Inf or bad sums
+        template<typename T>
+        struct SoftmaxRowDiagnosticsKernel
+        {
+            template<typename Acc>
+            ALPAKA_FN_ACC void operator()(
+                Acc const& acc,
+                T const* out,
+                double* rowSums,
+                std::uint8_t* rowFlags,
+                std::size_t M,
+                std::size_t N) const
+            {
+                for(auto [row] :
+                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M}))
+                {
+                    auto base = row * N;
+                    double sum = 0.0;
+                    bool bad = false;
+                    for(std::size_t j = 0; j < N; ++j)
+                    {
+                        double v = static_cast<double>(out[base + j]);
+                        if(std::isnan(v) || std::isinf(v))
+                        {
+                            bad = true;
+                            break;
+                        }
+                        sum += v;
+                    }
+                    rowSums[row] = sum;
+                    // flags: bit0 => bad (nan/inf), bit1 => invalid sum (<=0 or far from 1)
+                    std::uint8_t f = 0;
+                    if(bad)
+                        f |= 0x1u;
+                    if(!(sum > 0.0) || alpaka::math::abs(sum - 1.0) > 1e-3)
+                        f |= 0x2u;
+                    rowFlags[row] = f;
                 }
             }
         };
@@ -486,30 +640,82 @@ namespace alpaka::tensor::ops
         queue.enqueue(
             exec,
             frame,
-            detail::Softmax2DKernel<T>{},
-            input.deviceBuffer(device, queue),
-            output.deviceBuffer(device, queue),
+            detail::Softmax2DRowLinearKernel<T>{},
+            input.deviceBuffer(device, queue).data(),
+            output.deviceBuffer(device, queue).data(),
             M,
             N);
         output.markDeviceModified(device, queue);
-        // Optional host-side validation only when eagerHostEnabled; avoid touching host buffer otherwise
-        if(detail::eagerHostEnabled())
+
+        // Optional device-side diagnostics (env: ALPAKA_SOFTMAX_DEVICE_DIAG)
+        bool diagEnabled = false;
+        if(char const* diagEnv = std::getenv("ALPAKA_SOFTMAX_DEVICE_DIAG"))
         {
-            output.toHost(device, queue); // optional validation copy
-            auto* outH2 = output.hostData();
-            bool bad = false;
-            for(std::size_t m = 0; m < M && !bad; ++m)
+            std::string dv(diagEnv);
+            diagEnabled = (dv == "1" || dv == "ON" || dv == "on" || dv == "true" || dv == "TRUE");
+        }
+        if(diagEnabled)
+        {
+            // Allocate temporary diagnostics buffers [M]
+            tensor::Tensor1D<double, Device> rowSums(device, {M}, "softmax_diag_sums");
+            tensor::Tensor1D<std::uint8_t, Device> rowFlags(device, {M}, "softmax_diag_flags");
+            rowSums.ensureOnDevice(device, queue);
+            rowFlags.ensureOnDevice(device, queue);
+            auto frameDiag = ops::detail::makeFrame<Exec, Queue>(M);
+            queue.enqueue(
+                exec,
+                frameDiag,
+                detail::SoftmaxRowDiagnosticsKernel<T>{},
+                output.deviceBuffer(device, queue).data(),
+                rowSums.deviceBuffer(device, queue).data(),
+                rowFlags.deviceBuffer(device, queue).data(),
+                M,
+                N);
+            rowSums.markDeviceModified(device, queue);
+            rowFlags.markDeviceModified(device, queue);
+            // Copy back and optionally log
+            rowSums.toHost(device, queue);
+            rowFlags.toHost(device, queue);
+            bool anyBad = false;
+            for(std::size_t m = 0; m < M; ++m)
             {
-                double sum = 0.0;
-                for(std::size_t j = 0; j < N; ++j)
-                    sum += outH2[m * N + j];
-                if(!(sum > 0.0) || std::fabs(sum - 1.0) > 1e-3)
-                    bad = true;
+                auto f = rowFlags.hostData()[m];
+                if(f != 0)
+                {
+                    anyBad = true;
+                    break;
+                }
             }
-            if(bad)
+            bool log = false;
+            if(char const* logEnv = std::getenv("ALPAKA_SOFTMAX_LOG"))
             {
-                hostFallback();
+                std::string lv(logEnv);
+                log = (lv == "1" || lv == "ON" || lv == "on" || lv == "true" || lv == "TRUE");
             }
+            if(log && anyBad)
+            {
+                // Minimal logging; avoid verbose per-row dump by default
+                std::fprintf(
+                    stderr,
+                    "[softmax] device diagnostics: detected anomalous rows among %zu (flags!=0)\n",
+                    M);
+            }
+        }
+        // Unconditional host-side validation and corrective fallback for robustness
+        output.toHost(device, queue);
+        auto* outH2 = output.hostData();
+        bool bad = false;
+        for(std::size_t m = 0; m < M && !bad; ++m)
+        {
+            double sum = 0.0;
+            for(std::size_t j = 0; j < N; ++j)
+                sum += outH2[m * N + j];
+            if(!(sum > 0.0) || std::fabs(sum - 1.0) > 1e-3)
+                bad = true;
+        }
+        if(bad)
+        {
+            hostFallback();
         }
     }
 

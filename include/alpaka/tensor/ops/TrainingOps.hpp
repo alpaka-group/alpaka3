@@ -15,6 +15,16 @@
 
 #include <cassert>
 
+// Optional vendor libraries for fast paths
+#ifdef ALPAKA_HAS_CUBLAS
+#    include <cublas_v2.h>
+#    include <cuda_runtime.h>
+#endif
+#ifdef ALPAKA_HAS_CUDNN
+#    include <cuda_runtime.h>
+#    include <cudnn.h>
+#endif
+
 namespace alpaka::tensor::ops::train
 {
     namespace detail
@@ -219,8 +229,213 @@ namespace alpaka::tensor::ops::train
         dW.ensureOnDevice(device, queue);
         dInput.ensureOnDevice(device, queue);
 
+        // Try cuDNN fast path on CUDA (float, no dilation); fallback to host implementation on failure
+#if defined(ALPAKA_HAS_CUDNN)
+        if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda>)
+        {
+            if constexpr(std::is_same_v<T, float>)
+            {
+                if(p.dilation_h == 1 && p.dilation_w == 1)
+                {
+                    cudnnHandle_t handle = nullptr;
+                    static thread_local cudnnHandle_t tlHandle = nullptr;
+                    if(tlHandle == nullptr)
+                    {
+                        if(cudnnCreate(&tlHandle) != CUDNN_STATUS_SUCCESS)
+                        {
+                            tlHandle = nullptr;
+                        }
+                    }
+                    handle = tlHandle;
+                    if(handle)
+                    {
+                        cudnnSetStream(handle, queue.getNativeHandle());
+
+                        // Descriptors
+                        cudnnTensorDescriptor_t xDesc{}, dyDesc{}, dxDesc{};
+                        cudnnFilterDescriptor_t wDesc{}, dwDesc{};
+                        cudnnConvolutionDescriptor_t convDesc{};
+                        if(cudnnCreateTensorDescriptor(&xDesc) != CUDNN_STATUS_SUCCESS
+                           || cudnnCreateTensorDescriptor(&dyDesc) != CUDNN_STATUS_SUCCESS
+                           || cudnnCreateTensorDescriptor(&dxDesc) != CUDNN_STATUS_SUCCESS
+                           || cudnnCreateFilterDescriptor(&wDesc) != CUDNN_STATUS_SUCCESS
+                           || cudnnCreateFilterDescriptor(&dwDesc) != CUDNN_STATUS_SUCCESS
+                           || cudnnCreateConvolutionDescriptor(&convDesc) != CUDNN_STATUS_SUCCESS)
+                        {
+                            // fall back on failure to create descriptors
+                        }
+                        else
+                        {
+                            // Set descriptors (NCHW)
+                            cudnnSetTensor4dDescriptor(
+                                xDesc,
+                                CUDNN_TENSOR_NCHW,
+                                CUDNN_DATA_FLOAT,
+                                static_cast<int>(N),
+                                static_cast<int>(C_in),
+                                static_cast<int>(H_in),
+                                static_cast<int>(W_in));
+                            cudnnSetTensor4dDescriptor(
+                                dyDesc,
+                                CUDNN_TENSOR_NCHW,
+                                CUDNN_DATA_FLOAT,
+                                static_cast<int>(N),
+                                static_cast<int>(C_out),
+                                static_cast<int>(H_out),
+                                static_cast<int>(W_out));
+                            cudnnSetTensor4dDescriptor(
+                                dxDesc,
+                                CUDNN_TENSOR_NCHW,
+                                CUDNN_DATA_FLOAT,
+                                static_cast<int>(N),
+                                static_cast<int>(C_in),
+                                static_cast<int>(H_in),
+                                static_cast<int>(W_in));
+
+                            cudnnSetFilter4dDescriptor(
+                                wDesc,
+                                CUDNN_DATA_FLOAT,
+                                CUDNN_TENSOR_NCHW,
+                                static_cast<int>(C_out),
+                                static_cast<int>(C_in),
+                                static_cast<int>(K_h),
+                                static_cast<int>(K_w));
+                            cudnnSetFilter4dDescriptor(
+                                dwDesc,
+                                CUDNN_DATA_FLOAT,
+                                CUDNN_TENSOR_NCHW,
+                                static_cast<int>(C_out),
+                                static_cast<int>(C_in),
+                                static_cast<int>(K_h),
+                                static_cast<int>(K_w));
+
+                            cudnnSetConvolution2dDescriptor(
+                                convDesc,
+                                static_cast<int>(p.pad_h),
+                                static_cast<int>(p.pad_w),
+                                static_cast<int>(p.stride_h),
+                                static_cast<int>(p.stride_w),
+                                1,
+                                1,
+                                CUDNN_CROSS_CORRELATION,
+                                CUDNN_DATA_FLOAT);
+
+                            // Workspace
+                            size_t wsSizeFilter = 0, wsSizeData = 0;
+                            cudnnConvolutionBwdFilterAlgo_t algoFilter;
+                            cudnnConvolutionBwdDataAlgo_t algoData;
+
+                            // Choose fastest algorithms (let cuDNN decide)
+                            cudnnGetConvolutionBackwardFilterAlgorithm(
+                                handle,
+                                xDesc,
+                                dyDesc,
+                                convDesc,
+                                dwDesc,
+                                CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST,
+                                0,
+                                &algoFilter);
+                            cudnnGetConvolutionBackwardFilterWorkspaceSize(
+                                handle,
+                                xDesc,
+                                dyDesc,
+                                convDesc,
+                                dwDesc,
+                                algoFilter,
+                                &wsSizeFilter);
+
+                            cudnnGetConvolutionBackwardDataAlgorithm(
+                                handle,
+                                wDesc,
+                                dyDesc,
+                                convDesc,
+                                dxDesc,
+                                CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST,
+                                0,
+                                &algoData);
+                            cudnnGetConvolutionBackwardDataWorkspaceSize(
+                                handle,
+                                wDesc,
+                                dyDesc,
+                                convDesc,
+                                dxDesc,
+                                algoData,
+                                &wsSizeData);
+
+                            size_t wsSize = std::max(wsSizeFilter, wsSizeData);
+                            void* workspace = nullptr;
+                            if(wsSize > 0)
+                                cudaMalloc(&workspace, wsSize);
+
+                            float alpha = 1.0f, beta = 0.0f;
+                            auto xPtr = input.deviceBuffer(device, queue).data();
+                            auto wPtr = weight.deviceBuffer(device, queue).data();
+                            auto dyPtr = dOut.deviceBuffer(device, queue).data();
+                            auto dwPtr = dW.deviceBuffer(device, queue).data();
+                            auto dxPtr = dInput.deviceBuffer(device, queue).data();
+
+                            auto stF = cudnnConvolutionBackwardFilter(
+                                handle,
+                                &alpha,
+                                xDesc,
+                                xPtr,
+                                dyDesc,
+                                dyPtr,
+                                convDesc,
+                                algoFilter,
+                                workspace,
+                                wsSize,
+                                &beta,
+                                dwDesc,
+                                dwPtr);
+
+                            auto stD = CUDNN_STATUS_SUCCESS;
+                            if(stF == CUDNN_STATUS_SUCCESS)
+                            {
+                                stD = cudnnConvolutionBackwardData(
+                                    handle,
+                                    &alpha,
+                                    wDesc,
+                                    wPtr,
+                                    dyDesc,
+                                    dyPtr,
+                                    convDesc,
+                                    algoData,
+                                    workspace,
+                                    wsSize,
+                                    &beta,
+                                    dxDesc,
+                                    dxPtr);
+                            }
+
+                            if(workspace)
+                                cudaFree(workspace);
+
+                            // Clean up descriptors
+                            cudnnDestroyTensorDescriptor(xDesc);
+                            cudnnDestroyTensorDescriptor(dyDesc);
+                            cudnnDestroyTensorDescriptor(dxDesc);
+                            cudnnDestroyFilterDescriptor(wDesc);
+                            cudnnDestroyFilterDescriptor(dwDesc);
+                            cudnnDestroyConvolutionDescriptor(convDesc);
+
+                            if(stF == CUDNN_STATUS_SUCCESS && stD == CUDNN_STATUS_SUCCESS)
+                            {
+                                dW.markDeviceModified(device, queue);
+                                dInput.markDeviceModified(device, queue);
+                                return; // cuDNN path succeeded
+                            }
+                        }
+                    }
+                    // If we reach here, vendor path is not taken -> fall through to host
+                }
+            }
+        }
+#endif // ALPAKA_HAS_CUDNN
+
         // Reference host implementation for correctness (keeps tests deterministic across backends).
-        // TODO: Switch to device kernels below once validated end-to-end.
+        // TODO: The device kernels below have correctness issues - need debugging before enablement.
+        // TODO: Add cuDNN convolution backward support via CleanTensorOpContext provider system.
         {
             // Bring inputs to host
             input.toHost(device, queue);
@@ -244,7 +459,7 @@ namespace alpaka::tensor::ops::train
             auto offW = [=](std::size_t co, std::size_t ci, std::size_t kh, std::size_t kw)
             { return (((co * C_in + ci) * K_h) + kh) * K_w + kw; };
 
-            // dW
+            // dW computation
             for(std::size_t co = 0; co < C_out; ++co)
             {
                 for(std::size_t ci = 0; ci < C_in; ++ci)
@@ -283,7 +498,7 @@ namespace alpaka::tensor::ops::train
                 }
             }
 
-            // dInput
+            // dInput computation
             for(std::size_t n = 0; n < N; ++n)
             {
                 for(std::size_t ci = 0; ci < C_in; ++ci)
@@ -332,13 +547,11 @@ namespace alpaka::tensor::ops::train
             dInput.markHostModified();
             dW.ensureOnDevice(device, queue);
             dInput.ensureOnDevice(device, queue);
-
-            // Temporary debug for tiny test case
-            // (no debug prints)
-            return; // Skip device kernels for now
+            return; // Skip device kernels due to correctness issues
         }
 
-        // dW kernel (device) - disabled by early return above; retained for future enablement
+        // Device kernels (currently disabled due to correctness issues - need debugging)
+        // dW kernel (device)
         {
             auto frame = ::alpaka::tensor::ops::detail::makeFrame<Exec, Queue>(C_out * C_in * K_h * K_w);
             queue.enqueue(
@@ -504,35 +717,106 @@ namespace alpaka::tensor::ops::train
         dA.ensureOnDevice(device, queue);
         dBias.ensureOnDevice(device, queue);
 
-        // dW
+        bool usedVendor = false;
+
+#if defined(ALPAKA_HAS_CUBLAS)
+        if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda>)
         {
-            auto frame = ::alpaka::tensor::ops::detail::makeFrame<Exec, Queue>(K * N);
-            queue.enqueue(
-                exec,
-                frame,
-                ::alpaka::tensor::ops::kernels::LinearGradWKernel{},
-                A.deviceBuffer(device, queue).data(),
-                dOut.deviceBuffer(device, queue).data(),
-                dW.deviceBuffer(device, queue).data(),
-                M,
-                N,
-                K);
-            dW.markDeviceModified(device, queue);
+#    ifdef __CUDACC__
+            // Static handle per thread to avoid recreate cost
+            static thread_local cublasHandle_t cublasHandle = nullptr;
+            if(cublasHandle == nullptr)
+            {
+                auto st = cublasCreate(&cublasHandle);
+                if(st != CUBLAS_STATUS_SUCCESS)
+                    cublasHandle = nullptr;
+            }
+            if(cublasHandle)
+            {
+                cublasSetStream(cublasHandle, queue.getNativeHandle());
+                float alpha = 1.0f, beta = 0.0f;
+                // dW = A^T [KxM] * dOut [MxN] -> [KxN]
+                // Map row-major to column-major by swapping A/B and M/N, no explicit trans needed
+                auto st1 = cublasSgemm(
+                    cublasHandle,
+                    CUBLAS_OP_N,
+                    CUBLAS_OP_T, // (A^T)^T = A in column-major mapping when swapped
+                    static_cast<int>(N),
+                    static_cast<int>(K),
+                    static_cast<int>(M),
+                    &alpha,
+                    dOut.deviceBuffer(device, queue).data(),
+                    static_cast<int>(N),
+                    A.deviceBuffer(device, queue).data(),
+                    static_cast<int>(K),
+                    &beta,
+                    dW.deviceBuffer(device, queue).data(),
+                    static_cast<int>(N));
+
+                // dA = dOut [MxN] * W^T [NxK] -> [MxK]
+                auto st2 = CUBLAS_STATUS_INTERNAL_ERROR;
+                if(st1 == CUBLAS_STATUS_SUCCESS)
+                {
+                    st2 = cublasSgemm(
+                        cublasHandle,
+                        CUBLAS_OP_T, // (W^T)^T = W in column-major mapping when swapped
+                        CUBLAS_OP_N,
+                        static_cast<int>(K),
+                        static_cast<int>(M),
+                        static_cast<int>(N),
+                        &alpha,
+                        W.deviceBuffer(device, queue).data(),
+                        static_cast<int>(N),
+                        dOut.deviceBuffer(device, queue).data(),
+                        static_cast<int>(N),
+                        &beta,
+                        dA.deviceBuffer(device, queue).data(),
+                        static_cast<int>(K));
+                }
+
+                if(st1 == CUBLAS_STATUS_SUCCESS && st2 == CUBLAS_STATUS_SUCCESS)
+                {
+                    usedVendor = true;
+                    dW.markDeviceModified(device, queue);
+                    dA.markDeviceModified(device, queue);
+                }
+            }
+#    endif
         }
-        // dA
+#endif // ALPAKA_HAS_CUBLAS
+
+        if(!usedVendor)
         {
-            auto frame = ::alpaka::tensor::ops::detail::makeFrame<Exec, Queue>(M * K);
-            queue.enqueue(
-                exec,
-                frame,
-                ::alpaka::tensor::ops::kernels::LinearGradAKernel{},
-                dOut.deviceBuffer(device, queue).data(),
-                W.deviceBuffer(device, queue).data(),
-                dA.deviceBuffer(device, queue).data(),
-                M,
-                N,
-                K);
-            dA.markDeviceModified(device, queue);
+            // dW
+            {
+                auto frame = ::alpaka::tensor::ops::detail::makeFrame<Exec, Queue>(K * N);
+                queue.enqueue(
+                    exec,
+                    frame,
+                    ::alpaka::tensor::ops::kernels::LinearGradWKernel{},
+                    A.deviceBuffer(device, queue).data(),
+                    dOut.deviceBuffer(device, queue).data(),
+                    dW.deviceBuffer(device, queue).data(),
+                    M,
+                    N,
+                    K);
+                dW.markDeviceModified(device, queue);
+            }
+            // dA
+            {
+                auto frame = ::alpaka::tensor::ops::detail::makeFrame<Exec, Queue>(M * K);
+                queue.enqueue(
+                    exec,
+                    frame,
+                    ::alpaka::tensor::ops::kernels::LinearGradAKernel{},
+                    dOut.deviceBuffer(device, queue).data(),
+                    W.deviceBuffer(device, queue).data(),
+                    dA.deviceBuffer(device, queue).data(),
+                    M,
+                    N,
+                    K);
+                dA.markDeviceModified(device, queue);
+            }
         }
         // dBias
         {
