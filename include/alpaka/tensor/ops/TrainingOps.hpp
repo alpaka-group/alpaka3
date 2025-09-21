@@ -334,17 +334,7 @@ namespace alpaka::tensor::ops::train
             dInput.ensureOnDevice(device, queue);
 
             // Temporary debug for tiny test case
-            if(N == 1 && C_in == 1 && C_out == 1 && H_in == 3 && W_in == 3 && K_h == 2 && K_w == 2 && H_out == 2
-               && W_out == 2)
-            {
-                std::cout << "[train::conv2d_backward] host path dW:";
-                for(int i = 0; i < 4; ++i)
-                    std::cout << ' ' << dW.hostData()[i];
-                std::cout << " dX:";
-                for(int i = 0; i < 9; ++i)
-                    std::cout << ' ' << dInput.hostData()[i];
-                std::cout << "\n";
-            }
+            // (no debug prints)
             return; // Skip device kernels for now
         }
 
