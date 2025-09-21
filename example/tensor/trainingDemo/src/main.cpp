@@ -91,6 +91,8 @@ struct LinearTrainable
         void const* cachePtr)
     {
         auto* cache = static_cast<Cache const*>(cachePtr);
+        if(cache == nullptr)
+            throw std::runtime_error("LinearTrainable backward: missing cache");
         auto* dy1D = std::get_if<at::Tensor1D<float, Device>>(&dy);
         if(!dy1D)
             throw std::runtime_error("LinearTrainable expects 1D dy variant");
@@ -149,6 +151,8 @@ struct ReLU1DLayer
         if(!in1D)
             throw std::runtime_error("ReLU1DLayer expects 1D dy variant");
         auto const* cache = static_cast<Cache const*>(cachePtr);
+        if(cache == nullptr)
+            throw std::runtime_error("ReLU1DLayer backward: missing cache");
         auto& dY = *in1D;
         at::Tensor1D<float, Device> dX(dev, {dY.size()}, "relu_dx");
         auto X = const_cast<at::Tensor1D<float, Device>&>(cache->x);
@@ -159,12 +163,14 @@ struct ReLU1DLayer
 
 int main()
 {
+    std::cerr << "[demo] start\n";
     using Exec = alpaka::exec::CpuOmpBlocks;
     auto exec = Exec{};
     // Select a host CPU device explicitly and create a queue
     auto sel = alpaka::onHost::makeDeviceSelector(alpaka::api::host, alpaka::deviceKind::cpu);
     auto device = sel.makeDevice(0);
     auto queue = device.makeQueue();
+    std::cerr << "[demo] device and queue created\n";
 
     using Dev = decltype(device);
     using Queue = decltype(queue);
@@ -172,16 +178,19 @@ int main()
     // Synthetic batch: M=2, K=4 → N=3
     std::size_t M = 2, K = 4, N = 3;
     at::Tensor1D<float, Dev> x(device, {M * K}, "demo_x");
+    std::cerr << "[demo] allocated x\n";
     {
         float* h = x.hostData();
         for(std::size_t i = 0; i < x.size(); ++i)
             h[i] = (i % 5) - 2.0f; // small values
         x.markHostModified();
     }
+    std::cerr << "[demo] initialized x\n";
 
     // Labels (one-hot) and scratch for softmax
     at::Tensor2D<float, Dev> labels(device, {M, N}, "labels");
     at::Tensor2D<float, Dev> probs(device, {M, N}, "probs");
+    std::cerr << "[demo] allocated labels/probs\n";
     {
         float* y = labels.hostData();
         for(std::size_t m = 0; m < M; ++m)
@@ -192,16 +201,19 @@ int main()
         }
         labels.markHostModified();
     }
+    std::cerr << "[demo] initialized labels\n";
 
     // Build CT pipeline: Linear -> ReLU
     LinearTrainable<Dev> lin{M, N};
     ReLU1DLayer<Dev> relu{};
     ops::TrainingSequentialCT<Dev, Exec, Queue, LinearTrainable<Dev>, ReLU1DLayer<Dev>>
         pipe(exec, device, queue, lin, relu);
+    std::cerr << "[demo] pipeline created\n";
 
     // Forward
     using Any = ops::TrainingSequentialCT<Dev, Exec, Queue, LinearTrainable<Dev>, ReLU1DLayer<Dev>>::Any;
     Any outVar = pipe.forward(Any{x});
+    std::cerr << "[demo] forward done\n";
     auto* logits1D = std::get_if<at::Tensor1D<float, Dev>>(&outVar);
     if(!logits1D)
     {
@@ -212,12 +224,15 @@ int main()
     // Softmax + CE backward to compute dLogits
     auto logits2D = ops::copy_flat_to_2d<float>(exec, device, queue, *logits1D, M, N);
     ops::softmax_2d<float>(exec, device, queue, logits2D, probs);
+    std::cerr << "[demo] softmax done\n";
     at::Tensor2D<float, Dev> dLogits(device, {M, N}, "dlogits");
     train::softmax_cross_entropy_backward<float>(exec, device, queue, logits2D, probs, labels, dLogits);
+    std::cerr << "[demo] smxce backward done\n";
 
     // Convert dLogits to 1D to feed pipeline backward
     auto dLogits1D = ops::flatten<float, 2>(exec, device, queue, dLogits);
     Any dxVar = pipe.backward(Any{dLogits1D});
+    std::cerr << "[demo] backward done\n";
     auto* dx1D = std::get_if<at::Tensor1D<float, Dev>>(&dxVar);
 
     // Print tiny summary

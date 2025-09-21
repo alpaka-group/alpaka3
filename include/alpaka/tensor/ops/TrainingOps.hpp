@@ -9,6 +9,7 @@
 #include <alpaka/tensor/ops/InferenceOps.hpp>
 #include <alpaka/tensor/ops/PoolingTypes.hpp>
 #include <alpaka/tensor/ops/kernels/ActivationBackwardKernels.hpp>
+#include <alpaka/tensor/ops/kernels/Conv2DBackwardKernels.hpp>
 #include <alpaka/tensor/ops/kernels/LinearBackwardKernels.hpp>
 #include <alpaka/tensor/ops/kernels/PoolingBackwardKernels.hpp>
 
@@ -16,6 +17,86 @@
 
 namespace alpaka::tensor::ops::train
 {
+    // Conv2D backward: compute dW and dInput given input X, weights W, and upstream grad dOut
+    template<typename T, typename Exec, typename Device, typename Queue>
+    void conv2d_backward(
+        Exec const& exec,
+        Device const& device,
+        Queue& queue,
+        tensor::Tensor4D<T, Device>& input, // [N, C_in, H_in, W_in]
+        tensor::Tensor4D<T, Device>& weight, // [C_out, C_in, K_h, K_w]
+        tensor::Tensor4D<T, Device>& dOut, // [N, C_out, H_out, W_out]
+        tensor::Tensor4D<T, Device>& dW, // [C_out, C_in, K_h, K_w]
+        tensor::Tensor4D<T, Device>& dInput, // [N, C_in, H_in, W_in]
+        ::alpaka::tensor::ops::Conv2DParams p)
+    {
+        static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>);
+        auto inS = input.shape();
+        auto wS = weight.shape();
+        auto dOS = dOut.shape();
+        auto dWS = dW.shape();
+        auto dXS = dInput.shape();
+        auto N = inS[0], C_in = inS[1], H_in = inS[2], W_in = inS[3];
+        auto C_out = wS[0], K_h = wS[2], K_w = wS[3];
+        auto H_out = dOS[2], W_out = dOS[3];
+        // Basic shape checks
+        assert(wS[1] == C_in && "weight C_in mismatch");
+        assert(dWS[0] == C_out && dWS[1] == C_in && dWS[2] == K_h && dWS[3] == K_w);
+        assert(dXS[0] == N && dXS[1] == C_in && dXS[2] == H_in && dXS[3] == W_in);
+
+        input.ensureOnDevice(device, queue);
+        weight.ensureOnDevice(device, queue);
+        dOut.ensureOnDevice(device, queue);
+        dW.ensureOnDevice(device, queue);
+        dInput.ensureOnDevice(device, queue);
+
+        // dW kernel
+        {
+            auto frame = ::alpaka::tensor::ops::detail::makeFrame<Exec, Queue>(C_out * C_in * K_h * K_w);
+            queue.enqueue(
+                exec,
+                frame,
+                ::alpaka::tensor::ops::kernels::Conv2DGradWKernel{},
+                input.deviceBuffer(device, queue),
+                dOut.deviceBuffer(device, queue),
+                dW.deviceBuffer(device, queue),
+                N,
+                C_in,
+                C_out,
+                H_in,
+                W_in,
+                H_out,
+                W_out,
+                K_h,
+                K_w,
+                p);
+            dW.markDeviceModified(device, queue);
+        }
+
+        // dInput kernel
+        {
+            auto frame = ::alpaka::tensor::ops::detail::makeFrame<Exec, Queue>(N * C_in * H_in * W_in);
+            queue.enqueue(
+                exec,
+                frame,
+                ::alpaka::tensor::ops::kernels::Conv2DGradInputKernel{},
+                dOut.deviceBuffer(device, queue),
+                weight.deviceBuffer(device, queue),
+                dInput.deviceBuffer(device, queue),
+                N,
+                C_in,
+                C_out,
+                H_in,
+                W_in,
+                H_out,
+                W_out,
+                K_h,
+                K_w,
+                p);
+            dInput.markDeviceModified(device, queue);
+        }
+    }
+
     // ReLU backward for 1D/4D tensors: dx = (x>0) ? dy : 0
     template<typename T, typename Exec, typename Device, typename Queue, typename Tensor>
     void relu_backward(Exec const& exec, Device const& device, Queue& queue, Tensor& x, Tensor& dy, Tensor& dx)

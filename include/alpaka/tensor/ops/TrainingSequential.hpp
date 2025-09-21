@@ -17,6 +17,17 @@
 
 namespace alpaka::tensor::ops
 {
+    // Detection idiom: detect presence of nested `Cache` type on a layer
+    template<class, class = void>
+    struct has_cache : std::false_type
+    {
+    };
+
+    template<class T>
+    struct has_cache<T, std::void_t<typename T::Cache>> : std::true_type
+    {
+    };
+
     // Concepts: detect training forward/backward signatures on a layer type
     template<typename L, typename Exec, typename Device, typename Queue, typename Any>
     concept TrainForward = requires(L l, Exec const& e, Device& d, Queue& q, Any x, void* c) {
@@ -112,10 +123,12 @@ namespace alpaka::tensor::ops
         static constexpr std::size_t kNumLayers = sizeof...(Layers);
         using CachesTuple = std::array<std::shared_ptr<void>, kNumLayers>;
 
+        // Initialize caches using the actual member tuple types to appease NVCC
         template<std::size_t Index>
-        static std::shared_ptr<void> makeCacheFor()
+        std::shared_ptr<void> makeCacheForMember()
         {
-            using L = std::tuple_element_t<Index, std::tuple<Layers...>>;
+            auto& layer = std::get<Index>(layers_);
+            using L = std::remove_cvref_t<decltype(layer)>;
             if constexpr(requires { typename L::Cache; })
             {
                 using CacheT = typename L::Cache;
@@ -128,9 +141,9 @@ namespace alpaka::tensor::ops
         }
 
         template<std::size_t... Is>
-        static CachesTuple makeCaches(std::index_sequence<Is...>)
+        void initCaches(std::index_sequence<Is...>)
         {
-            return CachesTuple{{makeCacheFor<Is>()...}};
+            ((caches_[Is] = makeCacheForMember<Is>()), ...);
         }
 
         // Inject CleanTensorOpContext into layers if they expose a public .context
@@ -195,7 +208,7 @@ namespace alpaka::tensor::ops
         template<std::size_t... Is>
         void forwardImpl(Any& x, std::index_sequence<Is...>)
         {
-            caches_ = makeCaches(std::index_sequence<Is...>{});
+            initCaches(std::index_sequence<Is...>{});
             ((x = forwardOne<Is>(std::move(x))), ...);
         }
 
