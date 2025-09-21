@@ -16,6 +16,7 @@
 #include <cmath>
 #include <iostream>
 #include <optional>
+#include <cstdlib>
 #include <variant>
 
 namespace at = alpaka::tensor;
@@ -24,7 +25,7 @@ namespace train = alpaka::tensor::ops::train;
 
 // Forward declaration
 template<typename Exec, typename Device, typename Queue>
-int runTrainingDemo(Exec const& exec, Device& device, Queue& queue);
+int runTrainingDemo(Exec const& exec, Device& device, Queue& queue, int steps, float lr);
 
 // A minimal trainable linear layer adapter compatible with TrainingSequentialCT
 // Assumes inputs are 1D of length M*K; outputs 1D of length M*N
@@ -191,9 +192,36 @@ struct ReLU1DLayer
     }
 };
 
-int main()
+int main(int argc, char** argv)
 {
     std::cerr << "[demo] start\n";
+
+    // Simple CLI: --seed <u64> --steps <int> --lr <float>
+    std::optional<unsigned long long> optSeed;
+    int optSteps = 100;
+    float optLr = 0.5f;
+    for(int i = 1; i < argc; ++i)
+    {
+        std::string a = argv[i];
+        auto need = [&](int more) { return (i + more) < argc; };
+        if(a == "--seed" && need(1))
+        {
+            optSeed = static_cast<unsigned long long>(std::stoull(argv[++i]));
+        }
+        else if(a == "--steps" && need(1))
+        {
+            optSteps = std::max(1, std::stoi(argv[++i]));
+        }
+        else if(a == "--lr" && need(1))
+        {
+            optLr = std::max(0.0f, std::stof(argv[++i]));
+        }
+        else if(a == "-v" && need(1))
+        {
+            // ignore verbosity arg in this demo; kept for consistency with others
+            ++i;
+        }
+    }
 
     // Generic backend enumeration: try all enabled executors for all enabled APIs.
     // No backend-specific code paths.
@@ -211,7 +239,10 @@ int main()
             std::cerr << "[demo] running on backend: "
                       << alpaka::onHost::demangledName(exec) << " / "
                       << alpaka::onHost::demangledName(deviceSpec) << "\n";
-            return runTrainingDemo(exec, device, queue);
+            // Seed host RNG deterministically per run
+            if(optSeed)
+                std::srand(static_cast<unsigned int>(*optSeed & 0xFFFFFFFFu));
+            return runTrainingDemo(exec, device, queue, optSteps, optLr);
         }
         catch(std::exception const& e)
         {
@@ -227,19 +258,27 @@ int main()
 }
 
 template<typename Exec, typename Device, typename Queue>
-int runTrainingDemo(Exec const& exec, Device& device, Queue& queue)
+int runTrainingDemo(Exec const& exec, Device& device, Queue& queue, int steps, float lr)
 {
     using Dev = Device;
 
-    // Synthetic batch: M=2, K=4 → N=3
-    std::size_t M = 2, K = 4, N = 3;
+    // Deterministic, linearly separable dataset: one-hot inputs map to same-class labels.
+    // Choose N classes, K=N features, M multiple of N.
+    std::size_t N = 3;           // classes
+    std::size_t K = N;           // in-features = classes (one-hot)
+    std::size_t M = 60;          // batch (20 samples per class)
     std::cerr << "[demo] before alloc x\n";
     at::Tensor1D<float, Dev> x(device, {M * K}, "demo_x");
     std::cerr << "[demo] after alloc x\n";
+    // Fill one-hot features
     {
         float* h = x.hostData();
-        for(std::size_t i = 0; i < x.size(); ++i)
-            h[i] = (i % 5) - 2.0f; // small values
+        std::fill(h, h + x.size(), 0.0f);
+        for(std::size_t m = 0; m < M; ++m)
+        {
+            std::size_t c = m % N;
+            h[m * K + c] = 1.0f;
+        }
         x.markHostModified();
     }
 
@@ -250,11 +289,11 @@ int runTrainingDemo(Exec const& exec, Device& device, Queue& queue)
     std::cerr << "[demo] after alloc labels/probs\n";
     {
         float* y = labels.hostData();
+        std::fill(y, y + (M * N), 0.0f);
         for(std::size_t m = 0; m < M; ++m)
         {
-            for(std::size_t c = 0; c < N; ++c)
-                y[m * N + c] = 0.f;
-            y[m * N + (m % N)] = 1.f; // simple 0/1 labels
+            std::size_t c = m % N;
+            y[m * N + c] = 1.f; // one-hot labels matching input class
         }
         labels.markHostModified();
     }
@@ -264,6 +303,15 @@ int runTrainingDemo(Exec const& exec, Device& device, Queue& queue)
         // Minimal: direct Linear forward to isolate errors
         LinearTrainable<Dev> lin{K, N, device};
         typename LinearTrainable<Dev>::Cache cache;
+        // Initialize weights/bias to zero to simplify convergence for one-hot data
+        {
+            auto* w = lin.W.hostData();
+            std::fill(w, w + (K * N), 0.0f);
+            lin.W.markHostModified();
+            auto* b = lin.b.hostData();
+            std::fill(b, b + N, 0.0f);
+            lin.b.markHostModified();
+        }
         std::cerr << "[demo] before direct forward\n";
         auto outVarDirect = lin.forward(exec, device, queue, std::variant<at::Tensor4D<float, Dev>, at::Tensor1D<float, Dev>, at::Tensor2D<float, Dev>>{x}, &cache);
         std::cerr << "[demo] after direct forward\n";
@@ -294,7 +342,6 @@ int runTrainingDemo(Exec const& exec, Device& device, Queue& queue)
         return static_cast<float>(loss / static_cast<double>(M));
     };
 
-    int steps = 5;
     float firstLoss = 0.f;
     float lastLoss = 0.f;
     for(int t = 0; t < steps; ++t)
@@ -310,17 +357,34 @@ int runTrainingDemo(Exec const& exec, Device& device, Queue& queue)
         lastLoss = loss;
         std::cout << "step=" << t << ", loss=" << loss << "\n";
 
-        // Compute gradient wrt logits and step parameters via backward
+    // Compute gradient wrt logits and step parameters via explicit backward
         at::Tensor2D<float, Dev> dLogits(device, {M, N}, "dlogits");
         train::softmax_cross_entropy_backward<float>(exec, device, queue, logits2D, probs, labels, dLogits);
-        auto dLogits1D = ops::flatten<float, 2>(exec, device, queue, dLogits);
-        // Backward just to exercise APIs (no relu here)
-        (void) lin.backward(exec, device, queue, std::variant<at::Tensor4D<float, Dev>, at::Tensor1D<float, Dev>, at::Tensor2D<float, Dev>>{dLogits1D}, &cache);
+    auto dLogits1D = ops::flatten<float, 2>(exec, device, queue, dLogits);
+    // Keep device buffer alive until queued backward ops complete on async backends
+    dLogits1D.deviceBuffer(device, queue).destructorWaitFor(queue);
+    // Ensure host-side visibility for CPU fallback in linear_backward
+    dLogits1D.toHost(device, queue);
+    // Compute grads dW, dB, dA and apply SGD with user-specified lr
+    at::Tensor1D<float, Dev> dW(device, {K * N}, "LT_dW_loop");
+    at::Tensor1D<float, Dev> dA(device, {M * K}, "LT_dA_loop");
+    at::Tensor1D<float, Dev> dB(device, {N}, "LT_dB_loop");
+    auto Ainput = const_cast<at::Tensor1D<float, Dev>&>(cache.input);
+    train::linear_backward(exec, device, queue, cache.M, cache.N, cache.K, Ainput, lin.W, dLogits1D, dW, dA, dB);
+    train::sgd_update(exec, device, queue, lin.W, dW, lr);
+    train::sgd_update(exec, device, queue, lin.b, dB, lr);
     }
 
     int loss_decreased = (lastLoss < firstLoss) ? 1 : 0;
     std::cout << "Training demo finished. loss_start=" << firstLoss << ", loss_end=" << lastLoss
               << ", loss_decreased=" << loss_decreased
               << ", logits_size=" << (logits1D ? logits1D->size() : 0) << "\n";
+
+    // Soft assert: expect loss to drop substantially on one-hot synthetic
+    if(lastLoss >= 0.5f * firstLoss)
+    {
+        std::cerr << "[demo] WARNING: loss did not decrease by 50% (" << lastLoss << " vs " << firstLoss << ")\n";
+        // Do not hard-fail to keep environments lenient; switch to exit(1) if strict CI desired
+    }
     return 0;
 }
