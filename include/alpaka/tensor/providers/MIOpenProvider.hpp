@@ -329,7 +329,7 @@ namespace alpaka::tensor
 #endif
         }
 
-        // Activation (ReLU) typed stub for parity; delegates to generic for now
+        // Activation (ReLU) forward, in-place
         template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
         void relu_inplace(
             Exec const& exec,
@@ -337,10 +337,92 @@ namespace alpaka::tensor
             Queue& queue,
             tensor::Tensor<T, Rank, Device>& t) const
         {
+#ifdef ALPAKA_HAS_MIOPEN
+            static_assert(std::is_same_v<Exec, alpaka::exec::GpuHip>, "MIOpen supports only HIP backend");
+            static_assert(std::is_same_v<T, float>, "MIOpen ReLU currently implemented for float only");
+
+            ensureInitialized();
+            if(!handle_)
+                throw std::runtime_error("MIOpen handle not initialized");
+
+            // Bind handle to HIP stream
+            auto hipStream = alpaka::onHost::getNativeHandle(queue);
+            auto stStream = miopenSetStream(handle_, hipStream);
+            if(stStream != miopenStatusSuccess)
+                throw std::runtime_error("MIOpen set stream failed");
+
+            // Ensure tensor lives on device
+            t.ensureOnDevice(device, queue);
+
+            // Build a 4D view (NCHW) for MIOpen regardless of Rank by flattening leading dims
+            // For Rank<4, we map to N=1,C=1 as needed; for Rank>4, flatten to N and keep last three dims.
+            auto shape = t.shape();
+            int N = 1, C = 1, H = 1, W = 1;
+            if constexpr(Rank == 4)
+            {
+                N = static_cast<int>(shape[0]);
+                C = static_cast<int>(shape[1]);
+                H = static_cast<int>(shape[2]);
+                W = static_cast<int>(shape[3]);
+            }
+            else if constexpr(Rank == 2)
+            {
+                N = static_cast<int>(shape[0]);
+                C = static_cast<int>(shape[1]);
+            }
+            else if constexpr(Rank == 1)
+            {
+                N = 1; C = 1; H = 1; W = static_cast<int>(shape[0]);
+            }
+            else
+            {
+                // Generic mapping: collapse leading dims to N, map last three as C,H,W if available
+                // Fallback to generic kernel for complex shapes
+                ::alpaka::tensor::ops::relu_inplace(exec, device, queue, t);
+                return;
+            }
+
+            miopenTensorDescriptor_t xDesc, yDesc;
+            miopenActivationDescriptor_t actDesc;
+            miopenCreateTensorDescriptor(&xDesc);
+            miopenCreateTensorDescriptor(&yDesc);
+            miopenCreateActivationDescriptor(&actDesc);
+            auto cleanup = [&]() {
+                miopenDestroyTensorDescriptor(xDesc);
+                miopenDestroyTensorDescriptor(yDesc);
+                miopenDestroyActivationDescriptor(actDesc);
+            };
+
+            miopenSet4dTensorDescriptor(xDesc, miopenFloat, N, C, H, W);
+            miopenSet4dTensorDescriptor(yDesc, miopenFloat, N, C, H, W);
+            // Parameters for ReLU are ignored; set to zeroes
+            miopenSetActivationDescriptor(actDesc, miopenActivationRELU, 0.0, 0.0, 0.0);
+
+            float alpha = 1.0f;
+            float beta = 0.0f;
+            void* dataPtr = static_cast<void*>(t.deviceBuffer(device, queue).data());
+            auto st = miopenActivationForward(
+                handle_,
+                actDesc,
+                &alpha,
+                xDesc,
+                dataPtr,
+                &beta,
+                yDesc,
+                dataPtr);
+
+            cleanup();
+
+            if(st != miopenStatusSuccess)
+                throw std::runtime_error("MIOpen ActivationForward (ReLU) failed");
+
+            t.markDeviceModified(device, queue);
+#else
             ::alpaka::tensor::ops::relu_inplace(exec, device, queue, t);
+#endif
         }
 
-        // Pooling typed stubs (generic fallback for now)
+        // Pooling forward (max)
         template<typename T, typename Exec, typename Device, typename Queue>
         auto max_pool2d(
             Exec const& exec,
@@ -349,7 +431,79 @@ namespace alpaka::tensor
             tensor::Tensor4D<T, Device>& input,
             ops::Pool2DParams const& params) const -> tensor::Tensor4D<T, Device>
         {
+#ifdef ALPAKA_HAS_MIOPEN
+            static_assert(std::is_same_v<Exec, alpaka::exec::GpuHip>, "MIOpen supports only HIP backend");
+            static_assert(std::is_same_v<T, float>, "MIOpen Pooling currently implemented for float only");
+
+            ensureInitialized();
+            if(!handle_)
+                throw std::runtime_error("MIOpen handle not initialized");
+
+            auto hipStream = alpaka::onHost::getNativeHandle(queue);
+            if(miopenSetStream(handle_, hipStream) != miopenStatusSuccess)
+                throw std::runtime_error("MIOpen set stream failed");
+
+            input.ensureOnDevice(device, queue);
+
+            miopenPoolingDescriptor_t poolDesc;
+            miopenCreatePoolingDescriptor(&poolDesc);
+            miopenSet2dPoolingDescriptor(
+                poolDesc,
+                miopenPoolingMax,
+                static_cast<int>(params.kernel_h),
+                static_cast<int>(params.kernel_w),
+                static_cast<int>(params.pad_h),
+                static_cast<int>(params.pad_w),
+                static_cast<int>(params.stride_h),
+                static_cast<int>(params.stride_w));
+
+            miopenTensorDescriptor_t xDesc, yDesc;
+            miopenCreateTensorDescriptor(&xDesc);
+            miopenCreateTensorDescriptor(&yDesc);
+
+            auto inShape = input.shape();
+            int N = static_cast<int>(inShape[0]);
+            int C = static_cast<int>(inShape[1]);
+            int H = static_cast<int>(inShape[2]);
+            int W = static_cast<int>(inShape[3]);
+            miopenSet4dTensorDescriptor(xDesc, miopenFloat, N, C, H, W);
+
+            int outN, outC, outH, outW;
+            miopenGetPoolingForwardOutputDim(poolDesc, xDesc, &outN, &outC, &outH, &outW);
+            miopenSet4dTensorDescriptor(yDesc, miopenFloat, outN, outC, outH, outW);
+
+            tensor::Tensor4D<T, Device> output(device, {static_cast<std::size_t>(outN), static_cast<std::size_t>(outC), static_cast<std::size_t>(outH), static_cast<std::size_t>(outW)});
+            output.ensureOnDevice(device, queue);
+
+            float alpha = 1.0f;
+            float beta = 0.0f;
+
+            // Some MIOpen versions require workspace for pooling backward only; pass null here.
+            auto st = miopenPoolingForward(
+                handle_,
+                poolDesc,
+                &alpha,
+                xDesc,
+                input.deviceBuffer(device, queue).data(),
+                &beta,
+                yDesc,
+                output.deviceBuffer(device, queue).data(),
+                false,
+                nullptr,
+                0);
+
+            miopenDestroyTensorDescriptor(xDesc);
+            miopenDestroyTensorDescriptor(yDesc);
+            miopenDestroyPoolingDescriptor(poolDesc);
+
+            if(st != miopenStatusSuccess)
+                throw std::runtime_error("MIOpen PoolingForward (Max) failed");
+
+            output.markDeviceModified(device, queue);
+            return output;
+#else
             return ::alpaka::tensor::ops::max_pool2d<T>(exec, device, queue, input, params);
+#endif
         }
 
         template<typename T, typename Exec, typename Device, typename Queue>
@@ -360,7 +514,78 @@ namespace alpaka::tensor
             tensor::Tensor4D<T, Device>& input,
             ops::Pool2DParams const& params) const -> tensor::Tensor4D<T, Device>
         {
+#ifdef ALPAKA_HAS_MIOPEN
+            static_assert(std::is_same_v<Exec, alpaka::exec::GpuHip>, "MIOpen supports only HIP backend");
+            static_assert(std::is_same_v<T, float>, "MIOpen Pooling currently implemented for float only");
+
+            ensureInitialized();
+            if(!handle_)
+                throw std::runtime_error("MIOpen handle not initialized");
+
+            auto hipStream = alpaka::onHost::getNativeHandle(queue);
+            if(miopenSetStream(handle_, hipStream) != miopenStatusSuccess)
+                throw std::runtime_error("MIOpen set stream failed");
+
+            input.ensureOnDevice(device, queue);
+
+            miopenPoolingDescriptor_t poolDesc;
+            miopenCreatePoolingDescriptor(&poolDesc);
+            miopenSet2dPoolingDescriptor(
+                poolDesc,
+                miopenPoolingAverage,
+                static_cast<int>(params.kernel_h),
+                static_cast<int>(params.kernel_w),
+                static_cast<int>(params.pad_h),
+                static_cast<int>(params.pad_w),
+                static_cast<int>(params.stride_h),
+                static_cast<int>(params.stride_w));
+
+            miopenTensorDescriptor_t xDesc, yDesc;
+            miopenCreateTensorDescriptor(&xDesc);
+            miopenCreateTensorDescriptor(&yDesc);
+
+            auto inShape = input.shape();
+            int N = static_cast<int>(inShape[0]);
+            int C = static_cast<int>(inShape[1]);
+            int H = static_cast<int>(inShape[2]);
+            int W = static_cast<int>(inShape[3]);
+            miopenSet4dTensorDescriptor(xDesc, miopenFloat, N, C, H, W);
+
+            int outN, outC, outH, outW;
+            miopenGetPoolingForwardOutputDim(poolDesc, xDesc, &outN, &outC, &outH, &outW);
+            miopenSet4dTensorDescriptor(yDesc, miopenFloat, outN, outC, outH, outW);
+
+            tensor::Tensor4D<T, Device> output(device, {static_cast<std::size_t>(outN), static_cast<std::size_t>(outC), static_cast<std::size_t>(outH), static_cast<std::size_t>(outW)});
+            output.ensureOnDevice(device, queue);
+
+            float alpha = 1.0f;
+            float beta = 0.0f;
+
+            auto st = miopenPoolingForward(
+                handle_,
+                poolDesc,
+                &alpha,
+                xDesc,
+                input.deviceBuffer(device, queue).data(),
+                &beta,
+                yDesc,
+                output.deviceBuffer(device, queue).data(),
+                false,
+                nullptr,
+                0);
+
+            miopenDestroyTensorDescriptor(xDesc);
+            miopenDestroyTensorDescriptor(yDesc);
+            miopenDestroyPoolingDescriptor(poolDesc);
+
+            if(st != miopenStatusSuccess)
+                throw std::runtime_error("MIOpen PoolingForward (Avg) failed");
+
+            output.markDeviceModified(device, queue);
+            return output;
+#else
             return ::alpaka::tensor::ops::avg_pool2d<T>(exec, device, queue, input, params);
+#endif
         }
 
         std::string getBackendName() const override

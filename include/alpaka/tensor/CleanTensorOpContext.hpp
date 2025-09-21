@@ -81,19 +81,21 @@ namespace alpaka::tensor
             }
             else
             {
-                // On HIP, prefer MIOpen when available for BatchNorm; activation remains default for now
+                // On HIP, prefer MIOpen when available for BatchNorm, Activation and Pooling
 #ifdef ALPAKA_HAS_MIOPEN
                 if constexpr(std::is_same_v<TExec, alpaka::exec::GpuHip>)
                 {
                     batchnormProvider_ = std::make_unique<MIOpenProvider>();
+                    activationProvider_ = std::make_unique<MIOpenProvider>();
+                    poolingProvider_ = std::make_unique<MIOpenProvider>();
                 }
                 else
 #endif
                 {
                     batchnormProvider_ = std::make_unique<DefaultProvider>();
+                    activationProvider_ = std::make_unique<DefaultProvider>();
+                    poolingProvider_ = std::make_unique<DefaultProvider>();
                 }
-                activationProvider_ = std::make_unique<DefaultProvider>();
-                poolingProvider_ = std::make_unique<DefaultProvider>();
             }
             fallbackProvider_ = std::make_unique<DefaultProvider>();
 
@@ -637,19 +639,22 @@ namespace alpaka::tensor
                 }
 #endif
 #ifdef ALPAKA_LANG_HIP
-                if(auto mi = dynamic_cast<MIOpenProvider*>(poolingProvider_.get()))
+                if constexpr(std::is_same_v<TExec, alpaka::exec::GpuHip>)
                 {
-                    try
+                    if(auto mi = dynamic_cast<MIOpenProvider*>(poolingProvider_.get()))
                     {
-                        return mi->template max_pool2d<T>(
-                            *exec_,
-                            *device_,
-                            *queue_,
-                            const_cast<tensor::Tensor4D<T, TDevice>&>(input),
-                            params);
-                    }
-                    catch(...)
-                    {
+                        try
+                        {
+                            return mi->template max_pool2d<T>(
+                                *exec_,
+                                *device_,
+                                *queue_,
+                                const_cast<tensor::Tensor4D<T, TDevice>&>(input),
+                                params);
+                        }
+                        catch(...)
+                        {
+                        }
                     }
                 }
 #endif
@@ -686,19 +691,22 @@ namespace alpaka::tensor
                 }
 #endif
 #ifdef ALPAKA_LANG_HIP
-                if(auto mi = dynamic_cast<MIOpenProvider*>(poolingProvider_.get()))
+                if constexpr(std::is_same_v<TExec, alpaka::exec::GpuHip>)
                 {
-                    try
+                    if(auto mi = dynamic_cast<MIOpenProvider*>(poolingProvider_.get()))
                     {
-                        return mi->template avg_pool2d<T>(
-                            *exec_,
-                            *device_,
-                            *queue_,
-                            const_cast<tensor::Tensor4D<T, TDevice>&>(input),
-                            params);
-                    }
-                    catch(...)
-                    {
+                        try
+                        {
+                            return mi->template avg_pool2d<T>(
+                                *exec_,
+                                *device_,
+                                *queue_,
+                                const_cast<tensor::Tensor4D<T, TDevice>&>(input),
+                                params);
+                        }
+                        catch(...)
+                        {
+                        }
                     }
                 }
 #endif
