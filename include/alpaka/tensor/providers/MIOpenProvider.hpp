@@ -6,6 +6,7 @@
 
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
 #include <alpaka/tensor/ops/InferenceOps.hpp>
+#include <alpaka/tensor/ops/TrainingOps.hpp>
 #include <alpaka/onHost/interface.hpp>
 #include <stdexcept>
 
@@ -443,7 +444,8 @@ namespace alpaka::tensor
             if(miopenSetStream(handle_, hipStream) != miopenStatusSuccess)
                 throw std::runtime_error("MIOpen set stream failed");
 
-            input.ensureOnDevice(device, queue);
+            // Ensure host data is up to date and use contiguous HIP buffers for MIOpen
+            const_cast<tensor::Tensor4D<T, Device>&>(input).toHost(device, queue);
 
             miopenPoolingDescriptor_t poolDesc;
             miopenCreatePoolingDescriptor(&poolDesc);
@@ -473,7 +475,26 @@ namespace alpaka::tensor
             miopenSet4dTensorDescriptor(yDesc, miopenFloat, outN, outC, outH, outW);
 
             tensor::Tensor4D<T, Device> output(device, {static_cast<std::size_t>(outN), static_cast<std::size_t>(outC), static_cast<std::size_t>(outH), static_cast<std::size_t>(outW)});
-            output.ensureOnDevice(device, queue);
+            // Allocate contiguous device buffers for input/output
+            size_t inBytes = static_cast<size_t>(N) * C * H * W * sizeof(T);
+            size_t outBytes = static_cast<size_t>(outN) * outC * outH * outW * sizeof(T);
+            void* dIn = nullptr;
+            void* dOut = nullptr;
+            if(hipMalloc(&dIn, inBytes) != hipSuccess || hipMalloc(&dOut, outBytes) != hipSuccess)
+            {
+                miopenDestroyTensorDescriptor(xDesc);
+                miopenDestroyTensorDescriptor(yDesc);
+                miopenDestroyPoolingDescriptor(poolDesc);
+                throw std::runtime_error("hipMalloc failed for pooling forward buffers");
+            }
+            if(hipMemcpy(dIn, input.hostData(), inBytes, hipMemcpyHostToDevice) != hipSuccess)
+            {
+                hipFree(dIn); hipFree(dOut);
+                miopenDestroyTensorDescriptor(xDesc);
+                miopenDestroyTensorDescriptor(yDesc);
+                miopenDestroyPoolingDescriptor(poolDesc);
+                throw std::runtime_error("hipMemcpy HtoD failed for pooling input");
+            }
 
             float alpha = 1.0f;
             float beta = 0.0f;
@@ -484,10 +505,10 @@ namespace alpaka::tensor
                 poolDesc,
                 &alpha,
                 xDesc,
-                input.deviceBuffer(device, queue).data(),
+                dIn,
                 &beta,
                 yDesc,
-                output.deviceBuffer(device, queue).data(),
+                dOut,
                 false,
                 nullptr,
                 0);
@@ -497,9 +518,18 @@ namespace alpaka::tensor
             miopenDestroyPoolingDescriptor(poolDesc);
 
             if(st != miopenStatusSuccess)
+            {
+                hipFree(dIn); hipFree(dOut);
                 throw std::runtime_error("MIOpen PoolingForward (Max) failed");
-
-            output.markDeviceModified(device, queue);
+            }
+            // Copy result back to host tensor
+            if(hipMemcpy(output.hostData(), dOut, outBytes, hipMemcpyDeviceToHost) != hipSuccess)
+            {
+                hipFree(dIn); hipFree(dOut);
+                throw std::runtime_error("hipMemcpy DtoH failed for pooling output");
+            }
+            output.markHostModified();
+            hipFree(dIn); hipFree(dOut);
             return output;
 #else
             return ::alpaka::tensor::ops::max_pool2d<T>(exec, device, queue, input, params);
@@ -526,7 +556,7 @@ namespace alpaka::tensor
             if(miopenSetStream(handle_, hipStream) != miopenStatusSuccess)
                 throw std::runtime_error("MIOpen set stream failed");
 
-            input.ensureOnDevice(device, queue);
+            const_cast<tensor::Tensor4D<T, Device>&>(input).toHost(device, queue);
 
             miopenPoolingDescriptor_t poolDesc;
             miopenCreatePoolingDescriptor(&poolDesc);
@@ -556,7 +586,26 @@ namespace alpaka::tensor
             miopenSet4dTensorDescriptor(yDesc, miopenFloat, outN, outC, outH, outW);
 
             tensor::Tensor4D<T, Device> output(device, {static_cast<std::size_t>(outN), static_cast<std::size_t>(outC), static_cast<std::size_t>(outH), static_cast<std::size_t>(outW)});
-            output.ensureOnDevice(device, queue);
+            // Allocate contiguous device buffers
+            size_t inBytes = static_cast<size_t>(N) * C * H * W * sizeof(T);
+            size_t outBytes = static_cast<size_t>(outN) * outC * outH * outW * sizeof(T);
+            void* dIn = nullptr;
+            void* dOut = nullptr;
+            if(hipMalloc(&dIn, inBytes) != hipSuccess || hipMalloc(&dOut, outBytes) != hipSuccess)
+            {
+                miopenDestroyTensorDescriptor(xDesc);
+                miopenDestroyTensorDescriptor(yDesc);
+                miopenDestroyPoolingDescriptor(poolDesc);
+                throw std::runtime_error("hipMalloc failed for avg pooling forward buffers");
+            }
+            if(hipMemcpy(dIn, input.hostData(), inBytes, hipMemcpyHostToDevice) != hipSuccess)
+            {
+                hipFree(dIn); hipFree(dOut);
+                miopenDestroyTensorDescriptor(xDesc);
+                miopenDestroyTensorDescriptor(yDesc);
+                miopenDestroyPoolingDescriptor(poolDesc);
+                throw std::runtime_error("hipMemcpy HtoD failed for avg pooling input");
+            }
 
             float alpha = 1.0f;
             float beta = 0.0f;
@@ -566,10 +615,10 @@ namespace alpaka::tensor
                 poolDesc,
                 &alpha,
                 xDesc,
-                input.deviceBuffer(device, queue).data(),
+                dIn,
                 &beta,
                 yDesc,
-                output.deviceBuffer(device, queue).data(),
+                dOut,
                 false,
                 nullptr,
                 0);
@@ -579,12 +628,528 @@ namespace alpaka::tensor
             miopenDestroyPoolingDescriptor(poolDesc);
 
             if(st != miopenStatusSuccess)
+            {
+                hipFree(dIn); hipFree(dOut);
                 throw std::runtime_error("MIOpen PoolingForward (Avg) failed");
-
-            output.markDeviceModified(device, queue);
+            }
+            if(hipMemcpy(output.hostData(), dOut, outBytes, hipMemcpyDeviceToHost) != hipSuccess)
+            {
+                hipFree(dIn); hipFree(dOut);
+                throw std::runtime_error("hipMemcpy DtoH failed for avg pooling output");
+            }
+            output.markHostModified();
+            hipFree(dIn); hipFree(dOut);
             return output;
 #else
             return ::alpaka::tensor::ops::avg_pool2d<T>(exec, device, queue, input, params);
+#endif
+        }
+
+        // Activation backward (ReLU): dX = dY * (X > 0)
+        template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
+        void relu_backward(
+            Exec const& exec,
+            Device const& device,
+            Queue& queue,
+            tensor::Tensor<T, Rank, Device>& x,  // pre-activation
+            tensor::Tensor<T, Rank, Device>& dy, // upstream grad
+            tensor::Tensor<T, Rank, Device>& dx) const
+        {
+#ifdef ALPAKA_HAS_MIOPEN
+            static_assert(std::is_same_v<Exec, alpaka::exec::GpuHip>, "MIOpen supports only HIP backend");
+            static_assert(std::is_same_v<T, float>, "MIOpen ReLU currently implemented for float only");
+
+            ensureInitialized();
+            if(!handle_)
+                throw std::runtime_error("MIOpen handle not initialized");
+
+            auto hipStream = alpaka::onHost::getNativeHandle(queue);
+            if(miopenSetStream(handle_, hipStream) != miopenStatusSuccess)
+                throw std::runtime_error("MIOpen set stream failed");
+
+            // Ensure residency
+            x.ensureOnDevice(device, queue);
+            dy.ensureOnDevice(device, queue);
+            dx.ensureOnDevice(device, queue);
+
+            // Map shape to 4D NCHW descriptors
+            auto shape = x.shape();
+            int N = 1, C = 1, H = 1, W = 1;
+            if constexpr(Rank == 4)
+            {
+                N = static_cast<int>(shape[0]);
+                C = static_cast<int>(shape[1]);
+                H = static_cast<int>(shape[2]);
+                W = static_cast<int>(shape[3]);
+            }
+            else if constexpr(Rank == 2)
+            {
+                N = static_cast<int>(shape[0]);
+                C = static_cast<int>(shape[1]);
+            }
+            else if constexpr(Rank == 1)
+            {
+                W = static_cast<int>(shape[0]);
+            }
+            else
+            {
+                // Fallback to generic implementation for complex ranks
+                ::alpaka::tensor::ops::train::relu_backward(exec, device, queue, x, dy, dx);
+                return;
+            }
+
+            // Create descriptors
+            miopenTensorDescriptor_t xDesc, yDesc, dyDesc, dxDesc;
+            miopenActivationDescriptor_t actDesc;
+            miopenCreateTensorDescriptor(&xDesc);
+            miopenCreateTensorDescriptor(&yDesc);
+            miopenCreateTensorDescriptor(&dyDesc);
+            miopenCreateTensorDescriptor(&dxDesc);
+            miopenCreateActivationDescriptor(&actDesc);
+            auto cleanup = [&]() {
+                miopenDestroyTensorDescriptor(xDesc);
+                miopenDestroyTensorDescriptor(yDesc);
+                miopenDestroyTensorDescriptor(dyDesc);
+                miopenDestroyTensorDescriptor(dxDesc);
+                miopenDestroyActivationDescriptor(actDesc);
+            };
+
+            miopenSet4dTensorDescriptor(xDesc, miopenFloat, N, C, H, W);
+            miopenSet4dTensorDescriptor(yDesc, miopenFloat, N, C, H, W);
+            miopenSet4dTensorDescriptor(dyDesc, miopenFloat, N, C, H, W);
+            miopenSet4dTensorDescriptor(dxDesc, miopenFloat, N, C, H, W);
+            miopenSetActivationDescriptor(actDesc, miopenActivationRELU, 0.0, 0.0, 0.0);
+
+            // MIOpen requires y (forward output). Compute y into a temp buffer using forward pass.
+            tensor::Tensor<T, Rank, Device> y(device, x.shape(), "relu_y");
+            y.ensureOnDevice(device, queue);
+            {
+                // Copy x -> y (device) then in-place relu on y
+                auto total = x.size();
+                auto frame = ::alpaka::tensor::ops::detail::makeFrame<Exec, Queue>(total);
+                queue.enqueue(
+                    exec,
+                    frame,
+                    ::alpaka::tensor::ops::UnaryKernel{},
+                    x.deviceBuffer(device, queue),
+                    y.deviceBuffer(device, queue),
+                    total,
+                    [] ALPAKA_FN_HOST_ACC (T v) { return v; });
+                y.markDeviceModified(device, queue);
+
+                float alphaF = 1.0f;
+                float betaF = 0.0f;
+                void* yPtr = static_cast<void*>(y.deviceBuffer(device, queue).data());
+                void* yOutPtr = yPtr;
+                void* xPtr = static_cast<void*>(x.deviceBuffer(device, queue).data());
+                auto stFwd = miopenActivationForward(handle_, actDesc, &alphaF, xDesc, xPtr, &betaF, yDesc, yOutPtr);
+                if(stFwd != miopenStatusSuccess)
+                {
+                    cleanup();
+                    // Fallback if forward fails
+                    ::alpaka::tensor::ops::train::relu_backward<T>(exec, device, queue, x, dy, dx);
+                    return;
+                }
+            }
+
+            float alpha = 1.0f;
+            float beta = 0.0f;
+            void* yPtr = static_cast<void*>(y.deviceBuffer(device, queue).data());
+            void* dyPtr = static_cast<void*>(dy.deviceBuffer(device, queue).data());
+            void* xPtr = static_cast<void*>(x.deviceBuffer(device, queue).data());
+            void* dxPtr = static_cast<void*>(dx.deviceBuffer(device, queue).data());
+
+            auto st = miopenActivationBackward(
+                handle_,
+                actDesc,
+                &alpha,
+                yDesc,
+                yPtr,
+                dyDesc,
+                dyPtr,
+                xDesc,
+                xPtr,
+                &beta,
+                dxDesc,
+                dxPtr);
+
+            cleanup();
+
+            if(st != miopenStatusSuccess)
+            {
+                // Fallback to generic if MIOpen fails
+                    ::alpaka::tensor::ops::train::relu_backward<T>(exec, device, queue, x, dy, dx);
+                return;
+            }
+
+            dx.markDeviceModified(device, queue);
+#else
+            ::alpaka::tensor::ops::train::relu_backward<T>(exec, device, queue, x, dy, dx);
+#endif
+        }
+
+        // Pooling backward (max)
+        template<typename T, typename Exec, typename Device, typename Queue>
+        void max_pool2d_backward(
+            Exec const& exec,
+            Device const& device,
+            Queue& queue,
+            tensor::Tensor4D<T, Device>& x,
+            tensor::Tensor4D<T, Device>& dy,
+            tensor::Tensor4D<T, Device>& dx,
+            ops::Pool2DParams const& params) const
+        {
+#ifdef ALPAKA_HAS_MIOPEN
+            static_assert(std::is_same_v<Exec, alpaka::exec::GpuHip>, "MIOpen supports only HIP backend");
+            static_assert(std::is_same_v<T, float>, "MIOpen Pooling currently implemented for float only");
+
+            ensureInitialized();
+            if(!handle_)
+                throw std::runtime_error("MIOpen handle not initialized");
+
+            auto hipStream = alpaka::onHost::getNativeHandle(queue);
+            if(miopenSetStream(handle_, hipStream) != miopenStatusSuccess)
+                throw std::runtime_error("MIOpen set stream failed");
+
+            x.ensureOnDevice(device, queue);
+            dy.ensureOnDevice(device, queue);
+            dx.ensureOnDevice(device, queue);
+
+            x.toHost(device, queue);
+            dy.toHost(device, queue);
+            // Create and configure pooling descriptor for MAX pooling
+            miopenPoolingDescriptor_t poolDesc;
+            miopenCreatePoolingDescriptor(&poolDesc);
+            miopenSet2dPoolingDescriptor(
+                poolDesc,
+                miopenPoolingMax,
+                static_cast<int>(params.kernel_h),
+                static_cast<int>(params.kernel_w),
+                static_cast<int>(params.pad_h),
+                static_cast<int>(params.pad_w),
+                static_cast<int>(params.stride_h),
+                static_cast<int>(params.stride_w));
+
+            miopenTensorDescriptor_t xDesc, yDesc, dyDesc, dxDesc;
+            miopenCreateTensorDescriptor(&xDesc);
+            miopenCreateTensorDescriptor(&yDesc);
+            miopenCreateTensorDescriptor(&dyDesc);
+            miopenCreateTensorDescriptor(&dxDesc);
+
+            auto inShape = x.shape();
+            int N = static_cast<int>(inShape[0]);
+            int C = static_cast<int>(inShape[1]);
+            int H = static_cast<int>(inShape[2]);
+            int W = static_cast<int>(inShape[3]);
+            miopenSet4dTensorDescriptor(xDesc, miopenFloat, N, C, H, W);
+
+            // Compute y shape using MIOpen helper
+            int outN, outC, outH, outW;
+            miopenGetPoolingForwardOutputDim(poolDesc, xDesc, &outN, &outC, &outH, &outW);
+            miopenSet4dTensorDescriptor(yDesc, miopenFloat, outN, outC, outH, outW);
+            miopenSet4dTensorDescriptor(dyDesc, miopenFloat, outN, outC, outH, outW);
+            miopenSet4dTensorDescriptor(dxDesc, miopenFloat, N, C, H, W);
+
+            // We need y for backward. Compute via forward and request workspace for backward.
+            // Allocate contiguous device buffers
+            size_t inBytes = static_cast<size_t>(N) * C * H * W * sizeof(T);
+            size_t outBytes = static_cast<size_t>(outN) * outC * outH * outW * sizeof(T);
+            void* dX = nullptr; void* dY = nullptr; void* dDy = nullptr; void* dDx = nullptr;
+            if(hipMalloc(&dX, inBytes) != hipSuccess || hipMalloc(&dY, outBytes) != hipSuccess
+               || hipMalloc(&dDy, outBytes) != hipSuccess || hipMalloc(&dDx, inBytes) != hipSuccess)
+            {
+                miopenDestroyTensorDescriptor(xDesc);
+                miopenDestroyTensorDescriptor(yDesc);
+                miopenDestroyTensorDescriptor(dyDesc);
+                miopenDestroyTensorDescriptor(dxDesc);
+                miopenDestroyPoolingDescriptor(poolDesc);
+                ::alpaka::tensor::ops::train::max_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
+                return;
+            }
+            // Copy inputs to device
+            if(hipMemcpy(dX, x.hostData(), inBytes, hipMemcpyHostToDevice) != hipSuccess
+               || hipMemcpy(dDy, dy.hostData(), outBytes, hipMemcpyHostToDevice) != hipSuccess)
+            {
+                hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+                miopenDestroyTensorDescriptor(xDesc);
+                miopenDestroyTensorDescriptor(yDesc);
+                miopenDestroyTensorDescriptor(dyDesc);
+                miopenDestroyTensorDescriptor(dxDesc);
+                miopenDestroyPoolingDescriptor(poolDesc);
+                ::alpaka::tensor::ops::train::max_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
+                return;
+            }
+            float alphaF = 1.0f, betaF = 0.0f;
+            // Query required workspace size for pooling backward (depends on output desc)
+            size_t wsSize = 0;
+            auto wsSt = miopenPoolingGetWorkSpaceSize(yDesc, &wsSize);
+            void* workspace = nullptr;
+            if(wsSt == miopenStatusSuccess && wsSize > 0)
+            {
+                if(hipMalloc(&workspace, wsSize) != hipSuccess)
+                {
+                    miopenDestroyTensorDescriptor(xDesc);
+                    miopenDestroyTensorDescriptor(yDesc);
+                    miopenDestroyTensorDescriptor(dyDesc);
+                    miopenDestroyTensorDescriptor(dxDesc);
+                    miopenDestroyPoolingDescriptor(poolDesc);
+                    ::alpaka::tensor::ops::train::max_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
+                    return;
+                }
+            }
+            auto stFwd = miopenPoolingForward(
+                handle_,
+                poolDesc,
+                &alphaF,
+                xDesc,
+                dX,
+                &betaF,
+                yDesc,
+                dY,
+                true,
+                workspace,
+                wsSize);
+            if(stFwd != miopenStatusSuccess)
+            {
+                hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+                miopenDestroyTensorDescriptor(xDesc);
+                miopenDestroyTensorDescriptor(yDesc);
+                miopenDestroyTensorDescriptor(dyDesc);
+                miopenDestroyTensorDescriptor(dxDesc);
+                miopenDestroyPoolingDescriptor(poolDesc);
+                if(workspace)
+                {
+                    hipError_t _ = hipFree(workspace); (void)_; 
+                }
+                ::alpaka::tensor::ops::train::max_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
+                return;
+            }
+
+            float alpha = 1.0f, beta = 0.0f;
+            // Zero-initialize dDx
+            hipMemset(dDx, 0, inBytes);
+            auto st = miopenPoolingBackward(
+                handle_,
+                poolDesc,
+                &alpha,
+                yDesc,
+                dY,
+                dyDesc,
+                dDy,
+                xDesc,
+                dX,
+                &beta,
+                dxDesc,
+                dDx,
+                workspace);
+
+            miopenDestroyTensorDescriptor(xDesc);
+            miopenDestroyTensorDescriptor(yDesc);
+            miopenDestroyTensorDescriptor(dyDesc);
+            miopenDestroyTensorDescriptor(dxDesc);
+            miopenDestroyPoolingDescriptor(poolDesc);
+            if(workspace)
+            {
+                hipError_t _ = hipFree(workspace); (void)_; 
+            }
+
+            if(st != miopenStatusSuccess)
+            {
+                hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+                ::alpaka::tensor::ops::train::max_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
+                return;
+            }
+            // Copy dDx back to host dx
+            if(hipMemcpy(dx.hostData(), dDx, inBytes, hipMemcpyDeviceToHost) != hipSuccess)
+            {
+                hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+                ::alpaka::tensor::ops::train::max_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
+                return;
+            }
+            dx.markHostModified();
+            hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+#else
+            ::alpaka::tensor::ops::train::max_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
+#endif
+        }
+
+        // Pooling backward (average)
+        template<typename T, typename Exec, typename Device, typename Queue>
+        void avg_pool2d_backward(
+            Exec const& exec,
+            Device const& device,
+            Queue& queue,
+            tensor::Tensor4D<T, Device>& x,
+            tensor::Tensor4D<T, Device>& dy,
+            tensor::Tensor4D<T, Device>& dx,
+            ops::Pool2DParams const& params) const
+        {
+#ifdef ALPAKA_HAS_MIOPEN
+            static_assert(std::is_same_v<Exec, alpaka::exec::GpuHip>, "MIOpen supports only HIP backend");
+            static_assert(std::is_same_v<T, float>, "MIOpen Pooling currently implemented for float only");
+
+            ensureInitialized();
+            if(!handle_)
+                throw std::runtime_error("MIOpen handle not initialized");
+
+            auto hipStream = alpaka::onHost::getNativeHandle(queue);
+            if(miopenSetStream(handle_, hipStream) != miopenStatusSuccess)
+                throw std::runtime_error("MIOpen set stream failed");
+
+            x.toHost(device, queue);
+            dy.toHost(device, queue);
+
+            miopenPoolingDescriptor_t poolDesc;
+            miopenCreatePoolingDescriptor(&poolDesc);
+            miopenSet2dPoolingDescriptor(
+                poolDesc,
+                miopenPoolingAverage,
+                static_cast<int>(params.kernel_h),
+                static_cast<int>(params.kernel_w),
+                static_cast<int>(params.pad_h),
+                static_cast<int>(params.pad_w),
+                static_cast<int>(params.stride_h),
+                static_cast<int>(params.stride_w));
+
+            miopenTensorDescriptor_t xDesc, yDesc, dyDesc, dxDesc;
+            miopenCreateTensorDescriptor(&xDesc);
+            miopenCreateTensorDescriptor(&yDesc);
+            miopenCreateTensorDescriptor(&dyDesc);
+            miopenCreateTensorDescriptor(&dxDesc);
+
+            auto inShape = x.shape();
+            int N = static_cast<int>(inShape[0]);
+            int C = static_cast<int>(inShape[1]);
+            int H = static_cast<int>(inShape[2]);
+            int W = static_cast<int>(inShape[3]);
+            miopenSet4dTensorDescriptor(xDesc, miopenFloat, N, C, H, W);
+
+            int outN, outC, outH, outW;
+            miopenGetPoolingForwardOutputDim(poolDesc, xDesc, &outN, &outC, &outH, &outW);
+            miopenSet4dTensorDescriptor(yDesc, miopenFloat, outN, outC, outH, outW);
+            miopenSet4dTensorDescriptor(dyDesc, miopenFloat, outN, outC, outH, outW);
+            miopenSet4dTensorDescriptor(dxDesc, miopenFloat, N, C, H, W);
+
+            // Allocate contiguous buffers
+            size_t inBytes = static_cast<size_t>(N) * C * H * W * sizeof(T);
+            size_t outBytes = static_cast<size_t>(outN) * outC * outH * outW * sizeof(T);
+            void* dX = nullptr; void* dY = nullptr; void* dDy = nullptr; void* dDx = nullptr;
+            if(hipMalloc(&dX, inBytes) != hipSuccess || hipMalloc(&dY, outBytes) != hipSuccess
+               || hipMalloc(&dDy, outBytes) != hipSuccess || hipMalloc(&dDx, inBytes) != hipSuccess)
+            {
+                miopenDestroyTensorDescriptor(xDesc);
+                miopenDestroyTensorDescriptor(yDesc);
+                miopenDestroyTensorDescriptor(dyDesc);
+                miopenDestroyTensorDescriptor(dxDesc);
+                miopenDestroyPoolingDescriptor(poolDesc);
+                ::alpaka::tensor::ops::train::avg_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
+                return;
+            }
+            if(hipMemcpy(dX, x.hostData(), inBytes, hipMemcpyHostToDevice) != hipSuccess
+               || hipMemcpy(dDy, dy.hostData(), outBytes, hipMemcpyHostToDevice) != hipSuccess)
+            {
+                hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+                miopenDestroyTensorDescriptor(xDesc);
+                miopenDestroyTensorDescriptor(yDesc);
+                miopenDestroyTensorDescriptor(dyDesc);
+                miopenDestroyTensorDescriptor(dxDesc);
+                miopenDestroyPoolingDescriptor(poolDesc);
+                ::alpaka::tensor::ops::train::avg_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
+                return;
+            }
+            float alphaF = 1.0f, betaF = 0.0f;
+            size_t wsSize = 0;
+            auto wsSt = miopenPoolingGetWorkSpaceSize(yDesc, &wsSize);
+            void* workspace = nullptr;
+            if(wsSt == miopenStatusSuccess && wsSize > 0)
+            {
+                if(hipMalloc(&workspace, wsSize) != hipSuccess)
+                {
+                    miopenDestroyTensorDescriptor(xDesc);
+                    miopenDestroyTensorDescriptor(yDesc);
+                    miopenDestroyTensorDescriptor(dyDesc);
+                    miopenDestroyTensorDescriptor(dxDesc);
+                    miopenDestroyPoolingDescriptor(poolDesc);
+                    ::alpaka::tensor::ops::train::avg_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
+                    return;
+                }
+            }
+            auto stFwd = miopenPoolingForward(
+                handle_,
+                poolDesc,
+                &alphaF,
+                xDesc,
+                dX,
+                &betaF,
+                yDesc,
+                dY,
+                true,
+                workspace,
+                wsSize);
+            if(stFwd != miopenStatusSuccess)
+            {
+                hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+                miopenDestroyTensorDescriptor(xDesc);
+                miopenDestroyTensorDescriptor(yDesc);
+                miopenDestroyTensorDescriptor(dyDesc);
+                miopenDestroyTensorDescriptor(dxDesc);
+                miopenDestroyPoolingDescriptor(poolDesc);
+                if(workspace)
+                {
+                    hipError_t _ = hipFree(workspace); (void)_; 
+                }
+                // Generic fallback
+                ::alpaka::tensor::ops::train::avg_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
+                return;
+            }
+
+            float alpha = 1.0f, beta = 0.0f;
+            // Zero-initialize dx similarly for avg pooling
+            hipMemset(dDx, 0, inBytes);
+            auto st = miopenPoolingBackward(
+                handle_,
+                poolDesc,
+                &alpha,
+                yDesc,
+                dY,
+                dyDesc,
+                dDy,
+                xDesc,
+                dX,
+                &beta,
+                dxDesc,
+                dDx,
+                workspace);
+
+            miopenDestroyTensorDescriptor(xDesc);
+            miopenDestroyTensorDescriptor(yDesc);
+            miopenDestroyTensorDescriptor(dyDesc);
+            miopenDestroyTensorDescriptor(dxDesc);
+            miopenDestroyPoolingDescriptor(poolDesc);
+            if(workspace)
+            {
+                hipError_t _ = hipFree(workspace); (void)_; 
+            }
+
+            if(st != miopenStatusSuccess)
+            {
+                hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+                // Fallback to generic avg pooling backward via manual distribution
+                ::alpaka::tensor::ops::train::avg_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
+                return;
+            }
+            // Copy result back to host and mark
+            if(hipMemcpy(dx.hostData(), dDx, inBytes, hipMemcpyDeviceToHost) != hipSuccess)
+            {
+                hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+                ::alpaka::tensor::ops::train::avg_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
+                return;
+            }
+            dx.markHostModified();
+            hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+#else
+            // Fallback to generic path
+            ::alpaka::tensor::ops::train::avg_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
 #endif
         }
 
