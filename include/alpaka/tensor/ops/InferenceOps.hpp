@@ -492,21 +492,24 @@ namespace alpaka::tensor::ops
             M,
             N);
         output.markDeviceModified(device, queue);
+        // Optional host-side validation only when eagerHostEnabled; avoid touching host buffer otherwise
         if(detail::eagerHostEnabled())
+        {
             output.toHost(device, queue); // optional validation copy
-        auto* outH2 = output.hostData();
-        bool bad = false;
-        for(std::size_t m = 0; m < M && !bad; ++m)
-        {
-            double sum = 0.0;
-            for(std::size_t j = 0; j < N; ++j)
-                sum += outH2[m * N + j];
-            if(!(sum > 0.0) || std::fabs(sum - 1.0) > 1e-3)
-                bad = true;
-        }
-        if(bad)
-        {
-            hostFallback();
+            auto* outH2 = output.hostData();
+            bool bad = false;
+            for(std::size_t m = 0; m < M && !bad; ++m)
+            {
+                double sum = 0.0;
+                for(std::size_t j = 0; j < N; ++j)
+                    sum += outH2[m * N + j];
+                if(!(sum > 0.0) || std::fabs(sum - 1.0) > 1e-3)
+                    bad = true;
+            }
+            if(bad)
+            {
+                hostFallback();
+            }
         }
     }
 

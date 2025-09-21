@@ -549,6 +549,17 @@ namespace alpaka::tensor::ops::train
         }
     }
 
+    // SGD parameter update functor (moved outside function for CUDA compatibility)
+    struct SgdUpdateOp
+    {
+        float lr;
+
+        ALPAKA_FN_HOST_ACC float operator()(float w, float g) const
+        {
+            return w - lr * g;
+        }
+    };
+
     // Simple SGD optimizer: W -= lr * dW, b -= lr * db
     template<typename Exec, typename Device, typename Queue>
     void sgd_update(
@@ -565,15 +576,7 @@ namespace alpaka::tensor::ops::train
         auto n = param.size();
         auto frame = ::alpaka::tensor::ops::detail::makeFrame<Exec, Queue>(n);
 
-        struct SgdUpdateOp
-        {
-            float lr;
-
-            ALPAKA_FN_HOST_ACC float operator()(float w, float g) const
-            {
-                return w - lr * g;
-            }
-        } op{lr};
+        SgdUpdateOp op{lr};
 
         queue.enqueue(
             exec,

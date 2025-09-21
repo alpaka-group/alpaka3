@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
 #include <alpaka/alpaka.hpp>
+#include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/tensor/CleanTensorOpContext.hpp>
 #include <alpaka/tensor/TensorCore.hpp>
 #include <alpaka/tensor/ops/InferenceOps.hpp>
@@ -18,6 +19,10 @@
 namespace at = alpaka::tensor;
 namespace ops = alpaka::tensor::ops;
 namespace train = alpaka::tensor::ops::train;
+
+// Forward declaration
+template<typename Exec, typename Device, typename Queue>
+int runTrainingDemo(Exec const& exec, Device& device, Queue& queue);
 
 // A minimal trainable linear layer adapter compatible with TrainingSequentialCT
 // Assumes inputs are 1D of length M*K; outputs 1D of length M*N
@@ -164,16 +169,43 @@ struct ReLU1DLayer
 int main()
 {
     std::cerr << "[demo] start\n";
+
+    // Try GPU first, fallback to CPU
+    bool useGpu = std::getenv("ALPAKA_TRAINING_CPU_ONLY") == nullptr;
+
+    if(useGpu)
+    {
+        std::cerr << "[demo] attempting GPU device\n";
+        try
+        {
+            using Exec = alpaka::exec::GpuCuda;
+            auto exec = Exec{};
+            auto sel = alpaka::onHost::makeDeviceSelector(alpaka::api::cuda, alpaka::deviceKind::NvidiaGpu{});
+            auto device = sel.makeDevice(0);
+            auto queue = device.makeQueue();
+            std::cerr << "[demo] GPU device and queue created (CUDA)\n";
+            return runTrainingDemo(exec, device, queue);
+        }
+        catch(std::exception const& e)
+        {
+            std::cerr << "[demo] GPU failed: " << e.what() << ", falling back to CPU\n";
+        }
+    }
+
+    std::cerr << "[demo] using CPU device\n";
     using Exec = alpaka::exec::CpuOmpBlocks;
     auto exec = Exec{};
-    // Select a host CPU device explicitly and create a queue
     auto sel = alpaka::onHost::makeDeviceSelector(alpaka::api::host, alpaka::deviceKind::cpu);
     auto device = sel.makeDevice(0);
     auto queue = device.makeQueue();
-    std::cerr << "[demo] device and queue created\n";
+    std::cerr << "[demo] CPU device and queue created\n";
+    return runTrainingDemo(exec, device, queue);
+}
 
-    using Dev = decltype(device);
-    using Queue = decltype(queue);
+template<typename Exec, typename Device, typename Queue>
+int runTrainingDemo(Exec const& exec, Device& device, Queue& queue)
+{
+    using Dev = Device;
 
     // Synthetic batch: M=2, K=4 → N=3
     std::size_t M = 2, K = 4, N = 3;
@@ -210,7 +242,7 @@ int main()
         pipe(exec, device, queue, lin, relu);
     std::cerr << "[demo] pipeline created\n";
 
-    // Forward
+    // Forward once to warm up
     using Any = ops::TrainingSequentialCT<Dev, Exec, Queue, LinearTrainable<Dev>, ReLU1DLayer<Dev>>::Any;
     Any outVar = pipe.forward(Any{x});
     std::cerr << "[demo] forward done\n";
@@ -221,21 +253,52 @@ int main()
         return 1;
     }
 
-    // Softmax + CE backward to compute dLogits
-    auto logits2D = ops::copy_flat_to_2d<float>(exec, device, queue, *logits1D, M, N);
-    ops::softmax_2d<float>(exec, device, queue, logits2D, probs);
-    std::cerr << "[demo] softmax done\n";
-    at::Tensor2D<float, Dev> dLogits(device, {M, N}, "dlogits");
-    train::softmax_cross_entropy_backward<float>(exec, device, queue, logits2D, probs, labels, dLogits);
-    std::cerr << "[demo] smxce backward done\n";
+    // Simple multi-step training loop on synthetic labels to show loss decreases
+    auto ce_loss = [&](at::Tensor2D<float, Dev>& prob, at::Tensor2D<float, Dev>& lab)
+    {
+        prob.toHost(device, queue);
+        lab.toHost(device, queue);
+        auto* p = prob.hostData();
+        auto* y = lab.hostData();
+        double loss = 0.0;
+        for(std::size_t m = 0; m < M; ++m)
+        {
+            // find true class index from one-hot labels
+            std::size_t k = 0;
+            for(std::size_t c = 0; c < N; ++c)
+                if(y[m * N + c] == 1.f)
+                    k = c;
+            double pk = std::max(1e-6, static_cast<double>(p[m * N + k]));
+            loss += -std::log(pk);
+        }
+        return static_cast<float>(loss / static_cast<double>(M));
+    };
 
-    // Convert dLogits to 1D to feed pipeline backward
-    auto dLogits1D = ops::flatten<float, 2>(exec, device, queue, dLogits);
-    Any dxVar = pipe.backward(Any{dLogits1D});
-    std::cerr << "[demo] backward done\n";
-    auto* dx1D = std::get_if<at::Tensor1D<float, Dev>>(&dxVar);
+    int steps = 20;
+    float firstLoss = 0.f;
+    float lastLoss = 0.f;
+    for(int t = 0; t < steps; ++t)
+    {
+        // Forward current params
+        Any out = pipe.forward(Any{x});
+        auto* out1D = std::get_if<at::Tensor1D<float, Dev>>(&out);
+        auto logits2D = ops::copy_flat_to_2d<float>(exec, device, queue, *out1D, M, N);
+        ops::softmax_2d<float>(exec, device, queue, logits2D, probs);
+        float loss = ce_loss(probs, labels);
+        if(t == 0)
+            firstLoss = loss;
+        lastLoss = loss;
+        std::cout << "step=" << t << ", loss=" << loss << "\n";
 
-    // Print tiny summary
-    std::cout << "Training demo finished. dx size=" << (dx1D ? dx1D->size() : 0) << "\n";
+        // Compute gradient wrt logits and step parameters via backward
+        at::Tensor2D<float, Dev> dLogits(device, {M, N}, "dlogits");
+        train::softmax_cross_entropy_backward<float>(exec, device, queue, logits2D, probs, labels, dLogits);
+        auto dLogits1D = ops::flatten<float, 2>(exec, device, queue, dLogits);
+        (void) pipe.backward(Any{dLogits1D});
+    }
+
+    int loss_decreased = (lastLoss < firstLoss) ? 1 : 0;
+    std::cout << "Training demo finished. loss_start=" << firstLoss << ", loss_end=" << lastLoss
+              << ", loss_decreased=" << loss_decreased << ", dx size=" << (logits1D ? logits1D->size() : 0) << "\n";
     return 0;
 }
