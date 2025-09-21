@@ -6,6 +6,7 @@
 
 #include <alpaka/tensor/ops/Gemm.hpp>
 #include <alpaka/tensor/ops/InferenceOps.hpp>
+#include <alpaka/tensor/ops/TrainingOps.hpp>
 #include <alpaka/tensor/providers/CuBLASProvider.hpp>
 #include <alpaka/tensor/providers/CuDNNProvider.hpp>
 #include <alpaka/tensor/providers/DefaultProvider.hpp>
@@ -612,6 +613,45 @@ namespace alpaka::tensor
             ::alpaka::tensor::ops::relu_inplace(*exec_, *device_, *queue_, t);
         }
 
+        // ReLU backward delegation (training): dx = dy * 1[x>0]
+        template<typename T, std::size_t Rank>
+        void relu_backward(
+            tensor::Tensor<T, Rank, TDevice>& x,
+            tensor::Tensor<T, Rank, TDevice>& dy,
+            tensor::Tensor<T, Rank, TDevice>& dx)
+        {
+            auto& provider = getActivationProvider();
+            if(provider.supportsOperation(OpType::Activation))
+            {
+#ifdef ALPAKA_HAS_CUDNN
+                if constexpr(std::is_same_v<TExec, alpaka::exec::GpuCuda>)
+                {
+                    if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(&provider))
+                    {
+                        // TODO: implement cuDNN relu backward wiring if needed
+                    }
+                }
+#endif
+#ifdef ALPAKA_LANG_HIP
+                if constexpr(std::is_same_v<TExec, alpaka::exec::GpuHip>)
+                {
+                    if(auto mi = dynamic_cast<MIOpenProvider*>(&provider))
+                    {
+                        try
+                        {
+                            mi->template relu_backward<T, Rank>(*exec_, *device_, *queue_, x, dy, dx);
+                            return;
+                        }
+                        catch(...)
+                        {
+                        }
+                    }
+                }
+#endif
+            }
+            ::alpaka::tensor::ops::train::relu_backward<T>(*exec_, *device_, *queue_, x, dy, dx);
+        }
+
         // Pooling delegation: try vendor providers first, then fallback to generic
         template<typename T>
         auto max_pool2d(tensor::Tensor4D<T, TDevice> const& input, ops::Pool2DParams const& params)
@@ -717,6 +757,85 @@ namespace alpaka::tensor
                 *queue_,
                 const_cast<tensor::Tensor4D<T, TDevice>&>(input),
                 params);
+        }
+
+        // Pooling backward (max)
+        template<typename T>
+        void max_pool2d_backward(
+            tensor::Tensor4D<T, TDevice>& x,
+            tensor::Tensor4D<T, TDevice>& dy,
+            tensor::Tensor4D<T, TDevice>& dx,
+            ops::Pool2DParams const& params)
+        {
+            if(poolingProvider_ && poolingProvider_->isActive())
+            {
+#ifdef ALPAKA_HAS_CUDNN
+                if constexpr(std::is_same_v<TExec, alpaka::exec::GpuCuda>)
+                {
+                    if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(poolingProvider_.get()))
+                    {
+                        // TODO: implement cuDNN pooling backward wiring if needed
+                    }
+                }
+#endif
+#ifdef ALPAKA_LANG_HIP
+                if constexpr(std::is_same_v<TExec, alpaka::exec::GpuHip>)
+                {
+                    if(auto mi = dynamic_cast<MIOpenProvider*>(poolingProvider_.get()))
+                    {
+                        try
+                        {
+                            mi->template max_pool2d_backward<T>(*exec_, *device_, *queue_, x, dy, dx, params);
+                            return;
+                        }
+                        catch(...)
+                        {
+                        }
+                    }
+                }
+#endif
+            }
+            ::alpaka::tensor::ops::train::max_pool2d_backward<T>(*exec_, *device_, *queue_, x, dy, dx, params);
+        }
+
+        // Pooling backward (avg)
+        template<typename T>
+        void avg_pool2d_backward(
+            tensor::Tensor4D<T, TDevice>& x,
+            tensor::Tensor4D<T, TDevice>& dy,
+            tensor::Tensor4D<T, TDevice>& dx,
+            ops::Pool2DParams const& params)
+        {
+            if(poolingProvider_ && poolingProvider_->isActive())
+            {
+#ifdef ALPAKA_HAS_CUDNN
+                if constexpr(std::is_same_v<TExec, alpaka::exec::GpuCuda>)
+                {
+                    if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(poolingProvider_.get()))
+                    {
+                        // TODO: implement cuDNN avg pooling backward wiring if needed
+                    }
+                }
+#endif
+#ifdef ALPAKA_LANG_HIP
+                if constexpr(std::is_same_v<TExec, alpaka::exec::GpuHip>)
+                {
+                    if(auto mi = dynamic_cast<MIOpenProvider*>(poolingProvider_.get()))
+                    {
+                        try
+                        {
+                            mi->template avg_pool2d_backward<T>(*exec_, *device_, *queue_, x, dy, dx, params);
+                            return;
+                        }
+                        catch(...)
+                        {
+                        }
+                    }
+                }
+#endif
+            }
+            // Fallback: average pooling backward host helper
+            ::alpaka::tensor::ops::train::avg_pool2d_backward<T>(*exec_, *device_, *queue_, x, dy, dx, params);
         }
 
     private:

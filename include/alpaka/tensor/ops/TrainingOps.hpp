@@ -620,10 +620,10 @@ namespace alpaka::tensor::ops::train
         dx.markDeviceModified(device, queue);
     }
 
-    // MaxPool2D backward: naive per-input accumulation
+    // MaxPool2D backward: naive per-input accumulation (host implementation)
     template<typename T, typename Exec, typename Device, typename Queue>
     void max_pool2d_backward(
-        Exec const& exec,
+        Exec const& /*exec*/,
         Device const& device,
         Queue& queue,
         tensor::Tensor4D<T, Device>& x, // input [N,C,H,W]
@@ -633,28 +633,131 @@ namespace alpaka::tensor::ops::train
     {
         auto s = x.shape();
         auto so = dy.shape();
-        auto N = s[0], C = s[1], H = s[2], W = s[3];
-        auto H_out = so[2], W_out = so[3];
-        assert(dx.shape()[0] == N && dx.shape()[1] == C && dx.shape()[2] == H && dx.shape()[3] == W);
-        x.ensureOnDevice(device, queue);
-        dy.ensureOnDevice(device, queue);
+        auto N = static_cast<int>(s[0]);
+        auto C = static_cast<int>(s[1]);
+        auto H = static_cast<int>(s[2]);
+        auto W = static_cast<int>(s[3]);
+        auto H_out = static_cast<int>(so[2]);
+        auto W_out = static_cast<int>(so[3]);
+        assert(dx.shape()[0] == s[0] && dx.shape()[1] == s[1] && dx.shape()[2] == s[2] && dx.shape()[3] == s[3]);
+
+        // Work on host for simplicity and portability
+        x.toHost(device, queue);
+        dy.toHost(device, queue);
+        dx.toHost(device, queue);
+
+        auto* xh = x.hostData();
+        auto* dyh = dy.hostData();
+        auto* dxh = dx.hostData();
+        std::fill(dxh, dxh + static_cast<std::size_t>(N) * C * H * W, T{});
+
+        auto idx4 = [&](int n, int c, int h, int w, int Hdim, int Wdim) -> std::size_t {
+            return static_cast<std::size_t>(n) * C * Hdim * Wdim + static_cast<std::size_t>(c) * Hdim * Wdim
+                + static_cast<std::size_t>(h) * Wdim + static_cast<std::size_t>(w);
+        };
+
+        auto ceil_div = [](int a, int b) { return (a + b - 1) / b; };
+        auto floor_div = [](int a, int b) { return a / b; };
+
+        for(int n = 0; n < N; ++n)
+            for(int c = 0; c < C; ++c)
+                for(int h = 0; h < H; ++h)
+                    for(int w = 0; w < W; ++w)
+                    {
+                        int h_out_start = ceil_div(h + static_cast<int>(p.pad_h) - static_cast<int>(p.kernel_h) + 1, static_cast<int>(p.stride_h));
+                        int h_out_end = floor_div(h + static_cast<int>(p.pad_h), static_cast<int>(p.stride_h));
+                        int w_out_start = ceil_div(w + static_cast<int>(p.pad_w) - static_cast<int>(p.kernel_w) + 1, static_cast<int>(p.stride_w));
+                        int w_out_end = floor_div(w + static_cast<int>(p.pad_w), static_cast<int>(p.stride_w));
+
+                        h_out_start = std::max(h_out_start, 0);
+                        w_out_start = std::max(w_out_start, 0);
+                        h_out_end = std::min(h_out_end, H_out - 1);
+                        w_out_end = std::min(w_out_end, W_out - 1);
+
+                        T xi = xh[idx4(n, c, h, w, H, W)];
+                        T grad = T{};
+                        for(int ho = h_out_start; ho <= h_out_end; ++ho)
+                        {
+                            int h_start = ho * static_cast<int>(p.stride_h) - static_cast<int>(p.pad_h);
+                            int h_end = std::min(h_start + static_cast<int>(p.kernel_h), H);
+                            h_start = std::max(h_start, 0);
+                            for(int wo = w_out_start; wo <= w_out_end; ++wo)
+                            {
+                                int w_start = wo * static_cast<int>(p.stride_w) - static_cast<int>(p.pad_w);
+                                int w_end = std::min(w_start + static_cast<int>(p.kernel_w), W);
+                                w_start = std::max(w_start, 0);
+
+                                // Compute window max
+                                T mx = std::numeric_limits<T>::lowest();
+                                for(int ih = h_start; ih < h_end; ++ih)
+                                    for(int iw = w_start; iw < w_end; ++iw)
+                                        mx = std::max(mx, xh[idx4(n, c, ih, iw, H, W)]);
+                                if(xi >= mx)
+                                {
+                                    grad += dyh[idx4(n, c, ho, wo, H_out, W_out)];
+                                }
+                            }
+                        }
+                        dxh[idx4(n, c, h, w, H, W)] = grad;
+                    }
+
+        dx.markHostModified();
         dx.ensureOnDevice(device, queue);
-        auto frame = ::alpaka::tensor::ops::detail::makeFrame<Exec, Queue>(N * C * H * W);
-        queue.enqueue(
-            exec,
-            frame,
-            ::alpaka::tensor::ops::kernels::MaxPool2DBackwardInputKernel<T>{},
-            x.deviceBuffer(device, queue),
-            dy.deviceBuffer(device, queue),
-            dx.deviceBuffer(device, queue),
-            N,
-            C,
-            H,
-            W,
-            H_out,
-            W_out,
-            p);
-        dx.markDeviceModified(device, queue);
+    }
+
+    // AvgPool2D backward: distribute upstream gradient evenly over contributing inputs (host)
+    template<typename T, typename Exec, typename Device, typename Queue>
+    void avg_pool2d_backward(
+        Exec const& /*exec*/,
+        Device const& device,
+        Queue& queue,
+        tensor::Tensor4D<T, Device>& x, // input [N,C,H,W] (unused)
+        tensor::Tensor4D<T, Device>& dy, // upstream grad [N,C,H_out,W_out]
+        tensor::Tensor4D<T, Device>& dx, // grad wrt input [N,C,H,W]
+        Pool2DParams p)
+    {
+        auto s = x.shape();
+        auto so = dy.shape();
+        auto N = static_cast<int>(s[0]);
+        auto C = static_cast<int>(s[1]);
+        auto H = static_cast<int>(s[2]);
+        auto W = static_cast<int>(s[3]);
+        auto H_out = static_cast<int>(so[2]);
+        auto W_out = static_cast<int>(so[3]);
+        assert(dx.shape()[0] == s[0] && dx.shape()[1] == s[1] && dx.shape()[2] == s[2] && dx.shape()[3] == s[3]);
+
+        dy.toHost(device, queue);
+        dx.toHost(device, queue);
+
+        auto* dyh = dy.hostData();
+        auto* dxh = dx.hostData();
+        std::fill(dxh, dxh + static_cast<std::size_t>(N) * C * H * W, T{});
+
+        auto idx4 = [&](int n, int c, int h, int w, int Hdim, int Wdim) -> std::size_t {
+            return static_cast<std::size_t>(n) * C * Hdim * Wdim + static_cast<std::size_t>(c) * Hdim * Wdim
+                + static_cast<std::size_t>(h) * Wdim + static_cast<std::size_t>(w);
+        };
+
+        for(int n = 0; n < N; ++n)
+            for(int c = 0; c < C; ++c)
+                for(int ho = 0; ho < H_out; ++ho)
+                    for(int wo = 0; wo < W_out; ++wo)
+                    {
+                        int h_start = ho * static_cast<int>(p.stride_h) - static_cast<int>(p.pad_h);
+                        int w_start = wo * static_cast<int>(p.stride_w) - static_cast<int>(p.pad_w);
+                        int h_end = std::min(h_start + static_cast<int>(p.kernel_h), H);
+                        int w_end = std::min(w_start + static_cast<int>(p.kernel_w), W);
+                        h_start = std::max(h_start, 0);
+                        w_start = std::max(w_start, 0);
+                        int poolSize = std::max(1, (h_end - h_start) * (w_end - w_start));
+                        T val = dyh[idx4(n, c, ho, wo, H_out, W_out)] / static_cast<T>(poolSize);
+                        for(int ih = h_start; ih < h_end; ++ih)
+                            for(int iw = w_start; iw < w_end; ++iw)
+                                dxh[idx4(n, c, ih, iw, H, W)] += val;
+                    }
+
+        dx.markHostModified();
+        dx.ensureOnDevice(device, queue);
     }
 
     // Softmax + CrossEntropy loss backward w.r.t logits (2D: [M, C])
