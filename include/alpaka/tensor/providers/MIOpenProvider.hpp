@@ -489,7 +489,8 @@ namespace alpaka::tensor
             }
             if(hipMemcpy(dIn, input.hostData(), inBytes, hipMemcpyHostToDevice) != hipSuccess)
             {
-                hipFree(dIn); hipFree(dOut);
+                { hipError_t _st = hipFree(dIn); (void)_st; }
+                { hipError_t _st = hipFree(dOut); (void)_st; }
                 miopenDestroyTensorDescriptor(xDesc);
                 miopenDestroyTensorDescriptor(yDesc);
                 miopenDestroyPoolingDescriptor(poolDesc);
@@ -519,17 +520,20 @@ namespace alpaka::tensor
 
             if(st != miopenStatusSuccess)
             {
-                hipFree(dIn); hipFree(dOut);
+                { hipError_t _st = hipFree(dIn); (void)_st; }
+                { hipError_t _st = hipFree(dOut); (void)_st; }
                 throw std::runtime_error("MIOpen PoolingForward (Max) failed");
             }
             // Copy result back to host tensor
             if(hipMemcpy(output.hostData(), dOut, outBytes, hipMemcpyDeviceToHost) != hipSuccess)
             {
-                hipFree(dIn); hipFree(dOut);
+                { hipError_t _st = hipFree(dIn); (void)_st; }
+                { hipError_t _st = hipFree(dOut); (void)_st; }
                 throw std::runtime_error("hipMemcpy DtoH failed for pooling output");
             }
             output.markHostModified();
-            hipFree(dIn); hipFree(dOut);
+            { hipError_t _st = hipFree(dIn); (void)_st; }
+            { hipError_t _st = hipFree(dOut); (void)_st; }
             return output;
 #else
             return ::alpaka::tensor::ops::max_pool2d<T>(exec, device, queue, input, params);
@@ -600,7 +604,8 @@ namespace alpaka::tensor
             }
             if(hipMemcpy(dIn, input.hostData(), inBytes, hipMemcpyHostToDevice) != hipSuccess)
             {
-                hipFree(dIn); hipFree(dOut);
+                { hipError_t _st = hipFree(dIn); (void)_st; }
+                { hipError_t _st = hipFree(dOut); (void)_st; }
                 miopenDestroyTensorDescriptor(xDesc);
                 miopenDestroyTensorDescriptor(yDesc);
                 miopenDestroyPoolingDescriptor(poolDesc);
@@ -629,16 +634,19 @@ namespace alpaka::tensor
 
             if(st != miopenStatusSuccess)
             {
-                hipFree(dIn); hipFree(dOut);
+                { hipError_t _st = hipFree(dIn); (void)_st; }
+                { hipError_t _st = hipFree(dOut); (void)_st; }
                 throw std::runtime_error("MIOpen PoolingForward (Avg) failed");
             }
             if(hipMemcpy(output.hostData(), dOut, outBytes, hipMemcpyDeviceToHost) != hipSuccess)
             {
-                hipFree(dIn); hipFree(dOut);
+                { hipError_t _st = hipFree(dIn); (void)_st; }
+                { hipError_t _st = hipFree(dOut); (void)_st; }
                 throw std::runtime_error("hipMemcpy DtoH failed for avg pooling output");
             }
             output.markHostModified();
-            hipFree(dIn); hipFree(dOut);
+            { hipError_t _st = hipFree(dIn); (void)_st; }
+            { hipError_t _st = hipFree(dOut); (void)_st; }
             return output;
 #else
             return ::alpaka::tensor::ops::avg_pool2d<T>(exec, device, queue, input, params);
@@ -870,7 +878,10 @@ namespace alpaka::tensor
             if(hipMemcpy(dX, x.hostData(), inBytes, hipMemcpyHostToDevice) != hipSuccess
                || hipMemcpy(dDy, dy.hostData(), outBytes, hipMemcpyHostToDevice) != hipSuccess)
             {
-                hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+                { hipError_t _st = hipFree(dX); (void)_st; }
+                { hipError_t _st = hipFree(dY); (void)_st; }
+                { hipError_t _st = hipFree(dDy); (void)_st; }
+                { hipError_t _st = hipFree(dDx); (void)_st; }
                 miopenDestroyTensorDescriptor(xDesc);
                 miopenDestroyTensorDescriptor(yDesc);
                 miopenDestroyTensorDescriptor(dyDesc);
@@ -911,7 +922,10 @@ namespace alpaka::tensor
                 wsSize);
             if(stFwd != miopenStatusSuccess)
             {
-                hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+                { hipError_t _st = hipFree(dX); (void)_st; }
+                { hipError_t _st = hipFree(dY); (void)_st; }
+                { hipError_t _st = hipFree(dDy); (void)_st; }
+                { hipError_t _st = hipFree(dDx); (void)_st; }
                 miopenDestroyTensorDescriptor(xDesc);
                 miopenDestroyTensorDescriptor(yDesc);
                 miopenDestroyTensorDescriptor(dyDesc);
@@ -927,7 +941,7 @@ namespace alpaka::tensor
 
             float alpha = 1.0f, beta = 0.0f;
             // Zero-initialize dDx
-            hipMemset(dDx, 0, inBytes);
+            { hipError_t _st = hipMemset(dDx, 0, inBytes); (void)_st; }
             auto st = miopenPoolingBackward(
                 handle_,
                 poolDesc,
@@ -955,19 +969,28 @@ namespace alpaka::tensor
 
             if(st != miopenStatusSuccess)
             {
-                hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+                { hipError_t _st = hipFree(dX); (void)_st; }
+                { hipError_t _st = hipFree(dY); (void)_st; }
+                { hipError_t _st = hipFree(dDy); (void)_st; }
+                { hipError_t _st = hipFree(dDx); (void)_st; }
                 ::alpaka::tensor::ops::train::max_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
                 return;
             }
             // Copy dDx back to host dx
             if(hipMemcpy(dx.hostData(), dDx, inBytes, hipMemcpyDeviceToHost) != hipSuccess)
             {
-                hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+                { hipError_t _st = hipFree(dX); (void)_st; }
+                { hipError_t _st = hipFree(dY); (void)_st; }
+                { hipError_t _st = hipFree(dDy); (void)_st; }
+                { hipError_t _st = hipFree(dDx); (void)_st; }
                 ::alpaka::tensor::ops::train::max_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
                 return;
             }
             dx.markHostModified();
-            hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+            { hipError_t _st = hipFree(dX); (void)_st; }
+            { hipError_t _st = hipFree(dY); (void)_st; }
+            { hipError_t _st = hipFree(dDy); (void)_st; }
+            { hipError_t _st = hipFree(dDx); (void)_st; }
 #else
             ::alpaka::tensor::ops::train::max_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
 #endif
@@ -1048,7 +1071,10 @@ namespace alpaka::tensor
             if(hipMemcpy(dX, x.hostData(), inBytes, hipMemcpyHostToDevice) != hipSuccess
                || hipMemcpy(dDy, dy.hostData(), outBytes, hipMemcpyHostToDevice) != hipSuccess)
             {
-                hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+                { hipError_t _st = hipFree(dX); (void)_st; }
+                { hipError_t _st = hipFree(dY); (void)_st; }
+                { hipError_t _st = hipFree(dDy); (void)_st; }
+                { hipError_t _st = hipFree(dDx); (void)_st; }
                 miopenDestroyTensorDescriptor(xDesc);
                 miopenDestroyTensorDescriptor(yDesc);
                 miopenDestroyTensorDescriptor(dyDesc);
@@ -1088,7 +1114,10 @@ namespace alpaka::tensor
                 wsSize);
             if(stFwd != miopenStatusSuccess)
             {
-                hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+                { hipError_t _st = hipFree(dX); (void)_st; }
+                { hipError_t _st = hipFree(dY); (void)_st; }
+                { hipError_t _st = hipFree(dDy); (void)_st; }
+                { hipError_t _st = hipFree(dDx); (void)_st; }
                 miopenDestroyTensorDescriptor(xDesc);
                 miopenDestroyTensorDescriptor(yDesc);
                 miopenDestroyTensorDescriptor(dyDesc);
@@ -1105,7 +1134,7 @@ namespace alpaka::tensor
 
             float alpha = 1.0f, beta = 0.0f;
             // Zero-initialize dx similarly for avg pooling
-            hipMemset(dDx, 0, inBytes);
+            { hipError_t _st = hipMemset(dDx, 0, inBytes); (void)_st; }
             auto st = miopenPoolingBackward(
                 handle_,
                 poolDesc,
@@ -1133,7 +1162,10 @@ namespace alpaka::tensor
 
             if(st != miopenStatusSuccess)
             {
-                hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+                { hipError_t _st = hipFree(dX); (void)_st; }
+                { hipError_t _st = hipFree(dY); (void)_st; }
+                { hipError_t _st = hipFree(dDy); (void)_st; }
+                { hipError_t _st = hipFree(dDx); (void)_st; }
                 // Fallback to generic avg pooling backward via manual distribution
                 ::alpaka::tensor::ops::train::avg_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
                 return;
@@ -1141,12 +1173,18 @@ namespace alpaka::tensor
             // Copy result back to host and mark
             if(hipMemcpy(dx.hostData(), dDx, inBytes, hipMemcpyDeviceToHost) != hipSuccess)
             {
-                hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+                { hipError_t _st = hipFree(dX); (void)_st; }
+                { hipError_t _st = hipFree(dY); (void)_st; }
+                { hipError_t _st = hipFree(dDy); (void)_st; }
+                { hipError_t _st = hipFree(dDx); (void)_st; }
                 ::alpaka::tensor::ops::train::avg_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
                 return;
             }
             dx.markHostModified();
-            hipFree(dX); hipFree(dY); hipFree(dDy); hipFree(dDx);
+            { hipError_t _st = hipFree(dX); (void)_st; }
+            { hipError_t _st = hipFree(dY); (void)_st; }
+            { hipError_t _st = hipFree(dDy); (void)_st; }
+            { hipError_t _st = hipFree(dDx); (void)_st; }
 #else
             // Fallback to generic path
             ::alpaka::tensor::ops::train::avg_pool2d_backward<T>(exec, device, queue, x, dy, dx, params);
