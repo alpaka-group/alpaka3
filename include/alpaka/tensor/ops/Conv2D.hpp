@@ -9,6 +9,8 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/TensorCore.hpp>
 #include <alpaka/tensor/TensorDescriptor.hpp>
+#include <alpaka/tensor/ops/Conv2DTypes.hpp>
+#include <alpaka/tensor/ops/kernels/Conv2DKernels.hpp>
 
 #include <array>
 #include <cassert>
@@ -25,213 +27,11 @@ namespace alpaka::tensor::ops
 {
     // (Trait definition moved below detail namespace; no forward decl needed.)
 
-    // Conv2D parameters structure
-    struct Conv2DParams
-    {
-        std::size_t stride_h = 1;
-        std::size_t stride_w = 1;
-        std::size_t pad_h = 0;
-        std::size_t pad_w = 0;
-        std::size_t dilation_h = 1;
-        std::size_t dilation_w = 1;
-
-        Conv2DParams() = default;
-
-        Conv2DParams(
-            std::size_t sh,
-            std::size_t sw,
-            std::size_t ph,
-            std::size_t pw,
-            std::size_t dh = 1,
-            std::size_t dw = 1)
-            : stride_h(sh)
-            , stride_w(sw)
-            , pad_h(ph)
-            , pad_w(pw)
-            , dilation_h(dh)
-            , dilation_w(dw)
-        {
-        }
-    };
-
     // Alpaka Conv2D kernel for 4D tensors [N,C,H,W]
-    class Conv2DKernel
-    {
-    public:
-        template<typename Acc, typename TBufInput, typename TBufWeight, typename TBufOutput>
-        ALPAKA_FN_ACC void operator()(
-            Acc const& acc,
-            TBufInput input, // [N, C_in, H_in, W_in]
-            TBufWeight weight, // [C_out, C_in, K_h, K_w]
-            TBufOutput output, // [N, C_out, H_out, W_out]
-            std::size_t N,
-            std::size_t C_in,
-            std::size_t C_out,
-            std::size_t H_in,
-            std::size_t W_in,
-            std::size_t H_out,
-            std::size_t W_out,
-            std::size_t K_h,
-            std::size_t K_w,
-            Conv2DParams params) const
-        {
-            // Use 4D mapping to match frameSpec: [N, C_out, H_out, W_out]
-            for(auto [n, c_out, h_out, w_out] : alpaka::onAcc::makeIdxMap(
-                    acc,
-                    alpaka::onAcc::worker::threadsInGrid,
-                    alpaka::IdxRange{alpaka::Vec{N, C_out, H_out, W_out}}))
-            {
-                float sum = 0.f;
-                for(std::size_t c_in = 0; c_in < C_in; ++c_in)
-                {
-                    for(std::size_t kh = 0; kh < K_h; ++kh)
-                    {
-                        for(std::size_t kw = 0; kw < K_w; ++kw)
-                        {
-                            int h_in = static_cast<int>(h_out * params.stride_h + kh * params.dilation_h)
-                                       - static_cast<int>(params.pad_h);
-                            int w_in = static_cast<int>(w_out * params.stride_w + kw * params.dilation_w)
-                                       - static_cast<int>(params.pad_w);
-                            if(h_in >= 0 && h_in < static_cast<int>(H_in) && w_in >= 0
-                               && w_in < static_cast<int>(W_in))
-                            {
-                                auto input_idx = alpaka::Vec<std::size_t, 4>{
-                                    n,
-                                    c_in,
-                                    static_cast<std::size_t>(h_in),
-                                    static_cast<std::size_t>(w_in)};
-                                auto weight_idx = alpaka::Vec<std::size_t, 4>{c_out, c_in, kh, kw};
-
-                                sum += input[input_idx] * weight[weight_idx];
-                            }
-                        }
-                    }
-                }
-                output[alpaka::Vec<std::size_t, 4>{n, c_out, h_out, w_out}] = sum;
-            }
-        }
-    };
+    // Kernels moved to kernels/Conv2DKernels.hpp
 
     // Tiled Conv2D kernel with shared memory following StencilKernel pattern
-    template<int TILE_H = 16, int TILE_W = 16>
-    class Conv2DTiledKernel
-    {
-    public:
-        template<typename Acc, typename TBufInput, typename TBufWeight, typename TBufOutput>
-        ALPAKA_FN_ACC void operator()(
-            Acc const& acc,
-            TBufInput input, // [N, C_in, H_in, W_in]
-            TBufWeight weight, // [C_out, C_in, K_h, K_w]
-            TBufOutput output, // [N, C_out, H_out, W_out]
-            std::size_t N,
-            std::size_t C_in,
-            std::size_t C_out,
-            std::size_t H_in,
-            std::size_t W_in,
-            std::size_t H_out,
-            std::size_t W_out,
-            std::size_t K_h,
-            std::size_t K_w,
-            Conv2DParams params,
-            alpaka::Vec<std::size_t, 2> chunkSize,
-            alpaka::concepts::CVector auto sharedMemExtents) const
-        {
-            using namespace alpaka;
-
-            // Iterate over each (N, C_out) pair, then spatial tiles
-            for(auto [n, c_out] : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{Vec{N, C_out}}))
-            {
-                // Spatial tiling following StencilKernel pattern
-                for(auto blockStartIdx : onAcc::makeIdxMap(
-                        acc,
-                        onAcc::worker::blocksInGrid,
-                        IdxRange{Vec{std::size_t{0}, std::size_t{0}}, Vec{H_out, W_out}, chunkSize}))
-                {
-                    // Declare shared memory once per spatial tile (like StencilKernel)
-                    auto sPatch
-                        = alpaka::onAcc::declareSharedMdArray<float, alpaka::uniqueId()>(acc, sharedMemExtents);
-
-                    // Process each input channel
-                    for(std::size_t c_in = 0; c_in < C_in; ++c_in)
-                    {
-                        // Sync before loading new input channel data
-                        alpaka::onAcc::syncBlockThreads(acc);
-
-                        // Load input patch into shared memory for this channel
-                        auto patchSize = Vec{static_cast<std::size_t>(TILE_H), static_cast<std::size_t>(TILE_W)};
-                        for(auto idx2d :
-                            alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInBlock, IdxRange{patchSize}))
-                        {
-                            // Convert patch coordinates to input coordinates
-                            int h_in = static_cast<int>(blockStartIdx[0] * params.stride_h)
-                                       - static_cast<int>(params.pad_h) + static_cast<int>(idx2d[0]);
-                            int w_in = static_cast<int>(blockStartIdx[1] * params.stride_w)
-                                       - static_cast<int>(params.pad_w) + static_cast<int>(idx2d[1]);
-
-                            // Bounds checking
-                            if(h_in >= 0 && h_in < static_cast<int>(H_in) && w_in >= 0 && w_in < static_cast<int>(W_in)
-                               && n < N && c_in < C_in)
-                            {
-                                Vec<std::size_t, 4> input_idx{
-                                    n,
-                                    c_in,
-                                    static_cast<std::size_t>(h_in),
-                                    static_cast<std::size_t>(w_in)};
-                                sPatch[idx2d] = input[input_idx];
-                            }
-                            else
-                            {
-                                sPatch[idx2d] = 0.0f; // Zero padding
-                            }
-                        }
-
-                        // Sync after loading
-                        alpaka::onAcc::syncBlockThreads(acc);
-
-                        // Compute convolution for this input channel and accumulate
-                        for(auto outIdx :
-                            alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInBlock, IdxRange{chunkSize}))
-                        {
-                            auto globalOutIdx = outIdx + blockStartIdx;
-                            if(globalOutIdx[0] >= H_out || globalOutIdx[1] >= W_out)
-                                continue;
-
-                            float partialSum = 0.0f;
-
-                            // Convolution computation using shared memory
-                            for(std::size_t kh = 0; kh < K_h; ++kh)
-                            {
-                                for(std::size_t kw = 0; kw < K_w; ++kw)
-                                {
-                                    std::size_t patch_h = outIdx[0] * params.stride_h + kh * params.dilation_h;
-                                    std::size_t patch_w = outIdx[1] * params.stride_w + kw * params.dilation_w;
-
-                                    if(patch_h < static_cast<std::size_t>(TILE_H)
-                                       && patch_w < static_cast<std::size_t>(TILE_W))
-                                    {
-                                        Vec<std::size_t, 2> patch_idx{patch_h, patch_w};
-                                        Vec<std::size_t, 4> weight_idx{c_out, c_in, kh, kw};
-                                        partialSum += sPatch[patch_idx] * weight[weight_idx];
-                                    }
-                                }
-                            }
-
-                            // Accumulate to output
-                            Vec<std::size_t, 4> output_idx{n, c_out, globalOutIdx[0], globalOutIdx[1]};
-                            if(c_in == 0)
-                            {
-                                output[output_idx] = partialSum;
-                            }
-                            else
-                            {
-                                output[output_idx] += partialSum;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    };
+    // Tiled kernel moved to kernels/Conv2DKernels.hpp
 
     // Option B: Halo-aware tiled Conv2D kernel.
     // Assumptions for first implementation stage:
@@ -240,142 +40,7 @@ namespace alpaka::tensor::ops
     //  - MAX_KH, MAX_KW provide an upper bound for runtime kernel sizes (K_h <= MAX_KH, K_w <= MAX_KW)
     //  - Shared memory patch extents = TILE_H + MAX_KH - 1 by TILE_W + MAX_KW - 1 (worst-case halo)
     //  - Each thread computes exactly one output element within its tile (TILE_H x TILE_W)
-    template<int TILE_H, int TILE_W, int MAX_KH, int MAX_KW>
-    class Conv2DTiledKernelOptionB
-    {
-    public:
-        static_assert(TILE_H > 0 && TILE_W > 0, "Tile dims must be > 0");
-        static_assert(MAX_KH > 0 && MAX_KW > 0, "Max kernel dims must be > 0");
-
-        template<typename Acc, typename TBufInput, typename TBufWeight, typename TBufOutput>
-        ALPAKA_FN_ACC void operator()(
-            Acc const& acc,
-            TBufInput input, // [N, C_in, H_in, W_in]
-            TBufWeight weight, // [C_out, C_in, K_h, K_w]
-            TBufOutput output, // [N, C_out, H_out, W_out]
-            std::size_t N,
-            std::size_t C_in,
-            std::size_t C_out,
-            std::size_t H_in,
-            std::size_t W_in,
-            std::size_t H_out,
-            std::size_t W_out,
-            std::size_t K_h,
-            std::size_t K_w,
-            Conv2DParams params) const
-        {
-            using namespace alpaka;
-
-            // Compile-time shared memory extents (worst-case halo)
-            constexpr std::size_t PATCH_H = static_cast<std::size_t>(TILE_H + MAX_KH - 1);
-            constexpr std::size_t PATCH_W = static_cast<std::size_t>(TILE_W + MAX_KW - 1);
-            constexpr auto sharedMemExtents = alpaka::CVec<std::size_t, PATCH_H, PATCH_W>{};
-
-            // 4D tile distribution: each block processes a spatial tile for one (n,c_out)
-            for(auto tileOrigin : alpaka::onAcc::makeIdxMap(
-                    acc,
-                    alpaka::onAcc::worker::blocksInGrid,
-                    alpaka::IdxRange{
-                        alpaka::Vec{std::size_t{0}, std::size_t{0}, std::size_t{0}, std::size_t{0}},
-                        alpaka::Vec{N, C_out, H_out, W_out},
-                        alpaka::Vec{std::size_t{1}, std::size_t{1}, std::size_t{TILE_H}, std::size_t{TILE_W}}}))
-            {
-                std::size_t const n = tileOrigin[0];
-                std::size_t const c_out = tileOrigin[1];
-                std::size_t const outH0 = tileOrigin[2];
-                std::size_t const outW0 = tileOrigin[3];
-
-                // Shared memory patch (worst-case halo sizing)
-                auto sPatch = alpaka::onAcc::declareSharedMdArray<float, alpaka::uniqueId()>(acc, sharedMemExtents);
-
-                // Cooperative zero (once per tile) using 4D thread space (first two dims = 1)
-                for(auto tIdx : alpaka::onAcc::makeIdxMap(
-                        acc,
-                        alpaka::onAcc::worker::threadsInBlock,
-                        alpaka::IdxRange{
-                            alpaka::Vec{std::size_t{1}, std::size_t{1}, std::size_t{TILE_H}, std::size_t{TILE_W}}}))
-                {
-                    for(std::size_t ph = tIdx[2]; ph < PATCH_H; ph += TILE_H)
-                    {
-                        for(std::size_t pw = tIdx[3]; pw < PATCH_W; pw += TILE_W)
-                        {
-                            sPatch[alpaka::Vec{ph, pw}] = 0.f;
-                        }
-                    }
-                }
-                alpaka::onAcc::syncBlockThreads(acc);
-
-                std::size_t const loadH = K_h + TILE_H - 1;
-                std::size_t const loadW = K_w + TILE_W - 1;
-                std::size_t const tileEffH = (outH0 + TILE_H <= H_out) ? TILE_H : (H_out - outH0);
-                std::size_t const tileEffW = (outW0 + TILE_W <= W_out) ? TILE_W : (W_out - outW0);
-                auto effRange = alpaka::IdxRange{alpaka::Vec{tileEffH, tileEffW}};
-                for(std::size_t c_in = 0; c_in < C_in; ++c_in)
-                {
-                    // Cooperative load (only needed region) over 4D thread space
-                    for(auto tIdx : alpaka::onAcc::makeIdxMap(
-                            acc,
-                            alpaka::onAcc::worker::threadsInBlock,
-                            alpaka::IdxRange{alpaka::Vec{
-                                std::size_t{1},
-                                std::size_t{1},
-                                std::size_t{TILE_H},
-                                std::size_t{TILE_W}}}))
-                    {
-                        for(std::size_t ph = tIdx[2]; ph < loadH; ph += TILE_H)
-                        {
-                            for(std::size_t pw = tIdx[3]; pw < loadW; pw += TILE_W)
-                            {
-                                int h_in
-                                    = static_cast<int>(outH0) - static_cast<int>(params.pad_h) + static_cast<int>(ph);
-                                int w_in
-                                    = static_cast<int>(outW0) - static_cast<int>(params.pad_w) + static_cast<int>(pw);
-                                float val = 0.f;
-                                if(h_in >= 0 && h_in < static_cast<int>(H_in) && w_in >= 0
-                                   && w_in < static_cast<int>(W_in))
-                                {
-                                    Vec<std::size_t, 4> inIdx{
-                                        n,
-                                        c_in,
-                                        static_cast<std::size_t>(h_in),
-                                        static_cast<std::size_t>(w_in)};
-                                    val = input[inIdx];
-                                }
-                                sPatch[Vec{ph, pw}] = val;
-                            }
-                        }
-                    }
-                    alpaka::onAcc::syncBlockThreads(acc);
-
-                    // Compute outputs only over effective tile region (use last two dims)
-                    for(auto tIdx : alpaka::onAcc::makeIdxMap(
-                            acc,
-                            alpaka::onAcc::worker::threadsInBlock,
-                            alpaka::IdxRange{alpaka::Vec{std::size_t{1}, std::size_t{1}, tileEffH, tileEffW}}))
-                    {
-                        std::size_t const localH = tIdx[2];
-                        std::size_t const localW = tIdx[3];
-                        float partial = 0.f;
-                        for(std::size_t kh = 0; kh < K_h; ++kh)
-                        {
-                            for(std::size_t kw = 0; kw < K_w; ++kw)
-                            {
-                                Vec<std::size_t, 2> pIdx{localH + kh, localW + kw};
-                                Vec<std::size_t, 4> wIdx{c_out, c_in, kh, kw};
-                                partial += sPatch[pIdx] * weight[wIdx];
-                            }
-                        }
-                        Vec<std::size_t, 4> oIdx{n, c_out, outH0 + localH, outW0 + localW};
-                        if(c_in == 0)
-                            output[oIdx] = partial;
-                        else
-                            output[oIdx] += partial;
-                    }
-                    alpaka::onAcc::syncBlockThreads(acc);
-                } // c_in
-            } // tiles
-        }
-    };
+    // Option B tiled kernel moved to kernels/Conv2DKernels.hpp
 
     namespace detail
     {
@@ -551,7 +216,7 @@ namespace alpaka::tensor::ops
             queue.enqueue(
                 exec,
                 frameSpec,
-                Conv2DTiledKernelOptionB<TILE_H, TILE_W, MAX_KH, MAX_KW>{},
+                kernels::Conv2DTiledKernelOptionB<TILE_H, TILE_W, MAX_KH, MAX_KW>{},
                 const_cast<tensor::Tensor4D<T, Device>&>(input).deviceBuffer(device, queue),
                 const_cast<tensor::Tensor4D<T, Device>&>(weight).deviceBuffer(device, queue),
                 output.deviceBuffer(device, queue),
@@ -610,7 +275,7 @@ namespace alpaka::tensor::ops
             queue.enqueue(
                 exec,
                 frameSpec,
-                Conv2DKernel{},
+                kernels::Conv2DKernel{},
                 const_cast<tensor::Tensor4D<T, Device>&>(input).deviceBuffer(device, queue),
                 const_cast<tensor::Tensor4D<T, Device>&>(weight).deviceBuffer(device, queue),
                 output.deviceBuffer(device, queue),
