@@ -628,7 +628,7 @@ namespace alpaka::tensor::ops
             output.ensureOnDevice(device, queue);
         };
 
-        if(forceHost)
+        if(forceHost || std::is_same_v<Exec, alpaka::exec::CpuSerial>)
         {
             hostFallback();
             return;
@@ -819,24 +819,39 @@ namespace alpaka::tensor::ops
     {
         assert(flat.size() == M * N && "copy_flat_to_2d: size mismatch");
         tensor::Tensor2D<T, Device> out(device, {M, N}, "reshape2d");
-        flat.ensureOnDevice(device, queue);
-        out.ensureOnDevice(device, queue);
-        auto frame = ops::detail::makeFrame<Exec, Queue>(M * N);
-        queue.enqueue(
-            exec,
-            frame,
-            detail::Copy1DTo2DKernel<T>{},
-            flat.deviceBuffer(device, queue).data(),
-            out.deviceBuffer(device, queue),
-            M,
-            N);
-        out.markDeviceModified(device, queue);
-        // Ensure lifetime safety for async work: if either tensor is destroyed before the
-        // queued copy completes, block in destructor to avoid use-after-free.
-        flat.deviceBuffer(device, queue).destructorWaitFor(queue);
-        out.deviceBuffer(device, queue).destructorWaitFor(queue);
-        // Removed explicit wait; returning tensor keeps buffers alive
-        return out;
+        if constexpr(std::is_same_v<Exec, alpaka::exec::CpuSerial>)
+        {
+            // Pure host fallback to avoid device enqueues on Host
+            flat.toHost(device, queue);
+            auto const* src = flat.hostData();
+            auto* dst = out.hostData();
+            for(std::size_t i = 0; i < M * N; ++i)
+                dst[i] = src[i];
+            out.markHostModified();
+            out.ensureOnDevice(device, queue);
+            return out;
+        }
+        else
+        {
+            flat.ensureOnDevice(device, queue);
+            out.ensureOnDevice(device, queue);
+            auto frame = ops::detail::makeFrame<Exec, Queue>(M * N);
+            queue.enqueue(
+                exec,
+                frame,
+                detail::Copy1DTo2DKernel<T>{},
+                flat.deviceBuffer(device, queue).data(),
+                out.deviceBuffer(device, queue),
+                M,
+                N);
+            out.markDeviceModified(device, queue);
+            // Ensure lifetime safety for async work: if either tensor is destroyed before the
+            // queued copy completes, block in destructor to avoid use-after-free.
+            flat.deviceBuffer(device, queue).destructorWaitFor(queue);
+            out.deviceBuffer(device, queue).destructorWaitFor(queue);
+            // Removed explicit wait; returning tensor keeps buffers alive
+            return out;
+        }
     }
 
     // Safe 2D matmul helper: C[M,N] = A[M,K] * B[K,N] using 1D buffers and ops::gemm

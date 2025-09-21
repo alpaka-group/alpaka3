@@ -709,6 +709,50 @@ namespace alpaka::tensor::ops::train
         tensor::Tensor1D<float, Device>& dA, // [M*K]
         tensor::Tensor1D<float, Device>& dBias) // [N]
     {
+        if constexpr(std::is_same_v<Exec, alpaka::exec::CpuSerial>)
+        {
+            // Pure host implementation for stability on Host
+            auto const* Ah = A.hostData();
+            auto const* Wh = W.hostData();
+            auto const* dOh = dOut.hostData();
+            auto* dWh = dW.hostData();
+            auto* dAh = dA.hostData();
+            auto* dBh = dBias.hostData();
+            // dW = A^T [KxM] * dOut [MxN]
+            for(std::size_t k = 0; k < K; ++k)
+                for(std::size_t n = 0; n < N; ++n)
+                {
+                    double sum = 0.0;
+                    for(std::size_t m = 0; m < M; ++m)
+                        sum += static_cast<double>(Ah[m * K + k]) * static_cast<double>(dOh[m * N + n]);
+                    dWh[k * N + n] = static_cast<float>(sum);
+                }
+            // dA = dOut [MxN] * W^T [NxK]
+            for(std::size_t m = 0; m < M; ++m)
+                for(std::size_t k = 0; k < K; ++k)
+                {
+                    double sum = 0.0;
+                    for(std::size_t n = 0; n < N; ++n)
+                        sum += static_cast<double>(dOh[m * N + n]) * static_cast<double>(Wh[k * N + n]);
+                    dAh[m * K + k] = static_cast<float>(sum);
+                }
+            // dBias = row-sum of dOut
+            for(std::size_t n = 0; n < N; ++n)
+            {
+                double sum = 0.0;
+                for(std::size_t m = 0; m < M; ++m)
+                    sum += static_cast<double>(dOh[m * N + n]);
+                dBh[n] = static_cast<float>(sum);
+            }
+            dW.markHostModified();
+            dA.markHostModified();
+            dBias.markHostModified();
+            // Ensure device copies for any downstream ops
+            dW.ensureOnDevice(device, queue);
+            dA.ensureOnDevice(device, queue);
+            dBias.ensureOnDevice(device, queue);
+            return;
+        }
         // Ensure device residency
         A.ensureOnDevice(device, queue);
         W.ensureOnDevice(device, queue);
@@ -855,22 +899,35 @@ namespace alpaka::tensor::ops::train
         float lr)
     {
         assert(param.size() == grad.size());
-        param.ensureOnDevice(device, queue);
-        grad.ensureOnDevice(device, queue);
-        auto n = param.size();
-        auto frame = ::alpaka::tensor::ops::detail::makeFrame<Exec, Queue>(n);
+        if constexpr(std::is_same_v<Exec, alpaka::exec::CpuSerial>)
+        {
+            auto* w = param.hostData();
+            auto* g = grad.hostData();
+            auto n = param.size();
+            for(std::size_t i = 0; i < n; ++i)
+                w[i] = w[i] - lr * g[i];
+            param.markHostModified();
+            param.ensureOnDevice(device, queue);
+        }
+        else
+        {
+            param.ensureOnDevice(device, queue);
+            grad.ensureOnDevice(device, queue);
+            auto n = param.size();
+            auto frame = ::alpaka::tensor::ops::detail::makeFrame<Exec, Queue>(n);
 
-        SgdUpdateOp op{lr};
+            SgdUpdateOp op{lr};
 
-        queue.enqueue(
-            exec,
-            frame,
-            ::alpaka::tensor::ops::BinaryKernel{},
-            param.deviceBuffer(device, queue),
-            grad.deviceBuffer(device, queue),
-            param.deviceBuffer(device, queue),
-            n,
-            op);
-        param.markDeviceModified(device, queue);
+            queue.enqueue(
+                exec,
+                frame,
+                ::alpaka::tensor::ops::BinaryKernel{},
+                param.deviceBuffer(device, queue),
+                grad.deviceBuffer(device, queue),
+                param.deviceBuffer(device, queue),
+                n,
+                op);
+            param.markDeviceModified(device, queue);
+        }
     }
 } // namespace alpaka::tensor::ops::train
