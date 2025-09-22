@@ -18,6 +18,7 @@
 #include <cassert>
 #include <optional>
 #include <string>
+#include <utility>
 
 namespace alpaka::tensor
 {
