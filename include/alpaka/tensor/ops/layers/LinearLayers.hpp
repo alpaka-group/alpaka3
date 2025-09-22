@@ -135,8 +135,8 @@ namespace alpaka::tensor::ops::layers
                             exec,
                             frame,
                             ops::detail::LinearBiasKernel{},
-                            out.deviceBuffer(device, queue),
-                            b.deviceBuffer(device, queue),
+                            out.deviceBuffer(device, queue).data(),
+                            b.deviceBuffer(device, queue).data(),
                             batch,
                             outFeatures,
                             total);

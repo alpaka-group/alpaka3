@@ -179,16 +179,40 @@ int main(int argc, char** argv)
 {
     std::cout << "=== GEMM Example Tests ===\n" << std::endl;
     bool verbose = false;
+    std::string sizeArg;
     for(int i = 1; i < argc; ++i)
     {
         std::string a(argv[i]);
         if(a == "-v" || a == "--verbose")
             verbose = true;
+        else if(a == "-s" || a == "--size")
+        {
+            if(i + 1 < argc)
+            {
+                sizeArg = argv[++i];
+            }
+            else
+            {
+                std::cerr << "--size requires an argument" << std::endl;
+                return 1;
+            }
+        }
+        else if(a.rfind("--size=", 0) == 0)
+        {
+            sizeArg = a.substr(std::string("--size=").size());
+        }
         else if(a == "-h" || a == "--help")
         {
-            std::cout << "Usage: tensorGemmExample [-v|--verbose]" << std::endl;
+            std::cout << "Usage: tensorGemmExample [-v|--verbose] [-s N|--size N|--size=N]" << std::endl;
             return 0;
         }
+    }
+
+    // If size provided, set env var so runGemmBasic picks it up uniformly
+    if(!sizeArg.empty())
+    {
+        // Let runGemmBasic validate/parse; it will ignore malformed values gracefully
+        setenv("ALPAKA_GEMM_SIZE", sizeArg.c_str(), 1);
     }
     return onHost::executeForEachIfHasDevice(
         [verbose](auto const& backend) { return runGemmBasic(backend, verbose); },

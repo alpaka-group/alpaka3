@@ -310,7 +310,8 @@ namespace alpaka::tensor
             if(provider.supportsOperation(OpType::GEMM))
             {
                 // Prefer typed provider calls when available
-                bool usedTyped = false;
+                // NVCC warning cleanup: remove unused variable (was only for diagnostics)
+                // bool usedTyped = false;
                 try
                 {
                     if constexpr(std::is_same_v<TExec, alpaka::exec::GpuCuda>)
