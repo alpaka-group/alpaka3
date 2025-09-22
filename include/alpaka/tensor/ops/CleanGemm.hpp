@@ -9,6 +9,7 @@
 #include <alpaka/tensor/TensorCore.hpp>
 #include <alpaka/tensor/TensorDescriptor.hpp>
 #include <alpaka/tensor/ops/ElementwiseGeneric.hpp>
+#include <alpaka/tensor/ops/kernels/GemmKernels.hpp>
 #include <alpaka/tensor/providers/DefaultProvider.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
 #include <alpaka/tensor/providers/ProviderRegistry.hpp>
@@ -28,39 +29,7 @@ namespace alpaka::tensor::ops::clean
      */
     namespace detail
     {
-        struct GemmKernel
-        {
-            template<typename TAcc>
-            ALPAKA_FN_ACC void operator()(
-                TAcc const& acc,
-                float const* a,
-                float const* b,
-                float* c,
-                std::size_t M,
-                std::size_t N,
-                std::size_t K,
-                float alpha,
-                float beta) const
-            {
-                auto const globalIdx = makeIdxMap(acc);
-                auto const index = globalIdx[0];
-
-                if(index < M * N)
-                {
-                    std::size_t row = index / N;
-                    std::size_t col = index % N;
-
-                    float sum = 0.0f;
-                    for(std::size_t k = 0; k < K; ++k)
-                    {
-                        sum += a[row * K + k] * b[k * N + col];
-                    }
-
-                    // Apply alpha and beta: C = alpha * A * B + beta * C
-                    c[index] = alpha * sum + beta * c[index];
-                }
-            }
-        };
+        // Note: duplicate GEMM kernel removed. Use ops::kernels::GemmKernel instead.
 
         bool eagerHostEnabled()
         {
@@ -153,10 +122,10 @@ namespace alpaka::tensor::ops::clean
         queue.enqueue(
             exec,
             frame,
-            detail::GemmKernel{},
-            A.deviceBuffer(device, queue).data(),
-            B.deviceBuffer(device, queue).data(),
-            C.deviceBuffer(device, queue).data(),
+            ::alpaka::tensor::ops::kernels::GemmKernel{},
+            A.deviceBuffer(device, queue),
+            B.deviceBuffer(device, queue),
+            C.deviceBuffer(device, queue),
             M,
             N,
             K,
