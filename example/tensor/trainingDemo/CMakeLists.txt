@@ -12,7 +12,7 @@ endif()
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../../cmake/CudaSupport.cmake)
 
-add_executable(trainingDemo src/main.cpp)
+add_executable(trainingDemo src/trainingDemo.cpp)
 
 target_link_libraries(trainingDemo PUBLIC alpaka::alpaka)
 alpaka_finalize(trainingDemo)
