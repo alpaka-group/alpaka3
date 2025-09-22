@@ -17,7 +17,12 @@
 #include <alpaka/tensor/ops/kernels/BatchNormKernels.hpp>
 // Softmax kernels (extracted)
 #include <alpaka/tensor/ops/kernels/SoftmaxKernels.hpp>
+// GELU kernels (extracted)
+#include <alpaka/tensor/ops/kernels/GeluKernels.hpp>
+// LayerNorm kernels (extracted)
+#include <alpaka/tensor/ops/kernels/LayerNormKernels.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cmath>
@@ -669,52 +674,6 @@ namespace alpaka::tensor::ops
     }
 
     // ---------------- GELU (approximate) ----------------
-    namespace detail
-    {
-        template<typename T>
-        struct GeluKernel
-        {
-            template<typename Acc>
-            ALPAKA_FN_ACC void operator()(Acc const& acc, T const* in, T* out, std::size_t total) const
-            {
-                // tanh approximation: 0.5*x*(1+tanh(\sqrt{2/pi}*(x + 0.044715*x^3)))
-                constexpr T k0 = T(0.7978845608028654); // sqrt(2/pi)
-                constexpr T k1 = T(0.044715);
-                for(auto [idx] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{total}))
-                {
-                    T x = in[idx];
-                    T x3 = x * x * x;
-                    T u = k0 * (x + k1 * x3);
-                    T t = T(::tanh((double) u));
-                    out[idx] = T(0.5) * x * (T(1) + t);
-                }
-            }
-        };
-
-        // View-based GELU for 2D tensors to sidestep any backend-specific pointer issues
-        template<typename T>
-        struct Gelu2DViewKernel
-        {
-            template<typename Acc, typename InBuf, typename OutBuf>
-            ALPAKA_FN_ACC void operator()(Acc const& acc, InBuf in, OutBuf out, std::size_t M, std::size_t D) const
-            {
-                constexpr T k0 = T(0.7978845608028654); // sqrt(2/pi)
-                constexpr T k1 = T(0.044715);
-                for(auto [idx] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M * D}))
-                {
-                    std::size_t m = idx / D;
-                    std::size_t d = idx % D;
-                    T x = in[alpaka::Vec<std::size_t, 2>{m, d}];
-                    T x3 = x * x * x;
-                    T u = k0 * (x + k1 * x3);
-                    T t = T(::tanh((double) u));
-                    out[alpaka::Vec<std::size_t, 2>{m, d}] = T(0.5) * x * (T(1) + t);
-                }
-            }
-        };
-    } // namespace detail
 
     template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
     void gelu(Exec const& exec, Device const& device, Queue& queue, tensor::Tensor<T, Rank, Device>& t)
@@ -725,7 +684,7 @@ namespace alpaka::tensor::ops
         queue.enqueue(
             exec,
             frame,
-            detail::GeluKernel<T>{},
+            kernels::GeluKernel<T>{},
             t.deviceBuffer(device, queue).data(),
             t.deviceBuffer(device, queue).data(),
             total);
@@ -744,7 +703,7 @@ namespace alpaka::tensor::ops
         queue.enqueue(
             exec,
             frame,
-            detail::Gelu2DViewKernel<T>{},
+            kernels::Gelu2DViewKernel<T>{},
             t.deviceBuffer(device, queue),
             t.deviceBuffer(device, queue),
             M,
@@ -753,77 +712,7 @@ namespace alpaka::tensor::ops
     }
 
     // ---------------- Layer Normalization (2D: [M, D]) ----------------
-    namespace detail
-    {
-        template<typename T>
-        struct RowReduceMeanVarKernel
-        {
-            template<typename Acc, typename InBuf, typename MeanBuf, typename VarBuf>
-            ALPAKA_FN_ACC void operator()(
-                Acc const& acc,
-                InBuf in,
-                MeanBuf mean,
-                VarBuf var,
-                std::size_t M,
-                std::size_t D) const
-            {
-                for(auto [m] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M}))
-                {
-                    // naive per-row reduction
-                    double sum = 0.0;
-                    double sumsq = 0.0;
-                    for(std::size_t d = 0; d < D; ++d)
-                    {
-                        T x = in[alpaka::Vec<std::size_t, 2>{m, d}];
-                        sum += x;
-                        sumsq += double(x) * double(x);
-                    }
-                    double mu = sum / double(D);
-                    double ex2 = sumsq / double(D);
-                    mean[m] = T(mu);
-                    var[m] = T(ex2 - mu * mu);
-                }
-            }
-        };
-
-        template<typename T>
-        struct LayerNormApplyKernel
-        {
-            template<
-                typename Acc,
-                typename InBuf,
-                typename MeanBuf,
-                typename VarBuf,
-                typename GammaBuf,
-                typename BetaBuf,
-                typename OutBuf>
-            ALPAKA_FN_ACC void operator()(
-                Acc const& acc,
-                InBuf in,
-                MeanBuf mean,
-                VarBuf var,
-                GammaBuf gamma,
-                BetaBuf beta,
-                OutBuf out,
-                std::size_t M,
-                std::size_t D,
-                T eps) const
-            {
-                // Use 1D linear indexing to avoid mapping a 1D thread space onto a 2D range
-                for(auto [idx] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M * D}))
-                {
-                    std::size_t m = idx / D;
-                    std::size_t d = idx % D;
-                    T x = in[alpaka::Vec<std::size_t, 2>{m, d}];
-                    T invStd = T(1) / T(::sqrt((double) var[m] + (double) eps));
-                    T y = (x - mean[m]) * invStd;
-                    out[alpaka::Vec<std::size_t, 2>{m, d}] = y * gamma[d] + beta[d];
-                }
-            }
-        };
-    } // namespace detail
+    // LayerNorm kernels moved to ops/kernels/LayerNormKernels.hpp
 
     template<typename T, typename Exec, typename Device, typename Queue>
     void layer_norm_2d(
@@ -860,7 +749,7 @@ namespace alpaka::tensor::ops
             queue.enqueue(
                 exec,
                 frame,
-                detail::RowReduceMeanVarKernel<T>{},
+                kernels::RowReduceMeanVarKernel<T>{},
                 input.deviceBuffer(device, queue),
                 mean.deviceBuffer(device, queue),
                 var.deviceBuffer(device, queue),
@@ -874,7 +763,7 @@ namespace alpaka::tensor::ops
             queue.enqueue(
                 exec,
                 frame,
-                detail::LayerNormApplyKernel<T>{},
+                kernels::LayerNormApplyKernel<T>{},
                 input.deviceBuffer(device, queue),
                 mean.deviceBuffer(device, queue),
                 var.deviceBuffer(device, queue),
@@ -944,9 +833,10 @@ namespace alpaka::tensor::ops
             Queue& queue,
             tensor::Tensor4D<T, Device>& input,
             Pool2DParams const& params,
-            Op)
+            Op op)
         {
             (void) exec; // currently host-only reference
+            (void) op;
             auto inShape = input.shape();
             auto outShape = compute_pool2d_output_shape(inShape, params);
             tensor::Tensor4D<T, Device> output(device, outShape, Op::NeedsCount ? "avgpool_ref" : "maxpool_ref");
@@ -970,8 +860,8 @@ namespace alpaka::tensor::ops
                             int h_end = std::min(h_start + static_cast<int>(params.kernel_h), H);
                             int w_end = std::min(w_start + static_cast<int>(params.kernel_w), W);
                             // clamp starts (negative region considered zero for avg, ignored for max)
-                            int h_iter_start = std::max(h_start, 0);
-                            int w_iter_start = std::max(w_start, 0);
+                            int h_iter_start = (h_start > 0) ? h_start : 0;
+                            int w_iter_start = (w_start > 0) ? w_start : 0;
                             T acc = Op::init();
                             std::size_t count = 0; // actual contributing elements
                             for(int ih = h_iter_start; ih < h_end; ++ih)
