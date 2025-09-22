@@ -1,6 +1,17 @@
-/* Minimal inference-oriented ops built atop core tensor primitives.
- * Focus: correctness & shape safety (no early micro-optimizations yet).
- * Ops: BiasAdd (2D/4D), Linear (GEMM + bias), Softmax (row-wise), Flatten.
+/* InferenceOps - High-level inference APIs over canonical kernels/providers
+ *
+ * What it is:
+ *  - A thin façade for inference-time ops (bias add, linear/GEMM, softmax, GELU, layernorm,
+ *    pooling helpers, flatten/copy/concat), selecting provider/vendor fast paths when available.
+ *  - Validates shapes, manages device residency, and enqueues canonical functors from ops/kernels.
+ *
+ * What it is not:
+ *  - A bag of kernels. Most kernels have been extracted to ops/kernels/*; this file wires them up
+ *    and provides simple, consistent APIs.
+ *
+ * When to include:
+ *  - Use in inference code; prefer including this façade over cherry-picking individual kernels.
+ *
  * SPDX-License-Identifier: MPL-2.0
  */
 #pragma once

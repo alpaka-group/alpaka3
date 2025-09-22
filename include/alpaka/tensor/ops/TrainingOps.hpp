@@ -1,4 +1,19 @@
-/* Minimal training ops: Linear backward + SGD optimizer + SoftmaxCE gradients (logits) */
+/* TrainingOps - High-level training APIs over canonical kernels/providers
+ *
+ * What it is:
+ *  - A thin façade for training-time tensor ops (conv/linear backward, activation backward,
+ *    softmax cross-entropy, simple optimizers), selecting fast paths when available.
+ *  - Validates shapes, manages device residency, enqueues canonical kernels from ops/kernels,
+ *    or vendor libraries (cuBLAS/cuDNN) where configured.
+ *
+ * What it is not:
+ *  - A bag of kernels. The few remaining inline training kernels have been extracted to
+ *    ops/kernels/ (e.g., SoftmaxCEKernels.hpp) for consistency and reuse.
+ *
+ * When to include:
+ *  - Use in training code that needs convenient APIs; prefer including this header rather
+ *    than individual kernel headers.
+ */
 #pragma once
 
 #include <alpaka/alpaka.hpp>
@@ -11,6 +26,8 @@
 #include <alpaka/tensor/ops/kernels/ActivationBackwardKernels.hpp>
 #include <alpaka/tensor/ops/kernels/Conv2DBackwardKernels.hpp>
 #include <alpaka/tensor/ops/kernels/LinearBackwardKernels.hpp>
+// Softmax CE kernels (extracted)
+#include <alpaka/tensor/ops/kernels/SoftmaxCEKernels.hpp>
 
 #include <cassert>
 
@@ -28,171 +45,6 @@ namespace alpaka::tensor::ops::train
 {
     namespace detail
     {
-        // Device-callable elementwise op: (p - y) / M
-        template<typename T>
-        struct SubDivByMOp
-        {
-            std::size_t M;
-
-            ALPAKA_FN_HOST_ACC T operator()(T p, T y) const
-            {
-                return (p - y) / static_cast<T>(M);
-            }
-        };
-
-        // Pointer-linearized elementwise kernel: out[i] = (probs[i] - labels[i]) / M
-        template<typename T>
-        struct SoftmaxCEElementwiseKernel
-        {
-            template<typename Acc>
-            ALPAKA_FN_ACC void operator()(
-                Acc const& acc,
-                T const* probs,
-                T const* labels,
-                T* out,
-                std::size_t n,
-                std::size_t M) const
-            {
-                for(auto [i] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{n}))
-                {
-                    out[i] = (probs[i] - labels[i]) / static_cast<T>(M);
-                }
-            }
-        };
-
-        // Row-wise buffer kernel: recompute softmax from logits and write full gradient row
-        template<typename T>
-        struct SoftmaxCEBackwardRowKernel
-        {
-            template<typename Acc, typename InBuf, typename LBuf, typename OBuf>
-            ALPAKA_FN_ACC void operator()(
-                Acc const& acc,
-                InBuf logits,
-                LBuf labels,
-                OBuf out,
-                std::size_t M,
-                std::size_t C) const
-            {
-                for(auto [row] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M}))
-                {
-                    // Pass 1: row max
-                    T maxVal = -std::numeric_limits<T>::infinity();
-                    for(std::size_t j = 0; j < C; ++j)
-                    {
-                        T v = logits[alpaka::Vec<std::size_t, 2>{row, j}];
-                        maxVal = (!alpaka::math::isnan(v) && v > maxVal) ? v : maxVal;
-                    }
-                    // Pass 2: exp sum
-                    double sum = 0.0;
-                    for(std::size_t j = 0; j < C; ++j)
-                    {
-                        T shifted = logits[alpaka::Vec<std::size_t, 2>{row, j}] - maxVal;
-                        if(shifted > T(80))
-                            shifted = T(80);
-                        double e = static_cast<double>(alpaka::math::exp(shifted));
-                        if(!std::isnan(e) && !std::isinf(e))
-                            sum += e;
-                    }
-                    if(!(sum > 0.0) || std::isnan(sum) || std::isinf(sum))
-                    {
-                        T uniform = T{1} / static_cast<T>(C);
-                        for(std::size_t j = 0; j < C; ++j)
-                        {
-                            auto coord = alpaka::Vec<std::size_t, 2>{row, j};
-                            out[coord] = (uniform - labels[coord]) / static_cast<T>(M);
-                        }
-                        continue;
-                    }
-                    double inv = 1.0 / sum;
-                    // Pass 3: write gradients for entire row
-                    for(std::size_t j = 0; j < C; ++j)
-                    {
-                        T shifted = logits[alpaka::Vec<std::size_t, 2>{row, j}] - maxVal;
-                        if(shifted > T(80))
-                            shifted = T(80);
-                        double e = static_cast<double>(alpaka::math::exp(shifted));
-                        if(std::isnan(e) || std::isinf(e))
-                            e = 0.0;
-                        T p = static_cast<T>(e * inv);
-                        auto coord = alpaka::Vec<std::size_t, 2>{row, j};
-                        out[coord] = (p - labels[coord]) / static_cast<T>(M);
-                    }
-                }
-            }
-        };
-
-        // Row-wise kernel using raw pointers: launch over M*C, but only one thread per row (col==0)
-        // computes the row-wise softmax from logits and writes the entire gradient row:
-        // dLogits[row, j] = (softmax(logits)[row, j] - labels[row, j]) / M
-        template<typename T>
-        struct SoftmaxCEBackwardLinearFromLogitsKernel
-        {
-            template<typename Acc>
-            ALPAKA_FN_ACC void operator()(
-                Acc const& acc,
-                T const* logits,
-                T const* labels,
-                T* out,
-                std::size_t M,
-                std::size_t C) const
-            {
-                auto total = M * C;
-                for(auto [idx] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{total}))
-                {
-                    std::size_t row = idx / C;
-                    std::size_t col = idx % C;
-                    if(col != 0)
-                        continue; // single writer per row
-                    std::size_t rowBase = row * C;
-                    // Pass 1: row max over logits[row, :]
-                    T maxVal = -std::numeric_limits<T>::infinity();
-                    for(std::size_t j = 0; j < C; ++j)
-                    {
-                        T v = logits[rowBase + j];
-                        maxVal = (!alpaka::math::isnan(v) && v > maxVal) ? v : maxVal;
-                    }
-                    // Pass 2: exp sum
-                    double sum = 0.0;
-                    for(std::size_t j = 0; j < C; ++j)
-                    {
-                        T shifted = logits[rowBase + j] - maxVal;
-                        if(shifted > T(80))
-                            shifted = T(80);
-                        double e = static_cast<double>(alpaka::math::exp(shifted));
-                        if(!std::isnan(e) && !std::isinf(e))
-                            sum += e;
-                    }
-                    if(!(sum > 0.0) || std::isnan(sum) || std::isinf(sum))
-                    {
-                        // Degenerate: write uniform gradients
-                        T uniform = T{1} / static_cast<T>(C);
-                        for(std::size_t j = 0; j < C; ++j)
-                        {
-                            T y = labels[rowBase + j];
-                            out[rowBase + j] = (uniform - y) / static_cast<T>(M);
-                        }
-                        continue;
-                    }
-                    double inv = 1.0 / sum;
-                    // Pass 3: write gradients for entire row
-                    for(std::size_t j = 0; j < C; ++j)
-                    {
-                        T shifted = logits[rowBase + j] - maxVal;
-                        if(shifted > T(80))
-                            shifted = T(80);
-                        double e = static_cast<double>(alpaka::math::exp(shifted));
-                        if(std::isnan(e) || std::isinf(e))
-                            e = 0.0;
-                        T p = static_cast<T>(e * inv);
-                        T y = labels[rowBase + j];
-                        out[rowBase + j] = (p - y) / static_cast<T>(M);
-                    }
-                }
-            }
-        };
     } // namespace detail
 
     // Conv2D backward: compute dW and dInput given input X, weights W, and upstream grad dOut
