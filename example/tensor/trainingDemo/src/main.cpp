@@ -5,11 +5,7 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
-#include <alpaka/tensor/CleanTensorOpContext.hpp>
-#include <alpaka/tensor/TensorCore.hpp>
-#include <alpaka/tensor/ops/InferenceOps.hpp>
-#include <alpaka/tensor/ops/TrainingOps.hpp>
-#include <alpaka/tensor/ops/TrainingSequential.hpp>
+// Tensor headers are included via alpaka.hpp umbrella; avoid direct includes in examples.
 
 #include <algorithm>
 #include <array>
