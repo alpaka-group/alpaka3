@@ -320,21 +320,13 @@ namespace alpaka::tensor::ops::train
                                 CUDNN_CROSS_CORRELATION,
                                 CUDNN_DATA_FLOAT);
 
-                            // Workspace
+                            // Workspace and algorithm selection
                             size_t wsSizeFilter = 0, wsSizeData = 0;
-                            cudnnConvolutionBwdFilterAlgo_t algoFilter;
-                            cudnnConvolutionBwdDataAlgo_t algoData;
+                            // Use safe default algorithms compatible across cuDNN versions
+                            cudnnConvolutionBwdFilterAlgo_t algoFilter = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_0;
+                            cudnnConvolutionBwdDataAlgo_t algoData = CUDNN_CONVOLUTION_BWD_DATA_ALGO_0;
 
-                            // Choose fastest algorithms (let cuDNN decide)
-                            cudnnGetConvolutionBackwardFilterAlgorithm(
-                                handle,
-                                xDesc,
-                                dyDesc,
-                                convDesc,
-                                dwDesc,
-                                CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST,
-                                0,
-                                &algoFilter);
+                            // Query workspace sizes for the selected algorithms
                             cudnnGetConvolutionBackwardFilterWorkspaceSize(
                                 handle,
                                 xDesc,
@@ -344,15 +336,6 @@ namespace alpaka::tensor::ops::train
                                 algoFilter,
                                 &wsSizeFilter);
 
-                            cudnnGetConvolutionBackwardDataAlgorithm(
-                                handle,
-                                wDesc,
-                                dyDesc,
-                                convDesc,
-                                dxDesc,
-                                CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST,
-                                0,
-                                &algoData);
                             cudnnGetConvolutionBackwardDataWorkspaceSize(
                                 handle,
                                 wDesc,
@@ -651,9 +634,10 @@ namespace alpaka::tensor::ops::train
         auto* dxh = dx.hostData();
         std::fill(dxh, dxh + static_cast<std::size_t>(N) * C * H * W, T{});
 
-        auto idx4 = [&](int n, int c, int h, int w, int Hdim, int Wdim) -> std::size_t {
+        auto idx4 = [&](int n, int c, int h, int w, int Hdim, int Wdim) -> std::size_t
+        {
             return static_cast<std::size_t>(n) * C * Hdim * Wdim + static_cast<std::size_t>(c) * Hdim * Wdim
-                + static_cast<std::size_t>(h) * Wdim + static_cast<std::size_t>(w);
+                   + static_cast<std::size_t>(h) * Wdim + static_cast<std::size_t>(w);
         };
 
         auto ceil_div = [](int a, int b) { return (a + b - 1) / b; };
@@ -664,9 +648,13 @@ namespace alpaka::tensor::ops::train
                 for(int h = 0; h < H; ++h)
                     for(int w = 0; w < W; ++w)
                     {
-                        int h_out_start = ceil_div(h + static_cast<int>(p.pad_h) - static_cast<int>(p.kernel_h) + 1, static_cast<int>(p.stride_h));
+                        int h_out_start = ceil_div(
+                            h + static_cast<int>(p.pad_h) - static_cast<int>(p.kernel_h) + 1,
+                            static_cast<int>(p.stride_h));
                         int h_out_end = floor_div(h + static_cast<int>(p.pad_h), static_cast<int>(p.stride_h));
-                        int w_out_start = ceil_div(w + static_cast<int>(p.pad_w) - static_cast<int>(p.kernel_w) + 1, static_cast<int>(p.stride_w));
+                        int w_out_start = ceil_div(
+                            w + static_cast<int>(p.pad_w) - static_cast<int>(p.kernel_w) + 1,
+                            static_cast<int>(p.stride_w));
                         int w_out_end = floor_div(w + static_cast<int>(p.pad_w), static_cast<int>(p.stride_w));
 
                         h_out_start = std::max(h_out_start, 0);
@@ -733,9 +721,10 @@ namespace alpaka::tensor::ops::train
         auto* dxh = dx.hostData();
         std::fill(dxh, dxh + static_cast<std::size_t>(N) * C * H * W, T{});
 
-        auto idx4 = [&](int n, int c, int h, int w, int Hdim, int Wdim) -> std::size_t {
+        auto idx4 = [&](int n, int c, int h, int w, int Hdim, int Wdim) -> std::size_t
+        {
             return static_cast<std::size_t>(n) * C * Hdim * Wdim + static_cast<std::size_t>(c) * Hdim * Wdim
-                + static_cast<std::size_t>(h) * Wdim + static_cast<std::size_t>(w);
+                   + static_cast<std::size_t>(h) * Wdim + static_cast<std::size_t>(w);
         };
 
         for(int n = 0; n < N; ++n)

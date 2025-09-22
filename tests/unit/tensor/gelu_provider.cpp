@@ -11,12 +11,10 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <cmath>
+#include <type_traits>
 
-using namespace alpaka;
-using namespace alpaka::tensor;
-using namespace alpaka::tensor::ops;
-using TestBackends
-    = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors))>;
+using TestBackends = std::decay_t<
+    decltype(alpaka::onHost::allBackends(alpaka::onHost::enabledApis, alpaka::onHost::example::enabledExecutors))>;
 
 inline float gelu_ref(float x)
 {
@@ -31,21 +29,21 @@ inline float gelu_ref(float x)
 TEMPLATE_LIST_TEST_CASE("GELU via provider inplace 1D", "[tensor][gelu][provider]", TestBackends)
 {
     auto cfg = TestType::makeDict();
-    auto selector = onHost::makeDeviceSelector(cfg[object::deviceSpec]);
+    auto selector = alpaka::onHost::makeDeviceSelector(cfg[alpaka::object::deviceSpec]);
     if(!selector.isAvailable())
         return;
     auto device = selector.makeDevice(0);
     auto queue = device.makeQueue();
-    auto exec = cfg[object::exec];
+    auto exec = cfg[alpaka::object::exec];
     using Device = decltype(device);
 
     constexpr std::size_t N = 128;
-    Tensor1D<float, Device> t(device, {N}, "gelu1d_ctx");
+    alpaka::tensor::Tensor1D<float, Device> t(device, {N}, "gelu1d_ctx");
     for(std::size_t i = 0; i < N; ++i)
         t.hostData()[i] = float(i) / 16.0f - 4.0f; // [-4,4)
     t.markHostModified();
 
-    auto ctx = createCleanTensorOpContext(exec, device, queue);
+    auto ctx = alpaka::tensor::createCleanTensorOpContext(exec, device, queue);
     ctx.template gelu<float, 1>(t);
     t.toHost(device, queue);
 
@@ -56,21 +54,21 @@ TEMPLATE_LIST_TEST_CASE("GELU via provider inplace 1D", "[tensor][gelu][provider
 TEMPLATE_LIST_TEST_CASE("GELU via provider inplace 2D", "[tensor][gelu][provider]", TestBackends)
 {
     auto cfg = TestType::makeDict();
-    auto selector = onHost::makeDeviceSelector(cfg[object::deviceSpec]);
+    auto selector = alpaka::onHost::makeDeviceSelector(cfg[alpaka::object::deviceSpec]);
     if(!selector.isAvailable())
         return;
     auto device = selector.makeDevice(0);
     auto queue = device.makeQueue();
-    auto exec = cfg[object::exec];
+    auto exec = cfg[alpaka::object::exec];
     using Device = decltype(device);
 
     constexpr std::size_t M = 8, D = 16;
-    Tensor2D<float, Device> t(device, {M, D}, "gelu2d_ctx");
+    alpaka::tensor::Tensor2D<float, Device> t(device, {M, D}, "gelu2d_ctx");
     for(std::size_t i = 0; i < M * D; ++i)
         t.hostData()[i] = float(i % D) / 8.0f - 1.0f;
     t.markHostModified();
 
-    auto ctx = createCleanTensorOpContext(exec, device, queue);
+    auto ctx = alpaka::tensor::createCleanTensorOpContext(exec, device, queue);
     ctx.template gelu<float, 2>(t);
     t.toHost(device, queue);
 
