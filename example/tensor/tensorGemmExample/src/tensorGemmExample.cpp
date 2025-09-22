@@ -30,48 +30,28 @@ int runGemmBasic(Cfg const& cfg, bool verbose)
     std::cout << "Device: " << deviceSpec.getApi().getName() << std::endl;
     std::cout << "Executor: " << onHost::demangledName(exec) << std::endl;
 
-    // Enable verbose backend reporting inside GEMM implementation only if requested
+    // Enable verbose provider reporting inside GEMM implementation only if requested
     if(verbose)
         setenv("ALPAKA_OPS_VERBOSE", "1", 1);
-
-    // Provide an expected-backend hint based on executor and env toggles.
-    // Actual backend will be printed by provider diagnostics below if enabled.
-    auto expectMsg = std::string("Generic alpaka kernel (no vendor BLAS)");
-    bool cublasDisabled = false;
-    bool rocblasDisabled = false;
-    if(char const* d = std::getenv("ALPAKA_DISABLE_CUBLAS"))
-    {
-        std::string v(d);
-        cublasDisabled = (v == "1" || v == "ON" || v == "on" || v == "true" || v == "TRUE");
-    }
-    if(char const* d = std::getenv("ALPAKA_DISABLE_ROCBLAS"))
-    {
-        std::string v(d);
-        rocblasDisabled = (v == "1" || v == "ON" || v == "on" || v == "true" || v == "TRUE");
-    }
-    if constexpr(std::is_same_v<decltype(exec), alpaka::exec::GpuCuda>)
-    {
-        expectMsg = cublasDisabled ? "Generic alpaka kernel (cuBLAS disabled)" : "cuBLAS (CUDA)";
-    }
-#ifdef ALPAKA_LANG_HIP
-    else if constexpr(std::is_same_v<decltype(exec), alpaka::exec::GpuHip>)
-    {
-        expectMsg = rocblasDisabled ? "Generic alpaka kernel (rocBLAS disabled)" : "rocBLAS (HIP)";
-    }
-#endif
-    std::cout << "Backend expected: " << expectMsg << std::endl;
 
     try
     {
         // Matrix dimensions: C[M x N] = A[M x K] * B[K x N]
+        // Uniform problem size by default; allow override via env ALPAKA_GEMM_SIZE
         std::size_t M = 256;
         std::size_t N = 256;
         std::size_t K = 256;
-        // Temporary workaround: reduce problem size for CpuSerial to avoid known performance/heap issue
-        if constexpr(std::is_same_v<decltype(exec), alpaka::exec::CpuSerial>)
+        if(char const* sz = std::getenv("ALPAKA_GEMM_SIZE"))
         {
-            M = N = K = 64;
-            std::cout << "(CpuSerial detected -> using reduced size 64^3 for stability)" << std::endl;
+            try
+            {
+                std::size_t s = static_cast<std::size_t>(std::stoul(sz));
+                if(s > 0)
+                    M = N = K = s;
+            }
+            catch(...)
+            { /* ignore malformed env */
+            }
         }
 
         std::cout << "Matrix A: " << M << "x" << K << std::endl;
@@ -117,10 +97,12 @@ int runGemmBasic(Cfg const& cfg, bool verbose)
 
         std::cout << "✓ Test data initialized" << std::endl;
 
-        // Optional: print provider diagnostics so we can see selected backend
-        if(verbose)
+        // Print provider diagnostics so we can see which backend actually ran (rocBLAS/cuBLAS vs Default)
         {
-            alpaka::tensor::CleanTensorOpContext<decltype(exec), decltype(device), decltype(queue)> ctx(exec, device, queue);
+            alpaka::tensor::CleanTensorOpContext<decltype(exec), decltype(device), decltype(queue)> ctx(
+                exec,
+                device,
+                queue);
             auto active = ctx.getActiveProviders();
             std::cout << "Active providers: ";
             for(std::size_t i = 0; i < active.size(); ++i)
@@ -130,9 +112,14 @@ int runGemmBasic(Cfg const& cfg, bool verbose)
         // Perform GEMM via provider-aware context to enable rocBLAS/cuBLAS when available
         auto t0 = std::chrono::high_resolution_clock::now();
         {
-            alpaka::tensor::CleanTensorOpContext<decltype(exec), decltype(device), decltype(queue)> ctx(exec, device, queue);
-            // Our context API expects row-major non-transposed inputs (we keep transA/transB as hints in case of extension)
-            (void)transA; (void)transB;
+            alpaka::tensor::CleanTensorOpContext<decltype(exec), decltype(device), decltype(queue)> ctx(
+                exec,
+                device,
+                queue);
+            // Our context API expects row-major non-transposed inputs (we keep transA/transB as hints in case of
+            // extension)
+            (void) transA;
+            (void) transB;
             ctx.gemm(M, N, K, alpha, A, B, beta, C);
         }
         // Synchronize & copy back for host inspection
@@ -142,8 +129,7 @@ int runGemmBasic(Cfg const& cfg, bool verbose)
         auto t1 = std::chrono::high_resolution_clock::now();
         double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
 
-    std::cout << "✓ GEMM completed in " << ms << " ms" << std::endl;
-    std::cout << "Backend used: see 'Active providers' line above (rocBLAS/cuBLAS vs Default)" << std::endl;
+        std::cout << "✓ GEMM completed in " << ms << " ms" << std::endl;
 
         // Basic validation - check that result has correct shape
         assert(C.size() == M * N);
