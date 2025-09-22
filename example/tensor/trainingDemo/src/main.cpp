@@ -14,9 +14,9 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
 #include <optional>
-#include <cstdlib>
 #include <variant>
 
 namespace at = alpaka::tensor;
@@ -39,10 +39,10 @@ struct LinearTrainable
         at::Tensor1D<float, Device> input; // cached input
     };
 
-    std::size_t inFeatures;  // K
+    std::size_t inFeatures; // K
     std::size_t outFeatures; // N
-    at::Tensor1D<float, Device> W;        // size K*N
-    at::Tensor1D<float, Device> b;        // size N
+    at::Tensor1D<float, Device> W; // size K*N
+    at::Tensor1D<float, Device> b; // size N
 
     LinearTrainable(std::size_t inF, std::size_t outF, Device& dev)
         : inFeatures(inF)
@@ -80,29 +80,13 @@ struct LinearTrainable
             throw std::runtime_error("LinearTrainable: input size not divisible by inFeatures");
         batch = in.size() / inFeatures;
         auto out = at::Tensor1D<float, Device>(dev, {batch * outFeatures}, "LT_out");
-        if constexpr(std::is_same_v<Exec, alpaka::exec::CpuSerial>)
-        {
-            // Host-only fallback for CPU path to avoid async/device issues
-            auto* inH = in.hostData();
-            auto* wH = W.hostData();
-            auto* bH = b.hostData();
-            auto* oH = out.hostData();
-            for(std::size_t m = 0; m < batch; ++m)
-            {
-                for(std::size_t n = 0; n < outFeatures; ++n)
-                {
-                    float sum = 0.f;
-                    for(std::size_t k = 0; k < inFeatures; ++k)
-                        sum += inH[m * inFeatures + k] * wH[k * outFeatures + n];
-                    oH[m * outFeatures + n] = sum + bH[n];
-                }
-            }
-            out.markHostModified();
-        }
-        else
-        {
-            ops::linear(exec, dev, q, batch, outFeatures, inFeatures, in, W, &b, out);
-        }
+        // Generic path: always use ops::linear for all executors/backends
+        // Linear with bias
+        ops::linear(exec, dev, q, batch, outFeatures, inFeatures, in, W, &b, out);
+        // Ensure queued ops complete before returning a moved tensor to avoid any
+        // accidental use-after-free on async backends.
+        out.deviceBuffer(dev, q).destructorWaitFor(q);
+        out.toHost(dev, q); // also verifies coherence paths
         // cache input and shapes
         if(cache)
         {
@@ -236,12 +220,11 @@ int main(int argc, char** argv)
         auto queue = device.makeQueue(alpaka::queueKind::nonBlocking);
         try
         {
-            std::cerr << "[demo] running on backend: "
-                      << alpaka::onHost::demangledName(exec) << " / "
+            std::cerr << "[demo] running on backend: " << alpaka::onHost::demangledName(exec) << " / "
                       << alpaka::onHost::demangledName(deviceSpec) << "\n";
             // Seed host RNG deterministically per run
             if(optSeed)
-                std::srand(static_cast<unsigned int>(*optSeed & 0xFFFFFFFFu));
+                std::srand(static_cast<unsigned int>(*optSeed & 0xFFFF'FFFFu));
             return runTrainingDemo(exec, device, queue, optSteps, optLr);
         }
         catch(std::exception const& e)
@@ -264,9 +247,9 @@ int runTrainingDemo(Exec const& exec, Device& device, Queue& queue, int steps, f
 
     // Deterministic, linearly separable dataset: one-hot inputs map to same-class labels.
     // Choose N classes, K=N features, M multiple of N.
-    std::size_t N = 3;           // classes
-    std::size_t K = N;           // in-features = classes (one-hot)
-    std::size_t M = 60;          // batch (20 samples per class)
+    std::size_t N = 3; // classes
+    std::size_t K = N; // in-features = classes (one-hot)
+    std::size_t M = 60; // batch (20 samples per class)
     std::cerr << "[demo] before alloc x\n";
     at::Tensor1D<float, Dev> x(device, {M * K}, "demo_x");
     std::cerr << "[demo] after alloc x\n";
@@ -300,24 +283,33 @@ int runTrainingDemo(Exec const& exec, Device& device, Queue& queue, int steps, f
 
     // Build CT pipeline: Linear -> ReLU
     std::cerr << "[demo] before pipeline\n";
-        // Minimal: direct Linear forward to isolate errors
-        LinearTrainable<Dev> lin{K, N, device};
-        typename LinearTrainable<Dev>::Cache cache;
-        // Initialize weights/bias to zero to simplify convergence for one-hot data
-        {
-            auto* w = lin.W.hostData();
-            std::fill(w, w + (K * N), 0.0f);
-            lin.W.markHostModified();
-            auto* b = lin.b.hostData();
-            std::fill(b, b + N, 0.0f);
-            lin.b.markHostModified();
-        }
-        std::cerr << "[demo] before direct forward\n";
-        auto outVarDirect = lin.forward(exec, device, queue, std::variant<at::Tensor4D<float, Dev>, at::Tensor1D<float, Dev>, at::Tensor2D<float, Dev>>{x}, &cache);
-        std::cerr << "[demo] after direct forward\n";
-        auto* logits1D = std::get_if<at::Tensor1D<float, Dev>>(&outVarDirect);
-        if(!logits1D)
-            throw std::runtime_error("Unexpected output variant");
+    // Minimal: direct Linear forward to isolate errors
+    LinearTrainable<Dev> lin{K, N, device};
+    typename LinearTrainable<Dev>::Cache cache;
+    // Initialize weights/bias to zero to simplify convergence for one-hot data
+    {
+        auto* w = lin.W.hostData();
+        std::fill(w, w + (K * N), 0.0f);
+        lin.W.markHostModified();
+        auto* b = lin.b.hostData();
+        std::fill(b, b + N, 0.0f);
+        lin.b.markHostModified();
+    }
+    std::cerr << "[demo] before direct forward\n";
+    auto outVarDirect = lin.forward(
+        exec,
+        device,
+        queue,
+        std::variant<at::Tensor4D<float, Dev>, at::Tensor1D<float, Dev>, at::Tensor2D<float, Dev>>{x},
+        &cache);
+    std::cerr << "[demo] after direct forward\n";
+    // Ensure all enqueued work completed before inspecting variant and continuing
+    alpaka::onHost::wait(queue);
+    std::cerr << "[demo] after variant get_if start\n";
+    auto* logits1D = std::get_if<at::Tensor1D<float, Dev>>(&outVarDirect);
+    if(!logits1D)
+        throw std::runtime_error("Unexpected output variant");
+    std::cerr << "[demo] after variant get_if ok, logits size=" << logits1D->size() << "\n";
 
     // logits1D is set above from direct forward
 
@@ -347,7 +339,12 @@ int runTrainingDemo(Exec const& exec, Device& device, Queue& queue, int steps, f
     for(int t = 0; t < steps; ++t)
     {
         // Forward current params (reuse direct linear layer)
-        auto outVariant = lin.forward(exec, device, queue, std::variant<at::Tensor4D<float, Dev>, at::Tensor1D<float, Dev>, at::Tensor2D<float, Dev>>{x}, &cache);
+        auto outVariant = lin.forward(
+            exec,
+            device,
+            queue,
+            std::variant<at::Tensor4D<float, Dev>, at::Tensor1D<float, Dev>, at::Tensor2D<float, Dev>>{x},
+            &cache);
         auto* out1D = std::get_if<at::Tensor1D<float, Dev>>(&outVariant);
         auto logits2D = ops::copy_flat_to_2d<float>(exec, device, queue, *out1D, M, N);
         ops::softmax_2d<float>(exec, device, queue, logits2D, probs);
@@ -357,28 +354,39 @@ int runTrainingDemo(Exec const& exec, Device& device, Queue& queue, int steps, f
         lastLoss = loss;
         std::cout << "step=" << t << ", loss=" << loss << "\n";
 
-    // Compute gradient wrt logits and step parameters via explicit backward
+        // Compute gradient wrt logits and step parameters via explicit backward
         at::Tensor2D<float, Dev> dLogits(device, {M, N}, "dlogits");
         train::softmax_cross_entropy_backward<float>(exec, device, queue, logits2D, probs, labels, dLogits);
-    auto dLogits1D = ops::flatten<float, 2>(exec, device, queue, dLogits);
-    // Keep device buffer alive until queued backward ops complete on async backends
-    dLogits1D.deviceBuffer(device, queue).destructorWaitFor(queue);
-    // Ensure host-side visibility for CPU fallback in linear_backward
-    dLogits1D.toHost(device, queue);
-    // Compute grads dW, dB, dA and apply SGD with user-specified lr
-    at::Tensor1D<float, Dev> dW(device, {K * N}, "LT_dW_loop");
-    at::Tensor1D<float, Dev> dA(device, {M * K}, "LT_dA_loop");
-    at::Tensor1D<float, Dev> dB(device, {N}, "LT_dB_loop");
-    auto Ainput = const_cast<at::Tensor1D<float, Dev>&>(cache.input);
-    train::linear_backward(exec, device, queue, cache.M, cache.N, cache.K, Ainput, lin.W, dLogits1D, dW, dA, dB);
-    train::sgd_update(exec, device, queue, lin.W, dW, lr);
-    train::sgd_update(exec, device, queue, lin.b, dB, lr);
+        auto dLogits1D = ops::flatten<float, 2>(exec, device, queue, dLogits);
+        // Keep device buffer alive until queued backward ops complete on async backends
+        dLogits1D.deviceBuffer(device, queue).destructorWaitFor(queue);
+        // Ensure host-side visibility for CPU fallback in linear_backward
+        dLogits1D.toHost(device, queue);
+        // Compute grads dW, dB, dA and apply SGD with user-specified lr
+        at::Tensor1D<float, Dev> dW(device, {K * N}, "LT_dW_loop");
+        at::Tensor1D<float, Dev> dA(device, {M * K}, "LT_dA_loop");
+        at::Tensor1D<float, Dev> dB(device, {N}, "LT_dB_loop");
+        auto Ainput = const_cast<at::Tensor1D<float, Dev>&>(cache.input);
+        train::linear_backward(exec, device, queue, cache.M, cache.N, cache.K, Ainput, lin.W, dLogits1D, dW, dA, dB);
+        train::sgd_update(exec, device, queue, lin.W, dW, lr);
+        train::sgd_update(exec, device, queue, lin.b, dB, lr);
+
+        // Async safety: ensure all temporaries used by enqueued kernels either
+        // wait on destruction or complete before going out of scope.
+        // Protect reshape/logits and gradients from being freed while kernels run.
+        logits2D.deviceBuffer(device, queue).destructorWaitFor(queue);
+        dLogits.deviceBuffer(device, queue).destructorWaitFor(queue);
+        dW.deviceBuffer(device, queue).destructorWaitFor(queue);
+        dA.deviceBuffer(device, queue).destructorWaitFor(queue);
+        dB.deviceBuffer(device, queue).destructorWaitFor(queue);
+        // For the demo, also synchronize at end of iteration to keep behavior predictable
+        alpaka::onHost::wait(queue);
     }
 
     int loss_decreased = (lastLoss < firstLoss) ? 1 : 0;
     std::cout << "Training demo finished. loss_start=" << firstLoss << ", loss_end=" << lastLoss
-              << ", loss_decreased=" << loss_decreased
-              << ", logits_size=" << (logits1D ? logits1D->size() : 0) << "\n";
+              << ", loss_decreased=" << loss_decreased << ", logits_size=" << (logits1D ? logits1D->size() : 0)
+              << "\n";
 
     // Soft assert: expect loss to drop substantially on one-hot synthetic
     if(lastLoss >= 0.5f * firstLoss)

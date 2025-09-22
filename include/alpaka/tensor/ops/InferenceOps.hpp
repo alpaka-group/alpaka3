@@ -90,11 +90,11 @@ namespace alpaka::tensor::ops
 
         struct LinearBiasKernel
         {
-            template<typename Acc, typename OutBuf, typename BiasBuf>
+            template<typename Acc>
             ALPAKA_FN_ACC void operator()(
                 Acc const& acc,
-                OutBuf out,
-                BiasBuf b,
+                float* out,
+                float const* b,
                 std::size_t M,
                 std::size_t N,
                 std::size_t total) const
@@ -110,11 +110,11 @@ namespace alpaka::tensor::ops
 
         struct LinearBiasReluKernel
         {
-            template<typename Acc, typename OutBuf, typename BiasBuf>
+            template<typename Acc>
             ALPAKA_FN_ACC void operator()(
                 Acc const& acc,
-                OutBuf out,
-                BiasBuf b,
+                float* out,
+                float const* b,
                 std::size_t M,
                 std::size_t N,
                 std::size_t total) const
@@ -505,13 +505,31 @@ namespace alpaka::tensor::ops
                 exec,
                 frame,
                 detail::LinearBiasKernel{},
-                Out.deviceBuffer(device, queue),
-                bias->deviceBuffer(device, queue),
+                Out.deviceBuffer(device, queue).data(),
+                bias->deviceBuffer(device, queue).data(),
                 M,
                 N,
                 total);
             Out.markDeviceModified(device, queue); // defer wait
         }
+    }
+
+    // Convenience overload: nullptr bias selects GEMM-only path
+    template<typename Exec, typename Device, typename Queue>
+    void linear(
+        Exec const& exec,
+        Device const& device,
+        Queue& queue,
+        std::size_t M,
+        std::size_t N,
+        std::size_t K,
+        tensor::Tensor1D<float, Device>& A,
+        tensor::Tensor1D<float, Device>& W,
+        std::nullptr_t /*bias*/,
+        tensor::Tensor1D<float, Device>& Out)
+    {
+        // GEMM only
+        ops::gemm(exec, device, queue, 'N', 'N', M, N, K, 1.0f, A, W, 0.0f, Out);
     }
 
     // Fused linear + ReLU: GEMM + bias + ReLU in one operation
@@ -541,8 +559,8 @@ namespace alpaka::tensor::ops
                 exec,
                 frame,
                 detail::LinearBiasReluKernel{},
-                Out.deviceBuffer(device, queue),
-                bias->deviceBuffer(device, queue),
+                Out.deviceBuffer(device, queue).data(),
+                bias->deviceBuffer(device, queue).data(),
                 M,
                 N,
                 total);
@@ -741,15 +759,16 @@ namespace alpaka::tensor::ops
         template<typename T>
         struct Copy1DTo2DKernel
         {
-            template<typename Acc, typename InBuf, typename OutBuf>
-            ALPAKA_FN_ACC void operator()(Acc const& acc, InBuf in, OutBuf out, std::size_t M, std::size_t N) const
+            template<typename Acc>
+            ALPAKA_FN_ACC void operator()(Acc const& acc, T const* in, T* out, std::size_t M, std::size_t N) const
             {
                 for(auto [idx] :
                     alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M * N}))
                 {
                     auto row = idx / N;
                     auto col = idx % N;
-                    out[alpaka::Vec<std::size_t, 2>{row, col}] = in[idx];
+                    // Write using explicit row-major linear indexing to avoid accessor/layout mismatches
+                    out[row * N + col] = in[idx];
                 }
             }
         };
@@ -841,7 +860,7 @@ namespace alpaka::tensor::ops
                 frame,
                 detail::Copy1DTo2DKernel<T>{},
                 flat.deviceBuffer(device, queue).data(),
-                out.deviceBuffer(device, queue),
+                out.deviceBuffer(device, queue).data(),
                 M,
                 N);
             out.markDeviceModified(device, queue);
@@ -884,7 +903,7 @@ namespace alpaka::tensor::ops
             frame,
             detail::Copy1DTo2DKernel<float>{},
             C1D.deviceBuffer(device, queue).data(),
-            C.deviceBuffer(device, queue),
+            C.deviceBuffer(device, queue).data(),
             M,
             N);
         C.markDeviceModified(device, queue);

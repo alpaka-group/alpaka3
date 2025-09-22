@@ -937,6 +937,8 @@ namespace alpaka::tensor::ops::train
                     N,
                     K);
                 dW.markDeviceModified(device, queue);
+                // Ensure completion before any temporary goes out of scope on async backends
+                ::alpaka::onHost::wait(queue);
             }
             // dA
             {
@@ -952,6 +954,7 @@ namespace alpaka::tensor::ops::train
                     N,
                     K);
                 dA.markDeviceModified(device, queue);
+                ::alpaka::onHost::wait(queue);
             }
         }
         // dBias
@@ -966,6 +969,7 @@ namespace alpaka::tensor::ops::train
                 M,
                 N);
             dBias.markDeviceModified(device, queue);
+            ::alpaka::onHost::wait(queue);
         }
     }
 
@@ -1020,6 +1024,8 @@ namespace alpaka::tensor::ops::train
                 n,
                 op);
             param.markDeviceModified(device, queue);
+            // Avoid lifetime races on async backends
+            ::alpaka::onHost::wait(queue);
         }
     }
 } // namespace alpaka::tensor::ops::train

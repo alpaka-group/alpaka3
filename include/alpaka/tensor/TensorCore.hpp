@@ -200,6 +200,9 @@ namespace alpaka::tensor
         {
             other.state_ = CoherenceState::Unallocated;
             other.boundDevice_ = nullptr;
+            // Important: disengage moved-from optionals to avoid double-destruction
+            other.host_.reset();
+            other.device_.reset();
         }
 
         Tensor& operator=(Tensor&& other) noexcept
@@ -215,6 +218,9 @@ namespace alpaka::tensor
                 boundDevice_ = other.boundDevice_;
                 other.state_ = CoherenceState::Unallocated;
                 other.boundDevice_ = nullptr;
+                // Disengage moved-from buffers to prevent double free
+                other.host_.reset();
+                other.device_.reset();
             }
             return *this;
         }
