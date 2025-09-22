@@ -4,6 +4,7 @@
 #include <alpaka/tensor/TensorCore.hpp>
 #include <alpaka/tensor/ops/InferenceOps.hpp>
 #include <alpaka/tensor/ops/concepts/LayerConcepts.hpp>
+#include <alpaka/tensor/ops/kernels/ElementwiseKernels.hpp>
 
 #include <array>
 #include <cstdlib>
@@ -134,7 +135,7 @@ namespace alpaka::tensor::ops::layers
                         queue.enqueue(
                             exec,
                             frame,
-                            ops::detail::LinearBiasKernel{},
+                            ops::kernels::LinearBiasKernel{},
                             out.deviceBuffer(device, queue).data(),
                             b.deviceBuffer(device, queue).data(),
                             batch,
