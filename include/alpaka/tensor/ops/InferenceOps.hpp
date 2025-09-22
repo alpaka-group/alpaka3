@@ -15,6 +15,8 @@
 #include <alpaka/tensor/ops/PoolingTypes.hpp>
 // BatchNorm kernels
 #include <alpaka/tensor/ops/kernels/BatchNormKernels.hpp>
+// Softmax kernels (extracted)
+#include <alpaka/tensor/ops/kernels/SoftmaxKernels.hpp>
 
 #include <array>
 #include <cassert>
@@ -144,262 +146,7 @@ namespace alpaka::tensor::ops
             }
         };
 
-        template<typename T>
-        struct Softmax2DKernel
-        {
-            // Clean numerically-stable softmax: three passes (max, sum, write) per row.
-            // No negative cutoff; only clips very large positive to avoid inf. Always normalizes.
-            template<typename Acc, typename InBuf, typename OutBuf>
-            ALPAKA_FN_ACC void operator()(Acc const& acc, InBuf in, OutBuf out, std::size_t M, std::size_t N) const
-            {
-                for(auto [row] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M}))
-                {
-                    // Pass 1: row max
-                    T maxVal = -std::numeric_limits<T>::infinity();
-                    for(std::size_t j = 0; j < N; ++j)
-                    {
-                        // Note: Alpaka 2D buffers index as [col, row] for contiguous row-major layout
-                        T v = in[alpaka::Vec<std::size_t, 2>{j, row}];
-                        maxVal = (!alpaka::math::isnan(v) && v > maxVal) ? v : maxVal;
-                    }
-                    // Pass 2: exp sum (double accumulation for precision)
-                    double sum = 0.0;
-                    for(std::size_t j = 0; j < N; ++j)
-                    {
-                        T shifted = in[alpaka::Vec<std::size_t, 2>{j, row}] - maxVal;
-                        if(shifted > T(80))
-                            shifted = T(80); // prevent overflow
-                        double e = static_cast<double>(alpaka::math::exp(shifted));
-                        if(!std::isnan(e) && !std::isinf(e))
-                            sum += e; // ignore NaN/Inf silently
-                    }
-                    if(!(sum > 0.0) || std::isnan(sum) || std::isinf(sum))
-                    {
-                        // Degenerate: write uniform distribution
-                        T uniform = T{1} / static_cast<T>(N);
-                        for(std::size_t j = 0; j < N; ++j)
-                            out[alpaka::Vec<std::size_t, 2>{j, row}] = uniform;
-                        continue;
-                    }
-                    double inv = 1.0 / sum;
-                    // Pass 3: write normalized probabilities
-                    for(std::size_t j = 0; j < N; ++j)
-                    {
-                        T shifted = in[alpaka::Vec<std::size_t, 2>{j, row}] - maxVal;
-                        if(shifted > T(80))
-                            shifted = T(80);
-                        double e = static_cast<double>(alpaka::math::exp(shifted));
-                        if(std::isnan(e) || std::isinf(e))
-                            e = 0.0;
-                        out[alpaka::Vec<std::size_t, 2>{j, row}] = static_cast<T>(e * inv);
-                    }
-                }
-            }
-        };
-
-        // Device-side post-pass to fix degenerate rows: if a row sum is invalid (<=0, NaN/Inf) or deviates
-        // significantly from 1 due to numeric corner cases, rewrite the row as a uniform distribution.
-        template<typename T>
-        struct SoftmaxRowFixupKernel
-        {
-            template<typename Acc, typename OutBuf>
-            ALPAKA_FN_ACC void operator()(Acc const& acc, OutBuf out, std::size_t M, std::size_t N) const
-            {
-                for(auto [row] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M}))
-                {
-                    double sum = 0.0;
-                    bool bad = false;
-                    for(std::size_t j = 0; j < N; ++j)
-                    {
-                        double v = static_cast<double>(out[alpaka::Vec<std::size_t, 2>{j, row}]);
-                        if(std::isnan(v) || std::isinf(v))
-                        {
-                            bad = true;
-                            break;
-                        }
-                        sum += v;
-                    }
-                    if(bad || !(sum > 0.0) || std::fabs(sum - 1.0) > 1e-4)
-                    {
-                        T uniform = T{1} / static_cast<T>(N);
-                        for(std::size_t j = 0; j < N; ++j)
-                            out[alpaka::Vec<std::size_t, 2>{j, row}] = uniform;
-                    }
-                }
-            }
-        };
-
-        // Same fix-up but using linearized pointers to avoid any accessor/layout mismatches.
-        template<typename T>
-        struct SoftmaxRowFixupLinearKernel
-        {
-            template<typename Acc>
-            ALPAKA_FN_ACC void operator()(Acc const& acc, T* out, std::size_t M, std::size_t N) const
-            {
-                for(auto [row] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M}))
-                {
-                    double sum = 0.0;
-                    bool bad = false;
-                    auto base = row * N;
-                    for(std::size_t j = 0; j < N; ++j)
-                    {
-                        double v = static_cast<double>(out[base + j]);
-                        if(std::isnan(v) || std::isinf(v))
-                        {
-                            bad = true;
-                            break;
-                        }
-                        sum += v;
-                    }
-                    if(bad || !(sum > 0.0) || std::fabs(sum - 1.0) > 1e-4)
-                    {
-                        T uniform = T{1} / static_cast<T>(N);
-                        for(std::size_t j = 0; j < N; ++j)
-                            out[base + j] = uniform;
-                    }
-                }
-            }
-        };
-
-        // Alternative pointer-linearized implementation to avoid any potential multidimensional accessor
-        // layout mismatch. Uses explicit row-major indexing (row*N + col).
-        template<typename T>
-        struct Softmax2DLinearKernel
-        {
-            template<typename Acc>
-            ALPAKA_FN_ACC void operator()(Acc const& acc, T const* in, T* out, std::size_t M, std::size_t N) const
-            {
-                // Launch over all elements; only threads with col==0 do the row computation to guarantee one worker
-                // per row.
-                for(auto [idx] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M * N}))
-                {
-                    auto row = idx / N;
-                    auto col = idx % N;
-                    if(col != 0)
-                        continue; // only one thread per row performs computation
-                    if(row >= M)
-                        continue;
-                    T maxVal = -std::numeric_limits<T>::infinity();
-                    for(std::size_t j = 0; j < N; ++j)
-                        maxVal = alpaka::math::max(maxVal, in[row * N + j]);
-                    double sum = 0.0;
-                    for(std::size_t j = 0; j < N; ++j)
-                    {
-                        T shifted = in[row * N + j] - maxVal;
-                        if(shifted > T(80))
-                            shifted = T(80);
-                        sum += static_cast<double>(alpaka::math::exp(shifted));
-                    }
-                    if(!(sum > 0.0) || std::isnan(sum) || std::isinf(sum))
-                    {
-                        T uniform = T(1) / T(N);
-                        for(std::size_t j = 0; j < N; ++j)
-                            out[row * N + j] = uniform;
-                        continue;
-                    }
-                    double inv = 1.0 / sum;
-                    for(std::size_t j = 0; j < N; ++j)
-                    {
-                        T shifted = in[row * N + j] - maxVal;
-                        if(shifted > T(80))
-                            shifted = T(80);
-                        double e = static_cast<double>(alpaka::math::exp(shifted));
-                        out[row * N + j] = static_cast<T>(e * inv);
-                    }
-                }
-            }
-        };
-
-        // Row-parallel linear kernel: one worker per row computes the entire row
-        template<typename T>
-        struct Softmax2DRowLinearKernel
-        {
-            template<typename Acc>
-            ALPAKA_FN_ACC void operator()(Acc const& acc, T const* in, T* out, std::size_t M, std::size_t N) const
-            {
-                for(auto [row] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M}))
-                {
-                    // Pass 1: row max
-                    T maxVal = -std::numeric_limits<T>::infinity();
-                    auto base = row * N;
-                    for(std::size_t j = 0; j < N; ++j)
-                        maxVal = alpaka::math::max(maxVal, in[base + j]);
-
-                    // Pass 2: sum exp(shifted)
-                    double sum = 0.0;
-                    for(std::size_t j = 0; j < N; ++j)
-                    {
-                        T shifted = in[base + j] - maxVal;
-                        if(shifted > T(80))
-                            shifted = T(80);
-                        sum += static_cast<double>(alpaka::math::exp(shifted));
-                    }
-                    if(!(sum > 0.0) || std::isnan(sum) || std::isinf(sum))
-                    {
-                        T uniform = T(1) / T(N);
-                        for(std::size_t j = 0; j < N; ++j)
-                            out[base + j] = uniform;
-                        continue;
-                    }
-                    double inv = 1.0 / sum;
-                    // Pass 3: write normalized
-                    for(std::size_t j = 0; j < N; ++j)
-                    {
-                        T shifted = in[base + j] - maxVal;
-                        if(shifted > T(80))
-                            shifted = T(80);
-                        double e = static_cast<double>(alpaka::math::exp(shifted));
-                        out[base + j] = static_cast<T>(e * inv);
-                    }
-                }
-            }
-        };
-
-        // Diagnostics: compute per-row sum of probabilities and flag rows with NaN/Inf or bad sums
-        template<typename T>
-        struct SoftmaxRowDiagnosticsKernel
-        {
-            template<typename Acc>
-            ALPAKA_FN_ACC void operator()(
-                Acc const& acc,
-                T const* out,
-                double* rowSums,
-                std::uint8_t* rowFlags,
-                std::size_t M,
-                std::size_t N) const
-            {
-                for(auto [row] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M}))
-                {
-                    auto base = row * N;
-                    double sum = 0.0;
-                    bool bad = false;
-                    for(std::size_t j = 0; j < N; ++j)
-                    {
-                        double v = static_cast<double>(out[base + j]);
-                        if(std::isnan(v) || std::isinf(v))
-                        {
-                            bad = true;
-                            break;
-                        }
-                        sum += v;
-                    }
-                    rowSums[row] = sum;
-                    // flags: bit0 => bad (nan/inf), bit1 => invalid sum (<=0 or far from 1)
-                    std::uint8_t f = 0;
-                    if(bad)
-                        f |= 0x1u;
-                    if(!(sum > 0.0) || alpaka::math::abs(sum - 1.0) > 1e-3)
-                        f |= 0x2u;
-                    rowFlags[row] = f;
-                }
-            }
-        };
+        // Softmax kernels moved to ops/kernels/SoftmaxKernels.hpp
 
         // BatchNorm kernel moved to kernels/BatchNormKernels.hpp
 
@@ -655,7 +402,7 @@ namespace alpaka::tensor::ops
         queue.enqueue(
             exec,
             frame,
-            detail::Softmax2DRowLinearKernel<T>{},
+            kernels::Softmax2DRowLinearKernel<T>{},
             input.deviceBuffer(device, queue).data(),
             output.deviceBuffer(device, queue).data(),
             M,
@@ -680,7 +427,7 @@ namespace alpaka::tensor::ops
             queue.enqueue(
                 exec,
                 frameDiag,
-                detail::SoftmaxRowDiagnosticsKernel<T>{},
+                kernels::SoftmaxRowDiagnosticsKernel<T>{},
                 output.deviceBuffer(device, queue).data(),
                 rowSums.deviceBuffer(device, queue).data(),
                 rowFlags.deviceBuffer(device, queue).data(),
