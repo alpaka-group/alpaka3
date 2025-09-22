@@ -27,7 +27,7 @@ benchmark/tensor/Conv2DBenchmark/
 ## Build C++ Benchmark
 From project root (after normal build configuration):
 ```
-cmake --build build --target conv2d_bench
+cmake --build build --target conv2dBench
 ```
 
 ## Run Examples
@@ -37,10 +37,10 @@ python python/pytorch_conv2d_benchmark.py --batch 32 --suite all --iters 300 --p
   --output pytorch_all_b32.json
 
 # Alpaka with provider
-./conv2d_bench --suite lenet --batch 32 --iters 300 --json alpaka_provider_lenet_b32.json
+./conv2dBench --suite lenet --batch 32 --iters 300 --json alpaka_provider_lenet_b32.json
 
 # Alpaka fallback
-ALPAKA_DISABLE_CUDNN=1 ./conv2d_bench --suite lenet --batch 32 --iters 300 --json alpaka_fallback_lenet_b32.json
+ALPAKA_DISABLE_CUDNN=1 ./conv2dBench --suite lenet --batch 32 --iters 300 --json alpaka_fallback_lenet_b32.json
 ```
 
 ## Compare

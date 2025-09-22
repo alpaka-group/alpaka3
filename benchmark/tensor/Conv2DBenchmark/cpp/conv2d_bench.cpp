@@ -10,10 +10,10 @@
  *   mkdir -p build && cd build
  *   cmake -DCMAKE_BUILD_TYPE=Release -Dalpaka_BENCHMARKS=ON ..
  *   # (Enable / detect CUDA & cuDNN via ccmake or additional -DALPAKA_ENABLE_CUDA=ON if needed)
- *   cmake --build . -j $(nproc) --target conv2d_bench
+ *   cmake --build . -j $(nproc) --target conv2dBench
  *
  * Binary location after build:
- *   ./build/benchmark/tensor/Conv2DBenchmark/cpp/conv2d_bench
+ *   ./build/benchmark/tensor/Conv2DBenchmark/cpp/conv2dBench
  *
  * Suites:
  *   --suite lenet   (small LeNet-like shapes)
@@ -36,21 +36,21 @@
  *
  * Example Runs (CUDA only):
  *   # Provider (cuDNN) large suite, batch 4
- *   ./build/benchmark/tensor/Conv2DBenchmark/cpp/conv2d_bench \
+ *   ./build/benchmark/tensor/Conv2DBenchmark/cpp/conv2dBench \
  *       --suite large --batch 4 --warmup 5 --iters 30 --backend Cuda \
  *       --json provider_large_cuda.json
  *
  *   # Fallback (no provider) same shapes
- *   ALPAKA_DISABLE_CUDNN=1 ./build/benchmark/tensor/Conv2DBenchmark/cpp/conv2d_bench \
+ *   ALPAKA_DISABLE_CUDNN=1 ./build/benchmark/tensor/Conv2DBenchmark/cpp/conv2dBench \
  *       --suite large --batch 4 --warmup 5 --iters 30 --backend Cuda \
  *       --no-provider --json fallback_large_cuda.json
  *
  *   # Lenet on CUDA & Host OpenMP (if available), quick run
- *   ./build/benchmark/tensor/Conv2DBenchmark/cpp/conv2d_bench \
+ *   ./build/benchmark/tensor/Conv2DBenchmark/cpp/conv2dBench \
  *       --suite lenet --batch 4 --warmup 3 --iters 20 --json lenet_all.json
  *
  *   # All suites, provider disabled, CUDA only
- *   ./build/benchmark/tensor/Conv2DBenchmark/cpp/conv2d_bench \
+ *   ./build/benchmark/tensor/Conv2DBenchmark/cpp/conv2dBench \
  *       --suite all --backend Cuda --no-provider --json all_fallback_cuda.json
  *
  * JSON Schema (per entry):
