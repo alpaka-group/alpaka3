@@ -3,6 +3,7 @@
 #include <alpaka/tensor/TensorCore.hpp>
 #include <alpaka/tensor/ops/InferenceOps.hpp>
 #include <alpaka/tensor/ops/concepts/LayerConcepts.hpp>
+#include <alpaka/tensor/ops/kernels/TensorCopyKernels.hpp>
 
 namespace alpaka::tensor::ops::layers
 {
@@ -48,7 +49,7 @@ namespace alpaka::tensor::ops::layers
                 queue.enqueue(
                     exec,
                     frame,
-                    ops::detail::FlattenCopyKernel<float>{},
+                    ops::kernels::FlattenCopyKernel<float>{},
                     in.deviceBuffer(device, queue).data(),
                     out.deviceBuffer(device, queue).data(),
                     n);
@@ -108,7 +109,7 @@ namespace alpaka::tensor::ops::layers
                 queue.enqueue(
                     exec,
                     frame,
-                    ops::detail::FlattenCopyKernel<float>{},
+                    ops::kernels::FlattenCopyKernel<float>{},
                     in.deviceBuffer(device, queue).data(),
                     out.deviceBuffer(device, queue).data(),
                     n);

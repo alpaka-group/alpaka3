@@ -21,6 +21,10 @@
 #include <alpaka/tensor/ops/kernels/GeluKernels.hpp>
 // LayerNorm kernels (extracted)
 #include <alpaka/tensor/ops/kernels/LayerNormKernels.hpp>
+// Elementwise kernels (extracted)
+#include <alpaka/tensor/ops/kernels/ElementwiseKernels.hpp>
+// Tensor copy/concat kernels (extracted)
+#include <alpaka/tensor/ops/kernels/TensorCopyKernels.hpp>
 
 #include <algorithm>
 #include <array>
@@ -94,106 +98,13 @@ namespace alpaka::tensor::ops
             }
         };
 
-        struct LinearBiasKernel
-        {
-            template<typename Acc>
-            ALPAKA_FN_ACC void operator()(
-                Acc const& acc,
-                float* out,
-                float const* b,
-                std::size_t M,
-                std::size_t N,
-                std::size_t total) const
-            {
-                for(auto [idx] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{total}))
-                {
-                    auto col = idx % N;
-                    out[idx] += b[col];
-                }
-            }
-        };
-
-        struct LinearBiasReluKernel
-        {
-            template<typename Acc>
-            ALPAKA_FN_ACC void operator()(
-                Acc const& acc,
-                float* out,
-                float const* b,
-                std::size_t M,
-                std::size_t N,
-                std::size_t total) const
-            {
-                for(auto [idx] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{total}))
-                {
-                    auto col = idx % N;
-                    auto val = out[idx] + b[col];
-                    out[idx] = val > 0.0f ? val : 0.0f;
-                }
-            }
-        };
-
-        // In-place ReLU kernel (generic 1D traversal over underlying buffer)
-        template<typename T>
-        struct ReluInplaceKernel
-        {
-            template<typename Acc>
-            ALPAKA_FN_ACC void operator()(Acc const& acc, T* data, std::size_t n) const
-            {
-                for(auto [i] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{n}))
-                {
-                    auto v = data[i];
-                    data[i] = v > T{} ? v : T{};
-                }
-            }
-        };
+        // Elementwise kernels moved to ops/kernels/ElementwiseKernels.hpp
 
         // Softmax kernels moved to ops/kernels/SoftmaxKernels.hpp
 
         // BatchNorm kernel moved to kernels/BatchNormKernels.hpp
 
-        template<typename T>
-        struct ConcatChannelsKernel
-        {
-            template<typename Acc, typename ABuf, typename BBuf, typename OutBuf>
-            ALPAKA_FN_ACC void operator()(
-                Acc const& acc,
-                ABuf A,
-                BBuf B,
-                OutBuf O,
-                std::size_t N,
-                std::size_t C1,
-                std::size_t C2,
-                std::size_t H,
-                std::size_t W,
-                std::size_t total) const
-            {
-                auto C_tot = C1 + C2;
-                auto hw = H * W;
-                auto nStride = C_tot * hw;
-                (void) N;
-                for(auto [idx] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{total}))
-                {
-                    auto n = idx / nStride;
-                    auto rem = idx % nStride;
-                    auto c = rem / hw;
-                    auto rem2 = rem % hw;
-                    auto h = rem2 / W;
-                    auto w = rem2 % W;
-                    if(c < C1)
-                        O[alpaka::Vec<std::size_t, 4>{n, c, h, w}] = A[alpaka::Vec<std::size_t, 4>{n, c, h, w}];
-                    else
-                    {
-                        auto cB = c - C1;
-                        O[alpaka::Vec<std::size_t, 4>{n, c, h, w}] = B[alpaka::Vec<std::size_t, 4>{n, cB, h, w}];
-                    }
-                }
-            }
-        };
+        // Copy/concat kernels moved to ops/kernels/TensorCopyKernels.hpp
     } // namespace detail
 
     // ---------------- Bias Add ----------------
@@ -253,7 +164,7 @@ namespace alpaka::tensor::ops
             queue.enqueue(
                 exec,
                 frame,
-                detail::LinearBiasKernel{},
+                kernels::LinearBiasKernel{},
                 Out.deviceBuffer(device, queue).data(),
                 bias->deviceBuffer(device, queue).data(),
                 M,
@@ -307,7 +218,7 @@ namespace alpaka::tensor::ops
             queue.enqueue(
                 exec,
                 frame,
-                detail::LinearBiasReluKernel{},
+                kernels::LinearBiasReluKernel{},
                 Out.deviceBuffer(device, queue).data(),
                 bias->deviceBuffer(device, queue).data(),
                 M,
@@ -324,7 +235,7 @@ namespace alpaka::tensor::ops
             queue.enqueue(
                 exec,
                 frame,
-                detail::ReluInplaceKernel<float>{},
+                kernels::ReluInplaceKernel<float>{},
                 Out.deviceBuffer(device, queue).data(),
                 total);
             Out.markDeviceModified(device, queue);
@@ -488,40 +399,7 @@ namespace alpaka::tensor::ops
 
     // ---------------- Flatten ----------------
     // Provide zero-copy view when source layout is contiguous; otherwise fall back to device copy.
-    namespace detail
-    {
-        template<typename T>
-        struct FlattenCopyKernel
-        {
-            template<typename Acc>
-            ALPAKA_FN_ACC void operator()(Acc const& acc, T const* in, T* out, std::size_t total) const
-            {
-                for(auto [idx] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{total}))
-                {
-                    out[idx] = in[idx];
-                }
-            }
-        };
-
-        // Copy flattened [M*N] buffer to 2D [M,N] tensor (row-major) on device
-        template<typename T>
-        struct Copy1DTo2DKernel
-        {
-            template<typename Acc>
-            ALPAKA_FN_ACC void operator()(Acc const& acc, T const* in, T* out, std::size_t M, std::size_t N) const
-            {
-                for(auto [idx] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M * N}))
-                {
-                    auto row = idx / N;
-                    auto col = idx % N;
-                    // Write using explicit row-major linear indexing to avoid accessor/layout mismatches
-                    out[row * N + col] = in[idx];
-                }
-            }
-        };
-    } // namespace detail
+    // Flatten/copy kernels moved to ops/kernels/TensorCopyKernels.hpp
 
     // Simple contiguity check placeholder (current Tensor always contiguous row-major)
     inline bool isContiguous(auto const&)
@@ -558,7 +436,7 @@ namespace alpaka::tensor::ops
         queue.enqueue(
             exec,
             frame,
-            detail::FlattenCopyKernel<T>{},
+            kernels::FlattenCopyKernel<T>{},
             src.deviceBuffer(device, queue).data(),
             out.deviceBuffer(device, queue).data(),
             total);
@@ -607,7 +485,7 @@ namespace alpaka::tensor::ops
             queue.enqueue(
                 exec,
                 frame,
-                detail::Copy1DTo2DKernel<T>{},
+                kernels::Copy1DTo2DKernel<T>{},
                 flat.deviceBuffer(device, queue).data(),
                 out.deviceBuffer(device, queue).data(),
                 M,
@@ -650,7 +528,7 @@ namespace alpaka::tensor::ops
         queue.enqueue(
             exec,
             frame,
-            detail::Copy1DTo2DKernel<float>{},
+            kernels::Copy1DTo2DKernel<float>{},
             C1D.deviceBuffer(device, queue).data(),
             C.deviceBuffer(device, queue).data(),
             M,
@@ -669,7 +547,7 @@ namespace alpaka::tensor::ops
         t.ensureOnDevice(device, queue);
         auto n = t.size();
         auto frame = ops::detail::makeFrame<Exec, Queue>(n);
-        queue.enqueue(exec, frame, detail::ReluInplaceKernel<T>{}, t.deviceBuffer(device, queue).data(), n);
+        queue.enqueue(exec, frame, kernels::ReluInplaceKernel<T>{}, t.deviceBuffer(device, queue).data(), n);
         t.markDeviceModified(device, queue); // defer host sync
     }
 
@@ -992,7 +870,7 @@ namespace alpaka::tensor::ops
         queue.enqueue(
             exec,
             frame,
-            detail::ConcatChannelsKernel<T>{},
+            kernels::ConcatChannelsKernel<T>{},
             a.deviceBuffer(device, queue),
             b.deviceBuffer(device, queue),
             out.deviceBuffer(device, queue),
