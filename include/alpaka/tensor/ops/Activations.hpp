@@ -51,19 +51,7 @@ namespace alpaka::tensor::ops
         }
     };
 
-    // Generic 1D fallback kernel for elementwise ReLU (rank-agnostic flattened launch)
-    struct SimpleUnaryReluKernel
-    {
-        template<typename Acc, typename InBuf, typename OutBuf>
-        ALPAKA_FN_ACC void operator()(Acc const& acc, InBuf in, OutBuf out, std::size_t n) const
-        {
-            for(auto [i] : alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{n}))
-            {
-                auto v = in[i];
-                out[i] = v > decltype(v){} ? v : decltype(v){};
-            }
-        }
-    };
+    // Fallback now uses generic UnaryKernel with ReluOp from ElementwiseGeneric
 
     // ReLU operation for SIMD processing
     struct SimdReLUOp
@@ -129,7 +117,7 @@ namespace alpaka::tensor::ops
             auto n = input.size();
             if(n == 0)
                 return;
-            // Reuse elementwise generic launcher (local minimal inline implementation)
+            // Use shared generic UnaryKernel with ReluOp functor
             unsigned threadsPerBlock = 256u;
             unsigned blocks = static_cast<unsigned>((n + threadsPerBlock - 1) / threadsPerBlock);
             if(blocks == 0)
@@ -140,10 +128,11 @@ namespace alpaka::tensor::ops
             queue.enqueue(
                 exec,
                 frame,
-                SimpleUnaryReluKernel{},
+                UnaryKernel{},
                 input.deviceBuffer(device, queue),
                 output.deviceBuffer(device, queue),
-                n);
+                n,
+                ReluOp{});
             // Removed unconditional wait (can be re-enabled with ALPAKA_DEBUG_SYNC)
             output.markDeviceModified(device, queue);
             if(detail::eagerHostEnabled())

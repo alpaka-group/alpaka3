@@ -1439,38 +1439,6 @@ namespace alpaka::tensor::ops
     };
 
     // ---------------- Element-wise Addition for Residual Connections ----------------
-    namespace detail
-    {
-        template<typename T>
-        struct ElementwiseAddKernel
-        {
-            template<typename Acc, typename InBuf1, typename InBuf2, typename OutBuf>
-            ALPAKA_FN_ACC void operator()(
-                Acc const& acc,
-                InBuf1 in1,
-                InBuf2 in2,
-                OutBuf out,
-                std::size_t N,
-                std::size_t C,
-                std::size_t H,
-                std::size_t W) const
-            {
-                // Use 4D indexing to match frame specification
-                for(auto [n, c, h, w] : alpaka::onAcc::makeIdxMap(
-                        acc,
-                        alpaka::onAcc::worker::threadsInGrid,
-                        alpaka::IdxRange{alpaka::Vec{N, C, H, W}}))
-                {
-                    // Bounds checking
-                    if(n < N && c < C && h < H && w < W)
-                    {
-                        auto coord = alpaka::Vec<std::size_t, 4>{n, c, h, w};
-                        out[coord] = in1[coord] + in2[coord];
-                    }
-                }
-            }
-        };
-    } // namespace detail
 
     template<typename Device>
     struct AddLayerStruct
@@ -1487,33 +1455,8 @@ namespace alpaka::tensor::ops
             auto shape2 = input2.shape();
             assert(shape1 == shape2 && "AddLayer: input tensors must have same shape");
 
-            tensor::Tensor4D<float, Device> output(device, shape1, "add_output");
-
-            input1.ensureOnDevice(device, queue);
-            input2.ensureOnDevice(device, queue);
-            output.ensureOnDevice(device, queue);
-
-            auto N = shape1[0], C = shape1[1], H = shape1[2], W = shape1[3];
-
-            // Use 4D frame specification to match kernel's 4D iteration
-            auto frameExtent = alpaka::Vec{std::size_t{1}, std::size_t{1}, std::size_t{1}, std::size_t{1}};
-            auto numFrames = alpaka::Vec{N, C, H, W};
-            auto frameSpec = alpaka::onHost::FrameSpec{numFrames, frameExtent};
-            queue.enqueue(
-                exec,
-                frameSpec,
-                detail::ElementwiseAddKernel<float>{},
-                input1.deviceBuffer(device, queue),
-                input2.deviceBuffer(device, queue),
-                output.deviceBuffer(device, queue),
-                N,
-                C,
-                H,
-                W);
-
-            output.markDeviceModified(device, queue);
-            alpaka::onHost::wait(queue);
-            return output;
+            // Reuse generic elementwise add (works for all ranks)
+            return ops::add<float, 4>(exec, device, queue, input1, input2);
         }
     };
 
