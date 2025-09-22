@@ -51,27 +51,6 @@ namespace alpaka::tensor::ops
         {
             return std::is_same_v<Exec, alpaka::exec::GpuCuda>;
         }
-
-        // Placeholder cuDNN function - not currently used
-        template<typename T>
-        void cudnn_conv2d_impl(
-            T const*,
-            T const*,
-            T*,
-            std::size_t,
-            std::size_t,
-            std::size_t,
-            std::size_t,
-            std::size_t,
-            std::size_t,
-            std::size_t,
-            std::size_t,
-            std::size_t,
-            Conv2DParams const&)
-        {
-            // This function is currently not called
-            std::cout << "Conv2D: cuDNN placeholder (should not be called)" << std::endl;
-        }
     } // namespace detail
 
     template<typename Exec>
