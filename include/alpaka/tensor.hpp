@@ -11,7 +11,6 @@
 #include <alpaka/tensor/TensorView.hpp>
 
 // Elementwise operations (needed by TensorGeneric)
-#include <alpaka/tensor/ops/ElementwiseFixed.hpp>
 #include <alpaka/tensor/ops/ElementwiseGeneric.hpp>
 #include <alpaka/tensor/ops/ElementwiseLazy.hpp>
 

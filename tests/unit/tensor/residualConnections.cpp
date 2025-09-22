@@ -14,11 +14,6 @@
 // Forward declare what we need to test without including the full headers
 namespace alpaka::tensor::ops
 {
-    namespace detail
-    {
-        template<typename T>
-        struct ElementwiseAddKernel;
-    } // namespace detail
 
     template<typename Device>
     struct AddLayerStruct;
@@ -37,14 +32,7 @@ namespace alpaka::tensor::ops
     } // namespace smart_helpers
 } // namespace alpaka::tensor::ops
 
-TEST_CASE("ElementwiseAddKernel forward declaration", "[residual]")
-{
-    // Test that our ElementwiseAddKernel can be forward declared
-    using namespace alpaka::tensor::ops;
-    static_assert(std::is_class_v<detail::ElementwiseAddKernel<float>>);
-
-    REQUIRE(true);
-}
+// Removed ElementwiseAddKernel forward-declaration test (kernel unified via generic add)
 
 TEST_CASE("AddLayerStruct forward declaration", "[residual]")
 {

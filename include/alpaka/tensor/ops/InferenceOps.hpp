@@ -41,63 +41,6 @@ namespace alpaka::tensor::ops
     // Internal kernel functors (namespace-scope: local classes cannot have member templates)
     namespace detail
     {
-        template<typename T>
-        struct BiasAdd2DKernel
-        {
-            template<typename Acc, typename InBuf, typename BiasBuf, typename OutBuf>
-            ALPAKA_FN_ACC void operator()(
-                Acc const& acc,
-                InBuf in,
-                BiasBuf b,
-                OutBuf out,
-                std::size_t M,
-                std::size_t N,
-                std::size_t total) const
-            {
-                for(auto [idx] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{total}))
-                {
-                    auto row = idx / N;
-                    auto col = idx % N;
-                    out[alpaka::Vec<std::size_t, 2>{row, col}] = in[alpaka::Vec<std::size_t, 2>{row, col}] + b[col];
-                }
-            }
-        };
-
-        template<typename T>
-        struct BiasAdd4DKernel
-        {
-            template<typename Acc, typename InBuf, typename BiasBuf, typename OutBuf>
-            ALPAKA_FN_ACC void operator()(
-                Acc const& acc,
-                InBuf in,
-                BiasBuf b,
-                OutBuf out,
-                std::size_t N,
-                std::size_t C,
-                std::size_t H,
-                std::size_t W,
-                std::size_t total) const
-            {
-                for(auto [idx] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{total}))
-                {
-                    auto hw = H * W;
-                    [[maybe_unused]] auto cStride = hw;
-                    [[maybe_unused]] auto nStride = C * hw;
-                    auto n = idx / nStride;
-                    auto rem = idx % nStride;
-                    auto c = rem / hw;
-                    auto rem2 = rem % hw;
-                    auto h = rem2 / W;
-                    auto w = rem2 % W;
-                    (void) N; // N derivable from total but passed for clarity
-                    auto coord = alpaka::Vec<std::size_t, 4>{n, c, h, w};
-                    out[coord] = in[coord] + b[c];
-                }
-            }
-        };
-
         // Elementwise kernels moved to ops/kernels/ElementwiseKernels.hpp
 
         // Softmax kernels moved to ops/kernels/SoftmaxKernels.hpp
