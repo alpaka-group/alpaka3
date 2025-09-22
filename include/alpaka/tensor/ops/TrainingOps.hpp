@@ -11,7 +11,6 @@
 #include <alpaka/tensor/ops/kernels/ActivationBackwardKernels.hpp>
 #include <alpaka/tensor/ops/kernels/Conv2DBackwardKernels.hpp>
 #include <alpaka/tensor/ops/kernels/LinearBackwardKernels.hpp>
-#include <alpaka/tensor/ops/kernels/PoolingBackwardKernels.hpp>
 
 #include <cassert>
 

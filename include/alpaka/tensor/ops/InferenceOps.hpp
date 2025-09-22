@@ -11,9 +11,8 @@
 #include <alpaka/tensor/TensorGeneric.hpp>
 #include <alpaka/tensor/ops/ElementwiseGeneric.hpp>
 #include <alpaka/tensor/ops/Gemm.hpp>
-// Split pooling: shared types and kernels
+// Split pooling: shared types
 #include <alpaka/tensor/ops/PoolingTypes.hpp>
-#include <alpaka/tensor/ops/kernels/PoolingKernels.hpp>
 // BatchNorm kernels
 #include <alpaka/tensor/ops/kernels/BatchNormKernels.hpp>
 
@@ -401,8 +400,6 @@ namespace alpaka::tensor::ops
                 }
             }
         };
-
-        // Pooling kernels moved to kernels/PoolingKernels.hpp
 
         // BatchNorm kernel moved to kernels/BatchNormKernels.hpp
 

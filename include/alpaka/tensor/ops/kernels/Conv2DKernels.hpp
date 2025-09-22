@@ -211,13 +211,6 @@ namespace alpaka::tensor::ops::kernels
         }
     };
 
-    template<typename Shape>
-    inline auto computeConv2DOutputShape(Shape const& in, Shape const& w, ::alpaka::tensor::ops::Conv2DParams const& p)
-        -> std::array<std::size_t, 4>
-    {
-        auto N = in[0], C_out = w[0], H_in = in[2], W_in = in[3], K_h = w[2], K_w = w[3];
-        auto H_out = (H_in + 2 * p.pad_h - p.dilation_h * (K_h - 1) - 1) / p.stride_h + 1;
-        auto W_out = (W_in + 2 * p.pad_w - p.dilation_w * (K_w - 1) - 1) / p.stride_w + 1;
-        return {N, C_out, H_out, W_out};
-    }
+    // Note: Output shape helpers live in ops/Conv2D.hpp as part of the public op API.
+    // Kernels in this header intentionally avoid providing duplicate helpers.
 } // namespace alpaka::tensor::ops::kernels
