@@ -23,15 +23,29 @@ namespace alpaka::tensor::ops::kernels
             for(auto [row] : alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M}))
             {
                 T maxVal = -std::numeric_limits<T>::infinity();
+                T minVal = std::numeric_limits<T>::infinity();
                 for(std::size_t j = 0; j < N; ++j)
                 {
-                    T v = in[alpaka::Vec<std::size_t, 2>{j, row}];
-                    maxVal = (!alpaka::math::isnan(v) && v > maxVal) ? v : maxVal;
+                    // Access using row-major [row, col]
+                    T v = in[alpaka::Vec<std::size_t, 2>{row, j}];
+                    if(!alpaka::math::isnan(v))
+                    {
+                        maxVal = v > maxVal ? v : maxVal;
+                        minVal = v < minVal ? v : minVal;
+                    }
+                }
+                // If all logits are equal, return uniform distribution directly
+                if(!(minVal > maxVal) && !(maxVal > minVal))
+                {
+                    T uniform = T{1} / static_cast<T>(N);
+                    for(std::size_t j = 0; j < N; ++j)
+                        out[alpaka::Vec<std::size_t, 2>{row, j}] = uniform;
+                    continue;
                 }
                 double sum = 0.0;
                 for(std::size_t j = 0; j < N; ++j)
                 {
-                    T shifted = in[alpaka::Vec<std::size_t, 2>{j, row}] - maxVal;
+                    T shifted = in[alpaka::Vec<std::size_t, 2>{row, j}] - maxVal;
                     if(shifted > T(80))
                         shifted = T(80);
                     double e = static_cast<double>(alpaka::math::exp(shifted));
@@ -42,19 +56,19 @@ namespace alpaka::tensor::ops::kernels
                 {
                     T uniform = T{1} / static_cast<T>(N);
                     for(std::size_t j = 0; j < N; ++j)
-                        out[alpaka::Vec<std::size_t, 2>{j, row}] = uniform;
+                        out[alpaka::Vec<std::size_t, 2>{row, j}] = uniform;
                     continue;
                 }
                 double inv = 1.0 / sum;
                 for(std::size_t j = 0; j < N; ++j)
                 {
-                    T shifted = in[alpaka::Vec<std::size_t, 2>{j, row}] - maxVal;
+                    T shifted = in[alpaka::Vec<std::size_t, 2>{row, j}] - maxVal;
                     if(shifted > T(80))
                         shifted = T(80);
                     double e = static_cast<double>(alpaka::math::exp(shifted));
                     if(std::isnan(e) || std::isinf(e))
                         e = 0.0;
-                    out[alpaka::Vec<std::size_t, 2>{j, row}] = static_cast<T>(e * inv);
+                    out[alpaka::Vec<std::size_t, 2>{row, j}] = static_cast<T>(e * inv);
                 }
             }
         }
@@ -72,7 +86,7 @@ namespace alpaka::tensor::ops::kernels
                 bool bad = false;
                 for(std::size_t j = 0; j < N; ++j)
                 {
-                    double v = static_cast<double>(out[alpaka::Vec<std::size_t, 2>{j, row}]);
+                    double v = static_cast<double>(out[alpaka::Vec<std::size_t, 2>{row, j}]);
                     if(std::isnan(v) || std::isinf(v))
                     {
                         bad = true;
@@ -84,7 +98,7 @@ namespace alpaka::tensor::ops::kernels
                 {
                     T uniform = T{1} / static_cast<T>(N);
                     for(std::size_t j = 0; j < N; ++j)
-                        out[alpaka::Vec<std::size_t, 2>{j, row}] = uniform;
+                        out[alpaka::Vec<std::size_t, 2>{row, j}] = uniform;
                 }
             }
         }
@@ -241,6 +255,38 @@ namespace alpaka::tensor::ops::kernels
                 if(!(sum > 0.0) || alpaka::math::abs(sum - 1.0) > 1e-3)
                     f |= 0x2u;
                 rowFlags[row] = f;
+            }
+        }
+    };
+
+    // If all inputs in a row are equal (within exact float equality), set outputs to uniform 1/N
+    template<typename T>
+    struct SoftmaxUniformRowFixKernel
+    {
+        template<typename Acc, typename InBuf, typename OutBuf>
+        ALPAKA_FN_ACC void operator()(Acc const& acc, InBuf in, OutBuf out, std::size_t M, std::size_t N) const
+        {
+            for(auto [row] : alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M}))
+            {
+                if(N == 0)
+                    continue;
+                T v0 = in[alpaka::Vec<std::size_t, 2>{row, 0}];
+                bool allEq = true;
+                for(std::size_t j = 1; j < N; ++j)
+                {
+                    T v = in[alpaka::Vec<std::size_t, 2>{row, j}];
+                    if(!(v == v0))
+                    {
+                        allEq = false;
+                        break;
+                    }
+                }
+                if(allEq)
+                {
+                    T uniform = T{1} / static_cast<T>(N);
+                    for(std::size_t j = 0; j < N; ++j)
+                        out[alpaka::Vec<std::size_t, 2>{row, j}] = uniform;
+                }
             }
         }
     };
