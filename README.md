@@ -31,6 +31,72 @@ Roadmaps and Integration Plans
 - ATen compatibility and backend strategy: `include/alpaka/tensor/ATenCompatibilityRoadmap.md`
 - Python bindings (pybind11) and interop plan: `include/alpaka/tensor/Pybind11IntegrationRoadmap.md`
 
+ATen-minimal (Phase 1) usage
+----------------------------
+
+This repository ships a minimal ATen-like shim for tensors and a few ops to ease integration and testing. The scope is intentionally small (Float32; ranks 1–2; add and matmul) and correctness-first.
+
+Key headers:
+- `include/alpaka/tensor/aten/DynamicTensor.hpp` — runtime-typed wrapper over static tensors
+- `include/alpaka/tensor/aten/Ops.hpp` — ATen-like ops: `aten::add`, `aten::matmul`
+
+Quick example:
+
+```c++
+#include <alpaka/alpaka.hpp>
+#include <alpaka/onHost/example/executors.hpp>
+#include <alpaka/tensor/aten/DynamicTensor.hpp>
+#include <alpaka/tensor/aten/Ops.hpp>
+
+using namespace alpaka;
+using namespace alpaka::tensor;
+using namespace alpaka::tensor::aten;
+
+int main() {
+    auto cfg = onHost::example::defaultBackend(); // or use allBackends in tests
+    auto selector = onHost::makeDeviceSelector(cfg[object::deviceSpec]);
+    if(!selector.isAvailable()) return 0;
+    auto device = selector.makeDevice(0);
+    auto queue = device.makeQueue();
+    auto exec = cfg[object::exec];
+
+    // Create 2D Float32 tensors A(3x5) and B(3x5):
+    tensor::Tensor2D<float, decltype(device)> A(device, {3,5}, "A");
+    tensor::Tensor2D<float, decltype(device)> B(device, {3,5}, "B");
+    for(std::size_t i=0;i<3;i++)
+      for(std::size_t j=0;j<5;j++){
+        A.hostData()[i*5+j] = static_cast<float>(i + j);
+        B.hostData()[i*5+j] = static_cast<float>(i - j);
+      }
+    A.markHostModified();
+    B.markHostModified();
+
+    auto Ad = DynamicTensor<decltype(device)>::wrap<float,2>(std::move(A));
+    auto Bd = DynamicTensor<decltype(device)>::wrap<float,2>(std::move(B));
+
+    // ATen-like add: C = A + B (shape and dtype must match exactly)
+    auto Cd = aten::add(exec, device, queue, Ad, Bd);
+    auto& C2 = Cd.as<float,2>();
+    C2.toHost(device, queue);
+
+    // ATen-like matmul: D = E @ F for 2D Float32
+    tensor::Tensor2D<float, decltype(device)> E(device, {4,6}, "E");
+    tensor::Tensor2D<float, decltype(device)> F(device, {6,3}, "F");
+    E.markHostModified();
+    F.markHostModified();
+    auto Ed = DynamicTensor<decltype(device)>::wrap<float,2>(std::move(E));
+    auto Fd = DynamicTensor<decltype(device)>::wrap<float,2>(std::move(F));
+    auto Dd = aten::matmul(exec, device, queue, Ed, Fd);
+    auto& D2 = Dd.as<float,2>();
+    D2.toHost(device, queue);
+}
+```
+
+Notes:
+- Phase 1 uses stable host-side paths for 2D ops to ensure correctness on all backends.
+- Broadcasting and dtypes beyond Float32 are not yet supported.
+- See `tests/unit/tensor/aten_minimal.cpp` for more usage patterns.
+
 Software License
 ----------------
 

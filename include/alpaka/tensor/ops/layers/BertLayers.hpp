@@ -14,63 +14,6 @@
 
 namespace alpaka::tensor::ops::layers
 {
-    // Residual add helper using a simple 1D-indexed device kernel (stable across backends)
-    namespace detail
-    {
-        struct Add2DKernel
-        {
-            template<typename Acc, typename BufA, typename BufB, typename BufO>
-            ALPAKA_FN_ACC void operator()(Acc const& acc, BufA A, BufB B, BufO O, std::size_t M, std::size_t D) const
-            {
-                for(auto [idx] :
-                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M * D}))
-                {
-                    std::size_t m = idx / D;
-                    std::size_t d = idx % D;
-                    O[alpaka::Vec<std::size_t, 2>{m, d}]
-                        = A[alpaka::Vec<std::size_t, 2>{m, d}] + B[alpaka::Vec<std::size_t, 2>{m, d}];
-                }
-            }
-        };
-
-        template<typename Exec, typename Device, typename Queue>
-        inline void residualAdd2D(
-            Exec const& exec,
-            Device& device,
-            Queue& queue,
-            tensor::Tensor2D<float, Device>& A,
-            tensor::Tensor2D<float, Device>& B,
-            tensor::Tensor2D<float, Device>& Out)
-        {
-            auto shapeA = A.shape();
-            auto shapeB = B.shape();
-            auto shapeO = Out.shape();
-            if(shapeA != shapeB || shapeA != shapeO)
-            {
-                throw std::runtime_error("residualAdd2D: shape mismatch");
-            }
-            auto M = shapeA[0];
-            auto D = shapeA[1];
-            if(M == 0 || D == 0)
-                return;
-
-            A.ensureOnDevice(device, queue);
-            B.ensureOnDevice(device, queue);
-            Out.ensureOnDevice(device, queue);
-
-            auto frame = alpaka::tensor::ops::detail::makeFrame<Exec, Queue>(M * D);
-            queue.enqueue(
-                exec,
-                frame,
-                Add2DKernel{},
-                A.deviceBuffer(device, queue),
-                B.deviceBuffer(device, queue),
-                Out.deviceBuffer(device, queue),
-                M,
-                D);
-            Out.markDeviceModified(device, queue);
-        }
-    } // namespace detail
 
     // Self-Attention over [M, D] using optional learned projections (single-head)
     // If Wq/Wk/Wv are not provided, defaults to identity projections (Q=K=V=input)
@@ -266,7 +209,7 @@ namespace alpaka::tensor::ops::layers
             if(std::getenv("ALPAKA_BERT_DEBUG"))
                 std::cerr << "[bert-layers-debug] entering residual 1" << std::endl;
             tensor::Tensor2D<float, Device> Xres1(device, {M, D}, "X_res1");
-            detail::residualAdd2D(exec, device, queue, in, Aout, Xres1);
+            ops::residual_add_2d<float>(exec, device, queue, in, Aout, Xres1);
             if(std::getenv("ALPAKA_BERT_DEBUG"))
                 std::cerr << "[bert-layers-debug] after residual 1" << std::endl;
 
@@ -291,7 +234,7 @@ namespace alpaka::tensor::ops::layers
             if(std::getenv("ALPAKA_BERT_DEBUG"))
                 std::cerr << "[bert-layers-debug] entering residual 2" << std::endl;
             tensor::Tensor2D<float, Device> Out(device, {M, D}, "bert_block_out");
-            detail::residualAdd2D(exec, device, queue, Xres1, U, Out);
+            ops::residual_add_2d<float>(exec, device, queue, Xres1, U, Out);
             if(std::getenv("ALPAKA_BERT_DEBUG"))
                 std::cerr << "[bert-layers-debug] after residual 2" << std::endl;
 
