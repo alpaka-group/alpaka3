@@ -26,6 +26,10 @@ namespace alpaka::tensor::ops::layers
             auto logits2D = copy_flat_to_2d<float>(exec, device, queue, in, batch, features);
             tensor::Tensor2D<float, Device> probs(device, {batch, features}, "softmaxOut");
             softmax_2d<float>(exec, device, queue, logits2D, probs);
+            // Ensure the softmax kernel that reads logits2D has finished before
+            // logits2D goes out of scope and frees its buffers. The queue is
+            // non-blocking on host, so we must wait here to prevent UAF.
+            alpaka::onHost::wait(queue);
             return probs;
         }
     };
