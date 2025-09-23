@@ -152,91 +152,58 @@ DynamicTensor broadcast_binary_op(const DynamicTensor& a,
 }
 ```
 
-## Implementation Roadmap
+## Implementation Roadmap (stabilization-first)
 
-### Phase 1: Foundation (1-2 months)
-1. **Implement DynamicTensor wrapper**
-   - Type-erased base class
-   - Runtime shape/dtype/device tracking
-   - Basic view operations (reshape, transpose)
+### Phase 0: Stabilization and Core Runtime (2–3 weeks)
+1. Cleanup and DRY
+   - Deduplicate kernels; keep a single canonical implementation per op family.
+   - Enforce provider-first dispatch with clear fallbacks to Alpaka kernels.
+   - Keep facades (InferenceOps.hpp, TrainingOps.hpp) thin and well-documented.
+2. Shape/stride/view semantics (minimal)
+   - Reshape, transpose, squeeze/unsqueeze with validation; metadata-only when possible.
+   - Contiguity checks and helpers; no general broadcasting yet.
+3. Reduction scaffolding
+   - Define a minimal reduction API surface (sum/mean signatures) without broad kernel coverage.
+4. Tests and docs
+   - Ensure all existing examples/benchmarks/tests build and run; add smoke tests for views/contiguity.
+   - Document error handling and unsupported-path behavior.
 
-2. **Create Storage abstraction**
-   - Reference-counted memory
-   - Device-aware allocation
-   - Slice/view support
+### Phase 1: Minimal ATen Bridge (add + matmul) (2–3 weeks)
+1. Dynamic shim (narrow scope)
+   - Introduce a tiny DynamicTensor wrapper sufficient to support add and matmul.
+   - Runtime dtype/device and limited rank (1–4D) mapping to current static tensors.
+2. ATen operator registration
+   - Register aten.add and aten.matmul only, for float32/float64 on CPU/GPU where available.
+   - Use a backend key (e.g., PrivateUse1 or custom) and provide meta kernels for shape inference.
+3. Dispatch wiring
+   - Route to provider-first paths (BLAS/cuBLAS/rocBLAS) with Alpaka fallbacks.
+4. Validation
+   - Reference tests against PyTorch for representative shapes/dtypes; CI for CPU and one GPU.
+   - Package a minimal lib (e.g., libalpaka_aten.so) and document usage.
 
-3. **Build dispatch infrastructure**
-   - Runtime to compile-time type dispatch
-   - Rank dispatch (1D to 6D typical)
-   - Device routing
+### Phase 2: Core Ops Expansion (3–5 weeks)
+1. Elementwise family
+   - sub, mul, div, pow, and unary exp, log, sqrt; error on unsupported dtypes/devices.
+2. Broadcasting engine (initial)
+   - Implement NumPy-style broadcasting rules for binary elementwise ops and add tests.
+3. Reductions (initial)
+   - sum/mean over dims with keepdim; contiguous fast paths first.
+4. Views and type promotion
+   - Improve transpose/view coverage; add basic type promotion rules aligned with ATen.
 
-### Phase 2: Core Operations (2-3 months)
-1. **Extend element-wise operations**
-   ```cpp
-   // Add to ElementwiseGeneric.hpp
-   DEFINE_UNARY_OP(exp, expf)
-   DEFINE_UNARY_OP(log, logf)
-   DEFINE_UNARY_OP(sqrt, sqrtf)
-   DEFINE_UNARY_OP(sin, sinf)
-   DEFINE_UNARY_OP(cos, cosf)
-   DEFINE_BINARY_OP(pow, powf)
-   ```
+### Phase 3: Indexing and Performance (optional/incremental)
+1. Indexing
+   - gather/scatter, masked ops (limited dtypes/devices initially).
+2. Strided iteration
+   - Efficient kernels honoring arbitrary strides; micro-benchmarks and perf guards.
+3. Perf infrastructure
+   - Memory pooling, temporary buffer reuse, and a handful of fused patterns for hot paths.
 
-2. **Implement reduction framework**
-   ```cpp
-   template<typename ReduceOp>
-   DynamicTensor reduce(const DynamicTensor& input,
-                       IntArrayRef dims,
-                       bool keepdim,
-                       ReduceOp op);
-   ```
+### Phase 4: DNN Operator Registration (deferred)
+1. Wire conv2d/pooling/batchnorm into the ATen bridge with provider-first acceleration.
+2. Backward ops as needed by examples/benchmarks; maintain stable APIs.
 
-3. **Add comparison operations**
-   ```cpp
-   DynamicTensor compare(const DynamicTensor& a,
-                        const DynamicTensor& b,
-                        ComparisonType cmp);
-   ```
-
-### Phase 3: Advanced Features (2-3 months)
-1. **Indexing and slicing**
-   - gather/scatter kernels
-   - Advanced indexing with tensors
-   - Masked operations
-
-2. **Broadcasting engine**
-   - NumPy-compatible broadcasting rules
-   - Efficient strided iteration
-
-3. **Autograd integration hooks**
-   - Gradient tracking metadata
-   - Backward function registration
-
-### Phase 4: Python Integration (1-2 months)
-1. **Python bindings via pybind11**
-   ```python
-   import alpaka_tensor as at
-   
-   x = at.tensor([[1, 2], [3, 4]], device='cuda:0')
-   y = at.tensor([[5, 6]], device='cuda:0')
-   z = at.matmul(x, y.T)  # With broadcasting
-   ```
-
-2. **PyTorch custom backend**
-   ```python
-   import torch
-   torch.ops.load_library("alpaka_ops.so")
-   
-   x = torch.randn(100, 100, device='alpaka:0')
-   ```
-
-3. **Operator registration**
-   ```cpp
-   TORCH_LIBRARY(alpaka, m) {
-       m.def("add(Tensor a, Tensor b) -> Tensor");
-       m.def("conv2d(Tensor input, Tensor weight, ...) -> Tensor");
-   }
-   ```
+Python integration is tracked separately in Pybind11IntegrationRoadmap.md. Early milestones (CPU tensor + NumPy zero-copy, then GPU + DLPack) can progress in parallel with Phase 0/1 as they reuse the same facades and dispatch.
 
 ## Performance Considerations
 
@@ -288,26 +255,18 @@ def test_operation(op_name, *args):
 
 ## Success Metrics
 
-1. **Operator Coverage**: Support 90% of core ATen ops (top 200)
-2. **Performance**: Within 10% of PyTorch for common operations
-3. **Memory Efficiency**: Comparable memory usage to PyTorch
-4. **API Compatibility**: Drop-in replacement for common workflows
-5. **Backend Integration**: Functional PyTorch custom backend
+Phase-gated targets:
+1. Phase 1: add/matmul parity with PyTorch numerics for float32/float64; provider-first paths exercised; CI green on CPU + one GPU.
+2. Phase 2: Elementwise + broadcasting + basic reductions stable for common shapes; no correctness regressions.
+3. Ongoing: Performance within ~10% of PyTorch for add/matmul; memory usage comparable; expand coverage pragmatically.
 
 ## Conclusion
 
-The proposed hybrid architecture preserves Alpaka's performance advantages while adding the flexibility needed for ATen compatibility. By maintaining the efficient static core and adding a dynamic layer, we can achieve:
+The hybrid approach keeps Alpaka’s static, high-performance kernels while layering just enough dynamic machinery to integrate with ATen. With a stabilization-first plan, we will:
 
-- ✅ Full ATen operator compatibility
-- ✅ Python/PyTorch integration
-- ✅ Maintained performance for specialized use cases
-- ✅ Gradual migration path
-- ✅ Backend portability (CPU/CUDA/HIP/SYCL)
+- ✅ Deliver meaningful ATen compatibility early (add/matmul), expanding incrementally
+- ✅ Reuse provider-first dispatch to preserve performance on hot paths
+- ✅ Keep APIs stable for existing examples/benchmarks while adding dynamic entry points
+- ✅ Maintain backend portability (CPU/CUDA/HIP/SYCL)
 
-This positions Alpaka as both a high-performance compute library and a viable PyTorch backend, opening opportunities for:
-- Custom accelerator support
-- Research into new hardware backends
-- Specialized optimizations for specific workloads
-- Educational framework for tensor computation
-
-The modular approach allows teams to adopt components incrementally, from using just the static kernels to full PyTorch integration.
+This positions Alpaka to serve current users immediately and grow toward deeper PyTorch interoperability over time, without overcommitting to full operator coverage up front.
