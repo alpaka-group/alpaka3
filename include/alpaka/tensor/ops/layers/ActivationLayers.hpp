@@ -50,8 +50,8 @@ namespace alpaka::tensor::ops::layers
                     exec,
                     frame,
                     ops::kernels::FlattenCopyKernel<float>{},
-                    in.deviceBuffer(device, queue).data(),
-                    out.deviceBuffer(device, queue).data(),
+                    in.deviceBuffer(device, queue),
+                    out.deviceBuffer(device, queue),
                     n);
                 out.markDeviceModified(device, queue);
             }
@@ -110,8 +110,8 @@ namespace alpaka::tensor::ops::layers
                     exec,
                     frame,
                     ops::kernels::FlattenCopyKernel<float>{},
-                    in.deviceBuffer(device, queue).data(),
-                    out.deviceBuffer(device, queue).data(),
+                    in.deviceBuffer(device, queue),
+                    out.deviceBuffer(device, queue),
                     n);
                 out.markDeviceModified(device, queue);
             }

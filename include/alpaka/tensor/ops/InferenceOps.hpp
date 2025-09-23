@@ -370,34 +370,30 @@ namespace alpaka::tensor::ops
         Queue& queue,
         tensor::Tensor<T, Rank, Device>& src)
     {
-        // Zero-copy path: create a 1D tensor wrapper sharing the same buffers.
-        if(isContiguous(src))
-        {
-            // Construct 1D tensor without reallocating; shallow wrapper.
-            // Reuse underlying storage by moving then restoring (minimal intrusive change): create new tensor and
-            // manually assign buffers.
-            tensor::Tensor1D<T, Device> view; // default
-            // Hacky but minimal: allocate a 1D tensor then swap device/host buffers from src.
-            view = tensor::Tensor1D<T, Device>(device, {src.size()}, "flatten_view");
-            // Copy pointers instead of data where possible.
-            // Since current Tensor implementation does not expose direct buffer ownership manipulation,
-            // fall back to copy kernel until a proper shared-view facility exists.
-        }
-        // Fallback copy (current implemented behavior)
+        // Conservative, backend-agnostic implementation: host-side copy then sync to device.
+        // This avoids any potential backend-specific pitch/layout quirks during flattening.
+        (void) exec;
         tensor::Tensor1D<T, Device> out(device, {src.size()}, "flatten");
-        src.ensureOnDevice(device, queue);
-        out.ensureOnDevice(device, queue);
-        auto total = src.size();
-        auto frame = ops::detail::makeFrame<Exec, Queue>(total);
-        queue.enqueue(
-            exec,
-            frame,
-            kernels::FlattenCopyKernel<T>{},
-            src.deviceBuffer(device, queue).data(),
-            out.deviceBuffer(device, queue).data(),
-            total);
-        out.markDeviceModified(device, queue);
-        // Removed explicit wait; returning tensor keeps buffers alive
+        // Bring source data to host and copy in logical row-major order.
+        src.toHost(device, queue);
+        auto const* srcH = src.hostData();
+        auto* outH = out.hostData();
+        if constexpr(Rank == 2)
+        {
+            auto shape = src.shape();
+            auto M = shape[0];
+            auto N = shape[1];
+            // src host layout is contiguous row-major for our tensors
+            for(std::size_t i = 0; i < M * N; ++i)
+                outH[i] = srcH[i];
+        }
+        else
+        {
+            // Generic linear copy for contiguous tensors
+            for(std::size_t i = 0; i < src.size(); ++i)
+                outH[i] = srcH[i];
+        }
+        out.markHostModified();
         return out;
     }
 
@@ -421,39 +417,15 @@ namespace alpaka::tensor::ops
     {
         assert(flat.size() == M * N && "copy_flat_to_2d: size mismatch");
         tensor::Tensor2D<T, Device> out(device, {M, N}, "reshape2d");
-        if constexpr(std::is_same_v<Exec, alpaka::exec::CpuSerial>)
-        {
-            // Pure host fallback to avoid device enqueues on Host
-            flat.toHost(device, queue);
-            auto const* src = flat.hostData();
-            auto* dst = out.hostData();
-            for(std::size_t i = 0; i < M * N; ++i)
-                dst[i] = src[i];
-            out.markHostModified();
-            out.ensureOnDevice(device, queue);
-            return out;
-        }
-        else
-        {
-            flat.ensureOnDevice(device, queue);
-            out.ensureOnDevice(device, queue);
-            auto frame = ops::detail::makeFrame<Exec, Queue>(M * N);
-            queue.enqueue(
-                exec,
-                frame,
-                kernels::Copy1DTo2DKernel<T>{},
-                flat.deviceBuffer(device, queue).data(),
-                out.deviceBuffer(device, queue).data(),
-                M,
-                N);
-            out.markDeviceModified(device, queue);
-            // Ensure lifetime safety for async work: if either tensor is destroyed before the
-            // queued copy completes, block in destructor to avoid use-after-free.
-            flat.deviceBuffer(device, queue).destructorWaitFor(queue);
-            out.deviceBuffer(device, queue).destructorWaitFor(queue);
-            // Removed explicit wait; returning tensor keeps buffers alive
-            return out;
-        }
+        (void) exec;
+        // Simple host-side reshape copy, then sync to device.
+        flat.toHost(device, queue);
+        auto const* src = flat.hostData();
+        auto* dst = out.hostData();
+        for(std::size_t i = 0; i < M * N; ++i)
+            dst[i] = src[i];
+        out.markHostModified();
+        return out;
     }
 
     // Safe 2D matmul helper: C[M,N] = A[M,K] * B[K,N] using 1D buffers and ops::gemm
@@ -478,22 +450,19 @@ namespace alpaka::tensor::ops
         tensor::Tensor1D<float, Device> C1D(device, {M * N}, "mm_out_flat");
         // GEMM: (M x K) * (K x N) -> (M x N)
         ops::gemm(exec, device, queue, 'N', 'N', M, N, K, 1.0f, A1D, B1D, 0.0f, C1D);
-        // Copy back to 2D C directly
+        // Copy back to 2D C using kernel to avoid 1D<->2D memcpy mismatch
         C.ensureOnDevice(device, queue);
         auto frame = ops::detail::makeFrame<Exec, Queue>(M * N);
         queue.enqueue(
             exec,
             frame,
             kernels::Copy1DTo2DKernel<float>{},
-            C1D.deviceBuffer(device, queue).data(),
-            C.deviceBuffer(device, queue).data(),
+            C1D.deviceBuffer(device, queue),
+            C.deviceBuffer(device, queue),
             M,
             N);
+        alpaka::onHost::wait(queue);
         C.markDeviceModified(device, queue);
-        // Prevent use-after-free of temporary C1D in async path: if C1D is destroyed
-        // before the queued copy completes, wait on the queue in its destructor.
-        C1D.deviceBuffer(device, queue).destructorWaitFor(queue);
-        C.deviceBuffer(device, queue).destructorWaitFor(queue);
     }
 
     // ---------------- In-place ReLU (async, no host sync) ----------------
