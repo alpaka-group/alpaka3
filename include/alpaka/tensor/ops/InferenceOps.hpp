@@ -355,10 +355,12 @@ namespace alpaka::tensor::ops
     // Provide zero-copy view when source layout is contiguous; otherwise fall back to device copy.
     // Flatten/copy kernels moved to ops/kernels/TensorCopyKernels.hpp
 
-    // Simple contiguity check placeholder (current Tensor always contiguous row-major)
-    inline bool isContiguous(auto const&)
+    // Contiguity check using descriptor utilities
+    template<typename T, std::size_t Rank, typename Device>
+    inline bool isContiguous(tensor::Tensor<T, Rank, Device> const& t)
     {
-        return true;
+        auto d = tensor::makeDescriptor(t);
+        return d.isContiguous();
     }
 
     template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
