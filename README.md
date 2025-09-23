@@ -25,6 +25,12 @@ Host, device, mapped, and managed multi-dimensional views provide a natural way 
 
 This repository separates the development of [mainline alpaka](https://github.com/alpaka-group/alpaka) from the upcoming major release, which introduces breaking changes compared to previous versions.
 
+Roadmaps and Integration Plans
+------------------------------
+
+- ATen compatibility and backend strategy: `include/alpaka/tensor/ATenCompatibilityRoadmap.md`
+- Python bindings (pybind11) and interop plan: `include/alpaka/tensor/Pybind11IntegrationRoadmap.md`
+
 Software License
 ----------------
 
