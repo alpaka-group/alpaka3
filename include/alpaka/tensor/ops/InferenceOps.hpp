@@ -211,60 +211,7 @@ namespace alpaka::tensor::ops
         std::size_t M = inShape[0];
         std::size_t N = inShape[1];
 
-        char const* forceHostEnv = std::getenv("ALPAKA_SOFTMAX_HOST");
-        bool forceHost = false;
-        if(forceHostEnv)
-        {
-            std::string v(forceHostEnv);
-            forceHost = (v == "1" || v == "ON" || v == "on" || v == "true" || v == "TRUE");
-        }
-
-        auto hostFallback = [&]()
-        {
-            input.toHost(device, queue);
-            auto const* inH = input.hostData();
-            auto* outH = output.hostData();
-            for(std::size_t m = 0; m < M; ++m)
-            {
-                T maxv = -std::numeric_limits<T>::infinity();
-                for(std::size_t j = 0; j < N; ++j)
-                    maxv = std::max(maxv, inH[m * N + j]);
-                double sum = 0.0;
-                for(std::size_t j = 0; j < N; ++j)
-                {
-                    T shifted = inH[m * N + j] - maxv;
-                    if(shifted > T(80))
-                        shifted = T(80);
-                    sum += std::exp(double(shifted));
-                }
-                if(!(sum > 0.0) || std::isnan(sum) || std::isinf(sum))
-                {
-                    T uniform = T(1) / T(N);
-                    for(std::size_t j = 0; j < N; ++j)
-                        outH[m * N + j] = uniform;
-                }
-                else
-                {
-                    double inv = 1.0 / sum;
-                    for(std::size_t j = 0; j < N; ++j)
-                    {
-                        T shifted = inH[m * N + j] - maxv;
-                        if(shifted > T(80))
-                            shifted = T(80);
-                        double e = std::exp(double(shifted));
-                        outH[m * N + j] = T(e * inv);
-                    }
-                }
-            }
-            output.markHostModified();
-            output.ensureOnDevice(device, queue);
-        };
-
-        if(forceHost || std::is_same_v<Exec, alpaka::exec::CpuSerial>)
-        {
-            hostFallback();
-            return;
-        }
+        // Generic device path (no env toggles, no host fallback): compute row-wise softmax on device.
 
         input.ensureOnDevice(device, queue);
         output.ensureOnDevice(device, queue);
@@ -278,77 +225,7 @@ namespace alpaka::tensor::ops
             M,
             N);
         output.markDeviceModified(device, queue);
-
-        // Optional device-side diagnostics (env: ALPAKA_SOFTMAX_DEVICE_DIAG)
-        bool diagEnabled = false;
-        if(char const* diagEnv = std::getenv("ALPAKA_SOFTMAX_DEVICE_DIAG"))
-        {
-            std::string dv(diagEnv);
-            diagEnabled = (dv == "1" || dv == "ON" || dv == "on" || dv == "true" || dv == "TRUE");
-        }
-        if(diagEnabled)
-        {
-            // Allocate temporary diagnostics buffers [M]
-            tensor::Tensor1D<double, Device> rowSums(device, {M}, "softmax_diag_sums");
-            tensor::Tensor1D<std::uint8_t, Device> rowFlags(device, {M}, "softmax_diag_flags");
-            rowSums.ensureOnDevice(device, queue);
-            rowFlags.ensureOnDevice(device, queue);
-            auto frameDiag = ops::detail::makeFrame<Exec, Queue>(M);
-            queue.enqueue(
-                exec,
-                frameDiag,
-                kernels::SoftmaxRowDiagnosticsKernel<T>{},
-                output.deviceBuffer(device, queue).data(),
-                rowSums.deviceBuffer(device, queue).data(),
-                rowFlags.deviceBuffer(device, queue).data(),
-                M,
-                N);
-            rowSums.markDeviceModified(device, queue);
-            rowFlags.markDeviceModified(device, queue);
-            // Copy back and optionally log
-            rowSums.toHost(device, queue);
-            rowFlags.toHost(device, queue);
-            bool anyBad = false;
-            for(std::size_t m = 0; m < M; ++m)
-            {
-                auto f = rowFlags.hostData()[m];
-                if(f != 0)
-                {
-                    anyBad = true;
-                    break;
-                }
-            }
-            bool log = false;
-            if(char const* logEnv = std::getenv("ALPAKA_SOFTMAX_LOG"))
-            {
-                std::string lv(logEnv);
-                log = (lv == "1" || lv == "ON" || lv == "on" || lv == "true" || lv == "TRUE");
-            }
-            if(log && anyBad)
-            {
-                // Minimal logging; avoid verbose per-row dump by default
-                std::fprintf(
-                    stderr,
-                    "[softmax] device diagnostics: detected anomalous rows among %zu (flags!=0)\n",
-                    M);
-            }
-        }
-        // Unconditional host-side validation and corrective fallback for robustness
-        output.toHost(device, queue);
-        auto* outH2 = output.hostData();
-        bool bad = false;
-        for(std::size_t m = 0; m < M && !bad; ++m)
-        {
-            double sum = 0.0;
-            for(std::size_t j = 0; j < N; ++j)
-                sum += outH2[m * N + j];
-            if(!(sum > 0.0) || std::fabs(sum - 1.0) > 1e-3)
-                bad = true;
-        }
-        if(bad)
-        {
-            hostFallback();
-        }
+        // Note: Diagnostics and host validation paths were removed to keep the core generic and clean.
     }
 
     // ---------------- Flatten ----------------
@@ -534,6 +411,9 @@ namespace alpaka::tensor::ops
             M,
             D);
         Out.markDeviceModified(device, queue);
+        // Ensure kernel completion before returning to avoid lifetime issues if A/B are temporaries.
+        // Host queues are non-blocking; callers may pass short-lived tensors. Waiting here is safe.
+        alpaka::onHost::wait(queue);
     }
 
     // ---------------- GELU (approximate) ----------------

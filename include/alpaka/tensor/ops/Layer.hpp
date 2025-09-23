@@ -588,7 +588,14 @@ namespace alpaka::tensor::ops
         {
             // Sequential execution: each layer transforms input and passes to next
             for(auto& f : nodes_)
+            {
                 in = f(&exec, &dev, &q, in);
+                // Ensure kernels launched within the layer complete before the
+                // previous tensor instance goes out of scope and gets destroyed.
+                // This prevents use-after-free when layers enqueue async work
+                // consuming the input tensor while the pipeline replaces it.
+                alpaka::onHost::wait(q);
+            }
             return in;
         }
 
@@ -952,12 +959,12 @@ namespace alpaka::tensor::ops
                     // The layer invoker is responsible for proper memory management
                     auto out = inv(*inPtr);
 
-                    // Only sync when profiling is enabled or at critical points
-                    // Most layers can run asynchronously without full synchronization
-                    if(profilingEnabled_)
-                    {
-                        alpaka::onHost::wait(queue_);
-                    }
+                    // Synchronize at the layer boundary to ensure that any kernels
+                    // launched inside the layer that read from the input have finished
+                    // before the input tensor is destroyed when the variant is replaced.
+                    // This guards against heap-use-after-free detected by ASan under
+                    // asynchronous backends (e.g., CpuOmpBlocks, GPU queues).
+                    alpaka::onHost::wait(queue_);
 
                     a = Any{std::move(out)};
 #ifdef ALPAKA_TENSOR_PIPELINE_DEBUG
@@ -980,11 +987,10 @@ namespace alpaka::tensor::ops
                     assert(inPtr && "Layer input tensor rank/type mismatch (in-place)");
                     inv(*inPtr); // modifies in place
 
-                    // Only sync when profiling is enabled
-                    if(profilingEnabled_)
-                    {
-                        alpaka::onHost::wait(queue_);
-                    }
+                    // Synchronize at the layer boundary to ensure in-place updates
+                    // are visible to subsequent layers and to keep execution ordering
+                    // consistent across backends.
+                    alpaka::onHost::wait(queue_);
 #ifdef ALPAKA_TENSOR_PIPELINE_DEBUG
                     (void) debugName;
 #endif
