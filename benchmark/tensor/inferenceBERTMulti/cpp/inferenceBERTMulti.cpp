@@ -80,6 +80,8 @@ int runBertMulti(
                 std::cout << ", ";
         }
         std::cout << "\n";
+        if(std::getenv("ALPAKA_BERT_DEBUG"))
+            std::cerr << "[bert-multi-debug] after providers/env\n";
     }
 
     // Resolve inputIds if provided or generate synthetic token ids
@@ -162,6 +164,8 @@ int runBertMulti(
     layers::EmbeddingLayer<Device> embed(std::move(embW));
     auto X = embed(exec, device, queue, tokenIds); // [B*S,H]
     addPositionalEncoding(X, (std::size_t) seqLen, device, queue);
+    if(std::getenv("ALPAKA_BERT_DEBUG"))
+        std::cerr << "[bert-multi-debug] after embedding+positional\n";
 
     // Shared LN params
     auto D = static_cast<std::size_t>(hidden);
@@ -265,6 +269,10 @@ int runBertMulti(
         std::cout << "  Mean: " << std::fixed << std::setprecision(3) << mean << " ms  Median: " << pct(0.5)
                   << " ms  P95: " << pct(0.95) << " ms\n";
         std::cout << "  Throughput: " << std::setprecision(2) << throughput << " samples/s\n";
+    }
+    else
+    {
+        std::cout << "BERT encoder MultiSequential completed (" << (isGpu ? "CUDA" : "CPU") << ")\n";
     }
 
     return 0;

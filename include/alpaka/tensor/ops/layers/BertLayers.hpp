@@ -9,38 +9,67 @@
 
 #include <cmath>
 #include <optional>
+#include <stdexcept>
 #include <utility>
 
 namespace alpaka::tensor::ops::layers
 {
-    // Internal 2D add kernel for residuals: Out = A + B
+    // Residual add helper using a simple 1D-indexed device kernel (stable across backends)
     namespace detail
     {
-        template<typename T>
         struct Add2DKernel
         {
-            template<typename Acc, typename InBuf1, typename InBuf2, typename OutBuf>
-            ALPAKA_FN_ACC void operator()(
-                Acc const& acc,
-                InBuf1 in1,
-                InBuf2 in2,
-                OutBuf out,
-                std::size_t M,
-                std::size_t D) const
+            template<typename Acc, typename BufA, typename BufB, typename BufO>
+            ALPAKA_FN_ACC void operator()(Acc const& acc, BufA A, BufB B, BufO O, std::size_t M, std::size_t D) const
             {
-                for(auto [m, d] : alpaka::onAcc::makeIdxMap(
-                        acc,
-                        alpaka::onAcc::worker::threadsInGrid,
-                        alpaka::IdxRange{alpaka::Vec{M, D}}))
+                for(auto [idx] :
+                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M * D}))
                 {
-                    if(m < M && d < D)
-                    {
-                        auto coord = alpaka::Vec<std::size_t, 2>{m, d};
-                        out[coord] = in1[coord] + in2[coord];
-                    }
+                    std::size_t m = idx / D;
+                    std::size_t d = idx % D;
+                    O[alpaka::Vec<std::size_t, 2>{m, d}]
+                        = A[alpaka::Vec<std::size_t, 2>{m, d}] + B[alpaka::Vec<std::size_t, 2>{m, d}];
                 }
             }
         };
+
+        template<typename Exec, typename Device, typename Queue>
+        inline void residualAdd2D(
+            Exec const& exec,
+            Device& device,
+            Queue& queue,
+            tensor::Tensor2D<float, Device>& A,
+            tensor::Tensor2D<float, Device>& B,
+            tensor::Tensor2D<float, Device>& Out)
+        {
+            auto shapeA = A.shape();
+            auto shapeB = B.shape();
+            auto shapeO = Out.shape();
+            if(shapeA != shapeB || shapeA != shapeO)
+            {
+                throw std::runtime_error("residualAdd2D: shape mismatch");
+            }
+            auto M = shapeA[0];
+            auto D = shapeA[1];
+            if(M == 0 || D == 0)
+                return;
+
+            A.ensureOnDevice(device, queue);
+            B.ensureOnDevice(device, queue);
+            Out.ensureOnDevice(device, queue);
+
+            auto frame = alpaka::tensor::ops::detail::makeFrame<Exec, Queue>(M * D);
+            queue.enqueue(
+                exec,
+                frame,
+                Add2DKernel{},
+                A.deviceBuffer(device, queue),
+                B.deviceBuffer(device, queue),
+                Out.deviceBuffer(device, queue),
+                M,
+                D);
+            Out.markDeviceModified(device, queue);
+        }
     } // namespace detail
 
     // Self-Attention over [M, D] using optional learned projections (single-head)
@@ -233,26 +262,13 @@ namespace alpaka::tensor::ops::layers
             // Self-Attention (+optional Wo inside)
             auto Aout = attn(exec, device, queue, Xln);
 
-            // Residual 1: Xin + Aout
+            // Residual 1: Xin + Aout (use shared safe helper)
+            if(std::getenv("ALPAKA_BERT_DEBUG"))
+                std::cerr << "[bert-layers-debug] entering residual 1" << std::endl;
             tensor::Tensor2D<float, Device> Xres1(device, {M, D}, "X_res1");
-            {
-                in.ensureOnDevice(device, queue);
-                Aout.ensureOnDevice(device, queue);
-                Xres1.ensureOnDevice(device, queue);
-                auto frameExtent = alpaka::Vec{std::size_t{1}, std::size_t{1}};
-                auto numFrames = alpaka::Vec{M, D};
-                auto frameSpec = alpaka::onHost::FrameSpec{numFrames, frameExtent};
-                queue.enqueue(
-                    exec,
-                    frameSpec,
-                    detail::Add2DKernel<float>{},
-                    in.deviceBuffer(device, queue),
-                    Aout.deviceBuffer(device, queue),
-                    Xres1.deviceBuffer(device, queue),
-                    M,
-                    D);
-                Xres1.markDeviceModified(device, queue);
-            }
+            detail::residualAdd2D(exec, device, queue, in, Aout, Xres1);
+            if(std::getenv("ALPAKA_BERT_DEBUG"))
+                std::cerr << "[bert-layers-debug] after residual 1" << std::endl;
 
             // LN2
             tensor::Tensor2D<float, Device> Y(device, {M, D}, "X_ln2");
@@ -272,25 +288,12 @@ namespace alpaka::tensor::ops::layers
             auto U = ffn(exec, device, queue, Y);
 
             // Residual 2: Xres1 + U
+            if(std::getenv("ALPAKA_BERT_DEBUG"))
+                std::cerr << "[bert-layers-debug] entering residual 2" << std::endl;
             tensor::Tensor2D<float, Device> Out(device, {M, D}, "bert_block_out");
-            {
-                Xres1.ensureOnDevice(device, queue);
-                U.ensureOnDevice(device, queue);
-                Out.ensureOnDevice(device, queue);
-                auto frameExtent = alpaka::Vec{std::size_t{1}, std::size_t{1}};
-                auto numFrames = alpaka::Vec{M, D};
-                auto frameSpec = alpaka::onHost::FrameSpec{numFrames, frameExtent};
-                queue.enqueue(
-                    exec,
-                    frameSpec,
-                    detail::Add2DKernel<float>{},
-                    Xres1.deviceBuffer(device, queue),
-                    U.deviceBuffer(device, queue),
-                    Out.deviceBuffer(device, queue),
-                    M,
-                    D);
-                Out.markDeviceModified(device, queue);
-            }
+            detail::residualAdd2D(exec, device, queue, Xres1, U, Out);
+            if(std::getenv("ALPAKA_BERT_DEBUG"))
+                std::cerr << "[bert-layers-debug] after residual 2" << std::endl;
 
             return Out;
         }

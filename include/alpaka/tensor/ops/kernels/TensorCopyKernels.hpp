@@ -12,16 +12,36 @@
 
 namespace alpaka::tensor::ops::kernels
 {
+    // 2D -> 1D flatten that respects 2D pitches by using view indexing
+    template<typename T>
+    struct Flatten2DTo1DKernel
+    {
+        template<typename Acc, typename In2DBuf, typename Out1DBuf>
+        ALPAKA_FN_ACC void operator()(Acc const& acc, In2DBuf in, Out1DBuf out, std::size_t M, std::size_t N) const
+        {
+            auto* outPtr = out.data();
+            for(auto [idx] :
+                alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M * N}))
+            {
+                auto r = idx / N;
+                auto c = idx % N;
+                outPtr[idx] = in[alpaka::Vec<std::size_t, 2>{r, c}];
+            }
+        }
+    };
+
     template<typename T>
     struct FlattenCopyKernel
     {
-        template<typename Acc>
-        ALPAKA_FN_ACC void operator()(Acc const& acc, T const* in, T* out, std::size_t total) const
+        template<typename Acc, typename InBuf, typename OutBuf>
+        ALPAKA_FN_ACC void operator()(Acc const& acc, InBuf in, OutBuf out, std::size_t total) const
         {
+            auto const* inPtr = in.data();
+            auto* outPtr = out.data();
             for(auto [idx] :
                 alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{total}))
             {
-                out[idx] = in[idx];
+                outPtr[idx] = inPtr[idx];
             }
         }
     };
@@ -29,15 +49,16 @@ namespace alpaka::tensor::ops::kernels
     template<typename T>
     struct Copy1DTo2DKernel
     {
-        template<typename Acc>
-        ALPAKA_FN_ACC void operator()(Acc const& acc, T const* in, T* out, std::size_t M, std::size_t N) const
+        template<typename Acc, typename InBuf, typename OutBuf>
+        ALPAKA_FN_ACC void operator()(Acc const& acc, InBuf in, OutBuf out, std::size_t M, std::size_t N) const
         {
+            auto const* inPtr = in.data();
             for(auto [idx] :
                 alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M * N}))
             {
                 auto row = idx / N;
                 auto col = idx % N;
-                out[row * N + col] = in[idx];
+                out[alpaka::Vec<std::size_t, 2>{row, col}] = inPtr[idx];
             }
         }
     };

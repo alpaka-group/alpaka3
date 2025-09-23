@@ -148,6 +148,7 @@ int runBert(
     std::cout << "=== Backend: " << alpaka::onHost::demangledName(exec) << " / " << backendName << " ===\n";
     // Provider summary and env flags
     {
+        auto dbg = std::getenv("ALPAKA_BERT_DEBUG") != nullptr;
         auto cleanCtxProbe = tt::createCleanTensorOpContext(exec, device, queue);
         auto active = cleanCtxProbe.getActiveProviders();
         std::cout << "Providers: ";
@@ -174,6 +175,8 @@ int runBert(
                   << " ALPAKA_USE_FP16=" << getenv_s("ALPAKA_USE_FP16")
                   << " ALPAKA_SOFTMAX_HOST=" << getenv_s("ALPAKA_SOFTMAX_HOST")
                   << " ALPAKA_LINEAR_INIT=" << getenv_s("ALPAKA_LINEAR_INIT") << "\n";
+        if(dbg)
+            std::cerr << "[bert-debug] after providers/env\n";
     }
 
     // Token ids [B*S] (optionally loaded from .npy)
@@ -227,6 +230,8 @@ int runBert(
     {
         // Best-effort discovery; ignore errors
     }
+    if(std::getenv("ALPAKA_BERT_DEBUG"))
+        std::cerr << "[bert-debug] after data autodiscovery\n";
     std::vector<std::size_t> inputIdsHost;
     std::vector<std::size_t> maskHost;
     std::vector<std::size_t> typeIdsHost;
@@ -298,17 +303,23 @@ int runBert(
             h[i] = (std::size_t) dist(rng);
         tokenIds.markHostModified();
     }
+    if(std::getenv("ALPAKA_BERT_DEBUG"))
+        std::cerr << "[bert-debug] after token ids init\n";
 
     // Embedding weights [V, H]
     std::size_t vocab = 30522;
     tt::Tensor2D<float, Device> embW(device, {vocab, (std::size_t) hidden}, "embW");
     initEmbedding(embW, 42);
+    if(std::getenv("ALPAKA_BERT_DEBUG"))
+        std::cerr << "[bert-debug] after embedding weights init\n";
 
     auto cleanCtx = tt::createCleanTensorOpContext(exec, device, queue);
     // Perform embedding (pipe does not accept size_t input variants)
     layers::EmbeddingLayer<Device> embed(std::move(embW));
     auto X = embed(exec, device, queue, tokenIds); // [B*S, H]
     addPositionalEncoding(X, (std::size_t) seqLen, device, queue);
+    if(std::getenv("ALPAKA_BERT_DEBUG"))
+        std::cerr << "[bert-debug] after embedding+positional\n";
 
     // Allocate projection/FFN weights
     auto initWeights2D = [&](std::size_t K, std::size_t N, char const* name)
@@ -337,6 +348,8 @@ int runBert(
         W1 = std::move(t1);
         W2 = std::move(t2);
     }
+    if(std::getenv("ALPAKA_BERT_DEBUG"))
+        std::cerr << "[bert-debug] after projection/ffn weights init\n";
 
     // Legacy path: always use masked-attention capable host path when mask provided,
     // otherwise fallback to device attention helper but keep the same structure.
@@ -374,6 +387,8 @@ int runBert(
         // LN1
         tt::Tensor1D<float, Device> ln1_gamma(device, {D}, "ln1_gamma");
         tt::Tensor1D<float, Device> ln1_beta(device, {D}, "ln1_beta");
+        if(std::getenv("ALPAKA_BERT_DEBUG"))
+            std::cerr << "[bert-debug] run_once: after alloc ln1 params (D=" << D << ")\n";
         for(std::size_t i = 0; i < D; ++i)
         {
             ln1_gamma.hostData()[i] = 1.0f;
@@ -383,6 +398,8 @@ int runBert(
         ln1_beta.markHostModified();
         tt::Tensor2D<float, Device> Xln(device, {M, D}, "X_ln");
         ops::layer_norm_2d<float>(exec, device, queue, Xin, ln1_gamma, ln1_beta, 1e-5f, Xln);
+        if(std::getenv("ALPAKA_BERT_DEBUG"))
+            std::cerr << "[bert-debug] run_once: after layernorm (M=" << M << ", D=" << D << ")\n";
 
         // Masked attention on host (as before), Q=K=V=Xln
         tt::Tensor2D<float, Device> K(device, {M, D}, "K");
@@ -392,6 +409,8 @@ int runBert(
         std::memcpy(V.hostData(), Xln.hostData(), sizeof(float) * V.size());
         K.markHostModified();
         V.markHostModified();
+        if(std::getenv("ALPAKA_BERT_DEBUG"))
+            std::cerr << "[bert-debug] run_once: after K/V host copy\n";
 
         tt::Tensor2D<float, Device> Aout(device, {M, D}, "attn_out");
         float const scale = 1.0f / std::sqrt(static_cast<float>(D));
@@ -456,13 +475,19 @@ int runBert(
         }
         Aout.markHostModified();
         Aout.ensureOnDevice(device, queue);
+        if(std::getenv("ALPAKA_BERT_DEBUG"))
+            std::cerr << "[bert-debug] run_once: after masked attention host path\n";
 
         // Output projection, residual, LN2, FFN, residual
         tt::Tensor2D<float, Device> POut(device, {M, D}, "proj_out");
         ops::matmul_2d(exec, device, queue, Aout, W_o, POut);
+        if(std::getenv("ALPAKA_BERT_DEBUG"))
+            std::cerr << "[bert-debug] run_once: after Wo matmul\n";
 
         tt::Tensor2D<float, Device> Xres1(device, {M, D}, "x_res1");
         detail::residualAdd2D(exec, device, queue, Xin, POut, Xres1);
+        if(std::getenv("ALPAKA_BERT_DEBUG"))
+            std::cerr << "[bert-debug] run_once: after residual 1\n";
 
         tt::Tensor1D<float, Device> ln2_gamma(device, {D}, "ln2_gamma");
         tt::Tensor1D<float, Device> ln2_beta(device, {D}, "ln2_beta");
@@ -475,15 +500,21 @@ int runBert(
         ln2_beta.markHostModified();
         tt::Tensor2D<float, Device> Y(device, {M, D}, "Y_ln");
         ops::layer_norm_2d<float>(exec, device, queue, Xres1, ln2_gamma, ln2_beta, 1e-5f, Y);
+        if(std::getenv("ALPAKA_BERT_DEBUG"))
+            std::cerr << "[bert-debug] run_once: after LN2\n";
 
         tt::Tensor2D<float, Device> Z(device, {M, (std::size_t) (4 * D)}, "ffn1");
         ops::matmul_2d(exec, device, queue, Y, W1, Z);
         cleanCtx.template gelu<float, 2>(Z);
         tt::Tensor2D<float, Device> U(device, {M, D}, "ffn2");
         ops::matmul_2d(exec, device, queue, Z, W2, U);
+        if(std::getenv("ALPAKA_BERT_DEBUG"))
+            std::cerr << "[bert-debug] run_once: after FFN matmuls+gelu\n";
 
         tt::Tensor2D<float, Device> Out(device, {M, D}, "out");
         detail::residualAdd2D(exec, device, queue, Xres1, U, Out);
+        if(std::getenv("ALPAKA_BERT_DEBUG"))
+            std::cerr << "[bert-debug] run_once: after residual 2\n";
         return Out;
     };
 
@@ -527,6 +558,11 @@ int runBert(
         std::cout << "  Mean: " << std::fixed << std::setprecision(3) << mean << " ms  Median: " << pct(0.5)
                   << " ms  P95: " << pct(0.95) << " ms\n";
         std::cout << "  Throughput: " << std::setprecision(2) << throughput << " samples/s\n";
+    }
+    else
+    {
+        // Always print a small completion banner to avoid empty output under certain runners like CTest
+        std::cout << "BERT encoder completed (" << (isGpu ? "CUDA" : "CPU") << ")\n";
     }
 
     return 0;
