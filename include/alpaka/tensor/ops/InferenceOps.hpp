@@ -476,6 +476,66 @@ namespace alpaka::tensor::ops
         t.markDeviceModified(device, queue); // defer host sync
     }
 
+    // ---------------- Residual add (2D) ----------------
+    // Out[M,D] = A[M,D] + B[M,D] using contiguous linear traversal
+    // Use view indexing to respect potential non-unit strides/pitch on some backends.
+    namespace detail
+    {
+        struct ResidualAdd2DKernel
+        {
+            template<typename Acc, typename BufA, typename BufB, typename BufO>
+            ALPAKA_FN_ACC void operator()(Acc const& acc, BufA A, BufB B, BufO O, std::size_t M, std::size_t D) const
+            {
+                for(auto [idx] :
+                    alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{M * D}))
+                {
+                    std::size_t m = idx / D;
+                    std::size_t d = idx % D;
+                    O[alpaka::Vec<std::size_t, 2>{m, d}]
+                        = A[alpaka::Vec<std::size_t, 2>{m, d}] + B[alpaka::Vec<std::size_t, 2>{m, d}];
+                }
+            }
+        };
+    } // namespace detail
+
+    template<typename T, typename Exec, typename Device, typename Queue>
+    void residual_add_2d(
+        Exec const& exec,
+        Device const& device,
+        Queue& queue,
+        tensor::Tensor2D<T, Device>& A,
+        tensor::Tensor2D<T, Device>& B,
+        tensor::Tensor2D<T, Device>& Out)
+    {
+        auto sA = A.shape();
+        auto sB = B.shape();
+        auto sO = Out.shape();
+        if(sA != sB || sA != sO)
+        {
+            throw std::runtime_error("residual_add_2d: shape mismatch");
+        }
+        std::size_t M = sA[0];
+        std::size_t D = sA[1];
+        if(M == 0 || D == 0)
+            return;
+
+        A.ensureOnDevice(device, queue);
+        B.ensureOnDevice(device, queue);
+        Out.ensureOnDevice(device, queue);
+
+        auto frame = ops::detail::makeFrame<Exec, Queue>(M * D);
+        queue.enqueue(
+            exec,
+            frame,
+            detail::ResidualAdd2DKernel{},
+            A.deviceBuffer(device, queue),
+            B.deviceBuffer(device, queue),
+            Out.deviceBuffer(device, queue),
+            M,
+            D);
+        Out.markDeviceModified(device, queue);
+    }
+
     // ---------------- GELU (approximate) ----------------
 
     template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>

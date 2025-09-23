@@ -485,7 +485,7 @@ int runBert(
             std::cerr << "[bert-debug] run_once: after Wo matmul\n";
 
         tt::Tensor2D<float, Device> Xres1(device, {M, D}, "x_res1");
-        detail::residualAdd2D(exec, device, queue, Xin, POut, Xres1);
+        ops::residual_add_2d<float>(exec, device, queue, Xin, POut, Xres1);
         if(std::getenv("ALPAKA_BERT_DEBUG"))
             std::cerr << "[bert-debug] run_once: after residual 1\n";
 
@@ -512,7 +512,7 @@ int runBert(
             std::cerr << "[bert-debug] run_once: after FFN matmuls+gelu\n";
 
         tt::Tensor2D<float, Device> Out(device, {M, D}, "out");
-        detail::residualAdd2D(exec, device, queue, Xres1, U, Out);
+        ops::residual_add_2d<float>(exec, device, queue, Xres1, U, Out);
         if(std::getenv("ALPAKA_BERT_DEBUG"))
             std::cerr << "[bert-debug] run_once: after residual 2\n";
         return Out;
