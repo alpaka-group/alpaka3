@@ -62,3 +62,7 @@ Pipfile.lock
 
 # user specific cmake preset settings
 CMakeUserPresets.json
+
+# python environment for sphinx doc
+# is generated, if the user follows it official documentation
+alpaka-doc-env
