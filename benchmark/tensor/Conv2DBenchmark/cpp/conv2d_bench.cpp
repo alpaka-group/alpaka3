@@ -434,7 +434,7 @@ void runForBackend(Backend const& backend, Args const& args, std::vector<JsonEnt
         std::cout << "Provider context created.\n";
         // Diagnostics: report whether conv provider is active and what backend it uses
         auto& prov = tensorOpCtxOpt->getConvProvider();
-        bool verbose = std::getenv("ALPAKA_OPS_VERBOSE") != nullptr;
+        bool verbose = false; // TODO: add --verbose plumbing
         bool active = prov.isActive();
         std::cout << "  Conv provider active: " << (active ? "yes" : "no") << '\n';
         std::cout << "  Conv provider backend: " << prov.getBackendName() << '\n';
@@ -443,7 +443,7 @@ void runForBackend(Backend const& backend, Args const& args, std::vector<JsonEnt
             std::cout << "  Conv provider inactive (falling back to default)" << '\n';
         }
         if(verbose)
-            std::cout << "  (Set ALPAKA_OPS_VERBOSE=1 for per-call provider logs)\n";
+            std::cout << "  (Re-run with --verbose once integrated for per-call provider logs)\n";
     }
     else
     {

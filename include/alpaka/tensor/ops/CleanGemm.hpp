@@ -87,7 +87,7 @@ namespace alpaka::tensor::ops::clean
         B.ensureOnDevice(device, queue);
         C.ensureOnDevice(device, queue);
 
-        bool const verbose = std::getenv("ALPAKA_OPS_VERBOSE") != nullptr;
+        bool const verbose = false;
         if(verbose)
             std::cout << "GEMM: Delegating to provider (M=" << M << " N=" << N << " K=" << K << ")\n";
 
@@ -169,7 +169,7 @@ namespace alpaka::tensor::ops::clean
         B.ensureOnDevice(device, queue);
         C.ensureOnDevice(device, queue);
 
-        bool const verbose = std::getenv("ALPAKA_OPS_VERBOSE") != nullptr;
+        bool const verbose = false;
 
         if(!provider.isActive() || !provider.supportsOperation(OpType::GEMM))
         {

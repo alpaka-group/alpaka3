@@ -205,12 +205,18 @@ namespace alpaka::tensor
         bool isActive() const override
         {
 #ifdef ALPAKA_HAS_CUDNN
-            if(char const* d = std::getenv("ALPAKA_DISABLE_CUDNN"))
+            // Centralized env toggle check (temporary until RuntimeConfig is introduced).
+            auto disabledViaEnv = []() -> bool
             {
-                std::string v(d);
-                if(v == "1" || v == "ON" || v == "on" || v == "true" || v == "TRUE")
+                char const* d = std::getenv("ALPAKA_DISABLE_CUDNN");
+                if(!d)
                     return false;
-            }
+                std::string v(d);
+                // Accept common truthy spellings meaning: disable cuDNN.
+                return (v == "1" || v == "ON" || v == "on" || v == "true" || v == "TRUE" || v == "Yes" || v == "yes");
+            }();
+            if(disabledViaEnv)
+                return false;
             ensureInitialized();
             return initialized_;
 #else
@@ -278,7 +284,7 @@ namespace alpaka::tensor
         {
 #ifdef ALPAKA_HAS_CUDNN
             static_assert(std::is_same_v<Exec, alpaka::exec::GpuCuda>, "CuDNN only supports CUDA backend");
-            bool const logEnabled = std::getenv("ALPAKA_CONV_LOG") != nullptr;
+            bool const logEnabled = false; // --verbose will be integrated later; disable env flag
             if(!isActive())
                 return fallbackToGenericConv2D(exec, device, queue, input, weight, params);
             if(!std::is_same_v<T, float>)
@@ -434,7 +440,7 @@ namespace alpaka::tensor
             initStatus_ = cudnnCreate(&handle_);
             if(initStatus_ == CUDNN_STATUS_SUCCESS)
                 initialized_ = true;
-            else if(std::getenv("ALPAKA_VERBOSE_VENDOR"))
+            else
             {
                 static bool diagPrinted = false;
                 if(!diagPrinted)

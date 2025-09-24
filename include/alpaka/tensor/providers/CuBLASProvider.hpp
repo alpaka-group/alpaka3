@@ -100,7 +100,7 @@ namespace alpaka::tensor
             static_assert(std::is_same_v<Exec, alpaka::exec::GpuCuda>, "CuBLAS provider only supports CUDA backend");
 
 #ifdef ALPAKA_HAS_CUBLAS
-            bool const verbose = std::getenv("ALPAKA_OPS_VERBOSE") != nullptr;
+            bool const verbose = false;
 
             if(!isActive())
             {
@@ -245,7 +245,7 @@ namespace alpaka::tensor
 
             initialized_ = true;
 
-            bool const verbose = std::getenv("ALPAKA_OPS_VERBOSE") != nullptr;
+            bool const verbose = false;
             if(verbose)
                 std::cout << "CuBLAS provider initialized successfully\n";
         }
@@ -255,7 +255,7 @@ namespace alpaka::tensor
             bool allowTensorOp = std::getenv("ALPAKA_DISABLE_TENSOR_CORES") == nullptr;
             bool useMixedPrecision = std::getenv("ALPAKA_USE_FP16") != nullptr;
             bool allowTF32 = std::getenv("ALPAKA_ALLOW_TF32") != nullptr; // explicit opt-in like cuDNN path
-            bool const verbose = std::getenv("ALPAKA_OPS_VERBOSE") != nullptr;
+            bool const verbose = false;
 
             if(!allowTensorOp)
             {

@@ -36,7 +36,6 @@ int runBertMulti(
     int layersCount,
     int iters,
     int warmup,
-    bool timing,
     bool onlyGpu,
     bool onlySerial,
     bool profileLayers,
@@ -231,8 +230,7 @@ int runBertMulti(
         out = std::get<tt::Tensor2D<float, Device>>(v);
         alpaka::onHost::wait(queue);
         auto e = std::chrono::high_resolution_clock::now();
-        if(timing)
-            times.push_back(std::chrono::duration<double, std::milli>(e - s).count());
+        times.push_back(std::chrono::duration<double, std::milli>(e - s).count());
 
         if(profileLayers)
         {
@@ -251,7 +249,7 @@ int runBertMulti(
 
     out.toHost(device, queue);
 
-    if(timing && !times.empty())
+    if(!times.empty())
     {
         std::sort(times.begin(), times.end());
         double mean = 0;
@@ -286,7 +284,6 @@ int main(int argc, char** argv)
     int layers = 2;
     int warmup = 5;
     int iters = 5;
-    bool timing = false;
     bool onlyGpu = false;
     bool onlySerial = false;
     bool profile = false;
@@ -306,12 +303,7 @@ int main(int argc, char** argv)
         else if(a == "--warmup" && i + 1 < argc)
             warmup = std::stoi(argv[++i]);
         else if(a == "--iters" && i + 1 < argc)
-        {
             iters = std::stoi(argv[++i]);
-            timing = true;
-        }
-        else if(a == "--timing")
-            timing = true;
         else if(a == "--only-gpu")
             onlyGpu = true;
         else if(a == "--only-serial")
@@ -323,7 +315,7 @@ int main(int argc, char** argv)
         else if(a == "--help")
         {
             std::cout << "Usage: inferenceBERTMulti [--batch B] [--seq S] [--hidden H] [--layers L] "
-                         "[--iters N] [--warmup W] [--timing] [--only-gpu] [--only-serial] [--profile-layers]\n"
+                         "[--iters N] [--warmup W] [--only-gpu] [--only-serial] [--profile-layers]\n"
                          "       [--input-ids path.npy]\n";
             return 0;
         }
@@ -340,7 +332,6 @@ int main(int argc, char** argv)
                 layers,
                 iters,
                 warmup,
-                timing,
                 onlyGpu,
                 onlySerial,
                 profile,
