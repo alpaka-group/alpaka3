@@ -54,6 +54,7 @@ Individual chapters are based on the information of the chapters before.
    :caption: Contribution
    :maxdepth: 1
 
+   contribution/sphinx.rst
    contribution/tools.rst
 
 .. toctree::
