@@ -314,7 +314,7 @@ namespace alpaka::tensor::ops
         float beta,
         tensor::Tensor1D<float, Device>& C)
     {
-        bool verbose = std::getenv("ALPAKA_OPS_VERBOSE") != nullptr;
+        bool verbose = false;
         detail::gemm_impl(exec, device, queue, M, N, K, alpha, A, B, beta, C, verbose);
     }
 
@@ -334,7 +334,7 @@ namespace alpaka::tensor::ops
         float beta,
         tensor::Tensor1D<float, Device>& C)
     {
-        bool verbose = std::getenv("ALPAKA_OPS_VERBOSE") != nullptr;
+        bool verbose = false;
         detail::gemm_impl(exec, device, queue, M, N, K, alpha, A, B, beta, C, verbose);
     }
 } // namespace alpaka::tensor::ops

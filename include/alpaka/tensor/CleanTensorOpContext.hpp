@@ -396,6 +396,30 @@ namespace alpaka::tensor
                 // Typed fast-path where available
                 try
                 {
+#ifdef ALPAKA_HAS_CUDNN
+                    // Prefer typed cuDNN path on CUDA similar to GEMM/BatchNorm patterns
+                    if constexpr(std::is_same_v<TExec, alpaka::exec::GpuCuda>)
+                    {
+                        if(auto* cudnnProv = dynamic_cast<CuDNNProvider*>(&provider))
+                        {
+                            try
+                            {
+                                auto out = cudnnProv->template conv2d<T, TExec, TDevice, TQueue>(
+                                    *exec_,
+                                    *device_,
+                                    *queue_,
+                                    input,
+                                    weight,
+                                    params);
+                                return out;
+                            }
+                            catch(...)
+                            {
+                                // Swallow and continue to next typed provider attempt / status path
+                            }
+                        }
+                    }
+#endif
 #ifdef ALPAKA_LANG_HIP
                     if constexpr(std::is_same_v<TExec, alpaka::exec::GpuHip>)
                     {

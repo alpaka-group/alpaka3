@@ -75,7 +75,7 @@ namespace alpaka::tensor::ops
         // Fast path for 4D tensors (keep existing debug output & indexing)
         if constexpr(TensorIn::rank == 4 && TensorOut::rank == 4)
         {
-            bool const verbose = std::getenv("ALPAKA_OPS_VERBOSE") != nullptr;
+            bool const verbose = false;
             if(verbose)
                 std::cout << "ReLU: 4D fast path" << std::endl;
             auto n = input.size();
@@ -108,7 +108,7 @@ namespace alpaka::tensor::ops
         }
         else
         {
-            bool const verbose = std::getenv("ALPAKA_OPS_VERBOSE") != nullptr;
+            bool const verbose = false;
             // Fallback: use generic unary kernel (works for 1D, 2D, etc.)
             if(verbose)
                 std::cout << "ReLU: generic fallback path (rank=" << TensorIn::rank << ")" << std::endl;

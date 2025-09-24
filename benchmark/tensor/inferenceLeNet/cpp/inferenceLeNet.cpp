@@ -339,7 +339,6 @@ int runLeNet(
     bool onlyGpu,
     int warmupIters,
     int measureIters,
-    bool timing,
     bool printArgmax,
     bool profileLayers,
     std::string const& mnistImagesPath = "",
@@ -637,7 +636,7 @@ int runLeNet(
     if(anyMismatch)
         return 3;
 
-    if(timing && measureIters > 0)
+    if(measureIters > 0)
     {
         std::sort(times.begin(), times.end());
         double mean = 0.0;
@@ -674,7 +673,7 @@ int main(int argc, char** argv)
     bool onlyGpu = false;
     int warmup = 5;
     int iters = 1;
-    bool timing = false;
+    // timing variable removed; timing summary now always printed when iterations > 0
     bool printArgmax = false;
     bool useMnist = false;
     bool profileLayers = false;
@@ -706,30 +705,30 @@ int main(int argc, char** argv)
         else if(a == "--iters" && i + 1 < argc)
         {
             iters = std::max(1, std::stoi(argv[++i]));
-            timing = true;
         }
         else if(a == "--warmup" && i + 1 < argc)
             warmup = std::max(0, std::stoi(argv[++i]));
-        else if(a == "--timing")
-            timing = true;
         else if(a == "--print-argmax")
             printArgmax = true;
         else if(a == "--profile-layers")
+        {
             profileLayers = true;
+        }
         else if(a == "--help")
         {
             std::cout << "Usage: inferenceLeNet [--weights DIR] [--expected N] [--print-probs] [--batch B]"
-                         " [--only-gpu] [--iters N] [--warmup W] [--timing] [--print-argmax] [--verbose]\n"
+                         " [--only-gpu] [--iters N] [--warmup W] [--print-argmax] [--verbose] [--profile-layers]\n"
                          "                      [--mnist-images FILE] [--mnist-labels FILE] [--profile-layers]\n";
             std::cout << "\nMNIST Data Options:\n";
             std::cout << "  --mnist-images FILE    Path to MNIST images file (idx3-ubyte)\n";
             std::cout << "  --mnist-labels FILE    Path to MNIST labels file (idx1-ubyte)\n";
             std::cout << "                         If both provided, uses real MNIST data instead of random\n";
             std::cout << "\nProfiling Options:\n";
-            std::cout << "  --profile-layers       Enable detailed layer-wise timing analysis\n";
+            std::cout << "  --profile-layers       Enable detailed layer-wise timing analysis (implies timing)\n";
             return 0;
         }
     }
+    // Timing summary is automatic; no explicit flag needed.
     if(verbose)
         setenv("ALPAKA_OPS_VERBOSE", "1", 1);
     WeightPaths w{weightsDir};
@@ -746,7 +745,6 @@ int main(int argc, char** argv)
                 onlyGpu,
                 warmup,
                 iters,
-                timing,
                 printArgmax,
                 profileLayers,
                 mnistImagesPath,

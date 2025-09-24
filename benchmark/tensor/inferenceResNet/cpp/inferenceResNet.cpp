@@ -11,10 +11,9 @@
  *
  * Command line options (initial subset):
  *   --batch N            Batch size (default 32)
- *   --iters N            Measured iterations (enables timing)
+ *   --iters N            Measured iterations (always prints timing stats)
  *   --warmup W           Warmup iterations (default 5)
  *   --only-gpu           Skip non-GPU backends
- *   --timing             Print latency & throughput stats
  *   --profile-layers     Per-layer timing (reuses generic pipeline profiling)
  *   --classes K          Number of output classes (default 10)
  */
@@ -56,7 +55,6 @@ int runResNet18(
     int batch,
     int iters,
     int warmup,
-    bool timing,
     bool onlyGpu,
     bool onlyCuda,
     bool onlyHip,
@@ -106,6 +104,7 @@ int runResNet18(
 
     std::cout << "=== Backend: " << alpaka::onHost::demangledName(exec) << " / " << backendName << " ===\n";
 
+
     // Input tensor [N,3,32,32]
     tt::Tensor4D<float, Device> input(device, {(std::size_t) batch, 3, 32, 32}, "input");
     {
@@ -128,6 +127,13 @@ int runResNet18(
     Pipe pipe(exec, device, queue, std::move(cleanCtx));
     if(profileLayers)
         pipe.enableProfiling(true);
+
+    // Print active tensor providers for each backend to verify vendor utilization.
+    if(auto* ctx = pipe.getCleanTensorOpContext())
+    {
+        std::cout << "Active providers: ";
+        ctx->printProviderInfo();
+    }
 
     // Optional provider diagnostics via --verbose
     if(verbose && pipe.hasCleanTensorOpContext())
@@ -221,8 +227,7 @@ int runResNet18(
         outAny = pipe.forward(tmp);
         alpaka::onHost::wait(queue);
         auto e = std::chrono::high_resolution_clock::now();
-        if(timing)
-            times.push_back(std::chrono::duration<double, std::milli>(e - s).count());
+        times.push_back(std::chrono::duration<double, std::milli>(e - s).count());
     }
 
     if(iters > 0)
@@ -245,7 +250,7 @@ int runResNet18(
             std::cout << "  " << i << ": " << names[i] << " - " << durs[i] << " ms\n";
     }
 
-    if(timing && !times.empty())
+    if(!times.empty())
     {
         std::sort(times.begin(), times.end());
         double mean = 0;
@@ -285,7 +290,6 @@ int main(int argc, char** argv)
     int batch = 1;
     int warmup = 0;
     int iters = 1;
-    bool timing = false;
     bool onlyGpu = false;
     bool onlySerial = false;
     bool onlyCuda = false;
@@ -304,12 +308,7 @@ int main(int argc, char** argv)
         else if(a == "--warmup" && i + 1 < argc)
             warmup = std::stoi(argv[++i]);
         else if(a == "--iters" && i + 1 < argc)
-        {
             iters = std::stoi(argv[++i]);
-            timing = true;
-        }
-        else if(a == "--timing")
-            timing = true;
         else if(a == "--only-gpu")
             onlyGpu = true;
         else if(a == "--only-cuda")
@@ -335,7 +334,7 @@ int main(int argc, char** argv)
         else if(a == "--help")
         {
             std::puts(
-                "Usage: inferenceResNet [--batch N] [--iters N] [--warmup W] [--timing] [--only-gpu] "
+                "Usage: inferenceResNet [--batch N] [--iters N] [--warmup W] [--only-gpu] "
                 "[--only-cuda|--only-hip] [--only-serial|--only-omp] [--profile-layers] [--classes K] [-v|--verbose] "
                 "[--dry-run] [--limit-stages N|--shallow]");
             return 0;
@@ -350,7 +349,6 @@ int main(int argc, char** argv)
                 batch,
                 dryRun ? 0 : iters,
                 dryRun ? 0 : warmup,
-                timing,
                 onlyGpu,
                 onlyCuda,
                 onlyHip,

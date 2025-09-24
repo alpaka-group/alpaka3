@@ -4,25 +4,25 @@
  * Quick run (GPU-only example, copy-paste):
  *   ./build/benchmark/tensor/inferenceBERT/cpp/inferenceBERT \
  *     --batch 2 --seq 8 --hidden 32 --layers 1 --iters 2 --warmup 1 \
- *     --timing --only-gpu --profile-layers
+ *     --only-gpu --profile-layers
  *
  * Build (Release, limited parallelism):
  *   cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
  *   cmake --build build -j 8 --target inferenceBERT
  *
- * Run (auto-detect backends, with timing):
- *   ./build/benchmark/tensor/inferenceBERT/cpp/inferenceBERT --iters 10 --timing
+ * Run (auto-detect backends, always prints timing when --iters > 0):
+ *   ./build/benchmark/tensor/inferenceBERT/cpp/inferenceBERT --iters 10
  *
  * Run with real BERT inputs (.npy files):
  *   ./build/benchmark/tensor/inferenceBERT/cpp/inferenceBERT \
  *     --input-ids data/input_ids.npy \
  *     --attention-mask data/attention_mask.npy \
  *     --token-type-ids data/token_type_ids.npy \
- *     --iters 5 --timing
+ *     --iters 5
  *
  * Generate sample data into the default folder:
  *   ./build/benchmark/tensor/inferenceBERT/cpp/inferenceBERT \
- *     --generate-sample-data --batch 2 --seq 8 --timing
+ *     --generate-sample-data --batch 2 --seq 8
  *
  * Default data directory (no flags needed if files exist):
  *   benchmark/tensor/inferenceBERT/cpp/data/
@@ -31,13 +31,13 @@
  *
  * Force GPU or CPU serial backends:
  *   # GPU only
- *   ./build/benchmark/tensor/inferenceBERT/cpp/inferenceBERT --only-gpu --iters 5 --timing
+ *   ./build/benchmark/tensor/inferenceBERT/cpp/inferenceBERT --only-gpu --iters 5
  *   # CPU serial only
- *   ./build/benchmark/tensor/inferenceBERT/cpp/inferenceBERT --only-serial --iters 5 --timing
+ *   ./build/benchmark/tensor/inferenceBERT/cpp/inferenceBERT --only-serial --iters 5
  *
  * Optional provider/env toggles (examples):
  *   ALPAKA_DISABLE_CUBLAS=1 ALPAKA_DISABLE_CUDNN=1 \
- *   ./build/benchmark/tensor/inferenceBERT/cpp/inferenceBERT --iters 5 --timing
+ *   ./build/benchmark/tensor/inferenceBERT/cpp/inferenceBERT --iters 5
  *
  * Print help:
  *   ./build/benchmark/tensor/inferenceBERT/cpp/inferenceBERT --help
@@ -63,11 +63,10 @@
  *   --hidden H           Hidden size/model dim (default 256)
  *   --heads Hn           Number of attention heads (default 4)
  *   --layers L           Encoder layers (default 2)
- *   --iters N            Measured iterations (enables timing)
+ *   --iters N            Measured iterations (always prints timing stats)
  *   --warmup W           Warmup iterations (default 5)
  *   --only-gpu           Skip non-GPU backends
  *   --only-serial        Only run CpuSerial
- *   --timing             Print latency & throughput stats
  *   --profile-layers     Per-layer timing in last iteration
  */
 #include <alpaka/alpaka.hpp>
@@ -117,7 +116,6 @@ int runBert(
     int layersCount,
     int iters,
     int warmup,
-    bool timing,
     bool onlyGpu,
     bool onlySerial,
     bool profileLayers,
@@ -167,9 +165,7 @@ int runBert(
         std::cout << "Env: ALPAKA_DISABLE_CUBLAS=" << getenv_s("ALPAKA_DISABLE_CUBLAS")
                   << " ALPAKA_DISABLE_CUDNN=" << getenv_s("ALPAKA_DISABLE_CUDNN")
                   << " ALPAKA_ATTENTION_DEVICE_GEMM=" << getenv_s("ALPAKA_ATTENTION_DEVICE_GEMM")
-                  << " ALPAKA_OPS_VERBOSE=" << getenv_s("ALPAKA_OPS_VERBOSE")
-                  << " ALPAKA_CONV_LOG=" << getenv_s("ALPAKA_CONV_LOG")
-                  << " ALPAKA_BATCHNORM_LOG=" << getenv_s("ALPAKA_BATCHNORM_LOG")
+                  << " --verbose=" << (std::getenv("ALPAKA_FAKE_VERBOSE_PLACEHOLDER") ? "1" : "0")
                   << " ALPAKA_CONV_FIND=" << getenv_s("ALPAKA_CONV_FIND")
                   << " ALPAKA_DISABLE_TENSOR_CORES=" << getenv_s("ALPAKA_DISABLE_TENSOR_CORES")
                   << " ALPAKA_USE_FP16=" << getenv_s("ALPAKA_USE_FP16")
@@ -534,13 +530,12 @@ int runBert(
             out = run_once(out);
         alpaka::onHost::wait(queue);
         auto e = std::chrono::high_resolution_clock::now();
-        if(timing)
-            times.push_back(std::chrono::duration<double, std::milli>(e - s).count());
+        times.push_back(std::chrono::duration<double, std::milli>(e - s).count());
     }
 
     out.toHost(device, queue);
 
-    if(timing && !times.empty())
+    if(!times.empty())
     {
         std::sort(times.begin(), times.end());
         double mean = 0;
@@ -577,7 +572,6 @@ int main(int argc, char** argv)
     int layers = 2;
     int warmup = 5;
     int iters = 5;
-    bool timing = false;
     bool onlyGpu = false;
     bool onlySerial = false;
     bool profile = false;
@@ -602,12 +596,7 @@ int main(int argc, char** argv)
         else if(a == "--warmup" && i + 1 < argc)
             warmup = std::stoi(argv[++i]);
         else if(a == "--iters" && i + 1 < argc)
-        {
             iters = std::stoi(argv[++i]);
-            timing = true;
-        }
-        else if(a == "--timing")
-            timing = true;
         else if(a == "--only-gpu")
             onlyGpu = true;
         else if(a == "--only-serial")
@@ -625,7 +614,7 @@ int main(int argc, char** argv)
         else if(a == "--help")
         {
             std::cout << "Usage: inferenceBERT [--batch B] [--seq S] [--hidden H] [--heads Hn] [--layers L] "
-                         "[--iters N] [--warmup W] [--timing] [--only-gpu] [--only-serial] [--profile-layers]\n"
+                         "[--iters N] [--warmup W] [--only-gpu] [--only-serial] [--profile-layers]\n"
                          "       [--generate-sample-data]\n"
                          "       [--input-ids path.npy] [--attention-mask path.npy] [--token-type-ids path.npy]\n";
             return 0;
@@ -650,7 +639,6 @@ int main(int argc, char** argv)
                 layers,
                 iters,
                 warmup,
-                timing,
                 onlyGpu,
                 onlySerial,
                 profile,

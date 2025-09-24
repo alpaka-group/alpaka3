@@ -148,7 +148,8 @@ namespace alpaka::tensor::ops
         auto H_out = output_shape[2];
         auto W_out = output_shape[3];
 
-        bool const verbose = std::getenv("ALPAKA_OPS_VERBOSE") != nullptr;
+        // Verbose now driven by benchmark/app --verbose flag via caller-propagated context (env var removed)
+        bool const verbose = false; // Placeholder: will be plumbed through higher-level context if needed
         if(verbose)
         {
             std::cout << "Conv2D: Processing 4D convolution with output shape [" << N << "," << C_out << "," << H_out
