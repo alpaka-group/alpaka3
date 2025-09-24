@@ -9,11 +9,21 @@ formats:
   - epub
 
 build:
-  os: ubuntu-22.04
+  os: ubuntu-24.04
   tools:
-    python: "3.11"
+    python: "3.13"
+  apt_packages:
+    - wget
   jobs:
     pre_build:
+      # upgrade to doxygen 1.14
+      - wget https://www.doxygen.nl/files/doxygen-1.14.0.linux.bin.tar.gz
+      - tar -xf doxygen-1.14.0.linux.bin.tar.gz
+      # we cannot uninstall or replace the existing doxygen installed via apt
+      # place the doxygen executable in the Python environment bin folder
+      # the Python environment bin folder is located before the system paths in PATH
+      - cp $PWD/doxygen-1.14.0/bin/doxygen $READTHEDOCS_VIRTUALENV_PATH/bin
+      - doxygen --version
       - pwd
       - ls -la
 
