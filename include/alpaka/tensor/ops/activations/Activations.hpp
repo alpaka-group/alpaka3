@@ -8,6 +8,8 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/core/SyncDebug.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
+#include <alpaka/tensor/kernels/ElementwiseKernels.hpp>
+#include <alpaka/tensor/kernels/GeluKernels.hpp>
 #include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>
 
 #include <algorithm>
@@ -145,6 +147,51 @@ namespace alpaka::tensor::ops
     void relu_inplace(Exec const& exec, Device& device, Queue& queue, Tensor& tensor)
     {
         relu(exec, device, queue, tensor, tensor);
+    }
+
+    template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
+    void relu_inplace_async(Exec const& exec, Device const& device, Queue& queue, tensor::Tensor<T, Rank, Device>& t)
+    {
+        t.ensureOnDevice(device, queue);
+        auto n = t.size();
+        auto frame = ops::detail::makeFrame<Exec, Queue>(n);
+        queue.enqueue(exec, frame, kernels::ReluInplaceKernel<T>{}, t.deviceBuffer(device, queue).data(), n);
+        t.markDeviceModified(device, queue);
+    }
+
+    template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
+    void gelu(Exec const& exec, Device const& device, Queue& queue, tensor::Tensor<T, Rank, Device>& t)
+    {
+        t.ensureOnDevice(device, queue);
+        auto total = t.size();
+        auto frame = ops::detail::makeFrame<Exec, Queue>(total);
+        queue.enqueue(
+            exec,
+            frame,
+            kernels::GeluKernel<T>{},
+            t.deviceBuffer(device, queue).data(),
+            t.deviceBuffer(device, queue).data(),
+            total);
+        t.markDeviceModified(device, queue);
+    }
+
+    template<typename T, typename Exec, typename Device, typename Queue>
+    void gelu(Exec const& exec, Device const& device, Queue& queue, tensor::Tensor2D<T, Device>& t)
+    {
+        t.ensureOnDevice(device, queue);
+        auto shape = t.shape();
+        std::size_t M = shape[0];
+        std::size_t D = shape[1];
+        auto frame = ops::detail::makeFrame<Exec, Queue>(M * D);
+        queue.enqueue(
+            exec,
+            frame,
+            kernels::Gelu2DViewKernel<T>{},
+            t.deviceBuffer(device, queue),
+            t.deviceBuffer(device, queue),
+            M,
+            D);
+        t.markDeviceModified(device, queue);
     }
 
 } // namespace alpaka::tensor::ops

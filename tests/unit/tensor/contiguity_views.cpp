@@ -4,7 +4,7 @@
 #include <alpaka/onHost/executeForEach.hpp>
 #include <alpaka/tensor/core/Helpers.hpp>
 #include <alpaka/tensor/core/ViewUtils.hpp>
-#include <alpaka/tensor/ops/inference/InferenceOps.hpp>
+#include <alpaka/tensor/ops/reshape/Reshape.hpp>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_template_test_macros.hpp>

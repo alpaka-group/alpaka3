@@ -6,7 +6,6 @@
 #include <alpaka/onHost/interface.hpp>
 #include <alpaka/tensor.hpp>
 #include <alpaka/tensor/context/CleanTensorOpContext.hpp>
-#include <alpaka/tensor/ops/inference/InferenceOps.hpp>
 
 #include <algorithm>
 #include <chrono>

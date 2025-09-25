@@ -5,7 +5,8 @@
 #pragma once
 
 #include <alpaka/tensor/ops/convolution/Conv2D.hpp>
-#include <alpaka/tensor/ops/inference/InferenceOps.hpp>
+#include <alpaka/tensor/ops/pooling/Pooling.hpp>
+#include <alpaka/tensor/ops/pooling/PoolingTypes.hpp>
 #include <alpaka/tensor/providers/DefaultProvider.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
 

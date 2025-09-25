@@ -2,7 +2,8 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/layers/base/LayerConcepts.hpp>
-#include <alpaka/tensor/ops/inference/InferenceOps.hpp>
+#include <alpaka/tensor/ops/pooling/Pooling.hpp>
+#include <alpaka/tensor/ops/pooling/PoolingTypes.hpp>
 
 namespace alpaka::tensor::ops::layers
 {

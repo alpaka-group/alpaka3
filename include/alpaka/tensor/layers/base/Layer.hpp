@@ -7,8 +7,15 @@
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/layers/aggregators/AllLayers.hpp>
 #include <alpaka/tensor/ops/activations/Activations.hpp>
+#include <alpaka/tensor/ops/bias/BiasAdd.hpp>
 #include <alpaka/tensor/ops/convolution/Conv2D.hpp>
-#include <alpaka/tensor/ops/inference/InferenceOps.hpp>
+#include <alpaka/tensor/ops/linear/LinearOps.hpp>
+#include <alpaka/tensor/ops/normalization/BatchNorm.hpp>
+#include <alpaka/tensor/ops/normalization/LayerNorm.hpp>
+#include <alpaka/tensor/ops/pooling/Pooling.hpp>
+#include <alpaka/tensor/ops/reshape/Reshape.hpp>
+#include <alpaka/tensor/ops/softmax/Softmax.hpp>
+#include <alpaka/tensor/ops/transform/Concat.hpp>
 
 #include <array>
 #include <cassert>
