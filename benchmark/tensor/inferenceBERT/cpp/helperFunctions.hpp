@@ -276,4 +276,4 @@ void addPositionalEncoding(Tensor2D& X, std::size_t seqLen, Device& device, Queu
     X.ensureOnDevice(device, queue);
 }
 
-// Residual add helpers have moved to ops::residual_add_2d in InferenceOps.hpp
+// Residual add helpers now live in ops::residual_add_2d (see BiasAdd.hpp)

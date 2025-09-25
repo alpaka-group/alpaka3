@@ -22,10 +22,17 @@
 #include <alpaka/tensor/kernels/ActivationBackwardKernels.hpp>
 #include <alpaka/tensor/kernels/Conv2DBackwardKernels.hpp>
 #include <alpaka/tensor/kernels/LinearBackwardKernels.hpp>
+#include <alpaka/tensor/ops/activations/Activations.hpp>
 #include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>
-#include <alpaka/tensor/ops/inference/InferenceOps.hpp>
 #include <alpaka/tensor/ops/linear/Gemm.hpp>
+#include <alpaka/tensor/ops/linear/LinearOps.hpp>
+#include <alpaka/tensor/ops/normalization/BatchNorm.hpp>
+#include <alpaka/tensor/ops/normalization/LayerNorm.hpp>
+#include <alpaka/tensor/ops/pooling/Pooling.hpp>
 #include <alpaka/tensor/ops/pooling/PoolingTypes.hpp>
+#include <alpaka/tensor/ops/reshape/Reshape.hpp>
+#include <alpaka/tensor/ops/softmax/Softmax.hpp>
+#include <alpaka/tensor/ops/transform/Concat.hpp>
 // Softmax CE kernels (extracted)
 #include <alpaka/tensor/kernels/SoftmaxCEKernels.hpp>
 

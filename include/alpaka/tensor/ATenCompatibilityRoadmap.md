@@ -158,7 +158,7 @@ DynamicTensor broadcast_binary_op(const DynamicTensor& a,
 1. Cleanup and DRY
    - Deduplicate kernels; keep a single canonical implementation per op family.
    - Enforce provider-first dispatch with clear fallbacks to Alpaka kernels.
-   - Keep facades (InferenceOps.hpp, TrainingOps.hpp) thin and well-documented.
+   - Keep facades (TrainingOps.hpp) thin while re-exporting modular inference headers for backward compatibility.
 2. Shape/stride/view semantics (minimal)
    - Reshape, transpose, squeeze/unsqueeze with validation; metadata-only when possible.
    - Contiguity checks and helpers; no general broadcasting yet.

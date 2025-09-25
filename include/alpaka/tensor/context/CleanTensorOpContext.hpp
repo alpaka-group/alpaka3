@@ -4,9 +4,18 @@
  */
 #pragma once
 
-#include <alpaka/tensor/ops/inference/InferenceOps.hpp>
+#include <alpaka/tensor/ops/activations/Activations.hpp>
+#include <alpaka/tensor/ops/bias/BiasAdd.hpp>
 #include <alpaka/tensor/ops/linear/Gemm.hpp>
+#include <alpaka/tensor/ops/linear/LinearOps.hpp>
+#include <alpaka/tensor/ops/normalization/BatchNorm.hpp>
+#include <alpaka/tensor/ops/normalization/LayerNorm.hpp>
+#include <alpaka/tensor/ops/pooling/Pooling.hpp>
+#include <alpaka/tensor/ops/pooling/PoolingTypes.hpp>
+#include <alpaka/tensor/ops/reshape/Reshape.hpp>
+#include <alpaka/tensor/ops/softmax/Softmax.hpp>
 #include <alpaka/tensor/ops/training/TrainingOps.hpp>
+#include <alpaka/tensor/ops/transform/Concat.hpp>
 #include <alpaka/tensor/providers/BuildCaps.hpp>
 #include <alpaka/tensor/providers/CuBLASProvider.hpp>
 #include <alpaka/tensor/providers/CuDNNProvider.hpp>

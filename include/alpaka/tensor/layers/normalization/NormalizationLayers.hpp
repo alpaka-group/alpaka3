@@ -2,7 +2,7 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/layers/base/LayerConcepts.hpp>
-#include <alpaka/tensor/ops/inference/InferenceOps.hpp>
+#include <alpaka/tensor/ops/normalization/LayerNorm.hpp>
 
 namespace alpaka::tensor::ops::layers
 {

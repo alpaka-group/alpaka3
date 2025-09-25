@@ -5,8 +5,8 @@
 #include <alpaka/tensor/adapters/aten/Broadcast.hpp>
 #include <alpaka/tensor/adapters/aten/DynamicTensor.hpp>
 #include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>
-#include <alpaka/tensor/ops/inference/InferenceOps.hpp>
 #include <alpaka/tensor/ops/linear/Gemm.hpp>
+#include <alpaka/tensor/ops/reshape/Reshape.hpp>
 
 #include <stdexcept>
 
