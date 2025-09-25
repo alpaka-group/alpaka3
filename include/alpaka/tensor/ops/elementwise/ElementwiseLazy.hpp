@@ -6,7 +6,6 @@
 
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/core/TensorDebugMacros.hpp>
-#include <alpaka/tensor/core/TensorView.hpp>
 #include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>
 
 namespace alpaka::tensor::ops
@@ -118,67 +117,6 @@ namespace alpaka::tensor::ops
         tensor::Tensor<T, Rank, Device>& in)
     {
         return unaryLazy<T, Rank>(exec, device, queue, in, ReluOp{}, "relu_lazy");
-    }
-
-    // =============================================================================
-    // VIEW-BASED OPERATIONS - These work with TensorView for method chaining
-    // =============================================================================
-
-    // Operations on TensorView that return TensorView for chaining
-    template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue, typename S>
-    TensorView<T, Rank, Device> mul_scalar(
-        TensorView<T, Rank, Device> view,
-        Exec const& exec,
-        Device const& device,
-        Queue& queue,
-        S scalar)
-    {
-        auto& tensor = view.getTensor();
-        auto result = mul_scalarLazy<T, Rank>(exec, device, queue, tensor, scalar);
-        tensor = std::move(result); // Update the view's tensor
-        return view; // Return the same view for chaining
-    }
-
-    template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
-    TensorView<T, Rank, Device> add(
-        TensorView<T, Rank, Device> view,
-        Exec const& exec,
-        Device const& device,
-        Queue& queue,
-        tensor::Tensor<T, Rank, Device>& other)
-    {
-        auto& tensor = view.getTensor();
-        auto result = addLazy<T, Rank>(exec, device, queue, tensor, other);
-        tensor = std::move(result);
-        return view;
-    }
-
-    // Final operation that syncs and returns tensor
-    template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
-    tensor::Tensor<T, Rank, Device> relu(
-        TensorView<T, Rank, Device> view,
-        Exec const& exec,
-        Device const& device,
-        Queue& queue)
-    {
-        auto& tensor = view.getTensor();
-        auto result = reluLazy<T, Rank>(exec, device, queue, tensor);
-        if(detail::eagerHostEnabled())
-            result.toHost(device, queue); // Optional host sync at end of chain
-        return result;
-    }
-
-    // =============================================================================
-    // SYNTAX SUGAR - Allow method-like chaining on tensors
-    // =============================================================================
-
-    // Free functions that enable: tensor.view().mul_scalar(...).relu(...)
-    template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue, typename S>
-    auto operator|(TensorView<T, Rank, Device> view, std::tuple<Exec, Device&, Queue&, S>)
-        -> TensorView<T, Rank, Device>
-    {
-        // This is a placeholder - we'll implement proper chaining syntax later
-        return view;
     }
 
 } // namespace alpaka::tensor::ops

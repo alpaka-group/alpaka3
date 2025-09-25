@@ -9,8 +9,6 @@
 #include <alpaka/tensor/core/TensorDebugMacros.hpp>
 #include <alpaka/tensor/core/TensorDescriptor.hpp>
 #include <alpaka/tensor/core/TensorUtilities.hpp>
-#include <alpaka/tensor/core/TensorView.hpp>
-#include <alpaka/tensor/core/ViewUtils.hpp>
 
 // Runtime context & instrumentation
 #include <alpaka/tensor/context/CleanTensorOpContext.hpp>
@@ -46,7 +44,6 @@
 #include <alpaka/tensor/ops/training/TrainingSequential.hpp>
 
 // Layer abstractions (grouped by domain)
-#include <alpaka/tensor/layers/aggregators/AllLayers.hpp>
 #include <alpaka/tensor/layers/base/Layer.hpp>
 #include <alpaka/tensor/layers/base/LayerConcepts.hpp>
 #include <alpaka/tensor/layers/embedding/EmbeddingLayers.hpp>
