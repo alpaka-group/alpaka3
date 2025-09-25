@@ -652,7 +652,6 @@ namespace alpaka::tensor
 #endif
 
     public:
-#ifdef ALPAKA_HAS_CUDNN
         // Pooling typed implementations (cuDNN). Fallback to generic when not supported.
         template<typename T, typename Exec, typename Device, typename Queue>
         auto max_pool2d(
@@ -838,7 +837,6 @@ namespace alpaka::tensor
             (void) params;
             throw std::runtime_error("cuDNN not built");
 #    endif
-        }
-#endif
+    }
     };
 } // namespace alpaka::tensor
