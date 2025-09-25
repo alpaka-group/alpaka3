@@ -4,8 +4,6 @@
  */
 #pragma once
 
-#include <alpaka/tensor/context/OpStatus.hpp>
-
 #include <concepts>
 #include <cstddef>
 #include <string>
@@ -22,7 +20,12 @@ namespace alpaka::tensor
         Activation // TODO(ROCM): ensure upcoming HIP providers advertise same OpType set
     };
 
-    // OpStatus is declared in OpStatus.hpp; do not redeclare here.
+    enum class OpStatus
+    {
+        Success, // Operation completed successfully
+        Unsupported, // Operation not supported by this provider
+        Error // Operation failed due to error
+    };
 
     // Forward declaration of operation parameter types
     namespace ops
