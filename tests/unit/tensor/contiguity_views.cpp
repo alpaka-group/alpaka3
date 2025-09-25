@@ -2,8 +2,8 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
+#include <alpaka/tensor/core/TensorDescriptor.hpp>
 #include <alpaka/tensor/core/TensorUtilities.hpp>
-#include <alpaka/tensor/core/ViewUtils.hpp>
 #include <alpaka/tensor/ops/reshape/Reshape.hpp>
 
 #include <catch2/catch_approx.hpp>

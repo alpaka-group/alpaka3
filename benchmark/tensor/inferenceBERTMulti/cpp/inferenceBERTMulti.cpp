@@ -3,8 +3,6 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
-#include <alpaka/tensor/context/CleanTensorOpContext.hpp>
-#include <alpaka/tensor/layers/aggregators/AllLayers.hpp>
 
 #include <algorithm>
 #include <chrono>
