@@ -5,7 +5,14 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/context/CleanTensorOpContext.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
-#include <alpaka/tensor/layers/aggregators/AllLayers.hpp>
+#include <alpaka/tensor/layers/mlp/LinearLayers.hpp>
+#include <alpaka/tensor/layers/mlp/ReLULayer.hpp>
+#include <alpaka/tensor/layers/mlp/SoftmaxLayer.hpp>
+#include <alpaka/tensor/layers/normalization/BatchNormLayer.hpp>
+#include <alpaka/tensor/layers/normalization/NormalizationLayers.hpp>
+#include <alpaka/tensor/layers/transformer/BertLayers.hpp>
+#include <alpaka/tensor/layers/vision/Conv2DLayer.hpp>
+#include <alpaka/tensor/layers/vision/PoolingLayers.hpp>
 #include <alpaka/tensor/ops/activations/Activations.hpp>
 #include <alpaka/tensor/ops/bias/BiasAdd.hpp>
 #include <alpaka/tensor/ops/convolution/Conv2D.hpp>
@@ -31,10 +38,23 @@
 
 namespace alpaka::tensor::ops
 {
+    // Import specialized layer types for cleaner code - avoid blanket namespace to prevent kernel collisions
+    using alpaka::tensor::ops::layers::AvgPool2DLayer;
+    using alpaka::tensor::ops::layers::BatchNorm2DLayer;
+    using alpaka::tensor::ops::layers::Conv2DLayer;
+    using alpaka::tensor::ops::layers::GlobalAveragePool2DLayer;
+    using alpaka::tensor::ops::layers::LayerNorm2DLayer;
+    using alpaka::tensor::ops::layers::LinearLayer;
+    using alpaka::tensor::ops::layers::LinearReLULayer;
+    using alpaka::tensor::ops::layers::MaxPool2DLayer;
+    using alpaka::tensor::ops::layers::ReLU1DLayer;
+    using alpaka::tensor::ops::layers::ReLULayer;
+    using alpaka::tensor::ops::layers::SelfAttention2DLayer;
+    using alpaka::tensor::ops::layers::SoftmaxLayer;
 
-    // BatchNorm inference kernel: per-element normalization
+    // BatchNorm inference kernel: per-element normalization (renamed to avoid conflicts)
     template<typename T>
-    struct BatchNorm2DApplyKernel
+    struct LocalBatchNorm2DApplyKernel
     {
         template<typename Acc, typename InBuf, typename RM, typename RV, typename G, typename B, typename OutBuf>
         ALPAKA_FN_ACC void operator()(
@@ -129,107 +149,7 @@ namespace alpaka::tensor::ops
         }
     };
 
-    template<typename Device>
-    struct ReLULayerStruct
-    {
-        bool inPlace{true};
-
-        template<typename Exec, typename Queue>
-        tensor::Tensor4D<float, Device> operator()(
-            Exec const& exec,
-            Device& device,
-            Queue& queue,
-            tensor::Tensor4D<float, Device>& in) const
-        {
-            if(inPlace)
-            {
-                relu_inplace(exec, device, queue, in);
-                return in;
-            }
-            tensor::Tensor4D<float, Device> out(device, in.shape(), "relu_out");
-            relu(exec, device, queue, in, out);
-            return out;
-        }
-    };
-
-    // 1D variant for post-linear activations
-    template<typename Device>
-    struct ReLU1DLayerStruct
-    {
-        bool inPlace{true};
-
-        template<typename Exec, typename Queue>
-        tensor::Tensor1D<float, Device> operator()(
-            Exec const& exec,
-            Device& device,
-            Queue& queue,
-            tensor::Tensor1D<float, Device>& in) const
-        {
-            if(inPlace)
-            {
-                relu_inplace(exec, device, queue, in);
-                return in;
-            }
-            tensor::Tensor1D<float, Device> out(device, in.shape(), "relu1d_out");
-            relu(exec, device, queue, in, out);
-            return out;
-        }
-    };
-
     // ---- Pooling Layers ----
-    template<typename Device>
-    struct MaxPool2DLayerStruct
-    {
-        Pool2DParams params{};
-
-        template<typename Exec, typename Queue>
-        tensor::Tensor4D<float, Device> operator()(
-            Exec const& exec,
-            Device& device,
-            Queue& queue,
-            tensor::Tensor4D<float, Device>& in) const
-        {
-            return max_pool2d<float>(exec, device, queue, in, params);
-        }
-    };
-
-    template<typename Device>
-    struct AvgPool2DLayerStruct
-    {
-        Pool2DParams params{};
-
-        template<typename Exec, typename Queue>
-        tensor::Tensor4D<float, Device> operator()(
-            Exec const& exec,
-            Device& device,
-            Queue& queue,
-            tensor::Tensor4D<float, Device>& in) const
-        {
-            return avg_pool2d<float>(exec, device, queue, in, params);
-        }
-    };
-
-    template<typename Device>
-    struct GlobalAveragePool2DLayerStruct
-    {
-        template<typename Exec, typename Queue>
-        tensor::Tensor4D<float, Device> operator()(
-            Exec const& exec,
-            Device& device,
-            Queue& queue,
-            tensor::Tensor4D<float, Device>& in) const
-        {
-            auto s = in.shape();
-            Pool2DParams p{
-                static_cast<std::uint32_t>(s[2]),
-                static_cast<std::uint32_t>(s[3]),
-                static_cast<std::uint32_t>(s[2]),
-                static_cast<std::uint32_t>(s[3]),
-                0u,
-                0u};
-            return avg_pool2d<float>(exec, device, queue, in, p);
-        }
-    };
 
     // Inference BatchNorm2D (expects pre-computed running mean/var and affine params gamma/beta)
     template<typename Device>
@@ -318,7 +238,7 @@ namespace alpaka::tensor::ops
             queue.enqueue(
                 exec,
                 frameSpec,
-                BatchNorm2DApplyKernel<float>{},
+                LocalBatchNorm2DApplyKernel<float>{},
                 in.deviceBuffer(device, queue),
                 runningMean.deviceBuffer(device, queue),
                 runningVar.deviceBuffer(device, queue),
@@ -485,7 +405,7 @@ namespace alpaka::tensor::ops
             BatchNorm2DLayerStruct<Device> bn1{bn1Mean, bn1Var, bn1Gamma, bn1Beta, bnEps};
             x = bn1(exec, dev, q, x);
             printShape("[BB] after bn1", x);
-            ReLULayerStruct<Device> relu{};
+            ReLULayer<Device> relu{};
             relu.inPlace = true;
             relu(exec, dev, q, x);
             printShape("[BB] after relu1", x);
@@ -538,7 +458,7 @@ namespace alpaka::tensor::ops
         }
 
         template<typename Exec, typename Queue>
-        void addReLU(Exec const&, Queue&, ReLULayerStruct<Device> l)
+        void addReLU(Exec const&, Queue&, ReLULayer<Device> l)
         {
             nodes_.emplace_back(
                 [l = std::move(l)](void const* e, void* d, void* q, Tensor4D& in)
@@ -551,7 +471,7 @@ namespace alpaka::tensor::ops
         }
 
         template<typename Exec, typename Queue>
-        void addMaxPool(Exec const&, Queue&, MaxPool2DLayerStruct<Device> l)
+        void addMaxPool(Exec const&, Queue&, MaxPool2DLayer<Device> l)
         {
             nodes_.emplace_back(
                 [l = std::move(l)](void const* e, void* d, void* q, Tensor4D& in)
@@ -564,7 +484,7 @@ namespace alpaka::tensor::ops
         }
 
         template<typename Exec, typename Queue>
-        void addAvgPool(Exec const&, Queue&, AvgPool2DLayerStruct<Device> l)
+        void addAvgPool(Exec const&, Queue&, AvgPool2DLayer<Device> l)
         {
             nodes_.emplace_back(
                 [l = std::move(l)](void const* e, void* d, void* q, Tensor4D& in)
@@ -577,7 +497,7 @@ namespace alpaka::tensor::ops
         }
 
         template<typename Exec, typename Queue>
-        void addGlobalAvgPool(Exec const&, Queue&, GlobalAveragePool2DLayerStruct<Device> l)
+        void addGlobalAvgPool(Exec const&, Queue&, GlobalAveragePool2DLayer<Device> l)
         {
             nodes_.emplace_back(
                 [l = std::move(l)](void const* e, void* d, void* q, Tensor4D& in)
@@ -622,225 +542,6 @@ namespace alpaka::tensor::ops
             tensor::Tensor4D<float, Device>& in) const
         {
             return flatten_4d_to_2d<float>(exec, device, queue, in);
-        }
-    };
-
-    template<typename Device>
-    struct LinearLayerStruct
-    {
-        std::size_t batch{1};
-        std::size_t outFeatures{1};
-        mutable std::optional<tensor::Tensor1D<float, Device>> weights;
-        mutable std::optional<tensor::Tensor1D<float, Device>> bias;
-
-        // Non-owning pointer to clean context for provider delegation
-        mutable void* context{nullptr};
-
-        template<typename Exec, typename Queue>
-        tensor::Tensor1D<float, Device> operator()(
-            Exec const& exec,
-            Device& device,
-            Queue& queue,
-            tensor::Tensor1D<float, Device>& in) const
-        {
-            auto total = in.size();
-            auto K = total / batch;
-            if(!weights)
-            {
-                weights.emplace(device, std::array<std::size_t, 1>{K * outFeatures}, "linearW");
-                auto* pw = weights->hostData();
-                // He or Xavier style init depending on activation expectation: assume ReLU -> He
-                float fanIn = static_cast<float>(K);
-                float fanOut = static_cast<float>(outFeatures);
-                // Default: He uniform
-                float limit = std::sqrt(6.f / fanIn); // Xavier uniform would be sqrt(6/(fanIn+fanOut))
-                char const* modeEnv = std::getenv("ALPAKA_LINEAR_INIT");
-                if(modeEnv)
-                {
-                    std::string m(modeEnv);
-                    if(m == "xavier" || m == "XAVIER")
-                        limit = std::sqrt(6.f / (fanIn + fanOut));
-                }
-                // Simple LCG for deterministic reproducible init (no <random> dependency differences across compilers)
-                unsigned seed = 1337u;
-                auto lcg = [&]()
-                {
-                    seed = seed * 1'664'525u + 1'013'904'223u;
-                    return seed;
-                };
-                for(std::size_t i = 0; i < weights->size(); ++i)
-                {
-                    float r = (float) (lcg() & 0xFF'FFFF) / float(0xFF'FFFF); // [0,1)
-                    float val = -limit + 2.f * limit * r; // [-limit, limit]
-                    pw[i] = val;
-                }
-                weights->markHostModified();
-                if(!bias)
-                {
-                    bias.emplace(device, std::array<std::size_t, 1>{outFeatures}, "linearB");
-                    auto* pb = bias->hostData();
-                    for(std::size_t j = 0; j < outFeatures; ++j)
-                        pb[j] = 0.f; // zero bias
-                    bias->markHostModified();
-                }
-            }
-            auto& W = *weights;
-            tensor::Tensor1D<float, Device> out(device, {batch * outFeatures}, "linearOut");
-            auto* bptr = bias ? &*bias : nullptr;
-
-            if(context)
-            {
-                // Use GEMM provider delegation through clean context
-                auto* cleanContext = static_cast<tensor::CleanTensorOpContext<Exec, Device, Queue>*>(context);
-
-                // Try to use provider delegation first
-                try
-                {
-                    // Create 2D tensor views for GEMM operation
-                    // A: [batch, K], W: [K, outFeatures], Out: [batch, outFeatures]
-
-                    // For now, fallback to existing linear implementation
-                    // TODO: Implement proper 2D tensor reshaping and GEMM delegation through context
-                    linear(
-                        exec,
-                        device,
-                        queue,
-                        batch,
-                        outFeatures,
-                        K,
-                        in,
-                        const_cast<tensor::Tensor1D<float, Device>&>(W),
-                        bptr ? const_cast<tensor::Tensor1D<float, Device>*>(bptr) : nullptr,
-                        out);
-                }
-                catch(...)
-                {
-                    // Fallback to direct linear implementation if provider fails
-                    linear(
-                        exec,
-                        device,
-                        queue,
-                        batch,
-                        outFeatures,
-                        K,
-                        in,
-                        const_cast<tensor::Tensor1D<float, Device>&>(W),
-                        bptr ? const_cast<tensor::Tensor1D<float, Device>*>(bptr) : nullptr,
-                        out);
-                }
-            }
-            else
-            {
-                // Fallback to existing linear implementation
-                linear(
-                    exec,
-                    device,
-                    queue,
-                    batch,
-                    outFeatures,
-                    K,
-                    in,
-                    const_cast<tensor::Tensor1D<float, Device>&>(W),
-                    bptr ? const_cast<tensor::Tensor1D<float, Device>*>(bptr) : nullptr,
-                    out);
-            }
-            return out;
-        }
-    };
-
-    template<typename Device>
-    struct LinearReLULayerStruct
-    {
-        std::size_t batch{1};
-        std::size_t outFeatures{1};
-        mutable std::optional<tensor::Tensor1D<float, Device>> weights;
-        mutable std::optional<tensor::Tensor1D<float, Device>> bias;
-
-        template<typename Exec, typename Queue>
-        tensor::Tensor1D<float, Device> operator()(
-            Exec const& exec,
-            Device& device,
-            Queue& queue,
-            tensor::Tensor1D<float, Device>& in) const
-        {
-            auto total = in.size();
-            auto K = total / batch;
-            if(!weights)
-            {
-                weights.emplace(device, std::array<std::size_t, 1>{K * outFeatures}, "linearW");
-                auto* pw = weights->hostData();
-                // He initialization (optimal for ReLU)
-                float fanIn = static_cast<float>(K);
-                float limit = std::sqrt(6.f / fanIn);
-                char const* modeEnv = std::getenv("ALPAKA_LINEAR_INIT");
-                if(modeEnv)
-                {
-                    std::string m(modeEnv);
-                    if(m == "xavier" || m == "XAVIER")
-                    {
-                        float fanOut = static_cast<float>(outFeatures);
-                        limit = std::sqrt(6.f / (fanIn + fanOut));
-                    }
-                }
-                // Simple LCG for deterministic reproducible init
-                unsigned seed = 1337u;
-                auto lcg = [&]()
-                {
-                    seed = seed * 1'664'525u + 1'013'904'223u;
-                    return seed;
-                };
-                for(std::size_t i = 0; i < weights->size(); ++i)
-                {
-                    float r = (float) (lcg() & 0xFF'FFFF) / float(0xFF'FFFF); // [0,1)
-                    float val = -limit + 2.f * limit * r; // [-limit, limit]
-                    pw[i] = val;
-                }
-                weights->markHostModified();
-                if(!bias)
-                {
-                    bias.emplace(device, std::array<std::size_t, 1>{outFeatures}, "linearB");
-                    auto* pb = bias->hostData();
-                    for(std::size_t j = 0; j < outFeatures; ++j)
-                        pb[j] = 0.f; // zero bias
-                    bias->markHostModified();
-                }
-            }
-            auto& W = *weights;
-            tensor::Tensor1D<float, Device> out(device, {batch * outFeatures}, "linearReluOut");
-            auto* bptr = bias ? &*bias : nullptr;
-            // Use fused linear + ReLU operation
-            linear_relu(
-                exec,
-                device,
-                queue,
-                batch,
-                outFeatures,
-                K,
-                in,
-                const_cast<tensor::Tensor1D<float, Device>&>(W),
-                bptr ? const_cast<tensor::Tensor1D<float, Device>*>(bptr) : nullptr,
-                out);
-            return out;
-        }
-    };
-
-    template<typename Device>
-    struct SoftmaxLayerStruct
-    {
-        std::size_t batch{1};
-        std::size_t features{1};
-
-        template<typename Exec, typename Queue>
-        tensor::Tensor2D<float, Device> operator()(
-            Exec const& exec,
-            Device& device,
-            Queue& queue,
-            tensor::Tensor1D<float, Device>& in) const
-        {
-            auto logits2D = copy_flat_to_2d<float>(exec, device, queue, in, batch, features);
-            tensor::Tensor2D<float, Device> probs(device, {batch, features}, "softmaxOut");
-            softmax_2d<float>(exec, device, queue, logits2D, probs);
-            return probs;
         }
     };
 
@@ -1016,7 +717,7 @@ namespace alpaka::tensor::ops
             addImpl<T4>([this, l = std::move(l)](T4& in) mutable { return l(exec_, dev_, queue_, in); }, "Conv2D");
         }
 
-        void addReLU(ReLULayerStruct<Device> l)
+        void addReLU(ReLULayer<Device> l)
         {
             if(l.inPlace)
             {
@@ -1028,7 +729,7 @@ namespace alpaka::tensor::ops
             }
         }
 
-        void addReLU1D(ReLU1DLayerStruct<Device> l)
+        void addReLU1D(ReLU1DLayer<Device> l)
         {
             if(l.inPlace)
             {
@@ -1040,12 +741,12 @@ namespace alpaka::tensor::ops
             }
         }
 
-        void addMaxPool(MaxPool2DLayerStruct<Device> l)
+        void addMaxPool(MaxPool2DLayer<Device> l)
         {
             addImpl<T4>([this, l = std::move(l)](T4& in) mutable { return l(exec_, dev_, queue_, in); }, "MaxPool");
         }
 
-        void addAvgPool(AvgPool2DLayerStruct<Device> l)
+        void addAvgPool(AvgPool2DLayer<Device> l)
         {
             addImpl<T4>([this, l = std::move(l)](T4& in) mutable { return l(exec_, dev_, queue_, in); }, "AvgPool");
         }
@@ -1055,7 +756,7 @@ namespace alpaka::tensor::ops
             addImpl<T4>([this, l = std::move(l)](T4& in) mutable { return l(exec_, dev_, queue_, in); }, "Flatten");
         }
 
-        void addLinear(LinearLayerStruct<Device> l)
+        void addLinear(LinearLayer<Device> l)
         {
             // Inject clean context if available
             if(hasCleanTensorOpContext())
@@ -1063,17 +764,17 @@ namespace alpaka::tensor::ops
             addImpl<T1>([this, l = std::move(l)](T1& in) mutable { return l(exec_, dev_, queue_, in); }, "Linear");
         }
 
-        void addLinearReLU(LinearReLULayerStruct<Device> l)
+        void addLinearReLU(LinearReLULayer<Device> l)
         {
             addImpl<T1>([this, l = std::move(l)](T1& in) mutable { return l(exec_, dev_, queue_, in); }, "LinearReLU");
         }
 
-        void addSoftmax(SoftmaxLayerStruct<Device> l)
+        void addSoftmax(SoftmaxLayer<Device> l)
         {
             addImpl<T1>([this, l = std::move(l)](T1& in) mutable { return l(exec_, dev_, queue_, in); }, "Softmax");
         }
 
-        void addGlobalAvgPool(GlobalAveragePool2DLayerStruct<Device> l)
+        void addGlobalAvgPool(GlobalAveragePool2DLayer<Device> l)
         {
             addImpl<T4>(
                 [this, l = std::move(l)](T4& in) mutable { return l(exec_, dev_, queue_, in); },
@@ -1478,10 +1179,10 @@ namespace alpaka::tensor::ops
     struct ResidualBlockStruct
     {
         Conv2DLayerStruct<Device> conv1;
-        ReLULayerStruct<Device> relu1;
+        ReLULayer<Device> relu1;
         Conv2DLayerStruct<Device> conv2;
         std::optional<Conv2DLayerStruct<Device>> projection; // 1x1 conv for dimension matching
-        ReLULayerStruct<Device> final_relu;
+        ReLULayer<Device> final_relu;
 
         // Basic residual block: Conv -> ReLU -> Conv -> Add(skip) -> ReLU
         template<typename Exec, typename Queue>
@@ -1555,7 +1256,7 @@ namespace alpaka::tensor::ops
             weights1.markHostModified();
 
             block.conv1 = Conv2DLayerStruct<Device>{std::move(weights1), std::nullopt, params1};
-            block.relu1 = ReLULayerStruct<Device>{true};
+            block.relu1 = ReLULayer<Device>{true};
 
             // Second conv layer
             Conv2DParams params2{};
@@ -1597,7 +1298,7 @@ namespace alpaka::tensor::ops
                 block.projection = Conv2DLayerStruct<Device>{std::move(proj_weights), std::nullopt, proj_params};
             }
 
-            block.final_relu = ReLULayerStruct<Device>{true};
+            block.final_relu = ReLULayer<Device>{true};
 
             return block;
         }
