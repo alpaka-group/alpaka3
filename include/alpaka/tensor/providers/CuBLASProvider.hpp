@@ -4,7 +4,7 @@
  */
 #pragma once
 
-#include <alpaka/tensor/core/SyncDebug.hpp>
+#include <alpaka/tensor/core/TensorDebugMacros.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
 
 #ifdef ALPAKA_HAS_CUBLAS

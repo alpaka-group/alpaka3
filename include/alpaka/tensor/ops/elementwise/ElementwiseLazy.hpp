@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <alpaka/tensor/core/SyncDebug.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
+#include <alpaka/tensor/core/TensorDebugMacros.hpp>
 #include <alpaka/tensor/core/TensorView.hpp>
 #include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>
 
