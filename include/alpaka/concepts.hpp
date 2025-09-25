@@ -4,7 +4,12 @@
 
 #pragma once
 
-#include "alpaka/internal/interface.hpp"
+#include "alpaka/api/concepts/api.hpp"
+#include "alpaka/concepts/hasName.hpp"
+#include "alpaka/mem/concepts/ExpectedValueType.hpp"
+#include "alpaka/mem/concepts/IBuffer.hpp"
+#include "alpaka/mem/concepts/IMdSpan.hpp"
+#include "alpaka/mem/concepts/IView.hpp"
 #include "alpaka/tag.hpp"
 
 #include <concepts>
@@ -12,45 +17,13 @@
 
 namespace alpaka
 {
-    namespace detail
-    {
-        struct ApiBase
-        {
-        };
-    } // namespace detail
-
-    namespace trait
-    {
-        template<typename T_Type>
-        struct IsApi : std::is_base_of<detail::ApiBase, T_Type>
-        {
-        };
-    } // namespace trait
-
-    template<typename T_Type>
-    constexpr bool isApi_v = trait::IsApi<T_Type>::value;
-
     namespace concepts
     {
-        template<typename T>
-        concept HasStaticName = requires(T t) {
-            { internal::GetStaticName::Op<std::decay_t<T>>{}(t) } -> std::convertible_to<std::string>;
-        };
-
-        template<typename T>
-        concept HasName = requires(T t) {
-            { internal::GetName::Op<T>{}(t) } -> std::convertible_to<std::string>;
-        };
-
         template<typename T>
         concept HasGet = requires(T t) { t.get(); };
 
         template<typename T>
         concept HasStaticDim = requires(T t) { T::dim(); };
-
-
-        template<typename T>
-        concept Api = isApi_v<T> && requires(T t) { requires HasStaticName<T>; };
 
         template<typename T, unsigned int T_dim>
         concept Dim = requires { T::dim() == T_dim; };
