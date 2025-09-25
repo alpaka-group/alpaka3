@@ -18,4 +18,5 @@ namespace alpaka::concepts
 
     template<typename T>
     concept Reference = std::is_reference_v<T>;
+
 } // namespace alpaka::concepts

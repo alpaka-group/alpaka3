@@ -61,10 +61,6 @@ namespace alpaka::concepts
             typename T::const_pointer;
             typename T::index_type;
 
-            requires std::copy_constructible<T>;
-            requires std::assignable_from<MutT&, MutT&>;
-            // TODO(SimeonEhrig): check if assignment fulfills const correctness
-            // requires std::assignable_from<decltype(const_t)&, decltype(const_t)&>;
             requires std::movable<MutT>;
 
             { T::dim() } -> std::same_as<uint32_t>;
