@@ -3,8 +3,8 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
-#include <alpaka/tensor/CleanTensorOpContext.hpp>
-#include <alpaka/tensor/ops/layers/AllLayers.hpp>
+#include <alpaka/tensor/context/CleanTensorOpContext.hpp>
+#include <alpaka/tensor/layers/aggregators/AllLayers.hpp>
 
 #include <algorithm>
 #include <chrono>
@@ -56,7 +56,6 @@ int runBertMulti(
     using ExecT = std::decay_t<decltype(exec)>;
     constexpr bool isCudaExec = std::is_same_v<ExecT, alpaka::exec::GpuCuda>;
     constexpr bool isHipExec = std::is_same_v<ExecT, alpaka::exec::GpuHip>;
-    constexpr bool isOmpExec = std::is_same_v<ExecT, alpaka::exec::CpuOmpBlocks>;
     constexpr bool isSerExec = std::is_same_v<ExecT, alpaka::exec::CpuSerial>;
     constexpr bool isGpuCexpr = isCudaExec || isHipExec;
     bool isGpu = isGpuCexpr;

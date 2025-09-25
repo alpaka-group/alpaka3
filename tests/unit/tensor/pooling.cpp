@@ -3,7 +3,7 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
-#include <alpaka/tensor/ops/Layer.hpp>
+#include <alpaka/tensor/layers/base/Layer.hpp>
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>

@@ -3,8 +3,8 @@
  */
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
-#include <alpaka/tensor/CleanTensorOpContext.hpp>
-#include <alpaka/tensor/TensorCore.hpp>
+#include <alpaka/tensor/context/CleanTensorOpContext.hpp>
+#include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
 
 #include <cassert>

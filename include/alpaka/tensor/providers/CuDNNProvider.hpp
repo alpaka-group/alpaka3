@@ -4,8 +4,8 @@
  */
 #pragma once
 
-#include <alpaka/tensor/ops/Conv2D.hpp>
-#include <alpaka/tensor/ops/InferenceOps.hpp>
+#include <alpaka/tensor/ops/convolution/Conv2D.hpp>
+#include <alpaka/tensor/ops/inference/InferenceOps.hpp>
 #include <alpaka/tensor/providers/DefaultProvider.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
 
@@ -661,7 +661,7 @@ namespace alpaka::tensor
             tensor::Tensor4D<T, Device>& input,
             ops::Pool2DParams const& params) const -> tensor::Tensor4D<T, Device>
         {
-#    ifdef ALPAKA_HAS_CUDNN
+#ifdef ALPAKA_HAS_CUDNN
             if(!isActive())
                 return ::alpaka::tensor::ops::max_pool2d<T>(exec, device, queue, input, params);
             if constexpr(!std::is_same_v<Exec, alpaka::exec::GpuCuda> || !std::is_same_v<T, float>)
@@ -736,14 +736,14 @@ namespace alpaka::tensor
                     output.toHost(device, queue);
                 return output;
             }
-#    else
+#else
             (void) exec;
             (void) device;
             (void) queue;
             (void) input;
             (void) params;
             throw std::runtime_error("cuDNN not built");
-#    endif
+#endif
         }
 
         template<typename T, typename Exec, typename Device, typename Queue>
@@ -754,7 +754,7 @@ namespace alpaka::tensor
             tensor::Tensor4D<T, Device>& input,
             ops::Pool2DParams const& params) const -> tensor::Tensor4D<T, Device>
         {
-#    ifdef ALPAKA_HAS_CUDNN
+#ifdef ALPAKA_HAS_CUDNN
             if(!isActive())
                 return ::alpaka::tensor::ops::avg_pool2d<T>(exec, device, queue, input, params);
             if constexpr(!std::is_same_v<Exec, alpaka::exec::GpuCuda> || !std::is_same_v<T, float>)
@@ -829,14 +829,14 @@ namespace alpaka::tensor
                     output.toHost(device, queue);
                 return output;
             }
-#    else
+#else
             (void) exec;
             (void) device;
             (void) queue;
             (void) input;
             (void) params;
             throw std::runtime_error("cuDNN not built");
-#    endif
-    }
+#endif
+        }
     };
 } // namespace alpaka::tensor

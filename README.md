@@ -45,8 +45,8 @@ Quick example:
 ```c++
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
-#include <alpaka/tensor/aten/DynamicTensor.hpp>
-#include <alpaka/tensor/aten/Ops.hpp>
+#include <alpaka/tensor/adapters/aten/DynamicTensor.hpp>
+#include <alpaka/tensor/adapters/aten/Ops.hpp>
 
 using namespace alpaka;
 using namespace alpaka::tensor;
