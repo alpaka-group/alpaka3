@@ -40,7 +40,7 @@ TEMPLATE_LIST_TEST_CASE("AvgPool2D basic correctness", "[tensor][pool]", TestBac
     p.stride_w = 2;
     p.pad_h = 0;
     p.pad_w = 0;
-    AvgPool2DLayerStruct<Device> layer{p};
+    AvgPool2DLayer<Device> layer{p};
     auto out = layer(cfg[object::exec], device, queue, input);
     out.toHost(device, queue);
     auto s = out.shape();
@@ -64,7 +64,7 @@ TEMPLATE_LIST_TEST_CASE("GlobalAveragePool2D per-channel mean", "[tensor][pool]"
     for(int i = 0; i < 8; ++i)
         input.hostData()[i] = float(i + 1);
     input.markHostModified();
-    GlobalAveragePool2DLayerStruct<Device> g{};
+    GlobalAveragePool2DLayer<Device> g{};
     auto out = g(cfg[object::exec], device, queue, input);
     out.toHost(device, queue);
     auto s = out.shape();
@@ -95,7 +95,7 @@ TEMPLATE_LIST_TEST_CASE("AvgPool2D stride < kernel overlap", "[tensor][pool]", T
     p.stride_w = 1;
     p.pad_h = 0;
     p.pad_w = 0;
-    AvgPool2DLayerStruct<Device> layer{p};
+    AvgPool2DLayer<Device> layer{p};
     auto out = layer(cfg[object::exec], device, queue, input);
     out.toHost(device, queue);
     auto s = out.shape();
@@ -126,7 +126,7 @@ TEMPLATE_LIST_TEST_CASE("AvgPool2D with padding includes padded zeros", "[tensor
     p.stride_w = 1;
     p.pad_h = 1;
     p.pad_w = 1;
-    AvgPool2DLayerStruct<Device> layer{p};
+    AvgPool2DLayer<Device> layer{p};
     auto out = layer(cfg[object::exec], device, queue, input);
     out.toHost(device, queue);
     auto s = out.shape();
