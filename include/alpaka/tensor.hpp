@@ -15,9 +15,6 @@
 
 // Runtime context & instrumentation
 #include <alpaka/tensor/context/CleanTensorOpContext.hpp>
-#include <alpaka/tensor/context/OpStatus.hpp>
-#include <alpaka/tensor/context/QueueSemantics.hpp>
-#include <alpaka/tensor/context/TensorTrace.hpp>
 
 // Provider system (vendor integrations re-exported here for convenience)
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
