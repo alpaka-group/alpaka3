@@ -63,6 +63,7 @@ namespace alpaka::onHost
 
             uint32_t getDeviceCount()
             {
+                ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::device);
                 constexpr bool isSupportedDev = trait::IsDeviceSupportedBy::
                     Op<T_DeviceKind, ALPAKA_TYPEOF(getApi(std::declval<Platform>()))>::value;
                 if constexpr(isSupportedDev)
@@ -87,6 +88,7 @@ namespace alpaka::onHost
 
             Handle<unifiedCudaHip::Device<Platform>> makeDevice(uint32_t const& idx)
             {
+                ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::device);
                 uint32_t const numDevices = getDeviceCount();
                 if(idx >= numDevices)
                 {
@@ -120,6 +122,7 @@ namespace alpaka::onHost
                 unifiedCudaHip::Platform<T_ApiInterface, T_DeviceKind> const& platform,
                 uint32_t deviceIdx) const
             {
+                ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::device);
                 using ApiInterface = typename unifiedCudaHip::Platform<T_ApiInterface, T_DeviceKind>::ApiInterface;
                 typename ApiInterface::DeviceProp_t devProp;
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(ApiInterface, ApiInterface::getDeviceProperties(&devProp, deviceIdx));

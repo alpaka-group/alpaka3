@@ -27,7 +27,7 @@ namespace alpaka::onHost
         using ThreadExtentsVecType = T_ThreadExtents;
         using ThreadSpecType = ThreadSpec<T_NumFrames, T_ThreadExtents>;
 
-        static consteval uint32_t dim()
+        static constexpr uint32_t dim()
         {
             return T_FrameExtents::dim();
         }
@@ -133,6 +133,7 @@ namespace alpaka::onHost
 
     std::ostream& operator<<(std::ostream& s, concepts::FrameSpec auto const& d)
     {
-        return s << "frames=" << d.m_numFrames << " frameExtent=" << d.m_frameExtent;
+        return s << "FrameSpec{ frames=" << d.m_numFrames << ", frameExtent=" << d.m_frameExtent << ", "
+                 << d.getThreadSpec() << " }";
     }
 } // namespace alpaka::onHost

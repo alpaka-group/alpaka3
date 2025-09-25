@@ -39,10 +39,12 @@ namespace alpaka::onHost
                 , m_idx(idx)
                 , m_isBlocking(isBlocking)
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::queue);
             }
 
             ~Queue()
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 internal::wait(*this);
             }
 
@@ -88,6 +90,7 @@ namespace alpaka::onHost
             template<typename T_Fn>
             auto submit(T_Fn&& fn)
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 if(m_isBlocking)
                 {
                     std::lock_guard<std::mutex> lk(m_mutex);
@@ -136,6 +139,7 @@ namespace alpaka::onHost
                 ThreadSpec<T_NumBlocks, T_NumThreads> const& threadBlocking,
                 auto const& kernelBundle)
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::queue);
                 auto deviceKind = alpaka::getDeviceKind(m_device);
                 submit(
                     [kernelBundle, executor, threadBlocking, deviceKind]()
@@ -159,6 +163,7 @@ namespace alpaka::onHost
                 FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents> const& frameSpec,
                 auto const& kernelBundle)
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::queue);
                 auto threadBlocking = internal::adjustThreadSpec(*m_device.get(), executor, frameSpec, kernelBundle);
                 auto deviceKind = alpaka::getDeviceKind(m_device);
                 submit(
@@ -182,6 +187,7 @@ namespace alpaka::onHost
              */
             void enqueue(auto const& task)
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 submit([task]() { task(); });
             }
 
@@ -220,6 +226,7 @@ namespace alpaka::onHost
         {
             void operator()(cpu::Queue<T_Device>& queue) const
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 // enqueue an empty task as marker and wait for the future
                 queue.submit([]() {}).wait();
             }
@@ -230,44 +237,48 @@ namespace alpaka::onHost
         {
             void operator()(cpu::Queue<T_Device>& queue, T_Event& event) const
             {
-                // Setting the event state (e.g. the future) and enqueuing it has to be atomic.
-                std::lock_guard<std::mutex> lk(event.m_mutex);
-
-                ++event.m_enqueueCount;
-
-                auto const enqueueCount = event.m_enqueueCount;
-
-                /* In case the queue is blocking we can not use queue.submit() because we hold the lock already.
-                 * The blocking queue executes the lambda directly which will create a deadlock.
-                 */
-                if(queue.m_isBlocking)
+                ALPAKA_LOG_FUNCTION(onHost::logger::event + onHost::logger::queue);
+                // open a scope to avoid logging during we hold the lock for this class
                 {
-                    // Nothing to do if it has been re-enqueued to a later position in the queue.
-                    if(enqueueCount == event.m_enqueueCount)
+                    // Setting the event state (e.g. the future) and enqueuing it has to be atomic.
+                    std::lock_guard<std::mutex> lk(event.m_mutex);
+
+                    ++event.m_enqueueCount;
+
+                    auto const enqueueCount = event.m_enqueueCount;
+
+                    /* In case the queue is blocking we can not use queue.submit() because we hold the lock already.
+                     * The blocking queue executes the lambda directly which will create a deadlock.
+                     */
+                    if(queue.m_isBlocking)
                     {
-                        event.m_LastReadyEnqueueCount = std::max(enqueueCount, event.m_LastReadyEnqueueCount);
-                    }
-                    // apply a fulfilled future
-                    std::promise<void> p;
-                    p.set_value();
-                    event.m_future = p.get_future();
-                }
-                else
-                {
-                    auto sharedEvent = event.getSharedPtr();
-                    // Enqueue a task that only resets the events flag if it is completed.
-                    event.m_future = queue.submit(
-                        [sharedEvent, enqueueCount]() mutable
+                        // Nothing to do if it has been re-enqueued to a later position in the queue.
+                        if(enqueueCount == event.m_enqueueCount)
                         {
-                            std::unique_lock<std::mutex> lk2(sharedEvent->m_mutex);
-
-                            // Nothing to do if it has been re-enqueued to a later position in the queue.
-                            if(enqueueCount == sharedEvent->m_enqueueCount)
+                            event.m_LastReadyEnqueueCount = std::max(enqueueCount, event.m_LastReadyEnqueueCount);
+                        }
+                        // apply a fulfilled future
+                        std::promise<void> p;
+                        p.set_value();
+                        event.m_future = p.get_future();
+                    }
+                    else
+                    {
+                        auto sharedEvent = event.getSharedPtr();
+                        // Enqueue a task that only resets the events flag if it is completed.
+                        event.m_future = queue.submit(
+                            [sharedEvent, enqueueCount]() mutable
                             {
-                                sharedEvent->m_LastReadyEnqueueCount
-                                    = std::max(enqueueCount, sharedEvent->m_LastReadyEnqueueCount);
-                            }
-                        });
+                                std::unique_lock<std::mutex> lk2(sharedEvent->m_mutex);
+
+                                // Nothing to do if it has been re-enqueued to a later position in the queue.
+                                if(enqueueCount == sharedEvent->m_enqueueCount)
+                                {
+                                    sharedEvent->m_LastReadyEnqueueCount
+                                        = std::max(enqueueCount, sharedEvent->m_LastReadyEnqueueCount);
+                                }
+                            });
+                    }
                 }
             }
         };
@@ -277,29 +288,33 @@ namespace alpaka::onHost
         {
             void operator()(cpu::Queue<T_Device>& queue, cpu::Event<T_Device>& event) const
             {
-                // Setting the event state and enqueuing it has to be atomic.
-                std::unique_lock<std::mutex> lk(event.m_mutex);
-
-                if(!event.isReady())
+                ALPAKA_LOG_FUNCTION(onHost::logger::event + onHost::logger::queue);
+                // open a scope to avoid logging during we hold the lock for this class
                 {
-                    /* In case the queue is blocking we can not use queue.submit() because we hold the lock already.
-                     * The blocking queue executes the lambda directly which will create a deadlock.
-                     */
-                    if(queue.m_isBlocking)
-                    {
-                        std::shared_future sFuture = event.m_future;
-                        lk.unlock();
-                        sFuture.get();
-                    }
-                    else
-                    {
-                        auto sharedEvent = event.getSharedPtr();
-                        auto oldFuture = event.m_future;
+                    // Setting the event state and enqueuing it has to be atomic.
+                    std::unique_lock<std::mutex> lk(event.m_mutex);
 
-                        // unlock here to avoid keeping the look during the maybe expensive enqueue of the task
-                        lk.unlock();
-                        // Enqueue a task that waits for the given future of the event.
-                        queue.submit([sharedEvent, oldFuture]() { oldFuture.get(); });
+                    if(!event.isReady())
+                    {
+                        /* In case the queue is blocking we can not use queue.submit() because we hold the lock
+                         * already. The blocking queue executes the lambda directly which will create a deadlock.
+                         */
+                        if(queue.m_isBlocking)
+                        {
+                            std::shared_future sFuture = event.m_future;
+                            lk.unlock();
+                            sFuture.get();
+                        }
+                        else
+                        {
+                            auto sharedEvent = event.getSharedPtr();
+                            auto oldFuture = event.m_future;
+
+                            // unlock here to avoid keeping the look during the maybe expensive enqueue of the task
+                            lk.unlock();
+                            // Enqueue a task that waits for the given future of the event.
+                            queue.submit([sharedEvent, oldFuture]() { oldFuture.get(); });
+                        }
                     }
                 }
             }
@@ -311,6 +326,7 @@ namespace alpaka::onHost
             void operator()(cpu::Queue<T_Device>& queue, auto&& dest, T_Source const& source, T_Extents const& extents)
                 const requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
                 constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
 
                 /* Get all required properties outside the lambda function to not extend the life-time of the data.
@@ -366,6 +382,7 @@ namespace alpaka::onHost
             void operator()(cpu::Queue<T_Device>& queue, auto&& dest, uint8_t byteValue, T_Extents const& extents)
                 const requires(std::is_same_v<ALPAKA_TYPEOF(dest), T_Dest>)
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
                 constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
 
                 void* destPtr = static_cast<void*>(alpaka::onHost::data(dest));
@@ -415,6 +432,7 @@ namespace alpaka::onHost
                 const requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
                                && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
                 auto executors = supportedExecutors(getDevice(queue), exec::allExecutors);
                 // avoid that we pass a SharedBuffer and convert non alpaka data views
                 alpaka::concepts::MdSpan<T_Value> auto dataView = makeView(dest);
@@ -445,6 +463,7 @@ namespace alpaka::onHost
 
             auto operator()(cpu::Queue<T_Device>& queue, T_Extents const& extents) const
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
                 auto device = queue.getDevice();
                 constexpr uint32_t alignment = api::util::simdOptimizedAlignment<T_Type>(
                     ALPAKA_TYPEOF(getApi(device)){},
@@ -466,6 +485,15 @@ namespace alpaka::onHost
                     pitches,
                     std::move(deleter),
                     Alignment<alignment>{}};
+
+                ALPAKA_LOG_INFO(
+                    onHost::logger::memory + onHost::logger::queue,
+                    [&]()
+                    {
+                        std::stringstream ss;
+                        ss << sharedBuffer;
+                        return ss.str();
+                    });
                 return sharedBuffer;
             }
         };

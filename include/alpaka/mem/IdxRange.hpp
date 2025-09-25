@@ -41,7 +41,7 @@ namespace alpaka
         {
         }
 
-        static consteval uint32_t dim()
+        static constexpr uint32_t dim()
         {
             return IdxVecType::dim();
         }

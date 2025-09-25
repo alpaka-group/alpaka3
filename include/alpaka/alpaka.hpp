@@ -42,6 +42,7 @@
 #include "alpaka/onHost/algo/transformReduce.hpp"
 #include "alpaka/onHost/demangledName.hpp"
 #include "alpaka/onHost/interface.hpp"
+#include "alpaka/onHost/logger/logger.hpp"
 #include "alpaka/onHost/mem/stdContainer.hpp"
 #include "alpaka/tag.hpp"
 #include "alpaka/utility.hpp"

@@ -10,6 +10,7 @@
 #include "alpaka/internal/interface.hpp"
 #include "alpaka/onHost/Handle.hpp"
 #include "alpaka/onHost/internal/interface.hpp"
+#include "alpaka/onHost/logger/logger.hpp"
 
 #include <cstdint>
 #include <cstring>
@@ -28,10 +29,12 @@ namespace alpaka::onHost
                 : m_device(std::move(device))
                 , m_idx(idx)
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::event);
             }
 
             ~Event()
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::event);
                 internal::wait(*this);
             }
 
@@ -105,6 +108,7 @@ namespace alpaka::onHost
              */
             bool isReady() noexcept
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::event);
                 return (m_LastReadyEnqueueCount == m_enqueueCount);
             }
 
@@ -116,6 +120,7 @@ namespace alpaka::onHost
              */
             bool isEventComplete() noexcept
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::event);
                 std::lock_guard<std::mutex> lk(m_mutex);
                 return isReady();
             }
@@ -125,6 +130,7 @@ namespace alpaka::onHost
 
             void wait()
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::event);
                 std::unique_lock<std::mutex> lk(m_mutex);
                 size_t enqueueCount = m_enqueueCount;
 

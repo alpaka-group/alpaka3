@@ -55,6 +55,7 @@ namespace alpaka::onHost
                       {sycl::property::queue::in_order{}})
                 , m_isBlocking(isBlocking)
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::queue);
             }
 
             [[nodiscard]] bool isBlocking() const noexcept
@@ -70,6 +71,7 @@ namespace alpaka::onHost
 
             ~Queue()
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 try
                 {
                     m_queue.wait_and_throw();
@@ -130,6 +132,7 @@ namespace alpaka::onHost
 
             void waitFor(syclGeneric::Event<T_Device>& event)
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::event + onHost::logger::queue);
                 sycl::event sycl_event = event.getNativeHandle();
                 [[maybe_unused]] sycl::event ev
                     = m_queue.submit([sycl_event](sycl::handler& cgh) { cgh.depends_on(sycl_event); });
@@ -162,6 +165,7 @@ namespace alpaka::onHost
 
         void operator()(syclGeneric::Queue<T_Device>& queue, T_Task const& task) const
         {
+            ALPAKA_LOG_FUNCTION(onHost::logger::queue);
             // using the queue by reference is fine here, because the queue is not destroyed while the task is
             // executed.
             [[maybe_unused]] sycl::event ev
@@ -177,6 +181,7 @@ namespace alpaka::onHost
     {
         void operator()(syclGeneric::Queue<T_Device>& queue, T_Event& event) const
         {
+            ALPAKA_LOG_FUNCTION(onHost::logger::event + onHost::logger::queue);
             sycl::event emulatedEvent = queue.m_queue.submit([](sycl::handler& cgh) { cgh.single_task([]() {}); });
             event.setEvent(emulatedEvent);
 
@@ -192,6 +197,7 @@ namespace alpaka::onHost
         void operator()(syclGeneric::Queue<T_Device>& queue, auto&& dest, uint8_t byteValue, T_Extents const& extents)
             const requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
         {
+            ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
             // TODO: implement generic version for multidimensional memory
             sycl::queue sycl_queue = queue.getNativeHandle();
             [[maybe_unused]] sycl::event ev = sycl_queue.memset(
@@ -213,6 +219,7 @@ namespace alpaka::onHost
             T_Source const& source,
             T_Extents const& extents) const requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
         {
+            ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
             // TODO: implement generic version for multidimensional memory
             sycl::queue sycl_queue = queue.getNativeHandle();
             [[maybe_unused]] sycl::event ev = sycl_queue.memcpy(
@@ -236,6 +243,7 @@ namespace alpaka::onHost
             requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
                      && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
         {
+            ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
             sycl::queue sycl_queue = queue.getNativeHandle();
             [[maybe_unused]] sycl::event ev = sycl_queue.fill(internal::Data::data(dest), elementValue, extents.x());
             if(queue.isBlocking())
@@ -251,6 +259,7 @@ namespace alpaka::onHost
     {
         auto operator()(syclGeneric::Queue<T_Device>& queue, T_Extents const& extents) const
         {
+            ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
             auto device = queue.getDevice();
             constexpr uint32_t alignment = api::util::simdOptimizedAlignment<T_Type>(
                 ALPAKA_TYPEOF(getApi(device)){},

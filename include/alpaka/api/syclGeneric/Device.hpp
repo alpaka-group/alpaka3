@@ -31,6 +31,12 @@ namespace alpaka::onHost
                 , m_sycl_dev(dev)
                 , m_properties{internal::getDeviceProperties(*m_platform.get(), m_idx)}
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::device);
+            }
+
+            ~Device()
+            {
+                ALPAKA_LOG_FUNCTION(onHost::logger::device);
             }
 
             Device(Device const&) = delete;
@@ -51,6 +57,7 @@ namespace alpaka::onHost
 
             [[nodiscard]] Handle<syclGeneric::Queue<Device>> makeQueue(queueKind::concepts::QueueKind auto kind)
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::queue + onHost::logger::device);
                 static_assert(
                     kind == queueKind::blocking || kind == queueKind::nonBlocking,
                     "Unsupported queue kind.");
@@ -72,6 +79,7 @@ namespace alpaka::onHost
 
             void wait()
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::device);
                 // Copy queue weak refs under lock then release to avoid blocking other operations while waiting.
                 std::vector<std::weak_ptr<syclGeneric::Queue<Device>>> tmpQueues;
                 {
@@ -92,6 +100,7 @@ namespace alpaka::onHost
 
             Handle<syclGeneric::Event<Device>> makeEvent()
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::event + onHost::logger::device);
                 auto thisHandle = this->getSharedPtr();
                 std::lock_guard<std::mutex> lk{m_writeGuard};
                 auto newEvent = std::make_shared<syclGeneric::Event<Device>>(std::move(thisHandle), events.size());
@@ -140,6 +149,7 @@ namespace alpaka::onHost
         {
             auto operator()(syclGeneric::Device<T_Platform>& device, T_Extents const& extents) const
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::device);
                 constexpr uint32_t alignment = api::util::simdOptimizedAlignment<T_Type>(
                     ALPAKA_TYPEOF(getApi(device)){},
                     ALPAKA_TYPEOF(getDeviceKind(device)){});
@@ -168,6 +178,7 @@ namespace alpaka::onHost
         {
             auto operator()(syclGeneric::Device<T_Platform>& device, T_Extents const& extents) const
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::device);
                 constexpr uint32_t alignment = api::util::simdOptimizedAlignment<T_Type>(
                     ALPAKA_TYPEOF(getApi(device)){},
                     ALPAKA_TYPEOF(getDeviceKind(device)){});
@@ -202,6 +213,7 @@ namespace alpaka::onHost
         {
             auto operator()(syclGeneric::Device<T_Platform>& device, T_Extents const& extents) const
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::device);
                 constexpr uint32_t alignment = api::util::simdOptimizedAlignment<T_Type>(
                     ALPAKA_TYPEOF(getApi(device)){},
                     ALPAKA_TYPEOF(getDeviceKind(device)){});
@@ -230,6 +242,7 @@ namespace alpaka::onHost
         {
             bool operator()(syclGeneric::Device<T_Platform>& device, T_Any const& view) const
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::device);
                 auto [sycl_device, sycl_context] = device.getNativeHandle();
                 auto sycl_alloc_type = sycl::get_pointer_type(data(view), sycl_context);
 
@@ -291,6 +304,7 @@ namespace alpaka::onHost
                 T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::device);
                 auto numThreads = dataBlocking.getThreadSpec().m_numThreads;
 
                 /** This limit is not exact but for typical GPUs, Intel, NVIDIA and AMD we can at least use 1024
@@ -310,6 +324,7 @@ namespace alpaka::onHost
                 T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::device);
                 auto numThreadsPerBlocks = dataBlocking.getThreadSpec().m_numThreads;
                 auto const maxThreadsPerBlock = device.m_properties.m_maxThreadsPerBlock;
 

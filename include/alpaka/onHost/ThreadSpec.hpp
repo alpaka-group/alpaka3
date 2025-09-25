@@ -22,7 +22,7 @@ namespace alpaka::onHost
         using NumBlocksVecType = typename T_NumBlocks::UniVec;
         using NumThreadsVecType = T_NumThreads;
 
-        static consteval uint32_t dim()
+        static constexpr uint32_t dim()
         {
             return T_NumThreads::dim();
         }
@@ -76,6 +76,6 @@ namespace alpaka::onHost
 
     std::ostream& operator<<(std::ostream& s, concepts::ThreadSpec auto const& t)
     {
-        return s << "blocks=" << t.m_numBlocks << " threads=" << t.m_numThreads;
+        return s << "ThreadSpec{ blocks=" << t.m_numBlocks << ", threads=" << t.m_numThreads << " }";
     }
 } // namespace alpaka::onHost

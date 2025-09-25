@@ -49,6 +49,7 @@ namespace alpaka::onHost
                 , m_idx(idx)
                 , m_isBlocking(isBlocking)
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
                     ApiInterface,
                     ApiInterface::setDevice(onHost::getNativeHandle(m_device)));
@@ -59,6 +60,7 @@ namespace alpaka::onHost
 
             ~Queue()
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 onHost::internal::wait(*this);
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(
                     ApiInterface,
@@ -236,7 +238,7 @@ namespace alpaka::onHost
                 using NumBlocksVecType = typename T_NumBlocks::UniVec;
                 using NumThreadsVecType = T_NumThreads;
 
-                static consteval uint32_t dim()
+                static constexpr uint32_t dim()
                 {
                     return T_NumThreads::dim();
                 }
@@ -357,6 +359,7 @@ namespace alpaka::onHost
 
             void operator()(unifiedCudaHip::Queue<T_Device>& queue, T_Task const& task) const
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
 
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
@@ -375,6 +378,7 @@ namespace alpaka::onHost
         {
             void operator()(unifiedCudaHip::Queue<T_Device>& queue, T_Event& event) const
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::event + onHost::logger::queue);
                 using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
                     ApiInterface,
@@ -399,6 +403,7 @@ namespace alpaka::onHost
                 ThreadSpec<T_NumBlocks, T_NumThreads> const& threadBlocking,
                 T_KernelBundle const& kernelBundle) const
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::queue);
                 unifiedCudaHip::CallKernel{}(executor, queue, threadBlocking, kernelBundle);
             }
         };
@@ -422,6 +427,7 @@ namespace alpaka::onHost
                 FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents> const& frameSpec,
                 T_KernelBundle const& kernelBundle) const
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::queue);
                 auto threadBlocking
                     = internal::adjustThreadSpec(*queue.m_device.get(), executor, frameSpec, kernelBundle);
                 unifiedCudaHip::CallKernel{}(
@@ -443,6 +449,7 @@ namespace alpaka::onHost
                 T_Source const& source,
                 T_Extents const& extents) const requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
                 using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
 
                 auto extentMd = pCast<size_t>(extents);
@@ -529,6 +536,7 @@ namespace alpaka::onHost
                 uint8_t byteValue,
                 T_Extents const& extents) const requires(std::is_same_v<ALPAKA_TYPEOF(dest), T_Dest>)
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
                 using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
                 auto extentMd = pCast<size_t>(extents);
 
@@ -599,6 +607,7 @@ namespace alpaka::onHost
                 requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
                          && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
                 auto executors = supportedExecutors(getDevice(queue), exec::allExecutors);
                 // avoid that we pass a SharedBuffer and convert non alpaka data views
                 auto dataView = makeView(dest);
@@ -619,6 +628,7 @@ namespace alpaka::onHost
         {
             auto operator()(unifiedCudaHip::Queue<T_Device>& queue, T_Extents const& extents) const
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
                 using ApiInterface = typename T_Device::ApiInterface;
 
                 /** Each CUDA/HIP allocation is aligned to at least 128 byte but typically to 256byte

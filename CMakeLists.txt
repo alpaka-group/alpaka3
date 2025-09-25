@@ -109,15 +109,14 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 endif()
 
 if(NOT TARGET alpaka)
-    add_library(alpaka INTERFACE)
-
-    add_library(alpaka::alpaka ALIAS alpaka)
-    target_compile_definitions(alpaka INTERFACE ALPAKA_CMAKE_TARGET_ALPAKA)
-
     ## target: alpaka::header
     add_library(alpaka_target_headers INTERFACE)
     add_library(alpaka::headers ALIAS alpaka_target_headers)
     target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_CMAKE_TARGET_HEADERS)
+
+    add_library(alpaka INTERFACE)
+    add_library(alpaka::alpaka ALIAS alpaka)
+    target_compile_definitions(alpaka INTERFACE ALPAKA_CMAKE_TARGET_ALPAKA)
 
     add_library(alpaka::host ALIAS alpaka_target_headers)
 
@@ -324,10 +323,10 @@ if(alpaka_DEP_ONEAPI)
 
     if(alpaka_RELOCATABLE_DEVICE_CODE STREQUAL ON)
         alpaka_set_compiler_options(DEVICE alpaka_target_oneapi alpaka "-fsycl-rdc")
-        target_link_options(alpaka INTERFACE "-fsycl-rdc")
+        target_link_options(alpaka_target_oneapi INTERFACE "-fsycl-rdc")
     elseif(alpaka_RELOCATABLE_DEVICE_CODE STREQUAL OFF)
         alpaka_set_compiler_options(DEVICE alpaka_target_oneapi alpaka "-fno-sycl-rdc")
-        target_link_options(alpaka INTERFACE "-fno-sycl-rdc")
+        target_link_options(alpaka_target_oneapi INTERFACE "-fno-sycl-rdc")
     endif()
 
     option(alpaka_ONEAPI_Cpu "Enable oneApi AMD Gpu support in examples/benchmarks and tests" ON)
@@ -486,23 +485,23 @@ endif()
 
 option(alpaka_EXEC_CpuSerial "Enable/Disable serial executor in examples/benchmarks and tests" ON)
 if(NOT alpaka_EXEC_CpuSerial)
-    target_compile_definitions(alpaka INTERFACE ALPAKA_DISABLE_EXEC_CpuSerial)
+    target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_DISABLE_EXEC_CpuSerial)
 endif()
 option(alpaka_EXEC_CpuOmpBlocks "Enable/Disable OpenMP blocks executor in examples/benchmarks and tests" ON)
 if(NOT alpaka_EXEC_CpuOmpBlocks)
-    target_compile_definitions(alpaka INTERFACE ALPAKA_DISABLE_EXEC_CpuOmpBlocks)
+    target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_DISABLE_EXEC_CpuOmpBlocks)
 endif()
 option(alpaka_EXEC_GpuCuda "Enable/Disable CUDA executor in examples/benchmarks and tests" ON)
 if(NOT alpaka_EXEC_GpuCuda)
-    target_compile_definitions(alpaka INTERFACE ALPAKA_DISABLE_EXEC_GpuCuda)
+    target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_DISABLE_EXEC_GpuCuda)
 endif()
 option(alpaka_EXEC_GpuHip "Enable/Disable HIP executor in examples/benchmarks and tests" ON)
 if(NOT alpaka_EXEC_GpuHip)
-    target_compile_definitions(alpaka INTERFACE ALPAKA_DISABLE_EXEC_GpuHip)
+    target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_DISABLE_EXEC_GpuHip)
 endif()
 option(alpaka_EXEC_OneApi "Enable/Disable Intel OneAPI SYCL executor in examples/benchmarks and tests" ON)
 if(NOT alpaka_EXEC_OneApi)
-    target_compile_definitions(alpaka INTERFACE ALPAKA_DISABLE_EXEC_OneApi)
+    target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_DISABLE_EXEC_OneApi)
 endif()
 
 # These options are used in the alpaka_finalize call
@@ -516,4 +515,89 @@ if(alpaka_TSAN)
         WARNING
         "Thread sanitizer enabled: You should reduce mmap rnd bits to avoid compile issues: call as root 'sysctl vm.mmap_rnd_bits=28'"
     )
+endif()
+
+set(alpaka_LOG "OFF" CACHE STRING "Set how the logging should be compiled into alpaka")
+set_property(CACHE alpaka_LOG PROPERTY STRINGS "static;dynamic;OFF")
+
+if((${alpaka_LOG} STREQUAL "OFF") OR (${alpaka_LOG} STREQUAL "off"))
+    set(alpaka_LOG_ENABLED OFF)
+else()
+    set(alpaka_LOG_ENABLED ON)
+endif()
+if(alpaka_LOG_ENABLED)
+    if(${alpaka_LOG} STREQUAL "static")
+        target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_LOG_STATIC)
+    endif()
+
+    if(${alpaka_LOG} STREQUAL "dynamic")
+        target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_LOG_DYNAMIC)
+    endif()
+
+    option(alpaka_LOG_INDENT "Enable/Disable call stack indention for logging" ON)
+    if(alpaka_LOG_INDENT)
+        target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_LOG_INDENT)
+    endif()
+
+    set(alpaka_LOG_DETAIL "short" CACHE STRING "Set how the logging should be compiled into alpaka")
+    set_property(CACHE alpaka_LOG_DETAIL PROPERTY STRINGS "short;long")
+    if(${alpaka_LOG_DETAIL} STREQUAL "short")
+        target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_LOG_DETAIL_SHORT)
+    elseif(${alpaka_LOG_DETAIL} STREQUAL "long")
+        target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_LOG_DETAIL_LONG)
+    endif()
+
+    option(alpaka_LOG_FUNCTIONS "Enable/Disable logging of function entry and exit" ON)
+    if(alpaka_LOG_FUNCTIONS)
+        target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_ENABLE_LOG_FUNCTIONS)
+    endif()
+
+    option(alpaka_LOG_INFO "Enable/Disable logging of additional information" ON)
+    if(alpaka_LOG_INFO)
+        target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_ENABLE_LOG_INFO)
+    endif()
+    if(${alpaka_LOG} STREQUAL "static")
+        # Set default options for each log level (Device, Event, Memory, Queue, Kernel)
+        option(alpaka_LOG_STATIC_Device "Enable Device logging" ON)
+        option(alpaka_LOG_STATIC_Event "Enable Event logging" ON)
+        option(alpaka_LOG_STATIC_Memory "Enable Memory logging" ON)
+        option(alpaka_LOG_STATIC_Queue "Enable Queue logging" ON)
+        option(alpaka_LOG_STATIC_Kernel "Enable Kernel logging" ON)
+
+        # Initialize bit mask to 0
+        set(alpaka_LOG_STATIC_LVL_MASK 0)
+
+        # Set bit mask based on user-selected options
+        if(alpaka_LOG_STATIC_Device)
+            math(EXPR alpaka_LOG_STATIC_LVL_MASK "${alpaka_LOG_STATIC_LVL_MASK} | 1")
+        endif()
+
+        if(alpaka_LOG_STATIC_Event)
+            math(EXPR alpaka_LOG_STATIC_LVL_MASK "${alpaka_LOG_STATIC_LVL_MASK} | 2")
+        endif()
+
+        if(alpaka_LOG_STATIC_Memory)
+            math(EXPR alpaka_LOG_STATIC_LVL_MASK "${alpaka_LOG_STATIC_LVL_MASK} | 4")
+        endif()
+
+        if(alpaka_LOG_STATIC_Queue)
+            math(EXPR alpaka_LOG_STATIC_LVL_MASK "${alpaka_LOG_STATIC_LVL_MASK} | 8")
+        endif()
+
+        if(alpaka_LOG_STATIC_Kernel)
+            math(EXPR alpaka_LOG_STATIC_LVL_MASK "${alpaka_LOG_STATIC_LVL_MASK} | 16")
+        endif()
+
+        # Convert bitmask string to a numeric value
+        math(EXPR alpaka_LOG_STATIC_LVL_MASK_VALUE "${alpaka_LOG_STATIC_LVL_MASK}")
+
+        # Pass the bit mask to the C++ code via target_compile_definitions
+        target_compile_definitions(
+            alpaka_target_headers
+            INTERFACE ALPAKA_LOG_STATIC_LVL_MASK=${alpaka_LOG_STATIC_LVL_MASK_VALUE}
+        )
+
+        # Print the final bit mask value (for debugging purposes)
+        message(STATUS "define ALPAKA_LOG_STATIC_LVL_MASK is set to: ${alpaka_LOG_STATIC_LVL_MASK_VALUE}")
+    endif()
 endif()

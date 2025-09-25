@@ -13,6 +13,7 @@
 #include "alpaka/onAcc/Acc.hpp"
 #include "alpaka/onAcc/SimdAlgo.hpp"
 #include "alpaka/onHost/interface.hpp"
+#include "alpaka/onHost/logger/logger.hpp"
 #include "alpaka/trait.hpp"
 
 namespace alpaka::onHost::internal
@@ -52,6 +53,16 @@ namespace alpaka::onHost::internal
     {
         Vec const extentMd = extents;
         auto frameSpec = getFrameSpec<T_DataType>(queue.getDevice(), extentMd);
+
+        ALPAKA_LOG_INFO(
+            onHost::logger::memory,
+            [&]()
+            {
+                std::stringstream ss;
+                ss << "concurrent{ extents=" << extentMd << ", value_type=" << onHost::demangledName<T_DataType>()
+                   << ", " << frameSpec << ", fn=" << onHost::demangledName(fn) << " }";
+                return ss.str();
+            });
 
         queue.enqueue(
             exec,

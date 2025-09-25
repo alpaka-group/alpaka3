@@ -18,6 +18,12 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/finalize.cmake)
 set(_TARGET_NAME "headerCheckTest")
 
 ################################################################################
+# Add subdirectories.
+################################################################################
+
+alpaka_install_catch2()
+
+################################################################################
 # Directory of this file.
 ################################################################################
 set(ALPAKA_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include/alpaka)
@@ -52,7 +58,7 @@ list(APPEND _FILES_SOURCE "src/main.cpp")
 # Always add all files to the target executable build call to add them to the build project.
 add_executable(${_TARGET_NAME} ${_FILES_SOURCE})
 
-target_link_libraries(${_TARGET_NAME} PUBLIC Catch2 Catch2WithMain)
+target_link_libraries(${_TARGET_NAME} PRIVATE Catch2::Catch2WithMain)
 target_compile_definitions(${_TARGET_NAME} PRIVATE "ALPAKA_NO_TPP_INCLUDE")
 target_link_libraries(${_TARGET_NAME} PRIVATE alpaka::alpaka)
 alpaka_finalize(${_TARGET_NAME})

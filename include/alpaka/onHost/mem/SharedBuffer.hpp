@@ -60,6 +60,15 @@ namespace alpaka::onHost
             alpaka::concepts::Alignment T_OtherMemAlignment2>
         friend struct SharedBuffer;
 
+        template<
+            alpaka::concepts::Api T_OtherApi,
+            typename T_OtherType,
+            alpaka::concepts::Vector T_OtherExtents,
+            alpaka::concepts::Alignment T_OtherMemAlignment2>
+        friend std::ostream& operator<<(
+            std::ostream& s,
+            SharedBuffer<T_OtherApi, T_OtherType, T_OtherExtents, T_OtherMemAlignment2> const& buffer);
+
     public:
         template<
             alpaka::concepts::HasApi T_Any,
@@ -254,6 +263,18 @@ namespace alpaka::onHost
             return any.getView();
         }
     };
+
+    template<
+        alpaka::concepts::Api T_Api,
+        typename T_Type,
+        alpaka::concepts::Vector T_Extents,
+        alpaka::concepts::Alignment T_MemAlignment>
+    std::ostream& operator<<(std::ostream& s, SharedBuffer<T_Api, T_Type, T_Extents, T_MemAlignment> const& buff)
+    {
+        return s << "SharedBuffer{ dim=" << buff.dim() << ", api= " << onHost::getName(T_Api{})
+                 << ", extents=" << buff.getExtents().toString() << ", pitches=" << buff.getPitches().toString()
+                 << " , alignment=" << T_MemAlignment::template get<T_Type>() << " }";
+    }
 
 } // namespace alpaka::onHost
 

@@ -76,7 +76,7 @@ namespace alpaka
         static_assert(std::is_convertible_v<index_type, typename T_Extents::type>);
         static_assert(T_Extents::dim() == T_Pitches::dim());
 
-        static consteval uint32_t dim()
+        static constexpr uint32_t dim()
         {
             return T_Extents::dim();
         }
@@ -244,6 +244,18 @@ namespace alpaka
         DataPitches<value_type, T_Pitches> m_pitch;
     };
 
+    template<
+        typename T_Type,
+        concepts::Vector T_Extents,
+        concepts::Vector T_Pitches,
+        concepts::Alignment T_MemAlignment>
+    std::ostream& operator<<(std::ostream& s, MdSpan<T_Type, T_Extents, T_Pitches, T_MemAlignment> const& mdSPan)
+    {
+        return s << "MdSpan{ dim=" << mdSPan.dim() << ", extents=" << mdSPan.getExtents().toString()
+                 << ", pitches=" << mdSPan.getPitches().toString()
+                 << " , alignment=" << T_MemAlignment::template get<T_Type>() << " }";
+    }
+
     /** access a C array with compile time extents via a runtime md index. */
     template<std::integral auto T_numDims, uint32_t T_dim = 0u>
     struct ResolveArrayAccess
@@ -297,7 +309,7 @@ namespace alpaka
         using const_pointer = value_type const*;
         using index_type = typename extentType::value_type;
 
-        static consteval uint32_t dim()
+        static constexpr uint32_t dim()
         {
             return std::rank_v<T_ArrayType>;
         }

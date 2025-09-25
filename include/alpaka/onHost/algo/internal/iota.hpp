@@ -5,7 +5,7 @@
 #pragma once
 
 
-#include "alpaka/Simd.hpp"
+#include "alpaka/SimdPtr.hpp"
 #include "alpaka/Vec.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/functor.hpp"
@@ -13,6 +13,7 @@
 #include "alpaka/onAcc/Acc.hpp"
 #include "alpaka/onAcc/SimdAlgo.hpp"
 #include "alpaka/onHost/interface.hpp"
+#include "alpaka/onHost/logger/logger.hpp"
 #include "alpaka/trait.hpp"
 
 namespace alpaka::onHost::internal
@@ -58,6 +59,16 @@ namespace alpaka::onHost::internal
     {
         Vec const extentMd = extents;
         auto frameSpec = getFrameSpec<T_DataType>(queue.getDevice(), extentMd);
+
+        ALPAKA_LOG_INFO(
+            onHost::logger::memory,
+            [&]()
+            {
+                std::stringstream ss;
+                ss << "iota{ extents=" << extentMd << ", value_type=" << onHost::demangledName<T_DataType>() << ", "
+                   << frameSpec << " }";
+                return ss.str();
+            });
 
         queue.enqueue(exec, frameSpec, KernelBundle{SimdIotaKernel{}, extentMd, initValue, ALPAKA_FORWARD(inputs)...});
     }

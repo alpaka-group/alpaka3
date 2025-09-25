@@ -10,6 +10,7 @@
 #include "alpaka/onAcc/interface.hpp"
 #include "alpaka/onHost/FrameSpec.hpp"
 #include "alpaka/onHost/internal/interface.hpp"
+#include "alpaka/onHost/logger/logger.hpp"
 
 #include <algorithm>
 
@@ -43,6 +44,7 @@ namespace alpaka::internal::generic
         alpaka::concepts::MdSpan<T_Value> auto&& dest,
         T_Value elementValue)
     {
+        ALPAKA_LOG_FUNCTION(onHost::logger::memory);
         uint32_t elementsPerFrameItem = getNumElemPerThread<T_Value>(internalQueue);
 
         auto extents = onHost::getExtents(dest);
@@ -58,6 +60,17 @@ namespace alpaka::internal::generic
         realFrameExtent.x() = IndexType{512u};
 
         auto frameSpec = onHost::FrameSpec{numFrames, realFrameExtent};
+
+        ALPAKA_LOG_INFO(
+            onHost::logger::memory,
+            [&]()
+            {
+                std::stringstream ss;
+                ss << "fill{ extents=" << extents << ", elementsPerFrameItem" << elementsPerFrameItem
+                   << ", dst=" << dest << ", value_type=" << onHost::demangledName(elementValue) << ", " << frameSpec
+                   << " }";
+                return ss.str();
+            });
 
         onHost::internal::enqueue(
             internalQueue,
