@@ -3,7 +3,6 @@
 
 #include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
-#include <alpaka/tensor/core/TensorGeneric.hpp>
 
 #include <array>
 #include <cstddef>

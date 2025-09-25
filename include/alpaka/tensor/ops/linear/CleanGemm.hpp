@@ -5,8 +5,8 @@
 #pragma once
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/tensor/core/SyncDebug.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
+#include <alpaka/tensor/core/TensorDebugMacros.hpp>
 #include <alpaka/tensor/core/TensorDescriptor.hpp>
 #include <alpaka/tensor/kernels/GemmKernels.hpp>
 #include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>

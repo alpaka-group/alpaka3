@@ -1,8 +1,6 @@
 /* Copyright 2025 Alpaka Tensor Library Contributors
  * SPDX-License-Identifier: MPL-2.0
  *
- * For detailed documentation on Alpaka queue semantics and synchronization
- * patterns, see: include/alpaka/tensor/QueueSemantics.hpp
  */
 
 #pragma once
