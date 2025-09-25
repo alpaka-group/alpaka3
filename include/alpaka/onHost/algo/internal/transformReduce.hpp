@@ -15,6 +15,7 @@
 #include "alpaka/onAcc/SimdAlgo.hpp"
 #include "alpaka/onAcc/atomic.hpp"
 #include "alpaka/onHost/interface.hpp"
+#include "alpaka/onHost/logger/logger.hpp"
 #include "alpaka/trait.hpp"
 
 namespace alpaka::onHost::internal
@@ -205,11 +206,11 @@ namespace alpaka::onHost::internal
         }
     };
 
-    template<typename DataType>
+    template<typename T_DataType>
     inline void transformReduce(
         auto const& queue,
         alpaka::concepts::Executor auto const exec,
-        DataType const& neutralElement,
+        T_DataType const& neutralElement,
         alpaka::concepts::MdSpan auto out,
         auto&& reduceFn,
         auto&& transformFn,
@@ -218,7 +219,7 @@ namespace alpaka::onHost::internal
     {
         auto extentMd = onHost::getExtents(in0);
         using IndexType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(extentMd)>;
-        auto frameSpec = getFrameSpec<DataType>(queue.getDevice(), extentMd);
+        auto frameSpec = getFrameSpec<T_DataType>(queue.getDevice(), extentMd);
 
         /* Adjust the number of frames to a maximum based on the number of multiprocessors of the device.
          * The number of frames is kept as low as possible to reduce numerical issue due to long chains of reductions.
@@ -241,7 +242,18 @@ namespace alpaka::onHost::internal
         }
 
         auto kernelFn
-            = SimdTransformReduceKernel{static_cast<uint32_t>(frameSpec.m_frameExtent.product() * sizeof(DataType))};
+            = SimdTransformReduceKernel{static_cast<uint32_t>(frameSpec.m_frameExtent.product() * sizeof(T_DataType))};
+
+        ALPAKA_LOG_INFO(
+            onHost::logger::memory,
+            [&]()
+            {
+                std::stringstream ss;
+                ss << "transformReduce{ extents=" << extentMd << ", value_type=" << onHost::demangledName<T_DataType>()
+                   << ", " << frameSpec << ", reduceFn=" << onHost::demangledName(reduceFn)
+                   << ", transformFn=" << onHost::demangledName(transformFn) << " }";
+                return ss.str();
+            });
 
         onHost::fill(queue, out, neutralElement, out.getExtents().all(1));
         queue.enqueue(

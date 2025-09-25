@@ -14,6 +14,7 @@
 #    include "alpaka/internal/interface.hpp"
 #    include "alpaka/onHost/concepts.hpp"
 #    include "alpaka/onHost/internal/interface.hpp"
+#    include "alpaka/onHost/logger/logger.hpp"
 
 #    include <sycl/sycl.hpp>
 
@@ -35,6 +36,7 @@ namespace alpaka::onHost
                 : m_device(std::move(device))
                 , m_idx(idx)
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::event);
             }
 
             Event(Event const&) = delete;
@@ -45,6 +47,7 @@ namespace alpaka::onHost
 
             ~Event()
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::event);
                 try
                 {
                     m_event.wait_and_throw();
@@ -73,6 +76,7 @@ namespace alpaka::onHost
 
             void wait()
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::event);
                 m_event.wait_and_throw();
             }
 

@@ -66,6 +66,7 @@ namespace alpaka::onHost
 
             Handle<cpu::Device<Platform>> makeDevice(uint32_t const& idx)
             {
+                ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::device);
                 uint32_t const numDevices = getDeviceCount();
                 if(idx >= numDevices)
                 {
@@ -112,6 +113,7 @@ namespace alpaka::onHost
         {
             DeviceProperties operator()(cpu::Platform<T_DeviceKind> const& platform, uint32_t deviceIdx) const
             {
+                ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::device);
                 auto prop = DeviceProperties{};
                 prop.m_name = getCpuName();
                 prop.m_maxThreadsPerBlock = std::numeric_limits<uint32_t>::max();

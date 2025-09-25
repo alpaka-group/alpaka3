@@ -6,6 +6,7 @@
 
 #include "alpaka/core/config.hpp"
 
+#include <regex>
 #include <source_location>
 #include <string>
 #include <string_view>
@@ -56,4 +57,35 @@ namespace alpaka::onHost
     {
         return std::string(Demangled<T>::name());
     }
+
+    /** Simplify the C++ signature of a function
+     *
+     *  Template parameters will be left out and the alpaka namespace will be removed.
+     */
+    inline std::string simplifyFunctionSignature(std::string const& deName)
+    {
+        // 1. Remove the type assignments in template parameters (e.g., T_DeviceKind = ...)
+        std::string simplified = std::regex_replace(deName, std::regex("<[^>]*=\\s*[^>]*>"), "<...>");
+
+        // 2. Remove redundant occurrences of "alpaka::" within the template arguments (keep it once)
+        simplified = std::regex_replace(simplified, std::regex("alpaka::(?![A-Za-z0-9_]+<)"), "");
+
+        // 3. Simplify nested templates by removing template arguments, e.g., <...>
+        simplified = std::regex_replace(simplified, std::regex("<[^>]*>"), "<...>");
+
+        // 4. Optionally remove remaining `alpaka::` namespaces if desired
+        simplified = std::regex_replace(simplified, std::regex("^(alpaka::)+"), "");
+
+        return simplified;
+    }
+
+    /** Get a simplified demangled name of an object
+     *
+     * Template parameters will be left out and the alpaka namespace will be removed.
+     */
+    inline std::string demangledNameShort(auto const& demangledName)
+    {
+        return simplifyDemangedName(demangledName(demangledName));
+    }
+
 } // namespace alpaka::onHost

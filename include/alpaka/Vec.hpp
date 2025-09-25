@@ -119,7 +119,7 @@ namespace alpaka
         {
             using type = T;
 
-            static consteval uint32_t dim()
+            static constexpr uint32_t dim()
             {
                 return sizeof...(T_values);
             }
@@ -257,7 +257,7 @@ namespace alpaka
             return (*this)[0];
         }
 
-        static consteval uint32_t dim()
+        static constexpr uint32_t dim()
         {
             return T_dim;
         }

@@ -26,6 +26,7 @@
 #    include "alpaka/onHost/Handle.hpp"
 #    include "alpaka/onHost/interface.hpp"
 #    include "alpaka/onHost/internal/interface.hpp"
+#    include "alpaka/onHost/logger/logger.hpp"
 #    include "alpaka/onHost/mem/SharedBuffer.hpp"
 
 #    include <cstdint>
@@ -45,6 +46,7 @@ namespace alpaka::onHost
                 : m_device(std::move(device))
                 , m_idx(idx)
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::event);
                 // Set the current device.
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
                     ApiInterface,
@@ -69,6 +71,7 @@ namespace alpaka::onHost
 
             ~Event()
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::event);
                 onHost::internal::wait(*this);
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_NOEXCEPT(ApiInterface, ApiInterface::eventDestroy(getNativeHandle()));
             }
@@ -114,6 +117,7 @@ namespace alpaka::onHost
 
             void wait() const
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::event);
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(ApiInterface, ApiInterface::eventSynchronize(getNativeHandle()));
             }
 

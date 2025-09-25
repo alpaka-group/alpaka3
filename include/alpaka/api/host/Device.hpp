@@ -15,6 +15,7 @@
 #include "alpaka/onHost/Handle.hpp"
 #include "alpaka/onHost/mem/SharedBuffer.hpp"
 #include "alpaka/onHost/trait.hpp"
+#include "alpaka/tag.hpp"
 #include "alpaka/utility.hpp"
 
 #include <cstdint>
@@ -34,7 +35,13 @@ namespace alpaka::onHost
                 , m_idx(idx)
                 , m_properties{internal::getDeviceProperties(*m_platform.get(), m_idx)}
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::device);
                 m_properties.m_name += " id=" + std::to_string(m_idx);
+            }
+
+            ~Device()
+            {
+                ALPAKA_LOG_FUNCTION(onHost::logger::device);
             }
 
             Device(Device const&) = delete;
@@ -55,6 +62,7 @@ namespace alpaka::onHost
 
             void wait()
             {
+                ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::device);
                 // Host device synchronization - wait on all queues associated with this device.
                 // IMPORTANT: Do not hold queuesGuard across potentially long waits; copy weak refs first.
                 std::vector<std::weak_ptr<cpu::Queue<Device>>> tmpQueues;
@@ -107,6 +115,7 @@ namespace alpaka::onHost
 
             Handle<cpu::Queue<Device>> makeQueue(queueKind::concepts::QueueKind auto kind)
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 static_assert(
                     kind == queueKind::blocking || kind == queueKind::nonBlocking,
                     "Unsupported queue kind.");
@@ -124,6 +133,7 @@ namespace alpaka::onHost
 
             Handle<cpu::Event<Device>> makeEvent()
             {
+                ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::event);
                 auto thisHandle = this->getSharedPtr();
                 std::lock_guard<std::mutex> lk{queuesGuard};
                 auto newEvent = std::make_shared<cpu::Event<Device>>(std::move(thisHandle), queues.size());
@@ -171,6 +181,7 @@ namespace alpaka::onHost
         {
             auto operator()(cpu::Device<T_Platform>& device, T_Extents const& extents) const
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::device);
                 constexpr uint32_t alignment = api::util::simdOptimizedAlignment<T_Type>(
                     ALPAKA_TYPEOF(getApi(device)){},
                     ALPAKA_TYPEOF(getDeviceKind(device)){});
@@ -189,6 +200,15 @@ namespace alpaka::onHost
                     pitches,
                     std::move(deleter),
                     Alignment<alignment>{}};
+
+                ALPAKA_LOG_INFO(
+                    onHost::logger::memory + onHost::logger::device,
+                    [&]()
+                    {
+                        std::stringstream ss;
+                        ss << sharedBuffer;
+                        return ss.str();
+                    });
                 return sharedBuffer;
             }
         };
@@ -198,6 +218,7 @@ namespace alpaka::onHost
         {
             auto operator()(cpu::Device<T_Platform>& device, T_Extents const& extents) const
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::device);
                 return Alloc::Op<T_Type, cpu::Device<T_Platform>, T_Extents>{}(device, extents);
             }
         };
@@ -207,6 +228,7 @@ namespace alpaka::onHost
         {
             auto operator()(cpu::Device<T_Platform>& device, T_Extents const& extents) const
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::device);
                 return Alloc::Op<T_Type, cpu::Device<T_Platform>, T_Extents>{}(device, extents);
             }
         };
@@ -216,6 +238,7 @@ namespace alpaka::onHost
         {
             bool operator()(cpu::Device<T_Platform>& device, T_Any const& view) const
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::device);
                 if constexpr(
                     ALPAKA_TYPEOF(getApi(view)){} == api::host
                     && ALPAKA_TYPEOF(getDeviceKind(device)){} == deviceKind::cpu)
@@ -243,6 +266,7 @@ namespace alpaka::onHost
                 T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::kernel);
                 /// @todo add shortcut to create a CVec with equal values
                 auto const allOne
                     = ALPAKA_TYPEOF(iotaCVec<typename T_NumThreads::type, T_NumThreads::dim()>())::template all<1u>();
@@ -255,6 +279,7 @@ namespace alpaka::onHost
                 T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::kernel);
                 /// @todo add shortcut to create a CVec with equal values
                 auto const allOne
                     = ALPAKA_TYPEOF(iotaCVec<typename T_NumThreads::type, T_NumThreads::dim()>())::template all<1u>();
@@ -278,6 +303,7 @@ namespace alpaka::onHost
                 T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::kernel);
                 auto numThreadBlocks = dataBlocking.getThreadSpec().m_numBlocks;
                 return ThreadSpec{numThreadBlocks, T_NumThreads::template all<1u>()};
             }
@@ -288,6 +314,7 @@ namespace alpaka::onHost
                 T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const
             {
+                ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::kernel);
                 auto numThreadBlocks = dataBlocking.getThreadSpec().m_numBlocks;
 #if 0
                using IdxType = typename T_NumBlocks::type;

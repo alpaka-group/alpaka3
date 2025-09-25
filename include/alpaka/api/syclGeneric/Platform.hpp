@@ -140,6 +140,7 @@ namespace alpaka
 
                 uint32_t getDeviceCount() const
                 {
+                    ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::device);
                     constexpr bool isSupportedDev = trait::IsDeviceSupportedBy::
                         Op<T_DeviceKind, ALPAKA_TYPEOF(alpaka::internal::getApi(std::declval<Platform>()))>::value;
                     if constexpr(isSupportedDev)
@@ -152,6 +153,7 @@ namespace alpaka
 
                 Handle<syclGeneric::Device<Platform<T_ApiInterface, T_DeviceKind>>> makeDevice(uint32_t const& idx)
                 {
+                    ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::device);
                     uint32_t const numDevices = getDeviceCount();
                     if(idx >= numDevices)
                     {
@@ -215,6 +217,7 @@ namespace alpaka
                     syclGeneric::Platform<T_ApiInterface, T_DeviceKind> const& platform,
                     uint32_t deviceIdx) const
                 {
+                    ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::device);
                     if(deviceIdx >= platform.syclDevices.size())
                     {
                         std::stringstream ssErr;
