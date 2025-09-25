@@ -72,8 +72,8 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
-#include <alpaka/tensor/CleanTensorOpContext.hpp>
-#include <alpaka/tensor/ops/layers/AllLayers.hpp>
+#include <alpaka/tensor/context/CleanTensorOpContext.hpp>
+#include <alpaka/tensor/layers/aggregators/AllLayers.hpp>
 #if __has_include("helperFunctions.hpp")
 #    include "helperFunctions.hpp"
 #elif __has_include("benchmark/tensor/inferenceBERT/cpp/helperFunctions.hpp")

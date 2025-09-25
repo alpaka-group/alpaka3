@@ -5,37 +5,59 @@
 #pragma once
 
 // Core tensor functionality
-#include <alpaka/tensor/Helpers.hpp>
-#include <alpaka/tensor/OpStatus.hpp>
-#include <alpaka/tensor/TensorCore.hpp>
-#include <alpaka/tensor/TensorView.hpp>
+#include <alpaka/tensor/core/Helpers.hpp>
+#include <alpaka/tensor/core/SyncDebug.hpp>
+#include <alpaka/tensor/core/TensorCore.hpp>
+#include <alpaka/tensor/core/TensorDescriptor.hpp>
+#include <alpaka/tensor/core/TensorGeneric.hpp>
+#include <alpaka/tensor/core/TensorView.hpp>
+#include <alpaka/tensor/core/ViewUtils.hpp>
 
-// Elementwise operations (needed by TensorGeneric)
-#include <alpaka/tensor/ops/ElementwiseGeneric.hpp>
-#include <alpaka/tensor/ops/ElementwiseLazy.hpp>
+// Runtime context & instrumentation
+#include <alpaka/tensor/context/CleanTensorOpContext.hpp>
+#include <alpaka/tensor/context/OpStatus.hpp>
+#include <alpaka/tensor/context/QueueSemantics.hpp>
+#include <alpaka/tensor/context/TensorTrace.hpp>
 
-// Generic tensor functionality (depends on ops)
-#include <alpaka/tensor/TensorGeneric.hpp>
-
-// Modern provider system (unified)
-#include <alpaka/tensor/CleanTensorOpContext.hpp>
+// Provider system (vendor integrations re-exported here for convenience)
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
 #include <alpaka/tensor/providers/ProviderRegistry.hpp>
 
-// Math / activation ops
-#include <alpaka/tensor/ops/Activations.hpp>
+// Fundamental elementwise ops (powering tensor core utilities)
+#include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>
+#include <alpaka/tensor/ops/elementwise/ElementwiseLazy.hpp>
 
-// Higher level & domain specific opsTEnso
-#include <alpaka/tensor/SyncDebug.hpp>
-#include <alpaka/tensor/ops/BatchNormFold.hpp>
-#include <alpaka/tensor/ops/Conv2D.hpp>
-#include <alpaka/tensor/ops/Gemm.hpp>
-#include <alpaka/tensor/ops/HighLevel.hpp>
-#include <alpaka/tensor/ops/InferenceOps.hpp>
-#include <alpaka/tensor/ops/Layer.hpp>
+// Domain specific tensor operations
+#include <alpaka/tensor/ops/activations/Activations.hpp>
+#include <alpaka/tensor/ops/batchnorm/BatchNormFold.hpp>
+#include <alpaka/tensor/ops/convolution/Conv2D.hpp>
+#include <alpaka/tensor/ops/convolution/Conv2DTypes.hpp>
+#include <alpaka/tensor/ops/linear/CleanGemm.hpp>
+#include <alpaka/tensor/ops/linear/Gemm.hpp>
+#include <alpaka/tensor/ops/pooling/PoolingTypes.hpp>
+#include <alpaka/tensor/ops/reduction/Reduction.hpp>
 
-// Layer implementations (all PyTorch-style layers)
-#include <alpaka/tensor/ops/layers/AllLayers.hpp>
+// Inference/training orchestration layers
+#include <alpaka/tensor/ops/inference/HighLevel.hpp>
+#include <alpaka/tensor/ops/inference/InferenceOps.hpp>
+#include <alpaka/tensor/ops/training/TrainingOps.hpp>
+#include <alpaka/tensor/ops/training/TrainingSequential.hpp>
+
+// Layer abstractions (grouped by domain)
+#include <alpaka/tensor/layers/aggregators/AllLayers.hpp>
+#include <alpaka/tensor/layers/base/Layer.hpp>
+#include <alpaka/tensor/layers/base/LayerConcepts.hpp>
+#include <alpaka/tensor/layers/embedding/EmbeddingLayers.hpp>
+#include <alpaka/tensor/layers/mlp/ActivationLayers.hpp>
+#include <alpaka/tensor/layers/mlp/LinearLayers.hpp>
+#include <alpaka/tensor/layers/mlp/ReLULayer.hpp>
+#include <alpaka/tensor/layers/mlp/SoftmaxLayer.hpp>
+#include <alpaka/tensor/layers/normalization/BatchNormLayer.hpp>
+#include <alpaka/tensor/layers/normalization/NormalizationLayers.hpp>
+#include <alpaka/tensor/layers/transformer/AttentionLayers.hpp>
+#include <alpaka/tensor/layers/transformer/BertLayers.hpp>
+#include <alpaka/tensor/layers/vision/Conv2DLayer.hpp>
+#include <alpaka/tensor/layers/vision/PoolingLayers.hpp>
 
 // NOTE:
 // This header is the single aggregation point for all tensor features.

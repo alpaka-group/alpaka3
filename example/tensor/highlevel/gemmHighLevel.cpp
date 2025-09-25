@@ -6,7 +6,7 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
-#include <alpaka/tensor/CleanTensorOpContext.hpp>
+#include <alpaka/tensor/context/CleanTensorOpContext.hpp>
 
 #include <cassert>
 #include <chrono>
@@ -31,7 +31,10 @@ int runHighLevelGemm(Cfg const& cfg, bool verbose)
     // Optional: print provider diagnostics when verbose
     if(verbose)
     {
-        alpaka::tensor::CleanTensorOpContext<decltype(exec), decltype(device), decltype(queue)> ctx(exec, device, queue);
+        alpaka::tensor::CleanTensorOpContext<decltype(exec), decltype(device), decltype(queue)> ctx(
+            exec,
+            device,
+            queue);
         auto active = ctx.getActiveProviders();
         std::cout << "Active providers: ";
         for(std::size_t i = 0; i < active.size(); ++i)

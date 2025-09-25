@@ -5,8 +5,8 @@
 #include <alpaka/onHost/executeForEach.hpp>
 #include <alpaka/onHost/interface.hpp>
 #include <alpaka/tensor.hpp>
-#include <alpaka/tensor/CleanTensorOpContext.hpp>
-#include <alpaka/tensor/ops/InferenceOps.hpp>
+#include <alpaka/tensor/context/CleanTensorOpContext.hpp>
+#include <alpaka/tensor/ops/inference/InferenceOps.hpp>
 
 #include <algorithm>
 #include <chrono>

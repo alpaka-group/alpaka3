@@ -6,8 +6,8 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
-#include <alpaka/tensor/TensorCore.hpp>
-#include <alpaka/tensor/ops/HighLevel.hpp>
+#include <alpaka/tensor/core/TensorCore.hpp>
+#include <alpaka/tensor/ops/inference/HighLevel.hpp>
 
 #include <chrono>
 #include <cstdlib>

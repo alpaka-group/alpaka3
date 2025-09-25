@@ -3,8 +3,8 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
-#include <alpaka/tensor/TensorCore.hpp>
-#include <alpaka/tensor/ops/Gemm.hpp>
+#include <alpaka/tensor/core/TensorCore.hpp>
+#include <alpaka/tensor/ops/linear/Gemm.hpp>
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>

@@ -4,7 +4,7 @@
  */
 #pragma once
 
-#include <alpaka/tensor/OpStatus.hpp>
+#include <alpaka/tensor/context/OpStatus.hpp>
 
 #include <concepts>
 #include <cstddef>

@@ -4,9 +4,9 @@
  */
 #pragma once
 
-#include <alpaka/tensor/ops/Conv2D.hpp>
-#include <alpaka/tensor/ops/Gemm.hpp>
-#include <alpaka/tensor/ops/InferenceOps.hpp>
+#include <alpaka/tensor/ops/convolution/Conv2D.hpp>
+#include <alpaka/tensor/ops/inference/InferenceOps.hpp>
+#include <alpaka/tensor/ops/linear/Gemm.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
 
 namespace alpaka::tensor
