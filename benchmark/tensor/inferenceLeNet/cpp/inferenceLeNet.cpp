@@ -354,7 +354,10 @@ int runLeNet(
     using Device = decltype(device);
 
     auto backendName = alpaka::onHost::demangledName(deviceSpec);
-    bool isGpu = backendName.find("Cuda") != std::string::npos || backendName.find("GPU") != std::string::npos;
+      using ExecT = std::decay_t<decltype(exec)>;
+    constexpr bool isCudaExec = std::is_same_v<ExecT, alpaka::exec::GpuCuda>;
+    constexpr bool isHipExec = std::is_same_v<ExecT, alpaka::exec::GpuHip>;
+    constexpr bool isGpu = isCudaExec || isHipExec;
     if(onlyGpu && !isGpu)
         return 0; // skip non-GPU backend
     std::cout << "=== Backend: " << alpaka::onHost::demangledName(exec) << " / " << backendName << " ===\n";
