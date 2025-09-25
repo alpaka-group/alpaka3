@@ -38,7 +38,6 @@
 #include <alpaka/tensor/ops/reduction/Reduction.hpp>
 
 // Inference/training orchestration layers
-#include <alpaka/tensor/ops/inference/HighLevel.hpp>
 #include <alpaka/tensor/ops/inference/InferenceOps.hpp>
 #include <alpaka/tensor/ops/training/TrainingOps.hpp>
 #include <alpaka/tensor/ops/training/TrainingSequential.hpp>
