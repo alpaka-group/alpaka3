@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: MPL-2.0
 
 #pragma once
-
-// ---------------- Element-wise Addition for Residual Connections ----------------
+#include <alpaka/alpaka.hpp>
+#include <alpaka/tensor/context/CleanTensorOpContext.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/layers/mlp/LinearLayers.hpp>
 #include <alpaka/tensor/layers/mlp/ReLULayer.hpp>
@@ -28,7 +28,8 @@
 
 namespace alpaka::tensor::ops
 {
-
+    // Import specialized layer types for cleaner code - avoid blanket namespace to prevent kernel collisions
+    using alpaka::tensor::ops::layers::AvgPool2DLayer;
     using alpaka::tensor::ops::layers::BatchNorm2DLayer;
     using alpaka::tensor::ops::layers::Conv2DLayer;
     using alpaka::tensor::ops::layers::GlobalAveragePool2DLayer;
