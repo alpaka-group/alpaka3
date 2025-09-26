@@ -5,8 +5,8 @@
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/layers/normalization/NormalizationLayers.hpp>
 #include <alpaka/tensor/layers/transformer/AttentionLayers.hpp>
-#include <alpaka/tensor/ops/activations/Activations.hpp>
 #include <alpaka/tensor/ops/bias/BiasAdd.hpp>
+#include <alpaka/tensor/ops/elementwise/ActivationOps.hpp>
 #include <alpaka/tensor/ops/linear/LinearOps.hpp>
 #include <alpaka/tensor/ops/normalization/LayerNorm.hpp>
 
