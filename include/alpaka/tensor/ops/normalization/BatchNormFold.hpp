@@ -5,7 +5,7 @@
 #pragma once
 
 #include <alpaka/tensor/core/TensorCore.hpp>
-#include <alpaka/tensor/layers/base/Layer.hpp>
+#include <alpaka/tensor/layers/vision/Conv2DLayer.hpp>
 
 #include <cassert>
 #include <cmath>
