@@ -1,5 +1,4 @@
-/* Activations - Neural Network Activation Functions
- * Implements ReLU, Sigmoid, Tanh and other activation functions for inference
+/* ActivationOps - Neural network activation helpers built atop elementwise kernels
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -21,7 +20,6 @@
 namespace alpaka::tensor::ops
 {
 
-    // SIMD-based ReLU kernel following alpaka3 best practices (like babelstream)
     struct SimdReLUKernel
     {
         ALPAKA_FN_ACC void operator()(
@@ -35,7 +33,6 @@ namespace alpaka::tensor::ops
         }
     };
 
-    // Simple ReLU kernel - Non-SIMD approach using proper multi-dimensional indexing
     struct ReLUKernel
     {
         template<typename T_Acc>
@@ -44,7 +41,6 @@ namespace alpaka::tensor::ops
             alpaka::concepts::MdSpan auto input,
             alpaka::concepts::MdSpan auto output) const
         {
-            // Use proper multi-dimensional indexing with tensor extents
             for(auto tensorIdx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange(input.getExtents())))
             {
                 auto val = input[tensorIdx];
@@ -53,9 +49,6 @@ namespace alpaka::tensor::ops
         }
     };
 
-    // Fallback now uses generic UnaryKernel with ReluOp from ElementwiseGeneric
-
-    // ReLU operation for SIMD processing
     struct SimdReLUOp
     {
         constexpr void operator()(auto const&, auto const input, auto output) const
@@ -66,15 +59,12 @@ namespace alpaka::tensor::ops
         }
     };
 
-    // ReLU activation function - applies ReLU elementwise to separate input/output tensors
     template<typename Exec, typename Device, typename Queue, typename TensorIn, typename TensorOut>
     void relu(Exec const& exec, Device& device, Queue& queue, TensorIn& input, TensorOut& output)
     {
-        // Generic element count check
         if(input.size() != output.size())
             throw std::runtime_error("ReLU: size mismatch");
 
-        // Fast path for 4D tensors (keep existing debug output & indexing)
         if constexpr(TensorIn::rank == 4 && TensorOut::rank == 4)
         {
             bool const verbose = false;
@@ -98,20 +88,13 @@ namespace alpaka::tensor::ops
                 ReLUKernel{},
                 input.deviceBuffer(device, queue),
                 output.deviceBuffer(device, queue));
-            // Removed unconditional wait (can be re-enabled with ALPAKA_DEBUG_SYNC)
-            // ::alpaka::onHost::wait(queue);
             output.markDeviceModified(device, queue);
             if(detail::eagerHostEnabled())
                 output.toHost(device, queue);
-            if constexpr(std::is_same_v<Exec, alpaka::exec::CpuOmpBlocks>)
-            {
-                // omit extra wait; host copy already synchronizes
-            }
         }
         else
         {
             bool const verbose = false;
-            // Fallback: use generic unary kernel (works for 1D, 2D, etc.)
             if(verbose)
                 std::cout << "ReLU: generic fallback path (rank=" << TensorIn::rank << ")" << std::endl;
             input.ensureOnDevice(device, queue);
@@ -119,7 +102,6 @@ namespace alpaka::tensor::ops
             auto n = input.size();
             if(n == 0)
                 return;
-            // Use shared generic UnaryKernel with ReluOp functor
             unsigned threadsPerBlock = 256u;
             unsigned blocks = static_cast<unsigned>((n + threadsPerBlock - 1) / threadsPerBlock);
             if(blocks == 0)
@@ -135,14 +117,12 @@ namespace alpaka::tensor::ops
                 output.deviceBuffer(device, queue),
                 n,
                 ReluOp{});
-            // Removed unconditional wait (can be re-enabled with ALPAKA_DEBUG_SYNC)
             output.markDeviceModified(device, queue);
             if(detail::eagerHostEnabled())
                 output.toHost(device, queue);
         }
     }
 
-    // In-place ReLU activation - modifies input tensor directly
     template<typename Exec, typename Device, typename Queue, typename Tensor>
     void relu_inplace(Exec const& exec, Device& device, Queue& queue, Tensor& tensor)
     {

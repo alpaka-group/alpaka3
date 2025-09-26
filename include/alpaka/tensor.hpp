@@ -22,11 +22,11 @@
 #include <alpaka/tensor/ops/elementwise/ElementwiseLazy.hpp>
 
 // Domain specific tensor operations
-#include <alpaka/tensor/ops/activations/Activations.hpp>
 #include <alpaka/tensor/ops/batchnorm/BatchNormFold.hpp>
 #include <alpaka/tensor/ops/bias/BiasAdd.hpp>
 #include <alpaka/tensor/ops/convolution/Conv2D.hpp>
 #include <alpaka/tensor/ops/convolution/Conv2DTypes.hpp>
+#include <alpaka/tensor/ops/elementwise/ActivationOps.hpp>
 #include <alpaka/tensor/ops/linear/CleanGemm.hpp>
 #include <alpaka/tensor/ops/linear/Gemm.hpp>
 #include <alpaka/tensor/ops/linear/LinearOps.hpp>
@@ -37,7 +37,6 @@
 #include <alpaka/tensor/ops/reduction/Reduction.hpp>
 #include <alpaka/tensor/ops/reshape/Reshape.hpp>
 #include <alpaka/tensor/ops/softmax/Softmax.hpp>
-#include <alpaka/tensor/ops/transform/Concat.hpp>
 
 // Inference/training orchestration layers
 #include <alpaka/tensor/ops/training/TrainingOps.hpp>

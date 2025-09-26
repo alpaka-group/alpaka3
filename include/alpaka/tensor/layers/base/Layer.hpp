@@ -13,9 +13,9 @@
 #include <alpaka/tensor/layers/transformer/BertLayers.hpp>
 #include <alpaka/tensor/layers/vision/Conv2DLayer.hpp>
 #include <alpaka/tensor/layers/vision/PoolingLayers.hpp>
-#include <alpaka/tensor/ops/activations/Activations.hpp>
 #include <alpaka/tensor/ops/bias/BiasAdd.hpp>
 #include <alpaka/tensor/ops/convolution/Conv2D.hpp>
+#include <alpaka/tensor/ops/elementwise/ActivationOps.hpp>
 #include <alpaka/tensor/ops/normalization/BatchNorm.hpp>
 #include <alpaka/tensor/ops/pooling/Pooling.hpp>
 
