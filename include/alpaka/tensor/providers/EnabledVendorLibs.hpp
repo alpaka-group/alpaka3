@@ -1,4 +1,4 @@
-/* Build-time capability flags consolidated in one place
+/* Enabled vendor library capability flags consolidated in one place
  * Each flag reflects whether a vendor library was found and enabled via CMake.
  * SPDX-License-Identifier: MPL-2.0
  */
@@ -6,7 +6,7 @@
 
 namespace alpaka::tensor
 {
-    struct BuildCaps
+    struct EnabledVendorLibs
     {
 #ifdef ALPAKA_HAS_CUBLAS
         static constexpr bool hasCUBLAS = true;

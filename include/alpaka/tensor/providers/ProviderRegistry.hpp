@@ -15,7 +15,7 @@ namespace alpaka::tensor
     class CuDNNProvider;
     class RocBLASProvider;
     class MIOpenProvider;
-}
+} // namespace alpaka::tensor
 
 #ifdef ALPAKA_HAS_CUBLAS
 #    include <alpaka/tensor/providers/CuBLASProvider.hpp>
@@ -31,11 +31,11 @@ namespace alpaka::tensor
 #    include <alpaka/tensor/providers/MIOpenProvider.hpp>
 #endif
 
+#include <alpaka/tensor/providers/EnabledVendorLibs.hpp>
+
 #include <cstdlib>
 #include <memory>
 #include <type_traits>
-
-#include <alpaka/tensor/providers/BuildCaps.hpp>
 
 namespace alpaka::tensor
 {
@@ -44,10 +44,10 @@ namespace alpaka::tensor
     struct select_conv_provider
     {
         using type = std::conditional_t<
-            (std::is_same_v<Exec, alpaka::exec::GpuCuda> && BuildCaps::hasCUDNN),
+            (std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN),
             CuDNNProvider,
             std::conditional_t<
-                (std::is_same_v<Exec, alpaka::exec::GpuHip> && BuildCaps::hasMIOPEN),
+                (std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN),
                 MIOpenProvider,
                 DefaultProvider>>;
     };
@@ -60,10 +60,10 @@ namespace alpaka::tensor
     struct select_gemm_provider
     {
         using type = std::conditional_t<
-            (std::is_same_v<Exec, alpaka::exec::GpuCuda> && BuildCaps::hasCUBLAS),
+            (std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUBLAS),
             CuBLASProvider,
             std::conditional_t<
-                (std::is_same_v<Exec, alpaka::exec::GpuHip> && BuildCaps::hasROCBLAS),
+                (std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasROCBLAS),
                 RocBLASProvider,
                 DefaultProvider>>;
     };

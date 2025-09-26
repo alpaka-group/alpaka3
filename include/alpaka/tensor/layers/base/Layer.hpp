@@ -426,4 +426,3 @@ namespace alpaka::tensor::ops
 } // namespace alpaka::tensor::ops
 
 #include <alpaka/tensor/layers/base/inferenceSequential.hpp>
-#include <alpaka/tensor/layers/base/trainingSequential.hpp>

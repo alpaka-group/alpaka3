@@ -15,10 +15,10 @@
 #include <alpaka/tensor/ops/reshape/Reshape.hpp>
 #include <alpaka/tensor/ops/softmax/Softmax.hpp>
 #include <alpaka/tensor/ops/training/TrainingOps.hpp>
-#include <alpaka/tensor/providers/BuildCaps.hpp>
 #include <alpaka/tensor/providers/CuBLASProvider.hpp>
 #include <alpaka/tensor/providers/CuDNNProvider.hpp>
 #include <alpaka/tensor/providers/DefaultProvider.hpp>
+#include <alpaka/tensor/providers/EnabledVendorLibs.hpp>
 #include <alpaka/tensor/providers/MIOpenProvider.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
 #include <alpaka/tensor/providers/ProviderRegistry.hpp>
@@ -74,7 +74,7 @@ namespace alpaka::tensor
             // BatchNorm & Activation
             if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda>)
             {
-                if constexpr(BuildCaps::hasCUDNN)
+                if constexpr(EnabledVendorLibs::hasCUDNN)
                 {
                     auto probe = std::make_unique<CuDNNProvider>();
                     if(probe->isActive())
@@ -94,7 +94,7 @@ namespace alpaka::tensor
             }
             else if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip>)
             {
-                if constexpr(BuildCaps::hasMIOPEN)
+                if constexpr(EnabledVendorLibs::hasMIOPEN)
                 {
                     batchnormProvider_ = std::make_unique<MIOpenProvider>();
                     activationProvider_ = std::make_unique<MIOpenProvider>();
@@ -329,7 +329,7 @@ namespace alpaka::tensor
                 // bool usedTyped = false;
                 try
                 {
-                    if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && BuildCaps::hasCUBLAS)
+                    if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUBLAS)
                     {
                         if(auto* cu = dynamic_cast<CuBLASProvider*>(&provider))
                         {
@@ -348,7 +348,7 @@ namespace alpaka::tensor
                             return;
                         }
                     }
-                    if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && BuildCaps::hasROCBLAS)
+                    if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasROCBLAS)
                     {
                         if(auto* rb = dynamic_cast<RocBLASProvider*>(&provider))
                         {
@@ -410,7 +410,7 @@ namespace alpaka::tensor
                 try
                 {
                     // Prefer typed cuDNN path on CUDA similar to GEMM/BatchNorm patterns
-                    if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && BuildCaps::hasCUDNN)
+                    if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
                     {
                         if(auto* cudnnProv = dynamic_cast<CuDNNProvider*>(&provider))
                         {
@@ -431,7 +431,7 @@ namespace alpaka::tensor
                             }
                         }
                     }
-                    if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && BuildCaps::hasMIOPEN)
+                    if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
                     {
                         if(auto* mi = dynamic_cast<MIOpenProvider*>(&provider))
                         {
@@ -479,7 +479,7 @@ namespace alpaka::tensor
             if(provider.supportsOperation(OpType::BatchNorm))
             {
                 // Prefer typed cuDNN path when available to avoid type-erasure limitations
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && BuildCaps::hasCUDNN)
+                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
                 {
                     if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(&provider))
                     {
@@ -495,7 +495,7 @@ namespace alpaka::tensor
                     }
                 }
                 // HIP typed path via MIOpen
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && BuildCaps::hasMIOPEN)
+                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
                 {
                     if(auto mi = dynamic_cast<MIOpenProvider*>(&provider))
                     {
@@ -583,7 +583,7 @@ namespace alpaka::tensor
             // Prefer cuDNN via typed provider when on CUDA
             if(provider.supportsOperation(OpType::Activation))
             {
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && BuildCaps::hasCUDNN)
+                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
                 {
                     if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(&provider))
                     {
@@ -610,7 +610,7 @@ namespace alpaka::tensor
             auto& provider = getActivationProvider();
             if(provider.supportsOperation(OpType::Activation))
             {
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && BuildCaps::hasCUDNN)
+                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
                 {
                     if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(&provider))
                     {
@@ -625,7 +625,7 @@ namespace alpaka::tensor
                         }
                     }
                 }
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && BuildCaps::hasMIOPEN)
+                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
                 {
                     if(auto mi = dynamic_cast<MIOpenProvider*>(&provider))
                     {
@@ -653,14 +653,14 @@ namespace alpaka::tensor
             auto& provider = getActivationProvider();
             if(provider.supportsOperation(OpType::Activation))
             {
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && BuildCaps::hasCUDNN)
+                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
                 {
                     if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(&provider))
                     {
                         // TODO: implement cuDNN relu backward wiring if needed
                     }
                 }
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && BuildCaps::hasMIOPEN)
+                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
                 {
                     if(auto mi = dynamic_cast<MIOpenProvider*>(&provider))
                     {
@@ -686,7 +686,7 @@ namespace alpaka::tensor
             // Try CUDA/cuDNN
             if(poolingProvider_ && poolingProvider_->isActive())
             {
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && BuildCaps::hasCUDNN)
+                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
                 {
                     if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(poolingProvider_.get()))
                     {
@@ -705,7 +705,7 @@ namespace alpaka::tensor
                         }
                     }
                 }
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && BuildCaps::hasMIOPEN)
+                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
                 {
                     if(auto mi = dynamic_cast<MIOpenProvider*>(poolingProvider_.get()))
                     {
@@ -738,7 +738,7 @@ namespace alpaka::tensor
         {
             if(poolingProvider_ && poolingProvider_->isActive())
             {
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && BuildCaps::hasCUDNN)
+                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
                 {
                     if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(poolingProvider_.get()))
                     {
@@ -756,7 +756,7 @@ namespace alpaka::tensor
                         }
                     }
                 }
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && BuildCaps::hasMIOPEN)
+                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
                 {
                     if(auto mi = dynamic_cast<MIOpenProvider*>(poolingProvider_.get()))
                     {
@@ -793,14 +793,14 @@ namespace alpaka::tensor
         {
             if(poolingProvider_ && poolingProvider_->isActive())
             {
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && BuildCaps::hasCUDNN)
+                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
                 {
                     if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(poolingProvider_.get()))
                     {
                         // TODO: implement cuDNN pooling backward wiring if needed
                     }
                 }
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && BuildCaps::hasMIOPEN)
+                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
                 {
                     if(auto mi = dynamic_cast<MIOpenProvider*>(poolingProvider_.get()))
                     {
@@ -828,14 +828,14 @@ namespace alpaka::tensor
         {
             if(poolingProvider_ && poolingProvider_->isActive())
             {
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && BuildCaps::hasCUDNN)
+                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
                 {
                     if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(poolingProvider_.get()))
                     {
                         // TODO: implement cuDNN avg pooling backward wiring if needed
                     }
                 }
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && BuildCaps::hasMIOPEN)
+                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
                 {
                     if(auto mi = dynamic_cast<MIOpenProvider*>(poolingProvider_.get()))
                     {
