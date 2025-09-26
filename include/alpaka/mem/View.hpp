@@ -214,7 +214,7 @@ namespace alpaka
     template<typename T_Api, typename T_Type, concepts::Vector T_Extents, concepts::Alignment T_MemAlignment>
     std::ostream& operator<<(std::ostream& s, View<T_Api, T_Type, T_Extents, T_MemAlignment> const& view)
     {
-        return s << "View{ dim=" << view.dim() << ", api= " << onHost::getName(T_Api{})
+        return s << "View{ dim=" << ALPAKA_TYPEOF(view)::dim() << ", api= " << onHost::getName(T_Api{})
                  << ", extents=" << view.getExtents().toString() << ", pitches=" << view.getPitches().toString()
                  << " , alignment=" << T_MemAlignment::template get<T_Type>() << " }";
     }

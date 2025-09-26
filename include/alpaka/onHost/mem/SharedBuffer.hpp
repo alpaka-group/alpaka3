@@ -271,7 +271,7 @@ namespace alpaka::onHost
         alpaka::concepts::Alignment T_MemAlignment>
     std::ostream& operator<<(std::ostream& s, SharedBuffer<T_Api, T_Type, T_Extents, T_MemAlignment> const& buff)
     {
-        return s << "SharedBuffer{ dim=" << buff.dim() << ", api= " << onHost::getName(T_Api{})
+        return s << "SharedBuffer{ dim=" << ALPAKA_TYPEOF(buff)::dim() << ", api= " << onHost::getName(T_Api{})
                  << ", extents=" << buff.getExtents().toString() << ", pitches=" << buff.getPitches().toString()
                  << " , alignment=" << T_MemAlignment::template get<T_Type>() << " }";
     }

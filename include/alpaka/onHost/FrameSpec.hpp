@@ -27,7 +27,7 @@ namespace alpaka::onHost
         using ThreadExtentsVecType = T_ThreadExtents;
         using ThreadSpecType = ThreadSpec<T_NumFrames, T_ThreadExtents>;
 
-        static constexpr uint32_t dim()
+        static consteval uint32_t dim()
         {
             return T_FrameExtents::dim();
         }

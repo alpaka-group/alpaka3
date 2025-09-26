@@ -22,7 +22,7 @@ namespace alpaka::onHost
         using NumBlocksVecType = typename T_NumBlocks::UniVec;
         using NumThreadsVecType = T_NumThreads;
 
-        static constexpr uint32_t dim()
+        static consteval uint32_t dim()
         {
             return T_NumThreads::dim();
         }

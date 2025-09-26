@@ -51,7 +51,7 @@ namespace alpaka
         using value_type = T_Type;
         using index_type = typename T_Pitches::type;
 
-        static constexpr uint32_t dim()
+        static consteval uint32_t dim()
         {
             return T_Pitches::dim();
         }
@@ -90,7 +90,7 @@ namespace alpaka
         using value_type = T_Type;
         using index_type = T_IndexType;
 
-        static constexpr uint32_t dim()
+        static consteval uint32_t dim()
         {
             return 1u;
         }

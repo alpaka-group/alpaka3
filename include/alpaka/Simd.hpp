@@ -169,7 +169,7 @@ namespace alpaka
             return (*this)[0];
         }
 
-        static constexpr uint32_t dim()
+        static consteval uint32_t dim()
         {
             return T_dim;
         }
