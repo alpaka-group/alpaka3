@@ -1,7 +1,7 @@
 #pragma once
+
 #include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
-#include <alpaka/tensor/layers/base/LayerConcepts.hpp>
 
 #include <cstddef>
 #include <utility>

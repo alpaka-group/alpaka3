@@ -3,7 +3,6 @@
 #include <alpaka/tensor/context/CleanTensorOpContext.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/kernels/ElementwiseKernels.hpp>
-#include <alpaka/tensor/layers/base/LayerConcepts.hpp>
 #include <alpaka/tensor/ops/linear/LinearOps.hpp>
 #include <alpaka/tensor/ops/reshape/Reshape.hpp>
 

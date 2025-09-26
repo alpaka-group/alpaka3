@@ -2,20 +2,17 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/context/CleanTensorOpContext.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
-#include <alpaka/tensor/layers/base/LayerConcepts.hpp>
+#include <alpaka/tensor/ops/bias/BiasAdd.hpp>
 #include <alpaka/tensor/ops/convolution/Conv2D.hpp>
 
 #include <optional>
 
-namespace alpaka::tensor::ops::layers
+namespace alpaka::tensor::ops
 {
 
     template<typename Device>
-    struct Conv2DLayer
+    struct Conv2DLayerStruct
     {
-        using input_type = tensor::Tensor4D<float, Device>;
-        using output_type = tensor::Tensor4D<float, Device>;
-
         tensor::Tensor4D<float, Device> weights;
         std::optional<tensor::Tensor1D<float, Device>> bias;
         Conv2DParams params{};
@@ -24,9 +21,9 @@ namespace alpaka::tensor::ops::layers
         // Using void* to avoid template complexity - will be cast at usage
         mutable void* context{nullptr};
 
-        Conv2DLayer() = default;
+        Conv2DLayerStruct() = default;
 
-        Conv2DLayer(
+        Conv2DLayerStruct(
             tensor::Tensor4D<float, Device> w,
             std::optional<tensor::Tensor1D<float, Device>> b,
             Conv2DParams p)
@@ -68,6 +65,14 @@ namespace alpaka::tensor::ops::layers
             return out;
         }
     };
+
+} // namespace alpaka::tensor::ops
+
+namespace alpaka::tensor::ops::layers
+{
+
+    template<typename Device>
+    using Conv2DLayer = tensor::ops::Conv2DLayerStruct<Device>;
 
     // Factory function with CamelCase naming
     template<typename Device>

@@ -21,7 +21,7 @@ namespace alpaka::tensor::ops
     template<typename Device>
     struct ResidualBlockStruct;
 
-    namespace smart_helpers
+    namespace residualhelpers
     {
         struct ResidualDefaults
         {
@@ -29,7 +29,7 @@ namespace alpaka::tensor::ops
             static constexpr std::size_t stride = 1;
             static constexpr std::size_t padding = 1;
         };
-    } // namespace smart_helpers
+    } // namespace residualhelpers
 } // namespace alpaka::tensor::ops
 
 // Removed ElementwiseAddKernel forward-declaration test (kernel unified via generic add)
@@ -61,9 +61,9 @@ TEST_CASE("ResidualDefaults constants", "[residual]")
     // Test our constants are accessible
     using namespace alpaka::tensor::ops;
 
-    static_assert(smart_helpers::ResidualDefaults::kernel_size == 3);
-    static_assert(smart_helpers::ResidualDefaults::stride == 1);
-    static_assert(smart_helpers::ResidualDefaults::padding == 1);
+    static_assert(residualhelpers::ResidualDefaults::kernel_size == 3);
+    static_assert(residualhelpers::ResidualDefaults::stride == 1);
+    static_assert(residualhelpers::ResidualDefaults::padding == 1);
 
     REQUIRE(true);
 }
