@@ -30,8 +30,8 @@
 #include <alpaka/tensor/ops/normalization/LayerNorm.hpp>
 #include <alpaka/tensor/ops/pooling/Pooling.hpp>
 #include <alpaka/tensor/ops/pooling/PoolingTypes.hpp>
-#include <alpaka/tensor/ops/reshape/Reshape.hpp>
 #include <alpaka/tensor/ops/softmax/Softmax.hpp>
+#include <alpaka/tensor/ops/transform/Transform.hpp>
 // Softmax CE kernels (extracted)
 #include <alpaka/tensor/kernels/SoftmaxCEKernels.hpp>
 

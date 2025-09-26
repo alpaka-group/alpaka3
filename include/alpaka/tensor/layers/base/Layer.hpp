@@ -3,7 +3,6 @@
 
 #pragma once
 #include <alpaka/alpaka.hpp>
-#include <alpaka/tensor/context/CleanTensorOpContext.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/layers/mlp/LinearLayers.hpp>
 #include <alpaka/tensor/layers/mlp/ReLULayer.hpp>
@@ -18,6 +17,7 @@
 #include <alpaka/tensor/ops/elementwise/ActivationOps.hpp>
 #include <alpaka/tensor/ops/normalization/BatchNorm.hpp>
 #include <alpaka/tensor/ops/pooling/Pooling.hpp>
+#include <alpaka/tensor/providers/CleanTensorOpContext.hpp>
 
 #include <cassert>
 #include <cmath>

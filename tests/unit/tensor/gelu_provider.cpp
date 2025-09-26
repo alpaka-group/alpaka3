@@ -3,8 +3,8 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
-#include <alpaka/tensor/context/CleanTensorOpContext.hpp>
 #include <alpaka/tensor/ops/elementwise/ActivationOps.hpp>
+#include <alpaka/tensor/providers/CleanTensorOpContext.hpp>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_template_test_macros.hpp>
