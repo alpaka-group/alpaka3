@@ -45,8 +45,6 @@
 
 // Layer abstractions (grouped by domain)
 #include <alpaka/tensor/layers/base/Layer.hpp>
-#include <alpaka/tensor/layers/base/LayerConcepts.hpp>
-#include <alpaka/tensor/layers/embedding/EmbeddingLayers.hpp>
 #include <alpaka/tensor/layers/mlp/ActivationLayers.hpp>
 #include <alpaka/tensor/layers/mlp/LinearLayers.hpp>
 #include <alpaka/tensor/layers/mlp/ReLULayer.hpp>
@@ -55,6 +53,7 @@
 #include <alpaka/tensor/layers/normalization/NormalizationLayers.hpp>
 #include <alpaka/tensor/layers/transformer/AttentionLayers.hpp>
 #include <alpaka/tensor/layers/transformer/BertLayers.hpp>
+#include <alpaka/tensor/layers/transformer/EmbeddingLayer.hpp>
 #include <alpaka/tensor/layers/vision/Conv2DLayer.hpp>
 #include <alpaka/tensor/layers/vision/PoolingLayers.hpp>
 

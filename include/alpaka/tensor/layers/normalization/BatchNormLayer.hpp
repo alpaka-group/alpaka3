@@ -2,54 +2,12 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/context/CleanTensorOpContext.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
-#include <alpaka/tensor/layers/base/LayerConcepts.hpp>
+#include <alpaka/tensor/ops/normalization/BatchNorm.hpp>
 
-#include <cmath>
 #include <stdexcept>
 
 namespace alpaka::tensor::ops::layers
 {
-
-    // BatchNorm inference kernel: per-element normalization
-    template<typename T>
-    struct BatchNorm2DApplyKernel
-    {
-        template<typename Acc, typename InBuf, typename RM, typename RV, typename G, typename B, typename OutBuf>
-        ALPAKA_FN_ACC void operator()(
-            Acc const& acc,
-            InBuf const& inB,
-            RM const& meanB,
-            RV const& varB,
-            G const& gammaB,
-            B const& betaB,
-            OutBuf outB,
-            std::size_t N,
-            std::size_t C,
-            std::size_t H,
-            std::size_t W,
-            float eps) const
-        {
-            // Use 4D indexing to match frame specification
-            for(auto [n, c, h, w] : alpaka::onAcc::makeIdxMap(
-                    acc,
-                    alpaka::onAcc::worker::threadsInGrid,
-                    alpaka::IdxRange{alpaka::Vec{N, C, H, W}}))
-            {
-                // Bounds checking
-                if(n < N && c < C && h < H && w < W)
-                {
-                    auto coord = alpaka::Vec<std::size_t, 4>{n, c, h, w};
-                    float x = inB[coord];
-                    float mean = meanB[alpaka::Vec<std::size_t, 1>{c}];
-                    float var = varB[alpaka::Vec<std::size_t, 1>{c}];
-                    float g = gammaB[alpaka::Vec<std::size_t, 1>{c}];
-                    float bt = betaB[alpaka::Vec<std::size_t, 1>{c}];
-                    float invStd = 1.0f / ::sqrtf(var + eps);
-                    outB[coord] = g * (x - mean) * invStd + bt;
-                }
-            }
-        }
-    };
 
     // Inference BatchNorm2D (expects pre-computed running mean/var and affine params gamma/beta)
     template<typename Device>
@@ -121,40 +79,9 @@ namespace alpaka::tensor::ops::layers
                 }
             }
 
-            // Fallback to existing kernel implementation (either no context or provider failed)
+            // Fallback to shared batch-norm helper (either no context or provider failed)
             tensor::Tensor4D<float, Device> out(device, s, "bn_out");
-            in.ensureOnDevice(device, queue);
-            runningMean.ensureOnDevice(device, queue);
-            runningVar.ensureOnDevice(device, queue);
-            gamma.ensureOnDevice(device, queue);
-            beta.ensureOnDevice(device, queue);
-            out.ensureOnDevice(device, queue);
-            std::size_t total = N * C * H * W;
-            if(out.size() != total)
-            {
-                throw std::runtime_error("BatchNorm fallback: output tensor size mismatch");
-            }
-            // Use 4D frame specification to match kernel's 4D iteration
-            auto frameExtent = alpaka::Vec{std::size_t{1}, std::size_t{1}, std::size_t{1}, std::size_t{1}};
-            auto numFrames = alpaka::Vec{N, C, H, W};
-            auto frameSpec = alpaka::onHost::FrameSpec{numFrames, frameExtent};
-            queue.enqueue(
-                exec,
-                frameSpec,
-                BatchNorm2DApplyKernel<float>{},
-                in.deviceBuffer(device, queue),
-                runningMean.deviceBuffer(device, queue),
-                runningVar.deviceBuffer(device, queue),
-                gamma.deviceBuffer(device, queue),
-                beta.deviceBuffer(device, queue),
-                out.deviceBuffer(device, queue),
-                N,
-                C,
-                H,
-                W,
-                eps);
-            out.markDeviceModified(device, queue);
-            // Removed unnecessary synchronization - let cuDNN operations run asynchronously
+            ops::batch_norm_inference<float>(exec, device, queue, in, gamma, beta, runningMean, runningVar, eps, out);
             return out;
         }
     };
