@@ -39,11 +39,11 @@
 #include <alpaka/tensor/ops/transform/Transform.hpp>
 
 // Inference/training orchestration layers
+#include <alpaka/tensor/layers/base/TrainingSequential.hpp>
 #include <alpaka/tensor/ops/training/TrainingOps.hpp>
-#include <alpaka/tensor/ops/training/TrainingSequential.hpp>
 
 // Layer abstractions (grouped by domain)
-#include <alpaka/tensor/layers/base/Layer.hpp>
+#include <alpaka/tensor/layers/base/ResidualHelpers.hpp>
 #include <alpaka/tensor/layers/mlp/LinearLayers.hpp>
 #include <alpaka/tensor/layers/mlp/ReLULayer.hpp>
 #include <alpaka/tensor/layers/mlp/SoftmaxLayer.hpp>

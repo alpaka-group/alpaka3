@@ -3,7 +3,7 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
-#include <alpaka/tensor/layers/base/Layer.hpp>
+#include <alpaka/tensor/layers/vision/PoolingLayers.hpp>
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -12,6 +12,8 @@
 using namespace alpaka;
 using namespace alpaka::tensor;
 using namespace alpaka::tensor::ops;
+using alpaka::tensor::ops::layers::AvgPool2DLayer;
+using alpaka::tensor::ops::layers::GlobalAveragePool2DLayer;
 using TestBackends
     = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors))>;
 
