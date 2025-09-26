@@ -6,6 +6,7 @@
 #pragma once
 
 #include "alpaka/core/PP.hpp"
+#include "alpaka/core/hipConfig.hpp"
 
 // guard cmake target alpaka
 #if defined(ALPAKA_CMAKE_TARGET_ALPAKA) && !defined(ALPAKA_CMAKE_TARGET_ALPAKA_FINALIZE_CALLED)

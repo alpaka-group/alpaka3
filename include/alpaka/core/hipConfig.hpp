@@ -6,7 +6,8 @@
 
 #include "alpaka/core/PP.hpp"
 
-#if ALPAKA_LANG_HIP
+// We can not use ALPAKA_LANG_HIP because this file is required by core/config.hpp where ALPAKA_LANG_HIP is defined.
+#if defined(__HIP__)
 
 #    include <hip/hip_version.h>
 
