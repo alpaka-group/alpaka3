@@ -22,15 +22,15 @@
 #include <alpaka/tensor/ops/elementwise/ElementwiseLazy.hpp>
 
 // Domain specific tensor operations
-#include <alpaka/tensor/ops/batchnorm/BatchNormFold.hpp>
 #include <alpaka/tensor/ops/bias/BiasAdd.hpp>
 #include <alpaka/tensor/ops/convolution/Conv2D.hpp>
 #include <alpaka/tensor/ops/convolution/Conv2DTypes.hpp>
 #include <alpaka/tensor/ops/elementwise/ActivationOps.hpp>
-#include <alpaka/tensor/ops/linear/CleanGemm.hpp>
 #include <alpaka/tensor/ops/linear/Gemm.hpp>
+#include <alpaka/tensor/ops/linear/GemmFallback.hpp>
 #include <alpaka/tensor/ops/linear/LinearOps.hpp>
 #include <alpaka/tensor/ops/normalization/BatchNorm.hpp>
+#include <alpaka/tensor/ops/normalization/BatchNormFold.hpp>
 #include <alpaka/tensor/ops/normalization/LayerNorm.hpp>
 #include <alpaka/tensor/ops/pooling/Pooling.hpp>
 #include <alpaka/tensor/ops/pooling/PoolingTypes.hpp>
@@ -44,12 +44,11 @@
 
 // Layer abstractions (grouped by domain)
 #include <alpaka/tensor/layers/base/Layer.hpp>
-#include <alpaka/tensor/layers/mlp/ActivationLayers.hpp>
 #include <alpaka/tensor/layers/mlp/LinearLayers.hpp>
 #include <alpaka/tensor/layers/mlp/ReLULayer.hpp>
 #include <alpaka/tensor/layers/mlp/SoftmaxLayer.hpp>
 #include <alpaka/tensor/layers/normalization/BatchNormLayer.hpp>
-#include <alpaka/tensor/layers/normalization/NormalizationLayers.hpp>
+#include <alpaka/tensor/layers/normalization/LayerNormLayer.hpp>
 #include <alpaka/tensor/layers/transformer/AttentionLayers.hpp>
 #include <alpaka/tensor/layers/transformer/BertLayers.hpp>
 #include <alpaka/tensor/layers/transformer/EmbeddingLayer.hpp>

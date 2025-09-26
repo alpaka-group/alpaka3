@@ -5,14 +5,12 @@
 
 namespace alpaka::tensor::ops::layers
 {
-    // Layer Normalization for 2D tensors [M, D]
+    // Layer Normalization Layer (formerly in NormalizationLayers.hpp)
     template<typename Device>
     struct LayerNorm2DLayer
     {
         using input_type = tensor::Tensor2D<float, Device>;
         using output_type = tensor::Tensor2D<float, Device>;
-
-        // scale (gamma) and shift (beta)
         tensor::Tensor1D<float, Device> gamma; // [D]
         tensor::Tensor1D<float, Device> beta; // [D]
         float eps{1e-5f};
@@ -32,7 +30,6 @@ namespace alpaka::tensor::ops::layers
             tensor::Tensor2D<float, Device>& in) const
         {
             tensor::Tensor2D<float, Device> out(device, in.shape(), "layernorm2d_out");
-            // Dispatch to ops implementation
             layer_norm_2d<float>(
                 exec,
                 device,
@@ -46,12 +43,11 @@ namespace alpaka::tensor::ops::layers
         }
     };
 
-    // Factory helper
     template<typename Device>
     LayerNorm2DLayer<Device> layerNorm2d(
         tensor::Tensor1D<float, Device> gamma,
         tensor::Tensor1D<float, Device> beta,
-        float eps = 1e-5f)
+        float eps = 1.0e-5f)
     {
         return LayerNorm2DLayer<Device>{std::move(gamma), std::move(beta), eps};
     }

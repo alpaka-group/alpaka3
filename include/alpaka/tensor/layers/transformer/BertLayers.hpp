@@ -2,7 +2,7 @@
 
 #include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
-#include <alpaka/tensor/layers/normalization/NormalizationLayers.hpp>
+#include <alpaka/tensor/layers/normalization/LayerNormLayer.hpp>
 #include <alpaka/tensor/layers/transformer/AttentionLayers.hpp>
 #include <alpaka/tensor/ops/bias/BiasAdd.hpp>
 #include <alpaka/tensor/ops/elementwise/ActivationOps.hpp>
