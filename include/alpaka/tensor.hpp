@@ -10,8 +10,8 @@
 #include <alpaka/tensor/core/TensorDescriptor.hpp>
 #include <alpaka/tensor/core/TensorUtilities.hpp>
 
-// Runtime context & instrumentation
-#include <alpaka/tensor/context/CleanTensorOpContext.hpp>
+// Runtime context & instrumentation (moved under providers/)
+#include <alpaka/tensor/providers/CleanTensorOpContext.hpp>
 
 // Provider system (vendor integrations re-exported here for convenience)
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
@@ -35,8 +35,8 @@
 #include <alpaka/tensor/ops/pooling/Pooling.hpp>
 #include <alpaka/tensor/ops/pooling/PoolingTypes.hpp>
 #include <alpaka/tensor/ops/reduction/Reduction.hpp>
-#include <alpaka/tensor/ops/reshape/Reshape.hpp>
 #include <alpaka/tensor/ops/softmax/Softmax.hpp>
+#include <alpaka/tensor/ops/transform/Transform.hpp>
 
 // Inference/training orchestration layers
 #include <alpaka/tensor/ops/training/TrainingOps.hpp>

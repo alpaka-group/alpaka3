@@ -8,7 +8,7 @@
 #include <alpaka/tensor/kernels/ElementwiseKernels.hpp>
 #include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>
 #include <alpaka/tensor/ops/linear/Gemm.hpp>
-#include <alpaka/tensor/ops/reshape/Reshape.hpp>
+#include <alpaka/tensor/ops/transform/Transform.hpp>
 
 #include <algorithm>
 

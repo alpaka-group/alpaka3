@@ -1,10 +1,10 @@
 #pragma once
 #include <alpaka/alpaka.hpp>
-#include <alpaka/tensor/context/CleanTensorOpContext.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/kernels/ElementwiseKernels.hpp>
 #include <alpaka/tensor/ops/linear/LinearOps.hpp>
-#include <alpaka/tensor/ops/reshape/Reshape.hpp>
+#include <alpaka/tensor/ops/transform/Transform.hpp>
+#include <alpaka/tensor/providers/CleanTensorOpContext.hpp>
 
 #include <array>
 #include <cstdlib>

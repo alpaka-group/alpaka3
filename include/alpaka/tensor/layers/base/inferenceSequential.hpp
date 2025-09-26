@@ -1,7 +1,6 @@
 #pragma once
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/tensor/context/CleanTensorOpContext.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/layers/mlp/LinearLayers.hpp>
 #include <alpaka/tensor/layers/mlp/ReLULayer.hpp>
@@ -10,7 +9,8 @@
 #include <alpaka/tensor/layers/transformer/BertLayers.hpp>
 #include <alpaka/tensor/layers/vision/Conv2DLayer.hpp>
 #include <alpaka/tensor/layers/vision/PoolingLayers.hpp>
-#include <alpaka/tensor/ops/reshape/Reshape.hpp>
+#include <alpaka/tensor/ops/transform/Transform.hpp>
+#include <alpaka/tensor/providers/CleanTensorOpContext.hpp>
 
 #include <cassert>
 #include <chrono>
