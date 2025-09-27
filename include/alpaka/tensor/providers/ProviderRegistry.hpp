@@ -1,5 +1,5 @@
 /* Provider Registry & Compile-Time Selection
- * Combines former Selector + Factory responsibilities.
+ * Selector + Factory responsibilities.
  * SPDX-License-Identifier: MPL-2.0
  */
 #pragma once
