@@ -7,11 +7,15 @@
 #include <alpaka/onHost/executeForEach.hpp>
 // Tensor headers are included via alpaka.hpp umbrella; avoid direct includes in examples.
 
+// Provider diagnostics need explicit include beyond umbrella
+#include <alpaka/tensor/providers/CleanTensorOpContext.hpp>
+
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <string>
 #include <optional>
 #include <variant>
 
@@ -21,7 +25,7 @@ namespace train = alpaka::tensor::ops::train;
 
 // Forward declaration
 template<typename Exec, typename Device, typename Queue>
-int runTrainingDemo(Exec const& exec, Device& device, Queue& queue, int steps, float lr);
+int runTrainingDemo(Exec const& exec, Device& device, Queue& queue, int steps, float lr, bool verbose);
 
 // A minimal trainable linear layer adapter compatible with TrainingSequentialCT
 // Assumes inputs are 1D of length M*K; outputs 1D of length M*N
@@ -180,6 +184,7 @@ int main(int argc, char** argv)
     std::optional<unsigned long long> optSeed;
     int optSteps = 100;
     float optLr = 0.5f;
+    bool verbose = false;
     for(int i = 1; i < argc; ++i)
     {
         std::string a = argv[i];
@@ -196,10 +201,19 @@ int main(int argc, char** argv)
         {
             optLr = std::max(0.0f, std::stof(argv[++i]));
         }
-        else if(a == "-v" && need(1))
+        else if(a == "-v" || a == "--verbose")
         {
-            // ignore verbosity arg in this demo; kept for consistency with others
-            ++i;
+            verbose = true;
+            if(a == "-v" && need(1))
+            {
+                std::string next = argv[i + 1];
+                if(!next.empty() && next.front() != '-')
+                    ++i; // consume optional verbosity level
+            }
+        }
+        else if(a.rfind("--verbose=", 0) == 0)
+        {
+            verbose = true;
         }
     }
 
@@ -218,10 +232,22 @@ int main(int argc, char** argv)
         {
             std::cerr << "[demo] running on backend: " << alpaka::onHost::demangledName(exec) << " / "
                       << alpaka::onHost::demangledName(deviceSpec) << "\n";
+            if(verbose)
+            {
+                if(std::getenv("ALPAKA_OPS_VERBOSE") == nullptr)
+                    setenv("ALPAKA_OPS_VERBOSE", "1", 1);
+                alpaka::tensor::CleanTensorOpContext context(exec, device, queue);
+                auto providers = context.getActiveProviders();
+                std::cout << "[demo] Active tensor providers:\n";
+                for(auto const& entry : providers)
+                {
+                    std::cout << "  - " << entry << "\n";
+                }
+            }
             // Seed host RNG deterministically per run
             if(optSeed)
                 std::srand(static_cast<unsigned int>(*optSeed & 0xFFFF'FFFFu));
-            return runTrainingDemo(exec, device, queue, optSteps, optLr);
+            return runTrainingDemo(exec, device, queue, optSteps, optLr, verbose);
         }
         catch(std::exception const& e)
         {
@@ -237,7 +263,7 @@ int main(int argc, char** argv)
 }
 
 template<typename Exec, typename Device, typename Queue>
-int runTrainingDemo(Exec const& exec, Device& device, Queue& queue, int steps, float lr)
+int runTrainingDemo(Exec const& exec, Device& device, Queue& queue, int steps, float lr, bool verbose)
 {
     using Dev = Device;
 
@@ -246,6 +272,8 @@ int runTrainingDemo(Exec const& exec, Device& device, Queue& queue, int steps, f
     std::size_t N = 3; // classes
     std::size_t K = N; // in-features = classes (one-hot)
     std::size_t M = 60; // batch (20 samples per class)
+    if(verbose)
+        std::cerr << "[demo] verbose mode enabled\n";
     std::cerr << "[demo] before alloc x\n";
     at::Tensor1D<float, Dev> x(device, {M * K}, "demo_x");
     std::cerr << "[demo] after alloc x\n";
