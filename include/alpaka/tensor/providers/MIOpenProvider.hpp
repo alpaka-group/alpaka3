@@ -5,15 +5,20 @@
 #pragma once
 
 #include <alpaka/onHost/interface.hpp>
+#include <alpaka/tensor/ops/elementwise/ActivationOps.hpp>
 #include <alpaka/tensor/ops/pooling/Pooling.hpp>
 #include <alpaka/tensor/ops/pooling/PoolingTypes.hpp>
 #include <alpaka/tensor/ops/training/TrainingOps.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
 
 #include <stdexcept>
+#include <type_traits>
 
 #ifdef ALPAKA_HAS_MIOPEN
-#    include <hip/hip_runtime.h>
+#    if !defined(__HIP_PLATFORM_AMD__) && !defined(__HIP_PLATFORM_NVIDIA__)
+#        define __HIP_PLATFORM_AMD__
+#    endif
+#    include <hip/hip_runtime_api.h>
 #    include <miopen/miopen.h>
 
 #    include <cstdlib>
@@ -432,6 +437,27 @@ namespace alpaka::tensor
             ::alpaka::tensor::ops::relu_inplace(exec, device, queue, t);
 #endif
         }
+
+    template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
+    void gelu(Exec const& exec, Device const& device, Queue& queue, tensor::Tensor<T, Rank, Device>& t) const
+    {
+#ifdef ALPAKA_HAS_MIOPEN
+        static_assert(std::is_same_v<Exec, alpaka::exec::GpuHip>, "MIOpen supports only HIP backend");
+        static_assert(std::is_same_v<T, float>, "MIOpen GELU currently implemented for float only");
+
+        // MIOpen does not currently expose a native GELU activation. For now, delegate to the
+        // optimized Alpaka fallback to keep provider dispatch consistent while still running
+        // on the HIP execution backend.
+        auto& mutableDevice = const_cast<Device&>(device);
+        ::alpaka::tensor::ops::gelu(exec, mutableDevice, queue, t);
+#else
+        (void) exec;
+        (void) device;
+        (void) queue;
+        (void) t;
+        throw std::runtime_error("MIOpen not available at build time");
+#endif
+    }
 
         // Pooling forward (max)
         template<typename T, typename Exec, typename Device, typename Queue>
