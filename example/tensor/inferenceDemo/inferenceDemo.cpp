@@ -12,7 +12,7 @@
 // Avoid global using-directives to prevent ambiguous lookups after rebase changes.
 namespace tt = alpaka::tensor;
 namespace ops = alpaka::tensor::ops;
-namespace layers = alpaka::tensor::ops::layers;
+namespace layers = alpaka::tensor::layers;
 
 template<typename Tag>
 int runInference(Tag const& tag)

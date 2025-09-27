@@ -100,7 +100,7 @@
 
 namespace tt = alpaka::tensor;
 namespace ops = alpaka::tensor::ops;
-namespace layers = alpaka::tensor::ops::layers;
+namespace layers = alpaka::tensor::layers;
 
 // helper functions are included from helperFunctions.hpp
 

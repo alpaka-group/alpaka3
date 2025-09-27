@@ -11,8 +11,9 @@
 #include <optional>
 #include <string>
 
-namespace alpaka::tensor::ops::layers
+namespace alpaka::tensor::layers
 {
+    namespace ops = alpaka::tensor::ops;
 
     // Multi-rank layers
     template<typename Device>
@@ -28,7 +29,7 @@ namespace alpaka::tensor::ops::layers
             Queue& queue,
             tensor::Tensor4D<float, Device>& in) const
         {
-            return flatten_4d_to_2d<float>(exec, device, queue, in);
+            return ops::flatten_4d_to_2d<float>(exec, device, queue, in);
         }
     };
 
@@ -147,7 +148,7 @@ namespace alpaka::tensor::ops::layers
                 catch(...)
                 {
                     // Fallback to direct linear implementation if provider fails
-                    linear(
+                    ops::linear(
                         exec,
                         device,
                         queue,
@@ -163,7 +164,7 @@ namespace alpaka::tensor::ops::layers
             else
             {
                 // Fallback to existing linear implementation
-                linear(
+                ops::linear(
                     exec,
                     device,
                     queue,
@@ -243,7 +244,7 @@ namespace alpaka::tensor::ops::layers
             tensor::Tensor1D<float, Device> out(device, {batch * outFeatures}, "linearReluOut");
             auto* bptr = bias ? &*bias : nullptr;
             // Use fused linear + ReLU operation
-            linear_relu(
+            ops::linear_relu(
                 exec,
                 device,
                 queue,
@@ -277,4 +278,4 @@ namespace alpaka::tensor::ops::layers
         return LinearReLULayer<Device>{batch, outFeatures};
     }
 
-} // namespace alpaka::tensor::ops::layers
+} // namespace alpaka::tensor::layers

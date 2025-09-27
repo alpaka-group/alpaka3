@@ -12,8 +12,8 @@
 using namespace alpaka;
 using namespace alpaka::tensor;
 using namespace alpaka::tensor::ops;
-using alpaka::tensor::ops::layers::AvgPool2DLayer;
-using alpaka::tensor::ops::layers::GlobalAveragePool2DLayer;
+using alpaka::tensor::layers::AvgPool2DLayer;
+using alpaka::tensor::layers::GlobalAveragePool2DLayer;
 using TestBackends
     = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors))>;
 

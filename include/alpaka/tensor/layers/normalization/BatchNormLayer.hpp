@@ -6,7 +6,7 @@
 
 #include <stdexcept>
 
-namespace alpaka::tensor::ops::layers
+namespace alpaka::tensor::layers
 {
 
     // Inference BatchNorm2D (expects pre-computed running mean/var and affine params gamma/beta)
@@ -62,7 +62,8 @@ namespace alpaka::tensor::ops::layers
             }
 
             tensor::Tensor4D<float, Device> out(device, in.shape(), "bn_out");
-            ops::batch_norm_inference<float>(exec, device, queue, in, gamma, beta, runningMean, runningVar, eps, out);
+            tensor::ops::batch_norm_inference<
+                float>(exec, device, queue, in, gamma, beta, runningMean, runningVar, eps, out);
             return out;
         }
     };
@@ -84,4 +85,4 @@ namespace alpaka::tensor::ops::layers
             eps};
     }
 
-} // namespace alpaka::tensor::ops::layers
+} // namespace alpaka::tensor::layers

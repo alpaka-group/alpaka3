@@ -7,8 +7,10 @@
 
 #include <optional>
 
-namespace alpaka::tensor::ops
+namespace alpaka::tensor::layers
 {
+
+    using tensor::ops::Conv2DParams;
 
     template<typename Device>
     struct Conv2DLayerStruct
@@ -51,7 +53,7 @@ namespace alpaka::tensor::ops
             else
             {
                 // Fallback to direct ops call for backward compatibility
-                out = ops::conv2d<float>(exec, device, queue, in, weights, params);
+                out = tensor::ops::conv2d<float>(exec, device, queue, in, weights, params);
             }
 
             // Handle bias addition if present
@@ -59,29 +61,24 @@ namespace alpaka::tensor::ops
             {
                 tensor::Tensor4D<float, Device> tmp(device, out.shape(), "conv_bias_tmp");
                 auto& b = const_cast<tensor::Tensor1D<float, Device>&>(*bias);
-                bias_add_4d(exec, device, queue, out, b, tmp);
+                tensor::ops::bias_add_4d(exec, device, queue, out, b, tmp);
                 out = std::move(tmp);
             }
             return out;
         }
     };
 
-} // namespace alpaka::tensor::ops
-
-namespace alpaka::tensor::ops::layers
-{
-
     template<typename Device>
-    using Conv2DLayer = tensor::ops::Conv2DLayerStruct<Device>;
+    using Conv2DLayer = Conv2DLayerStruct<Device>;
 
     // Factory function with CamelCase naming
     template<typename Device>
-    Conv2DLayer<Device> conv2d(
+    Conv2DLayerStruct<Device> conv2d(
         tensor::Tensor4D<float, Device> weights,
         std::optional<tensor::Tensor1D<float, Device>> bias = std::nullopt,
         Conv2DParams params = {})
     {
-        return Conv2DLayer<Device>{std::move(weights), std::move(bias), params};
+        return Conv2DLayerStruct<Device>{std::move(weights), std::move(bias), params};
     }
 
-} // namespace alpaka::tensor::ops::layers
+} // namespace alpaka::tensor::layers

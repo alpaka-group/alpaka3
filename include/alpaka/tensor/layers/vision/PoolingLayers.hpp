@@ -4,8 +4,10 @@
 #include <alpaka/tensor/ops/pooling/Pooling.hpp>
 #include <alpaka/tensor/ops/pooling/PoolingTypes.hpp>
 
-namespace alpaka::tensor::ops::layers
+namespace alpaka::tensor::layers
 {
+
+    using tensor::ops::Pool2DParams;
 
     template<typename Device>
     struct MaxPool2DLayer
@@ -22,7 +24,7 @@ namespace alpaka::tensor::ops::layers
             Queue& queue,
             tensor::Tensor4D<float, Device>& in) const
         {
-            return max_pool2d<float>(exec, device, queue, in, params);
+            return tensor::ops::max_pool2d<float>(exec, device, queue, in, params);
         }
     };
 
@@ -41,7 +43,7 @@ namespace alpaka::tensor::ops::layers
             Queue& queue,
             tensor::Tensor4D<float, Device>& in) const
         {
-            return avg_pool2d<float>(exec, device, queue, in, params);
+            return tensor::ops::avg_pool2d<float>(exec, device, queue, in, params);
         }
     };
 
@@ -66,7 +68,7 @@ namespace alpaka::tensor::ops::layers
                 static_cast<std::uint32_t>(s[3]),
                 0u,
                 0u};
-            return avg_pool2d<float>(exec, device, queue, in, p);
+            return tensor::ops::avg_pool2d<float>(exec, device, queue, in, p);
         }
     };
 
@@ -89,4 +91,4 @@ namespace alpaka::tensor::ops::layers
         return GlobalAveragePool2DLayer<Device>{};
     }
 
-} // namespace alpaka::tensor::ops::layers
+} // namespace alpaka::tensor::layers

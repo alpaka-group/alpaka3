@@ -3,7 +3,7 @@
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/ops/normalization/LayerNorm.hpp>
 
-namespace alpaka::tensor::ops::layers
+namespace alpaka::tensor::layers
 {
     // Layer Normalization Layer (formerly in NormalizationLayers.hpp)
     template<typename Device>
@@ -30,7 +30,7 @@ namespace alpaka::tensor::ops::layers
             tensor::Tensor2D<float, Device>& in) const
         {
             tensor::Tensor2D<float, Device> out(device, in.shape(), "layernorm2d_out");
-            layer_norm_2d<float>(
+            tensor::ops::layer_norm_2d<float>(
                 exec,
                 device,
                 queue,
@@ -51,4 +51,4 @@ namespace alpaka::tensor::ops::layers
     {
         return LayerNorm2DLayer<Device>{std::move(gamma), std::move(beta), eps};
     }
-} // namespace alpaka::tensor::ops::layers
+} // namespace alpaka::tensor::layers

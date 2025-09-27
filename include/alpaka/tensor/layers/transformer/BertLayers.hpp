@@ -15,8 +15,10 @@
 #include <stdexcept>
 #include <utility>
 
-namespace alpaka::tensor::ops::layers
+namespace alpaka::tensor::layers
 {
+
+    namespace ops = alpaka::tensor::ops;
 
     // Self-Attention over [M, D] using optional learned projections (single-head)
     // If Wq/Wk/Wv are not provided, defaults to identity projections (Q=K=V=input)
@@ -73,7 +75,7 @@ namespace alpaka::tensor::ops::layers
             }
 
             // Scaled dot-product attention using existing layer scaffold
-            auto attn = layers::attention<Device>(std::move(K), std::move(V));
+            auto attn = attention<Device>(std::move(K), std::move(V));
             auto O = attn(exec, device, queue, Q);
 
             if(Wo)
@@ -265,4 +267,4 @@ namespace alpaka::tensor::ops::layers
             std::move(ffn)};
     }
 
-} // namespace alpaka::tensor::ops::layers
+} // namespace alpaka::tensor::layers

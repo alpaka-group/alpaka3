@@ -34,7 +34,7 @@
 
 namespace tt = alpaka::tensor;
 namespace ops = alpaka::tensor::ops;
-namespace layers = alpaka::tensor::ops::layers;
+namespace layers = alpaka::tensor::layers;
 
 // Simple weight initializer
 template<typename Tensor>
@@ -190,7 +190,7 @@ int runResNet18(
             for(int b = 0; b < st.blocks; ++b)
             {
                 bool down = (b == 0) && st.downsample;
-                ops::BasicBlockLayerStruct<Device> block{};
+                layers::BasicBlockLayerStruct<Device> block{};
                 pipe.addBasicBlock(std::move(block), currentIn, st.outC, down);
                 currentIn = st.outC; // subsequent block input
             }

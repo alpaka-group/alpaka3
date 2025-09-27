@@ -6,7 +6,7 @@
 #include <cstddef>
 #include <utility>
 
-namespace alpaka::tensor::ops::layers
+namespace alpaka::tensor::layers
 {
     // Simple Embedding lookup layer: indices [N] -> output [N, D]
     // Host-side reference implementation for now (copies to device at the end)
@@ -62,4 +62,4 @@ namespace alpaka::tensor::ops::layers
     {
         return EmbeddingLayer<Device>{std::move(weights)};
     }
-} // namespace alpaka::tensor::ops::layers
+} // namespace alpaka::tensor::layers

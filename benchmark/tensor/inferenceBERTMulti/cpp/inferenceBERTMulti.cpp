@@ -20,7 +20,7 @@
 
 namespace tt = alpaka::tensor;
 namespace ops = alpaka::tensor::ops;
-namespace layers = alpaka::tensor::ops::layers;
+namespace layers = alpaka::tensor::layers;
 
 // This is the MultiSequential-based version extracted from the current inferenceBERT implementation
 // It intentionally ignores attention_mask and uses device-enabled attention path for clarity.

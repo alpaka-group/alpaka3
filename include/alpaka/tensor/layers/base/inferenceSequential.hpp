@@ -26,32 +26,6 @@
 
 namespace alpaka::tensor::layers
 {
-    namespace layer_ops = alpaka::tensor::ops::layers;
-
-    using layer_ops::AvgPool2DLayer;
-    using layer_ops::BatchNorm2DLayer;
-    using layer_ops::BertEncoderBlock2D;
-    using layer_ops::Conv2DLayer;
-    using layer_ops::FeedForward2DLayer;
-    using layer_ops::FlattenLayer;
-    using layer_ops::GlobalAveragePool2DLayer;
-    using layer_ops::LayerNorm2DLayer;
-    using layer_ops::LinearLayer;
-    using layer_ops::LinearReLULayer;
-    using layer_ops::MaxPool2DLayer;
-    using layer_ops::ReLU1DLayer;
-    using layer_ops::ReLULayer;
-    using layer_ops::SelfAttention2DLayer;
-    using layer_ops::SoftmaxLayer;
-
-    template<typename Device>
-    using Conv2DLayerStruct = tensor::ops::Conv2DLayerStruct<Device>;
-
-    template<typename Device>
-    using BatchNorm2DLayerStruct = tensor::ops::BatchNorm2DLayerStruct<Device>;
-
-    template<typename Device>
-    using BasicBlockLayerStruct = tensor::ops::BasicBlockLayerStruct<Device>;
 
     template<typename Device>
     class Sequential
@@ -143,22 +117,6 @@ namespace alpaka::tensor::layers
         }
 
         std::vector<Fn> nodes_{};
-    };
-
-    // Multi-rank layers
-
-    template<typename Device>
-    struct FlattenLayerStruct
-    {
-        template<typename Exec, typename Queue>
-        alpaka::tensor::Tensor1D<float, Device> operator()(
-            Exec const& exec,
-            Device& device,
-            Queue& queue,
-            alpaka::tensor::Tensor4D<float, Device>& in) const
-        {
-            return flatten_4d_to_2d<float>(exec, device, queue, in);
-        }
     };
 
     /**
@@ -343,9 +301,12 @@ namespace alpaka::tensor::layers
             addImpl<T4>([this, l = std::move(l)](T4& in) mutable { return l(exec_, dev_, queue_, in); }, "AvgPool");
         }
 
-        void addFlatten(FlattenLayerStruct<Device> l)
+        void addFlatten()
         {
-            addImpl<T4>([this, l = std::move(l)](T4& in) mutable { return l(exec_, dev_, queue_, in); }, "Flatten");
+            addImpl<T4>(
+                [this](T4& in) mutable
+                { return alpaka::tensor::ops::flatten_4d_to_2d<float>(exec_, dev_, queue_, in); },
+                "Flatten");
         }
 
         void addLinear(LinearLayer<Device> l)
@@ -373,7 +334,7 @@ namespace alpaka::tensor::layers
                 "GlobalAvgPool");
         }
 
-        void addBatchNorm(BatchNorm2DLayerStruct<Device> l)
+        void addBatchNorm(BatchNorm2DLayer<Device> l)
         {
             // Inject clean context if available
             if(hasCleanTensorOpContext())

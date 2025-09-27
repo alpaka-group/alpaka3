@@ -12,12 +12,8 @@
  */
 
 // Forward declare what we need to test without including the full headers
-namespace alpaka::tensor::ops
+namespace alpaka::tensor::layers
 {
-
-    template<typename Device>
-    struct AddLayerStruct;
-
     template<typename Device>
     struct ResidualBlockStruct;
 
@@ -30,25 +26,12 @@ namespace alpaka::tensor::ops
             static constexpr std::size_t padding = 1;
         };
     } // namespace residualhelpers
-} // namespace alpaka::tensor::ops
-
-// Removed ElementwiseAddKernel forward-declaration test (kernel unified via generic add)
-
-TEST_CASE("AddLayerStruct forward declaration", "[residual]")
-{
-    // Test that our AddLayerStruct can be forward declared
-    using namespace alpaka::tensor::ops;
-    using SimpleDevice = int;
-
-    static_assert(std::is_class_v<AddLayerStruct<SimpleDevice>>);
-
-    REQUIRE(true);
-}
+} // namespace alpaka::tensor::layers
 
 TEST_CASE("ResidualBlockStruct forward declaration", "[residual]")
 {
     // Test that our ResidualBlockStruct can be forward declared
-    using namespace alpaka::tensor::ops;
+    using namespace alpaka::tensor::layers;
     using SimpleDevice = int;
 
     static_assert(std::is_class_v<ResidualBlockStruct<SimpleDevice>>);
@@ -59,7 +42,7 @@ TEST_CASE("ResidualBlockStruct forward declaration", "[residual]")
 TEST_CASE("ResidualDefaults constants", "[residual]")
 {
     // Test our constants are accessible
-    using namespace alpaka::tensor::ops;
+    using namespace alpaka::tensor::layers;
 
     static_assert(residualhelpers::ResidualDefaults::kernel_size == 3);
     static_assert(residualhelpers::ResidualDefaults::stride == 1);
