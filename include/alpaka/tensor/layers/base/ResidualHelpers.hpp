@@ -3,6 +3,7 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/layers/mlp/ReLULayer.hpp>
+#include <alpaka/tensor/layers/normalization/BatchNormLayer.hpp>
 #include <alpaka/tensor/layers/vision/Conv2DLayer.hpp>
 #include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>
 #include <alpaka/tensor/ops/normalization/BatchNorm.hpp>
@@ -16,75 +17,10 @@
 #include <stdexcept>
 #include <utility>
 
-namespace alpaka::tensor::ops
+namespace alpaka::tensor::layers
 {
-    using alpaka::tensor::ops::layers::ReLULayer;
-
-    template<typename Device>
-    struct BatchNorm2DLayerStruct
-    {
-        tensor::Tensor1D<float, Device> runningMean;
-        tensor::Tensor1D<float, Device> runningVar;
-        tensor::Tensor1D<float, Device> gamma;
-        tensor::Tensor1D<float, Device> beta;
-        float eps{1e-5f};
-        mutable void* context{nullptr};
-
-        BatchNorm2DLayerStruct() = default;
-
-        BatchNorm2DLayerStruct(
-            tensor::Tensor1D<float, Device> rm,
-            tensor::Tensor1D<float, Device> rv,
-            tensor::Tensor1D<float, Device> g,
-            tensor::Tensor1D<float, Device> b,
-            float e = 1e-5f)
-            : runningMean(std::move(rm))
-            , runningVar(std::move(rv))
-            , gamma(std::move(g))
-            , beta(std::move(b))
-            , eps(e)
-        {
-        }
-
-        template<typename Exec, typename Queue>
-        tensor::Tensor4D<float, Device> operator()(
-            Exec const& exec,
-            Device& device,
-            Queue& queue,
-            tensor::Tensor4D<float, Device>& in)
-        {
-            auto s = in.shape();
-            auto N = s[0];
-            auto C = s[1];
-            auto H = s[2];
-            auto W = s[3];
-            if(runningMean.size() != C || runningVar.size() != C || gamma.size() != C || beta.size() != C)
-            {
-                throw std::runtime_error(
-                    "BatchNorm fallback: parameter size mismatch (mean/var/gamma/beta vs channels)");
-            }
-            if(in.size() != N * C * H * W)
-            {
-                throw std::runtime_error("BatchNorm fallback: input tensor size mismatch");
-            }
-
-            if(context)
-            {
-                try
-                {
-                    auto* cleanContext = static_cast<tensor::CleanTensorOpContext<Exec, Device, Queue>*>(context);
-                    return cleanContext->batchnorm(in, runningMean, runningVar, gamma, beta, eps);
-                }
-                catch(std::runtime_error const&)
-                {
-                }
-            }
-
-            tensor::Tensor4D<float, Device> out(device, s, "bn_out");
-            ops::batch_norm_inference<float>(exec, device, queue, in, gamma, beta, runningMean, runningVar, eps, out);
-            return out;
-        }
-    };
+    namespace ops = alpaka::tensor::ops;
+    using tensor::ops::Conv2DParams;
 
     template<typename Device>
     struct BasicBlockLayerStruct
@@ -197,7 +133,7 @@ namespace alpaka::tensor::ops
             printShape("[BB] in", in);
             auto x = c1(exec, dev, q, in);
             printShape("[BB] after conv1", x);
-            BatchNorm2DLayerStruct<Device> bn1{bn1Mean, bn1Var, bn1Gamma, bn1Beta, bnEps};
+            BatchNorm2DLayer<Device> bn1{bn1Mean, bn1Var, bn1Gamma, bn1Beta, bnEps};
             x = bn1(exec, dev, q, x);
             printShape("[BB] after bn1", x);
             ReLULayer<Device> relu{};
@@ -207,7 +143,7 @@ namespace alpaka::tensor::ops
             Conv2DLayerStruct<Device> c2{w2, std::nullopt, conv2Params};
             x = c2(exec, dev, q, x);
             printShape("[BB] after conv2", x);
-            BatchNorm2DLayerStruct<Device> bn2{bn2Mean, bn2Var, bn2Gamma, bn2Beta, bnEps};
+            BatchNorm2DLayer<Device> bn2{bn2Mean, bn2Var, bn2Gamma, bn2Beta, bnEps};
             x = bn2(exec, dev, q, x);
             printShape("[BB] after bn2", x);
             tensor::Tensor4D<float, Device> identity = in;
@@ -215,7 +151,7 @@ namespace alpaka::tensor::ops
             {
                 Conv2DLayerStruct<Device> cp{wProj, std::nullopt, projParams};
                 identity = cp(exec, dev, q, in);
-                BatchNorm2DLayerStruct<Device> bnp{projMean, projVar, projGamma, projBeta, bnEps};
+                BatchNorm2DLayer<Device> bnp{projMean, projVar, projGamma, projBeta, bnEps};
                 identity = bnp(exec, dev, q, identity);
             }
             printShape("[BB] identity", identity);
@@ -228,24 +164,6 @@ namespace alpaka::tensor::ops
             if(dbg)
                 printShape("[BB] after relu2", x);
             return x;
-        }
-    };
-
-    template<typename Device>
-    struct AddLayerStruct
-    {
-        template<typename Exec, typename Queue>
-        tensor::Tensor4D<float, Device> operator()(
-            Exec const& exec,
-            Device& device,
-            Queue& queue,
-            tensor::Tensor4D<float, Device>& input1,
-            tensor::Tensor4D<float, Device>& input2) const
-        {
-            auto shape1 = input1.shape();
-            auto shape2 = input2.shape();
-            assert(shape1 == shape2 && "AddLayer: input tensors must have same shape");
-            return ops::add<float, 4>(exec, device, queue, input1, input2);
         }
     };
 
@@ -275,8 +193,10 @@ namespace alpaka::tensor::ops
                 skip = (*projection)(exec, device, queue, skip);
             }
 
-            AddLayerStruct<Device> add_layer;
-            auto output = add_layer(exec, device, queue, x, skip);
+            auto shapeX = x.shape();
+            auto shapeSkip = skip.shape();
+            assert(shapeX == shapeSkip && "Residual add: tensor shapes must match");
+            auto output = ops::add<float, 4>(exec, device, queue, x, skip);
             return final_relu(exec, device, queue, output);
         }
     };
@@ -364,4 +284,4 @@ namespace alpaka::tensor::ops
 
     } // namespace residualhelpers
 
-} // namespace alpaka::tensor::ops
+} // namespace alpaka::tensor::layers

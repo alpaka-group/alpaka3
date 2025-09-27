@@ -3,7 +3,7 @@
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/ops/elementwise/ActivationOps.hpp>
 
-namespace alpaka::tensor::ops::layers
+namespace alpaka::tensor::layers
 {
 
     template<typename Device>
@@ -23,11 +23,11 @@ namespace alpaka::tensor::ops::layers
         {
             if(inPlace)
             {
-                relu_inplace(exec, device, queue, in);
+                tensor::ops::relu_inplace(exec, device, queue, in);
                 return in;
             }
             tensor::Tensor4D<float, Device> out(device, in.shape(), "relu_out");
-            relu(exec, device, queue, in, out);
+            tensor::ops::relu(exec, device, queue, in, out);
             return out;
         }
     };
@@ -50,11 +50,11 @@ namespace alpaka::tensor::ops::layers
         {
             if(inPlace)
             {
-                relu_inplace(exec, device, queue, in);
+                tensor::ops::relu_inplace(exec, device, queue, in);
                 return in;
             }
             tensor::Tensor1D<float, Device> out(device, in.shape(), "relu1d_out");
-            relu(exec, device, queue, in, out);
+            tensor::ops::relu(exec, device, queue, in, out);
             return out;
         }
     };
@@ -72,4 +72,4 @@ namespace alpaka::tensor::ops::layers
         return ReLU1DLayer<Device>{inPlace};
     }
 
-} // namespace alpaka::tensor::ops::layers
+} // namespace alpaka::tensor::layers

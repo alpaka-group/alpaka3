@@ -7,8 +7,10 @@
 #include <cmath>
 #include <utility>
 
-namespace alpaka::tensor::ops::layers
+namespace alpaka::tensor::layers
 {
+    namespace ops = alpaka::tensor::ops;
+
     // Minimal scaled dot-product attention (single-head) scaffold
     // Input: Q,K,V as [N, D] each. Output: [N, D]
     // This is a simple host-reference implementation using existing ops for softmax when possible
@@ -93,4 +95,4 @@ namespace alpaka::tensor::ops::layers
     {
         return ScaledDotAttentionLayer<Device>{std::move(K), std::move(V)};
     }
-} // namespace alpaka::tensor::ops::layers
+} // namespace alpaka::tensor::layers

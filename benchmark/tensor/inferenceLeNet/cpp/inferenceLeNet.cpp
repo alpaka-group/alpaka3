@@ -55,7 +55,7 @@
 
 namespace tt = alpaka::tensor;
 namespace ops = alpaka::tensor::ops;
-namespace layers = alpaka::tensor::ops::layers;
+namespace layers = alpaka::tensor::layers;
 
 // Layer timing profiling structure
 struct LayerTimings

@@ -15,6 +15,8 @@
 
 namespace alpaka::tensor::ops
 {
+    using tensor::layers::Conv2DLayerStruct;
+
     template<typename Exec, typename Device, typename Queue>
     bool fold_batch_norm_into_conv(
         Exec const& exec,

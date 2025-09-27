@@ -14,7 +14,7 @@
 using namespace alpaka;
 using namespace alpaka::tensor;
 using namespace alpaka::tensor::ops;
-using namespace alpaka::tensor::ops::layers;
+using namespace alpaka::tensor::layers;
 using TestBackends
     = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors))>;
 
