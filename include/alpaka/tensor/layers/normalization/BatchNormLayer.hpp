@@ -42,45 +42,26 @@ namespace alpaka::tensor::ops::layers
         }
 
         template<typename Exec, typename Queue>
-    tensor::Tensor4D<float, Device> operator()( // non-const so we can get mutable device buffers
-        Exec const& exec,
-        Device& device,
-        Queue& queue,
-        tensor::Tensor4D<float, Device>& in)
+        tensor::Tensor4D<float, Device> operator()( // non-const so we can get mutable device buffers
+            Exec const& exec,
+            Device& device,
+            Queue& queue,
+            tensor::Tensor4D<float, Device>& in)
         {
-            auto s = in.shape();
-            auto N = s[0];
-            auto C = s[1];
-            auto H = s[2];
-            auto W = s[3];
-            // Robust shape checks
-            if(runningMean.size() != C || runningVar.size() != C || gamma.size() != C || beta.size() != C)
-            {
-                throw std::runtime_error(
-                    "BatchNorm fallback: parameter size mismatch (mean/var/gamma/beta vs channels)");
-            }
-            if(in.size() != N * C * H * W)
-            {
-                throw std::runtime_error("BatchNorm fallback: input tensor size mismatch");
-            }
-
             if(context)
             {
-                // Try to use provider delegation through clean context
+                auto* cleanContext = static_cast<tensor::CleanTensorOpContext<Exec, Device, Queue>*>(context);
                 try
                 {
-                    auto* cleanContext = static_cast<tensor::CleanTensorOpContext<Exec, Device, Queue>*>(context);
                     return cleanContext->batchnorm(in, runningMean, runningVar, gamma, beta, eps);
                 }
                 catch(std::runtime_error const&)
                 {
-                    // Fallback to kernel implementation if provider delegation fails
-                    // Fall through to kernel implementation below
+                    // Provider unavailable or failed; fall back to kernel implementation below.
                 }
             }
 
-            // Fallback to shared batch-norm helper (either no context or provider failed)
-            tensor::Tensor4D<float, Device> out(device, s, "bn_out");
+            tensor::Tensor4D<float, Device> out(device, in.shape(), "bn_out");
             ops::batch_norm_inference<float>(exec, device, queue, in, gamma, beta, runningMean, runningVar, eps, out);
             return out;
         }

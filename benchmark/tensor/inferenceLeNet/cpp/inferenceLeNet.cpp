@@ -412,7 +412,7 @@ int runLeNet(
 
     // Create clean tensor operation context for provider selection
     auto cleanCtx = tt::createCleanTensorOpContext(exec, device, queue);
-    using Pipe = ops::MultiSequential<Device, decltype(exec), decltype(queue)>;
+    using Pipe = alpaka::tensor::layers::MultiSequential<Device, decltype(exec), decltype(queue)>;
     Pipe pipe(exec, device, queue, std::move(cleanCtx));
     std::cout
         << (pipe.hasCleanTensorOpContext() ? "Using enhanced provider acceleration for convolutions\n"
