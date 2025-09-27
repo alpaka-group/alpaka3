@@ -193,7 +193,7 @@ int runBertMulti(
     tt::Tensor2D<float, Device> W1 = initWeights2D(D, 4 * D);
     tt::Tensor2D<float, Device> W2 = initWeights2D(4 * D, D);
 
-    using Pipe = ops::MultiSequential<Device, decltype(exec), decltype(queue)>;
+    using Pipe = alpaka::tensor::layers::MultiSequential<Device, decltype(exec), decltype(queue)>;
     Pipe pipe(exec, device, queue, &cleanCtx);
     pipe.enableProfiling(profileLayers);
 
@@ -210,7 +210,7 @@ int runBertMulti(
     // Warmup
     for(int i = 0; i < warmup; ++i)
     {
-        typename ops::MultiSequential<Device, decltype(exec), decltype(queue)>::Any v = X;
+        typename alpaka::tensor::layers::MultiSequential<Device, decltype(exec), decltype(queue)>::Any v = X;
         v = pipe.forward(std::move(v));
         X = std::get<tt::Tensor2D<float, Device>>(v);
         alpaka::onHost::wait(queue);
@@ -222,7 +222,7 @@ int runBertMulti(
     for(int i = 0; i < iters; ++i)
     {
         auto s = std::chrono::high_resolution_clock::now();
-        typename ops::MultiSequential<Device, decltype(exec), decltype(queue)>::Any v = X;
+        typename alpaka::tensor::layers::MultiSequential<Device, decltype(exec), decltype(queue)>::Any v = X;
         v = pipe.forward(std::move(v));
         out = std::get<tt::Tensor2D<float, Device>>(v);
         alpaka::onHost::wait(queue);

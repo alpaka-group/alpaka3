@@ -123,7 +123,7 @@ int runResNet18(
 
     // Build pipeline
     auto cleanCtx = tt::createCleanTensorOpContext(exec, device, queue);
-    using Pipe = ops::MultiSequential<Device, decltype(exec), decltype(queue)>;
+    using Pipe = alpaka::tensor::layers::MultiSequential<Device, decltype(exec), decltype(queue)>;
     Pipe pipe(exec, device, queue, std::move(cleanCtx));
     if(profileLayers)
         pipe.enableProfiling(true);

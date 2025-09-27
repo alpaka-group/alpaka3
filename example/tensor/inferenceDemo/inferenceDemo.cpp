@@ -57,7 +57,7 @@ int runInference(Tag const& tag)
     std::optional<tt::Tensor1D<float, Device>> conv1Bias;
 
     // Build multi-rank pipeline
-    using Pipe = ops::MultiSequential<Device, Exec, decltype(queue)>;
+    using Pipe = alpaka::tensor::layers::MultiSequential<Device, Exec, decltype(queue)>;
     Pipe pipe(exec, device, queue, tt::createCleanTensorOpContext(exec, device, queue));
     pipe.add(layers::conv2d<Device>(std::move(conv1W), conv1Bias, ops::Conv2DParams{1, 1, 1, 1, 1, 1}));
     pipe.add(layers::reLu<Device>(true));

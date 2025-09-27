@@ -24,24 +24,34 @@
 #include <variant>
 #include <vector>
 
-namespace alpaka::tensor::ops
+namespace alpaka::tensor::layers
 {
+    namespace layer_ops = alpaka::tensor::ops::layers;
 
-    using layers::AvgPool2DLayer;
-    using layers::BatchNorm2DLayer;
-    using layers::BertEncoderBlock2D;
-    using layers::Conv2DLayer;
-    using layers::FeedForward2DLayer;
-    using layers::FlattenLayer;
-    using layers::GlobalAveragePool2DLayer;
-    using layers::LayerNorm2DLayer;
-    using layers::LinearLayer;
-    using layers::LinearReLULayer;
-    using layers::MaxPool2DLayer;
-    using layers::ReLU1DLayer;
-    using layers::ReLULayer;
-    using layers::SelfAttention2DLayer;
-    using layers::SoftmaxLayer;
+    using layer_ops::AvgPool2DLayer;
+    using layer_ops::BatchNorm2DLayer;
+    using layer_ops::BertEncoderBlock2D;
+    using layer_ops::Conv2DLayer;
+    using layer_ops::FeedForward2DLayer;
+    using layer_ops::FlattenLayer;
+    using layer_ops::GlobalAveragePool2DLayer;
+    using layer_ops::LayerNorm2DLayer;
+    using layer_ops::LinearLayer;
+    using layer_ops::LinearReLULayer;
+    using layer_ops::MaxPool2DLayer;
+    using layer_ops::ReLU1DLayer;
+    using layer_ops::ReLULayer;
+    using layer_ops::SelfAttention2DLayer;
+    using layer_ops::SoftmaxLayer;
+
+    template<typename Device>
+    using Conv2DLayerStruct = tensor::ops::Conv2DLayerStruct<Device>;
+
+    template<typename Device>
+    using BatchNorm2DLayerStruct = tensor::ops::BatchNorm2DLayerStruct<Device>;
+
+    template<typename Device>
+    using BasicBlockLayerStruct = tensor::ops::BasicBlockLayerStruct<Device>;
 
     template<typename Device>
     class Sequential
@@ -554,4 +564,4 @@ namespace alpaka::tensor::ops
         std::vector<double> lastDurations_{}; // ms
     };
 
-} // namespace alpaka::tensor::ops
+} // namespace alpaka::tensor::layers
