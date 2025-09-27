@@ -131,10 +131,6 @@ if(NOT TARGET alpaka)
     target_link_libraries(alpaka INTERFACE alpaka_target_headers)
 endif()
 
-## GCC compiler
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-    alpaka_set_compiler_options(HOST target alpaka_target_headers "-fconcepts-diagnostics-depth=${alpaka_GCC_CONCEPT_DEPTH}")
-endif()
 
 ## OpenMP
 if(alpaka_DEP_OMP)
