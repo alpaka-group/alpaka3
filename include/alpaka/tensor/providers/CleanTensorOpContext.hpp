@@ -4,6 +4,16 @@
  */
 #pragma once
 
+/*
+ * CleanTensorOpContext.hpp
+ *   • Coordinates which tensor operation provider (vendor vs fallback) executes at runtime
+ *   • Hosts the capability-driven selection pipeline shared by GEMM, conv, norm, activation, pooling
+ *   • Owns fallback execution paths so every op can run even when no vendor library is available
+ *   • Includes the concrete provider headers needed for dynamic dispatch and capability checks
+ *   • Pulls in the generic tensor op headers used by the fallback implementations and validation logic
+ */
+
+// Core tensor functionality in case of fallback usage
 #include <alpaka/tensor/ops/bias/BiasAdd.hpp>
 #include <alpaka/tensor/ops/elementwise/ActivationOps.hpp>
 #include <alpaka/tensor/ops/fallback/FallbackOps.hpp>
@@ -16,6 +26,7 @@
 #include <alpaka/tensor/ops/softmax/Softmax.hpp>
 #include <alpaka/tensor/ops/training/TrainingOps.hpp>
 #include <alpaka/tensor/ops/transform/Transform.hpp>
+// Provider system provides vendor specific implementations of tensor operations.
 #include <alpaka/tensor/providers/CuBLASProvider.hpp>
 #include <alpaka/tensor/providers/CuDNNProvider.hpp>
 #include <alpaka/tensor/providers/DefaultProvider.hpp>
@@ -108,6 +119,249 @@ namespace alpaka::tensor
             }
             return false;
         }
+
+        template<typename Exec>
+        struct backend_dispatch
+        {
+            template<typename Fn>
+            static bool gemm(IOpProvider& provider, Fn&& fn)
+            {
+                static_cast<void>(provider);
+                static_cast<void>(fn);
+                return false;
+            }
+
+            template<typename Fn>
+            static bool conv(IOpProvider& provider, Fn&& fn)
+            {
+                static_cast<void>(provider);
+                static_cast<void>(fn);
+                return false;
+            }
+
+            template<typename Fn>
+            static bool batchnorm(IOpProvider& provider, Fn&& fn)
+            {
+                static_cast<void>(provider);
+                static_cast<void>(fn);
+                return false;
+            }
+
+            template<typename Fn>
+            static bool activation(IOpProvider& provider, Fn&& fn)
+            {
+                static_cast<void>(provider);
+                static_cast<void>(fn);
+                return false;
+            }
+
+            template<typename Fn>
+            static bool pooling(IOpProvider& provider, Fn&& fn)
+            {
+                static_cast<void>(provider);
+                static_cast<void>(fn);
+                return false;
+            }
+
+            template<typename Fn>
+            static bool activation_backward(IOpProvider& provider, Fn&& fn)
+            {
+                static_cast<void>(provider);
+                static_cast<void>(fn);
+                return false;
+            }
+
+            template<typename Fn>
+            static bool pooling_max_backward(IOpProvider& provider, Fn&& fn)
+            {
+                static_cast<void>(provider);
+                static_cast<void>(fn);
+                return false;
+            }
+
+            template<typename Fn>
+            static bool pooling_avg_backward(IOpProvider& provider, Fn&& fn)
+            {
+                static_cast<void>(provider);
+                static_cast<void>(fn);
+                return false;
+            }
+        };
+
+        template<>
+        struct backend_dispatch<alpaka::exec::GpuCuda>
+        {
+            template<typename Fn>
+            static bool gemm(IOpProvider& provider, Fn&& fn)
+            {
+                if constexpr(EnabledVendorLibs::hasCUBLAS)
+                {
+                    if(detail::tryInvokeProvider<CuBLASProvider>(provider, std::forward<Fn>(fn)))
+                        return true;
+                }
+                return false;
+            }
+
+            template<typename Fn>
+            static bool conv(IOpProvider& provider, Fn&& fn)
+            {
+                if constexpr(EnabledVendorLibs::hasCUDNN)
+                {
+                    if(detail::tryInvokeProvider<CuDNNProvider>(provider, std::forward<Fn>(fn)))
+                        return true;
+                }
+                return false;
+            }
+
+            template<typename Fn>
+            static bool batchnorm(IOpProvider& provider, Fn&& fn)
+            {
+                if constexpr(EnabledVendorLibs::hasCUDNN)
+                {
+                    if(detail::tryInvokeProvider<CuDNNProvider>(provider, std::forward<Fn>(fn)))
+                        return true;
+                }
+                return false;
+            }
+
+            template<typename Fn>
+            static bool activation(IOpProvider& provider, Fn&& fn)
+            {
+                if constexpr(EnabledVendorLibs::hasCUDNN)
+                {
+                    if(detail::tryInvokeProvider<CuDNNProvider>(provider, std::forward<Fn>(fn)))
+                        return true;
+                }
+                return false;
+            }
+
+            template<typename Fn>
+            static bool pooling(IOpProvider& provider, Fn&& fn)
+            {
+                if constexpr(EnabledVendorLibs::hasCUDNN)
+                {
+                    if(detail::tryInvokeProvider<CuDNNProvider>(provider, std::forward<Fn>(fn)))
+                        return true;
+                }
+                return false;
+            }
+
+            template<typename Fn>
+            static bool activation_backward(IOpProvider& provider, Fn&& fn)
+            {
+                static_cast<void>(provider);
+                static_cast<void>(fn);
+                return false; // cuDNN backward relu path not yet implemented
+            }
+
+            template<typename Fn>
+            static bool pooling_max_backward(IOpProvider& provider, Fn&& fn)
+            {
+                static_cast<void>(provider);
+                static_cast<void>(fn);
+                return false; // cuDNN pooling backward not wired yet
+            }
+
+            template<typename Fn>
+            static bool pooling_avg_backward(IOpProvider& provider, Fn&& fn)
+            {
+                static_cast<void>(provider);
+                static_cast<void>(fn);
+                return false; // cuDNN pooling backward not wired yet
+            }
+        };
+
+        template<>
+        struct backend_dispatch<alpaka::exec::GpuHip>
+        {
+            template<typename Fn>
+            static bool gemm(IOpProvider& provider, Fn&& fn)
+            {
+                if constexpr(EnabledVendorLibs::hasROCBLAS)
+                {
+                    if(detail::tryInvokeProvider<RocBLASProvider>(provider, std::forward<Fn>(fn)))
+                        return true;
+                }
+                return false;
+            }
+
+            template<typename Fn>
+            static bool conv(IOpProvider& provider, Fn&& fn)
+            {
+                if constexpr(EnabledVendorLibs::hasMIOPEN)
+                {
+                    if(detail::tryInvokeProvider<MIOpenProvider>(provider, std::forward<Fn>(fn)))
+                        return true;
+                }
+                return false;
+            }
+
+            template<typename Fn>
+            static bool batchnorm(IOpProvider& provider, Fn&& fn)
+            {
+                if constexpr(EnabledVendorLibs::hasMIOPEN)
+                {
+                    if(detail::tryInvokeProvider<MIOpenProvider>(provider, std::forward<Fn>(fn)))
+                        return true;
+                }
+                return false;
+            }
+
+            template<typename Fn>
+            static bool activation(IOpProvider& provider, Fn&& fn)
+            {
+                if constexpr(EnabledVendorLibs::hasMIOPEN)
+                {
+                    if(detail::tryInvokeProvider<MIOpenProvider>(provider, std::forward<Fn>(fn)))
+                        return true;
+                }
+                return false;
+            }
+
+            template<typename Fn>
+            static bool pooling(IOpProvider& provider, Fn&& fn)
+            {
+                if constexpr(EnabledVendorLibs::hasMIOPEN)
+                {
+                    if(detail::tryInvokeProvider<MIOpenProvider>(provider, std::forward<Fn>(fn)))
+                        return true;
+                }
+                return false;
+            }
+
+            template<typename Fn>
+            static bool activation_backward(IOpProvider& provider, Fn&& fn)
+            {
+                if constexpr(EnabledVendorLibs::hasMIOPEN)
+                {
+                    if(detail::tryInvokeProvider<MIOpenProvider>(provider, std::forward<Fn>(fn)))
+                        return true;
+                }
+                return false;
+            }
+
+            template<typename Fn>
+            static bool pooling_max_backward(IOpProvider& provider, Fn&& fn)
+            {
+                if constexpr(EnabledVendorLibs::hasMIOPEN)
+                {
+                    if(detail::tryInvokeProvider<MIOpenProvider>(provider, std::forward<Fn>(fn)))
+                        return true;
+                }
+                return false;
+            }
+
+            template<typename Fn>
+            static bool pooling_avg_backward(IOpProvider& provider, Fn&& fn)
+            {
+                if constexpr(EnabledVendorLibs::hasMIOPEN)
+                {
+                    if(detail::tryInvokeProvider<MIOpenProvider>(provider, std::forward<Fn>(fn)))
+                        return true;
+                }
+                return false;
+            }
+        };
     } // namespace detail
 
     template<typename TExec, typename TDevice, typename TQueue>
@@ -293,50 +547,23 @@ namespace alpaka::tensor
             auto& provider = getGemmProvider();
             if(provider.supportsOperation(OpType::GEMM))
             {
-                bool handled = false;
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUBLAS)
-                {
-                    handled = detail::tryInvokeProvider<CuBLASProvider>(
-                        provider,
-                        [&](auto& cu)
-                        {
-                            cu.template gemm<TExec, TDevice, TQueue>(
-                                *exec_,
-                                *device_,
-                                *queue_,
-                                M,
-                                N,
-                                K,
-                                alpha,
-                                A,
-                                B,
-                                beta,
-                                C);
-                        });
-                }
-                if(!handled)
-                {
-                    if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasROCBLAS)
+                bool handled = detail::backend_dispatch<Exec>::gemm(
+                    provider,
+                    [&](auto& typedProvider)
                     {
-                        handled = detail::tryInvokeProvider<RocBLASProvider>(
-                            provider,
-                            [&](auto& rb)
-                            {
-                                rb.template gemm<TExec, TDevice, TQueue>(
-                                    *exec_,
-                                    *device_,
-                                    *queue_,
-                                    M,
-                                    N,
-                                    K,
-                                    alpha,
-                                    A,
-                                    B,
-                                    beta,
-                                    C);
-                            });
-                    }
-                }
+                        typedProvider.template gemm<TExec, TDevice, TQueue>(
+                            *exec_,
+                            *device_,
+                            *queue_,
+                            M,
+                            N,
+                            K,
+                            alpha,
+                            A,
+                            B,
+                            beta,
+                            C);
+                    });
                 if(handled)
                     return;
 
@@ -357,42 +584,21 @@ namespace alpaka::tensor
             if(provider.supportsOperation(OpType::Conv2D))
             {
                 std::optional<TensorType> typedResult;
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
-                {
-                    if(!typedResult)
+                detail::backend_dispatch<Exec>::conv(
+                    provider,
+                    [&](auto& typedProvider)
                     {
-                        detail::tryInvokeProvider<CuDNNProvider>(
-                            provider,
-                            [&](auto& cudnn)
-                            {
-                                typedResult = cudnn.template conv2d<T, TExec, TDevice, TQueue>(
-                                    *exec_,
-                                    *device_,
-                                    *queue_,
-                                    input,
-                                    weight,
-                                    params);
-                            });
-                    }
-                }
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
-                {
-                    if(!typedResult)
-                    {
-                        detail::tryInvokeProvider<MIOpenProvider>(
-                            provider,
-                            [&](auto& miOpen)
-                            {
-                                typedResult = miOpen.template conv2d<T, TExec, TDevice, TQueue>(
-                                    *exec_,
-                                    *device_,
-                                    *queue_,
-                                    input,
-                                    weight,
-                                    params);
-                            });
-                    }
-                }
+                        if(!typedResult)
+                        {
+                            typedResult = typedProvider.template conv2d<T, TExec, TDevice, TQueue>(
+                                *exec_,
+                                *device_,
+                                *queue_,
+                                input,
+                                weight,
+                                params);
+                        }
+                    });
                 if(typedResult)
                     return std::move(*typedResult);
 
@@ -423,40 +629,24 @@ namespace alpaka::tensor
             if(provider.supportsOperation(OpType::BatchNorm))
             {
                 std::optional<TensorType> typedResult;
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
-                {
-                    if(!typedResult)
+                detail::backend_dispatch<Exec>::batchnorm(
+                    provider,
+                    [&](auto& typedProvider)
                     {
-                        detail::tryInvokeProvider<CuDNNProvider>(
-                            provider,
-                            [&](auto& cudnn)
-                            {
-                                typedResult = cudnn.template batchnorm<
-                                    T>(*exec_, *device_, *queue_, input, mean, variance, gamma, beta, epsilon);
-                            });
-                    }
-                }
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
-                {
-                    if(!typedResult)
-                    {
-                        detail::tryInvokeProvider<MIOpenProvider>(
-                            provider,
-                            [&](auto& miOpen)
-                            {
-                                typedResult = miOpen.template batchnorm<T, TExec, TDevice, TQueue>(
-                                    *exec_,
-                                    *device_,
-                                    *queue_,
-                                    input,
-                                    mean,
-                                    variance,
-                                    gamma,
-                                    beta,
-                                    epsilon);
-                            });
-                    }
-                }
+                        if(!typedResult)
+                        {
+                            typedResult = typedProvider.template batchnorm<T, TExec, TDevice, TQueue>(
+                                *exec_,
+                                *device_,
+                                *queue_,
+                                input,
+                                mean,
+                                variance,
+                                gamma,
+                                beta,
+                                epsilon);
+                        }
+                    });
                 if(typedResult)
                     return std::move(*typedResult);
 
@@ -484,13 +674,11 @@ namespace alpaka::tensor
             auto& provider = getActivationProvider();
             if(provider.supportsOperation(OpType::Activation))
             {
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
-                {
-                    if(detail::tryInvokeProvider<CuDNNProvider>(
-                           provider,
-                           [&](auto& cudnn) { cudnn.template gelu<T, Rank>(*exec_, *device_, *queue_, t); }))
-                        return;
-                }
+                if(detail::backend_dispatch<Exec>::activation(
+                       provider,
+                       [&](auto& typedProvider)
+                       { typedProvider.template gelu<T, Rank>(*exec_, *device_, *queue_, t); }))
+                    return;
             }
             ops::fallback::gelu<T, Rank>(*exec_, *device_, *queue_, t);
         }
@@ -501,20 +689,11 @@ namespace alpaka::tensor
             auto& provider = getActivationProvider();
             if(provider.supportsOperation(OpType::Activation))
             {
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
-                {
-                    if(detail::tryInvokeProvider<CuDNNProvider>(
-                           provider,
-                           [&](auto& cudnn) { cudnn.template relu_inplace<T, Rank>(*exec_, *device_, *queue_, t); }))
-                        return;
-                }
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
-                {
-                    if(detail::tryInvokeProvider<MIOpenProvider>(
-                           provider,
-                           [&](auto& miOpen) { miOpen.template relu_inplace<T, Rank>(*exec_, *device_, *queue_, t); }))
-                        return;
-                }
+                if(detail::backend_dispatch<Exec>::activation(
+                       provider,
+                       [&](auto& typedProvider)
+                       { typedProvider.template relu_inplace<T, Rank>(*exec_, *device_, *queue_, t); }))
+                    return;
             }
             ops::fallback::relu_inplace<T, Rank>(*exec_, *device_, *queue_, t);
         }
@@ -528,26 +707,11 @@ namespace alpaka::tensor
             auto& provider = getActivationProvider();
             if(provider.supportsOperation(OpType::Activation))
             {
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
-                {
-                    if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(&provider))
-                    { /* TODO */
-                    }
-                }
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
-                {
-                    if(auto mi = dynamic_cast<MIOpenProvider*>(&provider))
-                    {
-                        try
-                        {
-                            mi->template relu_backward<T, Rank>(*exec_, *device_, *queue_, x, dy, dx);
-                            return;
-                        }
-                        catch(...)
-                        {
-                        }
-                    }
-                }
+                if(detail::backend_dispatch<Exec>::activation_backward(
+                       provider,
+                       [&](auto& typedProvider)
+                       { typedProvider.template relu_backward<T, Rank>(*exec_, *device_, *queue_, x, dy, dx); }))
+                    return;
             }
             ::alpaka::tensor::ops::train::relu_backward<T>(*exec_, *device_, *queue_, x, dy, dx);
         }
@@ -561,40 +725,17 @@ namespace alpaka::tensor
             if(provider.supportsOperation(OpType::Pooling))
             {
                 std::optional<TensorType> typedResult;
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
-                {
-                    if(!typedResult)
+                detail::backend_dispatch<Exec>::pooling(
+                    provider,
+                    [&](auto& typedProvider)
                     {
-                        detail::tryInvokeProvider<CuDNNProvider>(
-                            provider,
-                            [&](auto& cudnn)
-                            {
-                                typedResult = cudnn.max_pool2d(
-                                    *exec_,
-                                    *device_,
-                                    *queue_,
-                                    const_cast<TensorType&>(input),
-                                    params);
-                            });
-                    }
-                }
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
-                {
-                    if(!typedResult)
-                    {
-                        detail::tryInvokeProvider<MIOpenProvider>(
-                            provider,
-                            [&](auto& miOpen)
-                            {
-                                typedResult = miOpen.max_pool2d(
-                                    *exec_,
-                                    *device_,
-                                    *queue_,
-                                    const_cast<TensorType&>(input),
-                                    params);
-                            });
-                    }
-                }
+                        if(!typedResult)
+                        {
+                            typedResult
+                                = typedProvider
+                                      .max_pool2d(*exec_, *device_, *queue_, const_cast<TensorType&>(input), params);
+                        }
+                    });
                 if(typedResult)
                     return std::move(*typedResult);
             }
@@ -610,40 +751,17 @@ namespace alpaka::tensor
             if(provider.supportsOperation(OpType::Pooling))
             {
                 std::optional<TensorType> typedResult;
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
-                {
-                    if(!typedResult)
+                detail::backend_dispatch<Exec>::pooling(
+                    provider,
+                    [&](auto& typedProvider)
                     {
-                        detail::tryInvokeProvider<CuDNNProvider>(
-                            provider,
-                            [&](auto& cudnn)
-                            {
-                                typedResult = cudnn.avg_pool2d(
-                                    *exec_,
-                                    *device_,
-                                    *queue_,
-                                    const_cast<TensorType&>(input),
-                                    params);
-                            });
-                    }
-                }
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
-                {
-                    if(!typedResult)
-                    {
-                        detail::tryInvokeProvider<MIOpenProvider>(
-                            provider,
-                            [&](auto& miOpen)
-                            {
-                                typedResult = miOpen.avg_pool2d(
-                                    *exec_,
-                                    *device_,
-                                    *queue_,
-                                    const_cast<TensorType&>(input),
-                                    params);
-                            });
-                    }
-                }
+                        if(!typedResult)
+                        {
+                            typedResult
+                                = typedProvider
+                                      .avg_pool2d(*exec_, *device_, *queue_, const_cast<TensorType&>(input), params);
+                        }
+                    });
                 if(typedResult)
                     return std::move(*typedResult);
             }
@@ -657,28 +775,14 @@ namespace alpaka::tensor
             tensor::Tensor4D<T, TDevice>& dx,
             ops::Pool2DParams const& params)
         {
-            if(poolingProvider_ && poolingProvider_->isActive())
+            auto& provider = getPoolingProvider();
+            if(provider.supportsOperation(OpType::Pooling))
             {
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
-                {
-                    if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(poolingProvider_.get()))
-                    { /* TODO */
-                    }
-                }
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
-                {
-                    if(auto mi = dynamic_cast<MIOpenProvider*>(poolingProvider_.get()))
-                    {
-                        try
-                        {
-                            mi->max_pool2d_backward(*exec_, *device_, *queue_, x, dy, dx, params);
-                            return;
-                        }
-                        catch(...)
-                        {
-                        }
-                    }
-                }
+                if(detail::backend_dispatch<Exec>::pooling_max_backward(
+                       provider,
+                       [&](auto& typedProvider)
+                       { typedProvider.max_pool2d_backward(*exec_, *device_, *queue_, x, dy, dx, params); }))
+                    return;
             }
             ::alpaka::tensor::ops::train::max_pool2d_backward<T>(*exec_, *device_, *queue_, x, dy, dx, params);
         }
@@ -690,28 +794,14 @@ namespace alpaka::tensor
             tensor::Tensor4D<T, TDevice>& dx,
             ops::Pool2DParams const& params)
         {
-            if(poolingProvider_ && poolingProvider_->isActive())
+            auto& provider = getPoolingProvider();
+            if(provider.supportsOperation(OpType::Pooling))
             {
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
-                {
-                    if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(poolingProvider_.get()))
-                    { /* TODO */
-                    }
-                }
-                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
-                {
-                    if(auto mi = dynamic_cast<MIOpenProvider*>(poolingProvider_.get()))
-                    {
-                        try
-                        {
-                            mi->avg_pool2d_backward(*exec_, *device_, *queue_, x, dy, dx, params);
-                            return;
-                        }
-                        catch(...)
-                        {
-                        }
-                    }
-                }
+                if(detail::backend_dispatch<Exec>::pooling_avg_backward(
+                       provider,
+                       [&](auto& typedProvider)
+                       { typedProvider.avg_pool2d_backward(*exec_, *device_, *queue_, x, dy, dx, params); }))
+                    return;
             }
             ::alpaka::tensor::ops::train::avg_pool2d_backward<T>(*exec_, *device_, *queue_, x, dy, dx, params);
         }
