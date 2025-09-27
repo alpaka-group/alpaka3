@@ -18,6 +18,12 @@ namespace alpaka
     {
         namespace ops
         {
+            enum class HostSyncPolicy
+            {
+                Auto,
+                DeviceOnly,
+                ForceHost
+            };
 
             // Generic unary elementwise kernel applying Functor: out[i] = f(in[i])
             class UnaryKernel
@@ -77,6 +83,20 @@ namespace alpaka
                         alpaka::Vec<unsigned int, 1u>{blocks},
                         alpaka::Vec<unsigned int, 1u>{threadsPerBlock}};
                 }
+
+                inline bool shouldSyncHost(HostSyncPolicy policy)
+                {
+                    switch(policy)
+                    {
+                    case HostSyncPolicy::DeviceOnly:
+                        return false;
+                    case HostSyncPolicy::ForceHost:
+                        return true;
+                    case HostSyncPolicy::Auto:
+                    default:
+                        return eagerHostEnabled();
+                    }
+                }
             } // namespace detail
 
             // Public APIs ---------------------------------------------------------
@@ -92,7 +112,8 @@ namespace alpaka
                 tensor::Tensor<T, Rank, Device>& a,
                 tensor::Tensor<T, Rank, Device>& b,
                 Functor f,
-                char const* name = "binary")
+                char const* name = "binary",
+                HostSyncPolicy hostSync = HostSyncPolicy::Auto)
             {
                 a.ensureOnDevice(device, queue);
                 b.ensureOnDevice(device, queue);
@@ -111,7 +132,7 @@ namespace alpaka
                     f);
                 // Removed forced wait (ALPAKA_DEBUG_SYNC can restore)
                 out.markDeviceModified(device, queue);
-                if(detail::eagerHostEnabled())
+                if(detail::shouldSyncHost(hostSync))
                     out.toHost(device, queue);
                 return out;
             }
@@ -124,7 +145,8 @@ namespace alpaka
                 Queue& queue,
                 tensor::Tensor<T, Rank, Device>& in,
                 Functor f,
-                char const* name = "unary")
+                char const* name = "unary",
+                HostSyncPolicy hostSync = HostSyncPolicy::Auto)
             {
                 in.ensureOnDevice(device, queue);
                 tensor::Tensor<T, Rank, Device> out(device, in.shape(), name);
@@ -141,7 +163,7 @@ namespace alpaka
                     f);
                 // Removed forced wait (ALPAKA_DEBUG_SYNC can restore)
                 out.markDeviceModified(device, queue);
-                if(detail::eagerHostEnabled())
+                if(detail::shouldSyncHost(hostSync))
                     out.toHost(device, queue);
                 return out;
             }
@@ -226,9 +248,10 @@ namespace alpaka
                 Device const& device,
                 Queue& queue,
                 tensor::Tensor<T, Rank, Device>& a,
-                tensor::Tensor<T, Rank, Device>& b)
+                tensor::Tensor<T, Rank, Device>& b,
+                HostSyncPolicy hostSync = HostSyncPolicy::Auto)
             {
-                return binary<T, Rank>(exec, device, queue, a, b, AddOp{}, "add");
+                return binary<T, Rank>(exec, device, queue, a, b, AddOp{}, "add", hostSync);
             }
 
             template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
@@ -237,9 +260,10 @@ namespace alpaka
                 Device const& device,
                 Queue& queue,
                 tensor::Tensor<T, Rank, Device>& a,
-                tensor::Tensor<T, Rank, Device>& b)
+                tensor::Tensor<T, Rank, Device>& b,
+                HostSyncPolicy hostSync = HostSyncPolicy::Auto)
             {
-                return binary<T, Rank>(exec, device, queue, a, b, SubOp{}, "sub");
+                return binary<T, Rank>(exec, device, queue, a, b, SubOp{}, "sub", hostSync);
             }
 
             template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
@@ -248,9 +272,10 @@ namespace alpaka
                 Device const& device,
                 Queue& queue,
                 tensor::Tensor<T, Rank, Device>& a,
-                tensor::Tensor<T, Rank, Device>& b)
+                tensor::Tensor<T, Rank, Device>& b,
+                HostSyncPolicy hostSync = HostSyncPolicy::Auto)
             {
-                return binary<T, Rank>(exec, device, queue, a, b, MulOp{}, "mul");
+                return binary<T, Rank>(exec, device, queue, a, b, MulOp{}, "mul", hostSync);
             }
 
             template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
@@ -259,9 +284,10 @@ namespace alpaka
                 Device const& device,
                 Queue& queue,
                 tensor::Tensor<T, Rank, Device>& a,
-                tensor::Tensor<T, Rank, Device>& b)
+                tensor::Tensor<T, Rank, Device>& b,
+                HostSyncPolicy hostSync = HostSyncPolicy::Auto)
             {
-                return binary<T, Rank>(exec, device, queue, a, b, DivOp{}, "div");
+                return binary<T, Rank>(exec, device, queue, a, b, DivOp{}, "div", hostSync);
             }
 
             template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
@@ -269,9 +295,10 @@ namespace alpaka
                 Exec const& exec,
                 Device const& device,
                 Queue& queue,
-                tensor::Tensor<T, Rank, Device>& in)
+                tensor::Tensor<T, Rank, Device>& in,
+                HostSyncPolicy hostSync = HostSyncPolicy::Auto)
             {
-                return unary<T, Rank>(exec, device, queue, in, ReluOp{}, "relu");
+                return unary<T, Rank>(exec, device, queue, in, ReluOp{}, "relu", hostSync);
             }
 
             // sub/mul/div already provided via generic wrappers above
@@ -283,9 +310,10 @@ namespace alpaka
                 Queue& queue,
                 tensor::Tensor<T, Rank, Device>& in,
                 S scalar,
-                char const* name = "add_scalar")
+                char const* name = "add_scalar",
+                HostSyncPolicy hostSync = HostSyncPolicy::Auto)
             {
-                return unary<T, Rank>(exec, device, queue, in, AddScalarOp<S>{scalar}, name);
+                return unary<T, Rank>(exec, device, queue, in, AddScalarOp<S>{scalar}, name, hostSync);
             }
 
             template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue, typename S>
@@ -295,15 +323,21 @@ namespace alpaka
                 Queue& queue,
                 tensor::Tensor<T, Rank, Device>& in,
                 S scalar,
-                char const* name = "mul_scalar")
+                char const* name = "mul_scalar",
+                HostSyncPolicy hostSync = HostSyncPolicy::Auto)
             {
-                return unary<T, Rank>(exec, device, queue, in, MulScalarOp<S>{scalar}, name);
+                return unary<T, Rank>(exec, device, queue, in, MulScalarOp<S>{scalar}, name, hostSync);
             }
 
             // In-place ReLU
 
             template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
-            void relu_inplace(Exec const& exec, Device const& device, Queue& queue, tensor::Tensor<T, Rank, Device>& t)
+            void relu_inplace(
+                Exec const& exec,
+                Device const& device,
+                Queue& queue,
+                tensor::Tensor<T, Rank, Device>& t,
+                HostSyncPolicy hostSync = HostSyncPolicy::Auto)
             {
                 t.ensureOnDevice(device, queue);
                 auto n = t.size();
@@ -318,7 +352,7 @@ namespace alpaka
                     ReluOp{});
                 // Removed forced wait (ALPAKA_DEBUG_SYNC can restore)
                 t.markDeviceModified(device, queue);
-                if(detail::eagerHostEnabled())
+                if(detail::shouldSyncHost(hostSync))
                     t.toHost(device, queue);
             }
 
