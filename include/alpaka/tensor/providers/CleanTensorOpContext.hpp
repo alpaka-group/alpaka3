@@ -6,6 +6,7 @@
 
 #include <alpaka/tensor/ops/bias/BiasAdd.hpp>
 #include <alpaka/tensor/ops/elementwise/ActivationOps.hpp>
+#include <alpaka/tensor/ops/fallback/FallbackOps.hpp>
 #include <alpaka/tensor/ops/linear/Gemm.hpp>
 #include <alpaka/tensor/ops/linear/LinearOps.hpp>
 #include <alpaka/tensor/ops/normalization/BatchNorm.hpp>
@@ -20,19 +21,95 @@
 #include <alpaka/tensor/providers/DefaultProvider.hpp>
 #include <alpaka/tensor/providers/EnabledVendorLibs.hpp>
 #include <alpaka/tensor/providers/MIOpenProvider.hpp>
+#include <alpaka/tensor/providers/ProviderCaps.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
-#include <alpaka/tensor/providers/ProviderRegistry.hpp>
 #include <alpaka/tensor/providers/RocBLASProvider.hpp>
 
 #include <cmath>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
+#include <tuple>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace alpaka::tensor
 {
+    namespace detail
+    {
+        template<typename Provider>
+        using provider_tag = std::type_identity<Provider>;
+
+        template<typename Exec>
+        constexpr auto providerPipeline()
+        {
+            if constexpr(std::is_same_v<std::decay_t<Exec>, alpaka::exec::GpuCuda>)
+            {
+                return std::
+                    tuple<provider_tag<CuBLASProvider>, provider_tag<CuDNNProvider>, provider_tag<DefaultProvider>>{};
+            }
+            else if constexpr(std::is_same_v<std::decay_t<Exec>, alpaka::exec::GpuHip>)
+            {
+                return std::tuple<
+                    provider_tag<RocBLASProvider>,
+                    provider_tag<MIOpenProvider>,
+                    provider_tag<DefaultProvider>>{};
+            }
+            else
+            {
+                return std::tuple<provider_tag<DefaultProvider>>{};
+            }
+        }
+
+        template<typename Exec, OpType op, typename Tag>
+        std::unique_ptr<IOpProvider> instantiateProvider(Tag)
+        {
+            using Provider = typename Tag::type;
+            if constexpr(!providers::supports<Provider>(op))
+                return nullptr;
+
+            auto candidate = std::make_unique<Provider>();
+            if(!candidate->isActive())
+                return nullptr;
+            if(!candidate->supportsOperation(op))
+                return nullptr;
+            return candidate;
+        }
+
+        template<typename Exec, OpType op>
+        std::unique_ptr<IOpProvider> makeProviderForOp()
+        {
+            std::unique_ptr<IOpProvider> chosen;
+            auto pipeline = providerPipeline<Exec>();
+            std::apply(
+                [&](auto... tags) { ((chosen || (chosen = instantiateProvider<Exec, op>(tags))), ...); },
+                pipeline);
+
+            if(!chosen)
+                chosen = std::make_unique<DefaultProvider>();
+            return chosen;
+        }
+
+        template<typename Provider, typename Fn>
+        bool tryInvokeProvider(IOpProvider& base, Fn&& fn)
+        {
+            if(auto* typed = dynamic_cast<Provider*>(&base))
+            {
+                try
+                {
+                    fn(*typed);
+                    return true;
+                }
+                catch(...)
+                {
+                }
+            }
+            return false;
+        }
+    } // namespace detail
+
     template<typename TExec, typename TDevice, typename TQueue>
     class CleanTensorOpContext
     {
@@ -54,58 +131,12 @@ namespace alpaka::tensor
             , device_(&device)
             , queue_(&queue)
         {
-            gemmProvider_ = ProviderRegistry::makeGemm<TExec>();
-            convProvider_ = ProviderRegistry::makeConv<TExec>();
-            if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda>)
-            {
-                if constexpr(EnabledVendorLibs::hasCUDNN)
-                {
-                    auto probe = std::make_unique<CuDNNProvider>();
-                    if(probe->isActive())
-                        batchnormProvider_ = std::move(probe);
-                    else
-                        batchnormProvider_ = std::make_unique<DefaultProvider>();
-                    activationProvider_ = std::make_unique<CuDNNProvider>();
-                    poolingProvider_ = std::make_unique<CuDNNProvider>();
-                }
-                else
-                {
-                    batchnormProvider_ = std::make_unique<DefaultProvider>();
-                    activationProvider_ = std::make_unique<DefaultProvider>();
-                    poolingProvider_ = std::make_unique<DefaultProvider>();
-                }
-            }
-            else if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip>)
-            {
-                if constexpr(EnabledVendorLibs::hasMIOPEN)
-                {
-                    batchnormProvider_ = std::make_unique<MIOpenProvider>();
-                    activationProvider_ = std::make_unique<MIOpenProvider>();
-                    poolingProvider_ = std::make_unique<MIOpenProvider>();
-                }
-                else
-                {
-                    batchnormProvider_ = std::make_unique<DefaultProvider>();
-                    activationProvider_ = std::make_unique<DefaultProvider>();
-                    poolingProvider_ = std::make_unique<DefaultProvider>();
-                }
-            }
-            else
-            {
-                batchnormProvider_ = std::make_unique<DefaultProvider>();
-                activationProvider_ = std::make_unique<DefaultProvider>();
-                poolingProvider_ = std::make_unique<DefaultProvider>();
-            }
+            gemmProvider_ = detail::makeProviderForOp<Exec, OpType::GEMM>();
+            convProvider_ = detail::makeProviderForOp<Exec, OpType::Conv2D>();
+            batchnormProvider_ = detail::makeProviderForOp<Exec, OpType::BatchNorm>();
+            activationProvider_ = detail::makeProviderForOp<Exec, OpType::Activation>();
+            poolingProvider_ = detail::makeProviderForOp<Exec, OpType::Pooling>();
             fallbackProvider_ = std::make_unique<DefaultProvider>();
-            {
-                std::unique_ptr<IOpProvider>* providers[]
-                    = {&gemmProvider_, &convProvider_, &batchnormProvider_, &activationProvider_, &poolingProvider_};
-                for(auto* p : providers)
-                    if(!*p)
-                        *p = std::make_unique<DefaultProvider>();
-            }
-            if(!fallbackProvider_)
-                fallbackProvider_ = std::make_unique<DefaultProvider>();
         }
 
         CleanTensorOpContext() = default;
@@ -262,13 +293,14 @@ namespace alpaka::tensor
             auto& provider = getGemmProvider();
             if(provider.supportsOperation(OpType::GEMM))
             {
-                try
+                bool handled = false;
+                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUBLAS)
                 {
-                    if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUBLAS)
-                    {
-                        if(auto* cu = dynamic_cast<CuBLASProvider*>(&provider))
+                    handled = detail::tryInvokeProvider<CuBLASProvider>(
+                        provider,
+                        [&](auto& cu)
                         {
-                            cu->template gemm<TExec, TDevice, TQueue>(
+                            cu.template gemm<TExec, TDevice, TQueue>(
                                 *exec_,
                                 *device_,
                                 *queue_,
@@ -280,37 +312,38 @@ namespace alpaka::tensor
                                 B,
                                 beta,
                                 C);
-                            return;
-                        }
-                    }
+                        });
+                }
+                if(!handled)
+                {
                     if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasROCBLAS)
                     {
-                        if(auto* rb = dynamic_cast<RocBLASProvider*>(&provider))
-                        {
-                            rb->template gemm<TExec, TDevice, TQueue>(
-                                *exec_,
-                                *device_,
-                                *queue_,
-                                M,
-                                N,
-                                K,
-                                alpha,
-                                A,
-                                B,
-                                beta,
-                                C);
-                            return;
-                        }
+                        handled = detail::tryInvokeProvider<RocBLASProvider>(
+                            provider,
+                            [&](auto& rb)
+                            {
+                                rb.template gemm<TExec, TDevice, TQueue>(
+                                    *exec_,
+                                    *device_,
+                                    *queue_,
+                                    M,
+                                    N,
+                                    K,
+                                    alpha,
+                                    A,
+                                    B,
+                                    beta,
+                                    C);
+                            });
                     }
                 }
-                catch(...)
-                {
-                }
-                auto status = provider.gemm_status(*exec_, *device_, *queue_, M, N, K, alpha, A, B, beta, C);
-                if(status == OpStatus::Success)
+                if(handled)
+                    return;
+
+                if(provider.gemm_status(*exec_, *device_, *queue_, M, N, K, alpha, A, B, beta, C) == OpStatus::Success)
                     return;
             }
-            ::alpaka::tensor::ops::gemm(*exec_, *device_, *queue_, 'N', 'N', M, N, K, alpha, A, B, beta, C);
+            ops::fallback::gemm(*exec_, *device_, *queue_, M, N, K, alpha, A, B, beta, C);
         }
 
         template<typename T>
@@ -321,58 +354,59 @@ namespace alpaka::tensor
         {
             auto& provider = getConvProvider();
             using TensorType = Tensor4D<T, TDevice>;
-            TensorType output(
-                *device_,
-                {input.shape()[0],
-                 weight.shape()[0],
-                 (input.shape()[2] + 2 * params.pad_h - weight.shape()[2]) / params.stride_h + 1,
-                 (input.shape()[3] + 2 * params.pad_w - weight.shape()[3]) / params.stride_w + 1});
             if(provider.supportsOperation(OpType::Conv2D))
             {
-                try
+                std::optional<TensorType> typedResult;
+                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
                 {
-                    if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
+                    if(!typedResult)
                     {
-                        if(auto* cudnnProv = dynamic_cast<CuDNNProvider*>(&provider))
-                        {
-                            try
+                        detail::tryInvokeProvider<CuDNNProvider>(
+                            provider,
+                            [&](auto& cudnn)
                             {
-                                return cudnnProv->template conv2d<T, TExec, TDevice, TQueue>(
+                                typedResult = cudnn.template conv2d<T, TExec, TDevice, TQueue>(
                                     *exec_,
                                     *device_,
                                     *queue_,
                                     input,
                                     weight,
                                     params);
-                            }
-                            catch(...)
-                            {
-                            }
-                        }
-                    }
-                    if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
-                    {
-                        if(auto* mi = dynamic_cast<MIOpenProvider*>(&provider))
-                        {
-                            return mi->template conv2d<T, TExec, TDevice, TQueue>(
-                                *exec_,
-                                *device_,
-                                *queue_,
-                                input,
-                                weight,
-                                params);
-                        }
+                            });
                     }
                 }
-                catch(...)
+                if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
                 {
+                    if(!typedResult)
+                    {
+                        detail::tryInvokeProvider<MIOpenProvider>(
+                            provider,
+                            [&](auto& miOpen)
+                            {
+                                typedResult = miOpen.template conv2d<T, TExec, TDevice, TQueue>(
+                                    *exec_,
+                                    *device_,
+                                    *queue_,
+                                    input,
+                                    weight,
+                                    params);
+                            });
+                    }
                 }
-                auto status = provider.conv2d_status(*exec_, *device_, *queue_, input, weight, params, output);
-                if(status == OpStatus::Success)
+                if(typedResult)
+                    return std::move(*typedResult);
+
+                TensorType output(
+                    *device_,
+                    {input.shape()[0],
+                     weight.shape()[0],
+                     (input.shape()[2] + 2 * params.pad_h - weight.shape()[2]) / params.stride_h + 1,
+                     (input.shape()[3] + 2 * params.pad_w - weight.shape()[3]) / params.stride_w + 1});
+                if(provider.conv2d_status(*exec_, *device_, *queue_, input, weight, params, output)
+                   == OpStatus::Success)
                     return output;
             }
-            output = ops::conv2d<T>(*exec_, *device_, *queue_, input, weight, params);
-            return output;
+            return ops::fallback::conv2d<T>(*exec_, *device_, *queue_, input, weight, params);
         }
 
         template<typename T>
@@ -386,81 +420,62 @@ namespace alpaka::tensor
         {
             auto& provider = getBatchNormProvider();
             using TensorType = Tensor4D<T, TDevice>;
-            TensorType output(*device_, input.shape());
             if(provider.supportsOperation(OpType::BatchNorm))
             {
+                std::optional<TensorType> typedResult;
                 if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
                 {
-                    if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(&provider))
+                    if(!typedResult)
                     {
-                        try
-                        {
-                            return cudnnProv->template batchnorm<
-                                T>(*exec_, *device_, *queue_, input, mean, variance, gamma, beta, epsilon);
-                        }
-                        catch(...)
-                        {
-                        }
+                        detail::tryInvokeProvider<CuDNNProvider>(
+                            provider,
+                            [&](auto& cudnn)
+                            {
+                                typedResult = cudnn.template batchnorm<
+                                    T>(*exec_, *device_, *queue_, input, mean, variance, gamma, beta, epsilon);
+                            });
                     }
                 }
                 if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
                 {
-                    if(auto mi = dynamic_cast<MIOpenProvider*>(&provider))
+                    if(!typedResult)
                     {
-                        try
-                        {
-                            return mi->template batchnorm<T, TExec, TDevice, TQueue>(
-                                *exec_,
-                                *device_,
-                                *queue_,
-                                input,
-                                mean,
-                                variance,
-                                gamma,
-                                beta,
-                                epsilon);
-                        }
-                        catch(...)
-                        {
-                        }
+                        detail::tryInvokeProvider<MIOpenProvider>(
+                            provider,
+                            [&](auto& miOpen)
+                            {
+                                typedResult = miOpen.template batchnorm<T, TExec, TDevice, TQueue>(
+                                    *exec_,
+                                    *device_,
+                                    *queue_,
+                                    input,
+                                    mean,
+                                    variance,
+                                    gamma,
+                                    beta,
+                                    epsilon);
+                            });
                     }
                 }
-                auto status = provider.batchnorm_status(
-                    *exec_,
-                    *device_,
-                    *queue_,
-                    input,
-                    mean,
-                    variance,
-                    gamma,
-                    beta,
-                    epsilon,
-                    output);
-                if(status == OpStatus::Success)
+                if(typedResult)
+                    return std::move(*typedResult);
+
+                TensorType output(*device_, input.shape());
+                if(provider.batchnorm_status(
+                       *exec_,
+                       *device_,
+                       *queue_,
+                       input,
+                       mean,
+                       variance,
+                       gamma,
+                       beta,
+                       epsilon,
+                       output)
+                   == OpStatus::Success)
                     return output;
             }
-            auto* inHost = const_cast<tensor::Tensor4D<T, TDevice>&>(input).hostData();
-            auto* outHost = output.hostData();
-            auto* meanHost = const_cast<tensor::Tensor1D<T, TDevice>&>(mean).hostData();
-            auto* varHost = const_cast<tensor::Tensor1D<T, TDevice>&>(variance).hostData();
-            auto* gammaHost = const_cast<tensor::Tensor1D<T, TDevice>&>(gamma).hostData();
-            auto* betaHost = const_cast<tensor::Tensor1D<T, TDevice>&>(beta).hostData();
-            auto shape = input.shape();
-            size_t N = shape[0], C = shape[1], H = shape[2], W = shape[3], spatial = H * W;
-            for(size_t n = 0; n < N; ++n)
-                for(size_t c = 0; c < C; ++c)
-                {
-                    T m = meanHost[c], v = varHost[c], g = gammaHost[c], b = betaHost[c];
-                    T invStd = T(1) / static_cast<T>(std::sqrt(static_cast<double>(v + epsilon)));
-                    size_t base = ((n * C + c) * H) * W;
-                    for(size_t idx = 0; idx < spatial; ++idx)
-                    {
-                        T x = inHost[base + idx];
-                        outHost[base + idx] = g * (x - m) * invStd + b;
-                    }
-                }
-            output.markHostModified();
-            return output;
+            return ops::fallback::batchnorm<T>(*exec_, *device_, *queue_, input, mean, variance, gamma, beta, epsilon);
         }
 
         template<typename T, size_t Rank>
@@ -471,20 +486,13 @@ namespace alpaka::tensor
             {
                 if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
                 {
-                    if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(&provider))
-                    {
-                        try
-                        {
-                            cudnnProv->template gelu<T, Rank>(*exec_, *device_, *queue_, t);
-                            return;
-                        }
-                        catch(...)
-                        {
-                        }
-                    }
+                    if(detail::tryInvokeProvider<CuDNNProvider>(
+                           provider,
+                           [&](auto& cudnn) { cudnn.template gelu<T, Rank>(*exec_, *device_, *queue_, t); }))
+                        return;
                 }
             }
-            ::alpaka::tensor::ops::gelu<T>(*exec_, *device_, *queue_, t);
+            ops::fallback::gelu<T, Rank>(*exec_, *device_, *queue_, t);
         }
 
         template<typename T, size_t Rank>
@@ -495,34 +503,20 @@ namespace alpaka::tensor
             {
                 if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
                 {
-                    if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(&provider))
-                    {
-                        try
-                        {
-                            cudnnProv->template relu_inplace<T, Rank>(*exec_, *device_, *queue_, t);
-                            return;
-                        }
-                        catch(...)
-                        {
-                        }
-                    }
+                    if(detail::tryInvokeProvider<CuDNNProvider>(
+                           provider,
+                           [&](auto& cudnn) { cudnn.template relu_inplace<T, Rank>(*exec_, *device_, *queue_, t); }))
+                        return;
                 }
                 if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
                 {
-                    if(auto mi = dynamic_cast<MIOpenProvider*>(&provider))
-                    {
-                        try
-                        {
-                            mi->template relu_inplace<T, Rank>(*exec_, *device_, *queue_, t);
-                            return;
-                        }
-                        catch(...)
-                        {
-                        }
-                    }
+                    if(detail::tryInvokeProvider<MIOpenProvider>(
+                           provider,
+                           [&](auto& miOpen) { miOpen.template relu_inplace<T, Rank>(*exec_, *device_, *queue_, t); }))
+                        return;
                 }
             }
-            ::alpaka::tensor::ops::relu_inplace(*exec_, *device_, *queue_, t);
+            ops::fallback::relu_inplace<T, Rank>(*exec_, *device_, *queue_, t);
         }
 
         template<typename T, size_t Rank>
@@ -562,102 +556,98 @@ namespace alpaka::tensor
         auto max_pool2d(tensor::Tensor4D<T, TDevice> const& input, ops::Pool2DParams const& params)
             -> tensor::Tensor4D<T, TDevice>
         {
-            if(poolingProvider_ && poolingProvider_->isActive())
+            auto& provider = getPoolingProvider();
+            using TensorType = Tensor4D<T, TDevice>;
+            if(provider.supportsOperation(OpType::Pooling))
             {
+                std::optional<TensorType> typedResult;
                 if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
                 {
-                    if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(poolingProvider_.get()))
+                    if(!typedResult)
                     {
-                        try
-                        {
-                            return cudnnProv->max_pool2d(
-                                *exec_,
-                                *device_,
-                                *queue_,
-                                const_cast<tensor::Tensor4D<T, TDevice>&>(input),
-                                params);
-                        }
-                        catch(...)
-                        {
-                        }
+                        detail::tryInvokeProvider<CuDNNProvider>(
+                            provider,
+                            [&](auto& cudnn)
+                            {
+                                typedResult = cudnn.max_pool2d(
+                                    *exec_,
+                                    *device_,
+                                    *queue_,
+                                    const_cast<TensorType&>(input),
+                                    params);
+                            });
                     }
                 }
                 if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
                 {
-                    if(auto mi = dynamic_cast<MIOpenProvider*>(poolingProvider_.get()))
+                    if(!typedResult)
                     {
-                        try
-                        {
-                            return mi->max_pool2d(
-                                *exec_,
-                                *device_,
-                                *queue_,
-                                const_cast<tensor::Tensor4D<T, TDevice>&>(input),
-                                params);
-                        }
-                        catch(...)
-                        {
-                        }
+                        detail::tryInvokeProvider<MIOpenProvider>(
+                            provider,
+                            [&](auto& miOpen)
+                            {
+                                typedResult = miOpen.max_pool2d(
+                                    *exec_,
+                                    *device_,
+                                    *queue_,
+                                    const_cast<TensorType&>(input),
+                                    params);
+                            });
                     }
                 }
+                if(typedResult)
+                    return std::move(*typedResult);
             }
-            return ::alpaka::tensor::ops::max_pool2d<T>(
-                *exec_,
-                *device_,
-                *queue_,
-                const_cast<tensor::Tensor4D<T, TDevice>&>(input),
-                params);
+            return ops::fallback::max_pool2d<T>(*exec_, *device_, *queue_, const_cast<TensorType&>(input), params);
         }
 
         template<typename T>
         auto avg_pool2d(tensor::Tensor4D<T, TDevice> const& input, ops::Pool2DParams const& params)
             -> tensor::Tensor4D<T, TDevice>
         {
-            if(poolingProvider_ && poolingProvider_->isActive())
+            auto& provider = getPoolingProvider();
+            using TensorType = Tensor4D<T, TDevice>;
+            if(provider.supportsOperation(OpType::Pooling))
             {
+                std::optional<TensorType> typedResult;
                 if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasCUDNN)
                 {
-                    if(auto cudnnProv = dynamic_cast<CuDNNProvider*>(poolingProvider_.get()))
+                    if(!typedResult)
                     {
-                        try
-                        {
-                            return cudnnProv->avg_pool2d(
-                                *exec_,
-                                *device_,
-                                *queue_,
-                                const_cast<tensor::Tensor4D<T, TDevice>&>(input),
-                                params);
-                        }
-                        catch(...)
-                        {
-                        }
+                        detail::tryInvokeProvider<CuDNNProvider>(
+                            provider,
+                            [&](auto& cudnn)
+                            {
+                                typedResult = cudnn.avg_pool2d(
+                                    *exec_,
+                                    *device_,
+                                    *queue_,
+                                    const_cast<TensorType&>(input),
+                                    params);
+                            });
                     }
                 }
                 if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasMIOPEN)
                 {
-                    if(auto mi = dynamic_cast<MIOpenProvider*>(poolingProvider_.get()))
+                    if(!typedResult)
                     {
-                        try
-                        {
-                            return mi->avg_pool2d(
-                                *exec_,
-                                *device_,
-                                *queue_,
-                                const_cast<tensor::Tensor4D<T, TDevice>&>(input),
-                                params);
-                        }
-                        catch(...)
-                        {
-                        }
+                        detail::tryInvokeProvider<MIOpenProvider>(
+                            provider,
+                            [&](auto& miOpen)
+                            {
+                                typedResult = miOpen.avg_pool2d(
+                                    *exec_,
+                                    *device_,
+                                    *queue_,
+                                    const_cast<TensorType&>(input),
+                                    params);
+                            });
                     }
                 }
+                if(typedResult)
+                    return std::move(*typedResult);
             }
-            return ::alpaka::tensor::ops::avg_pool2d<T>(
-                *exec_,
-                *device_,
-                *queue_,
-                const_cast<tensor::Tensor4D<T, TDevice>&>(input),
-                params);
+            return ops::fallback::avg_pool2d<T>(*exec_, *device_, *queue_, const_cast<TensorType&>(input), params);
         }
 
         template<typename T>
