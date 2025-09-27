@@ -17,7 +17,7 @@ namespace alpaka::tensor::layers
 
     // Multi-rank layers
     template<typename Device>
-    struct FlattenLayer
+    struct FlattenTo1DLayer
     {
         using input_type = tensor::Tensor4D<float, Device>;
         using output_type = tensor::Tensor1D<float, Device>;
@@ -261,9 +261,9 @@ namespace alpaka::tensor::layers
 
     // Factory functions with CamelCase naming
     template<typename Device>
-    FlattenLayer<Device> flatten()
+    FlattenTo1DLayer<Device> flatten()
     {
-        return FlattenLayer<Device>{};
+        return FlattenTo1DLayer<Device>{};
     }
 
     template<typename Device>

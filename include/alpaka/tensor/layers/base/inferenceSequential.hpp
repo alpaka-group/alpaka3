@@ -411,7 +411,7 @@ namespace alpaka::tensor::layers
                         typeid(LayerType).name());
                 }
             }
-            else if constexpr(std::is_same_v<LayerType, FlattenLayer<Device>>)
+            else if constexpr(std::is_same_v<LayerType, FlattenTo1DLayer<Device>>)
             {
                 // 4D to 1D conversion
                 addImpl<T4>(
