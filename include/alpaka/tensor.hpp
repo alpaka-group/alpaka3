@@ -19,9 +19,9 @@
 
 // Fundamental elementwise ops (powering tensor core utilities)
 #include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>
-#include <alpaka/tensor/ops/elementwise/ElementwiseLazy.hpp>
 
 // Domain specific tensor operations
+#include <alpaka/tensor/layers/base/inferenceSequential.hpp>
 #include <alpaka/tensor/ops/bias/BiasAdd.hpp>
 #include <alpaka/tensor/ops/convolution/Conv2D.hpp>
 #include <alpaka/tensor/ops/convolution/Conv2DTypes.hpp>
