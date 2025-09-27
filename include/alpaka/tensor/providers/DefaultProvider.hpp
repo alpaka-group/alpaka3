@@ -4,10 +4,7 @@
  */
 #pragma once
 
-#include <alpaka/tensor/ops/convolution/Conv2D.hpp>
-#include <alpaka/tensor/ops/linear/Gemm.hpp>
-#include <alpaka/tensor/ops/pooling/Pooling.hpp>
-#include <alpaka/tensor/ops/pooling/PoolingTypes.hpp>
+#include <alpaka/tensor/ops/fallback/FallbackOps.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
 
 namespace alpaka::tensor
@@ -102,8 +99,7 @@ namespace alpaka::tensor
             tensor::Tensor4D<T, Device> const& weight,
             ops::Conv2DParams const& params) -> tensor::Tensor4D<T, Device>
         {
-            // Delegate to existing generic implementation
-            return ops::conv2d<T>(exec, device, queue, input, weight, params);
+            return ops::fallback::conv2d<T>(exec, device, queue, input, weight, params);
         }
 
         template<typename Exec, typename Device, typename Queue>
@@ -120,7 +116,7 @@ namespace alpaka::tensor
             float beta,
             tensor::Tensor1D<float, Device>& C)
         {
-            ::alpaka::tensor::ops::gemm(exec, device, queue, 'N', 'N', M, N, K, alpha, A, B, beta, C);
+            ops::fallback::gemm(exec, device, queue, M, N, K, alpha, A, B, beta, C);
         }
 
         template<typename T, typename Exec, typename Device, typename Queue>
@@ -131,7 +127,7 @@ namespace alpaka::tensor
             tensor::Tensor4D<T, Device>& input,
             ops::Pool2DParams const& params) -> tensor::Tensor4D<T, Device>
         {
-            return ::alpaka::tensor::ops::max_pool2d<T>(exec, device, queue, input, params);
+            return ops::fallback::max_pool2d<T>(exec, device, queue, input, params);
         }
 
         template<typename T, typename Exec, typename Device, typename Queue>
@@ -142,7 +138,7 @@ namespace alpaka::tensor
             tensor::Tensor4D<T, Device>& input,
             ops::Pool2DParams const& params) -> tensor::Tensor4D<T, Device>
         {
-            return ::alpaka::tensor::ops::avg_pool2d<T>(exec, device, queue, input, params);
+            return ops::fallback::avg_pool2d<T>(exec, device, queue, input, params);
         }
     };
 
