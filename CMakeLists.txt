@@ -312,6 +312,8 @@ if(alpaka_DEP_HIP)
 
     # Detect and wire ROCm provider libraries (rocBLAS/MIOpen) if present
     include(${_alpaka_ROOT_DIR}/cmake/RocmSupport.cmake)
+    # Discover collective communication providers (RCCL, etc.)
+    include(${_alpaka_ROOT_DIR}/cmake/CollectiveSupport.cmake)
 endif()
 
 if(alpaka_DEP_ONEAPI)
