@@ -17,6 +17,51 @@ namespace ops = alpaka::tensor::ops;
 
 namespace
 {
+    void reportDiagnostics(at::RCCLProvider::Diagnostics const& diag)
+    {
+        std::cout << "[collective] detected GPUs: " << diag.deviceCount;
+        if(diag.activeDevice >= 0)
+        {
+            std::cout << " (active=" << diag.activeDevice;
+            if(!diag.activeDeviceName.empty())
+            {
+                std::cout << ", name=\"" << diag.activeDeviceName << "\"";
+            }
+            std::cout << ')';
+        }
+        std::cout << '\n';
+
+        if(!diag.deviceNames.empty())
+        {
+            for(std::size_t idx = 0; idx < diag.deviceNames.size(); ++idx)
+            {
+                std::cout << "[collective]   gpu[" << idx << "]: " << diag.deviceNames[idx] << '\n';
+            }
+        }
+
+        std::cout << "[collective] detected nodes: 1 (single-process example)\n";
+
+        if(diag.deviceCount > 1 && diag.peerAccess.size() == static_cast<std::size_t>(diag.deviceCount))
+        {
+            std::cout << "[collective] peer access (1=direct link, 0=disabled):\n";
+            for(std::size_t src = 0; src < diag.peerAccess.size(); ++src)
+            {
+                std::cout << "[collective]    from gpu " << src << ": ";
+                for(std::size_t dst = 0; dst < diag.peerAccess[src].size(); ++dst)
+                {
+                    std::cout << (diag.peerAccess[src][dst] ? '1' : '0');
+                    if(dst + 1 < diag.peerAccess[src].size())
+                        std::cout << ' ';
+                }
+                std::cout << '\n';
+            }
+        }
+        else
+        {
+            std::cout << "[collective] topology: single GPU or peer access data unavailable\n";
+        }
+    }
+
     template<typename Backend>
     int runBackend(Backend const& backend, bool verbose)
     {
@@ -54,6 +99,21 @@ namespace
                       << alpaka::onHost::demangledName(deviceSpec) << '\n';
             std::cout << "[collective] provider: " << provider.getBackendName() << ", world_size="
                       << provider.worldSize() << ", rank=" << provider.worldRank() << '\n';
+            reportDiagnostics(provider.diagnostics());
+        }
+
+        auto diag = provider.diagnostics();
+        if(!verbose && diag.deviceCount > 0)
+        {
+            std::cout << "[collective] GPUs: " << diag.deviceCount;
+            if(diag.activeDevice >= 0)
+            {
+                std::cout << " (active=" << diag.activeDevice;
+                if(!diag.activeDeviceName.empty())
+                    std::cout << ", name=\"" << diag.activeDeviceName << "\"";
+                std::cout << ')';
+            }
+            std::cout << " | nodes: 1\n";
         }
 
         constexpr std::size_t elementCount = 16;

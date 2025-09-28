@@ -8,6 +8,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #ifdef ALPAKA_HAS_RCCL
 #    include <hip/hip_runtime_api.h>
@@ -19,12 +20,23 @@ namespace alpaka::tensor
     class RCCLProvider : public ICollectiveProvider
     {
     public:
+        struct Diagnostics
+        {
+            int deviceCount = 0;
+            int activeDevice = -1;
+            std::string activeDeviceName;
+            std::vector<std::string> deviceNames;
+            std::vector<std::vector<bool>> peerAccess;
+        };
+
         RCCLProvider() = default;
         ~RCCLProvider() override;
 
         std::string getBackendName() const override;
         bool supportsOperation(OpType op) const override;
         bool isActive() const override;
+
+        Diagnostics diagnostics() const;
 
         bool supportsPattern(ops::CollectivePattern pattern) const override;
         bool supportsReduction(ops::CollectiveReduction reduction) const override;
@@ -148,6 +160,69 @@ namespace alpaka::tensor
     {
         ensureInitialized();
         return static_cast<std::size_t>(worldRank_);
+    }
+
+    inline RCCLProvider::Diagnostics RCCLProvider::diagnostics() const
+    {
+        Diagnostics diag;
+
+        int deviceCount = 0;
+        hipError_t hipStatus = hipGetDeviceCount(&deviceCount);
+        if(hipStatus != hipSuccess || deviceCount <= 0)
+        {
+            return diag;
+        }
+
+        diag.deviceCount = deviceCount;
+
+        int activeDevice = -1;
+        hipStatus = hipGetDevice(&activeDevice);
+        if(hipStatus == hipSuccess)
+        {
+            diag.activeDevice = activeDevice;
+        }
+
+        diag.deviceNames.resize(static_cast<std::size_t>(deviceCount));
+        diag.peerAccess.assign(static_cast<std::size_t>(deviceCount), std::vector<bool>(static_cast<std::size_t>(deviceCount), false));
+
+        for(int dev = 0; dev < deviceCount; ++dev)
+        {
+            hipDeviceProp_t props{};
+            hipStatus = hipGetDeviceProperties(&props, dev);
+            if(hipStatus == hipSuccess)
+            {
+                diag.deviceNames[static_cast<std::size_t>(dev)] = props.name;
+                if(dev == diag.activeDevice)
+                {
+                    diag.activeDeviceName = props.name;
+                }
+            }
+            else
+            {
+                diag.deviceNames[static_cast<std::size_t>(dev)] = "unknown";
+            }
+        }
+
+        for(int src = 0; src < deviceCount; ++src)
+        {
+            for(int dst = 0; dst < deviceCount; ++dst)
+            {
+                if(src == dst)
+                {
+                    diag.peerAccess[static_cast<std::size_t>(src)][static_cast<std::size_t>(dst)] = true;
+                    continue;
+                }
+
+                int canAccess = 0;
+                hipStatus = hipDeviceCanAccessPeer(&canAccess, src, dst);
+                if(hipStatus == hipSuccess)
+                {
+                    diag.peerAccess[static_cast<std::size_t>(src)][static_cast<std::size_t>(dst)] = (canAccess != 0);
+                }
+            }
+        }
+
+        return diag;
     }
 
     inline ncclDataType_t RCCLProvider::mapDataType(ops::CollectiveDataType dtype) const
@@ -384,6 +459,11 @@ namespace alpaka::tensor
     inline std::size_t RCCLProvider::worldRank() const
     {
         return 0;
+    }
+
+    inline RCCLProvider::Diagnostics RCCLProvider::diagnostics() const
+    {
+        return Diagnostics{};
     }
 
     inline void RCCLProvider::ensureInitialized() const
