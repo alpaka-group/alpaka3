@@ -10,6 +10,12 @@ project(alpaka)
 # This file's directory.
 set(_alpaka_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
 
+# Optional vendor library backends (auto-detected when enabled)
+option(alpaka_ENABLE_CUBLAS "Link cuBLAS provider when CUDA Toolkit supplies it" ON)
+option(alpaka_ENABLE_CUDNN "Link cuDNN provider when installed" ON)
+option(alpaka_ENABLE_ROCBLAS "Link rocBLAS provider when ROCm toolchain supplies it" ON)
+option(alpaka_ENABLE_MIOPEN "Link MIOpen provider when ROCm toolchain supplies it" ON)
+
 include(${_alpaka_ROOT_DIR}/cmake/buildDependencies.cmake)
 include(${_alpaka_ROOT_DIR}/cmake/finalize.cmake)
 include(${_alpaka_ROOT_DIR}/cmake/CudaSupport.cmake)
