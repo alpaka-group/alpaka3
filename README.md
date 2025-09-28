@@ -162,7 +162,6 @@ You should not include header files with a relative path from your source files.
 
 alpaka is currently not providing an installation target therefore you should use `add_subdirectory(path/to/alpaka)` in your CMakeLists.txt.
 
-- standard application enabling API's depending on the cmake dependencies selected
     ```cmake
     # call: cmake -Dalpaka_DEP_CUDA=ON pathToAlpaka
     add_executable(fooTarget src/main.cpp)
@@ -170,7 +169,6 @@ alpaka is currently not providing an installation target therefore you should us
     target_link_libraries(fooTarget PUBLIC alpaka)
     alpaka_finalize(fooTarget)
     ```
-- build a shared library
     ```cmake
     # call: cmake -Dalpaka_DEP_CUDA=ON pathToAlpaka
     add_library(fooShared SHARED src/foo.cpp)
@@ -180,7 +178,6 @@ alpaka is currently not providing an installation target therefore you should us
     add_executable(fooTarget src/main.cpp)
     target_link_libraries(fooTarget PRIVATE fooShared)
     ```
-- standard application which prefer manual selection of the API's
     ```cmake
     # call: cmake -Dalpaka_DEP_CUDA=ON pathToAlpaka
     add_executable(fooTarget src/main.cpp)
@@ -189,7 +186,6 @@ alpaka is currently not providing an installation target therefore you should us
     target_link_libraries(fooTarget PUBLIC alpaka::cuda)
     alpaka_finalize(fooTarget)
     ```  
-- using more than one dependency 
     ```cmake
     # call: cmake -Dalpaka_DEP_CUDA=ON -Dalpaka_DEP_HIP=ON pathToAlpaka
     add_executable(fooTarget src/main.cpp)
@@ -202,6 +198,26 @@ alpaka is currently not providing an installation target therefore you should us
     # provides access to host, HIP API
     target_link_libraries(barTarget PUBLIC alpaka alpaka::hip)
     alpaka_finalize(barTarget)
+
+### Optional vendor libraries
+
+When CUDA or ROCm toolchains are detected, alpaka will automatically link vendor math libraries when they are
+available. These integrations are **optional**. If the runtime does not ship a particular library (for example cuDNN on
+minimal CUDA installations), alpaka falls back to its generic kernels without failing the build. You can also force the
+fallback path explicitly at configure time:
+
+```bash
+cmake -Dalpaka_ENABLE_CUBLAS=OFF \
+      -Dalpaka_ENABLE_CUDNN=OFF \
+      -Dalpaka_ENABLE_ROCBLAS=OFF \
+      -Dalpaka_ENABLE_MIOPEN=OFF \
+      ..
+```
+
+Each switch defaults to `ON`; setting one to `OFF` suppresses the integration even if the corresponding toolkit is
+installed. This is useful on systems where only the generic alpaka implementations should be compiled or when targeting
+lightweight containers without vendor libraries.
+
     ```
 
 Coding
