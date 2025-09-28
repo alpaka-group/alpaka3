@@ -18,6 +18,7 @@ namespace alpaka::tensor
     class RocBLASProvider;
     class MIOpenProvider;
     class RCCLProvider;
+    class NCCLProvider;
 } // namespace alpaka::tensor
 
 namespace alpaka::tensor::providers
@@ -29,7 +30,7 @@ namespace alpaka::tensor::providers
         bool batchNorm = false;
         bool activation = false;
         bool pooling = false;
-    bool collective = false;
+        bool collective = false;
     };
 
     template<typename Provider>
@@ -77,7 +78,7 @@ namespace alpaka::tensor::providers
     [[nodiscard]] constexpr bool provides_any() noexcept
     {
         auto f = caps<Provider>();
-    return f.gemm || f.conv2d || f.batchNorm || f.activation || f.pooling || f.collective;
+        return f.gemm || f.conv2d || f.batchNorm || f.activation || f.pooling || f.collective;
     }
 
     // ------------------------------------------------------------------
@@ -156,6 +157,18 @@ namespace alpaka::tensor::providers
     {
         static constexpr CapabilityFlags value{
 #ifdef ALPAKA_HAS_RCCL
+            .collective = true
+#else
+            .collective = false
+#endif
+        };
+    };
+
+    template<>
+    struct provider_caps<::alpaka::tensor::NCCLProvider>
+    {
+        static constexpr CapabilityFlags value{
+#ifdef ALPAKA_HAS_NCCL
             .collective = true
 #else
             .collective = false

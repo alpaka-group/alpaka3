@@ -51,6 +51,14 @@ else()
 endif()
 set(ALPAKA_CUDA_DETECTED TRUE CACHE INTERNAL "CUDA detection completed" FORCE)
 
+if(TARGET alpaka_target_headers)
+    target_compile_definitions(
+        alpaka_target_headers
+        INTERFACE
+            $<$<AND:$<BOOL:${alpaka_ENABLE_CUBLAS}>,$<BOOL:${ALPAKA_HAS_CUBLAS}>>:ALPAKA_HAS_CUBLAS>
+            $<$<AND:$<BOOL:${alpaka_ENABLE_CUDNN}>,$<BOOL:${ALPAKA_HAS_CUDNN}>>:ALPAKA_HAS_CUDNN>)
+endif()
+
 # Macro to add CUDA/cuDNN support to a target
 # Usage: alpaka_add_cuda_support(target_name [VERBOSE])
 macro(alpaka_add_cuda_support TARGET_NAME)
@@ -76,10 +84,9 @@ macro(alpaka_add_cuda_support TARGET_NAME)
         if(alpaka_ENABLE_CUBLAS AND ALPAKA_HAS_CUBLAS AND TARGET CUDA::cublas)
             message(STATUS "Linking cuBLAS into ${TARGET_NAME}")
             target_link_libraries(${TARGET_NAME} PUBLIC CUDA::cublas)
-            target_compile_definitions(${TARGET_NAME} PRIVATE ALPAKA_HAS_CUBLAS)
-            if(TARGET alpaka_target_headers)
-                target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_HAS_CUBLAS)
-            endif()
+            target_compile_definitions(
+                ${TARGET_NAME}
+                PRIVATE $<$<AND:$<BOOL:${alpaka_ENABLE_CUBLAS}>,$<BOOL:${ALPAKA_HAS_CUBLAS}>>:ALPAKA_HAS_CUBLAS>)
         elseif(alpaka_ENABLE_CUBLAS)
             message(STATUS "cuBLAS requested but unavailable for ${TARGET_NAME}; continuing without provider")
         endif()
@@ -87,10 +94,9 @@ macro(alpaka_add_cuda_support TARGET_NAME)
         if(alpaka_ENABLE_CUDNN AND ALPAKA_HAS_CUDNN AND ALPAKA_CUDNN_LIBRARY)
             message(STATUS "Adding cuDNN support to ${TARGET_NAME}: ${ALPAKA_CUDNN_LIBRARY}")
             target_link_libraries(${TARGET_NAME} PUBLIC ${ALPAKA_CUDNN_LIBRARY})
-            target_compile_definitions(${TARGET_NAME} PRIVATE ALPAKA_HAS_CUDNN)
-            if(TARGET alpaka_target_headers)
-                target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_HAS_CUDNN)
-            endif()
+            target_compile_definitions(
+                ${TARGET_NAME}
+                PRIVATE $<$<AND:$<BOOL:${alpaka_ENABLE_CUDNN}>,$<BOOL:${ALPAKA_HAS_CUDNN}>>:ALPAKA_HAS_CUDNN>)
         elseif(alpaka_ENABLE_CUDNN)
             message(STATUS "cuDNN requested but unavailable for ${TARGET_NAME}; continuing without provider")
         endif()
