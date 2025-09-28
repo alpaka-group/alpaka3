@@ -1,4 +1,4 @@
-# RCCL collective example
+# NCCL/RCCL collective example
 # SPDX-License-Identifier: MPL-2.0
 
 cmake_minimum_required(VERSION 3.25)
@@ -10,8 +10,8 @@ if(NOT TARGET alpaka::alpaka)
     find_package(alpaka REQUIRED)
 endif()
 
-if(NOT ALPAKA_HAS_RCCL)
-    message(STATUS "Skipping collectiveBasic example (RCCL not available)")
+if(NOT ALPAKA_HAS_RCCL AND NOT ALPAKA_HAS_NCCL)
+    message(STATUS "Skipping collectiveBasic example (no NCCL or RCCL available)")
     return()
 endif()
 
@@ -20,6 +20,12 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../../cmake/CudaSupport.cmake)
 add_executable(collectiveBasic src/collectiveBasic.cpp)
 
 target_link_libraries(collectiveBasic PUBLIC alpaka::alpaka)
+if(ALPAKA_HAS_NCCL AND TARGET alpaka::cuda)
+    target_link_libraries(collectiveBasic PUBLIC alpaka::cuda)
+endif()
+if(ALPAKA_HAS_RCCL AND TARGET alpaka::hip)
+    target_link_libraries(collectiveBasic PUBLIC alpaka::hip)
+endif()
 alpaka_finalize(collectiveBasic)
 alpaka_add_tensor_cuda_support(collectiveBasic)
 

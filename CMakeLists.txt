@@ -13,6 +13,7 @@ set(_alpaka_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
 # Optional vendor library backends (auto-detected when enabled)
 option(alpaka_ENABLE_CUBLAS "Link cuBLAS provider when CUDA Toolkit supplies it" ON)
 option(alpaka_ENABLE_CUDNN "Link cuDNN provider when installed" ON)
+option(alpaka_ENABLE_NCCL "Link NCCL collective provider when installed" ON)
 option(alpaka_ENABLE_ROCBLAS "Link rocBLAS provider when ROCm toolchain supplies it" ON)
 option(alpaka_ENABLE_MIOPEN "Link MIOpen provider when ROCm toolchain supplies it" ON)
 
@@ -238,6 +239,9 @@ if(alpaka_DEP_CUDA)
 
     target_compile_definitions(alpaka_target_cuda INTERFACE ALPAKA_CMAKE_TARGET_CUDA)
     target_link_libraries(alpaka_target_cuda INTERFACE alpaka::headers)
+
+    # Discover CUDA collective communication providers (NCCL, etc.)
+    include(${_alpaka_ROOT_DIR}/cmake/CollectiveSupport.cmake)
 
     if(alpaka_COUNT_API_DEPS EQUAL 1)
         target_link_libraries(alpaka INTERFACE alpaka_target_cuda)

@@ -1,10 +1,11 @@
-// RCCL collective example: single-process all-reduce demonstration
+// NCCL/RCCL collective example: single-process all-reduce demonstration
 // SPDX-License-Identifier: MPL-2.0
 
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
 #include <alpaka/tensor/ops/CollectiveOps.hpp>
+#include <alpaka/tensor/providers/NCCLProvider.hpp>
 #include <alpaka/tensor/providers/RCCLProvider.hpp>
 
 #include <cmath>
@@ -17,7 +18,8 @@ namespace ops = alpaka::tensor::ops;
 
 namespace
 {
-    void reportDiagnostics(at::RCCLProvider::Diagnostics const& diag)
+    template<typename Diagnostics>
+    void reportDiagnostics(Diagnostics const& diag)
     {
         std::cout << "[collective] detected GPUs: " << diag.deviceCount;
         if(diag.activeDevice >= 0)
@@ -62,22 +64,11 @@ namespace
         }
     }
 
-    template<typename Backend>
-    int runBackend(Backend const& backend, bool verbose)
+    template<typename Provider, typename Backend>
+    int runProviderBackend(Backend const& backend, bool verbose)
     {
         auto deviceSpec = backend[alpaka::object::deviceSpec];
         auto exec = backend[alpaka::object::exec];
-
-        using ExecT = std::decay_t<decltype(exec)>;
-        if constexpr(!std::is_same_v<ExecT, alpaka::exec::GpuHip>)
-        {
-            if(verbose)
-            {
-                std::cout << "[collective] skipping backend (not HIP): " << alpaka::onHost::demangledName(exec)
-                          << " / " << alpaka::onHost::demangledName(deviceSpec) << '\n';
-            }
-            return 0;
-        }
 
         auto selector = alpaka::onHost::makeDeviceSelector(deviceSpec);
         if(!selector.isAvailable())
@@ -86,12 +77,15 @@ namespace
         auto device = selector.makeDevice(0);
         auto queue = device.makeQueue(alpaka::queueKind::nonBlocking);
 
-        at::RCCLProvider provider;
+        Provider provider;
         if(!provider.isActive())
         {
-            std::cerr << "[collective] RCCL provider is not active; ensure RCCL is installed and HIP is enabled\n";
+            std::cerr << "[collective] " << provider.getBackendName()
+                      << " provider is not active; ensure the required collective library is available\n";
             return 1;
         }
+
+        auto diag = provider.diagnostics();
 
         if(verbose)
         {
@@ -99,11 +93,9 @@ namespace
                       << alpaka::onHost::demangledName(deviceSpec) << '\n';
             std::cout << "[collective] provider: " << provider.getBackendName() << ", world_size="
                       << provider.worldSize() << ", rank=" << provider.worldRank() << '\n';
-            reportDiagnostics(provider.diagnostics());
+            reportDiagnostics(diag);
         }
-
-        auto diag = provider.diagnostics();
-        if(!verbose && diag.deviceCount > 0)
+        else if(diag.deviceCount > 0)
         {
             std::cout << "[collective] GPUs: " << diag.deviceCount;
             if(diag.activeDevice >= 0)
@@ -140,7 +132,7 @@ namespace
         deviceBuffer.destructorWaitFor(queue);
         if(status != at::OpStatus::Success)
         {
-            std::cerr << "[collective] rcclAllReduce returned error\n";
+            std::cerr << "[collective] allReduce returned error for provider " << provider.getBackendName() << '\n';
             return 1;
         }
 
@@ -170,12 +162,40 @@ namespace
 
         if(!validationOk)
         {
-            std::cerr << "[collective] validation failed: mismatch after allreduce\n";
+            std::cerr << "[collective] validation failed: mismatch after allreduce for "
+                      << provider.getBackendName() << '\n';
             return 1;
         }
 
-        std::cout << "[collective] RCCL AllReduce validation succeeded" << std::endl;
+        std::cout << "[collective] " << provider.getBackendName() << " AllReduce validation succeeded" << std::endl;
         return 0;
+    }
+
+    template<typename Backend>
+    int runBackend(Backend const& backend, bool verbose)
+    {
+        auto exec = backend[alpaka::object::exec];
+        auto deviceSpec = backend[alpaka::object::deviceSpec];
+
+        using ExecT = std::decay_t<decltype(exec)>;
+        if constexpr(std::is_same_v<ExecT, alpaka::exec::GpuHip>)
+        {
+            return runProviderBackend<at::RCCLProvider>(backend, verbose);
+        }
+        else if constexpr(std::is_same_v<ExecT, alpaka::exec::GpuCuda>)
+        {
+            return runProviderBackend<at::NCCLProvider>(backend, verbose);
+        }
+        else
+        {
+            if(verbose)
+            {
+                std::cout << "[collective] skipping backend (no collective provider): "
+                          << alpaka::onHost::demangledName(exec) << " / "
+                          << alpaka::onHost::demangledName(deviceSpec) << '\n';
+            }
+            return 0;
+        }
     }
 } // namespace
 
