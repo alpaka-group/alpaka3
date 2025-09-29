@@ -94,7 +94,7 @@ namespace alpaka
                         return true;
                     case HostSyncPolicy::Auto:
                     default:
-                        return eagerHostEnabled();
+                        return detail::eagerHostEnabled();
                     }
                 }
             } // namespace detail

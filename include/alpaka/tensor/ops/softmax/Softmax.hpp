@@ -10,8 +10,8 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cstdio>
 #include <cstdlib>
+#include <iostream>
 
 namespace alpaka::tensor::ops
 {
@@ -92,16 +92,16 @@ namespace alpaka::tensor::ops
             for(std::size_t r = 0; r < rowsToShow; ++r)
             {
                 double sum = 0.0;
-                std::printf("softmax row %zu: ", r);
+                std::cout << "softmax row " << r << ": ";
                 for(std::size_t j = 0; j < N; ++j)
                 {
                     float v = h[r * N + j];
                     sum += v;
-                    std::printf("%g ", static_cast<double>(v));
+                    std::cout << v << " ";
                 }
-                std::printf("| sum=%g\n", sum);
+                std::cout << "| sum=" << sum << "\n";
             }
-            std::fflush(stdout);
+            std::cout << std::flush;
         }
     }
 } // namespace alpaka::tensor::ops
