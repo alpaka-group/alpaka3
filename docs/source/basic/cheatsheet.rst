@@ -352,7 +352,7 @@ Atomic operations
     :dedent:
 
 Memory fences on block-, device- or system level (guarantees LoadLoad and StoreStore ordering)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   .. literalinclude:: ../../snippets/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-memoryFence

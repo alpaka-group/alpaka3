@@ -27,17 +27,20 @@ CMake Logging Options
 ---------------------
 
 * ``alpaka_LOG=<X>`` where ``X`` can be
-   - ``OFF``,``off`` - to disable logging, other CMake option ``alpaka_LOG_*`` will not be available.
+
+   - ``OFF`` - to disable logging, other CMake option ``alpaka_LOG_*`` will not be available.
    - ``static`` - will enable compile time logging where the logging level can be selected in CMake, additional CMake option ``alpaka_LOG_STATIC_*`` will be available.
    - ``dynamic`` - will enable runtime logging where the logging level can be selected via the environment variable ``ALPAKA_LOG_DYNAMIC_LVL=<lvl>``
-      -  ``lvl`` - is the number of :ref:`logging-level` or the sum of multiple lvl to select multiple levels at the within the same output
+
+     - ``lvl`` - is the number of :ref:`logging-level` or the sum of multiple lvl to select multiple levels at the within the same output
 
   If logging is off there will be no runtime overhead introduced.
+
    - ``static`` - will introduce small overhead for message formating and the output.
      If a logging level is disabled these messages will be removed at compile time and no runtime overhead is introduced.
    - ``dynamic``  - will introduce overhead for message formating and additional small overhead for a runtime lookup (one if condition).
 
-* ``alpaka_LOG_FUNCTIONS=<X>`` - where ``X`` can be ``ON` or ``OFF`` create a reduced call stack and show the function entry and exit. The exit will show the time in milliseconds between the entry and exit of the function.
+* ``alpaka_LOG_FUNCTIONS=<X>`` - where ``X`` can be ``ON`` or ``OFF`` create a reduced call stack and show the function entry and exit. The exit will show the time in milliseconds between the entry and exit of the function.
 
   .. code:: c++
 
