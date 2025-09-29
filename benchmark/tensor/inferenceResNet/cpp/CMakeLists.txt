@@ -19,9 +19,8 @@ alpaka_add_tensor_cuda_support(inferenceResNet)
 set_target_properties(inferenceResNet PROPERTIES FOLDER example)
 
 # Register as ctest benchmark similar to babelstream logic
- 
-    if(CMAKE_BUILD_TYPE STREQUAL "Release")
-        add_test(NAME inferenceResNet COMMAND inferenceResNet --dry-run --verbose)
-        set_tests_properties(inferenceResNet PROPERTIES TIMEOUT 5 LABELS "smoke;quick")
-    endif()
- 
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_test(NAME inferenceResNet COMMAND inferenceResNet --dry-run --verbose)
+    set_tests_properties(inferenceResNet PROPERTIES TIMEOUT 5 LABELS "smoke;quick")
+endif()

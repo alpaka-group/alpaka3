@@ -56,7 +56,8 @@ if(TARGET alpaka_target_headers)
         alpaka_target_headers
         INTERFACE
             $<$<AND:$<BOOL:${alpaka_ENABLE_CUBLAS}>,$<BOOL:${ALPAKA_HAS_CUBLAS}>>:ALPAKA_HAS_CUBLAS>
-            $<$<AND:$<BOOL:${alpaka_ENABLE_CUDNN}>,$<BOOL:${ALPAKA_HAS_CUDNN}>>:ALPAKA_HAS_CUDNN>)
+            $<$<AND:$<BOOL:${alpaka_ENABLE_CUDNN}>,$<BOOL:${ALPAKA_HAS_CUDNN}>>:ALPAKA_HAS_CUDNN>
+    )
 endif()
 
 # Macro to add CUDA/cuDNN support to a target
@@ -86,7 +87,8 @@ macro(alpaka_add_cuda_support TARGET_NAME)
             target_link_libraries(${TARGET_NAME} PUBLIC CUDA::cublas)
             target_compile_definitions(
                 ${TARGET_NAME}
-                PRIVATE $<$<AND:$<BOOL:${alpaka_ENABLE_CUBLAS}>,$<BOOL:${ALPAKA_HAS_CUBLAS}>>:ALPAKA_HAS_CUBLAS>)
+                PRIVATE $<$<AND:$<BOOL:${alpaka_ENABLE_CUBLAS}>,$<BOOL:${ALPAKA_HAS_CUBLAS}>>:ALPAKA_HAS_CUBLAS>
+            )
         elseif(alpaka_ENABLE_CUBLAS)
             message(STATUS "cuBLAS requested but unavailable for ${TARGET_NAME}; continuing without provider")
         endif()
@@ -96,7 +98,8 @@ macro(alpaka_add_cuda_support TARGET_NAME)
             target_link_libraries(${TARGET_NAME} PUBLIC ${ALPAKA_CUDNN_LIBRARY})
             target_compile_definitions(
                 ${TARGET_NAME}
-                PRIVATE $<$<AND:$<BOOL:${alpaka_ENABLE_CUDNN}>,$<BOOL:${ALPAKA_HAS_CUDNN}>>:ALPAKA_HAS_CUDNN>)
+                PRIVATE $<$<AND:$<BOOL:${alpaka_ENABLE_CUDNN}>,$<BOOL:${ALPAKA_HAS_CUDNN}>>:ALPAKA_HAS_CUDNN>
+            )
         elseif(alpaka_ENABLE_CUDNN)
             message(STATUS "cuDNN requested but unavailable for ${TARGET_NAME}; continuing without provider")
         endif()

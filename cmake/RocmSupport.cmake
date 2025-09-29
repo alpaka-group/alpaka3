@@ -103,9 +103,9 @@ if(ALPAKA_HAS_MIOPEN OR ALPAKA_HAS_ROCBLAS)
 
     find_path(
         ALPAKA_ROCM_HIP_INCLUDE_DIR
-        NAMES hip/hip_runtime.h
-        ${_alpaka_rocm_hint_args}
-        PATH_SUFFIXES include include/hip)
+        NAMES hip/hip_runtime.h ${_alpaka_rocm_hint_args}
+        PATH_SUFFIXES include include/hip
+    )
 
     if(ALPAKA_ROCM_HIP_INCLUDE_DIR)
         if(TARGET alpaka_target_headers)
@@ -115,6 +115,9 @@ if(ALPAKA_HAS_MIOPEN OR ALPAKA_HAS_ROCBLAS)
             target_include_directories(alpaka_target_hip INTERFACE "${ALPAKA_ROCM_HIP_INCLUDE_DIR}")
         endif()
     else()
-        message(WARNING "rocBLAS/MIOpen detected but hip/hip_runtime.h was not found. Set ROCM_PATH or HIP_ROOT_DIR so host targets can include HIP headers.")
+        message(
+            WARNING
+            "rocBLAS/MIOpen detected but hip/hip_runtime.h was not found. Set ROCM_PATH or HIP_ROOT_DIR so host targets can include HIP headers."
+        )
     endif()
 endif()
