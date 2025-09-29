@@ -11,6 +11,7 @@
 #include "alpaka/mem/Alignment.hpp"
 #include "alpaka/mem/DataPitches.hpp"
 #include "alpaka/mem/MdForwardIter.hpp"
+#include "alpaka/mem/trait.hpp"
 #include "alpaka/onHost/interface.hpp"
 #include "alpaka/trait.hpp"
 
@@ -150,9 +151,22 @@ namespace alpaka
         {
         }
 
-        MdSpan(MdSpan const&) = default;
-        MdSpan(MdSpan&&) = default;
-        constexpr MdSpan& operator=(MdSpan const&) = default;
+        template<typename T_Type_Other>
+        requires requires { requires !(std::is_const_v<T_Type_Other> && !std::is_const_v<T_Type>); }
+        constexpr MdSpan(MdSpan<T_Type_Other, T_Extents, T_Pitches, T_MemAlignment> const& other)
+            : m_ptr(other.data())
+            , m_extent(other.getExtents())
+            , m_pitch(other.getPitches()){};
+        constexpr MdSpan(MdSpan const&) = default;
+
+        template<typename T_Type_Other>
+        requires requires { requires !(std::is_const_v<T_Type_Other> && !std::is_const_v<T_Type>); }
+        constexpr MdSpan(MdSpan<T_Type_Other, T_Extents, T_Pitches, T_MemAlignment>&& other)
+            : m_ptr(std::move(other.data()))
+            , m_extent(std::move(other.getExtents()))
+            , m_pitch(std::move(other.getPitches())){};
+        constexpr MdSpan(MdSpan&&) = default;
+
         constexpr MdSpan& operator=(MdSpan&&) = default;
 
         static constexpr auto getAlignment()
@@ -255,6 +269,17 @@ namespace alpaka
                  << ", pitches=" << mdSpan.getPitches().toString()
                  << " , alignment=" << T_MemAlignment::template get<T_Type>() << " }";
     }
+
+    template<
+        typename T_Type,
+        alpaka::concepts::Vector T_Extents,
+        alpaka::concepts::Vector T_Pitches,
+        alpaka::concepts::Alignment T_MemAlignment>
+    struct internal::CopyConstructableDataSource<MdSpan<T_Type, T_Extents, T_Pitches, T_MemAlignment>> : std::true_type
+    {
+        using InnerMutable = MdSpan<std::remove_const_t<T_Type>, T_Extents, T_Pitches, T_MemAlignment>;
+        using InnerConst = MdSpan<std::add_const_t<T_Type>, T_Extents, T_Pitches, T_MemAlignment>;
+    };
 
     /** access a C array with compile time extents via a runtime md index. */
     template<std::integral auto T_numDims, uint32_t T_dim = 0u>
