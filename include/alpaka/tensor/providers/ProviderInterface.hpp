@@ -17,8 +17,7 @@ namespace alpaka::tensor
         GEMM,
         BatchNorm,
         Pooling,
-        Activation,
-        Collective // TODO(ROCM): ensure upcoming HIP providers advertise same OpType set
+        Activation
     };
 
     enum class OpStatus

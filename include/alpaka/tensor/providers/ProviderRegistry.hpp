@@ -6,7 +6,6 @@
 
 #include <alpaka/core/config.hpp>
 #include <alpaka/tensor/providers/DefaultProvider.hpp>
-#include <alpaka/tensor/providers/ICollectiveProvider.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
 
 // Forward declarations for provider types to allow conditional type references
@@ -16,8 +15,6 @@ namespace alpaka::tensor
     class CuDNNProvider;
     class RocBLASProvider;
     class MIOpenProvider;
-    class RCCLProvider;
-    class NCCLProvider;
 } // namespace alpaka::tensor
 
 #ifdef ALPAKA_HAS_CUBLAS
@@ -32,12 +29,6 @@ namespace alpaka::tensor
 #endif
 #ifdef ALPAKA_HAS_MIOPEN
 #    include <alpaka/tensor/providers/MIOpenProvider.hpp>
-#endif
-#ifdef ALPAKA_HAS_RCCL
-#    include <alpaka/tensor/providers/RCCLProvider.hpp>
-#endif
-#ifdef ALPAKA_HAS_NCCL
-#    include <alpaka/tensor/providers/NCCLProvider.hpp>
 #endif
 
 #include <alpaka/tensor/providers/EnabledVendorLibs.hpp>
@@ -87,21 +78,6 @@ namespace alpaka::tensor
         using type = DefaultProvider; // placeholder until consolidated CUDA+cuDNN+cuBLAS provider or HIP variant
     };
 
-    template<typename Exec>
-    struct select_collective_provider
-    {
-        using type = std::conditional_t<
-            (std::is_same_v<Exec, alpaka::exec::GpuCuda> && EnabledVendorLibs::hasNCCL),
-            NCCLProvider,
-            std::conditional_t<
-                (std::is_same_v<Exec, alpaka::exec::GpuHip> && EnabledVendorLibs::hasRCCL),
-                RCCLProvider,
-                void>>;
-    };
-
-    template<typename Exec>
-    using select_collective_provider_t = typename select_collective_provider<Exec>::type;
-
     // Runtime factory (optional use)
     class ProviderRegistry
     {
@@ -121,26 +97,6 @@ namespace alpaka::tensor
             return std::unique_ptr<IOpProvider>(new P());
         }
 
-        template<typename Exec>
-        static std::unique_ptr<ICollectiveProvider> makeCollective()
-        {
-            using P = select_collective_provider_t<Exec>;
-            if constexpr(std::is_void_v<P>)
-            {
-                return nullptr;
-            }
-            else
-            {
-                static_assert(
-                    std::is_base_of_v<ICollectiveProvider, P>,
-                    "Selected provider must implement ICollectiveProvider");
-                auto provider = std::make_unique<P>();
-                if(!provider->isActive())
-                {
-                    return nullptr;
-                }
-                return provider;
-            }
-        }
+        // Collective provider factory removed (NCCL/RCCL unsupported)
     };
 } // namespace alpaka::tensor

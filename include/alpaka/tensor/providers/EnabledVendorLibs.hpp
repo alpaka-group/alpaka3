@@ -32,18 +32,6 @@ namespace alpaka::tensor
         static constexpr bool hasMIOPEN = false;
 #endif
 
-#ifdef ALPAKA_HAS_NCCL
-        static constexpr bool hasNCCL = true;
-#else
-        static constexpr bool hasNCCL = false;
-#endif
-
-#ifdef ALPAKA_HAS_RCCL
-        static constexpr bool hasRCCL = true;
-#else
-        static constexpr bool hasRCCL = false;
-#endif
-
         // SYCL backends (optional – define in your SYCL support cmake when available)
 #ifdef ALPAKA_HAS_ONEMKL
         static constexpr bool hasONEMKL = true;
