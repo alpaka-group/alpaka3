@@ -520,7 +520,7 @@ endif()
 set(alpaka_LOG "OFF" CACHE STRING "Set how the logging should be compiled into alpaka")
 set_property(CACHE alpaka_LOG PROPERTY STRINGS "static;dynamic;OFF")
 
-if((${alpaka_LOG} STREQUAL "OFF") OR (${alpaka_LOG} STREQUAL "off"))
+if(${alpaka_LOG} STREQUAL "OFF")
     set(alpaka_LOG_ENABLED OFF)
 else()
     set(alpaka_LOG_ENABLED ON)
