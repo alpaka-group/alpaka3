@@ -13,6 +13,6 @@ namespace alpaka::concepts
     /** Check whether the specified data type matches the expected type, or if the expected type is
      *`alpaka::NotRequired`, then all data types passes the concept.
      **/
-    template<typename TData, typename TExpected>
-    concept ExpectedValueType = std::same_as<TExpected, TData> || std::same_as<TExpected, alpaka::NotRequired>;
+    template<typename T_Data, typename T_Expected>
+    concept ExpectedValueType = std::same_as<T_Expected, T_Data> || std::same_as<T_Expected, alpaka::NotRequired>;
 } // namespace alpaka::concepts

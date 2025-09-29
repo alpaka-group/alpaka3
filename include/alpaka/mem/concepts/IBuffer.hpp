@@ -41,9 +41,9 @@ namespace alpaka::concepts
          * @endcode
          * - <b>t.destructorWaitFor</b>: Add an action to be executed when the shared_ptr is destroyed.
          **/
-        template<typename T, typename MutT, typename ConstT>
+        template<typename T, typename T_Mut, typename T_Const>
         concept IBuffer = requires(T t) {
-            requires IView<T, MutT, ConstT>;
+            requires IView<T, T_Mut, T_Const>;
             t.addDestructorAction(alpaka::concepts::empty_callable);
             t.destructorWaitFor(alpaka::concepts::empty_callable);
         };
@@ -54,7 +54,7 @@ namespace alpaka::concepts
      * `alpaka::buffer` like object has memory ownership and therefore manages memory lifetime according to the RAII
      * principle.
      *
-     * \attention Use `alpaka::IBuffer` to restrict types in your code. The actual interface is described in
+     * @attention Use `alpaka::IBuffer` to restrict types in your code. The actual interface is described in
      * alpaka::concepts::impl::IBuffer.
      *
      **/

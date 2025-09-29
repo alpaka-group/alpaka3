@@ -23,9 +23,9 @@ namespace alpaka::concepts
          * the same interface.
          *
          **/
-        template<typename T, typename MutT, typename ConstT>
+        template<typename T, typename T_Mut, typename T_Const>
         concept IView = requires(T t) {
-            requires IMdSpan<T, MutT, ConstT>;
+            requires IMdSpan<T, T_Mut, T_Const>;
             { t.getApi() } -> alpaka::concepts::Api;
         };
     } // namespace impl
@@ -34,7 +34,7 @@ namespace alpaka::concepts
      * An `alpaka::view` like object contains information about the device(s) to which it is connected. The
      * `alpaka::view` like object has no memory ownership, and therefore it does not manage the memory lifetime.
      *
-     * \attention Use `alpaka::IView` to restrict types in your code. The actual interface is described in
+     * @attention Use `alpaka::IView` to restrict types in your code. The actual interface is described in
      * alpaka::concepts::impl::IView.
      *
      **/

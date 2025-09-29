@@ -52,8 +52,8 @@ namespace alpaka::concepts
          *
          * @note The access operator [] with an integral as an argument is only available if the dimension is one.
          **/
-        template<typename T, typename MutT, typename ConstT>
-        concept IMdSpan = requires(T t, MutT mut_t, ConstT const_t, alpaka::Vec<uint32_t, T::dim()> vec) {
+        template<typename T, typename T_Mut, typename T_Const>
+        concept IMdSpan = requires(T t, T_Mut mut_t, T_Const const_t, alpaka::Vec<uint32_t, T::dim()> vec) {
             typename T::value_type;
             typename T::reference;
             typename T::const_reference;
@@ -61,7 +61,7 @@ namespace alpaka::concepts
             typename T::const_pointer;
             typename T::index_type;
 
-            requires std::movable<MutT>;
+            requires std::movable<T_Mut>;
 
             { T::dim() } -> std::same_as<uint32_t>;
             { *mut_t } -> std::same_as<typename T::reference>;
@@ -99,7 +99,7 @@ namespace alpaka::concepts
      * An object of type `alpaka::mdspan` does not store any information about the storage location, e.g., whether
      * the memory is located on a CPU or a GPU.
      *
-     * \attention Use `alpaka::IMdSpan` to restrict types in your code. The actual interface is described in
+     * @attention Use `alpaka::IMdSpan` to restrict types in your code. The actual interface is described in
      * alpaka::concepts::impl::IMdSpan.
      *
      **/
