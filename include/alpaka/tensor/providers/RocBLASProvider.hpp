@@ -4,13 +4,15 @@
  */
 #pragma once
 
-#include <alpaka/tensor/providers/ProviderInterface.hpp>
 #include <alpaka/onHost/interface.hpp>
+#include <alpaka/tensor/providers/ProviderInterface.hpp>
+
 #include <stdexcept>
 
 #ifdef ALPAKA_HAS_ROCBLAS
-#    include <rocblas/rocblas.h>
 #    include <hip/hip_runtime.h>
+#    include <rocblas/rocblas.h>
+
 #    include <cstdlib>
 #    include <iostream>
 #    include <string>
@@ -56,7 +58,7 @@ namespace alpaka::tensor
 #ifdef ALPAKA_HAS_ROCBLAS
             return op == OpType::GEMM;
 #else
-            (void)op;
+            (void) op;
             return false;
 #endif
         }
@@ -117,8 +119,8 @@ namespace alpaka::tensor
             int const ldb = static_cast<int>(K); // leading dim of A^T
             int const ldc = static_cast<int>(N); // leading dim of C^T
 
-            const float* dB = B.deviceBuffer(device, queue).data();
-            const float* dA = A.deviceBuffer(device, queue).data();
+            float const* dB = B.deviceBuffer(device, queue).data();
+            float const* dA = A.deviceBuffer(device, queue).data();
             float* dC = C.deviceBuffer(device, queue).data();
 
             auto st = rocblas_sgemm(
@@ -141,7 +143,16 @@ namespace alpaka::tensor
 
             C.markDeviceModified(device, queue);
 #else
-            (void)M; (void)N; (void)K; (void)alpha; (void)A; (void)B; (void)beta; (void)C; (void)device; (void)queue;
+            (void) M;
+            (void) N;
+            (void) K;
+            (void) alpha;
+            (void) A;
+            (void) B;
+            (void) beta;
+            (void) C;
+            (void) device;
+            (void) queue;
             throw std::runtime_error("RocBLAS not available at build time");
 #endif
         }
