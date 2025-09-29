@@ -16,6 +16,7 @@
 #ifdef ALPAKA_HAS_CUDNN
 #    include <cuda_runtime.h>
 #    include <cudnn.h>
+
 #    include <array>
 #    include <iostream>
 #    include <string>
@@ -199,10 +200,10 @@ namespace alpaka::tensor
         {
 #ifdef ALPAKA_HAS_CUDNN
             return isActive() ? "cuDNN" : "cuDNN (Unavailable)";
-        return isActive() ? "cuDNN" : "cuDNN (Unavailable)";
+            return isActive() ? "cuDNN" : "cuDNN (Unavailable)";
 #else
-        // Stub provider string when cuDNN not built
-        return "cuDNN (Not Built)";
+            // Stub provider string when cuDNN not built
+            return "cuDNN (Not Built)";
 #endif
         }
 
@@ -223,9 +224,9 @@ namespace alpaka::tensor
                 return false;
             ensureInitialized();
             return initialized_;
-    #else
-        return false; // Not built -> inactive
-    #endif
+#else
+            return false; // Not built -> inactive
+#endif
         }
 
         bool supportsOperation(OpType op) const override
@@ -243,10 +244,10 @@ namespace alpaka::tensor
             default:
                 return false;
             }
-    #else
-        (void) op;
-        return false; // No operations supported when not built
-    #endif
+#else
+            (void) op;
+            return false; // No operations supported when not built
+#endif
         }
 
 #ifdef ALPAKA_HAS_CUDNN
@@ -257,9 +258,12 @@ namespace alpaka::tensor
         {
             return false;
         }
-    #else
-    bool supportsBatchNormTemporarilyDisabled() const { return false; }
-    #endif
+#else
+        bool supportsBatchNormTemporarilyDisabled() const
+        {
+            return false;
+        }
+#endif
 
 #ifdef ALPAKA_HAS_CUDNN
         char const* failureReason() const noexcept
@@ -308,10 +312,10 @@ namespace alpaka::tensor
             {
                 return fallbackToGenericConv2D(exec, device, queue, input, weight, params);
             }
-    #else
-        // When cuDNN not built we always fallback to generic conv2d (no exception, seamless fallback)
-        return ops::conv2d<T>(exec, device, queue, input, weight, params);
-    #endif
+#else
+            // When cuDNN not built we always fallback to generic conv2d (no exception, seamless fallback)
+            return ops::conv2d<T>(exec, device, queue, input, weight, params);
+#endif
         }
 
         template<typename T, typename Exec, typename Device, typename Queue>
@@ -332,10 +336,18 @@ namespace alpaka::tensor
             if(!isActive())
                 throw std::runtime_error("cuDNN provider inactive");
             return batchnorm_impl_typed(exec, device, queue, input, mean, variance, gamma, beta, epsilon);
-    #else
-        (void) exec; (void) device; (void) queue; (void) input; (void) mean; (void) variance; (void) gamma; (void) beta; (void) epsilon;
-        throw std::runtime_error("cuDNN batchnorm requested but cuDNN not built");
-    #endif
+#else
+            (void) exec;
+            (void) device;
+            (void) queue;
+            (void) input;
+            (void) mean;
+            (void) variance;
+            (void) gamma;
+            (void) beta;
+            (void) epsilon;
+            throw std::runtime_error("cuDNN batchnorm requested but cuDNN not built");
+#endif
         }
 
         template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
@@ -347,10 +359,13 @@ namespace alpaka::tensor
             if(!isActive())
                 throw std::runtime_error("cuDNN provider inactive");
             gelu_impl_typed(exec, device, queue, t);
-    #else
-        (void) exec; (void) device; (void) queue; (void) t;
-        throw std::runtime_error("cuDNN activation requested but cuDNN not built");
-    #endif
+#else
+            (void) exec;
+            (void) device;
+            (void) queue;
+            (void) t;
+            throw std::runtime_error("cuDNN activation requested but cuDNN not built");
+#endif
         }
 
         template<typename T, std::size_t Rank, typename Exec, typename Device, typename Queue>
@@ -721,10 +736,10 @@ namespace alpaka::tensor
                     output.toHost(device, queue);
                 return output;
             }
-    #else
-        // Seamless fallback to generic pooling when cuDNN not built
-        return ::alpaka::tensor::ops::max_pool2d<T>(exec, device, queue, input, params);
-    #endif
+#else
+            // Seamless fallback to generic pooling when cuDNN not built
+            return ::alpaka::tensor::ops::max_pool2d<T>(exec, device, queue, input, params);
+#endif
         }
 
         template<typename T, typename Exec, typename Device, typename Queue>
@@ -810,9 +825,9 @@ namespace alpaka::tensor
                     output.toHost(device, queue);
                 return output;
             }
-        #else
+#else
             return ::alpaka::tensor::ops::avg_pool2d<T>(exec, device, queue, input, params);
-        #endif
+#endif
         }
     };
 } // namespace alpaka::tensor

@@ -92,25 +92,14 @@ int main() {
 }
 ```
 
-Notes:
-- Phase 1 uses stable host-side paths for 2D ops to ensure correctness on all backends.
-- Broadcasting and dtypes beyond Float32 are not yet supported.
-- See `tests/unit/tensor/aten_minimal.cpp` for more usage patterns.
+### Optional Vendor Math/DNN Libraries (cuBLAS, cuDNN, rocBLAS, MIOpen)
 
-Software License
-----------------
+Alpaka tensor/provider layers are fully functional without any proprietary or platform vendor math/DNN libraries. Detection is automatic:
 
-**alpaka** is licensed under **MPL-2.0**.
-
-Documentation
--------------
-
-The documentation is available at: https://alpaka3.readthedocs.io
-
-### cross compile on x86 for riscv
-
-Tested on https://riscv.epcc.ed.ac.uk/
-
+* When the CUDA backend is enabled, Alpaka probes for cuBLAS and cuDNN. If found, they are linked and the corresponding compile definitions (`ALPAKA_HAS_CUBLAS`, `ALPAKA_HAS_CUDNN`) are set. If not, Alpaka prints a short status message and uses the generic kernels.
+* When the HIP backend is enabled, Alpaka probes for rocBLAS and MIOpen in the same fashion.
+* No CMake options are required—auto-detection is always on—and missing libraries never cause configuration to fail.
+* If the libraries become available later, a reconfigure automatically enables the accelerated providers; otherwise runtime remains correct via generic kernels without loader errors.
 ```bash
 module load riscv64-linux/gnu-12.2
 # download the latest CMake 3.3X and set it to your environment PATH variable
@@ -205,33 +194,25 @@ alpaka is currently not providing an installation target therefore you should us
 
 ### Optional vendor libraries
 
-When CUDA or ROCm toolchains are detected, alpaka will automatically link vendor math libraries when they are
-available. These integrations are **optional**. If the runtime does not ship a particular library (for example cuDNN on
-minimal CUDA installations), alpaka falls back to its generic kernels without failing the build. You can also force the
-fallback path explicitly at configure time:
+When CUDA or ROCm toolchains are detected, alpaka automatically probes for vendor math libraries. These integrations are
+**optional**. If the runtime does not ship a particular library (for example cuDNN on minimal CUDA installations),
+alpaka falls back to its generic kernels without failing the build. No configuration switches are needed: re-running
+`cmake` after installing the libraries is enough to pick up the acceleration providers.
 
-```bash
-cmake -Dalpaka_ENABLE_CUBLAS=OFF \
-      -Dalpaka_ENABLE_CUDNN=OFF \
-      -Dalpaka_ENABLE_ROCBLAS=OFF \
-      -Dalpaka_ENABLE_MIOPEN=OFF \
-      ..
-```
 ### Optional Vendor Math/DNN Libraries (cuBLAS, cuDNN, rocBLAS, MIOpen)
 
 Alpaka tensor/provider layers are fully functional without any proprietary or platform vendor math/DNN libraries.
 
 Behavior summary:
-* CMake options (e.g. `alpaka_ENABLE_CUBLAS=ON`, `alpaka_ENABLE_CUDNN=ON`, `alpaka_ENABLE_ROCBLAS=ON`, `alpaka_ENABLE_MIOPEN=ON`) declare an intent to use a library if present, but they NEVER make configuration or build fail when the library is absent.
-* If a library is not found, a STATUS or WARNING message is emitted and the build proceeds using generic Alpaka kernels (fallback provider) with no loss of correctness—only potential performance difference.
-* Compile definitions `ALPAKA_HAS_CUBLAS`, `ALPAKA_HAS_CUDNN`, `ALPAKA_HAS_ROCBLAS`, `ALPAKA_HAS_MIOPEN` are only defined when the corresponding verified library file is detected and linked.
-* No runtime loader errors (e.g. `error while loading shared libraries: libcublas.so`) are introduced by Alpaka—linkage occurs only after positive detection.
+* Auto-detection is always on. When cuBLAS/cuDNN or rocBLAS/MIOpen are present alongside the respective backend, alpaka
+  links them and defines the corresponding compile definitions `ALPAKA_HAS_CUBLAS`, `ALPAKA_HAS_CUDNN`, `ALPAKA_HAS_ROCBLAS`, `ALPAKA_HAS_MIOPEN`.
+* If a library is not found, a STATUS message documents the fallback and the build proceeds using the generic alpaka
+  kernels—there is no loss of correctness, only a potential performance delta.
+* Alpaka only adds libraries after verification, preventing runtime loader errors (such as `$\\texttt{libcublas.so}$` not
+  found) on systems where the vendor packages are missing.
 
-This “never fail for optional acceleration” philosophy ensures reproducible portable builds across CI, developer laptops, and clusters with heterogeneous toolchain provisioning.
-
-Each switch defaults to `ON`; setting one to `OFF` suppresses the integration even if the corresponding toolkit is
-installed. This is useful on systems where only the generic alpaka implementations should be compiled or when targeting
-lightweight containers without vendor libraries.
+This “never fail for optional acceleration” philosophy ensures reproducible portable builds across CI, developer
+laptops, and clusters with heterogeneous toolchain provisioning.
 
     ```
 

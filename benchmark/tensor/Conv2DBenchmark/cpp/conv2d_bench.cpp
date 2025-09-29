@@ -9,7 +9,7 @@
  * Build (release, enabling benchmarks & CUDA):
  *   mkdir -p build && cd build
  *   cmake -DCMAKE_BUILD_TYPE=Release -Dalpaka_BENCHMARKS=ON ..
- *   # (Enable / detect CUDA & cuDNN via ccmake or additional -DALPAKA_ENABLE_CUDA=ON if needed)
+ *   # CUDA and cuDNN are auto-detected; ensure the toolkit is on PATH/LD_LIBRARY_PATH if installed.
  *   cmake --build . -j $(nproc) --target conv2dBench
  *
  * Binary location after build:
