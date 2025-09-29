@@ -217,6 +217,17 @@ cmake -Dalpaka_ENABLE_CUBLAS=OFF \
       -Dalpaka_ENABLE_MIOPEN=OFF \
       ..
 ```
+### Optional Vendor Math/DNN Libraries (cuBLAS, cuDNN, rocBLAS, MIOpen)
+
+Alpaka tensor/provider layers are fully functional without any proprietary or platform vendor math/DNN libraries.
+
+Behavior summary:
+* CMake options (e.g. `alpaka_ENABLE_CUBLAS=ON`, `alpaka_ENABLE_CUDNN=ON`, `alpaka_ENABLE_ROCBLAS=ON`, `alpaka_ENABLE_MIOPEN=ON`) declare an intent to use a library if present, but they NEVER make configuration or build fail when the library is absent.
+* If a library is not found, a STATUS or WARNING message is emitted and the build proceeds using generic Alpaka kernels (fallback provider) with no loss of correctness—only potential performance difference.
+* Compile definitions `ALPAKA_HAS_CUBLAS`, `ALPAKA_HAS_CUDNN`, `ALPAKA_HAS_ROCBLAS`, `ALPAKA_HAS_MIOPEN` are only defined when the corresponding verified library file is detected and linked.
+* No runtime loader errors (e.g. `error while loading shared libraries: libcublas.so`) are introduced by Alpaka—linkage occurs only after positive detection.
+
+This “never fail for optional acceleration” philosophy ensures reproducible portable builds across CI, developer laptops, and clusters with heterogeneous toolchain provisioning.
 
 Each switch defaults to `ON`; setting one to `OFF` suppresses the integration even if the corresponding toolkit is
 installed. This is useful on systems where only the generic alpaka implementations should be compiled or when targeting

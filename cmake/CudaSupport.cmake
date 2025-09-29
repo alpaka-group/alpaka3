@@ -1,5 +1,9 @@
 # CUDA and cuDNN Support Module
 # Centralizes CUDA/cuDNN detection and linking logic for all alpaka tensor targets
+# Fallback Philosophy: alpaka must ALWAYS configure & build even when optional vendor
+# libraries (cuBLAS, cuDNN) are enabled in options but absent on the system.
+# We never emit FATAL_ERROR due to a missing optional GPU math/DNN library.
+# Instead we print a concise STATUS/WARNING and rely on generic Alpaka kernels.
 # SPDX-License-Identifier: MPL-2.0
 
 include_guard()
@@ -19,16 +23,32 @@ if(CUDAToolkit_FOUND)
     message(STATUS "CUDAToolkit_FOUND = ${CUDAToolkit_FOUND}")
     set(ALPAKA_HAS_CUDA_TOOLKIT TRUE CACHE INTERNAL "CUDA Toolkit detected" FORCE)
 
-    # cuBLAS is optional – only enable when explicitly allowed and the toolkit exports it
+    option(alpaka_DISABLE_VENDOR_RPATH "Do not add RPATH entries for detected vendor libraries" OFF)
+
+    # cuBLAS optional – enable only if explicitly allowed and target exists. We additionally verify the real library file.
     if(alpaka_ENABLE_CUBLAS)
         if(NOT TARGET CUDA::cublas)
             find_package(CUDAToolkit QUIET COMPONENTS cublas)
         endif()
         if(TARGET CUDA::cublas)
-            message(STATUS "cuBLAS target detected for optional provider integration")
-            set(ALPAKA_HAS_CUBLAS TRUE CACHE INTERNAL "cuBLAS detected" FORCE)
+            # Try to resolve the actual shared object path for sanity (best-effort static hint)
+            get_target_property(_cublas_imported_loc CUDA::cublas IMPORTED_LOCATION)
+            if(NOT _cublas_imported_loc AND DEFINED CUDAToolkit_LIBRARY_DIR)
+                find_library(_cublas_probe NAMES cublas PATHS ${CUDAToolkit_LIBRARY_DIR})
+                set(_cublas_imported_loc ${_cublas_probe})
+            endif()
+            if(_cublas_imported_loc AND EXISTS "${_cublas_imported_loc}")
+                message(STATUS "cuBLAS target + library detected: ${_cublas_imported_loc}")
+                set(ALPAKA_HAS_CUBLAS TRUE CACHE INTERNAL "cuBLAS detected" FORCE)
+                if(NOT alpaka_DISABLE_VENDOR_RPATH)
+                    get_filename_component(_cublas_dir "${_cublas_imported_loc}" DIRECTORY)
+                    list(APPEND ALPAKA_VENDOR_RPATH "${_cublas_dir}")
+                endif()
+            else()
+                message(WARNING "cuBLAS enabled but library path unresolved -> using generic kernels only")
+            endif()
         else()
-            message(STATUS "cuBLAS not found or not supplied by toolkit – falling back to generic kernels")
+            message(STATUS "cuBLAS enabled but target not found -> using generic kernels")
         endif()
     else()
         message(STATUS "cuBLAS integration disabled via alpaka_ENABLE_CUBLAS=OFF")
@@ -37,11 +57,15 @@ if(CUDAToolkit_FOUND)
     # cuDNN library lookup (optional)
     if(alpaka_ENABLE_CUDNN)
         find_library(ALPAKA_CUDNN_LIBRARY cudnn HINTS ${CUDAToolkit_LIBRARY_DIR})
-        if(ALPAKA_CUDNN_LIBRARY)
+        if(ALPAKA_CUDNN_LIBRARY AND EXISTS "${ALPAKA_CUDNN_LIBRARY}")
             message(STATUS "cuDNN library detected: ${ALPAKA_CUDNN_LIBRARY}")
             set(ALPAKA_HAS_CUDNN TRUE CACHE INTERNAL "cuDNN detected" FORCE)
+            if(NOT alpaka_DISABLE_VENDOR_RPATH)
+                get_filename_component(_cudnn_dir "${ALPAKA_CUDNN_LIBRARY}" DIRECTORY)
+                list(APPEND ALPAKA_VENDOR_RPATH "${_cudnn_dir}")
+            endif()
         else()
-            message(STATUS "cuDNN not found – CUDA builds will use generic convolutions by default")
+            message(STATUS "cuDNN enabled but library not found -> using generic convolution kernels")
         endif()
     else()
         message(STATUS "cuDNN integration disabled via alpaka_ENABLE_CUDNN=OFF")
@@ -85,23 +109,26 @@ macro(alpaka_add_cuda_support TARGET_NAME)
         if(alpaka_ENABLE_CUBLAS AND ALPAKA_HAS_CUBLAS AND TARGET CUDA::cublas)
             message(STATUS "Linking cuBLAS into ${TARGET_NAME}")
             target_link_libraries(${TARGET_NAME} PUBLIC CUDA::cublas)
-            target_compile_definitions(
-                ${TARGET_NAME}
-                PRIVATE $<$<AND:$<BOOL:${alpaka_ENABLE_CUBLAS}>,$<BOOL:${ALPAKA_HAS_CUBLAS}>>:ALPAKA_HAS_CUBLAS>
-            )
+            target_compile_definitions(${TARGET_NAME} PRIVATE ALPAKA_HAS_CUBLAS)
         elseif(alpaka_ENABLE_CUBLAS)
-            message(STATUS "cuBLAS requested but unavailable for ${TARGET_NAME}; continuing without provider")
+            message(STATUS "cuBLAS requested but unavailable for ${TARGET_NAME}; skipping linkage")
         endif()
 
         if(alpaka_ENABLE_CUDNN AND ALPAKA_HAS_CUDNN AND ALPAKA_CUDNN_LIBRARY)
-            message(STATUS "Adding cuDNN support to ${TARGET_NAME}: ${ALPAKA_CUDNN_LIBRARY}")
+            message(STATUS "Linking cuDNN into ${TARGET_NAME}")
             target_link_libraries(${TARGET_NAME} PUBLIC ${ALPAKA_CUDNN_LIBRARY})
-            target_compile_definitions(
-                ${TARGET_NAME}
-                PRIVATE $<$<AND:$<BOOL:${alpaka_ENABLE_CUDNN}>,$<BOOL:${ALPAKA_HAS_CUDNN}>>:ALPAKA_HAS_CUDNN>
-            )
+            target_compile_definitions(${TARGET_NAME} PRIVATE ALPAKA_HAS_CUDNN)
         elseif(alpaka_ENABLE_CUDNN)
-            message(STATUS "cuDNN requested but unavailable for ${TARGET_NAME}; continuing without provider")
+            message(STATUS "cuDNN requested but unavailable for ${TARGET_NAME}; skipping linkage")
+        endif()
+
+        # Apply consolidated vendor RPATH if any
+        if(ALPAKA_VENDOR_RPATH AND NOT alpaka_DISABLE_VENDOR_RPATH)
+            list(REMOVE_DUPLICATES ALPAKA_VENDOR_RPATH)
+            set_target_properties(
+                ${TARGET_NAME}
+                PROPERTIES BUILD_RPATH "${ALPAKA_VENDOR_RPATH}" INSTALL_RPATH "${ALPAKA_VENDOR_RPATH}"
+            )
         endif()
     else()
         message(STATUS "CUDA toolkit not available for ${TARGET_NAME}; falling back to generic alpaka kernels")

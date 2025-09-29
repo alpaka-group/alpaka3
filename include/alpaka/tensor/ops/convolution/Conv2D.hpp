@@ -17,10 +17,9 @@
 #include <cstddef>
 #include <cstdlib>
 
-// CUDA/cuDNN support
+// CUDA support (avoid including cuDNN in generic op header to allow builds without cuDNN)
 #ifdef __CUDACC__
 #    include <cuda_runtime.h>
-#    include <cudnn.h>
 #endif
 
 namespace alpaka::tensor::ops
