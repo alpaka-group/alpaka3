@@ -4,8 +4,11 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
-#include <alpaka/alpaka.hpp>
-#include <alpaka/tensor/core/TensorCore.hpp>
+// Minimal Alpaka includes for LayerNorm kernels
+#include <alpaka/Vec.hpp>
+#include <alpaka/mem/IdxRange.hpp>
+#include <alpaka/onAcc/WorkGroup.hpp>
+#include <alpaka/onAcc/interface.hpp>
 
 #include <cmath>
 #include <cstddef>

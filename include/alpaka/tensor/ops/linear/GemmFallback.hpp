@@ -4,7 +4,10 @@
  */
 #pragma once
 
-#include <alpaka/alpaka.hpp>
+#include <alpaka/Vec.hpp>
+#include <alpaka/onHost/FrameSpec.hpp>
+#include <alpaka/onHost/Queue.hpp>
+#include <alpaka/onHost/interface.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/core/TensorDebugMacros.hpp>
 #include <alpaka/tensor/core/TensorDescriptor.hpp>

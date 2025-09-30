@@ -3,10 +3,15 @@
  */
 #pragma once
 
-#include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/kernels/BatchNormKernels.hpp>
 #include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>
+
+namespace alpaka::tensor::ops::kernels
+{
+    template<typename T>
+    struct BatchNormInferenceKernel;
+} // namespace alpaka::tensor::ops::kernels
 
 #include <cassert>
 #include <cmath>

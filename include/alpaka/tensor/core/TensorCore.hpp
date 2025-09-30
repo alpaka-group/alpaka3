@@ -11,7 +11,10 @@
 
 #pragma once
 
-#include <alpaka/alpaka.hpp>
+#include <alpaka/Vec.hpp>
+#include <alpaka/onHost/Queue.hpp>
+#include <alpaka/onHost/interface.hpp>
+#include <alpaka/tensor/core/TensorTypes.hpp>
 
 #include <algorithm>
 #include <array>
@@ -31,20 +34,6 @@ namespace alpaka::tensor
         DeviceFresh, // Device has newest copy; host stale
         BothFresh // Identical & in sync
     };
-
-    // Forward declaration
-    template<typename T, std::size_t Rank, typename TDevice>
-    class Tensor;
-
-    // Aliases for convenience
-    template<typename T, typename D>
-    using Tensor1D = Tensor<T, 1, D>;
-    template<typename T, typename D>
-    using Tensor2D = Tensor<T, 2, D>;
-    template<typename T, typename D>
-    using Tensor3D = Tensor<T, 3, D>;
-    template<typename T, typename D>
-    using Tensor4D = Tensor<T, 4, D>;
 
     template<typename T, std::size_t Rank, typename TDevice>
     class Tensor

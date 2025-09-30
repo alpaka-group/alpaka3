@@ -1,21 +1,25 @@
 #pragma once
 
-#include <alpaka/alpaka.hpp>
-#include <alpaka/tensor/core/TensorCore.hpp>
-#include <alpaka/tensor/layers/mlp/ReLULayer.hpp>
-#include <alpaka/tensor/layers/normalization/BatchNormLayer.hpp>
-#include <alpaka/tensor/layers/vision/Conv2DLayer.hpp>
-#include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>
-#include <alpaka/tensor/ops/normalization/BatchNorm.hpp>
-#include <alpaka/tensor/providers/CleanTensorOpContext.hpp>
+#ifndef ALPAKA_TENSOR_LAYERS_BASE_RESIDUAL_HELPERS_HPP
+#    define ALPAKA_TENSOR_LAYERS_BASE_RESIDUAL_HELPERS_HPP
 
-#include <cassert>
-#include <cmath>
-#include <cstdlib>
-#include <iostream>
-#include <optional>
-#include <stdexcept>
-#include <utility>
+#    include <alpaka/onHost/interface.hpp>
+#    include <alpaka/tensor/core/TensorCore.hpp>
+#    include <alpaka/tensor/layers/mlp/ReLULayer.hpp>
+#    include <alpaka/tensor/layers/normalization/BatchNormLayer.hpp>
+#    include <alpaka/tensor/layers/normalization/LayerNormLayer.hpp>
+#    include <alpaka/tensor/layers/vision/Conv2DLayer.hpp>
+#    include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>
+#    include <alpaka/tensor/ops/normalization/BatchNorm.hpp>
+#    include <alpaka/tensor/ops/normalization/LayerNorm.hpp>
+
+#    include <cassert>
+#    include <cmath>
+#    include <cstdlib>
+#    include <iostream>
+#    include <optional>
+#    include <stdexcept>
+#    include <utility>
 
 namespace alpaka::tensor::layers
 {
@@ -285,3 +289,5 @@ namespace alpaka::tensor::layers
     } // namespace residualhelpers
 
 } // namespace alpaka::tensor::layers
+
+#endif // ALPAKA_TENSOR_LAYERS_BASE_RESIDUAL_HELPERS_HPP

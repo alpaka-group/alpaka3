@@ -6,7 +6,12 @@
  */
 #pragma once
 
-#include <alpaka/alpaka.hpp>
+namespace alpaka::tensor::ops::detail
+{
+    bool eagerHostEnabled();
+} // namespace alpaka::tensor::ops::detail
+
+#include <alpaka/onHost/interface.hpp>
 
 #include <cstdlib>
 

@@ -494,8 +494,8 @@ int runLeNet(
             // Map layer names to LeNet buckets (order added earlier in this file)
             auto const& names = pipe.layerNames();
             auto const& durs = pipe.lastDurations();
-            double conv1 = 0, relu1 = 0, pool1 = 0, conv2 = 0, relu2 = 0, pool2 = 0, flatten = 0, fc1 = 0, relu3 = 0,
-                   fc2 = 0, relu4 = 0, fc3 = 0, softmax = 0;
+            double conv1 = 0, relu1 = 0, pool1 = 0, conv2 = 0, relu2 = 0, pool2 = 0, flatten = 0, fc1 = 0, fc2 = 0,
+                   fc3 = 0, softmax = 0;
             // Expected name sequence: Conv2D, ReLU, MaxPool, Conv2D, ReLU, MaxPool, Flatten, LinearReLU, LinearReLU,
             // Linear, Softmax
             for(std::size_t i = 0; i < names.size() && i < durs.size(); ++i)
@@ -678,7 +678,8 @@ int main(int argc, char** argv)
     int iters = 1;
     // timing variable removed; timing summary now always printed when iterations > 0
     bool printArgmax = false;
-    bool useMnist = false;
+    bool mnistImagesProvided = false;
+    bool mnistLabelsProvided = false;
     bool profileLayers = false;
     for(int i = 1; i < argc; ++i)
     {
@@ -688,12 +689,12 @@ int main(int argc, char** argv)
         else if(a == "--mnist-images" && i + 1 < argc)
         {
             mnistImagesPath = argv[++i];
-            useMnist = true;
+            mnistImagesProvided = true;
         }
         else if(a == "--mnist-labels" && i + 1 < argc)
         {
             mnistLabelsPath = argv[++i];
-            useMnist = true;
+            mnistLabelsProvided = true;
         }
         else if(a == "--expected" && i + 1 < argc)
             expected = std::stoi(argv[++i]);
@@ -732,6 +733,12 @@ int main(int argc, char** argv)
             std::cout << "  --profile-layers       Enable detailed layer-wise timing analysis (implies timing)\n";
             return 0;
         }
+    }
+
+    if(mnistImagesProvided != mnistLabelsProvided)
+    {
+        std::cerr << "Both --mnist-images and --mnist-labels must be provided together." << std::endl;
+        return 1;
     }
     // Timing summary is automatic; no explicit flag needed.
     if(verbose)

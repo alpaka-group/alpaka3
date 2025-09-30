@@ -1,5 +1,5 @@
 #pragma once
-#include <alpaka/alpaka.hpp>
+#include <alpaka/onHost/interface.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/ops/softmax/Softmax.hpp>
 #include <alpaka/tensor/ops/transform/Transform.hpp>

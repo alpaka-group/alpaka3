@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include <alpaka/tensor/core/TensorCore.hpp>
+#include <alpaka/tensor/core/TensorTypes.hpp>
 
 #include <array>
 #include <cassert>
@@ -100,18 +100,7 @@ namespace alpaka::tensor
     }
 
     template<typename T, std::size_t Rank, typename Device>
-    TensorDescriptor<Rank> makeDescriptor(Tensor<T, Rank, Device> const& t)
-    {
-        TensorDescriptor<Rank> d;
-        auto const& sh = t.shape();
-        for(std::size_t i = 0; i < Rank; ++i)
-            d.dims[i] = sh[i];
-        d.strides = makeContiguousStrides(d.dims); // current TensorCore is always contiguous row-major
-        d.dtype = DTypeOf<std::remove_cv_t<T>>::value;
-        if constexpr(Rank == 4)
-            d.layout = LayoutTag::NCHW; // present assumption
-        return d;
-    }
+    TensorDescriptor<Rank> makeDescriptor(Tensor<T, Rank, Device> const& t);
 
     // Debug-only assert helpers (compiled out unless ALPAKA_TENSOR_DESC_DEBUG defined)
     template<std::size_t Rank>
@@ -138,6 +127,37 @@ namespace alpaka::tensor
         default:
             return "unknown";
         }
+    }
+
+    namespace viewutils
+    {
+        template<typename T, std::size_t Rank, typename Device>
+        inline bool isContiguous(tensor::Tensor<T, Rank, Device> const& t) noexcept;
+
+        template<typename T, std::size_t Rank, typename Device>
+        inline bool sameShape(
+            tensor::Tensor<T, Rank, Device> const& a,
+            tensor::Tensor<T, Rank, Device> const& b) noexcept;
+    } // namespace viewutils
+
+} // namespace alpaka::tensor
+
+#include <alpaka/tensor/core/TensorCore.hpp>
+
+namespace alpaka::tensor
+{
+    template<typename T, std::size_t Rank, typename Device>
+    inline TensorDescriptor<Rank> makeDescriptor(Tensor<T, Rank, Device> const& t)
+    {
+        TensorDescriptor<Rank> d;
+        auto const& sh = t.shape();
+        for(std::size_t i = 0; i < Rank; ++i)
+            d.dims[i] = sh[i];
+        d.strides = makeContiguousStrides(d.dims); // current TensorCore is always contiguous row-major
+        d.dtype = DTypeOf<std::remove_cv_t<T>>::value;
+        if constexpr(Rank == 4)
+            d.layout = LayoutTag::NCHW; // present assumption
+        return d;
     }
 
     namespace viewutils

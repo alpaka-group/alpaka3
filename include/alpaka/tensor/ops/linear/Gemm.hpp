@@ -1,12 +1,15 @@
 #pragma once
 
-#include <alpaka/alpaka.hpp>
+#include <alpaka/api/cuda/executor.hpp>
+#include <alpaka/onHost/interface.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/core/TensorDebugMacros.hpp>
 #include <alpaka/tensor/core/TensorDescriptor.hpp>
 #include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>
 // Split: include generic kernels from separate header
 #include <alpaka/tensor/kernels/GemmKernels.hpp>
+
+#include <chrono>
 
 // Include cuBLAS when compiling with CUDA
 #ifdef __CUDACC__
@@ -19,8 +22,6 @@
 
 namespace alpaka::tensor::ops
 {
-    // Forward declaration of simplified public API to ensure visibility in all TUs (important for some CUDA
-    // compilation orders)
     template<typename Exec, typename Device, typename Queue>
     inline void gemm_simple(
         Exec const& exec,

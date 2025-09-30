@@ -1,6 +1,5 @@
 #pragma once
 
-#include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 
 #include <cstddef>

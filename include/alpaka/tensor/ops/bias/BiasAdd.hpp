@@ -3,7 +3,11 @@
  */
 #pragma once
 
-#include <alpaka/alpaka.hpp>
+#include <alpaka/mem/IdxRange.hpp>
+#include <alpaka/onAcc/WorkGroup.hpp>
+#include <alpaka/onAcc/interface.hpp>
+#include <alpaka/onHost/FrameSpec.hpp>
+#include <alpaka/onHost/interface.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>
 

@@ -1,5 +1,4 @@
 #pragma once
-#include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/ops/normalization/BatchNorm.hpp>
 #include <alpaka/tensor/providers/CleanTensorOpContext.hpp>

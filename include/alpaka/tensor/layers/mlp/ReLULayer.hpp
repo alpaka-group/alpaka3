@@ -1,7 +1,10 @@
 #pragma once
-#include <alpaka/alpaka.hpp>
-#include <alpaka/tensor/core/TensorCore.hpp>
-#include <alpaka/tensor/ops/elementwise/ActivationOps.hpp>
+
+#ifndef ALPAKA_TENSOR_LAYERS_MLP_RELULAYER_HPP
+#    define ALPAKA_TENSOR_LAYERS_MLP_RELULAYER_HPP
+
+#    include <alpaka/tensor/core/TensorCore.hpp>
+#    include <alpaka/tensor/ops/elementwise/ActivationOps.hpp>
 
 namespace alpaka::tensor::layers
 {
@@ -73,3 +76,5 @@ namespace alpaka::tensor::layers
     }
 
 } // namespace alpaka::tensor::layers
+
+#endif // ALPAKA_TENSOR_LAYERS_MLP_RELULAYER_HPP

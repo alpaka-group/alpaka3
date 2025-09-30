@@ -3,7 +3,10 @@
  */
 #pragma once
 
-#include <alpaka/alpaka.hpp>
+// Minimal Alpaka includes for backward ReLU kernels
+#include <alpaka/mem/IdxRange.hpp>
+#include <alpaka/onAcc/WorkGroup.hpp>
+#include <alpaka/onAcc/interface.hpp>
 
 #include <cstddef>
 
