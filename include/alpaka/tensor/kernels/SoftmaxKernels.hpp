@@ -4,8 +4,11 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
-#include <alpaka/alpaka.hpp>
-#include <alpaka/tensor/core/TensorCore.hpp>
+// Minimal Alpaka includes for softmax kernels
+#include <alpaka/Vec.hpp>
+#include <alpaka/mem/IdxRange.hpp>
+#include <alpaka/onAcc/WorkGroup.hpp>
+#include <alpaka/onAcc/interface.hpp>
 
 #include <cmath>
 #include <cstddef>
@@ -28,7 +31,7 @@ namespace alpaka::tensor::ops::kernels
                 {
                     // Access using row-major [row, col]
                     T v = in[alpaka::Vec<std::size_t, 2>{row, j}];
-                    if(!alpaka::math::isnan(v))
+                    if(!std::isnan(static_cast<double>(v)))
                     {
                         maxVal = v > maxVal ? v : maxVal;
                         minVal = v < minVal ? v : minVal;
@@ -48,7 +51,7 @@ namespace alpaka::tensor::ops::kernels
                     T shifted = in[alpaka::Vec<std::size_t, 2>{row, j}] - maxVal;
                     if(shifted > T(80))
                         shifted = T(80);
-                    double e = static_cast<double>(alpaka::math::exp(shifted));
+                    double e = std::exp(static_cast<double>(shifted));
                     if(!std::isnan(e) && !std::isinf(e))
                         sum += e;
                 }
@@ -65,7 +68,7 @@ namespace alpaka::tensor::ops::kernels
                     T shifted = in[alpaka::Vec<std::size_t, 2>{row, j}] - maxVal;
                     if(shifted > T(80))
                         shifted = T(80);
-                    double e = static_cast<double>(alpaka::math::exp(shifted));
+                    double e = std::exp(static_cast<double>(shifted));
                     if(std::isnan(e) || std::isinf(e))
                         e = 0.0;
                     out[alpaka::Vec<std::size_t, 2>{row, j}] = static_cast<T>(e * inv);
@@ -152,14 +155,14 @@ namespace alpaka::tensor::ops::kernels
                     continue;
                 T maxVal = -std::numeric_limits<T>::infinity();
                 for(std::size_t j = 0; j < N; ++j)
-                    maxVal = alpaka::math::max(maxVal, in[row * N + j]);
+                    maxVal = std::max(maxVal, in[row * N + j]);
                 double sum = 0.0;
                 for(std::size_t j = 0; j < N; ++j)
                 {
                     T shifted = in[row * N + j] - maxVal;
                     if(shifted > T(80))
                         shifted = T(80);
-                    sum += static_cast<double>(alpaka::math::exp(shifted));
+                    sum += std::exp(static_cast<double>(shifted));
                 }
                 if(!(sum > 0.0) || std::isnan(sum) || std::isinf(sum))
                 {
@@ -174,7 +177,7 @@ namespace alpaka::tensor::ops::kernels
                     T shifted = in[row * N + j] - maxVal;
                     if(shifted > T(80))
                         shifted = T(80);
-                    double e = static_cast<double>(alpaka::math::exp(shifted));
+                    double e = std::exp(static_cast<double>(shifted));
                     out[row * N + j] = static_cast<T>(e * inv);
                 }
             }
@@ -192,14 +195,14 @@ namespace alpaka::tensor::ops::kernels
                 auto base = row * N;
                 T maxVal = -std::numeric_limits<T>::infinity();
                 for(std::size_t j = 0; j < N; ++j)
-                    maxVal = alpaka::math::max(maxVal, in[base + j]);
+                    maxVal = std::max(maxVal, in[base + j]);
                 double sum = 0.0;
                 for(std::size_t j = 0; j < N; ++j)
                 {
                     T shifted = in[base + j] - maxVal;
                     if(shifted > T(80))
                         shifted = T(80);
-                    sum += static_cast<double>(alpaka::math::exp(shifted));
+                    sum += std::exp(static_cast<double>(shifted));
                 }
                 if(!(sum > 0.0) || std::isnan(sum) || std::isinf(sum))
                 {
@@ -214,7 +217,7 @@ namespace alpaka::tensor::ops::kernels
                     T shifted = in[base + j] - maxVal;
                     if(shifted > T(80))
                         shifted = T(80);
-                    double e = static_cast<double>(alpaka::math::exp(shifted));
+                    double e = std::exp(static_cast<double>(shifted));
                     out[base + j] = static_cast<T>(e * inv);
                 }
             }
@@ -252,7 +255,7 @@ namespace alpaka::tensor::ops::kernels
                 std::uint8_t f = 0;
                 if(bad)
                     f |= 0x1u;
-                if(!(sum > 0.0) || alpaka::math::abs(sum - 1.0) > 1e-3)
+                if(!(sum > 0.0) || std::fabs(sum - 1.0) > 1e-3)
                     f |= 0x2u;
                 rowFlags[row] = f;
             }

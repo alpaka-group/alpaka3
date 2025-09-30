@@ -3,7 +3,6 @@
  */
 #pragma once
 
-#include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/kernels/ElementwiseKernels.hpp>
 #include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>

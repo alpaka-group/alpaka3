@@ -1,8 +1,12 @@
 #pragma once
 
-#include <alpaka/alpaka.hpp>
-#include <alpaka/tensor/core/TensorCore.hpp>
+// Minimal Alpaka includes for softmax cross-entropy kernels
+#include <alpaka/Vec.hpp>
+#include <alpaka/mem/IdxRange.hpp>
+#include <alpaka/onAcc/WorkGroup.hpp>
+#include <alpaka/onAcc/interface.hpp>
 
+#include <cmath>
 #include <limits>
 
 namespace alpaka::tensor::ops::kernels
@@ -46,7 +50,7 @@ namespace alpaka::tensor::ops::kernels
                 for(std::size_t j = 0; j < C; ++j)
                 {
                     T v = logits[alpaka::Vec<std::size_t, 2>{row, j}];
-                    maxVal = (!alpaka::math::isnan(v) && v > maxVal) ? v : maxVal;
+                    maxVal = (!std::isnan(static_cast<double>(v)) && v > maxVal) ? v : maxVal;
                 }
                 double sum = 0.0;
                 for(std::size_t j = 0; j < C; ++j)
@@ -54,7 +58,7 @@ namespace alpaka::tensor::ops::kernels
                     T shifted = logits[alpaka::Vec<std::size_t, 2>{row, j}] - maxVal;
                     if(shifted > T(80))
                         shifted = T(80);
-                    double e = static_cast<double>(alpaka::math::exp(shifted));
+                    double e = std::exp(static_cast<double>(shifted));
                     if(!std::isnan(e) && !std::isinf(e))
                         sum += e;
                 }
@@ -74,7 +78,7 @@ namespace alpaka::tensor::ops::kernels
                     T shifted = logits[alpaka::Vec<std::size_t, 2>{row, j}] - maxVal;
                     if(shifted > T(80))
                         shifted = T(80);
-                    double e = static_cast<double>(alpaka::math::exp(shifted));
+                    double e = std::exp(static_cast<double>(shifted));
                     if(std::isnan(e) || std::isinf(e))
                         e = 0.0;
                     T p = static_cast<T>(e * inv);
@@ -111,7 +115,7 @@ namespace alpaka::tensor::ops::kernels
                 for(std::size_t j = 0; j < C; ++j)
                 {
                     T v = logits[rowBase + j];
-                    maxVal = (!alpaka::math::isnan(v) && v > maxVal) ? v : maxVal;
+                    maxVal = (!std::isnan(static_cast<double>(v)) && v > maxVal) ? v : maxVal;
                 }
                 double sum = 0.0;
                 for(std::size_t j = 0; j < C; ++j)
@@ -119,7 +123,7 @@ namespace alpaka::tensor::ops::kernels
                     T shifted = logits[rowBase + j] - maxVal;
                     if(shifted > T(80))
                         shifted = T(80);
-                    double e = static_cast<double>(alpaka::math::exp(shifted));
+                    double e = std::exp(static_cast<double>(shifted));
                     if(!std::isnan(e) && !std::isinf(e))
                         sum += e;
                 }
@@ -139,7 +143,7 @@ namespace alpaka::tensor::ops::kernels
                     T shifted = logits[rowBase + j] - maxVal;
                     if(shifted > T(80))
                         shifted = T(80);
-                    double e = static_cast<double>(alpaka::math::exp(shifted));
+                    double e = std::exp(static_cast<double>(shifted));
                     if(std::isnan(e) || std::isinf(e))
                         e = 0.0;
                     T p = static_cast<T>(e * inv);

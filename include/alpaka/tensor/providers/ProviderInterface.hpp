@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#include <alpaka/tensor/core/TensorTypes.hpp>
+
 #include <concepts>
 #include <cstddef>
 #include <string>
@@ -33,14 +35,6 @@ namespace alpaka::tensor
         struct Conv2DParams;
         struct Pool2DParams;
     } // namespace ops
-
-    // Forward declare Tensor templates to avoid heavy includes
-    template<typename T, std::size_t Rank, typename Device>
-    class Tensor;
-    template<typename T, typename Device>
-    using Tensor1D = Tensor<T, 1, Device>;
-    template<typename T, typename Device>
-    using Tensor4D = Tensor<T, 4, Device>;
 
     // Polymorphic base (runtime optional). Type-erased virtual layer kept minimal.
     class IOpProvider

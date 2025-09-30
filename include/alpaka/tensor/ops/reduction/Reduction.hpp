@@ -6,8 +6,10 @@
  */
 #pragma once
 
-#include <alpaka/alpaka.hpp>
+#include <alpaka/Vec.hpp>
 #include <alpaka/mem/View.hpp>
+#include <alpaka/onHost/algo/reduce.hpp>
+#include <alpaka/onHost/interface.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 
 #include <functional>

@@ -8,6 +8,7 @@
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/core/TensorDebugMacros.hpp>
 #include <alpaka/tensor/core/TensorDescriptor.hpp>
+#include <alpaka/tensor/core/TensorTypes.hpp>
 #include <alpaka/tensor/core/TensorUtilities.hpp>
 
 // Runtime context & instrumentation (moved under providers/)
@@ -20,8 +21,11 @@
 // Fundamental elementwise ops (powering tensor core utilities)
 #include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>
 
-// Domain specific tensor operations
+// Layer helpers required by sequential builders
+#include <alpaka/tensor/layers/base/ResidualHelpers.hpp>
 #include <alpaka/tensor/layers/base/inferenceSequential.hpp>
+
+// Domain specific tensor operations
 #include <alpaka/tensor/ops/bias/BiasAdd.hpp>
 #include <alpaka/tensor/ops/convolution/Conv2D.hpp>
 #include <alpaka/tensor/ops/convolution/Conv2DTypes.hpp>
@@ -43,7 +47,6 @@
 #include <alpaka/tensor/ops/training/TrainingOps.hpp>
 
 // Layer abstractions (grouped by domain)
-#include <alpaka/tensor/layers/base/ResidualHelpers.hpp>
 #include <alpaka/tensor/layers/mlp/LinearLayers.hpp>
 #include <alpaka/tensor/layers/mlp/ReLULayer.hpp>
 #include <alpaka/tensor/layers/mlp/SoftmaxLayer.hpp>

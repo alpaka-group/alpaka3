@@ -4,7 +4,15 @@
 
 #pragma once
 
-#include <alpaka/alpaka.hpp>
+// Minimal alpaka includes (umbrella removed) in dependency order
+#include <alpaka/Vec.hpp>
+#include <alpaka/math.hpp>
+#include <alpaka/mem/IdxRange.hpp>
+#include <alpaka/onAcc/SimdAlgo.hpp>
+#include <alpaka/onAcc/WorkGroup.hpp>
+#include <alpaka/onAcc/interface.hpp>
+#include <alpaka/onHost/FrameSpec.hpp>
+#include <alpaka/onHost/interface.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/core/TensorDebugMacros.hpp>
 #include <alpaka/tensor/kernels/ElementwiseKernels.hpp>

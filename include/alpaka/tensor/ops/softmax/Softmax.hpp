@@ -3,7 +3,8 @@
  */
 #pragma once
 
-#include <alpaka/alpaka.hpp>
+#include <alpaka/core/Assert.hpp>
+#include <alpaka/onHost/interface.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/kernels/SoftmaxKernels.hpp>
 #include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>

@@ -5,9 +5,13 @@
   - No vendor includes here; pure Alpaka
 */
 
-#include <alpaka/alpaka.hpp>
-#include <alpaka/tensor/core/TensorCore.hpp>
-#include <alpaka/tensor/core/TensorDescriptor.hpp>
+// Minimal Alpaka includes (no umbrella) for Conv2D kernels
+#include <alpaka/CVec.hpp>
+#include <alpaka/Vec.hpp>
+#include <alpaka/mem/IdxRange.hpp>
+#include <alpaka/onAcc/Acc.hpp>
+#include <alpaka/onAcc/WorkGroup.hpp>
+#include <alpaka/onAcc/interface.hpp>
 #include <alpaka/tensor/ops/convolution/Conv2DTypes.hpp>
 
 #include <array>

@@ -16,7 +16,9 @@
  */
 #pragma once
 
-#include <alpaka/alpaka.hpp>
+#include <alpaka/api/cuda/executor.hpp>
+#include <alpaka/api/host/executor.hpp>
+#include <alpaka/onHost/interface.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/core/TensorDebugMacros.hpp>
 #include <alpaka/tensor/kernels/ActivationBackwardKernels.hpp>

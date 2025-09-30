@@ -3,12 +3,13 @@
  */
 #pragma once
 
-#include <alpaka/alpaka.hpp>
+#include <alpaka/onHost/interface.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/kernels/LayerNormKernels.hpp>
 #include <alpaka/tensor/ops/elementwise/ElementwiseGeneric.hpp>
 
 #include <cassert>
+#include <cstddef>
 
 namespace alpaka::tensor::ops
 {

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/layers/normalization/LayerNormLayer.hpp>
 #include <alpaka/tensor/layers/transformer/AttentionLayers.hpp>
@@ -11,6 +10,7 @@
 #include <alpaka/tensor/providers/CleanTensorOpContext.hpp>
 
 #include <cmath>
+#include <cstring>
 #include <optional>
 #include <stdexcept>
 #include <utility>

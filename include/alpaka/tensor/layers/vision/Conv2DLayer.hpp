@@ -1,5 +1,4 @@
 #pragma once
-#include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/ops/bias/BiasAdd.hpp>
 #include <alpaka/tensor/ops/convolution/Conv2D.hpp>

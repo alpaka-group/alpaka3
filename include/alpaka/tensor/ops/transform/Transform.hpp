@@ -4,7 +4,6 @@
  */
 #pragma once
 
-#include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/core/TensorDescriptor.hpp>
 #include <alpaka/tensor/kernels/TensorCopyKernels.hpp>

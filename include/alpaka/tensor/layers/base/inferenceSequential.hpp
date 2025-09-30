@@ -1,12 +1,13 @@
 #pragma once
 
-#include <alpaka/alpaka.hpp>
+#include <alpaka/onHost/interface.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/layers/base/ResidualHelpers.hpp>
 #include <alpaka/tensor/layers/mlp/LinearLayers.hpp>
 #include <alpaka/tensor/layers/mlp/ReLULayer.hpp>
 #include <alpaka/tensor/layers/mlp/SoftmaxLayer.hpp>
 #include <alpaka/tensor/layers/normalization/BatchNormLayer.hpp>
+#include <alpaka/tensor/layers/normalization/LayerNormLayer.hpp>
 #include <alpaka/tensor/layers/transformer/BertLayers.hpp>
 #include <alpaka/tensor/layers/vision/Conv2DLayer.hpp>
 #include <alpaka/tensor/layers/vision/PoolingLayers.hpp>

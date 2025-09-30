@@ -1,10 +1,11 @@
 #pragma once
-#include <alpaka/alpaka.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/ops/linear/LinearOps.hpp>
 #include <alpaka/tensor/ops/softmax/Softmax.hpp>
 
 #include <cmath>
+#include <cstdlib>
+#include <string>
 #include <utility>
 
 namespace alpaka::tensor::layers

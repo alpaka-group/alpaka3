@@ -7,7 +7,11 @@
   Naive reference implementations, buffer-indexing via Vec to respect layout.
 */
 
-#include <alpaka/alpaka.hpp>
+// Minimal Alpaka includes for Conv2D backward kernels
+#include <alpaka/Vec.hpp>
+#include <alpaka/mem/IdxRange.hpp>
+#include <alpaka/onAcc/WorkGroup.hpp>
+#include <alpaka/onAcc/interface.hpp>
 #include <alpaka/tensor/ops/convolution/Conv2DTypes.hpp>
 
 #include <cstddef>

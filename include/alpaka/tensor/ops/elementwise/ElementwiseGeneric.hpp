@@ -6,10 +6,16 @@
  */
 
 #pragma once
-#include <alpaka/alpaka.hpp>
+// Minimal alpaka includes required for elementwise ops (umbrella removed)
+#include <alpaka/Vec.hpp>
+#include <alpaka/mem/IdxRange.hpp>
+#include <alpaka/onAcc/WorkGroup.hpp>
+#include <alpaka/onAcc/interface.hpp>
+#include <alpaka/onHost/FrameSpec.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/core/TensorDebugMacros.hpp>
 
+#include <cstddef>
 #include <type_traits>
 
 namespace alpaka

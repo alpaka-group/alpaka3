@@ -6,7 +6,11 @@
 
 #pragma once
 
-#include <alpaka/alpaka.hpp>
+// Minimal alpaka includes (umbrella removed) in dependency order
+#include <alpaka/Vec.hpp>
+#include <alpaka/onHost/FrameSpec.hpp>
+#include <alpaka/onHost/Queue.hpp> // provides Queue and wait semantics
+#include <alpaka/onHost/interface.hpp>
 #include <alpaka/tensor/core/TensorCore.hpp>
 #include <alpaka/tensor/core/TensorDescriptor.hpp>
 #include <alpaka/tensor/kernels/Conv2DKernels.hpp>
