@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 /** @file
- * Unit tests for non-blocking memory visibility fences (memoryFence).
+ * Unit tests for non-blocking memory visibility fences (memFence).
  * Contains:
  *  - ProducerConsumerKernel: publication pattern using device-scope fences.
  *  - BlockSharedMemOrderKernel: shared-memory ordering using block-scope fences.
@@ -21,7 +21,7 @@ using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, 
 
 // Producer-Consumer kernel documentation:
 //  - Producer (thread 0) publishes a payload (value = iteration index) to global memory,
-//    then issues a device-scope memoryFence to ensure the data write becomes visible
+//    then issues a device-scope memFence to ensure the data write becomes visible
 //    before setting the corresponding ready flag to 1.
 //  - Consumer (thread 1) busy-waits on the ready flag becoming 1, then issues its own
 //    device-scope fence before reading the payload. This is like a typical acquire
@@ -58,7 +58,7 @@ struct ProducerConsumerKernel
                 // Publish payload value first.
                 atomicExch(acc, &payload[i], i);
                 // Ensure payload write is visible before flag store.
-                memoryFence(acc, memoryScope::device);
+                memFence(acc, scope::device);
                 atomicExch(acc, &readyFlags[i], 1u);
             }
             // consumer, only for tid == 1, second thread is consumer
@@ -76,7 +76,7 @@ struct ProducerConsumerKernel
                 // above the while-loop unless the flag read is treated as a dependency (atomic/volatile) and
                 // an acquire fence follows.
 
-                memoryFence(acc, memoryScope::device);
+                memFence(acc, scope::device);
                 auto v = payload[i];
                 if(v != i)
                 {
@@ -88,7 +88,7 @@ struct ProducerConsumerKernel
     }
 };
 
-TEMPLATE_LIST_TEST_CASE("memoryFence producer-consumer publication", "[memoryFence][producer-consumer]", TestApis)
+TEMPLATE_LIST_TEST_CASE("memFence producer-consumer publication", "[memFence][producer-consumer]", TestApis)
 {
     auto cfg = TestType::makeDict();
     auto deviceSpec = cfg[object::deviceSpec];
@@ -153,7 +153,7 @@ struct DeviceFenceTestKernelWriter
         if(idx == 0)
         {
             vars[0] = 10;
-            onAcc::memoryFence(acc, onAcc::memoryScope::Device{});
+            onAcc::memFence(acc, onAcc::scope::Device{});
             vars[1] = 20;
         }
     }
@@ -170,7 +170,7 @@ struct DeviceFenceTestKernelReader
         if(idx == 0)
         {
             auto const b = vars[1];
-            onAcc::memoryFence(acc, onAcc::memoryScope::Device{});
+            onAcc::memFence(acc, onAcc::scope::Device{});
             auto const a = vars[0];
 
             // If the fence is working correctly, the following case can never happen
@@ -194,12 +194,12 @@ struct DeviceFenceTestKernel
         if(idx == 0)
         {
             vars[0] = 10;
-            onAcc::memoryFence(acc, onAcc::memoryScope::Device{});
+            onAcc::memFence(acc, onAcc::scope::Device{});
             vars[1] = 20;
         }
 
         auto const b = vars[1];
-        onAcc::memoryFence(acc, onAcc::memoryScope::Device{});
+        onAcc::memFence(acc, onAcc::scope::Device{});
         auto const a = vars[0];
 
         // If the fence is working correctly, the following case can never happen
@@ -215,7 +215,7 @@ struct DeviceFenceTestKernel
 // Block shared-memory ordering test:
 // Validates that writes to dynamic shared memory from one thread become visible to sibling threads
 // in the same block after a block-scope fence. Pattern mirrors legacy BlockFenceTestKernel from the
-// original alpaka repo but adapted to memoryFence API and Catch2 style.
+// original alpaka repo but adapted to memFence API and Catch2 style.
 struct BlockSharedMemOrderKernel
 {
     // number of bytes of dynamic shared memory required by this kernel
@@ -245,7 +245,7 @@ struct BlockSharedMemOrderKernel
                 // publish new A
                 shared[0] = 10;
                 // ensure visibility of A before B write
-                memoryFence(acc, memoryScope::block);
+                memFence(acc, scope::block);
                 // publish B
                 shared[1] = 20;
             }
@@ -256,7 +256,7 @@ struct BlockSharedMemOrderKernel
             // All threads perform the read/validation (any non-producer could be consumer)
             auto b = shared[1];
             // acquire side
-            memoryFence(acc, memoryScope::block);
+            memFence(acc, scope::block);
             auto a = shared[0];
 
             // Forbidden outcome: observe updated B (20) but stale A (1)
@@ -269,7 +269,7 @@ struct BlockSharedMemOrderKernel
     }
 };
 
-TEMPLATE_LIST_TEST_CASE("memoryFence block shared-memory ordering", "[memoryFence][block-shared]", TestApis)
+TEMPLATE_LIST_TEST_CASE("memFence block shared-memory ordering", "[memFence][block-shared]", TestApis)
 {
     auto cfg = TestType::makeDict();
     auto deviceSpec = cfg[object::deviceSpec];

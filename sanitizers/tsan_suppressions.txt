@@ -2,8 +2,8 @@
 
 # the active waiting in the events unit test is detected as a data race, but is fine
 race:unit_test_event_event
-race:unit_test_mem_memoryFenceProducerConsumer
-race:unit_test_mem_memoryFenceBasic
+race:unit_test_mem_memFenceProducerConsumer
+race:unit_test_mem_memFenceBasic
 race:docs_test_cheatsheet
 
 # omp library is not instrumented, exclude it

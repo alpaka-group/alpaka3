@@ -8,7 +8,7 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/onAcc/Acc.hpp"
-#include "alpaka/onAcc/memoryScope.hpp"
+#include "alpaka/onAcc/scope.hpp"
 
 // Top-level guard needed because including sycl headers is needed
 #if ALPAKA_LANG_SYCL
@@ -24,15 +24,15 @@ namespace alpaka::onAcc::internalCompute
     {
         constexpr void operator()(onAcc::concepts::Acc auto const&, T_Scope const) const
         {
-            if constexpr(std::is_same_v<T_Scope, memoryScope::Block>)
+            if constexpr(std::is_same_v<T_Scope, scope::Block>)
             {
                 sycl::atomic_fence(sycl::memory_order::acq_rel, sycl::memory_scope::work_group);
             }
-            else if constexpr(std::is_same_v<T_Scope, memoryScope::Device>)
+            else if constexpr(std::is_same_v<T_Scope, scope::Device>)
             {
                 sycl::atomic_fence(sycl::memory_order::acq_rel, sycl::memory_scope::device);
             }
-            else if constexpr(std::is_same_v<T_Scope, memoryScope::System>)
+            else if constexpr(std::is_same_v<T_Scope, scope::System>)
             {
                 // System fences map to device scope for SYCL backends
                 sycl::atomic_fence(sycl::memory_order::acq_rel, sycl::memory_scope::system);

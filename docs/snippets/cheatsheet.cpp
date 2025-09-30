@@ -131,12 +131,12 @@ struct MemoryFenceKernel
 {
     ALPAKA_FN_ACC void operator()(onAcc::concepts::Acc auto const& acc) const
     {
-        // BEGIN-CHEATSHEET-memoryFence
+        // BEGIN-CHEATSHEET-memFence
         // Scopes: All threads of the block, the device and the system(host and peer devices)
-        onAcc::memoryFence(acc, onAcc::memoryScope::block);
-        onAcc::memoryFence(acc, onAcc::memoryScope::device);
-        onAcc::memoryFence(acc, onAcc::memoryScope::system);
-        // END-CHEATSHEET-memoryFence
+        onAcc::memFence(acc, onAcc::scope::block);
+        onAcc::memFence(acc, onAcc::scope::device);
+        onAcc::memFence(acc, onAcc::scope::system);
+        // END-CHEATSHEET-memFence
     }
 };
 

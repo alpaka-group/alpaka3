@@ -13,4 +13,4 @@
 #include "alpaka/api/syclGeneric/Event.hpp"
 #include "alpaka/api/syclGeneric/atomic.hpp"
 #include "alpaka/api/syclGeneric/math.hpp"
-#include "alpaka/api/syclGeneric/memoryFence.hpp"
+#include "alpaka/api/syclGeneric/memFence.hpp"

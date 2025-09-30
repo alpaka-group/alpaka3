@@ -6,7 +6,7 @@
 
 #include <string>
 
-namespace alpaka::onAcc::memoryScope
+namespace alpaka::onAcc::scope
 {
     struct Block
     {
@@ -39,4 +39,4 @@ namespace alpaka::onAcc::memoryScope
 
     inline constexpr System system{};
 
-} // namespace alpaka::onAcc::memoryScope
+} // namespace alpaka::onAcc::scope

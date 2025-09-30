@@ -30,7 +30,7 @@
 #include "alpaka/onAcc/SimdAlgo.hpp"
 #include "alpaka/onAcc/atomic.hpp"
 #include "alpaka/onAcc/interface.hpp"
-#include "alpaka/onAcc/memoryFence.hpp"
+#include "alpaka/onAcc/memFence.hpp"
 #include "alpaka/onAcc/tag.hpp"
 #include "alpaka/onHost/Device.hpp"
 #include "alpaka/onHost/DeviceSelector.hpp"

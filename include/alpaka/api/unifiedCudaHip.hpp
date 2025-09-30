@@ -12,4 +12,4 @@
 #include "alpaka/api/unifiedCudaHip/Queue.hpp"
 #include "alpaka/api/unifiedCudaHip/atomic.hpp"
 #include "alpaka/api/unifiedCudaHip/math.hpp"
-#include "alpaka/api/unifiedCudaHip/memoryFence.hpp"
+#include "alpaka/api/unifiedCudaHip/memFence.hpp"

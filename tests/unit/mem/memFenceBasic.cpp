@@ -31,11 +31,11 @@ struct MemoryFenceTestKernel
             // Initial write; any subsequent fence must not block, just enforce visibility / ordering.
             out[idx.x()] = static_cast<uint32_t>(idx.x());
             // Explicit scope form.
-            memoryFence(acc, memoryScope::block);
-            memoryFence(acc, memoryScope::device);
+            memFence(acc, scope::block);
+            memFence(acc, scope::device);
             // Convenience helper forms (should map to identical implementations).
-            onAcc::memoryFence(acc, onAcc::memoryScope::Block{});
-            onAcc::memoryFence(acc, onAcc::memoryScope::Device{});
+            onAcc::memFence(acc, onAcc::scope::Block{});
+            onAcc::memFence(acc, onAcc::scope::Device{});
             // Post‑fence update. If fences caused unintended reordering, test value would mismatch.
             out[idx.x()] += 1u;
         }
@@ -43,7 +43,7 @@ struct MemoryFenceTestKernel
 };
 
 // Run over all enabled backend+executor combinations exposed via TestApis.
-TEMPLATE_LIST_TEST_CASE("thread fence operations", "[memoryFence][basic]", TestApis)
+TEMPLATE_LIST_TEST_CASE("thread fence operations", "[memFence][basic]", TestApis)
 {
     auto cfg = TestType::makeDict();
     auto deviceSpec = cfg[object::deviceSpec];

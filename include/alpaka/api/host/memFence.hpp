@@ -9,7 +9,7 @@
 #include "alpaka/api/host/tag.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/onAcc/Acc.hpp"
-#include "alpaka/onAcc/memoryScope.hpp"
+#include "alpaka/onAcc/scope.hpp"
 #include "alpaka/tag.hpp"
 
 #include <atomic>
@@ -27,32 +27,32 @@ namespace alpaka::onAcc::internalCompute
 
         // Serial executor fence implementation
         // Block scope: nothing to do for serial
-        inline void hostMemoryFenceImpl(exec::CpuSerial const&, memoryScope::Block const)
+        inline void hostMemoryFenceImpl(exec::CpuSerial const&, scope::Block const)
         {
             // Block scope: NO-OP since threads within a block
         }
 
-        inline void hostMemoryFenceImpl(exec::CpuSerial const&, memoryScope::Device const)
+        inline void hostMemoryFenceImpl(exec::CpuSerial const&, scope::Device const)
         {
             std::atomic_thread_fence(std::memory_order_acq_rel);
         }
 
-        inline void hostMemoryFenceImpl(exec::CpuSerial const&, memoryScope::System const)
+        inline void hostMemoryFenceImpl(exec::CpuSerial const&, scope::System const)
         {
             std::atomic_thread_fence(std::memory_order_acq_rel);
         }
 
-        inline void hostMemoryFenceImpl(exec::CpuOmpBlocks const&, memoryScope::Block const)
+        inline void hostMemoryFenceImpl(exec::CpuOmpBlocks const&, scope::Block const)
         {
             // Block scope: NO-OP for OMP since single-threaded within a block
         }
 
-        inline void hostMemoryFenceImpl(exec::CpuOmpBlocks const&, memoryScope::Device const)
+        inline void hostMemoryFenceImpl(exec::CpuOmpBlocks const&, scope::Device const)
         {
             std::atomic_thread_fence(std::memory_order_acq_rel);
         }
 
-        inline void hostMemoryFenceImpl(exec::CpuOmpBlocks const&, memoryScope::System const)
+        inline void hostMemoryFenceImpl(exec::CpuOmpBlocks const&, scope::System const)
         {
             std::atomic_thread_fence(std::memory_order_acq_rel);
         }

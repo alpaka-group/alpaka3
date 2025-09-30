@@ -7,7 +7,7 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/onAcc/Acc.hpp"
-#include "alpaka/onAcc/memoryScope.hpp"
+#include "alpaka/onAcc/scope.hpp"
 
 #include <type_traits>
 
@@ -27,15 +27,15 @@ namespace alpaka::onAcc::internalCompute
         {
             // Host pass is not allowed.
 #    if ALPAKA_ARCH_PTX || ALPAKA_ARCH_AMD
-            if constexpr(std::is_same_v<T_Scope, memoryScope::Block>)
+            if constexpr(std::is_same_v<T_Scope, scope::Block>)
             {
                 __threadfence_block();
             }
-            else if constexpr(std::is_same_v<T_Scope, memoryScope::Device>)
+            else if constexpr(std::is_same_v<T_Scope, scope::Device>)
             {
                 __threadfence();
             }
-            else if constexpr(std::is_same_v<T_Scope, memoryScope::System>)
+            else if constexpr(std::is_same_v<T_Scope, scope::System>)
             {
                 __threadfence_system();
             }

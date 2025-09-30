@@ -355,8 +355,8 @@ Memory fences on block-, device- or system level (guarantees LoadLoad and StoreS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   .. literalinclude:: ../../snippets/cheatsheet.cpp
     :language: cpp
-    :start-after: BEGIN-CHEATSHEET-memoryFence
-    :end-before: END-CHEATSHEET-memoryFence
+    :start-after: BEGIN-CHEATSHEET-memFence
+    :end-before: END-CHEATSHEET-memFence
     :dedent:
 
 Math functions
