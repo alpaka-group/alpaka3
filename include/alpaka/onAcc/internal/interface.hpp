@@ -69,7 +69,7 @@ namespace alpaka::onAcc
         struct Atomic
         {
             /** Implements a atomic operation */
-            template<typename TOp, typename TAtomicImpl, typename T, typename THierarchy, typename TSfinae = void>
+            template<typename TOp, typename TAtomicImpl, typename T, typename T_Scope, typename TSfinae = void>
             struct Op;
         };
 

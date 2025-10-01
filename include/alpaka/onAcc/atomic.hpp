@@ -7,9 +7,9 @@
 #include "alpaka/api/api.hpp"
 #include "alpaka/api/trait.hpp"
 #include "alpaka/core/common.hpp"
-#include "alpaka/onAcc/atomicHierarchy.hpp"
 #include "alpaka/onAcc/atomicOp.hpp"
 #include "alpaka/onAcc/internal/interface.hpp"
+#include "alpaka/onAcc/scope.hpp"
 
 #include <type_traits>
 
@@ -21,11 +21,12 @@ namespace alpaka::onAcc
     //! \tparam T The value type.
     //! \param addr The value to change atomically.
     //! \param value The value used in the atomic operation.
-    template<typename TOp, typename T, typename THierarchy = hierarchy::Grids>
-    constexpr auto atomicOp(auto const& acc, T* const addr, T const& value, THierarchy const = THierarchy()) -> T
+    template<typename TOp, typename T, typename T_Scope = scope::Device>
+    constexpr auto atomicOp(auto const& acc, T* const addr, T const& value, T_Scope const = T_Scope()) -> T
     {
+        static_assert(!std::is_same_v<T_Scope, scope::System>, "System scope is currently not supported.");
         auto atomicImpl = trait::getAtomicImpl(acc[object::exec]);
-        return internalCompute::Atomic::Op<TOp, ALPAKA_TYPEOF(atomicImpl), T, THierarchy>::atomicOp(
+        return internalCompute::Atomic::Op<TOp, ALPAKA_TYPEOF(atomicImpl), T, T_Scope>::atomicOp(
             atomicImpl,
             addr,
             value);
@@ -38,16 +39,17 @@ namespace alpaka::onAcc
     //! \param addr The value to change atomically.
     //! \param compare The comparison value used in the atomic operation.
     //! \param value The value used in the atomic operation.
-    template<typename TOp, typename T, typename THierarchy = hierarchy::Grids>
+    template<typename TOp, typename T, typename T_Scope = scope::Device>
     constexpr auto atomicOp(
         auto const& acc,
         T* const addr,
         T const& compare,
         T const& value,
-        THierarchy const = THierarchy()) -> T
+        T_Scope const = T_Scope()) -> T
     {
+        static_assert(!std::is_same_v<T_Scope, scope::System>, "System scope is currently not supported.");
         auto atomicImpl = trait::getAtomicImpl(acc[object::exec]);
-        return internalCompute::Atomic::Op<TOp, ALPAKA_TYPEOF(atomicImpl), T, THierarchy>::atomicOp(
+        return internalCompute::Atomic::Op<TOp, ALPAKA_TYPEOF(atomicImpl), T, T_Scope>::atomicOp(
             atomicImpl,
             addr,
             compare,
@@ -59,8 +61,8 @@ namespace alpaka::onAcc
     //! \tparam T The value type.
     //! \param addr The value to change atomically.
     //! \param value The value used in the atomic operation.
-    template<typename T, typename THierarchy = hierarchy::Grids>
-    constexpr auto atomicAdd(auto const& acc, T* const addr, T const& value, THierarchy const hier = THierarchy()) -> T
+    template<typename T, typename T_Scope = scope::Device>
+    constexpr auto atomicAdd(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
         return atomicOp<AtomicAdd>(acc, addr, value, hier);
     }
@@ -70,8 +72,8 @@ namespace alpaka::onAcc
     //! \tparam T The value type.
     //! \param addr The value to change atomically.
     //! \param value The value used in the atomic operation.
-    template<typename T, typename THierarchy = hierarchy::Grids>
-    constexpr auto atomicSub(auto const& acc, T* const addr, T const& value, THierarchy const hier = THierarchy()) -> T
+    template<typename T, typename T_Scope = scope::Device>
+    constexpr auto atomicSub(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
         return atomicOp<AtomicSub>(acc, addr, value, hier);
     }
@@ -81,8 +83,8 @@ namespace alpaka::onAcc
     //! \tparam T The value type.
     //! \param addr The value to change atomically.
     //! \param value The value used in the atomic operation.
-    template<typename T, typename THierarchy = hierarchy::Grids>
-    constexpr auto atomicMin(auto const& acc, T* const addr, T const& value, THierarchy const hier = THierarchy()) -> T
+    template<typename T, typename T_Scope = scope::Device>
+    constexpr auto atomicMin(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
         return atomicOp<AtomicMin>(acc, addr, value, hier);
     }
@@ -92,8 +94,8 @@ namespace alpaka::onAcc
     //! \tparam T The value type.
     //! \param addr The value to change atomically.
     //! \param value The value used in the atomic operation.
-    template<typename T, typename THierarchy = hierarchy::Grids>
-    constexpr auto atomicMax(auto const& acc, T* const addr, T const& value, THierarchy const hier = THierarchy()) -> T
+    template<typename T, typename T_Scope = scope::Device>
+    constexpr auto atomicMax(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
         return atomicOp<AtomicMax>(acc, addr, value, hier);
     }
@@ -103,9 +105,8 @@ namespace alpaka::onAcc
     //! \tparam T The value type.
     //! \param addr The value to change atomically.
     //! \param value The value used in the atomic operation.
-    template<typename T, typename THierarchy = hierarchy::Grids>
-    constexpr auto atomicExch(auto const& acc, T* const addr, T const& value, THierarchy const hier = THierarchy())
-        -> T
+    template<typename T, typename T_Scope = scope::Device>
+    constexpr auto atomicExch(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
         return atomicOp<AtomicExch>(acc, addr, value, hier);
     }
@@ -115,8 +116,8 @@ namespace alpaka::onAcc
     //! \tparam T The value type.
     //! \param addr The value to change atomically.
     //! \param value The value used in the atomic operation.
-    template<typename T, typename THierarchy = hierarchy::Grids>
-    constexpr auto atomicInc(auto const& acc, T* const addr, T const& value, THierarchy const hier = THierarchy()) -> T
+    template<typename T, typename T_Scope = scope::Device>
+    constexpr auto atomicInc(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
         return atomicOp<AtomicInc>(acc, addr, value, hier);
     }
@@ -126,8 +127,8 @@ namespace alpaka::onAcc
     //! \tparam T The value type.
     //! \param addr The value to change atomically.
     //! \param value The value used in the atomic operation.
-    template<typename T, typename THierarchy = hierarchy::Grids>
-    constexpr auto atomicDec(auto const& acc, T* const addr, T const& value, THierarchy const hier = THierarchy()) -> T
+    template<typename T, typename T_Scope = scope::Device>
+    constexpr auto atomicDec(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
         return atomicOp<AtomicDec>(acc, addr, value, hier);
     }
@@ -137,8 +138,8 @@ namespace alpaka::onAcc
     //! \tparam T The value type.
     //! \param addr The value to change atomically.
     //! \param value The value used in the atomic operation.
-    template<typename T, typename THierarchy = hierarchy::Grids>
-    constexpr auto atomicAnd(auto const& acc, T* const addr, T const& value, THierarchy const hier = THierarchy()) -> T
+    template<typename T, typename T_Scope = scope::Device>
+    constexpr auto atomicAnd(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
         return atomicOp<AtomicAnd>(acc, addr, value, hier);
     }
@@ -148,8 +149,8 @@ namespace alpaka::onAcc
     //! \tparam T The value type.
     //! \param addr The value to change atomically.
     //! \param value The value used in the atomic operation.
-    template<typename T, typename THierarchy = hierarchy::Grids>
-    constexpr auto atomicOr(auto const& acc, T* const addr, T const& value, THierarchy const hier = THierarchy()) -> T
+    template<typename T, typename T_Scope = scope::Device>
+    constexpr auto atomicOr(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
         return atomicOp<AtomicOr>(acc, addr, value, hier);
     }
@@ -159,8 +160,8 @@ namespace alpaka::onAcc
     //! \tparam T The value type.
     //! \param addr The value to change atomically.
     //! \param value The value used in the atomic operation.
-    template<typename T, typename THierarchy = hierarchy::Grids>
-    constexpr auto atomicXor(auto const& acc, T* const addr, T const& value, THierarchy const hier = THierarchy()) -> T
+    template<typename T, typename T_Scope = scope::Device>
+    constexpr auto atomicXor(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
         return atomicOp<AtomicXor>(acc, addr, value, hier);
     }
@@ -171,13 +172,13 @@ namespace alpaka::onAcc
     //! \param addr The value to change atomically.
     //! \param compare The comparison value used in the atomic operation.
     //! \param value The value used in the atomic operation.
-    template<typename T, typename THierarchy = hierarchy::Grids>
+    template<typename T, typename T_Scope = scope::Device>
     constexpr auto atomicCas(
         auto const& acc,
         T* const addr,
         T const& compare,
         T const& value,
-        THierarchy const hier = THierarchy()) -> T
+        T_Scope const hier = T_Scope()) -> T
     {
         return atomicOp<AtomicCas>(acc, addr, compare, value, hier);
     }

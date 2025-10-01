@@ -5,8 +5,8 @@
 #pragma once
 
 #include "alpaka/core/config.hpp"
-#include "alpaka/onAcc/atomicHierarchy.hpp"
 #include "alpaka/onAcc/atomicOp.hpp"
+#include "alpaka/onAcc/scope.hpp"
 #include "alpaka/utility.hpp"
 
 #include <type_traits>
@@ -56,17 +56,17 @@ inline namespace alpakaGlobal
     //    // interface for atomicCas only
     //    __device__ static T atomic( T* add, T compare, T value);
     // \endcode
-    template<typename TOp, typename T, typename THierarchy, typename TSfinae = void>
+    template<typename TOp, typename T, typename T_Scope, typename TSfinae = void>
     struct AlpakaBuiltInAtomic : std::false_type
     {
     };
 
     // Cas.
-    template<typename T, typename THierarchy>
+    template<typename T, typename T_Scope>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicCas,
         T,
-        THierarchy,
+        T_Scope,
         typename std::void_t<
             decltype(atomicCAS(alpaka::core::declval<T*>(), alpaka::core::declval<T>(), alpaka::core::declval<T>()))>>
         : std::true_type
@@ -82,7 +82,7 @@ inline namespace alpakaGlobal
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicCas,
         T,
-        alpaka::onAcc::hierarchy::Threads,
+        alpaka::onAcc::scope::Block,
         typename std::void_t<decltype(atomicCAS_block(
             alpaka::core::declval<T*>(),
             alpaka::core::declval<T>(),
@@ -97,11 +97,11 @@ inline namespace alpakaGlobal
 
 
     // Add.
-    template<typename T, typename THierarchy>
+    template<typename T, typename T_Scope>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicAdd,
         T,
-        THierarchy,
+        T_Scope,
         typename std::void_t<decltype(atomicAdd(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -117,7 +117,7 @@ inline namespace alpakaGlobal
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicAdd,
         T,
-        alpaka::onAcc::hierarchy::Threads,
+        alpaka::onAcc::scope::Block,
         typename std::void_t<decltype(atomicAdd_block(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -130,8 +130,8 @@ inline namespace alpakaGlobal
 
 #        if CLANG_CUDA_PTX_WORKAROUND
     // clang is providing a builtin for atomicAdd even if these is not supported by the current architecture
-    template<typename THierarchy>
-    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicAdd, double, THierarchy> : std::false_type
+    template<typename T_Scope>
+    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicAdd, double, T_Scope> : std::false_type
     {
     };
 #        endif
@@ -141,18 +141,18 @@ inline namespace alpakaGlobal
     // call the buildin method and instead use the atomicCAS emulation. For details see:
     // https://github.com/alpaka-group/alpaka/issues/1657
     template<>
-    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicAdd, float, alpaka::onAcc::hierarchy::Threads> : std::false_type
+    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicAdd, float, alpaka::onAcc::scope::Block> : std::false_type
     {
     };
 #        endif
 
     // Sub.
 
-    template<typename T, typename THierarchy>
+    template<typename T, typename T_Scope>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicSub,
         T,
-        THierarchy,
+        T_Scope,
         typename std::void_t<decltype(atomicSub(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -167,7 +167,7 @@ inline namespace alpakaGlobal
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicSub,
         T,
-        alpaka::onAcc::hierarchy::Threads,
+        alpaka::onAcc::scope::Block,
         typename std::void_t<decltype(atomicSub_block(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -179,11 +179,11 @@ inline namespace alpakaGlobal
 #        endif
 
     // Min.
-    template<typename T, typename THierarchy>
+    template<typename T, typename T_Scope>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicMin,
         T,
-        THierarchy,
+        T_Scope,
         typename std::void_t<decltype(atomicMin(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -198,7 +198,7 @@ inline namespace alpakaGlobal
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicMin,
         T,
-        alpaka::onAcc::hierarchy::Threads,
+        alpaka::onAcc::scope::Block,
         typename std::void_t<decltype(atomicMin_block(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -211,34 +211,34 @@ inline namespace alpakaGlobal
 
 // disable HIP atomicMin: see https://github.com/ROCm-Developer-Tools/hipamd/pull/40
 #        if (ALPAKA_LANG_HIP)
-    template<typename THierarchy>
-    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMin, float, THierarchy> : std::false_type
+    template<typename T_Scope>
+    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMin, float, T_Scope> : std::false_type
     {
     };
 
     template<>
-    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMin, float, alpaka::onAcc::hierarchy::Threads> : std::false_type
+    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMin, float, alpaka::onAcc::scope::Block> : std::false_type
     {
     };
 
-    template<typename THierarchy>
-    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMin, double, THierarchy> : std::false_type
+    template<typename T_Scope>
+    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMin, double, T_Scope> : std::false_type
     {
     };
 
     template<>
-    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMin, double, alpaka::onAcc::hierarchy::Threads> : std::false_type
+    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMin, double, alpaka::onAcc::scope::Block> : std::false_type
     {
     };
 
 #            if !__has_builtin(__hip_atomic_compare_exchange_strong)
-    template<typename THierarchy>
-    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMin, unsigned long long, THierarchy> : std::false_type
+    template<typename T_Scope>
+    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMin, unsigned long long, T_Scope> : std::false_type
     {
     };
 
     template<>
-    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMin, unsigned long long, alpaka::onAcc::hierarchy::Threads>
+    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMin, unsigned long long, alpaka::onAcc::scope::Block>
         : std::false_type
     {
     };
@@ -247,11 +247,11 @@ inline namespace alpakaGlobal
 
     // Max.
 
-    template<typename T, typename THierarchy>
+    template<typename T, typename T_Scope>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicMax,
         T,
-        THierarchy,
+        T_Scope,
         typename std::void_t<decltype(atomicMax(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -266,7 +266,7 @@ inline namespace alpakaGlobal
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicMax,
         T,
-        alpaka::onAcc::hierarchy::Threads,
+        alpaka::onAcc::scope::Block,
         typename std::void_t<decltype(atomicMax_block(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -279,34 +279,34 @@ inline namespace alpakaGlobal
 
     // disable HIP atomicMax: see https://github.com/ROCm-Developer-Tools/hipamd/pull/40
 #        if (ALPAKA_LANG_HIP)
-    template<typename THierarchy>
-    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMax, float, THierarchy> : std::false_type
+    template<typename T_Scope>
+    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMax, float, T_Scope> : std::false_type
     {
     };
 
     template<>
-    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMax, float, alpaka::onAcc::hierarchy::Threads> : std::false_type
+    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMax, float, alpaka::onAcc::scope::Block> : std::false_type
     {
     };
 
-    template<typename THierarchy>
-    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMax, double, THierarchy> : std::false_type
+    template<typename T_Scope>
+    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMax, double, T_Scope> : std::false_type
     {
     };
 
     template<>
-    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMax, double, alpaka::onAcc::hierarchy::Threads> : std::false_type
+    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMax, double, alpaka::onAcc::scope::Block> : std::false_type
     {
     };
 
 #            if !__has_builtin(__hip_atomic_compare_exchange_strong)
-    template<typename THierarchy>
-    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMax, unsigned long long, THierarchy> : std::false_type
+    template<typename T_Scope>
+    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMax, unsigned long long, T_Scope> : std::false_type
     {
     };
 
     template<>
-    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMax, unsigned long long, alpaka::onAcc::hierarchy::Threads>
+    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMax, unsigned long long, alpaka::onAcc::scope::Block>
         : std::false_type
     {
     };
@@ -316,11 +316,11 @@ inline namespace alpakaGlobal
 
     // Exch.
 
-    template<typename T, typename THierarchy>
+    template<typename T, typename T_Scope>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicExch,
         T,
-        THierarchy,
+        T_Scope,
         typename std::void_t<decltype(atomicExch(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -335,7 +335,7 @@ inline namespace alpakaGlobal
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicExch,
         T,
-        alpaka::onAcc::hierarchy::Threads,
+        alpaka::onAcc::scope::Block,
         typename std::void_t<decltype(atomicExch_block(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -348,11 +348,11 @@ inline namespace alpakaGlobal
 
     // Inc.
 
-    template<typename T, typename THierarchy>
+    template<typename T, typename T_Scope>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicInc,
         T,
-        THierarchy,
+        T_Scope,
         typename std::void_t<decltype(atomicInc(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -367,7 +367,7 @@ inline namespace alpakaGlobal
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicInc,
         T,
-        alpaka::onAcc::hierarchy::Threads,
+        alpaka::onAcc::scope::Block,
         typename std::void_t<decltype(atomicInc_block(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -380,11 +380,11 @@ inline namespace alpakaGlobal
 
     // Dec.
 
-    template<typename T, typename THierarchy>
+    template<typename T, typename T_Scope>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicDec,
         T,
-        THierarchy,
+        T_Scope,
         typename std::void_t<decltype(atomicDec(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -399,7 +399,7 @@ inline namespace alpakaGlobal
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicDec,
         T,
-        alpaka::onAcc::hierarchy::Threads,
+        alpaka::onAcc::scope::Block,
         typename std::void_t<decltype(atomicDec_block(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -412,11 +412,11 @@ inline namespace alpakaGlobal
 
     // And.
 
-    template<typename T, typename THierarchy>
+    template<typename T, typename T_Scope>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicAnd,
         T,
-        THierarchy,
+        T_Scope,
         typename std::void_t<decltype(atomicAnd(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -431,7 +431,7 @@ inline namespace alpakaGlobal
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicAnd,
         T,
-        alpaka::onAcc::hierarchy::Threads,
+        alpaka::onAcc::scope::Block,
         typename std::void_t<decltype(atomicAnd_block(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -444,11 +444,11 @@ inline namespace alpakaGlobal
 
     // Or.
 
-    template<typename T, typename THierarchy>
+    template<typename T, typename T_Scope>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicOr,
         T,
-        THierarchy,
+        T_Scope,
         typename std::void_t<decltype(atomicOr(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -463,7 +463,7 @@ inline namespace alpakaGlobal
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicOr,
         T,
-        alpaka::onAcc::hierarchy::Threads,
+        alpaka::onAcc::scope::Block,
         typename std::void_t<decltype(atomicOr_block(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -476,11 +476,11 @@ inline namespace alpakaGlobal
 
     // Xor.
 
-    template<typename T, typename THierarchy>
+    template<typename T, typename T_Scope>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicXor,
         T,
-        THierarchy,
+        T_Scope,
         typename std::void_t<decltype(atomicXor(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {
@@ -495,7 +495,7 @@ inline namespace alpakaGlobal
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicXor,
         T,
-        alpaka::onAcc::hierarchy::Threads,
+        alpaka::onAcc::scope::Block,
         typename std::void_t<decltype(atomicXor_block(alpaka::core::declval<T*>(), alpaka::core::declval<T>()))>>
         : std::true_type
     {

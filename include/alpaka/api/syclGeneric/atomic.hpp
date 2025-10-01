@@ -9,9 +9,9 @@
 #if ALPAKA_LANG_SYCL
 
 #    include "alpaka/api/syclGeneric/tag.hpp"
-#    include "alpaka/onAcc/atomicHierarchy.hpp"
 #    include "alpaka/onAcc/atomicOp.hpp"
 #    include "alpaka/onAcc/internal/interface.hpp"
+#    include "alpaka/onAcc/scope.hpp"
 
 #    include <sycl/sycl.hpp>
 
@@ -20,36 +20,36 @@
 
 namespace alpaka::detail
 {
-    template<typename THierarchy>
+    template<typename T_Scope>
     struct SyclMemoryScope
     {
     };
 
     template<>
-    struct SyclMemoryScope<alpaka::onAcc::hierarchy::Grids>
+    struct SyclMemoryScope<alpaka::onAcc::scope::System>
+    {
+        static constexpr auto value = sycl::memory_scope::system;
+    };
+
+    template<>
+    struct SyclMemoryScope<alpaka::onAcc::scope::Device>
     {
         static constexpr auto value = sycl::memory_scope::device;
     };
 
     template<>
-    struct SyclMemoryScope<alpaka::onAcc::hierarchy::Blocks>
-    {
-        static constexpr auto value = sycl::memory_scope::device;
-    };
-
-    template<>
-    struct SyclMemoryScope<alpaka::onAcc::hierarchy::Threads>
+    struct SyclMemoryScope<alpaka::onAcc::scope::Block>
     {
         static constexpr auto value = sycl::memory_scope::work_group;
     };
 
-    template<typename T, typename THierarchy>
-    using sycl_atomic_ref = sycl::atomic_ref<T, sycl::memory_order::relaxed, SyclMemoryScope<THierarchy>::value>;
+    template<typename T, typename T_Scope>
+    using sycl_atomic_ref = sycl::atomic_ref<T, sycl::memory_order::relaxed, SyclMemoryScope<T_Scope>::value>;
 
-    template<typename THierarchy, typename T, typename TOp>
+    template<typename T_Scope, typename T, typename TOp>
     inline auto callAtomicOp(T* const addr, TOp&& op)
     {
-        auto ref = sycl_atomic_ref<T, THierarchy>{*addr};
+        auto ref = sycl_atomic_ref<T, T_Scope>{*addr};
         return op(ref);
     }
 
@@ -72,68 +72,60 @@ namespace alpaka::onAcc::internalCompute
 {
     // Add.
     //! The SYCL accelerator atomic operation.
-    template<typename T, typename THierarchy>
-    struct Atomic::Op<AtomicAdd, onAcc::internal::SyclAtomic, T, THierarchy>
+    template<typename T, typename T_Scope>
+    struct Atomic::Op<AtomicAdd, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "SYCL atomics do not support this type");
 
         static auto atomicOp(onAcc::internal::SyclAtomic const&, T* const addr, T const& value) -> T
         {
-            return alpaka::detail::callAtomicOp<THierarchy>(
-                addr,
-                [&value](auto& ref) { return ref.fetch_add(value); });
+            return alpaka::detail::callAtomicOp<T_Scope>(addr, [&value](auto& ref) { return ref.fetch_add(value); });
         }
     };
 
     // Sub.
     //! The SYCL accelerator atomic operation.
-    template<typename T, typename THierarchy>
-    struct Atomic::Op<AtomicSub, onAcc::internal::SyclAtomic, T, THierarchy>
+    template<typename T, typename T_Scope>
+    struct Atomic::Op<AtomicSub, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "SYCL atomics do not support this type");
 
         static auto atomicOp(onAcc::internal::SyclAtomic const&, T* const addr, T const& value) -> T
         {
-            return alpaka::detail::callAtomicOp<THierarchy>(
-                addr,
-                [&value](auto& ref) { return ref.fetch_sub(value); });
+            return alpaka::detail::callAtomicOp<T_Scope>(addr, [&value](auto& ref) { return ref.fetch_sub(value); });
         }
     };
 
     // Min.
     //! The SYCL accelerator atomic operation.
-    template<typename T, typename THierarchy>
-    struct Atomic::Op<AtomicMin, onAcc::internal::SyclAtomic, T, THierarchy>
+    template<typename T, typename T_Scope>
+    struct Atomic::Op<AtomicMin, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "SYCL atomics do not support this type");
 
         static auto atomicOp(onAcc::internal::SyclAtomic const&, T* const addr, T const& value) -> T
         {
-            return alpaka::detail::callAtomicOp<THierarchy>(
-                addr,
-                [&value](auto& ref) { return ref.fetch_min(value); });
+            return alpaka::detail::callAtomicOp<T_Scope>(addr, [&value](auto& ref) { return ref.fetch_min(value); });
         }
     };
 
     // Max.
     //! The SYCL accelerator atomic operation.
-    template<typename T, typename THierarchy>
-    struct Atomic::Op<AtomicMax, onAcc::internal::SyclAtomic, T, THierarchy>
+    template<typename T, typename T_Scope>
+    struct Atomic::Op<AtomicMax, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "SYCL atomics do not support this type");
 
         static auto atomicOp(onAcc::internal::SyclAtomic const&, T* const addr, T const& value) -> T
         {
-            return alpaka::detail::callAtomicOp<THierarchy>(
-                addr,
-                [&value](auto& ref) { return ref.fetch_max(value); });
+            return alpaka::detail::callAtomicOp<T_Scope>(addr, [&value](auto& ref) { return ref.fetch_max(value); });
         }
     };
 
     // Exch.
     //! The SYCL accelerator atomic operation.
-    template<typename T, typename THierarchy>
-    struct Atomic::Op<AtomicExch, onAcc::internal::SyclAtomic, T, THierarchy>
+    template<typename T, typename T_Scope>
+    struct Atomic::Op<AtomicExch, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(
             (std::is_integral_v<T> || std::is_floating_point_v<T>) and (sizeof(T) == 4 || sizeof(T) == 8),
@@ -141,14 +133,14 @@ namespace alpaka::onAcc::internalCompute
 
         static auto atomicOp(onAcc::internal::SyclAtomic const&, T* const addr, T const& value) -> T
         {
-            return alpaka::detail::callAtomicOp<THierarchy>(addr, [&value](auto& ref) { return ref.exchange(value); });
+            return alpaka::detail::callAtomicOp<T_Scope>(addr, [&value](auto& ref) { return ref.exchange(value); });
         }
     };
 
     // Inc.
     //! The SYCL accelerator atomic operation.
-    template<typename T, typename THierarchy>
-    struct Atomic::Op<AtomicInc, onAcc::internal::SyclAtomic, T, THierarchy>
+    template<typename T, typename T_Scope>
+    struct Atomic::Op<AtomicInc, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(
             std::is_unsigned_v<T> && (sizeof(T) == 4 || sizeof(T) == 8),
@@ -158,14 +150,14 @@ namespace alpaka::onAcc::internalCompute
         {
             auto inc = [&value](auto old_val)
             { return (old_val >= value) ? static_cast<T>(0) : (old_val + static_cast<T>(1)); };
-            return alpaka::detail::casWithCondition<alpaka::detail::sycl_atomic_ref<T, THierarchy>>(addr, inc);
+            return alpaka::detail::casWithCondition<alpaka::detail::sycl_atomic_ref<T, T_Scope>>(addr, inc);
         }
     };
 
     // Dec.
     //! The SYCL accelerator atomic operation.
-    template<typename T, typename THierarchy>
-    struct Atomic::Op<AtomicDec, onAcc::internal::SyclAtomic, T, THierarchy>
+    template<typename T, typename T_Scope>
+    struct Atomic::Op<AtomicDec, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(
             std::is_unsigned_v<T> && (sizeof(T) == 4 || sizeof(T) == 8),
@@ -175,57 +167,53 @@ namespace alpaka::onAcc::internalCompute
         {
             auto dec = [&value](auto& old_val)
             { return ((old_val == 0) || (old_val > value)) ? value : (old_val - static_cast<T>(1)); };
-            return alpaka::detail::casWithCondition<alpaka::detail::sycl_atomic_ref<T, THierarchy>>(addr, dec);
+            return alpaka::detail::casWithCondition<alpaka::detail::sycl_atomic_ref<T, T_Scope>>(addr, dec);
         }
     };
 
     // And.
     //! The SYCL accelerator atomic operation.
-    template<typename T, typename THierarchy>
-    struct Atomic::Op<AtomicAnd, onAcc::internal::SyclAtomic, T, THierarchy>
+    template<typename T, typename T_Scope>
+    struct Atomic::Op<AtomicAnd, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(std::is_integral_v<T>, "Bitwise operations only supported for integral types.");
 
         static auto atomicOp(onAcc::internal::SyclAtomic const&, T* const addr, T const& value) -> T
         {
-            return alpaka::detail::callAtomicOp<THierarchy>(
-                addr,
-                [&value](auto& ref) { return ref.fetch_and(value); });
+            return alpaka::detail::callAtomicOp<T_Scope>(addr, [&value](auto& ref) { return ref.fetch_and(value); });
         }
     };
 
     // Or.
     //! The SYCL accelerator atomic operation.
-    template<typename T, typename THierarchy>
-    struct Atomic::Op<AtomicOr, onAcc::internal::SyclAtomic, T, THierarchy>
+    template<typename T, typename T_Scope>
+    struct Atomic::Op<AtomicOr, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(std::is_integral_v<T>, "Bitwise operations only supported for integral types.");
 
         static auto atomicOp(onAcc::internal::SyclAtomic const&, T* const addr, T const& value) -> T
         {
-            return alpaka::detail::callAtomicOp<THierarchy>(addr, [&value](auto& ref) { return ref.fetch_or(value); });
+            return alpaka::detail::callAtomicOp<T_Scope>(addr, [&value](auto& ref) { return ref.fetch_or(value); });
         }
     };
 
     // Xor.
     //! The SYCL accelerator atomic operation.
-    template<typename T, typename THierarchy>
-    struct Atomic::Op<AtomicXor, onAcc::internal::SyclAtomic, T, THierarchy>
+    template<typename T, typename T_Scope>
+    struct Atomic::Op<AtomicXor, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(std::is_integral_v<T>, "Bitwise operations only supported for integral types.");
 
         static auto atomicOp(onAcc::internal::SyclAtomic const&, T* const addr, T const& value) -> T
         {
-            return alpaka::detail::callAtomicOp<THierarchy>(
-                addr,
-                [&value](auto& ref) { return ref.fetch_xor(value); });
+            return alpaka::detail::callAtomicOp<T_Scope>(addr, [&value](auto& ref) { return ref.fetch_xor(value); });
         }
     };
 
     // Cas.
     //! The SYCL accelerator atomic operation.
-    template<typename T, typename THierarchy>
-    struct Atomic::Op<AtomicCas, onAcc::internal::SyclAtomic, T, THierarchy>
+    template<typename T, typename T_Scope>
+    struct Atomic::Op<AtomicCas, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "SYCL atomics do not support this type");
 
@@ -247,7 +235,7 @@ namespace alpaka::onAcc::internalCompute
                 return expected_;
             };
 
-            return alpaka::detail::callAtomicOp<THierarchy>(addr, cas);
+            return alpaka::detail::callAtomicOp<T_Scope>(addr, cas);
         }
     };
 } // namespace alpaka::onAcc::internalCompute
