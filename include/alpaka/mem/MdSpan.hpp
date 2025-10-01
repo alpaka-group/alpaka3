@@ -11,6 +11,7 @@
 #include "alpaka/mem/Alignment.hpp"
 #include "alpaka/mem/DataPitches.hpp"
 #include "alpaka/mem/MdForwardIter.hpp"
+#include "alpaka/mem/concepts/detail/InnerTypeAllowedCast.hpp"
 #include "alpaka/mem/trait.hpp"
 #include "alpaka/onHost/interface.hpp"
 #include "alpaka/trait.hpp"
@@ -152,15 +153,20 @@ namespace alpaka
         }
 
         template<typename T_Type_Other>
-        requires requires { requires !(std::is_const_v<T_Type_Other> && !std::is_const_v<T_Type>); }
+        requires internal::concepts::InnerTypeAllowedCast<T_Type, T_Type_Other>
         constexpr MdSpan(MdSpan<T_Type_Other, T_Extents, T_Pitches, T_MemAlignment> const& other)
             : m_ptr(other.data())
             , m_extent(other.getExtents())
             , m_pitch(other.getPitches()){};
         constexpr MdSpan(MdSpan const&) = default;
 
+        // causes a compiler error with nvcc
+        // error: static assertion failed with "All kernel arguments must be trivially copyable or specialize
+        // trait::IsKernelArgumentTriviallyCopyable<>!"
+        // constexpr MdSpan& operator=(MdSpan&) = default;
+
         template<typename T_Type_Other>
-        requires requires { requires !(std::is_const_v<T_Type_Other> && !std::is_const_v<T_Type>); }
+        requires internal::concepts::InnerTypeAllowedCast<T_Type, T_Type_Other>
         constexpr MdSpan(MdSpan<T_Type_Other, T_Extents, T_Pitches, T_MemAlignment>&& other)
             : m_ptr(std::move(other.data()))
             , m_extent(std::move(other.getExtents()))

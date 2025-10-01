@@ -62,6 +62,8 @@ namespace alpaka::concepts
             typename T::index_type;
 
             requires std::movable<T_Mut>;
+            /// @todo add bool cast operator -> True if memory is valid. For example moved IMdSpan object are not valid
+            /// anymore.
 
             { T::dim() } -> std::same_as<uint32_t>;
             { *mut_t } -> std::same_as<typename T::reference>;

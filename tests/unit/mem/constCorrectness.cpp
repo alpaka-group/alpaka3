@@ -122,7 +122,7 @@ TEST_CASE("mdspan inner const move operator", "[mem][correctness]")
 
 template<typename TExpectedValueType, typename TExpectedReferenceType, typename TMdSpan>
 requires internal::concepts::CopyConstructableDataSource<TMdSpan> && concepts::IMdSpan<TMdSpan>
-void func_copy_by_value(TMdSpan mdspan)
+void funcCopyByValue(TMdSpan mdspan)
 {
     STATIC_REQUIRE(std::same_as<typename decltype(mdspan)::value_type, TExpectedValueType>);
     auto& val = mdspan[0];
@@ -131,7 +131,7 @@ void func_copy_by_value(TMdSpan mdspan)
 
 template<typename TExpectedValueType, typename TExpectedReferenceType, typename TMdSpan>
 requires internal::concepts::CopyConstructableDataSource<TMdSpan> && concepts::IMdSpan<TMdSpan>
-void func_reference(TMdSpan& mdspan)
+void funcReference(TMdSpan& mdspan)
 {
     STATIC_REQUIRE(std::same_as<typename std::remove_reference_t<decltype(mdspan)>::value_type, TExpectedValueType>);
     auto& val = mdspan[0];
@@ -140,7 +140,7 @@ void func_reference(TMdSpan& mdspan)
 
 template<typename TExpectedValueType, typename TExpectedReferenceType, typename TMdSpan>
 requires internal::concepts::CopyConstructableDataSource<TMdSpan> && concepts::IMdSpan<TMdSpan>
-void func_const_reference(TMdSpan const& mdspan)
+void funcConstReference(TMdSpan const& mdspan)
 {
     STATIC_REQUIRE(std::same_as<typename std::remove_reference_t<decltype(mdspan)>::value_type, TExpectedValueType>);
     auto& val = mdspan[0];
@@ -149,7 +149,7 @@ void func_const_reference(TMdSpan const& mdspan)
 
 template<typename TExpectedValueType, typename TExpectedReferenceType, typename TMdSpan>
 requires internal::concepts::CopyConstructableDataSource<TMdSpan> && concepts::IMdSpan<TMdSpan>
-void func_universal_ref(TMdSpan&& mdspan)
+void funcUniversalRef(TMdSpan&& mdspan)
 {
     STATIC_REQUIRE(std::same_as<typename std::remove_reference_t<decltype(mdspan)>::value_type, TExpectedValueType>);
     auto& val = mdspan[0];
@@ -165,29 +165,29 @@ TEST_CASE("function calls with mdspan object", "[mem][correctness]")
     concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
 
     MdSpan mdspan{ptr, extents, pitches};
-    func_copy_by_value<int, int&>(mdspan);
-    func_reference<int, int&>(mdspan);
-    func_const_reference<int, int const&>(mdspan);
-    func_universal_ref<int, int&>(mdspan);
-    func_universal_ref<int, int&>(MdSpan{ptr, extents, pitches});
+    funcCopyByValue<int, int&>(mdspan);
+    funcReference<int, int&>(mdspan);
+    funcConstReference<int, int const&>(mdspan);
+    funcUniversalRef<int, int&>(mdspan);
+    funcUniversalRef<int, int&>(MdSpan{ptr, extents, pitches});
 
     MdSpan const const_mdspan{ptr, extents, pitches};
-    func_copy_by_value<int, int&>(const_mdspan);
-    func_reference<int, int const&>(const_mdspan);
-    func_const_reference<int, int const&>(const_mdspan);
+    funcCopyByValue<int, int&>(const_mdspan);
+    funcReference<int, int const&>(const_mdspan);
+    funcConstReference<int, int const&>(const_mdspan);
 
     MdSpan mdspan_inner_const{const_ptr, extents, pitches};
-    func_copy_by_value<int const, int const&>(mdspan_inner_const);
-    func_reference<int const, int const&>(mdspan_inner_const);
-    func_const_reference<int const, int const&>(mdspan_inner_const);
-    func_universal_ref<int const, int const&>(mdspan_inner_const);
-    func_universal_ref<int const, int const&>(MdSpan{const_ptr, extents, pitches});
+    funcCopyByValue<int const, int const&>(mdspan_inner_const);
+    funcReference<int const, int const&>(mdspan_inner_const);
+    funcConstReference<int const, int const&>(mdspan_inner_const);
+    funcUniversalRef<int const, int const&>(mdspan_inner_const);
+    funcUniversalRef<int const, int const&>(MdSpan{const_ptr, extents, pitches});
 
     MdSpan const const_mdspan_inner_const{const_ptr, extents, pitches};
-    func_copy_by_value<int const, int const&>(const_mdspan_inner_const);
-    func_reference<int const, int const&>(const_mdspan_inner_const);
-    func_const_reference<int const, int const&>(const_mdspan_inner_const);
-    func_universal_ref<int const, int const&>(const_mdspan_inner_const);
+    funcCopyByValue<int const, int const&>(const_mdspan_inner_const);
+    funcReference<int const, int const&>(const_mdspan_inner_const);
+    funcConstReference<int const, int const&>(const_mdspan_inner_const);
+    funcUniversalRef<int const, int const&>(const_mdspan_inner_const);
 }
 
 TEST_CASE("sharedBuffer copy and move construct", "[mem][correctness]")
@@ -195,6 +195,73 @@ TEST_CASE("sharedBuffer copy and move construct", "[mem][correctness]")
     // TODO(SimeonEhrig): check if shared_ptr is moved and not accidentally copied
     // compare ref counter before and after copy
     STATIC_REQUIRE(true);
+}
+
+TEST_CASE("sharedBuffer inner const copy constructor", "[mem][correctness]")
+{
+    constexpr size_t size = 10;
+    int* ptr = nullptr;
+    int const* const_ptr = nullptr;
+    concepts::Vector auto extents = Vec<uint32_t, 3>{}.all(size);
+    concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
+
+    using MutSharedBuffer = onHost::SharedBuffer<alpaka::api::Host, int, decltype(extents)>;
+    using ConstSharedBuffer = onHost::SharedBuffer<alpaka::api::Host, int const, decltype(extents)>;
+
+    STATIC_REQUIRE(internal::CopyConstructableDataSource<MutSharedBuffer>::value);
+
+    // TODO(SimeonEhrig): enable me, when alpaka::View copy constructor allows different element types
+    // STATIC_REQUIRE(internal::concepts::CopyConstructableDataSource<MutSharedBuffer>);
+    // STATIC_REQUIRE(internal::concepts::CopyConstructableDataSource<ConstSharedBuffer>);
+
+    MutSharedBuffer mut_shared_buffer(api::host, ptr, extents, pitches, [] {});
+    ConstSharedBuffer const_shared_buffer(api::host, const_ptr, extents, pitches, [] {});
+
+    STATIC_REQUIRE(std::constructible_from<MutSharedBuffer, MutSharedBuffer&>);
+    [[maybe_unused]] MutSharedBuffer mut_shared_buffer_copy(mut_shared_buffer);
+
+    STATIC_REQUIRE(std::constructible_from<ConstSharedBuffer, ConstSharedBuffer&>);
+    [[maybe_unused]] ConstSharedBuffer const_shared_buffer_copy(const_shared_buffer);
+
+    // TODO(SimeonEhrig): enable me, when alpaka::View copy constructor allows different element types
+    // STATIC_REQUIRE(std::constructible_from<ConstSharedBuffer, MutSharedBuffer&>);
+    // [[maybe_unused]] ConstSharedBuffer mut_to_const_shared_buffer(mut_shared_buffer);
+    //
+    STATIC_REQUIRE_FALSE(std::constructible_from<MutSharedBuffer, ConstSharedBuffer&>);
+    // should not compile
+    // MdSpan const_to_mud_shared_buffer(const_shared_buffer);
+}
+
+TEST_CASE("sharedBuffer inner const move operator", "[mem][correctness]")
+{
+    constexpr size_t size = 10;
+    int* ptr = nullptr;
+    int const* const_ptr = nullptr;
+    concepts::Vector auto extents = Vec<uint32_t, 3>{}.all(size);
+    concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
+
+    using MutSharedBuffer = onHost::SharedBuffer<alpaka::api::Host, int, decltype(extents)>;
+    using ConstSharedBuffer = onHost::SharedBuffer<alpaka::api::Host, int const, decltype(extents)>;
+
+    MutSharedBuffer copy_mut_shared_buffer(api::host, ptr, extents, pitches, [] {});
+    ConstSharedBuffer copy_const_shared_buffer(api::host, const_ptr, extents, pitches, [] {});
+
+    MutSharedBuffer copy_mut_shared_buffer2(std::move(copy_mut_shared_buffer));
+    ConstSharedBuffer copy_const_shared_buffer2(std::move(copy_const_shared_buffer));
+    // TODO(SimeonEhrig): enable me, when alpaka::View move constructor allows different element types
+    // [[maybe_unused]] ConstSharedBuffer copy_const_shared_buffer3(std::move(copy_mut_shared_buffer2));
+    // should not compile
+    // MutSharedBuffer copy_mut_shared_buffer3(std::move(copy_const_shared_buffer3));
+
+    MutSharedBuffer assign_mut_shared_buffer(api::host, ptr, extents, pitches, [] {});
+    ConstSharedBuffer assign_const_shared_buffer(api::host, const_ptr, extents, pitches, [] {});
+
+    MutSharedBuffer assign_mut_shared_buffer2 = std::move(assign_mut_shared_buffer);
+    ConstSharedBuffer assign_const_shared_buffer2 = std::move(assign_const_shared_buffer);
+    // TODO(SimeonEhrig): enable me, when alpaka::View move constructor allows different element types
+    //[[maybe_unused]] ConstSharedBuffer assign_const_shared_buffer3 = std::move(assign_mut_shared_buffer2);
+    // should not compile
+    // Mutshared_buffer assign_mut_shared_buffer3 = std::move(assign_const_shared_buffer3);
 }
 
 TEST_CASE("buffer const correctness MD", "[mem][correctness]")

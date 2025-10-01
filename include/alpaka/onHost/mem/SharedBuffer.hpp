@@ -9,6 +9,8 @@
 #include "alpaka/core/config.hpp"
 #include "alpaka/internal/interface.hpp"
 #include "alpaka/mem/View.hpp"
+#include "alpaka/mem/concepts/detail/InnerTypeAllowedCast.hpp"
+#include "alpaka/mem/trait.hpp"
 #include "alpaka/onHost/Device.hpp"
 #include "alpaka/onHost/Handle.hpp"
 #include "alpaka/onHost/concepts.hpp"
@@ -89,11 +91,34 @@ namespace alpaka::onHost
                 "extent type and pitch type must be lossless convertible");
         }
 
+        template<typename T_Type_Other>
+        requires alpaka::internal::concepts::InnerTypeAllowedCast<T_Type, T_Type_Other>
+        explicit SharedBuffer(SharedBuffer<T_Api, T_Type_Other, T_Extents, T_MemAlignment> const& other)
+            : BaseView{static_cast<BaseView>(other)}
+            , m_deleter(other.m_deleter)
+        {
+        }
+
+        SharedBuffer(SharedBuffer const&) = default;
+
         auto& operator=(auto const& otherSharedBuffer) const
         {
             *this = otherSharedBuffer.getConstSharedBuffer();
             return *this;
         }
+
+        template<typename T_Type_Other>
+        requires alpaka::internal::concepts::InnerTypeAllowedCast<T_Type, T_Type_Other>
+        explicit SharedBuffer(SharedBuffer<T_Api, T_Type_Other, T_Extents, T_MemAlignment>&& other)
+            : BaseView{std::move(static_cast<BaseView>(other))}
+            , m_deleter(std::move(other.m_deleter))
+
+        {
+        }
+
+        SharedBuffer(SharedBuffer&&) = default;
+
+        SharedBuffer& operator=(SharedBuffer&&) = default;
 
         auto getView() const
         {
@@ -212,6 +237,18 @@ namespace alpaka::onHost
             addDestructorAction([any]() { onHost::wait(any); });
         }
 
+        /** Return the number of SharedBuffers which points to the same memory */
+        [[nodiscard]] constexpr long getUseCount() const noexcept
+        {
+            return m_deleter.use_count();
+        }
+
+        /** True if SharedBuffer is pointing to valid memory. */
+        constexpr explicit operator bool() const noexcept
+        {
+            return static_cast<bool>(m_deleter);
+        }
+
     private:
         /** @todo move this to trais or somewhere else that it can be used everywhere */
         template<alpaka::concepts::IsPointer T>
@@ -293,6 +330,18 @@ namespace alpaka::internal
             return T_Api{};
         }
     };
+
+    template<
+        alpaka::concepts::Api T_Api,
+        typename T_Type,
+        alpaka::concepts::Vector T_Extents,
+        alpaka::concepts::Alignment T_MemAlignment>
+    struct CopyConstructableDataSource<onHost::SharedBuffer<T_Api, T_Type, T_Extents, T_MemAlignment>> : std::true_type
+    {
+        using InnerMutable = onHost::SharedBuffer<T_Api, std::remove_const_t<T_Type>, T_Extents, T_MemAlignment>;
+        using InnerConst = onHost::SharedBuffer<T_Api, std::add_const_t<T_Type>, T_Extents, T_MemAlignment>;
+    };
+
 } // namespace alpaka::internal
 
 namespace alpaka::trait
