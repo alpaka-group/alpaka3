@@ -136,7 +136,11 @@ namespace alpaka
 
     namespace internal
     {
-        template<typename T_To, concepts::Vector T_End, concepts::Vector T_Begin, concepts::Vector T_Stride>
+        template<
+            typename T_To,
+            alpaka::concepts::Vector T_End,
+            alpaka::concepts::Vector T_Begin,
+            alpaka::concepts::Vector T_Stride>
         struct PCast::Op<T_To, IdxRange<T_End, T_Begin, T_Stride>>
         {
             constexpr decltype(auto) operator()(auto&& input) const

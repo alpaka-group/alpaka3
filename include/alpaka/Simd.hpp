@@ -757,7 +757,12 @@ namespace alpaka
 
     namespace internal
     {
-        template<typename T_To, typename T_Type, uint32_t T_dim, concepts::Alignment T_Alignment, typename T_Storage>
+        template<
+            typename T_To,
+            typename T_Type,
+            uint32_t T_dim,
+            alpaka::concepts::Alignment T_Alignment,
+            typename T_Storage>
         struct PCast::Op<T_To, alpaka::Simd<T_Type, T_dim, T_Alignment, T_Storage>>
         {
             constexpr decltype(auto) operator()(auto&& input) const
