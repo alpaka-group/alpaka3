@@ -93,7 +93,7 @@ namespace alpaka::onHost
 
         template<typename T_Type_Other>
         requires alpaka::internal::concepts::InnerTypeAllowedCast<T_Type, T_Type_Other>
-        explicit SharedBuffer(SharedBuffer<T_Api, T_Type_Other, T_Extents, T_MemAlignment> const& other)
+        SharedBuffer(SharedBuffer<T_Api, T_Type_Other, T_Extents, T_MemAlignment> const& other)
             : BaseView{static_cast<BaseView>(other)}
             , m_deleter(other.m_deleter)
         {
@@ -101,7 +101,7 @@ namespace alpaka::onHost
 
         SharedBuffer(SharedBuffer const&) = default;
 
-        auto& operator=(auto const& otherSharedBuffer) const
+        SharedBuffer& operator=(SharedBuffer const& otherSharedBuffer)
         {
             *this = otherSharedBuffer.getConstSharedBuffer();
             return *this;
@@ -109,7 +109,7 @@ namespace alpaka::onHost
 
         template<typename T_Type_Other>
         requires alpaka::internal::concepts::InnerTypeAllowedCast<T_Type, T_Type_Other>
-        explicit SharedBuffer(SharedBuffer<T_Api, T_Type_Other, T_Extents, T_MemAlignment>&& other)
+        SharedBuffer(SharedBuffer<T_Api, T_Type_Other, T_Extents, T_MemAlignment>&& other)
             : BaseView{std::move(static_cast<BaseView>(other))}
             , m_deleter(std::move(other.m_deleter))
 
