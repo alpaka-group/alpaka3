@@ -290,9 +290,8 @@ TEST_CASE("sharedBuffer inner const copy constructor", "[mem][correctness]")
 
     STATIC_REQUIRE(internal::CopyConstructableDataSource<MutSharedBuffer>::value);
 
-    // TODO(SimeonEhrig): enable me, when alpaka::View copy constructor allows different element types
-    // STATIC_REQUIRE(internal::concepts::CopyConstructableDataSource<MutSharedBuffer>);
-    // STATIC_REQUIRE(internal::concepts::CopyConstructableDataSource<ConstSharedBuffer>);
+    STATIC_REQUIRE(internal::concepts::CopyConstructableDataSource<MutSharedBuffer>);
+    STATIC_REQUIRE(internal::concepts::CopyConstructableDataSource<ConstSharedBuffer>);
 
     MutSharedBuffer mut_shared_buffer(api::host, ptr, extents, pitches, [] {});
     ConstSharedBuffer const_shared_buffer(api::host, const_ptr, extents, pitches, [] {});
@@ -303,13 +302,36 @@ TEST_CASE("sharedBuffer inner const copy constructor", "[mem][correctness]")
     STATIC_REQUIRE(std::constructible_from<ConstSharedBuffer, ConstSharedBuffer&>);
     [[maybe_unused]] ConstSharedBuffer const_shared_buffer_copy(const_shared_buffer);
 
-    // TODO(SimeonEhrig): enable me, when alpaka::View copy constructor allows different element types
-    // STATIC_REQUIRE(std::constructible_from<ConstSharedBuffer, MutSharedBuffer&>);
-    // [[maybe_unused]] ConstSharedBuffer mut_to_const_shared_buffer(mut_shared_buffer);
-    //
+    STATIC_REQUIRE(std::constructible_from<ConstSharedBuffer, MutSharedBuffer&>);
+    [[maybe_unused]] ConstSharedBuffer mut_to_const_shared_buffer(mut_shared_buffer);
+
     STATIC_REQUIRE_FALSE(std::constructible_from<MutSharedBuffer, ConstSharedBuffer&>);
     // should not compile
-    // MdSpan const_to_mud_shared_buffer(const_shared_buffer);
+    // MutSharedBuffer const_to_mud_shared_buffer(const_shared_buffer);
+}
+
+TEST_CASE("sharedBuffer inner const assignment operator", "[mem][correctness]")
+{
+    constexpr size_t size = 10;
+    int* ptr = nullptr;
+    int const* const_ptr = nullptr;
+    concepts::Vector auto extents = Vec<uint32_t, 2>{}.all(size);
+    concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
+
+    using MutSharedBuffer = onHost::SharedBuffer<alpaka::api::Host, int, decltype(extents)>;
+    using ConstSharedBuffer = onHost::SharedBuffer<alpaka::api::Host, int const, decltype(extents)>;
+
+    MutSharedBuffer mut_shared_buffer(api::host, ptr, extents, pitches, [] {});
+    ConstSharedBuffer const_shared_buffer(api::host, const_ptr, extents, pitches, [] {});
+
+    STATIC_REQUIRE(std::assignable_from<MutSharedBuffer&, MutSharedBuffer>);
+    [[maybe_unused]] MutSharedBuffer mut_shared_buffer2 = mut_shared_buffer;
+    STATIC_REQUIRE(std::assignable_from<ConstSharedBuffer&, ConstSharedBuffer>);
+    [[maybe_unused]] ConstSharedBuffer const_shared_buffer2 = const_shared_buffer;
+    STATIC_REQUIRE(std::assignable_from<ConstSharedBuffer&, MutSharedBuffer>);
+    [[maybe_unused]] ConstSharedBuffer const_shared_buffer3 = mut_shared_buffer;
+    STATIC_REQUIRE_FALSE(std::assignable_from<MutSharedBuffer&, ConstSharedBuffer>);
+    // MutSharedBuffer mut_shared_buffer3 = const_shared_buffer;
 }
 
 TEST_CASE("sharedBuffer inner const move operator", "[mem][correctness]")
@@ -328,8 +350,7 @@ TEST_CASE("sharedBuffer inner const move operator", "[mem][correctness]")
 
     MutSharedBuffer copy_mut_shared_buffer2(std::move(copy_mut_shared_buffer));
     ConstSharedBuffer copy_const_shared_buffer2(std::move(copy_const_shared_buffer));
-    // TODO(SimeonEhrig): enable me, when alpaka::View move constructor allows different element types
-    // [[maybe_unused]] ConstSharedBuffer copy_const_shared_buffer3(std::move(copy_mut_shared_buffer2));
+    [[maybe_unused]] ConstSharedBuffer copy_const_shared_buffer3(std::move(copy_mut_shared_buffer2));
     // should not compile
     // MutSharedBuffer copy_mut_shared_buffer3(std::move(copy_const_shared_buffer3));
 
@@ -338,10 +359,9 @@ TEST_CASE("sharedBuffer inner const move operator", "[mem][correctness]")
 
     MutSharedBuffer assign_mut_shared_buffer2 = std::move(assign_mut_shared_buffer);
     ConstSharedBuffer assign_const_shared_buffer2 = std::move(assign_const_shared_buffer);
-    // TODO(SimeonEhrig): enable me, when alpaka::View move constructor allows different element types
-    //[[maybe_unused]] ConstSharedBuffer assign_const_shared_buffer3 = std::move(assign_mut_shared_buffer2);
+    [[maybe_unused]] ConstSharedBuffer assign_const_shared_buffer3 = std::move(assign_mut_shared_buffer2);
     // should not compile
-    // Mutshared_buffer assign_mut_shared_buffer3 = std::move(assign_const_shared_buffer3);
+    // MutSharedBuffer assign_mut_shared_buffer3 = std::move(assign_const_shared_buffer3);
 }
 
 TEST_CASE("buffer const correctness MD", "[mem][correctness]")
