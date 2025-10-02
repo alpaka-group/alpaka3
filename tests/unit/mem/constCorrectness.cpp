@@ -190,11 +190,91 @@ TEST_CASE("function calls with mdspan object", "[mem][correctness]")
     funcUniversalRef<int const, int const&>(const_mdspan_inner_const);
 }
 
-TEST_CASE("sharedBuffer copy and move construct", "[mem][correctness]")
+TEST_CASE("View inner const copy constructor", "[mem][correctness]")
 {
-    // TODO(SimeonEhrig): check if shared_ptr is moved and not accidentally copied
-    // compare ref counter before and after copy
-    STATIC_REQUIRE(true);
+    constexpr size_t size = 10;
+    int* ptr = nullptr;
+    int const* const_ptr = nullptr;
+    concepts::Vector auto extents = Vec<uint32_t, 3>{}.all(size);
+    concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
+
+    using MutView = View<alpaka::api::Host, int, decltype(extents)>;
+    using ConstView = View<alpaka::api::Host, int const, decltype(extents)>;
+
+    STATIC_REQUIRE(internal::CopyConstructableDataSource<MutView>::value);
+
+    STATIC_REQUIRE(internal::concepts::CopyConstructableDataSource<MutView>);
+    STATIC_REQUIRE(internal::concepts::CopyConstructableDataSource<ConstView>);
+
+    MutView mut_view(api::host, ptr, extents, pitches);
+    ConstView const_view(api::host, const_ptr, extents, pitches);
+
+    STATIC_REQUIRE(std::constructible_from<MutView, MutView&>);
+    [[maybe_unused]] MutView mut_view_copy(mut_view);
+
+    STATIC_REQUIRE(std::constructible_from<ConstView, ConstView&>);
+    [[maybe_unused]] ConstView const_view_copy(const_view);
+
+    STATIC_REQUIRE(std::constructible_from<ConstView, MutView&>);
+    [[maybe_unused]] ConstView mut_to_const_view(mut_view);
+
+    STATIC_REQUIRE_FALSE(std::constructible_from<MutView, ConstView&>);
+    // should not compile
+    // MutView const_to_mud_view(const_view);
+}
+
+TEST_CASE("View inner const assignment operator", "[mem][correctness]")
+{
+    constexpr size_t size = 10;
+    int* ptr = nullptr;
+    int const* const_ptr = nullptr;
+    concepts::Vector auto extents = Vec<uint32_t, 2>{}.all(size);
+    concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
+
+    using MutView = View<alpaka::api::Host, int, decltype(extents)>;
+    using ConstView = View<alpaka::api::Host, int const, decltype(extents)>;
+
+    MutView mut_view(api::host, ptr, extents, pitches);
+    ConstView const_view(api::host, const_ptr, extents, pitches);
+
+    STATIC_REQUIRE(std::assignable_from<MutView&, MutView>);
+    [[maybe_unused]] MutView mut_view2 = mut_view;
+    STATIC_REQUIRE(std::assignable_from<ConstView&, ConstView>);
+    [[maybe_unused]] ConstView const_view2 = const_view;
+    STATIC_REQUIRE(std::assignable_from<ConstView&, MutView>);
+    [[maybe_unused]] ConstView const_view3 = mut_view;
+    STATIC_REQUIRE_FALSE(std::assignable_from<MutView&, ConstView>);
+    // MutView mut_view3 = const_view;
+}
+
+TEST_CASE("View inner const move constructor and move assignment operator", "[mem][correctness]")
+{
+    constexpr size_t size = 10;
+    int* ptr = nullptr;
+    int const* const_ptr = nullptr;
+    concepts::Vector auto extents = Vec<uint32_t, 3>{}.all(size);
+    concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
+
+    using MutView = View<alpaka::api::Host, int, decltype(extents)>;
+    using ConstView = View<alpaka::api::Host, int const, decltype(extents)>;
+
+    MutView construct_mut_view(api::host, ptr, extents, pitches);
+    ConstView construct_const_view(api::host, const_ptr, extents, pitches);
+
+    MutView construct_mut_view2(std::move(construct_mut_view));
+    ConstView construct_const_view2(std::move(construct_const_view));
+    [[maybe_unused]] ConstView construct_const_view3(std::move(construct_mut_view2));
+    // should not compile
+    // MutView construct_mut_view3(std::move(construct_const_view3));
+
+    MutView assign_mut_view(api::host, ptr, extents, pitches);
+    ConstView assign_const_view(api::host, const_ptr, extents, pitches);
+
+    MutView assign_mut_view2 = std::move(assign_mut_view);
+    ConstView assign_const_view2 = std::move(assign_const_view);
+    [[maybe_unused]] ConstView assign_const_view3 = std::move(assign_mut_view2);
+    // should not compile
+    // MutView assign_mut_view3 = std::move(assign_const_view3);
 }
 
 TEST_CASE("sharedBuffer inner const copy constructor", "[mem][correctness]")

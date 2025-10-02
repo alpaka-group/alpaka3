@@ -9,6 +9,8 @@
 #include "alpaka/mem/BoundaryIter.hpp"
 #include "alpaka/mem/MdSpan.hpp"
 #include "alpaka/mem/concepts.hpp"
+#include "alpaka/mem/concepts/detail/InnerTypeAllowedCast.hpp"
+#include "alpaka/mem/trait.hpp"
 #include "alpaka/onHost/interface.hpp"
 
 #include <cstdint>
@@ -22,7 +24,7 @@ namespace alpaka
      * Const-ness of the view instance is propagated to the data region.
      */
     template<
-        typename T_Api,
+        alpaka::concepts::Api T_Api,
         typename T_Type,
         alpaka::concepts::Vector T_Extents,
         alpaka::concepts::Alignment T_MemAlignment = Alignment<>>
@@ -62,7 +64,7 @@ namespace alpaka
     }
 
     template<
-        typename T_Api,
+        alpaka::concepts::Api T_Api,
         typename T_Type,
         alpaka::concepts::Vector T_Extents,
         alpaka::concepts::Alignment T_MemAlignment>
@@ -99,8 +101,24 @@ namespace alpaka
                 "extent type and pitch type must be lossless convertible");
         }
 
+        template<typename T_Type_Other>
+        requires alpaka::internal::concepts::InnerTypeAllowedCast<T_Type, T_Type_Other>
+        constexpr View(View<T_Api, T_Type_Other, T_Extents, T_MemAlignment> const& other)
+            : BaseMdSpan{static_cast<BaseMdSpan>(other)}
+        {
+        }
+
         constexpr View(View const&) = default;
+
+        template<typename T_Type_Other>
+        requires alpaka::internal::concepts::InnerTypeAllowedCast<T_Type, T_Type_Other>
+        constexpr View(View<T_Api, T_Type_Other, T_Extents, T_MemAlignment>&& other)
+            : BaseMdSpan{std::move(static_cast<BaseMdSpan>(other))}
+        {
+        }
+
         constexpr View(View&&) = default;
+
         constexpr View& operator=(View const&) = default;
         constexpr View& operator=(View&&) = default;
 
@@ -265,5 +283,16 @@ namespace alpaka::internal
         {
             return T_Api{};
         }
+    };
+
+    template<
+        alpaka::concepts::Api T_Api,
+        typename T_Type,
+        alpaka::concepts::Vector T_Extents,
+        alpaka::concepts::Alignment T_MemAlignment>
+    struct CopyConstructableDataSource<View<T_Api, T_Type, T_Extents, T_MemAlignment>> : std::true_type
+    {
+        using InnerMutable = View<T_Api, std::remove_const_t<T_Type>, T_Extents, T_MemAlignment>;
+        using InnerConst = View<T_Api, std::add_const_t<T_Type>, T_Extents, T_MemAlignment>;
     };
 } // namespace alpaka::internal
