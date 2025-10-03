@@ -4,7 +4,8 @@
 // Work funded by US NAS and ONRG (IMPRESS-U).
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/example/executors.hpp> // provides onHost::allBackends
+#include <alpaka/onHost/demangledName.hpp>
+#include <alpaka/onHost/example/executors.hpp> // provides onHost::allBackends
 
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_template_test_macros.hpp>
@@ -193,8 +194,9 @@ static double measureAlloc(TQueue& queue, std::size_t runs, AllocFn&& fn, uint8_
     {
         auto buf = fn(); // 1) allocate buffer
         alpaka::onHost::memset(queue, buf, uint8_t{0}); // 2) touch buffer: zero-init
-        retval = static_cast<uint8_t>(buf[0]); // 3) read first byte to enforce use
-        alpaka::onHost::wait(queue); // 4) sync memset + alloc
+        alpaka::onHost::wait(queue); // 3) sync memset + alloc
+        auto* raw = alpaka::onHost::data(buf);
+        retval = raw ? std::to_integer<uint8_t>(raw[0]) : uint8_t{0}; // 4) read first byte to enforce use
     }
     auto t1 = clock::now();
     returnValue = retval; // return the last value read from the buffer
@@ -326,7 +328,7 @@ void testAlloc(DeviceSpec const& spec, Exec const& exec)
 
     // meta‑data summary
     BenchmarkMetaData meta;
-    meta.setItem(BMInfoDataType::AcceleratorType, alpaka::core::demangledName(exec));
+    meta.setItem(BMInfoDataType::AcceleratorType, alpaka::onHost::demangledName(exec));
     meta.setItem(BMInfoDataType::DeviceName, alpaka::onHost::getName(dev));
     meta.setItem(BMInfoDataType::DataSize, std::to_string(allocBytesMain));
     meta.setItem(BMInfoDataType::NumRuns, std::to_string(numberOfRuns));
@@ -344,7 +346,9 @@ void testAlloc(DeviceSpec const& spec, Exec const& exec)
 }
 
 // ---------------- Catch2 integration  ---------------------------------------
-using Backends = std::decay_t<decltype(alpaka::onHost::allBackends(alpaka::onHost::enabledApis))>;
+using Backends = std::decay_t<decltype(alpaka::onHost::allBackends(
+    alpaka::onHost::enabledApis,
+    alpaka::onHost::example::enabledExecutors))>;
 
 TEMPLATE_LIST_TEST_CASE("Alloc benchmark", "[alloc]", Backends)
 {
