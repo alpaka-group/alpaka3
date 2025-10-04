@@ -21,6 +21,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <utility>
 
 // =============================================================================
 // Minimal helpers copied from BabelStreamCommon for self‑contained
@@ -62,7 +63,8 @@ enum class BMInfoDataType
     KernelBandwidths,
     KernelMinTimes,
     KernelMaxTimes,
-    KernelAvgTimes
+    KernelAvgTimes,
+    KernelColdTimes
 };
 
 static std::string toStr(BMInfoDataType t)
@@ -89,6 +91,8 @@ static std::string toStr(BMInfoDataType t)
         return "Max(s)";
     case BMInfoDataType::KernelAvgTimes:
         return "Avg(s)";
+    case BMInfoDataType::KernelColdTimes:
+        return "Cold(s)";
     }
     return "";
 }
@@ -117,6 +121,9 @@ public:
              BMInfoDataType::NumRuns})
             if(auto it = m.find(k); it != m.end())
                 ss << toStr(k) << ":" << it->second << "\n";
+
+        if(auto cold = m.find(BMInfoDataType::KernelColdTimes); cold != m.end())
+            ss << toStr(BMInfoDataType::KernelColdTimes) << ":" << cold->second << "\n";
 
         // build table rows
         auto knames = m.at(BMInfoDataType::KernelNames);
@@ -182,25 +189,33 @@ static void handleAllocArgs(int& argc, char* argv[])
 
 // ---------------- helper: measure total time of N allocations ---------------
 // measureAlloc:
-//   allocate buffer -> memset -> read first byte -> wait
-//   ensures the buffer is actually touched (no lazy allocation, no dead-code removal)
-template<class TQueue, class AllocFn>
-static double measureAlloc(TQueue& queue, std::size_t runs, AllocFn&& fn, uint8_t& returnValue)
+//   allocate buffer -> memset -> wait
+//   ensures the buffer is touched via Alpaka and records per-run timings
+template<class TQueue, class AllocFn, class VerifyFn>
+static std::pair<std::vector<double>, bool>
+measureAlloc(TQueue& queue, std::size_t runs, AllocFn&& fn, VerifyFn&& verify)
 {
     using clock = std::chrono::high_resolution_clock;
-    auto t0 = clock::now();
-    uint8_t retval = uint8_t{1}; // to ensure buffer is used
+
+    std::vector<double> perRun;
+    perRun.reserve(runs);
+    bool allZero = true;
+
     for(std::size_t i = 0; i < runs; ++i)
     {
-        auto buf = fn(); // 1) allocate buffer
-        alpaka::onHost::memset(queue, buf, uint8_t{0}); // 2) touch buffer: zero-init
-        alpaka::onHost::wait(queue); // 3) sync memset + alloc
-        auto* raw = alpaka::onHost::data(buf);
-        retval = raw ? std::to_integer<uint8_t>(raw[0]) : uint8_t{0}; // 4) read first byte to enforce use
+        auto const loopStart = clock::now();
+        auto buf = fn();
+
+        alpaka::onHost::memset(queue, buf, uint8_t{0});
+        alpaka::onHost::wait(queue);
+
+        auto const loopEnd = clock::now();
+        perRun.push_back(std::chrono::duration<double>(loopEnd - loopStart).count());
+
+        allZero = allZero && verify(queue, buf);
     }
-    auto t1 = clock::now();
-    returnValue = retval; // return the last value read from the buffer
-    return std::chrono::duration<double>(t1 - t0).count(); // seconds total
+
+    return {std::move(perRun), allZero};
 }
 
 // ---------------- runtime container (2 "kernels": Host / Device) ----------
@@ -219,26 +234,43 @@ struct AllocResults
         data[name] = Entry{{}, bytes};
     }
 
-    void pushTime(std::string const& name, double t)
+    void setTimes(std::string const& name, std::vector<double> values)
     {
-        data[name].times.push_back(t);
+        data[name].times = std::move(values);
     }
 
     static double min(std::vector<double> const& v)
     {
-        return v.size() > 1 ? *std::min_element(v.begin() + 1, v.end()) : v.front();
+        if(v.empty())
+            return 0.0;
+        if(v.size() == 1)
+            return v.front();
+        return *std::min_element(v.begin() + 1, v.end());
     }
 
     static double max(std::vector<double> const& v)
     {
-        return v.size() > 1 ? *std::max_element(v.begin() + 1, v.end()) : v.front();
+        if(v.empty())
+            return 0.0;
+        if(v.size() == 1)
+            return v.front();
+        return *std::max_element(v.begin() + 1, v.end());
     }
 
     static double avg(std::vector<double> const& v)
     {
-        if(v.size() <= 1)
-            return v.front();
-        return std::accumulate(v.begin() + 1, v.end(), 0.0) / (v.size() - 1);
+        if(v.empty())
+            return 0.0;
+        auto const* beginHot = v.size() > 1 ? v.data() + 1 : v.data();
+        auto const count = static_cast<double>(v.size() > 1 ? v.size() - 1 : v.size());
+        return count > 0.0
+            ? std::accumulate(beginHot, v.data() + v.size(), 0.0) / count
+            : 0.0;
+    }
+
+    static double cold(std::vector<double> const& v)
+    {
+        return v.empty() ? 0.0 : v.front();
     }
 
     std::vector<double> bandwidths() const
@@ -270,6 +302,14 @@ struct AllocResults
         std::vector<double> r;
         for(auto const& p : data)
             r.push_back(avg(p.second.times));
+        return r;
+    }
+
+    std::vector<double> colds() const
+    {
+        std::vector<double> r;
+        for(auto const& p : data)
+            r.push_back(cold(p.second.times));
         return r;
     }
 
@@ -311,20 +351,29 @@ void testAlloc(DeviceSpec const& spec, Exec const& exec)
     results.addKernel("HostAlloc", allocBytesMain * 1.0e-6);
     results.addKernel("DeviceAlloc", allocBytesMain * 1.0e-6);
 
-    uint8_t resultByte = uint8_t{1}; // to ensure buffer is used
+    auto const hostVerifier = [](auto&, auto const& buf) {
+        auto* raw = alpaka::onHost::data(buf);
+        return raw && std::to_integer<uint8_t>(raw[0]) == 0;
+    };
 
-    double tHost
-        = measureAlloc(queue, numberOfRuns, [&] { return onHost::allocHost<std::byte>(allocBytesMain); }, resultByte);
-    results.pushTime("HostAlloc", tHost);
-
-    uint8_t resultByteDev = uint8_t{1}; // to ensure buffer is used
-
-    double tDev = measureAlloc(
+    auto [hostTimes, hostZeroed] = measureAlloc(
         queue,
         numberOfRuns,
-        [&] { return onHost::alloc<std::byte>(dev, allocBytesMain); },
-        resultByteDev);
-    results.pushTime("DeviceAlloc", tDev);
+        [&] { return onHost::allocHost<std::byte>(allocBytesMain); },
+        hostVerifier);
+    results.setTimes("HostAlloc", std::move(hostTimes));
+
+    auto deviceScratch = alpaka::onHost::allocHost<std::byte>(std::size_t{1});
+    auto deviceVerifier = [scratch = std::move(deviceScratch)](auto& q, auto const& buf) mutable {
+        alpaka::onHost::memcpy(q, scratch, buf, std::size_t{1});
+        alpaka::onHost::wait(q);
+        auto* raw = alpaka::onHost::data(scratch);
+        return raw && std::to_integer<uint8_t>(raw[0]) == 0;
+    };
+
+    auto [deviceTimes, deviceZeroed]
+        = measureAlloc(queue, numberOfRuns, [&] { return onHost::alloc<std::byte>(dev, allocBytesMain); }, deviceVerifier);
+    results.setTimes("DeviceAlloc", std::move(deviceTimes));
 
     // meta‑data summary
     BenchmarkMetaData meta;
@@ -338,11 +387,12 @@ void testAlloc(DeviceSpec const& spec, Exec const& exec)
     meta.setItem(BMInfoDataType::KernelMinTimes, joinElements(results.mins(), ", "));
     meta.setItem(BMInfoDataType::KernelMaxTimes, joinElements(results.maxs(), ", "));
     meta.setItem(BMInfoDataType::KernelAvgTimes, joinElements(results.avgs(), ", "));
+    meta.setItem(BMInfoDataType::KernelColdTimes, joinElements(results.colds(), ", "));
 
     std::cout << meta.serializeAsTable() << std::endl;
 
-    REQUIRE(resultByte == uint8_t{0}); // host buffer properly zero-initialized
-    REQUIRE(resultByteDev == uint8_t{0}); // device buffer properly zero-initialized
+    REQUIRE(hostZeroed); // host buffer properly zero-initialized
+    REQUIRE(deviceZeroed); // device buffer properly zero-initialized
 }
 
 // ---------------- Catch2 integration  ---------------------------------------
