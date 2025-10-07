@@ -29,8 +29,8 @@ Heterogeneous
 
 Maintainable
    *alpaka* allows to provide a single version of the algorithm / kernel that can be used by all back-ends.
-  There is no need for "copy and paste" kernels with different API calls for different accelerators.
-  All the accelerator dependent implementation details are hidden within the *alpaka* library.
+   There is no need for "copy and paste" kernels with different API calls for different accelerators.
+   All the accelerator dependent implementation details are hidden within the *alpaka* library.
 
 Testable
    Due to the easy back-end switch, no special hardware is required for testing the kernels.
