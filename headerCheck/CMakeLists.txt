@@ -12,7 +12,7 @@ cmake_minimum_required(VERSION 3.25)
 project(Alpaka2HeaderTest)
 
 # Add common functions from alpaka.
-include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/common.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/alpakaCommon.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/finalize.cmake)
 
 set(_TARGET_NAME "headerCheckTest")

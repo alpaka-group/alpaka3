@@ -3,9 +3,14 @@
 Installation
 ============
 
+.. note::
+
+  You will find in the documentation very often the name *alpaka* and for directories ``alpaka3``, you will maybe wonder why we are not consequent using ``alpaka3`` everywhere.
+  The reason for this is that the complete code base will be copied to https://github.com/alpaka-group/alpaka after the first release, therefore options are already named ``alpaka``.
+
 **Installing dependencies**
 
-*alpaka* requires a modern C++ compiler (g++, clang++, Visual C++, …).
+*alpaka* requires a modern C++ compiler (g++, clang++, nvcc, icpx).
 **CMake** is the preferred system for configuration the build tree, building and installing.
 
 In order to install **CMake**:
@@ -29,10 +34,88 @@ Download the installer from https://cmake.org/download/
 - AMD GPUs: ROCm / HIP (https://rocmdocs.amd.com/en/latest/index.html)
 - Intel GPUs: OneAPI Toolkit (https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html#gs.9x3lnh)
 
+alpaka as Dependency in Your Application
+++++++++++++++++++++++++++++++++++++++++
+
+There are two ways to integrate *alpaka* as dependency with CMake into your project.
+
+.. _install-alpaka:
+
+Install alpaka
+~~~~~~~~~~~~~~
+
+The installation must be performed once and can be reused until you require a new version of *alpaka*.
+If you only install *alpaka* without enabling tests, examples or benchmarks CMake will not check for compilers, this is postponed to the usage of the installation together with our application.
+
+.. code-block:: bash
+
+  # Clone alpaka from github.com
+  git clone --branch dev https://github.com/alpaka-group/alpaka3.git
+  mkdir build && cd build
+  # assumed folder structure
+  # ├── alpaka3
+  # └── build
+  # if not set, the default is CMAKE_INSTALL_PREFIX=/usr/local
+  cmake -DCMAKE_INSTALL_PREFIX=/install/alpaka3 ..
+  cmake --install .
+
+The next CMake code snipped shows you to integrate the installed *alpaka* library in your application.
+You have now the possibility to select the compiler, enable dependency's to target different compute devices.
+Examples and brief description can be found in the follow up section :ref:`tests-and-examples`
+
+.. code-block:: cmake
+
+  find_package(alpaka REQUIRED)
+  # ...
+  add_executable(myTarget src/my.cpp)
+  target_link_libraries(myTarget PUBLIC alpaka::alpaka)
+  alpaka_finalize(myTarget)
+  # ...
+
+The next commands should be executed in the terminal and assumes that you prepend the environment variable ``CMAKE_PREFIX_PATH``
+with the path `/install/alpaka3`, that CMake knows where *alpaka* can be found.
+
+.. code-block:: bash
+
+  cmake <path_to_you_appliction>
+  cmake --build . --parallel
+
+Use the Source Code Without Installation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+With CMake it is possible to use *alpaka* without installation, you can simply point to the cloned folder.
+
+.. code-block:: bash
+
+  # Clone alpaka from github.com
+  git clone --branch dev https://github.com/alpaka-group/alpaka3.git
+
+The next CMake code is very similar to the usage of a installed alpaka version with the difference that you should use ``add_subdirectory()`` instead of CMake's ``find_package()``
+
+.. code-block:: cmake
+
+  # `${CMAKE_BINARY_DIR}/alpaka` places the alpaka code in your build directory in the sub directory `alpaka`
+  add_subdirectory("<path_to_cloned_alpaka3>" "${CMAKE_BINARY_DIR}/alpaka")
+  # ...
+  add_executable(myTarget src/my.cpp)
+  target_link_libraries(myTarget PUBLIC alpaka::alpaka)
+  alpaka_finalize(myTarget)
+  # ...
+
+You should prepend the environment variable ``CMAKE_PREFIX_PATH`` with the path to the cloned *alpaka* folder.
+
+.. code-block:: bash
+
+  cmake <path_to_you_appliction>
+  cmake --build . --parallel
+
+.. _tests-and-examples:
+
 Tests and Examples
 ++++++++++++++++++
 
-The examples and tests can be compiled without installing alpaka. They will use alpaka headers from the source directory.
+The examples and tests can be compiled before the installation of alpaka see :ref:`install-alpaka`.
+They will use alpaka headers from the source directory.
 The recipies shown here assume you have installed spack packages for specific compiler versions and that alpaka is relative to the build folder available.
 
 **Load dependencies**
@@ -144,8 +227,3 @@ This allows the usage of the coresponding executor e.g. `gpuCuda`, `gpuHip` or `
 .. warning::
 
   If an api is selected in the source code that is not activated during CMake configuration time, a compiler error occurs.
-
-**Installing alpaka**
-
-Since alpaka is a header only library compilation is not needed before installation.
-Installing with CMake is currently not supported but will be provided soon.
