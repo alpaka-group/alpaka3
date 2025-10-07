@@ -52,8 +52,11 @@ static void handleAllocArgs(int& argc, char* argv[])
 //   allocate buffer -> memset -> wait
 //   ensures the buffer is touched via Alpaka and records per-run timings
 template<typename T_Queue, typename T_AllocFn, typename T_VerifyFn>
-static std::pair<std::vector<double>, bool>
-measureAlloc(T_Queue& queue, std::size_t runs, T_AllocFn&& fn, T_VerifyFn&& verify)
+static std::pair<std::vector<double>, bool> measureAlloc(
+    T_Queue& queue,
+    std::size_t runs,
+    T_AllocFn&& fn,
+    T_VerifyFn&& verify)
 {
     using clock = std::chrono::high_resolution_clock;
 
@@ -95,7 +98,8 @@ void testAlloc(T_DeviceSpec const& spec, T_Exec const& exec)
     results.addKernel("HostAlloc", allocBytesMain * 1.0e-6);
     results.addKernel("DeviceAlloc", allocBytesMain * 1.0e-6);
 
-    auto const hostVerifier = [](auto&, auto const& buf) {
+    auto const hostVerifier = [](auto&, auto const& buf)
+    {
         auto* raw = alpaka::onHost::data(buf);
         return raw && std::to_integer<uint8_t>(raw[0]) == 0;
     };
@@ -108,15 +112,19 @@ void testAlloc(T_DeviceSpec const& spec, T_Exec const& exec)
     results.setTimes("HostAlloc", std::move(hostTimes));
 
     auto deviceScratch = alpaka::onHost::allocHost<std::byte>(std::size_t{1});
-    auto deviceVerifier = [scratch = std::move(deviceScratch)](auto& q, auto const& buf) mutable {
+    auto deviceVerifier = [scratch = std::move(deviceScratch)](auto& q, auto const& buf) mutable
+    {
         alpaka::onHost::memcpy(q, scratch, buf, std::size_t{1});
         alpaka::onHost::wait(q);
         auto* raw = alpaka::onHost::data(scratch);
         return raw && std::to_integer<uint8_t>(raw[0]) == 0;
     };
 
-    auto [deviceTimes, deviceZeroed]
-        = measureAlloc(queue, numberOfRuns, [&] { return onHost::alloc<std::byte>(dev, allocBytesMain); }, deviceVerifier);
+    auto [deviceTimes, deviceZeroed] = measureAlloc(
+        queue,
+        numberOfRuns,
+        [&] { return onHost::alloc<std::byte>(dev, allocBytesMain); },
+        deviceVerifier);
     results.setTimes("DeviceAlloc", std::move(deviceTimes));
 
     // meta‑data summary
@@ -140,9 +148,8 @@ void testAlloc(T_DeviceSpec const& spec, T_Exec const& exec)
 }
 
 // ---------------- Catch2 integration  ---------------------------------------
-using Backends = std::decay_t<decltype(alpaka::onHost::allBackends(
-    alpaka::onHost::enabledApis,
-    alpaka::onHost::example::enabledExecutors))>;
+using Backends = std::decay_t<
+    decltype(alpaka::onHost::allBackends(alpaka::onHost::enabledApis, alpaka::onHost::example::enabledExecutors))>;
 
 TEMPLATE_LIST_TEST_CASE("Alloc benchmark", "[alloc]", Backends)
 {
