@@ -11,3 +11,4 @@
 #include "alpaka/api/host/Queue.hpp"
 #include "alpaka/api/host/atomic.hpp"
 #include "alpaka/api/host/memFence.hpp"
+#include "alpaka/api/host/unknown.hpp"

@@ -7,6 +7,7 @@
 #include "alpaka/KernelBundle.hpp"
 #include "alpaka/api/trait.hpp"
 #include "alpaka/core/common.hpp"
+#include "alpaka/internal/interface.hpp"
 #include "alpaka/onHost/DeviceProperties.hpp"
 #include "alpaka/onHost/FrameSpec.hpp"
 #include "alpaka/onHost/Handle.hpp"
@@ -15,6 +16,10 @@
 
 namespace alpaka::onHost
 {
+    /** forward declaration for the fallback if an invalid api and device kind combination is used. */
+    template<typename T_Api, deviceKind::concepts::DeviceKind T_DeviceKind>
+    struct UnknownPlatform;
+
     namespace internal
     {
         struct MakePlatform
@@ -22,7 +27,10 @@ namespace alpaka::onHost
             template<typename T_Api, deviceKind::concepts::DeviceKind T_DeviceKind>
             struct Op
             {
-                auto operator()(T_Api api, T_DeviceKind deviceType) const;
+                auto operator()(T_Api api, T_DeviceKind deviceType) const
+                {
+                    return std::make_shared<UnknownPlatform<T_Api, T_DeviceKind>>();
+                }
             };
         };
 
