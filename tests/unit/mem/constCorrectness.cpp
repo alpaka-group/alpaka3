@@ -33,7 +33,7 @@ void requiresMutableBufferMd(concepts::MdSpan auto buffer)
     static_assert(!std::is_const_v<std::remove_reference_t<decltype(buffer[Vec{0, 0}])>>);
 }
 
-TEST_CASE("mdspan inner const copy constructor", "[mem][correctness]")
+TEST_CASE("mdspan inner const copy constructor", "[mem][mdspan][correctness][copyConstruct]")
 {
     constexpr size_t size = 10;
     int* ptr = nullptr;
@@ -66,7 +66,7 @@ TEST_CASE("mdspan inner const copy constructor", "[mem][correctness]")
     // MdSpan const_to_mud_mdspan(const_mdspan);
 }
 
-TEST_CASE("mdspan inner const assignment operator", "[mem][correctness]")
+TEST_CASE("mdspan inner const assignment operator", "[mem][mdspan][correctness][copyConstruct]")
 {
     constexpr size_t size = 10;
     int* ptr = nullptr;
@@ -90,7 +90,7 @@ TEST_CASE("mdspan inner const assignment operator", "[mem][correctness]")
     // MutMdSpan mut_mdspan3 = const_mdspan;
 }
 
-TEST_CASE("mdspan inner const move operator", "[mem][correctness]")
+TEST_CASE("mdspan inner const move operator", "[mem][mdspan][correctness][moveConstruct]")
 {
     constexpr size_t size = 10;
     int* ptr = nullptr;
@@ -156,7 +156,7 @@ void funcUniversalRef(TMdSpan&& mdspan)
     STATIC_CHECK(std::same_as<decltype(val), TExpectedReferenceType&>);
 }
 
-TEST_CASE("function calls with mdspan object", "[mem][correctness]")
+TEST_CASE("function calls with mdspan object", "[mem][mdspan][correctness]")
 {
     constexpr size_t size = 10;
     int* ptr = nullptr;
@@ -190,7 +190,7 @@ TEST_CASE("function calls with mdspan object", "[mem][correctness]")
     funcUniversalRef<int const, int const&>(const_mdspan_inner_const);
 }
 
-TEST_CASE("View inner const copy constructor", "[mem][correctness]")
+TEST_CASE("View inner const copy constructor", "[mem][view][correctness][copyConstruct]")
 {
     constexpr size_t size = 10;
     int* ptr = nullptr;
@@ -223,7 +223,7 @@ TEST_CASE("View inner const copy constructor", "[mem][correctness]")
     // MutView const_to_mud_view(const_view);
 }
 
-TEST_CASE("View inner const assignment operator", "[mem][correctness]")
+TEST_CASE("View inner const assignment operator", "[mem][view][correctness][copyConstruct]")
 {
     constexpr size_t size = 10;
     int* ptr = nullptr;
@@ -247,7 +247,7 @@ TEST_CASE("View inner const assignment operator", "[mem][correctness]")
     // MutView mut_view3 = const_view;
 }
 
-TEST_CASE("View inner const move constructor and move assignment operator", "[mem][correctness]")
+TEST_CASE("View inner const move constructor and move assignment operator", "[mem][view][correctness][moveConstruct]")
 {
     constexpr size_t size = 10;
     int* ptr = nullptr;
@@ -277,7 +277,7 @@ TEST_CASE("View inner const move constructor and move assignment operator", "[me
     // MutView assign_mut_view3 = std::move(assign_const_view3);
 }
 
-TEST_CASE("sharedBuffer inner const copy constructor", "[mem][correctness]")
+TEST_CASE("sharedBuffer inner const copy constructor", "[mem][sharedBuffer][correctness][copyConstruct]")
 {
     constexpr size_t size = 10;
     int* ptr = nullptr;
@@ -310,7 +310,7 @@ TEST_CASE("sharedBuffer inner const copy constructor", "[mem][correctness]")
     // MutSharedBuffer const_to_mud_shared_buffer(const_shared_buffer);
 }
 
-TEST_CASE("sharedBuffer inner const assignment operator", "[mem][correctness]")
+TEST_CASE("sharedBuffer inner const assignment operator", "[mem][sharedBuffer][correctness][copyConstruct]")
 {
     constexpr size_t size = 10;
     int* ptr = nullptr;
@@ -334,7 +334,7 @@ TEST_CASE("sharedBuffer inner const assignment operator", "[mem][correctness]")
     // MutSharedBuffer mut_shared_buffer3 = const_shared_buffer;
 }
 
-TEST_CASE("sharedBuffer inner const move operator", "[mem][correctness]")
+TEST_CASE("sharedBuffer inner const move operator", "[mem][sharedBuffer][correctness][moveConstruct]")
 {
     constexpr size_t size = 10;
     int* ptr = nullptr;
@@ -364,7 +364,7 @@ TEST_CASE("sharedBuffer inner const move operator", "[mem][correctness]")
     // MutSharedBuffer assign_mut_shared_buffer3 = std::move(assign_const_shared_buffer3);
 }
 
-TEST_CASE("buffer const correctness MD", "[mem][correctness]")
+TEST_CASE("buffer const correctness MD", "[mem][sharedBuffer][correctness]")
 {
     auto buffer0 = onHost::allocHost<int>(Vec{10, 10});
     requiresMutableBufferMd(buffer0);

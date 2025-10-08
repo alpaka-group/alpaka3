@@ -6,9 +6,74 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <vector>
+
 using namespace alpaka;
 
-TEST_CASE("copy SharedBuffer", "[mem][SharedBuffer]")
+template<typename T>
+requires(std::is_trivially_copyable_v<T>)
+void foo()
+{
+}
+
+TEST_CASE("move MdSpan", "[mem][mdspan][lifetime]")
+{
+    constexpr size_t size = 10;
+    std::vector<int> data(size);
+    int* ptr = data.data();
+    concepts::Vector auto extents = Vec<uint32_t, 1>{}.all(size);
+    concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
+
+    using MutMdSpan = MdSpan<int, decltype(extents), decltype(pitches)>;
+    using ConstMdSpan = MdSpan<int const, decltype(extents), decltype(pitches)>;
+
+    // static_assert(std::is_trivially_copyable_v<MutMdSpan>);
+    foo<MutMdSpan>();
+
+    MutMdSpan mdspan = MdSpan(ptr, extents, pitches);
+    REQUIRE(mdspan);
+    REQUIRE(mdspan.data() != nullptr);
+
+    [[maybe_unused]] ConstMdSpan other_mdspan = std::move(mdspan);
+    REQUIRE(mdspan);
+    REQUIRE(mdspan.data() != nullptr);
+    REQUIRE(other_mdspan);
+    REQUIRE(other_mdspan.data() != nullptr);
+
+    // because moving a mdspan does a copy, the original mdspan should be still valid after the move
+    REQUIRE(mdspan.data() == other_mdspan.data());
+    REQUIRE(mdspan.getExtents() == other_mdspan.getExtents());
+    REQUIRE(mdspan.getPitches() == other_mdspan.getPitches());
+}
+
+TEST_CASE("move View", "[mem][view][lifetime]")
+{
+    constexpr size_t size = 10;
+    std::vector<int> data(size);
+    int* ptr = data.data();
+    concepts::Vector auto extents = Vec<uint32_t, 1>{}.all(size);
+    concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
+
+    using MutView = View<alpaka::api::Host, int, decltype(extents)>;
+    using ConstView = View<alpaka::api::Host, int const, decltype(extents)>;
+
+    MutView view(api::host, ptr, extents, pitches);
+    REQUIRE(view);
+    REQUIRE(view.data() != nullptr);
+
+    [[maybe_unused]] ConstView const_view = std::move(view);
+    REQUIRE(view);
+    REQUIRE(view.data() != nullptr);
+    REQUIRE(const_view);
+    REQUIRE(const_view.data() != nullptr);
+
+    // because moving a view does a copy, the original view should be still valid after the move
+    REQUIRE(view.data() == const_view.data());
+    REQUIRE(view.getExtents() == const_view.getExtents());
+    REQUIRE(view.getPitches() == const_view.getPitches());
+}
+
+TEST_CASE("copy SharedBuffer", "[mem][sharedBuffer][lifetime]")
 {
     onHost::SharedBuffer buffer = onHost::allocHost<int>(Vec<unsigned int, 1>{10});
     REQUIRE(buffer.getUseCount() == 1);
@@ -20,7 +85,7 @@ TEST_CASE("copy SharedBuffer", "[mem][SharedBuffer]")
     REQUIRE(buffer2);
 }
 
-TEST_CASE("move SharedBuffer", "[mem][SharedBuffer]")
+TEST_CASE("move SharedBuffer", "[mem][sharedBuffer][lifetime]")
 {
     onHost::SharedBuffer buffer = onHost::allocHost<int>(Vec<unsigned int, 1>{10});
     REQUIRE(buffer.getUseCount() == 1);
@@ -46,7 +111,7 @@ struct LivingMemory
     int live_counter = 1;
 };
 
-TEST_CASE("lifetime of shared memory", "[mem][SharedBuffer]")
+TEST_CASE("lifetime of shared memory", "[mem][sharedBuffer][lifetime]")
 {
     concepts::Vector auto extents = Vec<uint32_t, 2>{}.all(1);
     concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
@@ -124,7 +189,7 @@ void funcUniversalRefMoved(auto&& buffer, long const expected_use_count)
     REQUIRE(tmp_buffer.getUseCount() == expected_use_count);
 }
 
-TEST_CASE("pass shared memory to function", "[mem][SharedBuffer]")
+TEST_CASE("pass shared memory to function", "[mem][sharedBuffer][lifetime]")
 {
     concepts::Vector auto extents = Vec<uint32_t, 2>{}.all(1);
     concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
