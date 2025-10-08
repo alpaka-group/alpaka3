@@ -211,25 +211,51 @@
       }
     },
     {
-      "name": "rel-gpu-cuda",
+      "name": "rel-gpu-cuda-nvcc-gcc",
       "inherits": [
         "release-base",
         "cpu-base"
       ],
       "cacheVariables": {
         "CMAKE_CXX_COMPILER": "g++",
-        "alpaka_DEP_CUDA": "ON"
+        "alpaka_DEP_CUDA": "ON",
+        "alpaka_DEP_OMP": "OFF"
       }
     },
     {
-      "name": "dbg-gpu-cuda",
+      "name": "dbg-gpu-cuda-nvcc-gcc",
       "inherits": [
         "debug-base",
         "cpu-base"
       ],
       "cacheVariables": {
         "CMAKE_CXX_COMPILER": "g++",
-        "alpaka_DEP_CUDA": "ON"
+        "alpaka_DEP_CUDA": "ON",
+        "alpaka_DEP_OMP": "OFF"
+      }
+    },
+    {
+      "name": "rel-gpu-cuda-nvcc-clang",
+      "inherits": [
+        "release-base",
+        "cpu-base"
+      ],
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++",
+        "alpaka_DEP_CUDA": "ON",
+        "alpaka_DEP_OMP": "OFF"
+      }
+    },
+    {
+      "name": "dbg-gpu-cuda-nvcc-clang",
+      "inherits": [
+        "debug-base",
+        "cpu-base"
+      ],
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++",
+        "alpaka_DEP_CUDA": "ON",
+        "alpaka_DEP_OMP": "OFF"
       }
     },
     {
@@ -239,7 +265,8 @@
       ],
       "cacheVariables": {
         "CMAKE_CXX_COMPILER": "icpx",
-        "alpaka_DEP_ONEAPI": "ON"
+        "alpaka_DEP_ONEAPI": "ON",
+        "alpaka_DEP_OMP": "OFF"
       }
     },
     {
@@ -249,7 +276,8 @@
       ],
       "cacheVariables": {
         "CMAKE_CXX_COMPILER": "icpx",
-        "alpaka_DEP_ONEAPI": "ON"
+        "alpaka_DEP_ONEAPI": "ON",
+        "alpaka_DEP_OMP": "OFF"
       }
     },
     {
@@ -259,7 +287,8 @@
       ],
       "cacheVariables": {
         "CMAKE_CXX_COMPILER": "clang++",
-        "alpaka_DEP_HIP": "ON"
+        "alpaka_DEP_HIP": "ON",
+        "alpaka_DEP_OMP": "OFF"
       }
     },
     {
@@ -269,7 +298,8 @@
       ],
       "cacheVariables": {
         "CMAKE_CXX_COMPILER": "clang++",
-        "alpaka_DEP_HIP": "ON"
+        "alpaka_DEP_HIP": "ON",
+        "alpaka_DEP_OMP": "OFF"
       }
     }
   ],
@@ -327,12 +357,20 @@
       "configurePreset": "dbg-cpu-clang-ubsan"
     },
     {
-      "name": "rel-gpu-cuda",
-      "configurePreset": "rel-gpu-cuda"
+      "name": "rel-gpu-cuda-nvcc-gcc",
+      "configurePreset": "rel-gpu-cuda-nvcc-gcc"
     },
     {
-      "name": "dbg-gpu-cuda",
-      "configurePreset": "dbg-gpu-cuda"
+      "name": "dbg-gpu-cuda-nvcc-gcc",
+      "configurePreset": "dbg-gpu-cuda-nvcc-gcc"
+    },
+    {
+      "name": "rel-gpu-cuda-nvcc-clang",
+      "configurePreset": "rel-gpu-cuda-nvcc-clang"
+    },
+    {
+      "name": "dbg-gpu-cuda-nvcc-clang",
+      "configurePreset": "dbg-gpu-cuda-nvcc-clang"
     },
     {
       "name": "rel-gpu-oneapi",
@@ -405,12 +443,20 @@
       "configurePreset": "dbg-cpu-clang-ubsan"
     },
     {
-      "name": "rel-gpu-cuda",
-      "configurePreset": "rel-gpu-cuda"
+      "name": "rel-gpu-cuda-nvcc-gcc",
+      "configurePreset": "rel-gpu-cuda-nvcc-gcc"
     },
     {
-      "name": "dbg-gpu-cuda",
-      "configurePreset": "dbg-gpu-cuda"
+      "name": "dbg-gpu-cuda-nvcc-gcc",
+      "configurePreset": "dbg-gpu-cuda-nvcc-gcc"
+    },
+    {
+      "name": "rel-gpu-cuda-nvcc-clang",
+      "configurePreset": "rel-gpu-cuda-nvcc-clang"
+    },
+    {
+      "name": "dbg-gpu-cuda-nvcc-clang",
+      "configurePreset": "dbg-gpu-cuda-nvcc-clang"
     },
     {
       "name": "rel-gpu-oneapi",
