@@ -113,7 +113,7 @@ namespace alpaka::onHost
 
             friend struct internal::MakeQueue;
 
-            Handle<cpu::Queue<Device>> makeQueue(queueKind::concepts::QueueKind auto kind)
+            Handle<cpu::Queue<Device>> makeQueue(alpaka::concepts::QueueKind auto kind)
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 static_assert(

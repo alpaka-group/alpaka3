@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "alpaka/api/concepts/api.hpp"
 #include "alpaka/interface.hpp"
 #include "alpaka/internal/interface.hpp"
 #include "alpaka/mem/BoundaryIter.hpp"
@@ -18,10 +19,12 @@
 
 namespace alpaka
 {
-    /** Non owning view to data
+    /** @brief Non owning view to data
      *
-     * This view is only holding a points to real data, copying the view is cheap.
+     * This view is only holding a pointer to real data, copying the view is cheap.
      * Const-ness of the view instance is propagated to the data region.
+     *
+     * This satisfies the alpaka::concepts::IView concept and, therefore, also the alpaka::concepts::IMdSpan concept.
      */
     template<
         alpaka::concepts::Api T_Api,
@@ -74,11 +77,11 @@ namespace alpaka
         using BaseMdSpan = MdSpan<T_Type, typename T_Extents::UniVec, typename T_Extents::UniVec, T_MemAlignment>;
 
     public:
-        /** creates a view
+        /** Creates a view
          *
          * @param data handle to the physical data
-         * @param extents M-dimensional extents in elements of the view. Must be <= number of elements in the dat
-         * handle.
+         * @param extents n-dimensional extents in elements of the view. Must satisfy `n <= number_of_elements` in the
+         * data handle.
          */
         template<
             alpaka::concepts::HasApi T_Any,
@@ -97,7 +100,7 @@ namespace alpaka
                   memAlignment}
         {
             static_assert(
-                isLosslessConvertible_v<typename T_UserPitches::type, typename T_UserExtents::type>,
+                isLosslesslyConvertible_v<typename T_UserPitches::type, typename T_UserExtents::type>,
                 "extent type and pitch type must be lossless convertible");
         }
 
@@ -271,9 +274,9 @@ namespace alpaka
 
 namespace alpaka::internal
 {
-    // external define the API trait to support constexpr evaluation
+    // externally define the API trait to support constexpr evaluation
     template<
-        typename T_Api,
+        alpaka::concepts::Api T_Api,
         typename T_Type,
         alpaka::concepts::Vector T_Extents,
         alpaka::concepts::Alignment T_MemAlignment>

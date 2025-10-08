@@ -19,7 +19,7 @@ namespace alpaka::onHost
 {
     namespace cpu
     {
-        template<deviceKind::concepts::DeviceKind T_DeviceKind>
+        template<alpaka::concepts::DeviceKind T_DeviceKind>
         struct Platform : std::enable_shared_from_this<Platform<T_DeviceKind>>
         {
         public:
@@ -99,7 +99,7 @@ namespace alpaka::onHost
 
     namespace internal
     {
-        template<deviceKind::concepts::DeviceKind T_DeviceKind>
+        template<alpaka::concepts::DeviceKind T_DeviceKind>
         struct MakePlatform::Op<api::Host, T_DeviceKind>
         {
             auto operator()(api::Host, T_DeviceKind) const
@@ -108,7 +108,7 @@ namespace alpaka::onHost
             }
         };
 
-        template<deviceKind::concepts::DeviceKind T_DeviceKind>
+        template<alpaka::concepts::DeviceKind T_DeviceKind>
         struct GetDeviceProperties::Op<cpu::Platform<T_DeviceKind>>
         {
             DeviceProperties operator()(cpu::Platform<T_DeviceKind> const& platform, uint32_t deviceIdx) const
@@ -128,7 +128,7 @@ namespace alpaka::onHost
 
 namespace alpaka::internal
 {
-    template<deviceKind::concepts::DeviceKind T_DeviceKind>
+    template<alpaka::concepts::DeviceKind T_DeviceKind>
     struct GetApi::Op<onHost::cpu::Platform<T_DeviceKind>>
     {
         inline constexpr auto operator()(auto&& platform) const

@@ -23,13 +23,14 @@ namespace alpaka::concepts
 
     namespace impl
     {
-        /** Interface concept that describes how multidimensional memory can be accessed on the host and device side.
-         * An `alpaka::buffer` like object contains information about the device(s) to which it is connected. The
-         * `alpaka::buffer` like object has memory ownership and therefore manages memory lifetime according to the
-         * RAII principle.
+        /** @brief Interface concept for objects describing multidimensional owned memory.
          *
-         * The concept fulfills all requirements of the alpaka::concepts::impl::IView concept and therefore offers
-         * the same interface.
+         * @details
+         * An `alpaka::buffer`-like object contains information about the device(s) to which it is connected. The
+         * `alpaka::buffer`-like object has memory ownership and therefore manages memory lifetime according to the
+         * RAII principle. The represented memory can have any dimensionality.
+         *
+         * Any object that fulfills the `IBuffer` concept is also an `IView` and `IMdSpan`.
          *
          * @section memberfunction member functions
          *
@@ -49,14 +50,15 @@ namespace alpaka::concepts
         };
     } // namespace impl
 
-    /** Interface concept that describes how multidimensional memory can be accessed on the host and device side.
-     * An `alpaka::buffer` like object contains information about the device(s) to which it is connected. The
-     * `alpaka::buffer` like object has memory ownership and therefore manages memory lifetime according to the RAII
+    /** @brief Interface concept for objects describing multidimensional owned memory.
+     *
+     * @details
+     * An `alpaka::buffer`-like object contains information about the device(s) to which it is connected. The
+     * `alpaka::buffer`-like object has memory ownership and therefore manages memory lifetime according to the RAII
      * principle.
      *
      * @attention Use `alpaka::IBuffer` to restrict types in your code. The actual interface is described in
      * alpaka::concepts::impl::IBuffer.
-     *
      **/
     template<typename T, typename T_ValueType = alpaka::NotRequired>
     concept IBuffer = requires(T t) {

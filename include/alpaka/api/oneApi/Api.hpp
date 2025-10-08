@@ -95,7 +95,7 @@ namespace alpaka
         };
 
         // for GPU
-        template<typename T_Type, concepts::IsGpuType T_DeviceKind>
+        template<typename T_Type, concepts::GpuType T_DeviceKind>
         struct GetArchSimdWidth::Op<T_Type, api::OneApi, T_DeviceKind>
         {
             constexpr uint32_t operator()(api::OneApi const, T_DeviceKind const) const
@@ -107,7 +107,7 @@ namespace alpaka
             }
         };
 
-        template<concepts::IsGpuType T_DeviceKind>
+        template<concepts::GpuType T_DeviceKind>
         struct GetNumPipelines::Op<api::OneApi, T_DeviceKind>
         {
             constexpr uint32_t operator()(api::OneApi const, T_DeviceKind const) const
@@ -120,7 +120,7 @@ namespace alpaka
             }
         };
 
-        template<concepts::IsGpuType T_DeviceKind>
+        template<concepts::GpuType T_DeviceKind>
         struct GetCachelineSize::Op<api::OneApi, T_DeviceKind>
         {
             constexpr uint32_t operator()(api::OneApi const, T_DeviceKind const) const

@@ -204,7 +204,7 @@ namespace alpaka
          * @param value Value which is set for all dimensions
          * @return new Simd<...>
          */
-        static constexpr auto all(concepts::IsConvertible<T_Type> auto const& value)
+        static constexpr auto all(concepts::Convertible<T_Type> auto const& value)
         {
             Simd result([=](uint32_t const) { return static_cast<T_Type>(value); });
             return result;
@@ -252,7 +252,7 @@ namespace alpaka
         }                                                                                                             \
         return *this;                                                                                                 \
     }                                                                                                                 \
-    constexpr Simd& operator op(concepts::IsLosslessConvertible<T_Type> auto const value)                             \
+    constexpr Simd& operator op(concepts::LosslesslyConvertible<T_Type> auto const value)                             \
     {                                                                                                                 \
         for(uint32_t i = 0u; i < T_dim; i++)                                                                          \
         {                                                                                                             \
@@ -659,7 +659,7 @@ namespace alpaka
                                                                                                                       \
     template<                                                                                                         \
         typenameOrConcept T_Type,                                                                                     \
-        concepts::IsLosslessConvertible<T_Type> T_ValueType,                                                          \
+        concepts::LosslesslyConvertible<T_Type> T_ValueType,                                                          \
         uint32_t T_dim,                                                                                               \
         concepts::Alignment T_Alignment,                                                                              \
         typename T_Storage>                                                                                           \
@@ -675,7 +675,7 @@ namespace alpaka
     }                                                                                                                 \
     template<                                                                                                         \
         typenameOrConcept T_Type,                                                                                     \
-        concepts::IsLosslessConvertible<T_Type> T_ValueType,                                                          \
+        concepts::LosslesslyConvertible<T_Type> T_ValueType,                                                          \
         uint32_t T_dim,                                                                                               \
         concepts::Alignment T_Alignment,                                                                              \
         typename T_Storage>                                                                                           \
@@ -737,7 +737,7 @@ namespace alpaka
         concept TypeOrSimd = (isSimd_v<T> || std::is_same_v<T, T_RequiredComponent>);
 
         template<typename T, typename T_RequiredComponent>
-        concept SimdOrConvertableType = (isSimd_v<T> || std::is_convertible_v<T, T_RequiredComponent>);
+        concept SimdOrConvertibleType = (isSimd_v<T> || std::is_convertible_v<T, T_RequiredComponent>);
     } // namespace concepts
 
     namespace trait

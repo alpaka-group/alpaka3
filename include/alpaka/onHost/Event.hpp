@@ -12,13 +12,13 @@
 
 namespace alpaka::onHost
 {
-    template<typename T_Api, alpaka::deviceKind::concepts::DeviceKind T_DeviceKind>
+    template<alpaka::concepts::Api T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
     struct Device;
 
     template<typename T_Device>
     struct Event;
 
-    template<typename T_Api, alpaka::deviceKind::concepts::DeviceKind T_DeviceKind>
+    template<alpaka::concepts::Api T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
     struct Event<Device<T_Api, T_DeviceKind>>
     {
     private:

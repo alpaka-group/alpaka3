@@ -11,6 +11,8 @@
 
 namespace alpaka::concepts
 {
+    /**
+     */
     template<typename T>
     concept HasStaticName = requires(T t) {
         { internal::GetStaticName::Op<std::decay_t<T>>{}(t) } -> std::convertible_to<std::string>;

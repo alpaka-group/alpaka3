@@ -13,32 +13,46 @@
 #include "alpaka/tag.hpp"
 
 #include <concepts>
-#include <string>
 
 namespace alpaka
 {
     namespace concepts
     {
+        /** @brief Concept to check if the given type has a `get()` function.
+         */
         template<typename T>
         concept HasGet = requires(T t) { t.get(); };
 
+        /** @brief Concept to check if the given type has a static `dim()` function
+         */
         template<typename T>
         concept HasStaticDim = requires(T t) { T::dim(); };
 
+        /** @brief Concept to check if the given type is of the given dimensionality
+         *
+         * @details
+         * The checked type must also fulfill HasStaticDim.
+         *
+         * @tparam T The type to check
+         * @tparam T_dim The dimension the checked type should have
+         */
         template<typename T, unsigned int T_dim>
         concept Dim = requires { T::dim() == T_dim; };
 
-
+        /** @brief Concept to check if the given type is a GPU DeviceKind
+         */
         template<typename T>
-        concept IsGpuType
-            = deviceKind::concepts::DeviceKind<T>
+        concept GpuType
+            = alpaka::concepts::DeviceKind<T>
               && (T{} == deviceKind::nvidiaGpu || T{} == deviceKind::amdGpu || T{} == deviceKind::intelGpu);
 
-
+        /** @brief Concept to check if the given type is a pointer, using std::is_pointer
+         */
         template<typename T>
-        concept IsPointer = std::is_pointer_v<T>;
+        concept Pointer = std::is_pointer_v<T>;
 
-
+        /** @todo Replace usage with alpaka::concepts::IView
+         */
         template<typename T, typename T_ValueType = alpaka::NotRequired>
         concept View = MdSpan<T, T_ValueType> && requires(T t) {
             { getApi(t) } -> alpaka::concepts::Api;

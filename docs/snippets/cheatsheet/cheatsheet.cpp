@@ -198,7 +198,7 @@ auto main() -> int
     }
 
     concepts::Api auto const api = api::host;
-    deviceKind::concepts::DeviceKind auto const deviceKind = deviceKind::cpu;
+    concepts::DeviceKind auto const deviceKind = deviceKind::cpu;
     uint32_t index = 0;
 
     auto task = []() {};

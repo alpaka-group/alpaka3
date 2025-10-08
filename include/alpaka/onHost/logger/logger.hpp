@@ -22,7 +22,7 @@ namespace alpaka::onHost::logger
      * @param logLvl log level or a sum of log levels
      */
     inline auto scope(
-        concepts::Lvl auto logLvl,
+        concepts::Level auto logLvl,
         std::source_location const& location = std::source_location::current())
     {
 #if defined(ALPAKA_LOG_STATIC)
@@ -58,7 +58,7 @@ namespace alpaka::onHost::logger
      * @param callable callable without arguments which provides a string which should be written to the output
      */
     inline void info(
-        concepts::Lvl auto logLvl,
+        concepts::Level auto logLvl,
         auto const& callable,
         std::source_location const& location = std::source_location::current())
     {

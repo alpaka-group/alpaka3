@@ -14,6 +14,21 @@
 
 namespace alpaka::onHost
 {
+    /** @brief Device/Api-agnostic description of an execution pattern for a kernel.
+     *
+     * @details
+     * A frame specification describes how threads on an execution device are distributed across the
+     * given problem space. The specification contains three parameters:
+     * - `numFrames`: The n-dimensional number of frames to cover the whole problem instance.
+     * - `frameExtents`: The n-dimensional size of one execution unit.
+     * - `threadSpec` (optional): Back-end specific specification of the actual execution resources,
+     * consisting of a number of blocks and number of threads. By default, this is automatically chosen
+     * by alpaka when starting a kernel to fit the alpaka::onHost::Device and alpaka::exec, ensuring
+     * compatibility. User-provided specifications might reduce the (performance-)portability.
+     *
+     * A kernel should always be written to be executable with any FrameSpec, and not depend
+     * on hard-coded thread numbers etc., to ensure portability between devices.
+     */
     template<
         alpaka::concepts::Vector T_NumFrames,
         alpaka::concepts::Vector<typename T_NumFrames::type, T_NumFrames::dim()> T_FrameExtents,

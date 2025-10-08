@@ -19,7 +19,7 @@
 namespace alpaka::example::scan
 {
 
-    template<alpaka::deviceKind::concepts::DeviceKind TDeviceKind>
+    template<alpaka::concepts::DeviceKind TDeviceKind>
     consteval auto maximumMiniBlockSize()
     {
         if constexpr(TDeviceKind{} == deviceKind::nvidiaGpu)

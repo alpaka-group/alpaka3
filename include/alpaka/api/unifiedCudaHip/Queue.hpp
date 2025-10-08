@@ -1,15 +1,12 @@
 /* Copyright 2024 René Widera
  * SPDX-License-Identifier: MPL-2.0
  */
-
-
-#pragma once
-
 #pragma once
 
 #include "alpaka/core/config.hpp"
 
 #if ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP
+#    include "alpaka/api/concepts/api.hpp"
 #    include "alpaka/api/cuda/IdxLayer.hpp"
 #    include "alpaka/api/generic.hpp"
 #    include "alpaka/api/hip/IdxLayer.hpp"
@@ -169,8 +166,8 @@ namespace alpaka::onHost
         };
 
         template<
-            typename T_Api,
-            deviceKind::concepts::DeviceKind T_DeviceKind,
+            alpaka::concepts::Api T_Api,
+            alpaka::concepts::DeviceKind T_DeviceKind,
             alpaka::concepts::Executor T_Executor,
             typename TKernelBundle,
             typename T_OptimizedThreadSpec,
@@ -197,8 +194,8 @@ namespace alpaka::onHost
         }
 
         template<
-            typename T_Api,
-            deviceKind::concepts::DeviceKind T_DeviceKind,
+            alpaka::concepts::Api T_Api,
+            alpaka::concepts::DeviceKind T_DeviceKind,
             alpaka::concepts::Executor T_Executor,
             typename TKernelBundle,
             typename T_OptimizedThreadSpec>

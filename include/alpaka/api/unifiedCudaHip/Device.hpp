@@ -106,7 +106,7 @@ namespace alpaka::onHost
 
             friend struct onHost::internal::MakeQueue;
 
-            Handle<unifiedCudaHip::Queue<Device>> makeQueue(queueKind::concepts::QueueKind auto kind)
+            Handle<unifiedCudaHip::Queue<Device>> makeQueue(alpaka::concepts::QueueKind auto kind)
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 static_assert(

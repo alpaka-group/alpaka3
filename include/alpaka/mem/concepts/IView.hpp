@@ -15,13 +15,14 @@ namespace alpaka::concepts
 {
     namespace impl
     {
-        /** Interface concept that describes how multidimensional memory can be accessed on the host and device side.
-         * An `alpaka::view` like object contains information about the device(s) to which it is connected. The
-         * `alpaka::view` like object has no memory ownership, and therefore it does not manage the memory lifetime.
+        /** @brief Interface concept for objects describing api-related multidimensional memory access.
          *
-         * The concept fulfills all requirements of the alpaka::concepts::impl::IMdSpan concept and therefore offers
-         * the same interface.
+         * @details
+         * An `alpaka::view`-like object contains information about the device(s) to which it is connected. The
+         * `alpaka::view`-like object has no memory ownership, and therefore, it does not manage the memory lifetime.
+         * The represented memory can have any dimensionality.
          *
+         * Any object fitting the `IView` concept is also an `IMdSpan`.
          **/
         template<typename T, typename T_Mut, typename T_Const>
         concept IView = requires(T t) {
@@ -30,13 +31,15 @@ namespace alpaka::concepts
         };
     } // namespace impl
 
-    /** Interface concept that describes how multidimensional memory can be accessed on the host and device side.
-     * An `alpaka::view` like object contains information about the device(s) to which it is connected. The
-     * `alpaka::view` like object has no memory ownership, and therefore it does not manage the memory lifetime.
+    /** @brief Interface concept for objects describing api-related multidimensional memory access.
+     *
+     * @details
+     * An `alpaka::view`-like object contains information about the device(s) to which it is connected. The
+     * `alpaka::view`-like object has no memory ownership, and, therefore, it does not manage the memory lifetime.
+     * The represented memory can have any dimensionality.
      *
      * @attention Use `alpaka::IView` to restrict types in your code. The actual interface is described in
      * alpaka::concepts::impl::IView.
-     *
      **/
     template<typename T, typename T_ValueType = alpaka::NotRequired>
     concept IView = requires(T t) {

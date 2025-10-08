@@ -65,7 +65,7 @@ namespace alpaka
             constexpr uint32_t dim = T_ThreadIdx::dim();
 
             auto allElements = iotaCVec<IdxType, dim>();
-            constexpr auto notSelectedDims = leftJoin(allElements, T_CSelect{});
+            constexpr auto notSelectedDims = filter(allElements, T_CSelect{});
 
             auto threadIndex = m_threadIdx;
             auto numThreads = m_threadCount;

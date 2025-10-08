@@ -19,14 +19,14 @@ namespace alpaka::onHost
     {
         struct MakePlatform
         {
-            template<typename T_Api, deviceKind::concepts::DeviceKind T_DeviceKind>
+            template<typename T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
             struct Op
             {
                 auto operator()(T_Api api, T_DeviceKind deviceType) const;
             };
         };
 
-        static auto makePlatform(auto api, deviceKind::concepts::DeviceKind auto deviceType)
+        static auto makePlatform(auto api, alpaka::concepts::DeviceKind auto deviceType)
         {
             return MakePlatform::Op<ALPAKA_TYPEOF(api), ALPAKA_TYPEOF(deviceType)>{}(api, deviceType);
         }
@@ -91,7 +91,7 @@ namespace alpaka::onHost
 
         struct MakeQueue
         {
-            template<typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+            template<typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
             struct Op
             {
                 auto operator()(T_Device& device, T_QueueKind) const
@@ -330,7 +330,7 @@ namespace alpaka::onHost
                 bool operator()(T_Device& device, T_Any const& any) const;
             };
 
-            template<typename T_DataApi, alpaka::deviceKind::concepts::DeviceKind T_DeviceKind, typename T_Any>
+            template<typename T_DataApi, alpaka::concepts::DeviceKind T_DeviceKind, typename T_Any>
             struct SecondPath
             {
                 bool operator()(T_DataApi, T_DeviceKind, T_Any const& any) const

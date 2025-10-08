@@ -224,19 +224,13 @@ struct CompileTimeKernel3D
         constexpr auto selectRes2 = vec[selectVec2];
         static_assert(selectRes2 == Vec{7, 5});
 
-        // cvec left and right join, empty result is currently not supported because zero dimensional vector is not
-        // allowed
+        // cvec filter
+        // empty results are undefined because zero length vectors don't exist
         auto m0 = CVec<int, 1, 2, 0>{};
         auto m1 = CVec<int, 1, 5>{};
 
-        constexpr auto l = leftJoin(m0, m1);
+        constexpr auto l = filter(m0, m1);
         static_assert(l == Vec{2, 0});
-
-        constexpr auto r = rightJoin(m0, m1);
-        static_assert(r == Vec{5});
-
-        constexpr auto inner = innerJoin(m0, m1);
-        static_assert(inner == Vec{1});
 
         constexpr auto vecSrcApply = CVec<int, 1, 2>{};
         constexpr auto vecResApply

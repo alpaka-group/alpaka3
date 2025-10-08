@@ -56,7 +56,7 @@ namespace alpaka
      */
     template<typename T_To>
     constexpr decltype(auto) lpCast(auto&& input)
-        requires(isLosslessConvertible_v<typename ALPAKA_TYPEOF(input)::type, T_To>)
+        requires(isLosslesslyConvertible_v<typename ALPAKA_TYPEOF(input)::type, T_To>)
     {
         return internal::LPCast::Op<T_To, ALPAKA_TYPEOF(input)>{}(input);
     }

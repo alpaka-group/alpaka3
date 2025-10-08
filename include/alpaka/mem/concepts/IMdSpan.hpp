@@ -15,7 +15,7 @@ namespace alpaka::concepts
 {
     namespace impl
     {
-        /** Interface concept that describes how multidimensional memory can be accessed on the host and device side.
+        /** @brief Interface concept for objects describing multidimensional memory access.
          *
          * @details
          *
@@ -41,13 +41,13 @@ namespace alpaka::concepts
          * alpaka::concepts::Alignment
          *
          * @section membertypes Member types
-         * - <b>T::value_type</b>: The element type. Can be const or not.
+         * - <b>T::value_type</b>: The element type. May or may not be const.
          * - <b>T::reference</b>: The element reference type is either const or non-const, depending on
          *`T::value_type`.
          * - <b>T::const_reference</b>: The constant reference type for an element. Always const.
          * - <b>T::pointer</b>: The element pointer type is either const or non-const, depending on
          *`T::value_type`.
-         * - <b>T::const_pointer</b>: The constant pointer type for an element. Always const.
+         * - <b>T::const_pointer</b>: The constant pointer type for an element. Always pointer-to-const.
          * - <b>T::index_type</b>: The index type of the pitch.
          *
          * @note The access operator [] with an integral as an argument is only available if the dimension is one.
@@ -98,13 +98,14 @@ namespace alpaka::concepts
 
     } // namespace impl
 
-    /** Interface concept that describes how multidimensional memory can be accessed on the host and device side.
+    /** @brief Interface concept for objects describing multidimensional memory access.
+     *
+     * @details
      * An object of type `alpaka::mdspan` does not store any information about the storage location, e.g., whether
      * the memory is located on a CPU or a GPU.
      *
      * @attention Use `alpaka::IMdSpan` to restrict types in your code. The actual interface is described in
      * alpaka::concepts::impl::IMdSpan.
-     *
      **/
     template<typename T, typename T_ValueType = alpaka::NotRequired>
     concept IMdSpan = requires {

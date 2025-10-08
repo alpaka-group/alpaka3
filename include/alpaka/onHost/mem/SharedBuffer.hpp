@@ -87,7 +87,7 @@ namespace alpaka::onHost
             , m_deleter{std::make_shared<internal::ManagedDealloc>(deleter)}
         {
             static_assert(
-                isLosslessConvertible_v<typename T_UserPitches::type, typename T_UserExtents::type>,
+                isLosslesslyConvertible_v<typename T_UserPitches::type, typename T_UserExtents::type>,
                 "extent type and pitch type must be lossless convertible");
         }
 
@@ -251,7 +251,7 @@ namespace alpaka::onHost
 
     private:
         /** @todo move this to trais or somewhere else that it can be used everywhere */
-        template<alpaka::concepts::IsPointer T>
+        template<alpaka::concepts::Pointer T>
         using ConstPtr_t = std::add_pointer_t<std::add_const_t<std::remove_pointer_t<T>>>;
 
         std::shared_ptr<internal::ManagedDealloc> m_deleter;

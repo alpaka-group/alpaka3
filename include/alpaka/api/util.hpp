@@ -137,7 +137,7 @@ namespace alpaka::api::util
      * @return the best alignment in bytes, will be a power of two value
      */
     template<typename T_ValueType>
-    inline constexpr auto simdOptimizedAlignment(auto api, alpaka::deviceKind::concepts::DeviceKind auto deviceKind)
+    inline constexpr auto simdOptimizedAlignment(auto api, alpaka::concepts::DeviceKind auto deviceKind)
     {
         constexpr uint32_t typeAlignmentBytes = alignof(T_ValueType);
         constexpr uint32_t simdPackBytes

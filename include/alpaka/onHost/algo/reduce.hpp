@@ -26,7 +26,7 @@ namespace alpaka::onHost
      *
      * @{
      */
-    template<typename DataType, typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+    template<typename DataType, typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
     inline void reduce(
         Queue<T_Device, T_QueueKind> const& queue,
         alpaka::concepts::Executor auto const exec,
@@ -49,7 +49,7 @@ namespace alpaka::onHost
      * A available default executor will be selected automaticlally. The default executor is a executor with most
      * parallelism/performance.
      */
-    template<typename DataType, typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+    template<typename DataType, typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
     inline void reduce(
         Queue<T_Device, T_QueueKind> const& queue,
         DataType const& neutralElement,

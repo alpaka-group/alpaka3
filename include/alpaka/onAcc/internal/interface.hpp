@@ -16,14 +16,14 @@ namespace alpaka::onAcc
     {
         struct Sync
         {
-            template<typename T_Acc, alpaka::layer::concepts::Layer T_Scope>
+            template<typename T_Acc, alpaka::concepts::Layer T_Scope>
             struct Op
             {
                 constexpr auto operator()(T_Acc const& acc, T_Scope const scope) const;
             };
         };
 
-        constexpr void sync(auto const& acc, alpaka::layer::concepts::Layer auto const scope)
+        constexpr void sync(auto const& acc, alpaka::concepts::Layer auto const scope)
         {
             Sync::Op<ALPAKA_TYPEOF(acc), ALPAKA_TYPEOF(scope)>{}(acc, scope);
         }

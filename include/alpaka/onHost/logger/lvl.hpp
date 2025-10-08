@@ -45,21 +45,23 @@ namespace alpaka::onHost::logger
 
     namespace concepts
     {
+        /** Concept for log level types
+         */
         template<typename T_DeviceKind>
-        concept Lvl = isLogLvl_v<T_DeviceKind>;
+        concept Level = isLogLvl_v<T_DeviceKind>;
     } // namespace concepts
 
-    constexpr bool operator==(concepts::Lvl auto lhs, concepts::Lvl auto rhs)
+    constexpr bool operator==(concepts::Level auto lhs, concepts::Level auto rhs)
     {
         return std::is_same_v<ALPAKA_TYPEOF(lhs), ALPAKA_TYPEOF(rhs)>;
     }
 
-    constexpr bool operator!=(concepts::Lvl auto lhs, concepts::Lvl auto rhs)
+    constexpr bool operator!=(concepts::Level auto lhs, concepts::Level auto rhs)
     {
         return !(lhs == rhs);
     }
 
-    constexpr auto operator+(concepts::Lvl auto lhs, concepts::Lvl auto rhs)
+    constexpr auto operator+(concepts::Level auto lhs, concepts::Level auto rhs)
     {
         return detail::AggregatedLogger<ALPAKA_TYPEOF(lhs), ALPAKA_TYPEOF(rhs)>{};
     }

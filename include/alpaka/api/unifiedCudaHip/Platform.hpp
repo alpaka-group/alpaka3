@@ -24,7 +24,7 @@ namespace alpaka::onHost
 {
     namespace unifiedCudaHip
     {
-        template<typename T_ApiInterface, deviceKind::concepts::DeviceKind T_DeviceKind>
+        template<typename T_ApiInterface, alpaka::concepts::DeviceKind T_DeviceKind>
         struct Platform : std::enable_shared_from_this<Platform<T_ApiInterface, T_DeviceKind>>
         {
             using ApiInterface = T_ApiInterface;
@@ -115,7 +115,7 @@ namespace alpaka::onHost
 
     namespace internal
     {
-        template<typename T_ApiInterface, deviceKind::concepts::DeviceKind T_DeviceKind>
+        template<typename T_ApiInterface, alpaka::concepts::DeviceKind T_DeviceKind>
         struct GetDeviceProperties::Op<unifiedCudaHip::Platform<T_ApiInterface, T_DeviceKind>>
         {
             DeviceProperties operator()(

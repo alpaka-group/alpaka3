@@ -20,7 +20,7 @@ namespace alpaka::onHost
     namespace internal
     {
 
-        template<deviceKind::concepts::DeviceKind T_DeviceKind>
+        template<alpaka::concepts::DeviceKind T_DeviceKind>
         struct MakePlatform::Op<api::Hip, T_DeviceKind>
         {
             auto operator()(api::Hip, T_DeviceKind) const
@@ -33,7 +33,7 @@ namespace alpaka::onHost
 
 namespace alpaka::internal
 {
-    template<deviceKind::concepts::DeviceKind T_DeviceKind>
+    template<alpaka::concepts::DeviceKind T_DeviceKind>
     struct GetApi::Op<onHost::unifiedCudaHip::Platform<ApiHipRt, T_DeviceKind>>
     {
         inline constexpr auto operator()(auto&& platform) const
@@ -42,7 +42,7 @@ namespace alpaka::internal
         }
     };
 
-    template<deviceKind::concepts::DeviceKind T_DeviceKind>
+    template<alpaka::concepts::DeviceKind T_DeviceKind>
     struct GetDeviceType::Op<onHost::unifiedCudaHip::Platform<ApiHipRt, T_DeviceKind>>
     {
         decltype(auto) operator()(auto&& platform) const

@@ -54,24 +54,33 @@ namespace alpaka
 
         template<typename T_QueueKind>
         constexpr bool isQueueKind_v = trait::IsQueueKind<T_QueueKind>::value;
+    } // namespace queueKind
 
-        namespace concepts
-        {
-            template<typename T_QueueKind>
-            concept QueueKind = isQueueKind_v<T_QueueKind>;
-        } // namespace concepts
+    namespace concepts
+    {
+        /** Concept to check if a type is a queue kind
+         *
+         * @details
+         * Example queue kinds are alpaka::queueKind::Blocking or alpaka::queueKind::NonBlocking.
+         */
+        template<typename T_QueueKind>
+        concept QueueKind = queueKind::isQueueKind_v<T_QueueKind>;
+    } // namespace concepts
 
-        constexpr bool operator==(concepts::QueueKind auto lhs, concepts::QueueKind auto rhs)
+    namespace queueKind
+    {
+        constexpr bool operator==(alpaka::concepts::QueueKind auto lhs, alpaka::concepts::QueueKind auto rhs)
         {
             return std::is_same_v<ALPAKA_TYPEOF(lhs), ALPAKA_TYPEOF(rhs)>;
         }
 
-        constexpr bool operator!=(concepts::QueueKind auto lhs, concepts::QueueKind auto rhs)
+        constexpr bool operator!=(alpaka::concepts::QueueKind auto lhs, alpaka::concepts::QueueKind auto rhs)
         {
             return !(lhs == rhs);
         }
 
-        /// Queue should block during the task execution
+        /** Queue should block during the task execution
+         */
         struct Blocking : detail::QueueKindBase
         {
             static std::string getName()
@@ -82,7 +91,8 @@ namespace alpaka
 
         constexpr auto blocking = Blocking{};
 
-        /// Queue should process task asynchronous
+        /** Queue should process task asynchronously
+         */
         struct NonBlocking : detail::QueueKindBase
         {
             static std::string getName()
@@ -113,13 +123,23 @@ namespace alpaka
 
         template<typename T_DeviceKind>
         constexpr bool isDeviceKind_v = trait::IsDeviceKind<T_DeviceKind>::value;
+    } // namespace deviceKind
 
-        namespace concepts
-        {
-            template<typename T_DeviceKind>
-            concept DeviceKind = isDeviceKind_v<T_DeviceKind>;
-        } // namespace concepts
+    namespace concepts
+    {
+        /** @brief Concept to check if something is a device kind
+         *
+         * @details
+         * A device kind in alpaka is a type of acceleration device, such as a GPU vendor. Examples are
+         * alpaka::deviceKind::amdGpu or alpaka::deviceKind::cpu. Together with an alpaka::onHost::Api, it can make
+         * up an alpaka::onHost::Device.
+         */
+        template<typename T_DeviceKind>
+        concept DeviceKind = deviceKind::isDeviceKind_v<T_DeviceKind>;
+    } // namespace concepts
 
+    namespace deviceKind
+    {
         constexpr bool operator==(concepts::DeviceKind auto lhs, concepts::DeviceKind auto rhs)
         {
             return std::is_same_v<ALPAKA_TYPEOF(lhs), ALPAKA_TYPEOF(rhs)>;
@@ -192,14 +212,23 @@ namespace alpaka
         } // namespace trait
 
         template<typename T_Layer>
-        constexpr bool isIsLayer_v = trait::IsLayer<T_Layer>::value;
+        constexpr bool isLayer_v = trait::IsLayer<T_Layer>::value;
+    } // namespace layer
 
-        namespace concepts
-        {
-            template<typename T_Layer>
-            concept Layer = isIsLayer_v<T_Layer>;
-        } // namespace concepts
+    namespace concepts
+    {
+        /** @brief Concept to check for a compute layer of an accelerator
+         *
+         * @details
+         * A layer is one specific part of the compute hierarchy of accelerators, for example alpaka::layer::Thread or
+         * alpaka::layer::Block.
+         */
+        template<typename T_Layer>
+        concept Layer = layer::isLayer_v<T_Layer>;
+    } // namespace concepts
 
+    namespace layer
+    {
         struct Thread : detail::LayerBase
         {
         };

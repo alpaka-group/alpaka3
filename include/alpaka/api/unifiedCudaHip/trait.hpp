@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "alpaka/api/concepts/api.hpp"
 #include "alpaka/api/trait.hpp"
 
 #include <type_traits>
@@ -16,7 +17,7 @@ namespace alpaka::unifiedCudaHip::trait
     {
     };
 
-    template<typename T_Api>
+    template<alpaka::concepts::Api T_Api>
     struct IsUnifiedApi : std::false_type
     {
     };

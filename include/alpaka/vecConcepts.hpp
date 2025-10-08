@@ -50,12 +50,12 @@ namespace alpaka
          * @tparam T_To The target type to which the source type is converted.
          */
         template<typename T_From, typename T_To>
-        concept IsLosslessConvertible
+        concept LosslesslyConvertible
             = std::convertible_to<T_From, T_To>
               && (detail::integralIntegralLossless<T_From, T_To> || detail::floatFloatLossless<T_From, T_To>
                   || detail::integralFloatLossless<T_From, T_To>);
 
         template<typename T_From, typename T_To>
-        concept IsConvertible = requires { std::is_convertible_v<T_From, T_To>; };
+        concept Convertible = requires { std::is_convertible_v<T_From, T_To>; };
     }; // namespace concepts
 } // namespace alpaka

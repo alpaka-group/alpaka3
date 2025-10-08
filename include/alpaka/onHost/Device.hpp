@@ -18,7 +18,16 @@
 
 namespace alpaka::onHost
 {
-    template<typename T_Api, alpaka::deviceKind::concepts::DeviceKind T_DeviceKind>
+    /** @brief Description of a specific device that one can schedule kernels on.
+     *
+     * @details
+     * A device is the combination of an alpaka::deviceKind::onHost::DeviceKind and an alpaka::concepts::Api,
+     * representing an entity that one can schedule work on.
+     *
+     * @tparam T_Api The Api powering this device.
+     * @tparam T_DeviceKind The kind of device it is.
+     */
+    template<alpaka::concepts::Api T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
     struct Device
     {
     private:
@@ -73,23 +82,23 @@ namespace alpaka::onHost
 
         /** Create a queue for this device.
          *
-         * @attention If you call this method multiple times it is allowed that you get always the same handle
+         * @attention If you call this method multiple times it is allowed that you always get the same handle
          * back. There is no guarantee that you will get independent queues.
          *
-         * Enqueuing tasks into two different queues is not guaranteeing that these tasks running in parallel.
-         * Running tasks from different tasks sequential is a valid behaviour. Enqueuing into two queues only
-         * providing the information that the tasks are independent of each other.
+         * Enqueuing tasks into two different queues does not guarantee that these tasks run in parallel.
+         * Running tasks from different tasks sequentially is valid behavior. Enqueuing into two individual queues only
+         * signifies that the tasks are independent of each other and their order of execution is independent.
          *
          * @param kind
          *   Blocking behaviour:
-         *    - queueKind::nonBlocking (default): enqueue returns immediately; completion must be ensured via
-         * onHost::wait(queue) or by enqueuing dependent operations onto the same queue.
-         *    - queueKind::nonBlocking: each enqueue only returns after the operation is complete and its effects are
+         *    - queueKind::nonBlocking (default): enqueue returns immediately; completion of the enqueued operation
+         * must be ensured via onHost::wait(queue) or by enqueuing dependent operations onto the same queue.
+         *    - queueKind::blocking: each enqueue only returns after the operation is complete and its effects are
          * host-visible.
          *
-         * @return onHost::Queue where task and memory operations can be enqueues to
+         * @return A onHost::Queue that tasks and memory operations can be enqueued on.
          */
-        auto makeQueue(queueKind::concepts::QueueKind auto kind)
+        auto makeQueue(alpaka::concepts::QueueKind auto kind)
         {
             return Queue{
                 internal::MakeQueue::Op<ALPAKA_TYPEOF(*m_device.get()), ALPAKA_TYPEOF(kind)>{}(*m_device.get(), kind),
@@ -101,30 +110,16 @@ namespace alpaka::onHost
             return makeQueue(queueKind::nonBlocking);
         }
 
-    public:
         auto makeEvent()
         {
             return Event{internal::MakeEvent::Op<std::decay_t<decltype(*m_device.get())>>{}(*m_device.get())};
         }
 
-        /** blocks the caller until the given handle executes all work
-         *
-         * @param any currently only queue handles are supported
+        /** Blocks the caller until the given handle executes all work
          */
         void wait()
         {
             return internal::wait(*m_device.get());
-        }
-
-        /** Get the native handle type
-         *
-         * The handle can be used with native API function from the underlying used parism library.
-         *
-         * @return the type depends on the used API
-         */
-        inline auto getNativeHandle(auto const& any)
-        {
-            return internal::getNativeHandle(*m_device.get());
         }
 
         /** Properties of a given device
@@ -146,6 +141,12 @@ namespace alpaka::onHost
 
     namespace concepts
     {
+        /** @brief Concept to check if something is a device.
+         *
+         * @details
+         * This concept checks for specializations of alpaka::onHost::Device. For more information on devices in
+         * alpaka, refer to the class documentation.
+         */
         template<typename T_Device>
         concept Device = alpaka::isSpecializationOf_v<T_Device, onHost::Device>;
     } // namespace concepts
@@ -197,7 +198,7 @@ namespace alpaka::onHost
 
     /** Allocates unified memory on the device associated with the given queue.
      *
-     * This memory can be accessed from all devices with the same Api and device kind. Depending of the backend e.g.
+     * This memory can be accessed from all devices with the same Api and device kind. Depending on the backend e.g.
      * OneApi memory can be accessed by other device kind devices if they are using the same native context. It is not
      * allowed to access the data on two devices at the same time, this must be avoided by explicit synchronizations.
      * Unified memory follows the rules of UVM memory of the device backend e.g. CUDA, HIP, ...
@@ -208,7 +209,7 @@ namespace alpaka::onHost
      * @param queue queue handle
      * @param extents number of elements for each dimension
      */
-    template<typename T_Type, typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+    template<typename T_Type, typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
     inline auto allocUnified(
         Queue<T_Device, T_QueueKind> const& queue,
         alpaka::concepts::VectorOrScalar auto const& extents)
@@ -220,7 +221,7 @@ namespace alpaka::onHost
                 extentsVec);
     }
 
-    /** Allocate pinned memory on the host which is mapped into the adress space of the device
+    /** Allocate pinned memory on the host which is mapped into the address space of the device
      *
      * Mapped memory is located on the host and is transferred for each access via the PCIe/Nvlink bus. The performance
      * on the device is mostly pure. Mapped memory should be used for host memory if you transfer memory between host
@@ -249,7 +250,7 @@ namespace alpaka::onHost
      * @param queue queue handle
      * @param extents number of elements for each dimension
      */
-    template<typename T_Type, typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+    template<typename T_Type, typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
     inline auto allocMapped(
         Queue<T_Device, T_QueueKind> const& queue,
         alpaka::concepts::VectorOrScalar auto const& extents)
@@ -257,7 +258,7 @@ namespace alpaka::onHost
         return allocMapped<T_Type>(queue.getDevice(), extents);
     }
 
-    /** allocate memory on the given device based on a view
+    /** Allocate memory on the given device based on a view
      *
      * Derives type and extents of the memory from the view.
      * The content of the memory is NOT copied to the created allocated memory.
@@ -274,7 +275,7 @@ namespace alpaka::onHost
 
     ///@}
 
-    /** check if the given view is accessible on the given device
+    /** Check if the given view is accessible on the given device
      *
      * @param device device handle
      * @param view memory where properties will be derived from
@@ -294,11 +295,11 @@ namespace alpaka::onHost
                    ALPAKA_TYPEOF(view)>{}(getApi(view), getDeviceKind(device), view);
     }
 
-    /** check if the given view is accessible on the given device of the queue.
+    /** Check if the given view is accessible on the device of the given queue
      *
      * @param queue queue handle
      */
-    template<typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+    template<typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
     inline bool isDataAccessible(Queue<T_Device, T_QueueKind> const& queue, alpaka::concepts::View auto const& view)
     {
         return internal::IsDataAccessible::FirstPath<ALPAKA_TYPEOF(*queue.getDevice().get()), ALPAKA_TYPEOF(view)>{}(
@@ -310,14 +311,14 @@ namespace alpaka::onHost
                    ALPAKA_TYPEOF(view)>{}(getApi(view), getDeviceKind(queue.getDevice()), view);
     }
 
-    /** provides a frame specification to operator on a given index range
+    /** Provides a frame specification to operate on a given index range
      *
      * The frame specification will be optimized for SIMD executions in the highest dimension.
      *
      * @param extents size of the index range
      * @return frame specification
      */
-    template<typename T_DataType, typename T_Api, alpaka::deviceKind::concepts::DeviceKind T_DeviceKind>
+    template<typename T_DataType, typename T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
     inline constexpr auto getFrameSpec(onHost::Device<T_Api, T_DeviceKind> const& device, auto&& extents)
     {
         using ExtentVecType = ALPAKA_TYPEOF(extents);

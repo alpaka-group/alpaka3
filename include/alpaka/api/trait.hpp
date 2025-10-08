@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "alpaka/api/concepts/api.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/math/internal/math.hpp"
 #include "alpaka/tag.hpp"
@@ -18,7 +19,7 @@ namespace alpaka
         /** Map's all API's by default to stl math functions. */
         struct GetMathImpl
         {
-            template<typename T_Api>
+            template<alpaka::concepts::Api T_Api>
             struct Op
             {
                 constexpr decltype(auto) operator()(T_Api const) const
@@ -28,7 +29,7 @@ namespace alpaka
             };
         };
 
-        template<typename T_Api>
+        template<alpaka::concepts::Api T_Api>
         constexpr decltype(auto) getMathImpl(T_Api const api)
         {
             return GetMathImpl::Op<T_Api>{}(api);
@@ -36,7 +37,7 @@ namespace alpaka
 
         struct GetArchSimdWidth
         {
-            template<typename T_Type, typename T_Api, deviceKind::concepts::DeviceKind T_DeviceKind>
+            template<typename T_Type, alpaka::concepts::Api T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
             struct Op
             {
                 consteval uint32_t operator()(T_Api const, T_DeviceKind const) const
@@ -50,7 +51,7 @@ namespace alpaka
         /** Number of commands a CPU can issue at the same time. */
         struct GetNumPipelines
         {
-            template<typename T_Api, deviceKind::concepts::DeviceKind T_DeviceKind>
+            template<alpaka::concepts::Api T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
             struct Op
             {
                 /** @return the return value must be >= 1 */
@@ -64,7 +65,7 @@ namespace alpaka
 
         struct GetCachelineSize
         {
-            template<typename T_Api, deviceKind::concepts::DeviceKind T_DeviceKind>
+            template<alpaka::concepts::Api T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
             struct Op
             {
                 consteval uint32_t operator()(T_Api const, T_DeviceKind const) const
@@ -87,6 +88,12 @@ namespace alpaka
 
     namespace concepts
     {
+        /** @brief Concept to check for an executor
+         *
+         * @details
+         * An executor in alpaka is a specific way of executing on an alpaka::onHost::Device. Examples of executors are
+         * alpaka::exec::GpuCuda or alpaka::onHost::cpu::OmpBlocks.
+         */
         template<typename T>
         concept Executor = alpaka::isExecutor<T>;
     } // namespace concepts
@@ -101,24 +108,29 @@ namespace alpaka
         return !(lhs == rhs);
     }
 
-    /** get SIMD with in bytes for the
+    /** Get the SIMD width in bytes for an API and device kind combination.
      *
      * @tparam T_Type data type
      * @return number of elements that can be processed in parallel in a vector register
      */
     template<typename T_Type>
-    consteval uint32_t getArchSimdWidth(auto const api, deviceKind::concepts::DeviceKind auto const deviceType)
+    consteval uint32_t getArchSimdWidth(
+        concepts::Api auto const api,
+        alpaka::concepts::DeviceKind auto const deviceType)
     {
         return trait::GetArchSimdWidth::Op<T_Type, ALPAKA_TYPEOF(api), ALPAKA_TYPEOF(deviceType)>{}(api, deviceType);
     }
 
-    /** get the number of instruction can be issued in parallel */
-    consteval uint32_t getNumPipelines(auto const api, deviceKind::concepts::DeviceKind auto const deviceType)
+    /** Get the number of instructions that can be issued in parallel
+     */
+    consteval uint32_t getNumPipelines(
+        concepts::Api auto const api,
+        alpaka::concepts::DeviceKind auto const deviceType)
     {
         return trait::GetNumPipelines::Op<ALPAKA_TYPEOF(api), ALPAKA_TYPEOF(deviceType)>{}(api, deviceType);
     }
 
-    /**  Get the number of elements to compute per thread.
+    /**  Get the number of elements to compute per thread
      *
      * This function considers the SIMD width for the corresponding data type and the potential for instruction
      * parallelism.
@@ -127,7 +139,9 @@ namespace alpaka
      * @return The minimum number of elements a thread should compute to achieve optimal utilization.
      */
     template<typename T_Type>
-    consteval uint32_t getNumElemPerThread(auto const api, deviceKind::concepts::DeviceKind auto const deviceType)
+    consteval uint32_t getNumElemPerThread(
+        concepts::Api auto const api,
+        alpaka::concepts::DeviceKind auto const deviceType)
     {
         return getArchSimdWidth<T_Type>(api, deviceType) * getNumPipelines(api, deviceType);
     }
@@ -138,7 +152,9 @@ namespace alpaka
      *
      * @return cacheline size in bytes
      */
-    consteval uint32_t getCachelineSize(auto const api, deviceKind::concepts::DeviceKind auto const deviceType)
+    consteval uint32_t getCachelineSize(
+        concepts::Api auto const api,
+        alpaka::concepts::DeviceKind auto const deviceType)
     {
         return trait::GetCachelineSize::Op<ALPAKA_TYPEOF(api), ALPAKA_TYPEOF(deviceType)>{}(api, deviceType);
     }

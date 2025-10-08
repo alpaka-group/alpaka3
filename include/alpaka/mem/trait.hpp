@@ -19,7 +19,7 @@ namespace alpaka
         {
             struct AutoIndexMapping
             {
-                template<typename T_Acc, typename T_Api, alpaka::deviceKind::concepts::DeviceKind T_DeviceKind>
+            template<typename T_Acc, typename T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
                 struct Op
                 {
                     constexpr auto operator()(T_Acc const&, T_Api, T_DeviceKind) const

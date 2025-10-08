@@ -63,6 +63,11 @@ namespace alpaka
                                  && (std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
                                      || std::same_as<T_ValueType, alpaka::NotRequired>);
 
+        /** Concept to check if a type is a CVector
+         *
+         * @details
+         * Checks whether the given type is a CVector. For more information, refer to the implementation alpaka::CVec.
+         */
         template<typename T, typename T_ValueType = alpaka::NotRequired>
         concept CVector = isCVector_v<T>
                           && (std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
@@ -77,7 +82,7 @@ namespace alpaka
         concept TypeOrVector = (isVector_v<T> || std::is_same_v<T, T_RequiredComponent>);
 
         template<typename T, typename T_RequiredComponent>
-        concept VectorOrConvertableType = (isVector_v<T> || std::is_convertible_v<T, T_RequiredComponent>);
+        concept VectorOrConvertibleType = (isVector_v<T> || std::is_convertible_v<T, T_RequiredComponent>);
     } // namespace concepts
 
     /** Array storge for vector data
@@ -161,17 +166,17 @@ namespace alpaka
         };
 
         template<typename T>
-        struct IsTemplateSignatureStorage : std::false_type
+        struct TemplateSignatureStorage : std::false_type
         {
         };
 
         template<typename T_Type, T_Type... T_values>
-        struct IsTemplateSignatureStorage<CVec<T_Type, T_values...>> : std::true_type
+        struct TemplateSignatureStorage<CVec<T_Type, T_values...>> : std::true_type
         {
         };
 
         template<typename T>
-        constexpr bool isTemplateSignatureStorage_v = IsTemplateSignatureStorage<T>::value;
+        constexpr bool TemplateSignatureStorage_v = TemplateSignatureStorage<T>::value;
     } // namespace detail
 
     template<typename T_Type, uint32_t T_dim, typename T_Storage = ArrayStorage<T_Type, T_dim>>
@@ -268,9 +273,9 @@ namespace alpaka
          * @param value Value which is set for all dimensions
          * @return new Vec<...>
          */
-        static constexpr auto all(concepts::IsConvertible<T_Type> auto const& value)
+        static constexpr auto all(concepts::Convertible<T_Type> auto const& value)
         {
-            if constexpr(requires { detail::isTemplateSignatureStorage_v<T_Storage>; })
+            if constexpr(requires { detail::TemplateSignatureStorage_v<T_Storage>; })
             {
                 UniVec result([=](uint32_t const) { return static_cast<T_Type>(value); });
                 return result;
@@ -332,7 +337,7 @@ namespace alpaka
         }                                                                                                             \
         return *this;                                                                                                 \
     }                                                                                                                 \
-    constexpr Vec& operator op(concepts::IsLosslessConvertible<T_Type> auto const value)                              \
+    constexpr Vec& operator op(concepts::LosslesslyConvertible<T_Type> auto const value)                              \
     {                                                                                                                 \
         for(uint32_t i = 0u; i < T_dim; i++)                                                                          \
         {                                                                                                             \
@@ -778,7 +783,7 @@ namespace alpaka
                                                                                                                       \
     template<                                                                                                         \
         typenameOrConcept T_Type,                                                                                     \
-        concepts::IsLosslessConvertible<T_Type> T_ValueType,                                                          \
+        concepts::LosslesslyConvertible<T_Type> T_ValueType,                                                          \
         uint32_t T_dim,                                                                                               \
         typename T_Storage>                                                                                           \
     constexpr auto operator op(const Vec<T_Type, T_dim, T_Storage>& lhs, T_ValueType rhs)                             \
@@ -793,7 +798,7 @@ namespace alpaka
     }                                                                                                                 \
     template<                                                                                                         \
         typenameOrConcept T_Type,                                                                                     \
-        concepts::IsLosslessConvertible<T_Type> T_ValueType,                                                          \
+        concepts::LosslesslyConvertible<T_Type> T_ValueType,                                                          \
         uint32_t T_dim,                                                                                               \
         typename T_Storage>                                                                                           \
     constexpr auto operator op(T_ValueType lhs, const Vec<T_Type, T_dim, T_Storage>& rhs)                             \

@@ -29,7 +29,7 @@ namespace alpaka::onAcc
         constexpr Acc& operator=(Acc const&) = delete;
         constexpr Acc& operator=(Acc&&) = delete;
 
-        /** get the M-dimensional indices within the origin in the quantity of the selected unit */
+        /** Get the n-dimensional indices within the origin in the quantity of the selected unit */
         constexpr alpaka::concepts::Vector auto getIdxWithin(concepts::Origin auto origin, concepts::Unit auto unit)
             const
         {
@@ -39,7 +39,7 @@ namespace alpaka::onAcc
                 unit);
         }
 
-        /** get the M-dimensional extents of an origin in the quantity of the selected unit */
+        /** Get the n-dimensional extents of an origin in the quantity of the selected unit */
         constexpr alpaka::concepts::Vector auto getExtentsOf(concepts::Origin auto origin, concepts::Unit auto unit)
             const
         {
@@ -68,10 +68,10 @@ namespace alpaka::onAcc
 
     namespace concepts
     {
-        /** Concept to check if a type is a accelerator
+        /** Concept to check if a type is an accelerator
          *
          * @tparam T_Acc Type to check
-         * @tparam T_Api enforce an api type, if not provided api type is not checked
+         * @tparam T_Api Enforce an API type, if not provided api type is not checked
          */
         template<typename T_Acc, typename T_Api = alpaka::NotRequired>
         concept Acc = alpaka::isSpecializationOf_v<T_Acc, alpaka::onAcc::Acc>
@@ -79,32 +79,32 @@ namespace alpaka::onAcc
                           || std::same_as<T_Api, alpaka::NotRequired>);
     } // namespace concepts
 
-    /** synchronize all threads within a given scope */
-    template<alpaka::layer::concepts::Layer T_Scope>
+    /** Synchronize all threads within a given scope */
+    template<alpaka::concepts::Layer T_Scope>
     constexpr void sync(concepts::Acc auto const& acc, T_Scope scope)
     {
         internalCompute::sync(acc, scope);
     }
 
-    /** synchronize all threads within a thread block */
+    /** Synchronize all threads within a thread block */
     constexpr void syncBlockThreads(concepts::Acc auto const& acc)
     {
         internalCompute::sync(acc, alpaka::layer::block);
     }
 
-    /** create a variable located in the thread blocks shared memory
+    /** Create a variable located in the thread blocks shared memory
      *
      * @code{.cpp}
      * // creates a reference to a float value
      * auto& foo = declareSharedVar<float, uniqueId()>(acc);
      * @endcode
      *
-     * @attention The data is not initialized it can contains garbage.
+     * @attention The data is not initialized; it can contain garbage.
      *
-     * @tparam T type which should be created, the constructor is not called
-     * @tparam T_uniqueId id those is unique inside a kernel.
+     * @tparam T The type that should be created; the constructor is not called
+     * @tparam T_uniqueId ID that is unique inside a kernel.
      *                  Reusing the id will return the same memory declared before with the same id.
-     * @return result should be taken as reference
+     * @return Result should be taken by reference
      */
     template<typename T, size_t T_uniqueId>
     constexpr decltype(auto) declareSharedVar(concepts::Acc auto const& acc)

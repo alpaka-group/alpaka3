@@ -55,7 +55,7 @@ namespace alpaka::onHost
                 return this->shared_from_this();
             }
 
-            [[nodiscard]] Handle<syclGeneric::Queue<Device>> makeQueue(queueKind::concepts::QueueKind auto kind)
+            [[nodiscard]] Handle<syclGeneric::Queue<Device>> makeQueue(alpaka::concepts::QueueKind auto kind)
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue + onHost::logger::device);
                 static_assert(

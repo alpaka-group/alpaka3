@@ -3,6 +3,7 @@
  */
 
 #pragma once
+#include "alpaka/api/concepts/api.hpp"
 #include "alpaka/api/oneApi/executor.hpp"
 #include "alpaka/api/syclGeneric/tag.hpp"
 #include "alpaka/core/common.hpp"
@@ -18,7 +19,7 @@
 
 namespace alpaka::onAcc::internalCompute
 {
-    template<typename T_Api, typename T_Scope>
+    template<alpaka::concepts::Api T_Api, typename T_Scope>
     requires(std::is_base_of_v<api::GenericSycl<T_Api>, T_Api>)
     struct MemoryFence::Op<T_Api, T_Scope>
     {

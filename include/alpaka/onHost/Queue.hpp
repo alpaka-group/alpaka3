@@ -15,16 +15,16 @@
 
 namespace alpaka::onHost
 {
-    template<typename T_Api, alpaka::deviceKind::concepts::DeviceKind T_DeviceKind>
+    template<alpaka::concepts::Api T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
     struct Device;
 
-    template<typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+    template<typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
     struct Queue;
 
     template<
-        typename T_Api,
-        alpaka::deviceKind::concepts::DeviceKind T_DeviceKind,
-        queueKind::concepts::QueueKind T_QueueKind>
+        alpaka::concepts::Api T_Api,
+        alpaka::concepts::DeviceKind T_DeviceKind,
+        alpaka::concepts::QueueKind T_QueueKind>
     struct Queue<Device<T_Api, T_DeviceKind>, T_QueueKind>
     {
     private:
@@ -172,7 +172,7 @@ namespace alpaka::onHost
         }
     };
 
-    template<typename T_Queue, queueKind::concepts::QueueKind T_QueueKind>
+    template<typename T_Queue, alpaka::concepts::QueueKind T_QueueKind>
     Queue(Handle<T_Queue>&&, T_QueueKind) -> Queue<
         Device<
             ALPAKA_TYPEOF(alpaka::internal::getApi(std::declval<T_Queue>())),
@@ -192,7 +192,7 @@ namespace alpaka::onHost
      * @param[in,out] dest can be a container/view where the data should be written to
      * @param[in] source can be a container/view from which the data will be copied
      */
-    template<typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+    template<typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
     inline void memcpy(Queue<T_Device, T_QueueKind> const& queue, auto&& dest, auto const& source)
     {
         memcpy(queue, ALPAKA_FORWARD(dest), source, internal::getExtents(dest));
@@ -205,7 +205,7 @@ namespace alpaka::onHost
      * @param[in] source can be a container/view from which the data will be copied
      * @param extents M-dimensional data extents in elements, can be smaller than the container capacity
      */
-    template<typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+    template<typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
     inline void memcpy(
         Queue<T_Device, T_QueueKind> const& queue,
         auto&& dest,
@@ -228,7 +228,7 @@ namespace alpaka::onHost
      * is finished.
      * @param byteValue value to be written to each byte
      */
-    template<typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+    template<typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
     inline void memset(Queue<T_Device, T_QueueKind> const& queue, auto&& dest, uint8_t byteValue)
     {
         memset(queue, ALPAKA_FORWARD(dest), byteValue, internal::getExtents(dest));
@@ -243,7 +243,7 @@ namespace alpaka::onHost
      * @param byteValue value to be written to each byte
      * @param extents M-dimensional data extents in elements, can be smaller than the container capacity
      */
-    template<typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+    template<typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
     inline void memset(
         Queue<T_Device, T_QueueKind> const& queue,
         auto&& dest,
@@ -265,7 +265,7 @@ namespace alpaka::onHost
      * is finished.
      * @param elementValue value to be written to each element
      */
-    template<typename T_Value, typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+    template<typename T_Value, typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
     inline void fill(Queue<T_Device, T_QueueKind> const& queue, auto&& dest, T_Value elementValue) requires(
         std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
         && std::same_as<ALPAKA_TYPEOF(alpaka::internal::getApi(queue)), ALPAKA_TYPEOF(alpaka::internal::getApi(dest))>)
@@ -283,7 +283,7 @@ namespace alpaka::onHost
      * @param extents M-dimensional data extents in elements, can be smaller than the container capacity
      */
 
-    template<typename T_Value, typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+    template<typename T_Value, typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
     inline void fill(
         Queue<T_Device, T_QueueKind> const& queue,
         auto&& dest,
@@ -327,7 +327,7 @@ namespace alpaka::onHost
      * memory is destroyed. The deallocation is asynchronous performed in the the queue which is used for the
      * allocation.
      */
-    template<typename T_Type, typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+    template<typename T_Type, typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
     inline auto allocDeferred(
         Queue<T_Device, T_QueueKind> const& queue,
         alpaka::concepts::VectorOrScalar auto const& extents)
@@ -355,7 +355,7 @@ namespace alpaka::onHost
      * memory is destroyed. The deallocation is asynchronous performed in the the queue which is used for the
      * allocation.
      */
-    template<typename T_Device, queueKind::concepts::QueueKind T_QueueKind>
+    template<typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
     inline auto allocLikeAsync(Queue<T_Device, T_QueueKind> const& queue, auto const& view)
     {
         return allocDeferred<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(queue, getExtents(view));

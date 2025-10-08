@@ -42,7 +42,7 @@ namespace alpaka::onHost
 
         struct IsDeviceSupportedBy
         {
-            template<deviceKind::concepts::DeviceKind T_DeviceKind, typename T_Api>
+            template<alpaka::concepts::DeviceKind T_DeviceKind, typename T_Api>
             struct Op : std::false_type
             {
             };

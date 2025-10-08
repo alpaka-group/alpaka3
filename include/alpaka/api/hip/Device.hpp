@@ -26,7 +26,7 @@ namespace alpaka::onHost
 
 namespace alpaka::onHost::internal
 {
-    template<alpaka::deviceKind::concepts::DeviceKind T_DeviceKind, typename T_Any>
+    template<alpaka::concepts::DeviceKind T_DeviceKind, typename T_Any>
     struct IsDataAccessible::SecondPath<api::Hip, T_DeviceKind, T_Any>
     {
         bool operator()(api::Hip usedApi, T_DeviceKind deviceKind, T_Any const& view) const

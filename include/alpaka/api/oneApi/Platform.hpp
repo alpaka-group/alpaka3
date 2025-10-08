@@ -69,7 +69,7 @@ namespace alpaka
     {
         namespace internal
         {
-            template<deviceKind::concepts::DeviceKind T_DeviceKind>
+            template<alpaka::concepts::DeviceKind T_DeviceKind>
             struct MakePlatform::Op<api::OneApi, T_DeviceKind>
             {
                 auto operator()(api::OneApi const&, T_DeviceKind) const
@@ -82,7 +82,7 @@ namespace alpaka
 
     namespace internal
     {
-        template<deviceKind::concepts::DeviceKind T_DeviceKind>
+        template<alpaka::concepts::DeviceKind T_DeviceKind>
         struct GetApi::Op<onHost::syclGeneric::Platform<api::OneApi, T_DeviceKind>>
         {
             decltype(auto) operator()(auto&& platform) const
@@ -91,7 +91,7 @@ namespace alpaka
             }
         };
 
-        template<deviceKind::concepts::DeviceKind T_DeviceKind>
+        template<alpaka::concepts::DeviceKind T_DeviceKind>
         struct GetDeviceType::Op<onHost::syclGeneric::Platform<api::OneApi, T_DeviceKind>>
         {
             decltype(auto) operator()(auto&& platform) const
@@ -104,7 +104,7 @@ namespace alpaka
 
 namespace alpaka::onHost::internal
 {
-    template<alpaka::deviceKind::concepts::DeviceKind T_DeviceKind, typename T_Any>
+    template<alpaka::concepts::DeviceKind T_DeviceKind, typename T_Any>
     struct IsDataAccessible::SecondPath<api::OneApi, T_DeviceKind, T_Any>
     {
         static void getPtrType(auto const& platform, auto& sycl_data_alloc_type, auto const& view)

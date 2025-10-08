@@ -31,6 +31,8 @@ namespace alpaka
 
     namespace concepts
     {
+        /** Concept to check if the given type implements the `getApi(T x)` function returning an alpaka::concepts::Api
+         */
         template<typename T_Any>
         concept HasApi = requires(T_Any&& any) {
             { getApi(any) } -> alpaka::concepts::Api;
@@ -59,7 +61,7 @@ namespace alpaka
     /** @} */
 
 
-    /**  Get the number of elements to compute per thread.
+    /** Get the number of elements to compute per thread.
      *
      * This function considers the SIMD width for the corresponding data type and the potential for instruction
      * parallelism.

@@ -20,7 +20,7 @@
 
 namespace alpaka
 {
-    /** Lightweight view to data in a n-dimensional array
+    /** Lightweight view to data in an n-dimensional array.
      *
      * Const-ness of the MdSpan instance is propagated to the data region.
      * A constant MdSpan can be used to access non-const data.

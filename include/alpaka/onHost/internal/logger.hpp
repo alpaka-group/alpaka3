@@ -114,7 +114,7 @@ namespace alpaka::onHost::logger::internal
     }
 
     /** Log the entry and exit of a scope */
-    template<logger::concepts::Lvl T_LogLvl, typename T_Writer = StdErr>
+    template<logger::concepts::Level T_LogLvl, typename T_Writer = StdErr>
     struct Scoped
     {
     public:
@@ -163,7 +163,7 @@ namespace alpaka::onHost::logger::internal
      *
      * @tparam T_Callable callable without arguments which provides a string which should be written to the output
      */
-    template<logger::concepts::Lvl T_LogLvl, typename T_Callable, typename T_Writer = StdErr>
+    template<logger::concepts::Level T_LogLvl, typename T_Callable, typename T_Writer = StdErr>
     requires(std::is_invocable_r_v<std::string, T_Callable>)
     struct Info
     {
