@@ -73,7 +73,7 @@
       }
     },
     {
-      "name": "rel-cpu-gcc",
+      "name": "rel-host-gcc",
       "inherits": [
         "release-base",
         "cpu-base"
@@ -83,7 +83,129 @@
       }
     },
     {
-      "name": "rel-cpu-headercheck",
+      "name": "rel-host-clang",
+      "inherits": [
+        "release-base",
+        "cpu-base"
+      ],
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "rel-cuda-nvcc-gcc",
+      "inherits": [
+        "release-base",
+        "cpu-base"
+      ],
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "g++",
+        "alpaka_DEP_CUDA": "ON",
+        "alpaka_DEP_OMP": "OFF"
+      }
+    },
+    {
+      "name": "rel-cuda-nvcc-clang",
+      "inherits": [
+        "release-base",
+        "cpu-base"
+      ],
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++",
+        "alpaka_DEP_CUDA": "ON",
+        "alpaka_DEP_OMP": "OFF"
+      }
+    },
+    {
+      "name": "rel-hip",
+      "inherits": [
+        "release-base"
+      ],
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++",
+        "alpaka_DEP_HIP": "ON",
+        "alpaka_DEP_OMP": "OFF"
+      }
+    },
+    {
+      "name": "rel-oneapi",
+      "inherits": [
+        "release-base"
+      ],
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "icpx",
+        "alpaka_DEP_ONEAPI": "ON",
+        "alpaka_DEP_OMP": "OFF"
+      }
+    },
+    {
+      "name": "dbg-host-gcc",
+      "inherits": [
+        "debug-base",
+        "cpu-base"
+      ],
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
+      "name": "dbg-host-clang",
+      "inherits": [
+        "debug-base",
+        "cpu-base"
+      ],
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "dbg-cuda-nvcc-gcc",
+      "inherits": [
+        "debug-base",
+        "cpu-base"
+      ],
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "g++",
+        "alpaka_DEP_CUDA": "ON",
+        "alpaka_DEP_OMP": "OFF"
+      }
+    },
+    {
+      "name": "dbg-cuda-nvcc-clang",
+      "inherits": [
+        "debug-base",
+        "cpu-base"
+      ],
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++",
+        "alpaka_DEP_CUDA": "ON",
+        "alpaka_DEP_OMP": "OFF"
+      }
+    },
+    {
+      "name": "dbg-hip",
+      "inherits": [
+        "debug-base"
+      ],
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++",
+        "alpaka_DEP_HIP": "ON",
+        "alpaka_DEP_OMP": "OFF"
+      }
+    },
+    {
+      "name": "dbg-oneapi",
+      "inherits": [
+        "debug-base"
+      ],
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "icpx",
+        "alpaka_DEP_ONEAPI": "ON",
+        "alpaka_DEP_OMP": "OFF"
+      }
+    },
+    {
+      "name": "rel-host-headercheck",
       "inherits": [
         "release-base",
         "cpu-base"
@@ -93,17 +215,7 @@
       }
     },
     {
-      "name": "dbg-cpu-gcc",
-      "inherits": [
-        "debug-base",
-        "cpu-base"
-      ],
-      "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "g++"
-      }
-    },
-    {
-      "name": "dbg-cpu-gcc-asan",
+      "name": "dbg-host-gcc-asan",
       "inherits": [
         "debug-base",
         "cpu-base",
@@ -114,7 +226,7 @@
       }
     },
     {
-      "name": "dbg-cpu-gcc-tsan",
+      "name": "dbg-host-gcc-tsan",
       "inherits": [
         "debug-base",
         "cpu-base",
@@ -125,7 +237,7 @@
       }
     },
     {
-      "name": "dbg-cpu-gcc-lsan",
+      "name": "dbg-host-gcc-lsan",
       "inherits": [
         "debug-base",
         "cpu-base",
@@ -136,7 +248,7 @@
       }
     },
     {
-      "name": "dbg-cpu-gcc-ubsan",
+      "name": "dbg-host-gcc-ubsan",
       "inherits": [
         "debug-base",
         "cpu-base",
@@ -147,17 +259,7 @@
       }
     },
     {
-      "name": "dbg-cpu-clang",
-      "inherits": [
-        "debug-base",
-        "cpu-base"
-      ],
-      "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "clang++"
-      }
-    },
-    {
-      "name": "dbg-cpu-clang-asan",
+      "name": "dbg-host-clang-asan",
       "inherits": [
         "debug-base",
         "cpu-base",
@@ -168,7 +270,7 @@
       }
     },
     {
-      "name": "dbg-cpu-clang-tsan",
+      "name": "dbg-host-clang-tsan",
       "inherits": [
         "debug-base",
         "cpu-base",
@@ -179,7 +281,7 @@
       }
     },
     {
-      "name": "dbg-cpu-clang-lsan",
+      "name": "dbg-host-clang-lsan",
       "inherits": [
         "debug-base",
         "cpu-base",
@@ -190,7 +292,7 @@
       }
     },
     {
-      "name": "dbg-cpu-clang-ubsan",
+      "name": "dbg-host-clang-ubsan",
       "inherits": [
         "debug-base",
         "cpu-base",
@@ -198,281 +300,179 @@
       ],
       "cacheVariables": {
         "CMAKE_CXX_COMPILER": "clang++"
-      }
-    },
-    {
-      "name": "rel-cpu-clang",
-      "inherits": [
-        "release-base",
-        "cpu-base"
-      ],
-      "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "clang++"
-      }
-    },
-    {
-      "name": "rel-gpu-cuda-nvcc-gcc",
-      "inherits": [
-        "release-base",
-        "cpu-base"
-      ],
-      "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "g++",
-        "alpaka_DEP_CUDA": "ON",
-        "alpaka_DEP_OMP": "OFF"
-      }
-    },
-    {
-      "name": "dbg-gpu-cuda-nvcc-gcc",
-      "inherits": [
-        "debug-base",
-        "cpu-base"
-      ],
-      "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "g++",
-        "alpaka_DEP_CUDA": "ON",
-        "alpaka_DEP_OMP": "OFF"
-      }
-    },
-    {
-      "name": "rel-gpu-cuda-nvcc-clang",
-      "inherits": [
-        "release-base",
-        "cpu-base"
-      ],
-      "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "clang++",
-        "alpaka_DEP_CUDA": "ON",
-        "alpaka_DEP_OMP": "OFF"
-      }
-    },
-    {
-      "name": "dbg-gpu-cuda-nvcc-clang",
-      "inherits": [
-        "debug-base",
-        "cpu-base"
-      ],
-      "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "clang++",
-        "alpaka_DEP_CUDA": "ON",
-        "alpaka_DEP_OMP": "OFF"
-      }
-    },
-    {
-      "name": "rel-gpu-oneapi",
-      "inherits": [
-        "release-base"
-      ],
-      "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "icpx",
-        "alpaka_DEP_ONEAPI": "ON",
-        "alpaka_DEP_OMP": "OFF"
-      }
-    },
-    {
-      "name": "dbg-gpu-oneapi",
-      "inherits": [
-        "debug-base"
-      ],
-      "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "icpx",
-        "alpaka_DEP_ONEAPI": "ON",
-        "alpaka_DEP_OMP": "OFF"
-      }
-    },
-    {
-      "name": "rel-gpu-hip",
-      "inherits": [
-        "release-base"
-      ],
-      "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "clang++",
-        "alpaka_DEP_HIP": "ON",
-        "alpaka_DEP_OMP": "OFF"
-      }
-    },
-    {
-      "name": "dbg-gpu-hip",
-      "inherits": [
-        "debug-base"
-      ],
-      "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "clang++",
-        "alpaka_DEP_HIP": "ON",
-        "alpaka_DEP_OMP": "OFF"
       }
     }
   ],
   "buildPresets": [
     {
-      "name": "rel-cpu-gcc",
-      "configurePreset": "rel-cpu-gcc"
+      "name": "rel-host-gcc",
+      "configurePreset": "rel-host-gcc"
     },
     {
-      "name": "dbg-cpu-gcc",
-      "configurePreset": "dbg-cpu-gcc"
+      "name": "rel-host-clang",
+      "configurePreset": "rel-host-clang"
     },
     {
-      "name": "dbg-cpu-gcc-asan",
-      "configurePreset": "dbg-cpu-gcc-asan"
+      "name": "rel-cuda-nvcc-gcc",
+      "configurePreset": "rel-cuda-nvcc-gcc"
     },
     {
-      "name": "dbg-cpu-gcc-tsan",
-      "configurePreset": "dbg-cpu-gcc-tsan"
+      "name": "rel-cuda-nvcc-clang",
+      "configurePreset": "rel-cuda-nvcc-clang"
     },
     {
-      "name": "dbg-cpu-gcc-lsan",
-      "configurePreset": "dbg-cpu-gcc-lsan"
+      "name": "rel-hip",
+      "configurePreset": "rel-hip"
     },
     {
-      "name": "dbg-cpu-gcc-ubsan",
-      "configurePreset": "dbg-cpu-gcc-ubsan"
+      "name": "rel-oneapi",
+      "configurePreset": "rel-oneapi"
     },
     {
-      "name": "rel-cpu-headercheck",
-      "configurePreset": "rel-cpu-headercheck"
+      "name": "dbg-host-gcc",
+      "configurePreset": "dbg-host-gcc"
     },
     {
-      "name": "rel-cpu-clang",
-      "configurePreset": "rel-cpu-clang"
+      "name": "dbg-host-clang",
+      "configurePreset": "dbg-host-clang"
     },
     {
-      "name": "dbg-cpu-clang",
-      "configurePreset": "dbg-cpu-clang"
+      "name": "dbg-cuda-nvcc-gcc",
+      "configurePreset": "dbg-cuda-nvcc-gcc"
     },
     {
-      "name": "dbg-cpu-clang-asan",
-      "configurePreset": "dbg-cpu-clang-asan"
+      "name": "dbg-cuda-nvcc-clang",
+      "configurePreset": "dbg-cuda-nvcc-clang"
     },
     {
-      "name": "dbg-cpu-clang-tsan",
-      "configurePreset": "dbg-cpu-clang-tsan"
+      "name": "dbg-hip",
+      "configurePreset": "dbg-hip"
     },
     {
-      "name": "dbg-cpu-clang-lsan",
-      "configurePreset": "dbg-cpu-clang-lsan"
+      "name": "dbg-oneapi",
+      "configurePreset": "dbg-oneapi"
     },
     {
-      "name": "dbg-cpu-clang-ubsan",
-      "configurePreset": "dbg-cpu-clang-ubsan"
+      "name": "rel-host-headercheck",
+      "configurePreset": "rel-host-headercheck"
     },
     {
-      "name": "rel-gpu-cuda-nvcc-gcc",
-      "configurePreset": "rel-gpu-cuda-nvcc-gcc"
+      "name": "dbg-host-gcc-asan",
+      "configurePreset": "dbg-host-gcc-asan"
     },
     {
-      "name": "dbg-gpu-cuda-nvcc-gcc",
-      "configurePreset": "dbg-gpu-cuda-nvcc-gcc"
+      "name": "dbg-host-gcc-tsan",
+      "configurePreset": "dbg-host-gcc-tsan"
     },
     {
-      "name": "rel-gpu-cuda-nvcc-clang",
-      "configurePreset": "rel-gpu-cuda-nvcc-clang"
+      "name": "dbg-host-gcc-lsan",
+      "configurePreset": "dbg-host-gcc-lsan"
     },
     {
-      "name": "dbg-gpu-cuda-nvcc-clang",
-      "configurePreset": "dbg-gpu-cuda-nvcc-clang"
+      "name": "dbg-host-gcc-ubsan",
+      "configurePreset": "dbg-host-gcc-ubsan"
     },
     {
-      "name": "rel-gpu-oneapi",
-      "configurePreset": "rel-gpu-oneapi"
+      "name": "dbg-host-clang-asan",
+      "configurePreset": "dbg-host-clang-asan"
     },
     {
-      "name": "dbg-gpu-oneapi",
-      "configurePreset": "dbg-gpu-oneapi"
+      "name": "dbg-host-clang-tsan",
+      "configurePreset": "dbg-host-clang-tsan"
     },
     {
-      "name": "rel-gpu-hip",
-      "configurePreset": "rel-gpu-hip"
+      "name": "dbg-host-clang-lsan",
+      "configurePreset": "dbg-host-clang-lsan"
     },
     {
-      "name": "dbg-gpu-hip",
-      "configurePreset": "dbg-gpu-hip"
+      "name": "dbg-host-clang-ubsan",
+      "configurePreset": "dbg-host-clang-ubsan"
     }
   ],
   "testPresets": [
     {
-      "name": "rel-cpu-gcc",
-      "configurePreset": "rel-cpu-gcc"
+      "name": "rel-host-gcc",
+      "configurePreset": "rel-host-gcc"
     },
     {
-      "name": "dbg-cpu-gcc",
-      "configurePreset": "dbg-cpu-gcc"
+      "name": "rel-host-clang",
+      "configurePreset": "rel-host-clang"
     },
     {
-      "name": "dbg-cpu-gcc-asan",
-      "configurePreset": "dbg-cpu-gcc-asan"
+      "name": "rel-cuda-nvcc-gcc",
+      "configurePreset": "rel-cuda-nvcc-gcc"
     },
     {
-      "name": "dbg-cpu-gcc-tsan",
-      "configurePreset": "dbg-cpu-gcc-tsan"
+      "name": "rel-cuda-nvcc-clang",
+      "configurePreset": "rel-cuda-nvcc-clang"
     },
     {
-      "name": "dbg-cpu-gcc-lsan",
-      "configurePreset": "dbg-cpu-gcc-lsan"
+      "name": "rel-hip",
+      "configurePreset": "rel-hip"
     },
     {
-      "name": "dbg-cpu-gcc-ubsan",
-      "configurePreset": "dbg-cpu-gcc-ubsan"
+      "name": "rel-oneapi",
+      "configurePreset": "rel-oneapi"
     },
     {
-      "name": "rel-cpu-headercheck",
-      "configurePreset": "rel-cpu-headercheck"
+      "name": "dbg-host-gcc",
+      "configurePreset": "dbg-host-gcc"
     },
     {
-      "name": "rel-cpu-clang",
-      "configurePreset": "rel-cpu-clang"
+      "name": "dbg-host-clang",
+      "configurePreset": "dbg-host-clang"
     },
     {
-      "name": "dbg-cpu-clang",
-      "configurePreset": "dbg-cpu-clang"
+      "name": "dbg-cuda-nvcc-gcc",
+      "configurePreset": "dbg-cuda-nvcc-gcc"
     },
     {
-      "name": "dbg-cpu-clang-asan",
-      "configurePreset": "dbg-cpu-clang-asan"
+      "name": "dbg-cuda-nvcc-clang",
+      "configurePreset": "dbg-cuda-nvcc-clang"
     },
     {
-      "name": "dbg-cpu-clang-tsan",
-      "configurePreset": "dbg-cpu-clang-tsan"
+      "name": "dbg-hip",
+      "configurePreset": "dbg-hip"
     },
     {
-      "name": "dbg-cpu-clang-lsan",
-      "configurePreset": "dbg-cpu-clang-lsan"
+      "name": "dbg-oneapi",
+      "configurePreset": "dbg-oneapi"
     },
     {
-      "name": "dbg-cpu-clang-ubsan",
-      "configurePreset": "dbg-cpu-clang-ubsan"
+      "name": "rel-host-headercheck",
+      "configurePreset": "rel-host-headercheck"
     },
     {
-      "name": "rel-gpu-cuda-nvcc-gcc",
-      "configurePreset": "rel-gpu-cuda-nvcc-gcc"
+      "name": "dbg-host-gcc-asan",
+      "configurePreset": "dbg-host-gcc-asan"
     },
     {
-      "name": "dbg-gpu-cuda-nvcc-gcc",
-      "configurePreset": "dbg-gpu-cuda-nvcc-gcc"
+      "name": "dbg-host-gcc-tsan",
+      "configurePreset": "dbg-host-gcc-tsan"
     },
     {
-      "name": "rel-gpu-cuda-nvcc-clang",
-      "configurePreset": "rel-gpu-cuda-nvcc-clang"
+      "name": "dbg-host-gcc-lsan",
+      "configurePreset": "dbg-host-gcc-lsan"
     },
     {
-      "name": "dbg-gpu-cuda-nvcc-clang",
-      "configurePreset": "dbg-gpu-cuda-nvcc-clang"
+      "name": "dbg-host-gcc-ubsan",
+      "configurePreset": "dbg-host-gcc-ubsan"
     },
     {
-      "name": "rel-gpu-oneapi",
-      "configurePreset": "rel-gpu-oneapi"
+      "name": "dbg-host-clang-asan",
+      "configurePreset": "dbg-host-clang-asan"
     },
     {
-      "name": "dbg-gpu-oneapi",
-      "configurePreset": "dbg-gpu-oneapi"
+      "name": "dbg-host-clang-tsan",
+      "configurePreset": "dbg-host-clang-tsan"
     },
     {
-      "name": "rel-gpu-hip",
-      "configurePreset": "rel-gpu-hip"
+      "name": "dbg-host-clang-lsan",
+      "configurePreset": "dbg-host-clang-lsan"
     },
     {
-      "name": "dbg-gpu-hip",
-      "configurePreset": "dbg-gpu-hip"
+      "name": "dbg-host-clang-ubsan",
+      "configurePreset": "dbg-host-clang-ubsan"
     }
   ]
 }
