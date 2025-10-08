@@ -244,7 +244,7 @@ namespace alpaka::onHost
         }
 
         /** True if SharedBuffer is pointing to valid memory. */
-        constexpr explicit operator bool() const noexcept
+        [[nodiscard]] constexpr explicit operator bool() const noexcept
         {
             return static_cast<bool>(m_deleter);
         }

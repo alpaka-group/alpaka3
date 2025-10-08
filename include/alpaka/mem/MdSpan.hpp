@@ -165,13 +165,6 @@ namespace alpaka
         // trait::IsKernelArgumentTriviallyCopyable<>!"
         // constexpr MdSpan& operator=(MdSpan&) = default;
 
-        template<typename T_Type_Other>
-        requires internal::concepts::InnerTypeAllowedCast<T_Type, T_Type_Other>
-        constexpr MdSpan(MdSpan<T_Type_Other, T_Extents, T_Pitches, T_MemAlignment>&& other)
-            : m_ptr(std::move(other.data()))
-            , m_extent(std::move(other.getExtents()))
-            , m_pitch(std::move(other.getPitches())){};
-        constexpr MdSpan(MdSpan&&) = default;
 
         constexpr MdSpan& operator=(MdSpan&&) = default;
 
@@ -223,6 +216,19 @@ namespace alpaka
                 this->getExtents(),
                 this->getPitches(),
                 T_MemAlignment{});
+        }
+
+        /** True if MdSpan is pointing to valid memory.
+         *
+         * @details
+         * An MdSpan remains valid even after being moved. The reason for this is that the MdSpan is simply copied.
+         * This is more efficient than a real move (e.g., setting the data pointer to nullptr). Implementing a real
+         * move is also not possible because MdSpan must be trivially copyable, which requires a default move
+         * constructor.
+         */
+        [[nodiscard]] constexpr explicit operator bool() const noexcept
+        {
+            return true;
         }
 
     protected:
