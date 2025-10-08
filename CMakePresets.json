@@ -258,7 +258,7 @@
         "release-base"
       ],
       "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "hip++",
+        "CMAKE_CXX_COMPILER": "clang++",
         "alpaka_DEP_HIP": "ON"
       }
     },
@@ -268,7 +268,7 @@
         "debug-base"
       ],
       "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "hip++",
+        "CMAKE_CXX_COMPILER": "clang++",
         "alpaka_DEP_HIP": "ON"
       }
     }
