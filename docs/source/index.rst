@@ -51,6 +51,12 @@ Individual chapters are based on the information of the chapters before.
    basic/cheatsheet.rst
 
 .. toctree::
+   :caption: Advanced
+   :maxdepth: 1
+
+   advanced/cmake.rst
+
+.. toctree::
    :caption: Developer
    :maxdepth: 1
 
