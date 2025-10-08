@@ -10,12 +10,6 @@
 
 using namespace alpaka;
 
-template<typename T>
-requires(std::is_trivially_copyable_v<T>)
-void foo()
-{
-}
-
 TEST_CASE("move MdSpan", "[mem][mdspan][lifetime]")
 {
     constexpr size_t size = 10;
@@ -27,8 +21,9 @@ TEST_CASE("move MdSpan", "[mem][mdspan][lifetime]")
     using MutMdSpan = MdSpan<int, decltype(extents), decltype(pitches)>;
     using ConstMdSpan = MdSpan<int const, decltype(extents), decltype(pitches)>;
 
-    // static_assert(std::is_trivially_copyable_v<MutMdSpan>);
-    foo<MutMdSpan>();
+    // mdspan needs to be trivial copyable, otherwise it cannot be passed to the kernel
+    static_assert(std::is_trivially_copyable_v<MutMdSpan>);
+    static_assert(std::is_trivially_copyable_v<ConstMdSpan>);
 
     MutMdSpan mdspan = MdSpan(ptr, extents, pitches);
     REQUIRE(mdspan);
