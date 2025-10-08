@@ -36,6 +36,18 @@ namespace alpaka::onHost
             return m_api.getName() + " " + m_deviceType.getName();
         }
 
+        /** Checks if the device kind and api combination is valid
+         *
+         * Reasons why a combination is valid can be that the api does not know how to talk to a device or that the
+         * required dependencies e.g. CUDA, HIP, OneApi are not fulfilled.
+         *
+         * @return true if the device kind and api combination is valid, else false
+         */
+        static constexpr bool isValid()
+        {
+            return trait::IsDeviceSupportedBy::Op<T_DeviceKind, T_Api>::value;
+        }
+
     private:
         T_Api m_api;
         T_DeviceKind m_deviceType;
@@ -45,6 +57,11 @@ namespace alpaka::onHost
     struct DeviceSelector
     {
     public:
+        static_assert(
+            DeviceSpec<T_Api, T_DeviceKind>::isValid(),
+            "Invalid combination of device kind and api. The api does not know how to talk to the device or the "
+            "required dependencies to enable the api are not fulfilled.");
+
         constexpr DeviceSelector(DeviceSpec<T_Api, T_DeviceKind> deviceSpec)
             : m_platform(internal::makePlatform(deviceSpec.getApi(), deviceSpec.getDeviceKind()))
             , m_deviceSpec(deviceSpec)
