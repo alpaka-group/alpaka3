@@ -303,7 +303,7 @@
       "configurePreset": "rel-cpu-headercheck"
     },
     {
-      "name": "rel-cpu-clang-release",
+      "name": "rel-cpu-clang",
       "configurePreset": "rel-cpu-clang"
     },
     {
@@ -381,7 +381,7 @@
       "configurePreset": "rel-cpu-headercheck"
     },
     {
-      "name": "rel-cpu-clang-release",
+      "name": "rel-cpu-clang",
       "configurePreset": "rel-cpu-clang"
     },
     {
