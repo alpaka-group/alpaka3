@@ -41,7 +41,7 @@ Accelerator, Platform and Device
 
 Define in-kernel thread indexing type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-init
     :end-before: END-CHEATSHEET-init
@@ -49,7 +49,7 @@ Define in-kernel thread indexing type
 
 Usage of multi-dimensional vectors required for extents or indecision
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-vectorCreate
     :end-before: END-CHEATSHEET-vectorCreate
@@ -57,7 +57,7 @@ Usage of multi-dimensional vectors required for extents or indecision
 
 Access components of and destructure multi-dimensional indices and extents
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-vectorAccess
     :end-before: END-CHEATSHEET-vectorAccess
@@ -65,7 +65,7 @@ Access components of and destructure multi-dimensional indices and extents
 
 Linearize multi-dimensional vectors
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-linearize
     :end-before: END-CHEATSHEET-linearize
@@ -73,7 +73,7 @@ Linearize multi-dimensional vectors
 
 Map linear index to multi-dimensional index
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-mapToMd
     :end-before: END-CHEATSHEET-mapToMd
@@ -109,7 +109,7 @@ Executors
 
 Create device selector and select a device by index
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-makeDevice
     :end-before: END-CHEATSHEET-makeDevice
@@ -120,7 +120,7 @@ Queue and Events
 
 Create a queue for a device
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-makeQueue
     :end-before: END-CHEATSHEET-makeQueue
@@ -128,7 +128,7 @@ Create a queue for a device
 
 Put a task for execution
 ~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-enqueueTask
     :end-before: END-CHEATSHEET-enqueueTask
@@ -136,7 +136,7 @@ Put a task for execution
 
 Wait for all operations in the queue
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-waitQueue
     :end-before: END-CHEATSHEET-waitQueue
@@ -144,7 +144,7 @@ Wait for all operations in the queue
 
 Create an event
 ~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-makeEvent
     :end-before: END-CHEATSHEET-makeEvent
@@ -152,7 +152,7 @@ Create an event
 
 Put an event to the queue
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-enqueueEvent
     :end-before: END-CHEATSHEET-enqueueEvent
@@ -160,7 +160,7 @@ Put an event to the queue
 
 Check if the event is completed
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-eventIsComplete
     :end-before: END-CHEATSHEET-eventIsComplete
@@ -168,7 +168,7 @@ Check if the event is completed
 
 Wait for the event (and all operations put to the same queue before it)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-waitEvent
     :end-before: END-CHEATSHEET-waitEvent
@@ -181,7 +181,7 @@ Memory allocation and transfers are symmetric for host and devices, both done vi
 
 Allocate a shared buffer in host memory
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-allocHostBuffer
     :end-before: END-CHEATSHEET-allocHostBuffer
@@ -189,7 +189,7 @@ Allocate a shared buffer in host memory
 
 Create a view to host memory represented by a pointer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-makeViewFromPtr
     :end-before: END-CHEATSHEET-makeViewFromPtr
@@ -197,7 +197,7 @@ Create a view to host memory represented by a pointer
 
 Create a view to host std::vector
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-makeViewFromStdVector
     :end-before: END-CHEATSHEET-makeViewFromStdVector
@@ -205,7 +205,7 @@ Create a view to host std::vector
 
 Create a view to host std::array
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-makeViewStdArray
     :end-before: END-CHEATSHEET-makeViewStdArray
@@ -213,7 +213,7 @@ Create a view to host std::array
 
 Get a raw pointer to a view initialization, etc.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-dataPtr
     :end-before: END-CHEATSHEET-dataPtr
@@ -221,7 +221,7 @@ Get a raw pointer to a view initialization, etc.
 
 Get the pitches of a view
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-getPitches
     :end-before: END-CHEATSHEET-getPitches
@@ -229,7 +229,7 @@ Get the pitches of a view
 
 View initialization, etc.
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-initView
     :end-before: END-CHEATSHEET-initView
@@ -237,7 +237,7 @@ View initialization, etc.
 
 Allocate a buffer
 ~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-allocBuffer
     :end-before: END-CHEATSHEET-allocBuffer
@@ -245,7 +245,7 @@ Allocate a buffer
 
 Copy multidimensiona buffer/view or span data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-memcpy
     :end-before: END-CHEATSHEET-memcpy
@@ -256,7 +256,7 @@ Kernel Execution
 
 Manually set a kernel launch configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-manualFrameSpec
     :end-before: END-CHEATSHEET-manualFrameSpec
@@ -264,7 +264,7 @@ Manually set a kernel launch configuration
 
 Automatically select a valid kernel launch configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-autoFrameSpec
     :end-before: END-CHEATSHEET-autoFrameSpec
@@ -278,7 +278,7 @@ Define a kernel as a C++ functor
   ``ALPAKA_FN_ACC`` is required for kernels and functions called inside, ``acc`` is mandatory first parameter, its type is the template parameter.
   ``acc`` must be a constant reference.
 
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-myKernel
     :end-before: END-CHEATSHEET-myKernel
@@ -288,7 +288,7 @@ Instantiate a kernel (does not launch it yet)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   acc parameter of the kernel is provided automatically, does not need to be specified here
 
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-createKernelWithArg
     :end-before: END-CHEATSHEET-createKernelWithArg
@@ -296,7 +296,7 @@ Instantiate a kernel (does not launch it yet)
 
 Put the kernel for execution
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-enqueueKernel
     :end-before: END-CHEATSHEET-enqueueKernel
@@ -313,7 +313,7 @@ Access multi-dimensional indices and extents of blocks, threads, and elements
 
 Allocate static shared memory variable
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-staticSharedMem
     :end-before: END-CHEATSHEET-staticSharedMem
@@ -321,7 +321,7 @@ Allocate static shared memory variable
 
 Get dynamic shared memory pool, requires the kernel to have a data member with the size in bytes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-dynSharedMem
     :end-before: END-CHEATSHEET-dynSharedMem
@@ -329,7 +329,7 @@ Get dynamic shared memory pool, requires the kernel to have a data member with t
 
 Or must specialize a trait for the kernel
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-dynSharedMemTrait
     :end-before: END-CHEATSHEET-dynSharedMemTrait
@@ -337,7 +337,7 @@ Or must specialize a trait for the kernel
 
 Synchronize threads of the same block
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-inKernelBlockWait
     :end-before: END-CHEATSHEET-inKernelBlockWait
@@ -345,7 +345,7 @@ Synchronize threads of the same block
 
 Atomic operations
 ~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-atomicAdd
     :end-before: END-CHEATSHEET-atomicAdd
@@ -353,7 +353,7 @@ Atomic operations
 
 Memory fences on block-, device- or system level (guarantees LoadLoad and StoreStore ordering)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-memFence
     :end-before: END-CHEATSHEET-memFence
@@ -361,7 +361,7 @@ Memory fences on block-, device- or system level (guarantees LoadLoad and StoreS
 
 Math functions
 ~~~~~~~~~~~~~~
-  .. literalinclude:: ../../snippets/cheatsheet.cpp
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-math
     :end-before: END-CHEATSHEET-math
