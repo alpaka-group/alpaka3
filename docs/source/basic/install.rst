@@ -117,9 +117,18 @@ CMake's ``FetchContent`` module provides a convenient way to automatically downl
 
 This approach is ideal for:
 
+- Jumpstarting a new alpaka project
 - Quick prototyping and testing
 - Projects that want to ensure consistent alpaka versions
 - CI/CD pipelines where automatic dependency management is preferred
+
+.. warning::
+  
+    When using FetchContent, *alpaka* will be downloaded each time you run CMake in a clean build directory. For faster builds in development, consider using the installation method or adding the alpaka source subdirectory (for example to your version control system as a submodule/subtree).
+
+.. note::
+
+    Users can directly copy and take over the ``CMakeLists.txt`` and ``main.cpp`` provided below, to start using *alpaka* in their project with ``FetchContent``.   
 
 Complete CMakeLists.txt Example
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -140,6 +149,10 @@ Create a ``main.cpp`` file that uses the device specification passed from CMake:
   
 Building Your Application
 ^^^^^^^^^^^^^^^^^^^^^^^^^
+.. note::
+    
+    If the ``main.cpp`` and ``CMakeLists.txt`` are placed in an empty directory, then from inside this directory, users can directly follow the code below to build and run the example.
+
 To build and run your application with the default CPU backend:
 
 .. code-block:: bash
@@ -155,24 +168,25 @@ You can select different device specifications at CMake configuration time using
   
 .. code-block:: bash
 
-    # NVIDIA CUDA
+    # NVIDIA CUDA DEVIC SPEC
     cmake .. -DmyApp_DEVICE_SPEC="cuda:nvidiaGpu"
+    # build and run
     cmake --build . --parallel
     ./fetchContentExample
     
 .. note::
   
     The device specification system allows you to select the target device at CMake configuration time. The format is ``"api:deviceKind"``, where:
-  
+    
     - **api**: The parallel programming interface (``host``, ``cuda``, ``hip``, ``oneApi``)
     - **deviceKind**: The type of device (``cpu``, ``nvidiaGpu``, ``amdGpu``, ``intelGpu``)
-  
+    
     Available combinations are: ``host:cpu``, ``cuda:nvidiaGpu``, ``hip:amdGpu``, ``oneApi:cpu``, ``oneApi:intelGpu``, ``oneApi:nvidiaGpu``, ``oneApi:amdGpu``
   
 .. warning::
-  
-    When using FetchContent, *alpaka* will be downloaded each time you run CMake in a clean build directory. For faster builds in development, consider using the installation method or adding the alpaka source subdirectory (for example to your version control system as a submodule/subtree).
-  
+    
+    The CUDA, HIP, or Intel backends are only working if the CUDA SDK, HIP SDK, or OneAPI SDK are available respectively
+
 
 .. _tests-and-examples:
 
