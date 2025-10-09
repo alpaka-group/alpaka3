@@ -19,15 +19,19 @@ add_subdirectory(cheatsheet)
 # this without polluting the fetched alpaka cmake environment
 make_directory(${CMAKE_BINARY_DIR}/docs/snippets/fetchContent/)
 execute_process(
-    COMMAND cmake -S ${CMAKE_CURRENT_SOURCE_DIR}/fetchContent -DCMAKE_BUILD_TYPE=Release
+    COMMAND
+        cmake -S ${CMAKE_CURRENT_SOURCE_DIR}/fetchContent -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/docs/snippets/fetchContent
     RESULT_VARIABLE SUBPROJECT_CONFIGURE_RESULT
     OUTPUT_VARIABLE SUBPROJECT_CONFIGURE_OUTPUT
-    ERROR_VARIABLE SUBPROJECT_CONFIGURE_OUTPUT
+    ERROR_VARIABLE SUBPROJECT_CONFIGURE_ERROR
 )
 
 if(NOT SUBPROJECT_CONFIGURE_RESULT EQUAL 0)
-    message(FATAL_ERROR "Subproject configuration failed:\n${SUBPROJECT_CONFIGURE_OUTPUT}")
+    message(STATUS "Subproject result:\n${SUBPROJECT_CONFIGURE_RESULT}")
+    message(STATUS "Subproject configuration failed:\n${SUBPROJECT_CONFIGURE_OUTPUT}")
+    message(FATAL_ERROR "Subproject configuration error:\n${SUBPROJECT_CONFIGURE_ERROR}")
 endif()
 
 add_custom_target(
