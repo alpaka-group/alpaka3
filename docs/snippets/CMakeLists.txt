@@ -15,9 +15,17 @@ cmake_minimum_required(VERSION 3.25)
 add_subdirectory(example)
 add_subdirectory(cheatsheet)
 
-# We do this, because fetchContent will get alpaka from git and we want to do
-# this without polluting the fetched alpaka cmake environment
+################################################################################
+# Build fetchContent example in isolation
+################################################################################
+
+# Create a separate build directory for the fetchContent example
+# This keeps the example's build environment clean and isolated from the main project
 make_directory(${CMAKE_BINARY_DIR}/docs/snippets/fetchContent/)
+
+# Configure the fetchContent example as a separate CMake project
+# This simulates how a user would actually use alpaka3 via FetchContent
+# We need to pass through the C++ compiler since the environment isnt shared with the process
 execute_process(
     COMMAND
         cmake -S ${CMAKE_CURRENT_SOURCE_DIR}/fetchContent -DCMAKE_BUILD_TYPE=Release
@@ -34,6 +42,8 @@ if(NOT SUBPROJECT_CONFIGURE_RESULT EQUAL 0)
     message(FATAL_ERROR "Subproject configuration error:\n${SUBPROJECT_CONFIGURE_ERROR}")
 endif()
 
+# Create a custom target to build the fetchContent example
+# This will be built as part of the main project's ALL target
 add_custom_target(
     fetchContent_build
     ALL
@@ -43,6 +53,6 @@ add_custom_target(
     VERBATIM
 )
 
-# Hardcoded path to fetchContent example because it is pulled into documentation
-# and we need a clean environment
+# Add a test with a hardcoded path that runs the fetchContent example in a clean environment
+# This verifies that the example pulled into documentation works correctly and can detect devices
 add_test(NAME fetchContent COMMAND ${CMAKE_BINARY_DIR}/docs/snippets/fetchContent/fetchContentExample)

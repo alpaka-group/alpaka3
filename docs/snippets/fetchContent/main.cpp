@@ -1,4 +1,4 @@
-/* Copyright 2025 Simeon Ehrig
+/* Copyright 2025 Simeon Ehrig, Tapish Narwal
  * SPDX-License-Identifier: ISC
  */
 
@@ -7,6 +7,9 @@
 #include <cstdlib>
 #include <iostream>
 
+// Helper function to create a device specification
+// Uses the compile-time definitions MYAPP_API and MYAPP_DEVICE_KIND
+// that were set in CMakeLists.txt
 auto getDeviceSpec()
 {
     return alpaka::onHost::DeviceSpec{alpaka::api::MYAPP_API, alpaka::deviceKind::MYAPP_DEVICE_KIND};
