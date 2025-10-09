@@ -2,6 +2,11 @@
  * SPDX-License-Identifier: ISC
  */
 
+/**  The grayscale example calculates grayscale value given R,G,B,A channels. Reports timing statistics (MinTime,
+ MaxTime, AvgTime), effective bandwidth in GB/s, per-kernel data moved in MB, and the number of kernel repetitions executed
+ per backend/precision pair. Example run: ./build/example/grayScale/grayScale -n 1048576 -r 5
+ */
+
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
@@ -9,10 +14,17 @@
 #include <algorithm>
 #include <chrono>
 // #include <execution>
+#include <unistd.h>
+
+#include <cstddef>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <random>
-#include <typeinfo>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <vector>
 
 using namespace alpaka;
 
@@ -52,116 +64,96 @@ public:
     }
 };
 
-struct Pixel
+struct RunMetrics
 {
-    std::uint8_t b, g, r, a;
+    std::string deviceName;
+    std::string execName;
+    std::string acceleratorType;
+    std::size_t dataSizeItems{};
+    std::size_t elementBytes{};
+    std::size_t kernelRuns{1u};
+    double minTime{};
+    double maxTime{};
+    double avgTime{};
+    double bandwidthGBs{};
+    double dataUsageMB{};
+    double copyTime{};
+    double copyBandwidthGBs{};
+    bool success{false};
 };
 
-void naiveToGray(auto&& buffer)
+struct StdBaselineMetrics
 {
-    std::for_each(
-        reinterpret_cast<Pixel*>(onHost::data(buffer)),
-        reinterpret_cast<Pixel*>(onHost::data(buffer) + onHost::getExtents(buffer).x()),
-        [](Pixel& pixel)
-        {
-            auto const gray = (pixel.r * 11 + pixel.g * 16 + pixel.b * 5) / 32;
-            pixel.r = pixel.g = pixel.b = gray;
-        });
-}
+    bool measured{false};
+    double timeSeconds{};
+    double bandwidthGBs{};
+};
 
 auto validateResult(
-    auto&& bufHostScalarRGB,
+    auto&& bufHostARGB,
     auto const& bufHostR,
     auto const& bufHostG,
     auto const& bufHostB,
     auto const& bufHostA,
-    size_t extent)
+    std::size_t extent) -> bool
 {
     using Data = uint32_t;
     static_assert(std::is_same_v<uint32_t, Data>);
-    // Validate results
-    int falseResults = 0;
-    static constexpr int MAX_PRINT_FALSE_RESULTS = 20;
-    for(size_t i(0u); i < extent; ++i)
+    for(std::size_t i = 0; i < extent; ++i)
     {
-        Data const& computedGray(bufHostScalarRGB[i]); // Direct indexing for scalarRGB
+        Data const& computedGray(bufHostARGB[i]);
 
-        uint32_t const grayValue = static_cast<uint8_t>(
-            (scalarR * bufHostR[i] + // Direct indexing for R
-             scalarG * bufHostG[i] + // Direct indexing for G
-             scalarB * bufHostB[i]) // Direct indexing for B
-            / scalar32); // Normalize by scalar32
+        uint32_t const grayValue
+            = static_cast<uint8_t>((scalarR * bufHostR[i] + scalarG * bufHostG[i] + scalarB * bufHostB[i]) / scalar32);
 
-        Data correctResult = grayValue | (grayValue << 8u) | (grayValue << 16u) | (bufHostA[i] << 24u);
+        Data const correctResult = grayValue | (grayValue << 8u) | (grayValue << 16u) | (bufHostA[i] << 24u);
 
         if(computedGray != correctResult)
-        {
-            if(falseResults < MAX_PRINT_FALSE_RESULTS)
-                std::cerr << "RGBA[" << i << "] == " << std::hex << computedGray << " != " << correctResult
-                          << std::endl;
-            std::cerr << std::resetiosflags(std::ios_base::fmtflags(0));
-            ++falseResults;
-        }
+            return false;
     }
-
-    if(falseResults == 0)
-    {
-        std::cout << "Execution results correct!" << std::endl;
-        std::cout << std::endl;
-        return EXIT_SUCCESS;
-    }
-    else
-    {
-        std::cout << "Found " << falseResults << " false results, printed no more than " << MAX_PRINT_FALSE_RESULTS
-                  << "\n"
-                  << "Execution results incorrect!" << std::endl;
-        std::cout << std::endl;
-        return EXIT_FAILURE;
-    }
+    return true;
 }
 
 template<typename T_Cfg>
-auto example(T_Cfg const& cfg, size_t numElements, bool enableStdForEach) -> int
+auto example(
+    T_Cfg const& cfg,
+    std::size_t numElements,
+    bool enableStdForEach,
+    std::size_t elementBytes,
+    std::size_t numberOfRuns,
+    RunMetrics& metrics,
+    StdBaselineMetrics& baseline) -> int
 {
     using IdxVec = Vec<std::size_t, 1u>;
+    using Data = uint32_t;
 
     auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
-    // Define the buffer element type.
-    // Use uint32_t for packed ARGB values
-    using Data = uint32_t;
-
-    // Number of elements to process
     IdxVec const extent(numElements);
 
-    std::cout << "Example GrayScale" << std::endl;
-    std::cout << "    Number of elements [#]: " << numElements << std::endl;
-    std::cout << "    Element type [byte]: " << onHost::demangledName<Data>() << std::endl;
-    std::cout << "    Buffer size [Gbyte]: " << numElements * sizeof(Data) / 1.e9 << std::endl;
-    std::cout << std::endl;
-
-    // Select a device
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     onHost::Device devAcc = devSelector.makeDevice(0);
-
-    // Create a queue on the device
     onHost::Queue queue = devAcc.makeQueue();
 
+    metrics.execName = onHost::demangledName(exec);
+    metrics.acceleratorType = metrics.execName;
+    metrics.deviceName = onHost::getName(devAcc);
+    metrics.dataSizeItems = numElements;
+    metrics.elementBytes = elementBytes;
+    metrics.kernelRuns = numberOfRuns;
 
-    // Allocate host memory buffers for R, G, B, and ARGB
     auto bufHostR = onHost::allocHost<uint8_t>(extent);
     auto bufHostG = onHost::allocHostLike(bufHostR);
     auto bufHostB = onHost::allocHostLike(bufHostR);
     auto bufHostA = onHost::allocHostLike(bufHostR);
     auto bufHostARGB = onHost::allocHost<Data>(extent);
-    auto bufHostScalarRGB = onHost::allocHostLike(bufHostARGB);
+    auto bufAccARGB = onHost::allocLike(devAcc, bufHostARGB);
 
-    // Fill input data with random RGB values
     std::random_device rd{};
     std::default_random_engine eng{rd()};
     std::uniform_int_distribution<uint8_t> dist(0, 255);
-    for(auto i(0u); i < extent; ++i)
+    for(std::size_t i = 0; i < numElements; ++i)
     {
         bufHostR[i] = dist(eng);
         bufHostG[i] = dist(eng);
@@ -169,80 +161,164 @@ auto example(T_Cfg const& cfg, size_t numElements, bool enableStdForEach) -> int
         bufHostA[i] = dist(eng);
         bufHostARGB[i] = (static_cast<Data>(bufHostA[i]) << 24u) | (static_cast<Data>(bufHostR[i]) << 16u)
                          | (static_cast<Data>(bufHostG[i]) << 8u) | static_cast<Data>(bufHostB[i]);
-        bufHostScalarRGB[i] = bufHostARGB[i];
     }
 
-    // Allocate device memory buffers for ARGB and scalarRGB
-    auto bufAccARGB = onHost::allocLike(devAcc, bufHostARGB);
-    auto bufAccScalarRGB = onHost::allocLike(devAcc, bufHostScalarRGB);
-
-    // optionally run for comparison but only if the executor is exec::cpuSerial
-    if(exec == alpaka::exec::cpuSerial && enableStdForEach)
+    auto bufHostARGBInitial = onHost::allocHostLike(bufHostARGB);
+    for(std::size_t i = 0; i < numElements; ++i)
     {
-        std::cout << "Using native CPU std::for_each()" << std::endl;
-        onHost::wait(queue);
-        auto const beginT = std::chrono::high_resolution_clock::now();
-        naiveToGray(bufHostScalarRGB);
-        auto const endT = std::chrono::high_resolution_clock::now();
-        double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
-
-        std::cout << "    Time for kernel execution [s]: " << kernelRuntime << std::endl;
-        // size is multiplied by two because we read and write to the buffer
-        std::cout << "    Processed [Gbyte/s]: "
-                  << (static_cast<double>(2ull * numElements * sizeof(Data)) / kernelRuntime) / 1.e9 << std::endl;
-
-        auto result = validateResult(bufHostScalarRGB, bufHostR, bufHostG, bufHostB, bufHostA, extent.x());
-        if(result != EXIT_SUCCESS)
-            return result;
+        bufHostARGBInitial[i] = bufHostARGB[i];
     }
 
-    // Copy Host -> Acc
-    onHost::memcpy(queue, bufAccARGB, bufHostARGB);
-
-
-    // Instantiate the kernel function object
     GrayscaleKernel kernel;
-
-    // Define frameExtent
-    Vec<size_t, 1u> frameExtent = 256u;
-    uint32_t elementsPerWorker = getNumElemPerThread<Data>(queue);
+    Vec<std::size_t, 1u> frameExtent = 256u;
+    uint32_t const elementsPerWorker = getNumElemPerThread<Data>(queue);
     auto dataBlocking = onHost::FrameSpec{divCeil(extent, frameExtent * elementsPerWorker), frameExtent};
 
-    // Enqueue the kernel execution task
+    double const bytesProcessed = static_cast<double>(numElements) * static_cast<double>(elementBytes) * 2.0;
+
+    if(enableStdForEach && !baseline.measured && exec == alpaka::exec::cpuSerial && numElements > 0u)
     {
-        std::cout << "Using alpaka accelerator: " << onHost::demangledName(exec) << " for "
-                  << deviceSpec.getApi().getName() << std::endl;
-        onHost::wait(queue);
-        auto const beginT = std::chrono::high_resolution_clock::now();
-        queue.enqueue(exec, dataBlocking, KernelBundle{kernel, bufAccARGB, static_cast<size_t>(extent[0])});
-        onHost::wait(queue); // Ensure kernel execution completes before proceeding
-        auto const endT = std::chrono::high_resolution_clock::now();
-        double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
-        std::cout << "    Time for kernel execution [s]: " << kernelRuntime << std::endl;
-        // size is multiplied by two because we read and write to the buffer
-        std::cout << "    Processed [Gbyte/s]: "
-                  << (static_cast<double>(2llu * numElements * sizeof(Data)) / kernelRuntime) / 1.e9 << std::endl;
+        auto bufStdBaseline = onHost::allocHostLike(bufHostARGBInitial);
+        for(std::size_t i = 0; i < numElements; ++i)
+        {
+            bufStdBaseline[i] = bufHostARGBInitial[i];
+        }
+
+        auto* baselineBegin = &bufStdBaseline[0];
+        auto* baselineItEnd = baselineBegin + numElements;
+
+        auto const baselineStart = std::chrono::high_resolution_clock::now();
+        std::for_each(
+            baselineBegin,
+            baselineItEnd,
+            [](uint32_t& pixel)
+            {
+                constexpr uint32_t maskFF = 0xFFu;
+                auto const alpha = pixel >> 24u;
+                auto const red = (pixel >> 16u) & maskFF;
+                auto const green = (pixel >> 8u) & maskFF;
+                auto const blue = pixel & maskFF;
+                auto const gray = (red * scalarR + green * scalarG + blue * scalarB) / scalar32;
+                pixel = gray | (gray << 8u) | (gray << 16u) | (alpha << 24u);
+            });
+        auto const baselineEnd = std::chrono::high_resolution_clock::now();
+
+        baseline.timeSeconds = std::chrono::duration<double>(baselineEnd - baselineStart).count();
+        baseline.bandwidthGBs = (bytesProcessed / baseline.timeSeconds) / 1.e9;
+        baseline.measured = validateResult(bufStdBaseline, bufHostR, bufHostG, bufHostB, bufHostA, numElements);
     }
 
-    // Copy back the result
+    double totalTime = 0.0;
+    double totalBandwidth = 0.0;
+    double minTime = std::numeric_limits<double>::max();
+    double maxTime = 0.0;
+
+    for(std::size_t run = 0; run < numberOfRuns; ++run)
     {
-        auto beginT = std::chrono::high_resolution_clock::now();
-        onHost::memcpy(queue, bufHostARGB, bufAccARGB);
+        onHost::memcpy(queue, bufAccARGB, bufHostARGBInitial);
         onHost::wait(queue);
-        auto const endT = std::chrono::high_resolution_clock::now();
-        double copyRuntime = std::chrono::duration<double>(endT - beginT).count();
-        std::cout << "    Time for HtoD copy [s]: " << copyRuntime << std::endl;
-        std::cout << "    Copied [Gbyte/s]: " << (static_cast<double>(numElements * sizeof(Data)) / copyRuntime) / 1.e9
-                  << std::endl;
+
+        auto const beginKernel = std::chrono::high_resolution_clock::now();
+        queue.enqueue(exec, dataBlocking, KernelBundle{kernel, bufAccARGB, numElements});
+        onHost::wait(queue);
+        auto const endKernel = std::chrono::high_resolution_clock::now();
+
+        double const kernelRuntime = std::chrono::duration<double>(endKernel - beginKernel).count();
+        totalTime += kernelRuntime;
+        totalBandwidth += (bytesProcessed / kernelRuntime) / 1.e9;
+        minTime = std::min(minTime, kernelRuntime);
+        maxTime = std::max(maxTime, kernelRuntime);
     }
 
-    return validateResult(bufHostARGB, bufHostR, bufHostG, bufHostB, bufHostA, extent.x());
+    auto const copyBackBegin = std::chrono::high_resolution_clock::now();
+    onHost::memcpy(queue, bufHostARGB, bufAccARGB);
+    onHost::wait(queue);
+    auto const copyBackEnd = std::chrono::high_resolution_clock::now();
+
+    metrics.minTime = minTime;
+    metrics.maxTime = maxTime;
+    metrics.avgTime = totalTime / static_cast<double>(numberOfRuns);
+    metrics.bandwidthGBs = totalBandwidth / static_cast<double>(numberOfRuns);
+    metrics.dataUsageMB = bytesProcessed / 1.e6;
+    metrics.copyTime = std::chrono::duration<double>(copyBackEnd - copyBackBegin).count();
+    metrics.copyBandwidthGBs
+        = (static_cast<double>(numElements) * static_cast<double>(elementBytes)) / metrics.copyTime / 1.e9;
+
+    metrics.success = validateResult(bufHostARGB, bufHostR, bufHostG, bufHostB, bufHostA, numElements);
+    return metrics.success ? EXIT_SUCCESS : EXIT_FAILURE;
+}
+
+auto runAllBackends(
+    std::size_t numElements,
+    bool enableStdForEach,
+    std::size_t elementBytes,
+    std::size_t numberOfRuns,
+    StdBaselineMetrics& baseline) -> std::vector<RunMetrics>
+{
+    std::vector<RunMetrics> results;
+    auto runner = [&](auto const& backend)
+    {
+        RunMetrics metrics;
+        int ret = example(backend, numElements, enableStdForEach, elementBytes, numberOfRuns, metrics, baseline);
+        if(ret == EXIT_SUCCESS)
+            results.emplace_back(std::move(metrics));
+        return ret;
+    };
+
+    int status = onHost::executeForEachIfHasDevice(
+        runner,
+        onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
+    if(status != EXIT_SUCCESS)
+        throw std::runtime_error("Grayscale example failed on at least one backend");
+
+    return results;
+}
+
+void printResults(
+    std::vector<RunMetrics> const& runs,
+    std::size_t numElements,
+    std::size_t numberOfRuns,
+    StdBaselineMetrics const& baseline)
+{
+    if(runs.empty())
+        return;
+
+    std::cout << "----------------------------------------" << '\n';
+    std::cout << "DataType: uint32_t ARGB" << '\n';
+    std::cout << "DataSize(items): " << numElements << '\n';
+    std::cout << "NumberOfRuns: " << numberOfRuns << '\n';
+    std::cout << "BackendsActive: " << runs.size() << '\n';
+
+    if(baseline.measured)
+    {
+        std::cout << "Std ForEach Baseline:" << '\n';
+        std::cout << "  Time(s): " << std::fixed << std::setprecision(6) << baseline.timeSeconds << '\n';
+        std::cout << "  Bandwidth(GB/s): " << std::fixed << std::setprecision(4) << baseline.bandwidthGBs << '\n';
+        std::cout << '\n';
+    }
+
+    for(auto const& run : runs)
+    {
+        std::cout << "name: " << run.deviceName << '\n';
+        std::cout << "AcceleratorType: " << run.acceleratorType << '\n';
+        std::cout << "DataType: uint32_t ARGB" << '\n';
+        std::cout << "ElementSize(bytes): " << run.elementBytes << '\n';
+        std::cout << "TimeForHtoDCopy(s): " << std::fixed << std::setprecision(6) << run.copyTime << '\n';
+        std::cout << "CopyRate(GB/s): " << std::fixed << std::setprecision(4) << run.copyBandwidthGBs << '\n';
+        std::cout << "Kernels         Bandwidths(GB/s) MinTime(s) MaxTime(s) AvgTime(s) DataUsage(MB)" << '\n';
+        std::cout << std::left << std::setw(15) << "GrayscaleKernel" << std::right << std::setw(12) << std::fixed
+                  << std::setprecision(3) << run.bandwidthGBs << std::setw(12) << std::setprecision(6) << run.minTime
+                  << std::setw(12) << std::setprecision(6) << run.maxTime << std::setw(12) << std::setprecision(6)
+                  << run.avgTime << std::setw(13) << std::setprecision(3) << run.dataUsageMB << '\n';
+        std::cout << '\n';
+    }
 }
 
 void help(char* argv[])
 {
     std::cerr << argv[0] << " [OPTIONS]" << std::endl;
     std::cerr << "  -n  numElements: Number of elements to process. Default: 1024*1024" << std::endl;
+    std::cerr << "  -r  numberOfRuns: Kernel repetitions per backend. Default: 1" << std::endl;
     std::cerr << "  -e: disable execution of the native std::for_each implementation" << std::endl;
     std::cerr << "  -h: Print this help message" << std::endl;
 }
@@ -251,10 +327,11 @@ auto main(int argc, char* argv[]) -> int
 {
     // Default value if no command line argument used
     size_t numElements = 1024 * 1024;
+    size_t numberOfRuns = 1;
 
     int opt;
     bool enableStdForEach = true;
-    while((opt = getopt(argc, argv, "hn:e")) != -1)
+    while((opt = getopt(argc, argv, "hn:er:")) != -1)
     {
         switch(opt)
         {
@@ -262,6 +339,27 @@ auto main(int argc, char* argv[]) -> int
             try
             {
                 numElements = std::stoul(optarg, nullptr, 0);
+            }
+            catch(std::invalid_argument const& e)
+            {
+                std::cerr << "Error: invalid argument '" << optarg << "'.\n";
+                return EXIT_FAILURE;
+            }
+            catch(std::out_of_range const& e)
+            {
+                std::cerr << "Error: value '" << optarg << "' out of range for size_t.\n";
+                return EXIT_FAILURE;
+            }
+            break;
+        case 'r':
+            try
+            {
+                numberOfRuns = std::stoul(optarg, nullptr, 0);
+                if(numberOfRuns == 0u)
+                {
+                    std::cerr << "Error: numberOfRuns must be greater than zero.\n";
+                    return EXIT_FAILURE;
+                }
             }
             catch(std::invalid_argument const& e)
             {
@@ -286,30 +384,19 @@ auto main(int argc, char* argv[]) -> int
         }
     }
 
-    using namespace alpaka;
+    try
+    {
+        StdBaselineMetrics baseline;
+        auto runs = runAllBackends(numElements, enableStdForEach, sizeof(uint32_t), numberOfRuns, baseline);
 
-    /* Execute the example once for each backend (device specification + executor)
-     *
-     * If you would like to execute it for a single accelerator only you can use the following code.
-     *  @code{.cpp}
-     *  auto deviceSpec = onHost::DeviceSpec{api::cuda, deviceKind::nvidiaGpu};
-     *  auto executor = exec::gpuCuda;
-     *  return example(deviceSpec, executor, enableStdForEach);
-     *  @endcode
-     *
-     * Some examples for device specifications (depending on the active dependencies).
-     *
-     *   onHost::DeviceSpec{api::host, deviceKind::cpu}
-     *   onHost::DeviceSpec{api::cuda, deviceKind::nvidiaGpu}
-     *   onHost::DeviceSpec{api::hip, deviceKind::amdGpu}
-     *   onHost::DeviceSpec{api::oneApi, deviceKind::intelGpu}
-     *
-     * A list of api's and device kinds can be found
-     * https://alpaka3.readthedocs.io/en/latest/basic/cheatsheet.html##available-apis
-     * A list of executors can be found
-     * https://alpaka3.readthedocs.io/en/latest/basic/cheatsheet.html#executors
-     */
-    return onHost::executeForEachIfHasDevice(
-        [=](auto const& tag) { return example(tag, numElements, enableStdForEach); },
-        onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
+        std::cout << "Kernels: GrayscaleKernel" << '\n';
+        printResults(runs, numElements, numberOfRuns, baseline);
+    }
+    catch(std::exception const& ex)
+    {
+        std::cerr << ex.what() << '\n';
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
 }
