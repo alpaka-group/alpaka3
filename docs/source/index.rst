@@ -44,8 +44,8 @@ Individual chapters are based on the information of the chapters before.
 
    basic/intro.rst
    basic/install.rst
-   basic/benchmark.rst
    basic/example.rst
+   basic/terms.rst
    basic/abstraction.rst
    basic/library.rst
    basic/cheatsheet.rst
@@ -55,6 +55,7 @@ Individual chapters are based on the information of the chapters before.
    :maxdepth: 1
 
    advanced/cmake.rst
+   basic/benchmark.rst
 
 .. toctree::
    :caption: Developer
