@@ -1,5 +1,4 @@
-/* Copyright 2024 Benjamin Worpitz, Matthias Werner, Bernhard Manfred Gruber, Jan Stephan, Luca Ferragina,
- *                Aurora Perego, Andrea Bocci
+/* Copyright 2024  Jan Stephan, Luca Ferragina, Aurora Perego, Andrea Bocci, René Widera, Mehmet Yusufoglu.
  * SPDX-License-Identifier: ISC
  */
 
@@ -14,6 +13,32 @@
 #include <typeinfo>
 
 using namespace alpaka;
+
+auto validateResult(auto const& bufHostC, auto const& bufHostA, auto const& bufHostB, std::size_t extent) -> int
+{
+    using Data = uint32_t;
+    static constexpr int MAX_PRINT_FALSE_RESULTS = 20;
+    int falseResults = 0;
+    for(std::size_t i(0u); i < extent; ++i)
+    {
+        Data const& val(bufHostC[i]);
+        Data const correctResult(bufHostA[i] + bufHostB[i]);
+        if(val != correctResult)
+        {
+            if(falseResults < MAX_PRINT_FALSE_RESULTS)
+                std::cerr << "C[" << i << "] == " << val << " != " << correctResult << std::endl;
+            ++falseResults;
+        }
+    }
+
+    if(falseResults == 0)
+        return EXIT_SUCCESS;
+
+    std::cout << "Found " << falseResults << " false results, printed no more than " << MAX_PRINT_FALSE_RESULTS << "\n"
+              << "Execution results incorrect!" << std::endl;
+    std::cout << std::endl;
+    return EXIT_FAILURE;
+}
 
 //! A vector addition kernel.
 class VectorAddKernel
@@ -54,7 +79,7 @@ public:
 // Instead, a single accelerator is selected once from the active accelerators and the kernels are executed with the
 // selected accelerator only. If you use the example as the starting point for your project, you can rename the
 // example() function to main() and move the accelerator tag to the function body.
-auto example(auto const deviceSpec, auto const exec, size_t numElements) -> int
+auto example(auto const deviceSpec, auto const exec, size_t numElements, size_t numberOfRuns) -> int
 {
     using IdxVec = Vec<std::size_t, 1u>;
 
@@ -66,6 +91,7 @@ auto example(auto const deviceSpec, auto const exec, size_t numElements) -> int
 
     std::cout << "Number of elements: " << numElements << std::endl;
     std::cout << "Element type: " << onHost::demangledName<Data>() << std::endl;
+    std::cout << "Number of runs: " << numberOfRuns << std::endl;
 
     std::cout << "Using alpaka accelerator: " << onHost::demangledName(exec) << " for "
               << deviceSpec.getApi().getName() << " " << deviceSpec.getDeviceKind().getName() << std::endl;
@@ -87,7 +113,7 @@ auto example(auto const deviceSpec, auto const exec, size_t numElements) -> int
     std::default_random_engine eng{rd()};
     std::uniform_int_distribution<Data> dist(1, 42);
 
-    for(auto i(0u); i < extent; ++i)
+    for(auto i(0u); i < extent.x(); ++i)
     {
         bufHostA[i] = dist(eng);
         bufHostB[i] = dist(eng);
@@ -99,68 +125,65 @@ auto example(auto const deviceSpec, auto const exec, size_t numElements) -> int
     auto bufAccB = onHost::allocLike(devAcc, bufHostB);
     auto bufAccC = onHost::allocLike(devAcc, bufHostC);
 
-    // Copy Host -> Acc
-    onHost::memcpy(queue, bufAccA, bufHostA);
-    onHost::memcpy(queue, bufAccB, bufHostB);
-    onHost::memcpy(queue, bufAccC, bufHostC);
-
-    // Instantiate the kernel function object
-    VectorAddKernel kernel;
-    auto const taskKernel = KernelBundle{kernel, bufAccA, bufAccB, bufAccC, extent};
-
     Vec<size_t, 1u> chunkSize = 256u;
     // how many elements one worker should compute to ensure vectorization or instruction parallelism
     uint32_t elementsPerWorker = getNumElemPerThread<Data>(queue);
     auto dataBlocking = onHost::FrameSpec{divCeil(extent, chunkSize * elementsPerWorker), chunkSize};
 
-    // Enqueue the kernel execution task
+    // Instantiate the kernel function object
+    VectorAddKernel kernel;
+    auto const taskKernel = KernelBundle{kernel, bufAccA, bufAccB, bufAccC, extent};
+
+    // Copy Host -> Acc
+    onHost::memcpy(queue, bufAccA, bufHostA);
+    onHost::memcpy(queue, bufAccB, bufHostB);
+
+    double totalKernelRuntime = 0.0;
+    double totalCopyRuntime = 0.0;
+    std::size_t completedRuns = 0u;
+
+    for(; completedRuns < numberOfRuns; ++completedRuns)
     {
+        // set the device memory to all zeros (byte-wise, not element-wise)
+        onHost::memset(queue, bufAccC, uint8_t{0});
+
+        // Kernel execution timing
         onHost::wait(queue);
         auto const beginT = std::chrono::high_resolution_clock::now();
+        // Enqueue the kernel execution task
         queue.enqueue(exec, dataBlocking, taskKernel);
         // wait in case we are using an asynchronous queue to time actual kernel runtime
         onHost::wait(queue);
         auto const endT = std::chrono::high_resolution_clock::now();
-        std::cout << "Time for kernel execution: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-                  << std::endl;
-    }
+        double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
+        totalKernelRuntime += kernelRuntime;
 
-    // Copy back the result
-    {
-        auto beginT = std::chrono::high_resolution_clock::now();
+        // Copy back the result
+        auto beginCopyT = std::chrono::high_resolution_clock::now();
         onHost::memcpy(queue, bufHostC, bufAccC);
         onHost::wait(queue);
-        auto const endT = std::chrono::high_resolution_clock::now();
-        std::cout << "Time for HtoD copy: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-                  << std::endl;
-    }
+        auto const endCopyT = std::chrono::high_resolution_clock::now();
+        double copyRuntime = std::chrono::duration<double>(endCopyT - beginCopyT).count();
+        totalCopyRuntime += copyRuntime;
 
-    int falseResults = 0;
-    static constexpr int MAX_PRINT_FALSE_RESULTS = 20;
-    for(auto i(0u); i < extent; ++i)
-    {
-        Data const& val(bufHostC[i]);
-        Data const correctResult(bufHostA[i] + bufHostB[i]);
-        if(val != correctResult)
+        if(completedRuns == 0)
         {
-            if(falseResults < MAX_PRINT_FALSE_RESULTS)
-                std::cerr << "C[" << i << "] == " << val << " != " << correctResult << std::endl;
-            ++falseResults;
+            if(int const result = validateResult(bufHostC, bufHostA, bufHostB, extent.x()); result != EXIT_SUCCESS)
+                return result;
         }
     }
 
-    if(falseResults == 0)
+    if(completedRuns > 0u)
     {
-        std::cout << "Execution results correct!" << std::endl;
-        return EXIT_SUCCESS;
+        double avgKernelRuntime = totalKernelRuntime / static_cast<double>(completedRuns);
+        double avgCopyRuntime = totalCopyRuntime / static_cast<double>(completedRuns);
+        std::cout << "Average time for kernel execution: " << avgKernelRuntime << "s" << std::endl;
+        std::cout << "Average time for HtoD copy: " << avgCopyRuntime << "s" << std::endl;
     }
-    else
-    {
-        std::cout << "Found " << falseResults << " false results, printed no more than " << MAX_PRINT_FALSE_RESULTS
-                  << "\n"
-                  << "Execution results incorrect!" << std::endl;
-        return EXIT_FAILURE;
-    }
+
+    std::cout << "Execution results correct!" << std::endl;
+    std::cout << std::endl;
+    return EXIT_SUCCESS;
 }
 
 void help(char* argv[])
@@ -171,9 +194,10 @@ void help(char* argv[])
 auto main(int argc, char* argv[]) -> int
 {
     size_t numElements = 123456;
+    size_t numberOfRuns = 1;
 
     int opt;
-    while((opt = getopt(argc, argv, "hn:")) != -1)
+    while((opt = getopt(argc, argv, "hn:r:")) != -1)
     {
         switch(opt)
         {
@@ -190,6 +214,27 @@ auto main(int argc, char* argv[]) -> int
             catch(std::out_of_range const& e)
             {
                 std::cerr << "Error: value '" << optarg << "' out of range for size_t.\n";
+                return EXIT_FAILURE;
+            }
+            break;
+        case 'r':
+            try
+            {
+                numberOfRuns = std::stoul(optarg, nullptr, 0);
+            }
+            catch(std::invalid_argument const& e)
+            {
+                std::cerr << "Error: invalid number of runs '" << optarg << "'.\n";
+                return EXIT_FAILURE;
+            }
+            catch(std::out_of_range const& e)
+            {
+                std::cerr << "Error: number of runs '" << optarg << "' out of range for size_t.\n";
+                return EXIT_FAILURE;
+            }
+            if(numberOfRuns == 0)
+            {
+                std::cerr << "Error: number of runs must be greater than zero.\n";
                 return EXIT_FAILURE;
             }
             break;
@@ -227,6 +272,12 @@ auto main(int argc, char* argv[]) -> int
      */
     return onHost::executeForEachIfHasDevice(
         [=](auto const& backend)
-        { return example(backend[alpaka::object::deviceSpec], backend[alpaka::object::exec], numElements); },
+        {
+            return example(
+                backend[alpaka::object::deviceSpec],
+                backend[alpaka::object::exec],
+                numElements,
+                numberOfRuns);
+        },
         onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
 }
