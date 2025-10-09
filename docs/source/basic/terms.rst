@@ -9,8 +9,8 @@ Host and Accelerator
 
 In alpaka, we distinguish between the ``host``-side code and ``accelerator``-side code.
 This separation follows the GPU offloading model, which all important GPU vendors use.
-The processor that is running the operating system is the application control flow source code of the ``host``-side.
-The source code, which contains the computation, is offloaded and executed as :ref:`Kernel` on an extra processor.
+The processor that is running the operating system represents the ``host``-side and manages the application's control flow.
+The part of the application that contains the computation is offloaded and executed as a :ref:`Kernel` on an extra processor.
 This is the ``accelerator``-side [#f1]_.
 In the following documentation, we use the terms *onHost* for ``host``-side code and *onAcc* for ``accelerator``-side code.
 This is also reflected in alpaka's namespaces:
@@ -24,7 +24,7 @@ If a function or object is in namespace ``alpaka``, it is usable *onHost* and *o
 Host
 ````
 
-The *onHost* is mainly controlling the application workflow, like selecting the ``accelerator``-:ref:`Device`, allocating memory, enqueuing kernels *onAcc*, and more.
+The *onHost* is mainly controlling the application control flow, like selecting the ``accelerator``-:ref:`Device`, allocating memory, enqueuing kernels *onAcc*, and more.
 
 Properties:
     - The entry point of the *onHost* control flow is the ``main()`` function of a C++ code.
