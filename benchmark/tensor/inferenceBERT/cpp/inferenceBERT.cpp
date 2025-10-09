@@ -58,13 +58,13 @@
  *   Residual + LayerNorm
  *
  * Command line options:
- *   --batch B            Batch size (default 8)
- *   --seq S              Sequence length (default 128)
- *   --hidden H           Hidden size/model dim (default 256)
+ *   --batch B            Batch size (default 2)
+ *   --seq S              Sequence length (default 32)
+ *   --hidden H           Hidden size/model dim (default 64)
  *   --heads Hn           Number of attention heads (default 4)
- *   --layers L           Encoder layers (default 2)
+ *   --layers L           Encoder layers (default 1)
  *   --iters N            Measured iterations (always prints timing stats)
- *   --warmup W           Warmup iterations (default 5)
+ *   --warmup W           Warmup iterations (default 1)
  *   --only-gpu           Skip non-GPU backends
  *   --only-serial        Only run CpuSerial
  *   --profile-layers     Per-layer timing in last iteration
@@ -563,13 +563,13 @@ int runBert(
 
 int main(int argc, char** argv)
 {
-    int batch = 8;
-    int seqLen = 128;
-    int hidden = 256;
+    int batch = 2;
+    int seqLen = 32;
+    int hidden = 64;
     int heads = 4;
-    int layers = 2;
-    int warmup = 5;
-    int iters = 5;
+    int layers = 1;
+    int warmup = 1;
+    int iters = 2;
     bool onlyGpu = false;
     bool onlySerial = false;
     bool profile = false;

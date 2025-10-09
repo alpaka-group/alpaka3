@@ -9,6 +9,10 @@
 cmake_minimum_required(VERSION 3.25)
 project("alpakaBenchmarks" LANGUAGES CXX)
 
+if(NOT COMMAND alpaka_install_catch2)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/buildDependencies.cmake)
+endif()
+
 alpaka_install_catch2()
 
 add_subdirectory("babelstream/")

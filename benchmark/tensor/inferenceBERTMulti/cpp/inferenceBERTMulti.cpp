@@ -275,12 +275,12 @@ int runBertMulti(
 
 int main(int argc, char** argv)
 {
-    int batch = 8;
-    int seqLen = 128;
-    int hidden = 256;
-    int layers = 2;
-    int warmup = 5;
-    int iters = 5;
+    int batch = 2;
+    int seqLen = 32;
+    int hidden = 64;
+    int layers = 1;
+    int warmup = 1;
+    int iters = 2;
     bool onlyGpu = false;
     bool onlySerial = false;
     bool profile = false;
