@@ -12,6 +12,16 @@ if(NOT DEFINED alpaka_COUNT_API_DEPS)
     message(FATAL_ERROR "internal variable 'alpaka_COUNT_API_DEPS' must be defined.")
 endif()
 
+# evaluating CMAKE_CUDA_HOST_COMPILER_ID must be performed before check_language() is called.
+# check_language() is removing the variable CMAKE_CUDA_HOST_COMPILER and CMAKE_CUDA_HOST_COMPILER_ID
+if(NOT CMAKE_CUDA_HOST_COMPILER_ID)
+    set(_alpaka_CUDA_HOST_COMPILER "${CMAKE_CXX_COMPILER_ID}")
+else()
+    if(${CMAKE_CUDA_HOST_COMPILER_ID} STREQUAL "GNU")
+        set(_alpaka_CUDA_HOST_COMPILER "GNU")
+    endif()
+endif()
+
 check_language(CUDA)
 
 if(CMAKE_CUDA_COMPILER)
@@ -21,7 +31,7 @@ if(CMAKE_CUDA_COMPILER)
     if(NOT TARGET alpaka::cuda)
         add_library(alpaka_target_cuda INTERFACE)
         add_library(alpaka::cuda ALIAS alpaka_target_cuda)
-        target_link_libraries(alpaka_target_cuda INTERFACE alpaka_target_headers)
+        target_link_libraries(alpaka_target_cuda INTERFACE alpaka::host)
         set_property(TARGET alpaka_target_cuda PROPERTY CUDA_STANDARD ${alpaka_CXX_STANDARD})
     endif()
 
@@ -84,9 +94,15 @@ if(CMAKE_CUDA_COMPILER)
     endif()
 
     target_compile_definitions(alpaka_target_cuda INTERFACE ALPAKA_CMAKE_TARGET_CUDA)
-    target_link_libraries(alpaka_target_cuda INTERFACE alpaka::headers)
 
     if(alpaka_COUNT_API_DEPS EQUAL 1)
         target_link_libraries(alpaka INTERFACE alpaka_target_cuda)
+    endif()
+
+    message(STATUS "cuda" ${_alpaka_CUDA_HOST_COMPILER})
+
+    ## GCC compiler flag to show a longer stack for concept diagnostics
+    if(${_alpaka_CUDA_HOST_COMPILER} STREQUAL "GNU")
+        alpaka_set_compiler_options(HOST target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-fconcepts-diagnostics-depth=${alpaka_GCC_CONCEPT_DEPTH}>")
     endif()
 endif()

@@ -116,7 +116,11 @@ if(NOT TARGET alpaka)
     add_library(alpaka::alpaka ALIAS alpaka)
     target_compile_definitions(alpaka INTERFACE ALPAKA_CMAKE_TARGET_ALPAKA)
 
-    add_library(alpaka::host ALIAS alpaka_target_headers)
+    add_library(alpaka_target_host INTERFACE)
+    add_library(alpaka::host ALIAS alpaka_target_host)
+    target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_CMAKE_TARGET_HOST)
+    target_link_libraries(alpaka_target_host INTERFACE alpaka_target_headers)
+    target_link_libraries(alpaka INTERFACE alpaka::host)
 
     # the alpaka library itself
     # SYSTEM voids showing warnings produced by alpaka when used in user applications.
@@ -134,12 +138,12 @@ if(NOT TARGET alpaka)
     endif()
 
     target_include_directories(
-        alpaka_target_headers
+        alpaka_target_host
         INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     )
     target_compile_features(alpaka_target_headers INTERFACE cxx_std_${alpaka_CXX_STANDARD})
 
-    target_link_libraries(alpaka INTERFACE alpaka_target_headers)
+    target_link_libraries(alpaka INTERFACE alpaka_target_host)
 endif()
 
 set(alpaka_COUNT_API_DEPS 0)
@@ -175,21 +179,23 @@ if(alpaka_DEP_ONEAPI)
     include(${_alpaka_CMAKE_DIR}/alpakaOneApi.cmake)
 endif()
 
-## GCC compiler
+## GCC compiler flag to show a longer stack for concept diagnostics
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-    alpaka_set_compiler_options(HOST target alpaka_target_headers "-fconcepts-diagnostics-depth=${alpaka_GCC_CONCEPT_DEPTH}")
+    alpaka_set_compiler_options(HOST target alpaka_target_host "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-fconcepts-diagnostics-depth=${alpaka_GCC_CONCEPT_DEPTH}>")
 endif()
 
 ## OpenMP
+# Thereis no way to get the correct flags for the language CUDA or HIP
 if(alpaka_DEP_OMP)
     find_package(OpenMP REQUIRED COMPONENTS CXX)
-    target_link_libraries(alpaka_target_headers INTERFACE OpenMP::OpenMP_CXX)
+    target_link_libraries(alpaka_target_host INTERFACE OpenMP::OpenMP_CXX)
     message(STATUS "OpenMP found: ${OpenMP_CXX_VERSION}")
 endif()
 
 ## search for atomic ref
 
 # Check for C++20 std::atomic_ref first
+# we only check the CXX compiler, equal to OpenMP which is checked for the CXX compiler only too.
 try_compile(
     alpaka_HAS_STD_ATOMIC_REF # Result stored here
     "${PROJECT_BINARY_DIR}/alpakaFeatureTests" # Binary directory for output file
@@ -201,7 +207,7 @@ try_compile(
 )
 if(alpaka_HAS_STD_ATOMIC_REF AND (NOT alpaka_ACC_CPU_DISABLE_ATOMIC_REF))
     message(STATUS "std::atomic_ref<T> found")
-    target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_HAS_STD_ATOMIC_REF)
+    target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_HAS_STD_ATOMIC_REF)
 else()
     message(STATUS "std::atomic_ref<T> NOT found")
 endif()
@@ -209,7 +215,7 @@ endif()
 if(NOT alpaka_HAS_STD_ATOMIC_REF)
     if(Boost_ATOMIC_FOUND)
         message(STATUS "boost::atomic_ref<T> found")
-        target_link_libraries(alpaka_target_headers INTERFACE Boost::atomic)
+        target_link_libraries(alpaka_target_host INTERFACE Boost::atomic)
     else()
         message(STATUS "boost::atomic_ref<T> NOT found")
     endif()
@@ -220,7 +226,7 @@ if((NOT alpaka_HAS_STD_ATOMIC_REF) AND (NOT Boost_ATOMIC_FOUND))
         STATUS
         "atomic_ref<T> or boost::atomic_ref<T> was not found or manually disabled. Falling back to lock-based CPU atomics."
     )
-    target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_DISABLE_ATOMIC_ATOMICREF)
+    target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_DISABLE_ATOMIC_ATOMICREF)
 endif()
 
 # These options are used in the alpaka_finalize call
@@ -246,34 +252,34 @@ else()
 endif()
 if(alpaka_LOG_ENABLED)
     if(${alpaka_LOG} STREQUAL "static")
-        target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_LOG_STATIC)
+        target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_LOG_STATIC)
     endif()
 
     if(${alpaka_LOG} STREQUAL "dynamic")
-        target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_LOG_DYNAMIC)
+        target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_LOG_DYNAMIC)
     endif()
 
     option(alpaka_LOG_INDENT "Enable/Disable call stack indention for logging" ON)
     if(alpaka_LOG_INDENT)
-        target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_LOG_INDENT)
+        target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_LOG_INDENT)
     endif()
 
     set(alpaka_LOG_DETAIL "short" CACHE STRING "Set how the logging should be compiled into alpaka")
     set_property(CACHE alpaka_LOG_DETAIL PROPERTY STRINGS "short;long")
     if(${alpaka_LOG_DETAIL} STREQUAL "short")
-        target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_LOG_DETAIL_SHORT)
+        target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_LOG_DETAIL_SHORT)
     elseif(${alpaka_LOG_DETAIL} STREQUAL "long")
-        target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_LOG_DETAIL_LONG)
+        target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_LOG_DETAIL_LONG)
     endif()
 
     option(alpaka_LOG_FUNCTIONS "Enable/Disable logging of function entry and exit" ON)
     if(alpaka_LOG_FUNCTIONS)
-        target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_ENABLE_LOG_FUNCTIONS)
+        target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_ENABLE_LOG_FUNCTIONS)
     endif()
 
     option(alpaka_LOG_INFO "Enable/Disable logging of additional information" ON)
     if(alpaka_LOG_INFO)
-        target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_ENABLE_LOG_INFO)
+        target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_ENABLE_LOG_INFO)
     endif()
     if(${alpaka_LOG} STREQUAL "static")
         # Set default options for each log level (Device, Event, Memory, Queue, Kernel)
@@ -312,7 +318,7 @@ if(alpaka_LOG_ENABLED)
 
         # Pass the bit mask to the C++ code via target_compile_definitions
         target_compile_definitions(
-            alpaka_target_headers
+            alpaka_target_host
             INTERFACE ALPAKA_LOG_STATIC_LVL_MASK=${alpaka_LOG_STATIC_LVL_MASK_VALUE}
         )
 
@@ -322,6 +328,7 @@ if(alpaka_LOG_ENABLED)
 endif()
 
 # CMake executor options for tests/benchmarks and examples
+# The follwoing option influences the alpaka header target
 option(alpaka_EXEC_CpuSerial "Enable/Disable serial executor in examples/benchmarks and tests" ON)
 if(NOT alpaka_EXEC_CpuSerial)
     target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_DISABLE_EXEC_CpuSerial)

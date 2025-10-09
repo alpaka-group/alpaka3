@@ -41,7 +41,7 @@ if(CMAKE_HIP_COMPILER)
 
     if(NOT TARGET alpaka::hip)
         add_library(alpaka_target_hip INTERFACE)
-        target_link_libraries(alpaka_target_hip INTERFACE alpaka_target_headers)
+        target_link_libraries(alpaka_target_hip INTERFACE alpaka::host)
         add_library(alpaka::hip ALIAS alpaka_target_hip)
     endif()
 

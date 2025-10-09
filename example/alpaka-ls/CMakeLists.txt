@@ -37,7 +37,7 @@ endif()
 
 add_executable(${_TARGET_NAME} src/ls.cpp)
 target_link_libraries(${_TARGET_NAME} PRIVATE ${CMAKE_DL_LIBS})
-target_link_libraries(${_TARGET_NAME} PUBLIC alpaka::headers)
+target_link_libraries(${_TARGET_NAME} PUBLIC alpaka::host)
 alpaka_finalize(${_TARGET_NAME})
 add_test(NAME ${_TARGET_NAME} COMMAND ${_TARGET_NAME})
 

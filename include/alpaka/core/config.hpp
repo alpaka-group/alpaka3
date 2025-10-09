@@ -14,8 +14,7 @@
 #endif
 // guard cmake target alpaka::headers
 #if defined(ALPAKA_CMAKE_TARGET_HEADERS) && !defined(ALPAKA_CMAKE_TARGET_HEADERS_FINALIZE_CALLED)
-#    error                                                                                                            \
-        "After adding the cmake target alpaka::headers or alpaka::host you should call 'alpaka_finalize(targetName)'"
+#    error "After adding the cmake target alpaka::headers you should call 'alpaka_finalize(targetName)'"
 #endif
 // guard cmake target alpaka::cuda
 #if defined(ALPAKA_CMAKE_TARGET_CUDA) && !defined(ALPAKA_CMAKE_TARGET_CUDA_FINALIZE_CALLED)
@@ -28,6 +27,10 @@
 // guard cmake target alpaka::onapi
 #if defined(ALPAKA_CMAKE_TARGET_ONEAPI) && !defined(ALPAKA_CMAKE_TARGET_ONEAPI_FINALIZE_CALLED)
 #    error "After adding the cmake target alpaka::oneapi you should call 'alpaka_finalize(targetName)'"
+#endif
+// guard cmake target alpaka::host
+#if defined(ALPAKA_CMAKE_TARGET_HOST) && !defined(ALPAKA_CMAKE_TARGET_HOST_FINALIZE_CALLED)
+#    error "After adding the cmake target alpaka::host you should call 'alpaka_finalize(targetName)'"
 #endif
 
 #ifdef __INTEL_COMPILER

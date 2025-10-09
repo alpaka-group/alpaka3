@@ -6,7 +6,7 @@
 ### Provide the alpaka target names linked to a target
 ##
 ## The target alpaka::alpaka and alpaka will insecurely be resolved to the actual targets linked to it.
-## target names are: ALPAKA, CUDA, HIP, ONEAPI, HEADERS
+## target names are: ALPAKA, CUDA, HIP, ONEAPI, HEADERS, HOST
 ##
 ## The output will be appended to the list variable provided as alpaka_target_list.
 function(alpaka_get_targets_recursive target alpaka_target_list)
@@ -31,7 +31,11 @@ function(alpaka_get_targets_recursive target alpaka_target_list)
             alpaka_get_targets_recursive(${lib} sub_targets)
             list(APPEND ${alpaka_target_list} "ONEAPI")
             list(APPEND ${alpaka_target_list} ${sub_targets})
-        elseif(lib MATCHES "alpaka_target_headers|alpaka::headers|alpaka::host")
+        elseif(lib MATCHES "alpaka_target_host|alpaka::host")
+            alpaka_get_targets_recursive(${lib} sub_targets)
+            list(APPEND ${alpaka_target_list} "HOST")
+            list(APPEND ${alpaka_target_list} ${sub_targets})
+        elseif(lib MATCHES "alpaka_target_headers|alpaka::headers")
             list(APPEND ${alpaka_target_list} "HEADERS")
         endif()
     endforeach()
@@ -119,6 +123,7 @@ function(alpaka_finalize target)
     list(FIND alpaka_target_list "ONEAPI" index_oneapi)
     list(FIND alpaka_target_list "HEADERS" index_headers)
     list(FIND alpaka_target_list "ALPAKA" index_alpaka)
+    list(FIND alpaka_target_list "HOST" index_host)
 
     # CUDA and HIP can not be used together
     if((NOT index_cuda EQUAL -1) AND (NOT index_hip EQUAL -1))
@@ -139,6 +144,7 @@ function(alpaka_finalize target)
         AND index_oneapi EQUAL -1
         AND index_headers EQUAL -1
         AND index_alpaka EQUAL -1
+        AND index_HOST EQUAL -1
     )
         message(
             FATAL_ERROR
@@ -207,6 +213,9 @@ function(alpaka_finalize target)
     endif()
     if(NOT index_headers EQUAL -1)
         target_compile_definitions(${target} PRIVATE ALPAKA_CMAKE_TARGET_HEADERS_FINALIZE_CALLED)
+    endif()
+    if(NOT index_host EQUAL -1)
+        target_compile_definitions(${target} PRIVATE ALPAKA_CMAKE_TARGET_HOST_FINALIZE_CALLED)
     endif()
     if(NOT index_alpaka EQUAL -1)
         target_compile_definitions(${target} PRIVATE ALPAKA_CMAKE_TARGET_ALPAKA_FINALIZE_CALLED)

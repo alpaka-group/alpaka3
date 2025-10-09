@@ -62,23 +62,27 @@ alpaka is providing Cmake targets based on the optional activated dependencies `
 
 - targets:
     - `alpaka::headers`
-      - set include dependencies and provides access to `host` API 
+      - set include dependencies 
+      - activate headre code based on the CMake option `alpaka_EXEC_*` (required for examples/tests/benchmarks)
+      - set `CXX` standard
     - `alpaka::host` 
-      - alias for `alpaka::headers`
-    - `alpaka`, `alpaka::alpaka`
-      - links `alpaka::headers` and provides access to an API activated the dependency switch 
-      - if at least two of the dependencies `alpaka_DEP_CUDA`, `alpaka_DEP_HIP`, or `alpaka_DEP_ONEAPI` are activated
-        - **none** of the APIs (expept `host`) will be added because these dependencies are mutual exclusive
-        - you should add the required executor targets manually
+      - links `alpaka::headers`
+      - sets compiler flags those are generic for CUDA/HIP and C++ targets
+      - sets special compiler flags those are for C++ targets only
     - `alpaka::cuda`
       - is available if `-Dalpaka_DEP_CUDA=ON` is set
       - activates support for NVIDIA GPUs
-    - `alpaka::hip` 
+    - `alpaka::hip`
       - is available if `-Dalpaka_DEP_HIP=ON` is set
       - activates support for AMD GPUs
-    - `alpaka::oneapi` 
-      - available if `-Dalpaka_DEP_ONEAPI=ON` is set
-      - activates support for CPUs, NVIDIA GPUs, AMD GPUs, and Intel GPUs
+    - `alpaka::oneapi`
+        - available if `-Dalpaka_DEP_ONEAPI=ON` is set
+        - activates support for CPUs, NVIDIA GPUs, AMD GPUs, and Intel GPUs
+    - `alpaka`, `alpaka::alpaka`
+      - links `alpaka::headers` and provides access to an API's activated by dependency switches
+      - if at least two of the dependencies `alpaka_DEP_CUDA`, `alpaka_DEP_HIP`, or `alpaka_DEP_ONEAPI` are activated
+        - **none** of the APIs (expect `host`) will be added because these dependencies are mutual exclusive
+        - you should add the required executor targets manually
 
 Note `alpaka_DEP_OMP` is linked into the target `alpaka::headers` because it influences only `host` executors but is not providing additional alpaka API support.
 

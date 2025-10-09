@@ -17,7 +17,7 @@ find_package(IntelSYCL REQUIRED)
 if(NOT TARGET alpaka::oneapi)
     add_library(alpaka_target_oneapi INTERFACE)
     add_library(alpaka::oneapi ALIAS alpaka_target_oneapi)
-    target_link_libraries(alpaka_target_oneapi INTERFACE alpaka_target_headers)
+    target_link_libraries(alpaka_target_oneapi INTERFACE alpaka::host)
     target_link_libraries(alpaka_target_oneapi INTERFACE IntelSYCL::SYCL_CXX)
 endif()
 
