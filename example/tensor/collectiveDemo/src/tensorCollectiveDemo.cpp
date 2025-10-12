@@ -1,3 +1,8 @@
+// Demo overview:
+// - Shows how to instantiate a CleanTensorOpContext with collective support.
+// - Configures a single-rank NCCL communicator targeting the first CUDA device.
+// - Performs an in-place all-reduce to validate the NCCL provider wiring.
+// - Falls back gracefully when CUDA or NCCL is unavailable on the current backend.
 #include <alpaka/alpaka.hpp>
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
