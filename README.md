@@ -98,6 +98,7 @@ Alpaka tensor/provider layers are fully functional without any proprietary or pl
 
 * When the CUDA backend is enabled, Alpaka probes for cuBLAS and cuDNN. If found, they are linked and the corresponding compile definitions (`ALPAKA_HAS_CUBLAS`, `ALPAKA_HAS_CUDNN`) are set. If not, Alpaka prints a short status message and uses the generic kernels.
 * When the HIP backend is enabled, Alpaka probes for rocBLAS and MIOpen in the same fashion.
+* Collective communication providers are gated behind the new `alpaka_ENABLE_COLLECTIVES` switch (enabled by default). When the CUDA toolchain is present, Alpaka looks for NCCL and defines `ALPAKA_HAS_NCCL`; with HIP it checks for RCCL and defines `ALPAKA_HAS_RCCL`. If either library is missing, runtime automatically falls back to peer-to-peer or host-mediated paths without failing configuration.
 * No CMake options are required—auto-detection is always on—and missing libraries never cause configuration to fail.
 * If the libraries become available later, a reconfigure automatically enables the accelerated providers; otherwise runtime remains correct via generic kernels without loader errors.
 ```bash

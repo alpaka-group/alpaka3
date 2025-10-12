@@ -16,7 +16,10 @@ message(STATUS "Running global CUDA detection...")
 set(ALPAKA_HAS_CUDA_TOOLKIT FALSE CACHE INTERNAL "CUDA Toolkit detected" FORCE)
 set(ALPAKA_HAS_CUBLAS FALSE CACHE INTERNAL "cuBLAS detected" FORCE)
 set(ALPAKA_HAS_CUDNN FALSE CACHE INTERNAL "cuDNN detected" FORCE)
+set(ALPAKA_HAS_NCCL FALSE CACHE INTERNAL "NCCL detected" FORCE)
 unset(ALPAKA_CUDNN_LIBRARY CACHE)
+unset(ALPAKA_NCCL_LIBRARY CACHE)
+unset(ALPAKA_NCCL_INCLUDE_DIR CACHE)
 
 find_package(CUDAToolkit QUIET)
 if(CUDAToolkit_FOUND)
@@ -66,10 +69,74 @@ else()
 endif()
 set(ALPAKA_CUDA_DETECTED TRUE CACHE INTERNAL "CUDA detection completed" FORCE)
 
+if(ALPAKA_HAS_CUDA_TOOLKIT AND alpaka_ENABLE_COLLECTIVES AND alpaka_ENABLE_NCCL)
+    # Provide default root hints before find_path/find_library calls.
+    set(_alpaka_nccl_root_hints)
+    foreach(var NCCL_ROOT NCCL_PATH)
+        if(DEFINED ENV{${var}} AND NOT "$ENV{${var}}" STREQUAL "")
+            list(APPEND _alpaka_nccl_root_hints "$ENV{${var}}")
+        endif()
+    endforeach()
+    if(CUDAToolkit_LIBRARY_DIR)
+        get_filename_component(_alpaka_cuda_root "${CUDAToolkit_LIBRARY_DIR}/.." REALPATH)
+        if(_alpaka_cuda_root)
+            list(APPEND _alpaka_nccl_root_hints "${_alpaka_cuda_root}")
+        endif()
+    endif()
+    if(_alpaka_nccl_root_hints)
+        list(REMOVE_DUPLICATES _alpaka_nccl_root_hints)
+        set(_alpaka_nccl_hint_args HINTS ${_alpaka_nccl_root_hints})
+    else()
+        unset(_alpaka_nccl_hint_args)
+    endif()
+
+    find_path(
+        ALPAKA_NCCL_INCLUDE_DIR
+        NAMES nccl.h ${_alpaka_nccl_hint_args}
+        PATH_SUFFIXES include include/nccl include/third_party/nccl
+    )
+
+    find_library(ALPAKA_NCCL_LIBRARY NAMES nccl ${_alpaka_nccl_hint_args} PATH_SUFFIXES lib lib64 lib/x86_64-linux-gnu)
+
+    if(ALPAKA_NCCL_LIBRARY AND EXISTS "${ALPAKA_NCCL_LIBRARY}")
+        set(ALPAKA_HAS_NCCL TRUE CACHE INTERNAL "NCCL detected" FORCE)
+        message(STATUS "NCCL library detected: ${ALPAKA_NCCL_LIBRARY}")
+        if(ALPAKA_NCCL_INCLUDE_DIR AND EXISTS "${ALPAKA_NCCL_INCLUDE_DIR}/nccl.h")
+            if(TARGET alpaka_target_headers)
+                target_include_directories(alpaka_target_headers INTERFACE "${ALPAKA_NCCL_INCLUDE_DIR}")
+            endif()
+            if(TARGET alpaka_target_cuda)
+                target_include_directories(alpaka_target_cuda INTERFACE "${ALPAKA_NCCL_INCLUDE_DIR}")
+            endif()
+        else()
+            message(WARNING "NCCL library found but headers missing; collective provider will not build")
+            set(ALPAKA_HAS_NCCL FALSE CACHE INTERNAL "NCCL detected" FORCE)
+        endif()
+
+        if(ALPAKA_HAS_NCCL)
+            if(NOT alpaka_DISABLE_VENDOR_RPATH)
+                get_filename_component(_alpaka_nccl_dir "${ALPAKA_NCCL_LIBRARY}" DIRECTORY)
+                list(APPEND ALPAKA_VENDOR_RPATH "${_alpaka_nccl_dir}")
+            endif()
+        endif()
+    else()
+        if(alpaka_ENABLE_NCCL)
+            message(STATUS "NCCL not found -> collective providers will use fallback path")
+        endif()
+    endif()
+elseif(alpaka_ENABLE_COLLECTIVES AND alpaka_ENABLE_NCCL)
+    message(STATUS "NCCL support requested but CUDA toolkit unavailable -> skipping")
+else()
+    message(STATUS "NCCL support disabled")
+endif()
+
 if(TARGET alpaka_target_headers)
     target_compile_definitions(
         alpaka_target_headers
-        INTERFACE $<$<BOOL:${ALPAKA_HAS_CUBLAS}>:ALPAKA_HAS_CUBLAS> $<$<BOOL:${ALPAKA_HAS_CUDNN}>:ALPAKA_HAS_CUDNN>
+        INTERFACE
+            $<$<BOOL:${ALPAKA_HAS_CUBLAS}>:ALPAKA_HAS_CUBLAS>
+            $<$<BOOL:${ALPAKA_HAS_CUDNN}>:ALPAKA_HAS_CUDNN>
+            $<$<BOOL:${ALPAKA_HAS_NCCL}>:ALPAKA_HAS_NCCL>
     )
 endif()
 
@@ -112,6 +179,17 @@ macro(alpaka_add_cuda_support TARGET_NAME)
             target_compile_definitions(${TARGET_NAME} PRIVATE ALPAKA_HAS_CUDNN)
         elseif(ALPAKA_HAS_CUDNN)
             message(WARNING "cuDNN reported available but library handle missing for ${TARGET_NAME}; skipping linkage")
+        endif()
+
+        if(ALPAKA_HAS_NCCL AND ALPAKA_NCCL_LIBRARY)
+            message(STATUS "Linking NCCL into ${TARGET_NAME}")
+            target_link_libraries(${TARGET_NAME} PUBLIC ${ALPAKA_NCCL_LIBRARY})
+            target_compile_definitions(${TARGET_NAME} PRIVATE ALPAKA_HAS_NCCL)
+            if(ALPAKA_NCCL_INCLUDE_DIR)
+                target_include_directories(${TARGET_NAME} PRIVATE ${ALPAKA_NCCL_INCLUDE_DIR})
+            endif()
+        elseif(ALPAKA_HAS_NCCL)
+            message(WARNING "NCCL reported available but library handle missing for ${TARGET_NAME}; skipping linkage")
         endif()
 
         # Apply consolidated vendor RPATH if any

@@ -98,6 +98,10 @@ option(alpaka_DEP_HIP "Enable the HIP as dependency, allows the usage of api::Hi
 option(alpaka_DEP_OMP "Enable the OpenMP as dependency, allows the usage of exec::cpuOmpBlocks" ON)
 option(alpaka_DEP_ONEAPI "Enable the Intel oneAPI SYCL dependency, allows using exec::oneApi" OFF)
 
+option(alpaka_ENABLE_COLLECTIVES "Enable tensor collective provider infrastructure" ON)
+option(alpaka_ENABLE_NCCL "Discover and link against NCCL when available" ${alpaka_ENABLE_COLLECTIVES})
+option(alpaka_ENABLE_RCCL "Discover and link against RCCL when available" ${alpaka_ENABLE_COLLECTIVES})
+
 # Unified compiler options
 alpaka_compiler_option(FAST_MATH "Enable fast-math" DEFAULT)
 alpaka_compiler_option(FTZ "Set flush to zero" DEFAULT)

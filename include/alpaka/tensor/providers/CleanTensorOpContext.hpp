@@ -34,7 +34,10 @@
 #include <alpaka/tensor/providers/MIOpenProvider.hpp>
 #include <alpaka/tensor/providers/ProviderCaps.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
+#include <alpaka/tensor/providers/ProviderRegistry.hpp>
 #include <alpaka/tensor/providers/RocBLASProvider.hpp>
+#include <alpaka/tensor/providers/collective/CollectiveProviderInterface.hpp>
+#include <alpaka/tensor/providers/collective/CollectiveTypes.hpp>
 
 #include <cmath>
 #include <iostream>
@@ -375,6 +378,7 @@ namespace alpaka::tensor
         std::unique_ptr<IOpProvider> activationProvider_;
         std::unique_ptr<IOpProvider> poolingProvider_;
         std::unique_ptr<IOpProvider> fallbackProvider_;
+        std::unique_ptr<collective::ICollectiveProvider> collectiveProvider_;
         TExec const* exec_{nullptr};
         TDevice const* device_{nullptr};
         TQueue* queue_{nullptr};
@@ -825,6 +829,67 @@ namespace alpaka::tensor
                 return "CPU (Serial)";
             else
                 return "Unknown";
+        }
+
+    public:
+        [[nodiscard]] OpStatus configureCollectives(collective::GroupConfig const& config)
+        {
+            auto* provider = ensureCollectiveProvider();
+            if(provider == nullptr)
+                return OpStatus::Unsupported;
+            if(provider->isActive())
+                return OpStatus::Success;
+            return provider->initialize(config);
+        }
+
+        [[nodiscard]] OpStatus collectiveAllReduce(collective::AllReduceRequest const& request)
+        {
+            auto* provider = ensureCollectiveProvider();
+            if(provider == nullptr)
+                return OpStatus::Unsupported;
+            if(!provider->isActive())
+                return OpStatus::Error;
+            return provider->allReduce(request);
+        }
+
+        [[nodiscard]] OpStatus collectiveBroadcast(collective::BroadcastRequest const& request)
+        {
+            auto* provider = ensureCollectiveProvider();
+            if(provider == nullptr)
+                return OpStatus::Unsupported;
+            if(!provider->isActive())
+                return OpStatus::Error;
+            return provider->broadcast(request);
+        }
+
+        [[nodiscard]] OpStatus collectiveBarrier(collective::BarrierRequest const& request)
+        {
+            auto* provider = ensureCollectiveProvider();
+            if(provider == nullptr)
+                return OpStatus::Unsupported;
+            if(!provider->isActive())
+                return OpStatus::Error;
+            return provider->barrier(request);
+        }
+
+        [[nodiscard]] collective::ICollectiveProvider* getCollectiveProvider()
+        {
+            return ensureCollectiveProvider();
+        }
+
+        [[nodiscard]] collective::ICollectiveProvider const* getCollectiveProvider() const
+        {
+            return collectiveProvider_.get();
+        }
+
+    private:
+        [[nodiscard]] collective::ICollectiveProvider* ensureCollectiveProvider()
+        {
+            if(!collectiveProvider_)
+            {
+                collectiveProvider_ = ProviderRegistry::template makeCollective<Exec>();
+            }
+            return collectiveProvider_.get();
         }
     };
 

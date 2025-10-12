@@ -7,6 +7,9 @@
 #include <alpaka/core/config.hpp>
 #include <alpaka/tensor/providers/DefaultProvider.hpp>
 #include <alpaka/tensor/providers/ProviderInterface.hpp>
+#include <alpaka/tensor/providers/collective/CollectiveProviderInterface.hpp>
+#include <alpaka/tensor/providers/collective/NcclCollectiveProvider.hpp>
+#include <alpaka/tensor/providers/collective/RcclCollectiveProvider.hpp>
 
 // Forward declarations for provider types to allow conditional type references
 namespace alpaka::tensor
@@ -97,6 +100,24 @@ namespace alpaka::tensor
             return std::unique_ptr<IOpProvider>(new P());
         }
 
-        // Collective provider factory removed (NCCL/RCCL unsupported)
+        template<typename Exec>
+        static std::unique_ptr<collective::ICollectiveProvider> makeCollective()
+        {
+            if constexpr(std::is_same_v<Exec, alpaka::exec::GpuCuda>)
+            {
+                if(EnabledVendorLibs::hasNCCL)
+                {
+                    return std::make_unique<collective::NcclCollectiveProvider>();
+                }
+            }
+            else if constexpr(std::is_same_v<Exec, alpaka::exec::GpuHip>)
+            {
+                if(EnabledVendorLibs::hasRCCL)
+                {
+                    return std::make_unique<collective::RcclCollectiveProvider>();
+                }
+            }
+            return nullptr;
+        }
     };
 } // namespace alpaka::tensor
