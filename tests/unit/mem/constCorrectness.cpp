@@ -190,6 +190,84 @@ TEST_CASE("function calls with mdspan object", "[mem][mdspan][correctness]")
     funcUniversalRef<int const, int const&>(const_mdspan_inner_const);
 }
 
+TEST_CASE("MdSpanArray inner const copy constructor", "[mem][mdspanarray][correctness][copyConstruct]")
+{
+    int static_data[2][2] = {{0, 0}, {0, 0}};
+    int const const_static_data[2][2] = {{0, 0}, {0, 0}};
+    using MutMdSpanArray = MdSpanArray<decltype(static_data), alpaka::Alignment<16>>;
+    using ConstMdSpanArray = MdSpanArray<decltype(const_static_data), alpaka::Alignment<16>>;
+
+    STATIC_REQUIRE(internal::CopyConstructableDataSource<MutMdSpanArray>::value);
+
+    STATIC_REQUIRE(internal::concepts::CopyConstructableDataSource<MutMdSpanArray>);
+    STATIC_REQUIRE(internal::concepts::CopyConstructableDataSource<ConstMdSpanArray>);
+
+    MutMdSpanArray mut_md_span_array(static_data);
+    ConstMdSpanArray const_md_span_array(const_static_data);
+
+    STATIC_REQUIRE(std::constructible_from<MutMdSpanArray, MutMdSpanArray&>);
+    [[maybe_unused]] MutMdSpanArray mut_md_span_array_copy(mut_md_span_array);
+
+    STATIC_REQUIRE(std::constructible_from<ConstMdSpanArray, ConstMdSpanArray&>);
+    [[maybe_unused]] ConstMdSpanArray const_md_span_array_copy(const_md_span_array);
+
+
+    STATIC_REQUIRE(std::constructible_from<ConstMdSpanArray, MutMdSpanArray&>);
+    [[maybe_unused]] ConstMdSpanArray mut_to_const_md_span_array(mut_md_span_array);
+
+    STATIC_REQUIRE_FALSE(std::constructible_from<MutMdSpanArray, ConstMdSpanArray&>);
+    // should not compile
+    // MutMdSpanArray const_to_mut_md_span_array(const_md_span_array);
+}
+
+TEST_CASE("MdSpanArray inner const assignment operator", "[mem][mdspanarray][correctness][copyConstruct]")
+{
+    int static_data[2][2] = {{0, 0}, {0, 0}};
+    int const const_static_data[2][2] = {{0, 0}, {0, 0}};
+    using MutMdSpanArray = MdSpanArray<decltype(static_data), alpaka::Alignment<16>>;
+    using ConstMdSpanArray = MdSpanArray<decltype(const_static_data), alpaka::Alignment<16>>;
+
+    MutMdSpanArray mut_md_span_array(static_data);
+    ConstMdSpanArray const_md_span_array(const_static_data);
+
+    STATIC_REQUIRE(std::assignable_from<MutMdSpanArray&, MutMdSpanArray>);
+    [[maybe_unused]] MutMdSpanArray mut_md_span_arra2 = mut_md_span_array;
+    STATIC_REQUIRE(std::assignable_from<ConstMdSpanArray&, ConstMdSpanArray>);
+    [[maybe_unused]] ConstMdSpanArray const_md_span_array2 = const_md_span_array;
+    STATIC_REQUIRE(std::assignable_from<ConstMdSpanArray&, MutMdSpanArray>);
+    [[maybe_unused]] ConstMdSpanArray const_md_span_array3 = mut_md_span_array;
+    STATIC_REQUIRE_FALSE(std::assignable_from<MutMdSpanArray&, ConstMdSpanArray>);
+    // MutMdSpanArray mut_view3 = const_md_span_array;
+}
+
+TEST_CASE(
+    "MdSpanArray inner const move constructor and move assignment operator",
+    "[mem][mdspanarray][correctness][moveConstruct]")
+{
+    int static_data[2][2] = {{0, 0}, {0, 0}};
+    int const const_static_data[2][2] = {{0, 0}, {0, 0}};
+    using MutMdSpanArray = MdSpanArray<decltype(static_data), alpaka::Alignment<16>>;
+    using ConstMdSpanArray = MdSpanArray<decltype(const_static_data), alpaka::Alignment<16>>;
+
+    MutMdSpanArray constr_mut_md(static_data);
+    ConstMdSpanArray constr_const_md(const_static_data);
+
+    MutMdSpanArray constr_mut_md2(std::move(constr_mut_md));
+    ConstMdSpanArray constr_const_md2(std::move(constr_const_md));
+    [[maybe_unused]] ConstMdSpanArray constr_const_md3(std::move(constr_mut_md2));
+    // should not compile
+    // MutMdSpanArray constr_mut_md3(std::move(constr_const_md3));
+
+    MutMdSpanArray assign_mut_md(static_data);
+    ConstMdSpanArray assign_const_md(const_static_data);
+
+    MutMdSpanArray assign_mut_md2 = std::move(assign_mut_md);
+    ConstMdSpanArray assign_const_md2 = std::move(assign_const_md);
+    [[maybe_unused]] ConstMdSpanArray assign_const_md3 = std::move(assign_mut_md2);
+    // should not compile
+    // MutMdSpanArray assign_mut_md3 = std::move(assign_const_md3);
+}
+
 TEST_CASE("View inner const copy constructor", "[mem][view][correctness][copyConstruct]")
 {
     constexpr size_t size = 10;

@@ -9,6 +9,59 @@
 
 using namespace alpaka;
 
+TEST_CASE(
+    "InnerTypeAllowedCast"
+    "[mem][concepts]")
+{
+    SECTION("GetElementType")
+    {
+        STATIC_REQUIRE(std::is_same_v<typename internal::GetElementType<int>::type, int>);
+        STATIC_REQUIRE(std::is_same_v<typename internal::GetElementType<int const>::type, int>);
+        STATIC_REQUIRE(std::is_same_v<typename internal::GetElementType<int&>::type, int>);
+        STATIC_REQUIRE(std::is_same_v<typename internal::GetElementType<int const&>::type, int>);
+        STATIC_REQUIRE(std::is_same_v<typename internal::GetElementType<int[2][2]>::type, int>);
+        STATIC_REQUIRE(std::is_same_v<typename internal::GetElementType<int const[2][2]>::type, int>);
+        STATIC_REQUIRE(std::is_same_v<typename internal::GetElementType<int(&)[2][2]>::type, int>);
+        STATIC_REQUIRE(std::is_same_v<typename internal::GetElementType<int const(&)[2][2]>::type, int>);
+
+        STATIC_REQUIRE_FALSE(internal::GetElementType<int>::is_const);
+        STATIC_REQUIRE(internal::GetElementType<int const>::is_const);
+        STATIC_REQUIRE_FALSE(internal::GetElementType<int&>::is_const);
+        STATIC_REQUIRE(internal::GetElementType<int const&>::is_const);
+        STATIC_REQUIRE_FALSE(internal::GetElementType<int[2][2]>::is_const);
+        STATIC_REQUIRE(internal::GetElementType<int const[2][2]>::is_const);
+        STATIC_REQUIRE_FALSE(internal::GetElementType<int(&)[2][2]>::is_const);
+        STATIC_REQUIRE(internal::GetElementType<int const(&)[2][2]>::is_const);
+    }
+
+    STATIC_REQUIRE(internal::concepts::InnerTypeAllowedCast<int, int>);
+    STATIC_REQUIRE(internal::concepts::InnerTypeAllowedCast<int const, int const>);
+    STATIC_REQUIRE(internal::concepts::InnerTypeAllowedCast<int const, int>);
+    STATIC_REQUIRE_FALSE(internal::concepts::InnerTypeAllowedCast<int, int const>);
+
+    // check reference if type is working
+    STATIC_REQUIRE(internal::concepts::InnerTypeAllowedCast<int const&, int&>);
+    STATIC_REQUIRE(internal::concepts::InnerTypeAllowedCast<int const&, int>);
+    STATIC_REQUIRE(internal::concepts::InnerTypeAllowedCast<int const, int&>);
+    STATIC_REQUIRE_FALSE(internal::concepts::InnerTypeAllowedCast<int&, int const&>);
+    STATIC_REQUIRE_FALSE(internal::concepts::InnerTypeAllowedCast<int&, int const>);
+    STATIC_REQUIRE_FALSE(internal::concepts::InnerTypeAllowedCast<int, int const&>);
+
+    // test C static array
+    STATIC_REQUIRE(internal::concepts::InnerTypeAllowedCast<int[2][2], int[2][2]>);
+    STATIC_REQUIRE(internal::concepts::InnerTypeAllowedCast<int const[2][2], int const[2][2]>);
+    STATIC_REQUIRE(internal::concepts::InnerTypeAllowedCast<int const[2][2], int[2][2]>);
+    STATIC_REQUIRE_FALSE(internal::concepts::InnerTypeAllowedCast<int[2][2], int const[2][2]>);
+
+    // check if a reference to a C static array is working
+    STATIC_REQUIRE(internal::concepts::InnerTypeAllowedCast<int const(&)[1][1][1], int(&)[1][1][1]>);
+    STATIC_REQUIRE(internal::concepts::InnerTypeAllowedCast<int const(&)[1][1][1], int[1][1][1]>);
+    STATIC_REQUIRE(internal::concepts::InnerTypeAllowedCast<int const[1][1][1], int(&)[1][1][1]>);
+    STATIC_REQUIRE_FALSE(internal::concepts::InnerTypeAllowedCast<int(&)[1][1][1], int const(&)[1][1][1]>);
+    STATIC_REQUIRE_FALSE(internal::concepts::InnerTypeAllowedCast<int(&)[1][1][1], int const[1][1][1]>);
+    STATIC_REQUIRE_FALSE(internal::concepts::InnerTypeAllowedCast<int[1][1][1], int const(&)[1][1][1]>);
+}
+
 // const value and const reference versions of the functions are not necessary
 // the const modifier is not part of the deduction and therefore it will be not passed to the concept
 void iMdSpanCallByValue(concepts::IMdSpan auto)
@@ -61,6 +114,32 @@ TEMPLATE_TEST_CASE_SIG(
         iMdSpanCallByUniversalReference(constMdSpan);
 
         iMdSpanCallByUniversalReference(MdSpan{ptr, extents, pitches});
+    }
+
+    SECTION("test alpaka::MdSpanArrayType object")
+    {
+        auto zero = static_cast<TElem>(0);
+        TElem static_data[2][2] = {{zero, zero}, {zero, zero}};
+        using MdSpanArrayType = MdSpanArray<decltype(static_data), alpaka::Alignment<16>>;
+        MdSpanArrayType mdSpanArray(static_data);
+        STATIC_REQUIRE(std::same_as<typename MdSpanArrayType::value_type, TElem>);
+
+        STATIC_REQUIRE(alpaka::concepts::IMdSpan<MdSpanArrayType>);
+        STATIC_REQUIRE(alpaka::concepts::IMdSpan<MdSpanArrayType const>);
+        STATIC_REQUIRE(alpaka::concepts::IMdSpan<MdSpanArrayType&>);
+        STATIC_REQUIRE_FALSE(alpaka::concepts::IView<MdSpanArrayType>);
+        STATIC_REQUIRE_FALSE(alpaka::concepts::IBuffer<MdSpanArrayType>);
+
+        iMdSpanCallByValue(mdSpanArray);
+        iMdSpanCallByReference(mdSpanArray);
+        iMdSpanCallByUniversalReference(mdSpanArray);
+
+        MdSpanArrayType const constMdSpanArray(static_data);
+        iMdSpanCallByValue(constMdSpanArray);
+        iMdSpanCallByReference(constMdSpanArray);
+        iMdSpanCallByUniversalReference(constMdSpanArray);
+
+        iMdSpanCallByUniversalReference(MdSpanArrayType{static_data});
     }
 
     SECTION("test alpaka::View object")

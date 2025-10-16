@@ -334,10 +334,14 @@ namespace alpaka
             "MdSpanArray can only be used if std::is_array_v<T> is true for the given type.");
     };
 
-    template<typename T_ArrayType, concepts::Alignment T_MemAlignment>
-    requires(std::is_array_v<T_ArrayType>)
+    template<alpaka::concepts::CStaticArray T_ArrayType, concepts::Alignment T_MemAlignment>
     struct MdSpanArray<T_ArrayType, T_MemAlignment>
     {
+    private:
+        using MutArrayType = std::remove_cv_t<T_ArrayType>;
+        using ConstArrayType = std::add_const_t<MutArrayType>;
+
+    public:
         using extentType = std::extent<T_ArrayType, std::rank_v<T_ArrayType>>;
         using value_type = std::remove_all_extents_t<T_ArrayType>;
         using reference = value_type&;
@@ -388,8 +392,7 @@ namespace alpaka
 
         constexpr auto getConstMdSpan() const
         {
-            using ConstArryType = std::add_const_t<T_ArrayType>;
-            return MdSpanArray<ConstArryType>(m_ptr);
+            return MdSpanArray<ConstArrayType>(*m_ptr);
         }
 
         constexpr auto cbegin() const
@@ -409,12 +412,26 @@ namespace alpaka
          *
          * @param pointer pointer to the memory
          */
-        constexpr MdSpanArray(T_ArrayType& staticSizedArray) : m_ptr(&staticSizedArray)
+        constexpr MdSpanArray(T_ArrayType& staticSizedArray) : m_ptr(const_cast<MutArrayType*>(&staticSizedArray))
+        {
+        }
+
+        template<alpaka::concepts::CStaticArray T_OtherArrayType>
+        requires internal::concepts::InnerTypeAllowedCast<T_ArrayType, T_OtherArrayType>
+        constexpr MdSpanArray(MdSpanArray<T_OtherArrayType, T_MemAlignment> const& other) : m_ptr(other.m_ptr)
         {
         }
 
         constexpr MdSpanArray(MdSpanArray const&) = default;
         constexpr MdSpanArray(MdSpanArray&&) = default;
+
+        template<alpaka::concepts::CStaticArray T_OtherArrayType>
+        requires internal::concepts::InnerTypeAllowedCast<T_ArrayType, T_OtherArrayType>
+        constexpr MdSpanArray(MdSpanArray<T_OtherArrayType, T_MemAlignment>&& other) : m_ptr(other.m_ptr)
+        {
+        }
+
+        constexpr MdSpanArray& operator=(MdSpanArray&&) = default;
 
         static constexpr auto getAlignment()
         {
@@ -461,8 +478,39 @@ namespace alpaka
             return createExtents(std::make_integer_sequence<index_type, dim()>{});
         }
 
+        constexpr auto getPitches() const
+        {
+            return alpaka::calculatePitchesFromExtents<value_type>(getExtents());
+        }
+
+        /** True if MdSpanArray is pointing to valid memory.
+         *
+         * @details
+         * An MdSpanArray remains valid even after being moved. The reason is, that it use stack memory which cannot be
+         * freed.
+         */
+        [[nodiscard]] constexpr explicit operator bool() const noexcept
+        {
+            return true;
+        }
+
+        // Needs to be friend of itself with that the copy and move constructor can access the m_ptr of other, if the
+        // const modifier of the C static array type of the other type is different.
+        friend MdSpanArray<MutArrayType, T_MemAlignment>;
+        friend MdSpanArray<ConstArrayType, T_MemAlignment>;
+
     protected:
-        T_ArrayType* m_ptr;
+        // we store the C static array as mutable type that we can assign it another MdSpanArray with const or
+        // non-const inner type
+        // Depending on the value_type, the const is added at memory access
+        MutArrayType* m_ptr;
+    };
+
+    template<alpaka::concepts::CStaticArray T_ArrayType, alpaka::concepts::Alignment T_MemAlignment>
+    struct internal::CopyConstructableDataSource<MdSpanArray<T_ArrayType, T_MemAlignment>> : std::true_type
+    {
+        using InnerMutable = MdSpanArray<std::remove_const_t<T_ArrayType>, T_MemAlignment>;
+        using InnerConst = MdSpanArray<std::add_const_t<T_ArrayType>, T_MemAlignment>;
     };
 
     namespace trait
