@@ -8,6 +8,7 @@
 #include "alpaka/core/Dict.hpp"
 #include "alpaka/core/Tag.hpp"
 #include "alpaka/core/common.hpp"
+#include "alpaka/mem/MdSpanArray.hpp"
 #include "alpaka/meta/NdLoop.hpp"
 #include "alpaka/onAcc/interface.hpp"
 #include "alpaka/tag.hpp"

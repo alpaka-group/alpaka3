@@ -21,7 +21,7 @@ TEST_CASE(
         STATIC_REQUIRE(std::is_same_v<typename internal::GetElementType<int const&>::type, int>);
         STATIC_REQUIRE(std::is_same_v<typename internal::GetElementType<int[2][2]>::type, int>);
         STATIC_REQUIRE(std::is_same_v<typename internal::GetElementType<int const[2][2]>::type, int>);
-        STATIC_REQUIRE(std::is_same_v<typename internal::GetElementType<int(&)[2][2]>::type, int>);
+        STATIC_REQUIRE(std::is_same_v<typename internal::GetElementType<int (&)[2][2]>::type, int>);
         STATIC_REQUIRE(std::is_same_v<typename internal::GetElementType<int const(&)[2][2]>::type, int>);
 
         STATIC_REQUIRE_FALSE(internal::GetElementType<int>::is_const);
@@ -30,7 +30,7 @@ TEST_CASE(
         STATIC_REQUIRE(internal::GetElementType<int const&>::is_const);
         STATIC_REQUIRE_FALSE(internal::GetElementType<int[2][2]>::is_const);
         STATIC_REQUIRE(internal::GetElementType<int const[2][2]>::is_const);
-        STATIC_REQUIRE_FALSE(internal::GetElementType<int(&)[2][2]>::is_const);
+        STATIC_REQUIRE_FALSE(internal::GetElementType<int (&)[2][2]>::is_const);
         STATIC_REQUIRE(internal::GetElementType<int const(&)[2][2]>::is_const);
     }
 
@@ -54,11 +54,11 @@ TEST_CASE(
     STATIC_REQUIRE_FALSE(internal::concepts::InnerTypeAllowedCast<int[2][2], int const[2][2]>);
 
     // check if a reference to a C static array is working
-    STATIC_REQUIRE(internal::concepts::InnerTypeAllowedCast<int const(&)[1][1][1], int(&)[1][1][1]>);
+    STATIC_REQUIRE(internal::concepts::InnerTypeAllowedCast<int const(&)[1][1][1], int (&)[1][1][1]>);
     STATIC_REQUIRE(internal::concepts::InnerTypeAllowedCast<int const(&)[1][1][1], int[1][1][1]>);
-    STATIC_REQUIRE(internal::concepts::InnerTypeAllowedCast<int const[1][1][1], int(&)[1][1][1]>);
-    STATIC_REQUIRE_FALSE(internal::concepts::InnerTypeAllowedCast<int(&)[1][1][1], int const(&)[1][1][1]>);
-    STATIC_REQUIRE_FALSE(internal::concepts::InnerTypeAllowedCast<int(&)[1][1][1], int const[1][1][1]>);
+    STATIC_REQUIRE(internal::concepts::InnerTypeAllowedCast<int const[1][1][1], int (&)[1][1][1]>);
+    STATIC_REQUIRE_FALSE(internal::concepts::InnerTypeAllowedCast<int (&)[1][1][1], int const(&)[1][1][1]>);
+    STATIC_REQUIRE_FALSE(internal::concepts::InnerTypeAllowedCast<int (&)[1][1][1], int const[1][1][1]>);
     STATIC_REQUIRE_FALSE(internal::concepts::InnerTypeAllowedCast<int[1][1][1], int const(&)[1][1][1]>);
 }
 

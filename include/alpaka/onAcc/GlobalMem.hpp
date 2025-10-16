@@ -8,7 +8,7 @@
 #include "alpaka/api/api.hpp"
 #include "alpaka/core/PP.hpp"
 #include "alpaka/core/config.hpp"
-#include "alpaka/mem/MdSpan.hpp"
+#include "alpaka/mem/MdSpanArray.hpp"
 
 #include <cassert>
 #include <tuple>
