@@ -119,7 +119,7 @@ namespace alpaka
 
         constexpr auto getConstMdSpan() const
         {
-            return MdSpanArray<ConstArrayType>(*m_ptr);
+            return MdSpanArray<ConstArrayType, T_MemAlignment>(*m_ptr);
         }
 
         constexpr auto cbegin() const
@@ -150,6 +150,7 @@ namespace alpaka
         }
 
         constexpr MdSpanArray(MdSpanArray const&) = default;
+
         constexpr MdSpanArray(MdSpanArray&&) = default;
 
         template<alpaka::concepts::CStaticArray T_OtherArrayType>
