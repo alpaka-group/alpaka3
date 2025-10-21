@@ -6,10 +6,10 @@
 
 #include "alpaka/Simd.hpp"
 #include "alpaka/Vec.hpp"
-#include "alpaka/cast.hpp"
-#include "alpaka/core/util.hpp"
+#include "alpaka/internal/interface.hpp"
 #include "alpaka/mem/Alignment.hpp"
 #include "alpaka/mem/concepts.hpp"
+#include "alpaka/mem/concepts/IMdSpan.hpp"
 #include "alpaka/trait.hpp"
 
 #include <array>
@@ -25,7 +25,6 @@ namespace alpaka
         struct IsSimdPtr : std::false_type
         {
         };
-
     } // namespace trait
 
     template<typename T>
@@ -33,7 +32,6 @@ namespace alpaka
 
     namespace concepts
     {
-
         /** Concept to check if a type is a SIMD pointer
          *
          * @tparam T Type to check
@@ -45,7 +43,6 @@ namespace alpaka
                           && (std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
                               || std::same_as<T_ValueType, alpaka::NotRequired>)
                           && ((T_width == alpaka::notRequiredWidth) || (T::width() == T_width));
-
     } // namespace concepts
 
     /** pointer to a SIMD pack with the width T_SimdWidth
@@ -58,7 +55,7 @@ namespace alpaka
      * @tparam T_SimdWidth width of the SIMD pack
      */
     template<
-        alpaka::concepts::MdSpan T_MdSpan,
+        typename T_MdSpan,
         alpaka::concepts::Vector T_IdxType,
         alpaka::concepts::Alignment T_MemAlignment,
         alpaka::concepts::CVector T_SimdWidth>
@@ -111,12 +108,12 @@ namespace alpaka
 
         constexpr decltype(auto) load() const
         {
-            return copyFrom(T_MdSpan::operator[](m_idx));
+            return internal::loadAsSimd<width()>(static_cast<T_MdSpan const&>(*this), getAlignment(), m_idx);
         }
 
         constexpr decltype(auto) load()
         {
-            return copyFrom(T_MdSpan::operator[](m_idx));
+            return internal::loadAsSimd<width()>(static_cast<T_MdSpan&>(*this), getAlignment(), m_idx);
         }
 
         /** get the alignment of the memory the pointer is pointing to
@@ -186,21 +183,36 @@ namespace alpaka
         }
 
     private:
-        constexpr decltype(auto) copyFrom(auto&& data) const
-        {
-            using DataTypeType = std::remove_reference_t<decltype(data)>;
-            using DstType = std::conditional_t<
-                std::is_const_v<DataTypeType>,
-                Simd<ALPAKA_TYPEOF(data), T_SimdWidth{}.back()> const,
-                Simd<ALPAKA_TYPEOF(data), T_SimdWidth{}.back()>>;
-
-            auto result = DstType{};
-            result.copyFrom(&data, getAlignment());
-            return result;
-        }
-
         IdxType m_idx;
     };
+
+    namespace internal
+    {
+        template<
+            alpaka::concepts::IMdSpan T_MdSpan,
+            alpaka::concepts::Alignment T_MdSpanAlignment,
+            alpaka::concepts::Vector T_Idx>
+        struct LoadAsSimd::Op<T_MdSpan, T_MdSpanAlignment, T_Idx>
+        {
+            template<uint32_t T_simdWidth>
+            constexpr auto load(auto&& dataSource, T_MdSpanAlignment alignment, T_Idx const& idx) const
+            {
+                static_assert(
+                    std::is_same_v<T_MdSpan, ALPAKA_TYPEOF(dataSource)>,
+                    "Data source type must match the class template signature.");
+                auto&& d = dataSource[idx];
+                using DataTypeType = std::remove_reference_t<decltype(d)>;
+                using DstType = std::conditional_t<
+                    std::is_const_v<DataTypeType>,
+                    Simd<std::decay_t<DataTypeType>, T_simdWidth> const,
+                    Simd<std::decay_t<DataTypeType>, T_simdWidth>>;
+
+                alpaka::concepts::Simd auto dest = DstType{};
+                dest.copyFrom(&d, alignment);
+                return dest;
+            }
+        };
+    } // namespace internal
 
     namespace trait
     {

@@ -52,7 +52,7 @@ namespace alpaka::onHost
         alpaka::concepts::Executor auto const exec,
         alpaka::concepts::IMdSpan auto&& out,
         auto&& fn,
-        auto&&... in)
+        alpaka::concepts::IGeneratorOrMdSpan auto&&... in)
     {
         internal::transform(queue, exec, ALPAKA_FORWARD(out), ALPAKA_FORWARD(fn), ALPAKA_FORWARD(in)...);
     }
@@ -62,7 +62,11 @@ namespace alpaka::onHost
      * parallelism/performance.
      */
     template<typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
-    inline void transform(Queue<T_Device, T_QueueKind> const& queue, auto&& out, auto&& fn, auto&&... in)
+    inline void transform(
+        Queue<T_Device, T_QueueKind> const& queue,
+        alpaka::concepts::IMdSpan auto&& out,
+        auto&& fn,
+        alpaka::concepts::IGeneratorOrMdSpan auto&&... in)
     {
         auto executor = supportedExecutors(queue.getDevice(), exec::allExecutors);
         transform(queue, std::get<0>(executor), ALPAKA_FORWARD(out), ALPAKA_FORWARD(fn), ALPAKA_FORWARD(in)...);

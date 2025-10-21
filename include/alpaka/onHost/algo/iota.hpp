@@ -32,8 +32,8 @@ namespace alpaka::onHost
         Queue<T_Device, T_QueueKind> const& queue,
         alpaka::concepts::Executor auto const exec,
         T_DataType const& initValue,
-        auto&& out0,
-        auto&&... outOther)
+        alpaka::concepts::IMdSpan auto&& out0,
+        alpaka::concepts::IMdSpan auto&&... outOther)
         requires(
             std::is_convertible_v<T_DataType, alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out0)>>
             && std::conjunction_v<
@@ -57,8 +57,8 @@ namespace alpaka::onHost
     inline void iota(
         Queue<T_Device, T_QueueKind> const& queue,
         T_DataType const& initValue,
-        auto&& out0,
-        auto&&... outOther)
+        alpaka::concepts::IMdSpan auto&& out0,
+        alpaka::concepts::IMdSpan auto&&... outOther)
         requires(
             std::is_convertible_v<T_DataType, alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out0)>>
             && std::conjunction_v<

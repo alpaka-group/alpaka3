@@ -11,6 +11,7 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/functor.hpp"
 #include "alpaka/mem/MdSpan.hpp"
+#include "alpaka/mem/concepts/IGeneratorOrMdSpan.hpp"
 #include "alpaka/onAcc/Acc.hpp"
 #include "alpaka/onAcc/SimdAlgo.hpp"
 #include "alpaka/onAcc/atomic.hpp"
@@ -29,10 +30,10 @@ namespace alpaka::onHost::internal
             onAcc::concepts::Acc auto const& acc,
             alpaka::concepts::Vector auto const& extentMd,
             T_DataType const& neutralElement,
-            alpaka::concepts::MdSpan auto output,
+            alpaka::concepts::IMdSpan auto output,
             auto const& reduceFunc,
             auto const& transformFunc,
-            alpaka::concepts::MdSpan auto&&... inputs) const
+            alpaka::concepts::IGeneratorOrMdSpan auto&&... inputs) const
         {
             static_assert(
                 std::is_same_v<ALPAKA_TYPEOF(neutralElement), alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(output)>>,
@@ -149,8 +150,7 @@ namespace alpaka::onHost::internal
             auto& result,
             auto&& reduceFunc,
             auto&& transformFunc,
-            alpaka::concepts::MdSpan auto&&... inputs)
-
+            alpaka::concepts::IGeneratorOrMdSpan auto&&... inputs)
         {
             // Use the generic transformFunc and the variant reduceFunc
             if constexpr(isSpecializationOf_v<ALPAKA_TYPEOF(transformFunc), StencilFunc>)
@@ -211,11 +211,11 @@ namespace alpaka::onHost::internal
         auto const& queue,
         alpaka::concepts::Executor auto const exec,
         T_DataType const& neutralElement,
-        alpaka::concepts::MdSpan auto out,
+        alpaka::concepts::IMdSpan auto out,
         auto&& reduceFn,
         auto&& transformFn,
         auto&& in0,
-        auto&&... in)
+        alpaka::concepts::IGeneratorOrMdSpan auto&&... in)
     {
         auto extentMd = onHost::getExtents(in0);
         using IndexType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(extentMd)>;

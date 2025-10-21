@@ -4,12 +4,9 @@
 
 #pragma once
 
-
-#include "alpaka/Simd.hpp"
 #include "alpaka/Vec.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/functor.hpp"
-#include "alpaka/mem/MdSpan.hpp"
 #include "alpaka/onAcc/Acc.hpp"
 #include "alpaka/onAcc/SimdAlgo.hpp"
 #include "alpaka/onHost/interface.hpp"
@@ -24,7 +21,7 @@ namespace alpaka::onHost::internal
             onAcc::concepts::Acc auto const& acc,
             alpaka::concepts::VectorOrScalar auto const& extents,
             auto const& func,
-            alpaka::concepts::MdSpan auto&&... inputs) const
+            alpaka::concepts::IGeneratorOrMdSpan auto&&... inputs) const
         {
             Vec const extentMd = extents;
             auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
@@ -49,7 +46,7 @@ namespace alpaka::onHost::internal
         alpaka::concepts::Executor auto const exec,
         alpaka::concepts::VectorOrScalar auto const& extents,
         auto&& fn,
-        auto&&... in)
+        alpaka::concepts::IGeneratorOrMdSpan auto&&... in)
     {
         Vec const extentMd = extents;
         auto frameSpec = getFrameSpec<T_DataType>(queue.getDevice(), extentMd);

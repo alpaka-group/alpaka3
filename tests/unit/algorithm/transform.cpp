@@ -65,61 +65,70 @@ struct ScalarOpWithAcc
     }
 };
 
-template<typename T_DataType>
-void executeTest(
-    concepts::Executor auto exec,
-    auto const& computeQueue,
-    auto const functorPair,
-    concepts::Vector auto extentMd)
+struct TestWithMdSpan
 {
-    std::cout << "run func : " << onHost::demangledName(functorPair.second) << std::endl;
-
-    auto computeDev = computeQueue.getDevice();
-    using DataType = T_DataType;
-    using OutDataType = decltype(functorPair.second(std::declval<DataType>(), std::declval<DataType>()));
-    onHost::SharedBuffer computeBufferOut = onHost::allocDeferred<OutDataType>(computeQueue, extentMd);
-    onHost::SharedBuffer computeBufferIn0 = onHost::allocDeferred<DataType>(computeQueue, extentMd);
-    onHost::SharedBuffer computeBufferIn1 = onHost::allocLikeAsync(computeQueue, computeBufferIn0);
-    onHost::SharedBuffer hostBufferIota = onHost::allocLike(onHost::makeHostDevice(), computeBufferIn0);
-    onHost::SharedBuffer hostBufferOut = onHost::allocLike(onHost::makeHostDevice(), computeBufferOut);
-
-    // initialize with the linearized index
-    DataType iotaCounter = 0;
-    for(auto& value : hostBufferIota)
+    template<typename T_DataType>
+    static void executeTest(
+        concepts::Executor auto exec,
+        auto const& computeQueue,
+        auto const setup,
+        concepts::Vector auto extentMd)
     {
-        value = iotaCounter;
-        ++iotaCounter;
-    }
+        std::cout << "run func : " << onHost::demangledName(std::get<1>(setup)) << std::endl;
 
-    onHost::memcpy(computeQueue, computeBufferIn0, hostBufferIota);
-    onHost::memcpy(computeQueue, computeBufferIn1, hostBufferIota);
+        auto computeDev = computeQueue.getDevice();
+        using DataType = T_DataType;
+        using OutDataType = decltype(std::get<1>(setup)(std::declval<DataType>(), std::declval<DataType>()));
+        onHost::SharedBuffer computeBufferOut = onHost::allocDeferred<OutDataType>(computeQueue, extentMd);
+        onHost::SharedBuffer computeBufferIn0 = onHost::allocDeferred<DataType>(computeQueue, extentMd);
+        onHost::SharedBuffer computeBufferIn1 = onHost::allocLikeAsync(computeQueue, computeBufferIn0);
+        onHost::SharedBuffer hostBufferIota = onHost::allocLike(onHost::makeHostDevice(), computeBufferIn0);
+        onHost::SharedBuffer hostBufferOut = onHost::allocLike(onHost::makeHostDevice(), computeBufferOut);
 
-    onHost::wait(computeQueue);
-    auto const beginT = std::chrono::high_resolution_clock::now();
-
-    onHost::transform(computeQueue, exec, computeBufferOut, functorPair.first, computeBufferIn0, computeBufferIn1);
-
-    onHost::wait(computeQueue);
-    auto const endT = std::chrono::high_resolution_clock::now();
-    std::cout << "Time for transform: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-              << " data size: " << computeBufferOut.getExtents() << std::endl;
-
-    onHost::memcpy(computeQueue, hostBufferOut, computeBufferOut);
-    onHost::wait(computeQueue);
-
-    // validate without using the forward iterator
-    DataType refIotaCounter = 0;
-    meta::ndLoopIncIdx(
-        extentMd,
-        [&](auto idx)
+        // initialize with the linearized index
+        DataType iotaCounter = 0;
+        for(auto& value : hostBufferIota)
         {
-            CHECK(hostBufferOut[idx] == functorPair.second(refIotaCounter, refIotaCounter));
-            ++refIotaCounter;
-        });
+            value = iotaCounter;
+            ++iotaCounter;
+        }
+
+        onHost::memcpy(computeQueue, computeBufferIn0, hostBufferIota);
+        onHost::memcpy(computeQueue, computeBufferIn1, hostBufferIota);
+
+        onHost::wait(computeQueue);
+        auto const beginT = std::chrono::high_resolution_clock::now();
+
+        onHost::transform(
+            computeQueue,
+            exec,
+            computeBufferOut,
+            std::get<0>(setup),
+            computeBufferIn0,
+            computeBufferIn1);
+
+        onHost::wait(computeQueue);
+        auto const endT = std::chrono::high_resolution_clock::now();
+        std::cout << "Time for transform: " << std::chrono::duration<double>(endT - beginT).count() << 's'
+                  << " data size: " << computeBufferOut.getExtents() << std::endl;
+
+        onHost::memcpy(computeQueue, hostBufferOut, computeBufferOut);
+        onHost::wait(computeQueue);
+
+        // validate without using the forward iterator
+        DataType refIotaCounter = 0;
+        meta::ndLoopIncIdx(
+            extentMd,
+            [&](auto idx)
+            {
+                CHECK(hostBufferOut[idx] == std::get<1>(setup)(refIotaCounter, refIotaCounter));
+                ++refIotaCounter;
+            });
+    };
 };
 
 template<typename T_DataType>
-void prepareTest(auto cfg, concepts::Vector auto extentMd, auto const& functorTuples)
+void prepareTest(auto cfg, concepts::Vector auto extentMd, auto const& setupTuple)
 {
     using DataType = T_DataType;
 
@@ -143,8 +152,9 @@ void prepareTest(auto cfg, concepts::Vector auto extentMd, auto const& functorTu
 
     // execute for each functor
     std::apply(
-        [&](auto const&... functorPair) { (executeTest<DataType>(exec, computeQueue, functorPair, extentMd), ...); },
-        functorTuples);
+        [&](auto const&... setup)
+        { (std::get<2>(setup).template executeTest<DataType>(exec, computeQueue, setup, extentMd), ...); },
+        setupTuple);
 }
 
 TEMPLATE_LIST_TEST_CASE("transform", "", TestBackends)
@@ -155,28 +165,127 @@ TEMPLATE_LIST_TEST_CASE("transform", "", TestBackends)
 
     // This list is not directly defined within the function `prepareTest()` due to nvcc compile issues.
     auto functorList = std::make_tuple(
-        std::make_pair(std::minus{}, std::minus{}),
-        std::make_pair(std::plus{}, std::plus{}),
+        std::make_tuple(std::minus{}, std::minus{}, TestWithMdSpan{}),
+        std::make_tuple(std::plus{}, std::plus{}, TestWithMdSpan{}),
         // we use variable.load() in the functor therefore we need to wrap the functor as StencilFunc
-        std::make_pair(StencilFunc{StencilAdd{}}, std::plus{}),
-        std::make_pair(StencilFunc{StencilAddWithAcc{}}, std::plus{}),
+        std::make_tuple(StencilFunc{StencilAdd{}}, std::plus{}, TestWithMdSpan{}),
+        std::make_tuple(StencilFunc{StencilAddWithAcc{}}, std::plus{}, TestWithMdSpan{}),
         /* We can use a lambda function because the types are explicitly defined.
          * Generic lambdas would not be supported for CUDA/HIP
          * Wrapp the functor as ScalarFunc because math::min() cannot be executed on a Simd pack.
          * This enforces that the functor is evaluated on scalar values and not SIMD packs.
          * Memory loads and stores will be vectorized.
          */
-        std::make_pair(
+        std::make_tuple(
             ScalarFunc{[] ALPAKA_FN_ACC(DataType const& a, DataType const& b)
                        { return math::min(a + DataType{1}, b); }},
-            [](DataType const& a, DataType const& b) { return math::min(a + DataType{1}, b); }),
-        std::make_pair(
+            [](DataType const& a, DataType const& b) { return math::min(a + DataType{1}, b); },
+            TestWithMdSpan{}),
+        std::make_tuple(
             ScalarFunc{ScalarOpWithAcc{}},
-            [](DataType const& a, DataType const& b) { return math::min(a + DataType{1}, b); }),
+            [](DataType const& a, DataType const& b) { return math::min(a + DataType{1}, b); },
+            TestWithMdSpan{}),
         // different output type
-        std::make_pair(
+        std::make_tuple(
             AddUpCastWithAcc{},
-            [](DataType const& a, DataType const& b) { return static_cast<size_t>(a + b); }));
+            [](DataType const& a, DataType const& b) { return static_cast<size_t>(a + b); },
+            TestWithMdSpan{}));
+
+    // different extents for testing
+    auto extentMdList
+        = std::make_tuple(Vec{5, 7, 3, 11}, Vec{93, 7, 123}, Vec{5, 7, 4111}, Vec{5, 7, 3}, Vec{7, 3}, Vec{3});
+
+    std::apply([&](auto... extents) { (prepareTest<DataType>(cfg, extents, functorList), ...); }, extentMdList);
+}
+
+struct TestWithGenerator
+{
+    template<typename T_DataType>
+    static void executeTest(
+        concepts::Executor auto exec,
+        auto const& computeQueue,
+        auto const setup,
+        concepts::Vector auto extentMd)
+    {
+        std::cout << "run func : " << onHost::demangledName(std::get<1>(setup)) << std::endl;
+
+        auto computeDev = computeQueue.getDevice();
+        using DataType = T_DataType;
+        using OutDataType = decltype(std::get<1>(setup)(std::declval<DataType>(), std::declval<DataType>()));
+        onHost::SharedBuffer computeBufferOut = onHost::allocDeferred<OutDataType>(computeQueue, extentMd);
+        onHost::SharedBuffer computeBufferIn0 = onHost::allocDeferred<DataType>(computeQueue, extentMd);
+        auto generator = LinearizedIdxGenerator{extentMd};
+        onHost::SharedBuffer hostBufferIota = onHost::allocLike(onHost::makeHostDevice(), computeBufferIn0);
+        onHost::SharedBuffer hostBufferOut = onHost::allocLike(onHost::makeHostDevice(), computeBufferOut);
+
+        // initialize with the linearized index
+        DataType iotaCounter = 0;
+        for(auto& value : hostBufferIota)
+        {
+            value = iotaCounter;
+            ++iotaCounter;
+        }
+
+        onHost::memcpy(computeQueue, computeBufferIn0, hostBufferIota);
+
+        onHost::wait(computeQueue);
+        auto const beginT = std::chrono::high_resolution_clock::now();
+
+        onHost::transform(computeQueue, exec, computeBufferOut, std::get<0>(setup), computeBufferIn0, generator);
+
+        onHost::wait(computeQueue);
+        auto const endT = std::chrono::high_resolution_clock::now();
+        std::cout << "Time for transform: " << std::chrono::duration<double>(endT - beginT).count() << 's'
+                  << " data size: " << computeBufferOut.getExtents() << std::endl;
+
+        onHost::memcpy(computeQueue, hostBufferOut, computeBufferOut);
+        onHost::wait(computeQueue);
+
+        // validate without using the forward iterator
+        DataType refIotaCounter = 0;
+        meta::ndLoopIncIdx(
+            extentMd,
+            [&](auto idx)
+            {
+                CHECK(hostBufferOut[idx] == std::get<1>(setup)(refIotaCounter, generator[idx]));
+                ++refIotaCounter;
+            });
+    };
+};
+
+TEMPLATE_LIST_TEST_CASE("transform generator", "", TestBackends)
+{
+    auto cfg = TestType::makeDict();
+
+    using DataType = int;
+
+    // This list is not directly defined within the function `prepareTest()` due to nvcc compile issues.
+    auto functorList = std::make_tuple(
+        std::make_tuple(std::minus{}, std::minus{}, TestWithGenerator{}),
+        std::make_tuple(std::plus{}, std::plus{}, TestWithGenerator{}),
+        // we use variable.load() in the functor therefore we need to wrap the functor as StencilFunc
+        std::make_tuple(StencilFunc{StencilAdd{}}, std::plus{}, TestWithGenerator{}),
+        std::make_tuple(StencilFunc{StencilAddWithAcc{}}, std::plus{}, TestWithGenerator{}),
+        /* We can use a lambda function because the types are explicitly defined.
+         * Generic lambdas would not be supported for CUDA/HIP
+         * Wrapp the functor as ScalarFunc because math::min() cannot be executed on a Simd pack.
+         * This enforces that the functor is evaluated on scalar values and not SIMD packs.
+         * Memory loads and stores will be vectorized.
+         */
+        std::make_tuple(
+            ScalarFunc{[] ALPAKA_FN_ACC(DataType const& a, DataType const& b)
+                       { return math::min(a + DataType{1}, b); }},
+            [](DataType const& a, DataType const& b) { return math::min(a + DataType{1}, b); },
+            TestWithGenerator{}),
+        std::make_tuple(
+            ScalarFunc{ScalarOpWithAcc{}},
+            [](DataType const& a, DataType const& b) { return math::min(a + DataType{1}, b); },
+            TestWithGenerator{}),
+        // different output type
+        std::make_tuple(
+            AddUpCastWithAcc{},
+            [](DataType const& a, DataType const& b) { return static_cast<size_t>(a + b); },
+            TestWithGenerator{}));
 
     // different extents for testing
     auto extentMdList

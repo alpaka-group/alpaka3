@@ -25,6 +25,7 @@
 #include "alpaka/math/internal/Complex.hpp"
 #include "alpaka/mem/BoundaryIter.hpp"
 #include "alpaka/mem/Iter.hpp"
+#include "alpaka/mem/LinearizedIdxGenerator.hpp"
 #include "alpaka/onAcc/Acc.hpp"
 #include "alpaka/onAcc/GlobalMem.hpp"
 #include "alpaka/onAcc/SimdAlgo.hpp"

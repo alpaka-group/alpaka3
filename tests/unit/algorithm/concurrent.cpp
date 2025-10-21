@@ -51,62 +51,71 @@ struct StencilAddMin
     }
 };
 
-/**
- * @param functorPair all functors should write the results to the first argument
- */
-template<typename T_DataType>
-void executeTest(
-    concepts::Executor auto exec,
-    auto const& computeQueue,
-    auto const functorPair,
-    concepts::Vector auto extentMd)
+struct TestWithMdSpan
 {
-    std::cout << "run func : " << onHost::demangledName(functorPair.second) << std::endl;
-
-    auto computeDev = computeQueue.getDevice();
-    using DataType = T_DataType;
-    onHost::SharedBuffer computeBufferIn0 = onHost::alloc<DataType>(computeDev, extentMd);
-    onHost::SharedBuffer computeBufferIn1 = onHost::allocLike(computeDev, computeBufferIn0);
-    onHost::SharedBuffer hostBufferIota = onHost::allocLike(onHost::makeHostDevice(), computeBufferIn0);
-    onHost::SharedBuffer hostBufferOut = onHost::allocLike(onHost::makeHostDevice(), computeBufferIn0);
-
-    // initialize with the linearized index
-    DataType iotaCounter = 0;
-    for(auto& value : hostBufferIota)
+    /**
+     * @param setup all functors should write the results to the first argument
+     */
+    template<typename T_DataType>
+    static void executeTest(
+        concepts::Executor auto exec,
+        auto const& computeQueue,
+        auto const setup,
+        concepts::Vector auto extentMd)
     {
-        value = iotaCounter;
-        ++iotaCounter;
-    }
+        std::cout << "run func : " << onHost::demangledName(std::get<1>(setup)) << std::endl;
 
-    onHost::memcpy(computeQueue, computeBufferIn0, hostBufferIota);
-    onHost::memcpy(computeQueue, computeBufferIn1, hostBufferIota);
+        auto computeDev = computeQueue.getDevice();
+        using DataType = T_DataType;
+        onHost::SharedBuffer computeBufferIn0 = onHost::alloc<DataType>(computeDev, extentMd);
+        onHost::SharedBuffer computeBufferIn1 = onHost::allocLike(computeDev, computeBufferIn0);
+        onHost::SharedBuffer hostBufferIota = onHost::allocLike(onHost::makeHostDevice(), computeBufferIn0);
+        onHost::SharedBuffer hostBufferOut = onHost::allocLike(onHost::makeHostDevice(), computeBufferIn0);
 
-    onHost::wait(computeQueue);
-    auto const beginT = std::chrono::high_resolution_clock::now();
-
-    onHost::concurrent<DataType>(computeQueue, exec, extentMd, functorPair.first, computeBufferIn0, computeBufferIn1);
-
-    onHost::wait(computeQueue);
-    auto const endT = std::chrono::high_resolution_clock::now();
-    std::cout << "Time for concurrent: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-              << " data size: " << extentMd << std::endl;
-
-    onHost::memcpy(computeQueue, hostBufferOut, computeBufferIn0);
-    onHost::wait(computeQueue);
-
-    // validate without using the forward iterator
-    DataType refIotaCounter = 0;
-    meta::ndLoopIncIdx(
-        extentMd,
-        [&](auto idx)
+        // initialize with the linearized index
+        DataType iotaCounter = 0;
+        for(auto& value : hostBufferIota)
         {
-            CHECK(hostBufferOut[idx] == functorPair.second(refIotaCounter, refIotaCounter));
-            ++refIotaCounter;
-        });
+            value = iotaCounter;
+            ++iotaCounter;
+        }
+
+        onHost::memcpy(computeQueue, computeBufferIn0, hostBufferIota);
+        onHost::memcpy(computeQueue, computeBufferIn1, hostBufferIota);
+
+        onHost::wait(computeQueue);
+        auto const beginT = std::chrono::high_resolution_clock::now();
+
+        onHost::concurrent<DataType>(
+            computeQueue,
+            exec,
+            extentMd,
+            std::get<0>(setup),
+            computeBufferIn0,
+            computeBufferIn1);
+
+        onHost::wait(computeQueue);
+        auto const endT = std::chrono::high_resolution_clock::now();
+        std::cout << "Time for concurrent: " << std::chrono::duration<double>(endT - beginT).count() << 's'
+                  << " data size: " << extentMd << std::endl;
+
+        onHost::memcpy(computeQueue, hostBufferOut, computeBufferIn0);
+        onHost::wait(computeQueue);
+
+        // validate without using the forward iterator
+        DataType refIotaCounter = 0;
+        meta::ndLoopIncIdx(
+            extentMd,
+            [&](auto idx)
+            {
+                CHECK(hostBufferOut[idx] == std::get<1>(setup)(refIotaCounter, refIotaCounter));
+                ++refIotaCounter;
+            });
+    };
 };
 
 template<typename T_DataType>
-void prepareTest(auto cfg, concepts::Vector auto extentMd, auto const& functorTuples)
+void prepareTest(auto cfg, concepts::Vector auto extentMd, auto const& setupTuple)
 {
     using DataType = T_DataType;
 
@@ -130,8 +139,9 @@ void prepareTest(auto cfg, concepts::Vector auto extentMd, auto const& functorTu
 
     // execute for each functor
     std::apply(
-        [&](auto const&... functorPair) { (executeTest<DataType>(exec, computeQueue, functorPair, extentMd), ...); },
-        functorTuples);
+        [&](auto const&... setup)
+        { (std::get<2>(setup).template executeTest<DataType>(exec, computeQueue, setup, extentMd), ...); },
+        setupTuple);
 }
 
 TEMPLATE_LIST_TEST_CASE("concurrent", "", TestBackends)
@@ -141,13 +151,94 @@ TEMPLATE_LIST_TEST_CASE("concurrent", "", TestBackends)
     using DataType = int;
 
     // This list is not directly defined within the function `prepareTest()` due to nvcc compile issues.
-    auto functorList = std::make_tuple(
-        std::make_pair(StencilAddWithAcc{}, std::plus{}),
-        std::make_pair(StencilAddMin{}, [](DataType const& a, DataType const& b) { return a + math::min(a, b); }));
+    auto setups = std::make_tuple(
+        std::make_tuple(StencilAddWithAcc{}, std::plus{}, TestWithMdSpan{}),
+        std::make_tuple(
+            StencilAddMin{},
+            [](DataType const& a, DataType const& b) { return a + math::min(a, b); },
+            TestWithMdSpan{}));
 
     // different extents for testing
     auto extentMdList
         = std::make_tuple(Vec{5, 7, 3, 11}, Vec{93, 7, 123}, Vec{5, 7, 4111}, Vec{5, 7, 3}, Vec{7, 3}, Vec{3});
 
-    std::apply([&](auto... extents) { (prepareTest<DataType>(cfg, extents, functorList), ...); }, extentMdList);
+    std::apply([&](auto... extents) { (prepareTest<DataType>(cfg, extents, setups), ...); }, extentMdList);
+}
+
+struct TestWithGenerator
+{
+    /**
+     * @param setup all functors should write the results to the first argument
+     */
+    template<typename T_DataType>
+    static void executeTest(
+        concepts::Executor auto exec,
+        auto const& computeQueue,
+        auto const setup,
+        concepts::Vector auto extentMd)
+    {
+        std::cout << "run func : " << onHost::demangledName(std::get<1>(setup)) << std::endl;
+
+        auto computeDev = computeQueue.getDevice();
+        using DataType = T_DataType;
+        onHost::SharedBuffer computeBufferIn0 = onHost::alloc<DataType>(computeDev, extentMd);
+        onHost::SharedBuffer hostBufferIota = onHost::allocLike(onHost::makeHostDevice(), computeBufferIn0);
+        onHost::SharedBuffer hostBufferOut = onHost::allocLike(onHost::makeHostDevice(), computeBufferIn0);
+
+        auto generator = LinearizedIdxGenerator{extentMd};
+
+        // initialize with the linearized index
+        DataType iotaCounter = 0;
+        for(auto& value : hostBufferIota)
+        {
+            value = iotaCounter;
+            ++iotaCounter;
+        }
+
+        onHost::memcpy(computeQueue, computeBufferIn0, hostBufferIota);
+
+        onHost::wait(computeQueue);
+        auto const beginT = std::chrono::high_resolution_clock::now();
+
+        onHost::concurrent<DataType>(computeQueue, exec, extentMd, std::get<0>(setup), computeBufferIn0, generator);
+
+        onHost::wait(computeQueue);
+        auto const endT = std::chrono::high_resolution_clock::now();
+        std::cout << "Time for concurrent: " << std::chrono::duration<double>(endT - beginT).count() << 's'
+                  << " data size: " << extentMd << std::endl;
+
+        onHost::memcpy(computeQueue, hostBufferOut, computeBufferIn0);
+        onHost::wait(computeQueue);
+
+        // validate without using the forward iterator
+        DataType refIotaCounter = 0;
+        meta::ndLoopIncIdx(
+            extentMd,
+            [&](auto idx)
+            {
+                CHECK(hostBufferOut[idx] == std::get<1>(setup)(refIotaCounter, generator[idx]));
+                ++refIotaCounter;
+            });
+    };
+};
+
+TEMPLATE_LIST_TEST_CASE("concurrent generator", "", TestBackends)
+{
+    auto cfg = TestType::makeDict();
+
+    using DataType = int;
+
+    // This list is not directly defined within the function `prepareTest()` due to nvcc compile issues.
+    auto setups = std::make_tuple(
+        std::make_tuple(StencilAddWithAcc{}, std::plus{}, TestWithGenerator{}),
+        std::make_tuple(
+            StencilAddMin{},
+            [](DataType const& a, DataType const& b) { return a + math::min(a, b); },
+            TestWithGenerator{}));
+
+    // different extents for testing
+    auto extentMdList
+        = std::make_tuple(Vec{5, 7, 3, 11}, Vec{93, 7, 123}, Vec{5, 7, 4111}, Vec{5, 7, 3}, Vec{7, 3}, Vec{3});
+
+    std::apply([&](auto... extents) { (prepareTest<DataType>(cfg, extents, setups), ...); }, extentMdList);
 }

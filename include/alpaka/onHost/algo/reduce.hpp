@@ -31,7 +31,7 @@ namespace alpaka::onHost
         Queue<T_Device, T_QueueKind> const& queue,
         alpaka::concepts::Executor auto const exec,
         DataType const& neutralElement,
-        alpaka::concepts::MdSpan auto out,
+        alpaka::concepts::IMdSpan auto out,
         auto&& binaryReduceFn,
         auto&& in) requires(std::same_as<DataType, alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>>)
     {
@@ -53,9 +53,10 @@ namespace alpaka::onHost
     inline void reduce(
         Queue<T_Device, T_QueueKind> const& queue,
         DataType const& neutralElement,
-        alpaka::concepts::MdSpan auto out,
+        alpaka::concepts::IMdSpan auto out,
         auto&& binaryReduceFn,
-        auto&& in) requires(std::same_as<DataType, alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>>)
+        alpaka::concepts::IGeneratorOrMdSpan auto&& in)
+        requires(std::same_as<DataType, alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>>)
     {
         auto executor = supportedExecutors(queue.getDevice(), exec::allExecutors);
         reduce(queue, std::get<0>(executor), neutralElement, out, ALPAKA_FORWARD(binaryReduceFn), ALPAKA_FORWARD(in));
