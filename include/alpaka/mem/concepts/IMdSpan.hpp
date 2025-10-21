@@ -53,48 +53,49 @@ namespace alpaka::concepts
          * @note The access operator [] with an integral as an argument is only available if the dimension is one.
          **/
         template<typename T, typename T_Mut, typename T_Const>
-        concept IMdSpan = requires(T t, T_Mut mut_t, T_Const const_t, alpaka::Vec<uint32_t, T::dim()> vec) {
-            typename T::value_type;
-            typename T::reference;
-            typename T::const_reference;
-            typename T::pointer;
-            typename T::const_pointer;
-            typename T::index_type;
+        concept IMdSpan
+            = requires(T t, T_Mut mut_t, T_Const const_t, alpaka::Vec<typename T::index_type, T::dim()> vec) {
+                  typename T::value_type;
+                  typename T::reference;
+                  typename T::const_reference;
+                  typename T::pointer;
+                  typename T::const_pointer;
+                  typename T::index_type;
 
-            requires std::movable<T_Mut>;
-            /// The bool operator returns true if access to the memory is valid. For example, memory access may be
-            /// invalid after moving the DataSource.
-            static_cast<bool>(t);
+                  requires std::movable<T_Mut>;
+                  /// The bool operator returns true if access to the memory is valid. For example, memory access may
+                  /// be invalid after moving the DataSource.
+                  static_cast<bool>(t);
 
-            { T::dim() } -> std::same_as<uint32_t>;
-            { *mut_t } -> std::same_as<typename T::reference>;
-            { *const_t } -> std::same_as<typename T::const_reference>;
-            { mut_t.data() } -> std::same_as<typename T::pointer>;
-            { const_t.data() } -> std::same_as<typename T::const_pointer>;
-            /// @todo check for a MDIterator concept
-            t.begin();
-            t.end();
-            t.cbegin();
-            t.cend();
+                  { T::dim() } -> std::same_as<uint32_t>;
+                  { *mut_t } -> std::same_as<typename T::reference>;
+                  { *const_t } -> std::same_as<typename T::const_reference>;
+                  { mut_t.data() } -> std::same_as<typename T::pointer>;
+                  { const_t.data() } -> std::same_as<typename T::const_pointer>;
+                  /// @todo check for a MDIterator concept
+                  t.begin();
+                  t.end();
+                  t.cbegin();
+                  t.cend();
 
-            { mut_t[vec] } -> std::same_as<typename T::reference>;
-            { const_t[vec] } -> std::same_as<typename T::const_reference>;
-            // only if MdSpan like object is 1D, the access operator with an integral is available
-            requires(T::dim() > 1) || requires {
-                { mut_t[0] } -> std::same_as<typename T::reference>;
-            };
-            requires(T::dim() > 1) || requires {
-                { const_t[0] } -> std::same_as<typename T::const_reference>;
-            };
+                  { mut_t[vec] } -> std::same_as<typename T::reference>;
+                  { const_t[vec] } -> std::same_as<typename T::const_reference>;
+                  // only if MdSpan like object is 1D, the access operator with an integral is available
+                  requires(T::dim() > 1) || requires {
+                      { mut_t[typename T::index_type{0}] } -> std::same_as<typename T::reference>;
+                  };
+                  requires(T::dim() > 1) || requires {
+                      { const_t[typename T::index_type{0}] } -> std::same_as<typename T::const_reference>;
+                  };
 
-            /// @todo add getSlice, getConstSlice and getView, getConstView functions
+                  /// @todo add getSlice, getConstSlice and getView, getConstView functions
 
-            { t.getAlignment() } -> alpaka::concepts::Alignment;
-            /// @todo implement concept alpaka::concepts::Extents and use it as return value
-            t.getExtents();
-            /// @todo implement concept alpaka::concepts::Pitches and use it as return value
-            t.getPitches();
-        };
+                  { t.getAlignment() } -> alpaka::concepts::Alignment;
+                  /// @todo implement concept alpaka::concepts::Extents and use it as return value
+                  t.getExtents();
+                  /// @todo implement concept alpaka::concepts::Pitches and use it as return value
+                  t.getPitches();
+              };
 
     } // namespace impl
 
