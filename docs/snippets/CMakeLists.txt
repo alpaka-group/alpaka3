@@ -21,7 +21,7 @@ add_subdirectory(cheatsheet)
 
 # Create a separate build directory for the fetchContent example
 # This keeps the example's build environment clean and isolated from the main project
-make_directory(${CMAKE_BINARY_DIR}/docs/snippets/fetchContent/)
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/docs/snippets/fetchContent/)
 
 # Configure the fetchContent example as a separate CMake project
 # This simulates how a user would actually use alpaka3 via FetchContent
