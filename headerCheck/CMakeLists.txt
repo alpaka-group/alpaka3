@@ -12,8 +12,7 @@ cmake_minimum_required(VERSION 3.25)
 project(Alpaka2HeaderTest)
 
 # Add common functions from alpaka.
-include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/alpakaCommon.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/finalize.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/buildDependencies.cmake)
 
 set(_TARGET_NAME "headerCheckTest")
 
@@ -21,19 +20,35 @@ set(_TARGET_NAME "headerCheckTest")
 # Add subdirectories.
 ################################################################################
 
-alpaka_install_catch2()
+# alpaka
+if(NOT TARGET alpaka::alpaka)
+    # hide alpaka_HEADERCHECKS because it can be OFF since this test is build directly.
+    mark_as_advanced(FORCE alpaka_HEADERCHECKS)
+    add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/.." "${CMAKE_BINARY_DIR}/alpaka")
+endif()
+
+# fetch catch2
+if(NOT TARGET Catch2::Catch2WithMain)
+    alpaka_install_catch2()
+endif()
+
+################################################################################
+# Enable CTests
+################################################################################
+
+enable_testing()
 
 ################################################################################
 # Directory of this file.
 ################################################################################
-set(ALPAKA_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include/alpaka)
+set(ALPAKA_ROOT_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../include/alpaka)
 
 # Normalize the path (e.g. remove ../)
-get_filename_component(ALPAKA_ROOT_DIR "${ALPAKA_ROOT_DIR}" ABSOLUTE)
+get_filename_component(ALPAKA_ROOT_INCLUDE_DIR "${ALPAKA_ROOT_INCLUDE_DIR}" ABSOLUTE)
 
 #---------------------------------------------------------------------------
 # Create source files.
-set(ALPAKA_SUFFIXED_INCLUDE_DIR "${ALPAKA_ROOT_DIR}")
+set(ALPAKA_SUFFIXED_INCLUDE_DIR "${ALPAKA_ROOT_INCLUDE_DIR}")
 append_recursive_files("${ALPAKA_SUFFIXED_INCLUDE_DIR}" "hpp" "ALPAKA_FILES_HEADER")
 
 set(_GENERATED_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/src")
