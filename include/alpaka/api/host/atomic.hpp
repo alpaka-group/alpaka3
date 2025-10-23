@@ -14,22 +14,22 @@
 #include <atomic>
 #include <type_traits>
 
-#ifndef ALPAKA_DISABLE_ATOMIC_ATOMICREF
-#    ifndef ALPAKA_HAS_STD_ATOMIC_REF
-#        include <boost/atomic.hpp>
-#    endif
+
+#ifdef ALPAKA_DISABLE_STD_ATOMIC_REF
+#    include <boost/atomic.hpp>
+#endif
 
 namespace alpaka::onAcc
 {
     namespace detail
     {
-#    if defined(ALPAKA_HAS_STD_ATOMIC_REF)
-        template<typename T>
-        using atomic_ref = std::atomic_ref<T>;
-#    else
+#if defined(ALPAKA_DISABLE_STD_ATOMIC_REF)
         template<typename T>
         using atomic_ref = boost::atomic_ref<T>;
-#    endif
+#else
+        template<typename T>
+        using atomic_ref = std::atomic_ref<T>;
+#endif
     } // namespace detail
 
     //! The atomic ops based on atomic_ref for CPU accelerators.
@@ -222,19 +222,17 @@ namespace alpaka::onAcc
                 T result;
                 do
                 {
-#    if ALPAKA_COMP_GNUC || ALPAKA_COMP_CLANG
-#        pragma GCC diagnostic push
-#        pragma GCC diagnostic ignored "-Wfloat-equal"
-#    endif
+#if ALPAKA_COMP_GNUC || ALPAKA_COMP_CLANG
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
                     result = ((old == compare) ? value : old);
-#    if ALPAKA_COMP_GNUC || ALPAKA_COMP_CLANG
-#        pragma GCC diagnostic pop
-#    endif
+#if ALPAKA_COMP_GNUC || ALPAKA_COMP_CLANG
+#    pragma GCC diagnostic pop
+#endif
                 } while(!ref.compare_exchange_weak(old, result));
                 return old;
             }
         };
     } // namespace internalCompute
 } // namespace alpaka::onAcc
-
-#endif

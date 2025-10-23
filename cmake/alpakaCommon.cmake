@@ -207,9 +207,9 @@ try_compile(
 )
 if(alpaka_HAS_STD_ATOMIC_REF AND (NOT alpaka_ACC_CPU_DISABLE_ATOMIC_REF))
     message(STATUS "std::atomic_ref<T> found")
-    target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_HAS_STD_ATOMIC_REF)
 else()
     message(STATUS "std::atomic_ref<T> NOT found")
+    target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_DISABLE_STD_ATOMIC_REF)
 endif()
 
 if(NOT alpaka_HAS_STD_ATOMIC_REF)
@@ -218,15 +218,8 @@ if(NOT alpaka_HAS_STD_ATOMIC_REF)
         target_link_libraries(alpaka_target_host INTERFACE Boost::atomic)
     else()
         message(STATUS "boost::atomic_ref<T> NOT found")
+        message(FATAL_ERROR "std::atomic_ref<T> OR boost::atomic_ref<T> is required")
     endif()
-endif()
-
-if((NOT alpaka_HAS_STD_ATOMIC_REF) AND (NOT Boost_ATOMIC_FOUND))
-    message(
-        STATUS
-        "atomic_ref<T> or boost::atomic_ref<T> was not found or manually disabled. Falling back to lock-based CPU atomics."
-    )
-    target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_DISABLE_ATOMIC_ATOMICREF)
 endif()
 
 # These options are used in the alpaka_finalize call
