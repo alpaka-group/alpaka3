@@ -198,6 +198,10 @@ if(alpaka_DEP_TBB)
     find_package(TBB 2021.10 REQUIRED COMPONENTS tbb)
     target_link_libraries(alpaka_target_host INTERFACE TBB::tbb)
     message(STATUS "oneTBB found: ${TBB_VERSION}")
+else()
+    # This will enforce config.hpp to not activate TBB even if thee headers are available.
+    # If the headers are available but the linker flags are not set there will be an error during linking.
+    target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_DISABLE_TBB)
 endif()
 
 ## search for atomic ref

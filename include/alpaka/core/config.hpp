@@ -281,7 +281,11 @@
 #if !defined(ALPAKA_TBB)
 #    // Does not provide a macro we can check therefore we need to load the headers first to set ALPAKA_TBB
 #    if defined(__has_include)
-#        if __has_include(<oneapi/tbb/version.h>)
+#        // alpaka assumes if the TBB headers can be found, TBB can be activated for usage.
+#        // If CMake is not used e.g. in compiler explorers or other build engines, the macro ALPAKA_DISABLE_TBB
+#        // must be set if the TBB headers are available but linker flags for TBB are not passed.
+#        // This can be the reason together if icpx is used since oneAPI is mostly shipping TBB directly.
+#        if __has_include(<oneapi/tbb/version.h>) && !defined(ALPAKA_DISABLE_TBB)
 #            include <oneapi/tbb/version.h>
 #        endif
 #    endif
