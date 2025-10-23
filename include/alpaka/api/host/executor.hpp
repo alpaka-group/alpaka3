@@ -8,14 +8,7 @@
 #include "alpaka/api/trait.hpp"
 #include "alpaka/tag.hpp"
 
-#include <cstdint>
-#include <limits>
 #include <string>
-#include <tuple>
-
-#if ALPAKA_TBB
-#    include <oneapi/tbb/info.h>
-#endif
 
 namespace alpaka
 {
@@ -46,35 +39,6 @@ namespace alpaka
             static std::string getName()
             {
                 return "CpuTbbBlocks";
-            }
-
-            static constexpr uint32_t maxThreadsPerBlock()
-            {
-                // Each block executes as a single logical worker; legacy accelerator also enforced 1 thread.
-                return 1u;
-            }
-
-            static constexpr uint32_t maxBlocksPerGrid()
-            {
-                // Host scheduling has no architectural grid limit; tasks queue up until workers are available.
-                return std::numeric_limits<uint32_t>::max();
-            }
-
-            static constexpr uint32_t sharedMemPerBlockBytes()
-            {
-                // Current host executor does not expose per-block dynamic shared memory.
-                return 0u;
-            }
-
-            static uint32_t maxConcurrency()
-            {
-#if ALPAKA_TBB
-                auto const defaultWorkerCount = static_cast<uint32_t>(oneapi::tbb::info::default_concurrency());
-                // Hardware threads define parallelism (e.g. 32 worker count on a 16-core/hyper-threaded system).
-                return defaultWorkerCount == 0u ? 1u : defaultWorkerCount;
-#else
-                return 1u;
-#endif
             }
         };
 

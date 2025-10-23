@@ -102,7 +102,8 @@ Executors
   .. code-block:: c++
 
      exec::cpuSerial
-     exec::ompBlocks
+     exec::cpuOmpBlocks
+     exec::cpuTbbBlocks
      exec::gpuCuda
      exec::gpuHip
      exec::oneApi

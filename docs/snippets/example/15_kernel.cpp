@@ -56,7 +56,8 @@ TEST_CASE("first kernel", "[docs]")
     auto frameSpec = onHost::FrameSpec{divExZero(computeBuffer.getExtents(), frameExtents), frameExtents};
     // If no executor is given as first argument to enqueue than the default executor is used.
     // The default is the fastest for the corresponding device.
-    // For deviceKind::cpu the default is exec::cpuOmpBlocks if omp is enabled, otherwise exec::cpuSerial
+    // For deviceKind::cpu the default is exec::cpuOmpBlocks if omp is enabled, else exec::cpuTbbBlocks if available
+    // otherwise exec::cpuSerial
     computeQueue.enqueue(frameSpec, KernelBundle{AddOne{}, computeBuffer});
     onHost::memcpy(computeQueue, stdVec, computeBuffer);
     onHost::wait(computeQueue);

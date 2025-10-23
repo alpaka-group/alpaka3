@@ -197,7 +197,7 @@ jobs:
                 ${{ matrix.config.cuda != 'no' && '-Dalpaka_DEP_CUDA=ON' || '' }} \
                 ${{ matrix.config.hip != 'no' && '-DCMAKE_CXX_COMPILER=clang++ -Dalpaka_DEP_HIP=ON -Dalpaka_DEP_OMP=OFF \
                    -DCMAKE_HIP_ARCHITECTURES=gfx906 -DAMDGPU_TARGETS=gfx906' || '' }} \
-           ${{ matrix.config.tbb == 'on' && '-Dalpaka_DEP_TBB=ON' || '' }} \
+                ${{ matrix.config.tbb == 'on' && '-Dalpaka_DEP_TBB=ON' || '' }} \
                 ${{ matrix.config.sanitizer == 'asan' && '-Dalpaka_ASAN=ON' || '' }} \
                 ${{ matrix.config.sanitizer == 'tsan' && '-Dalpaka_TSAN=ON' || '' }} \
                 ${{ matrix.config.sanitizer == 'lsan' && '-Dalpaka_LSAN=ON' || '' }} \

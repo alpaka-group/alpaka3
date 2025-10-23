@@ -17,5 +17,5 @@ namespace alpaka::exec
      * This list is used at places where a function can be called without an executor. In this case the first available
      * executor is used.
      */
-    constexpr auto allExecutors = std::make_tuple(gpuCuda, gpuHip, oneApi, cpuTbbBlocks, cpuOmpBlocks, cpuSerial);
+    constexpr auto allExecutors = std::make_tuple(gpuCuda, gpuHip, oneApi, cpuOmpBlocks, cpuTbbBlocks, cpuSerial);
 } // namespace alpaka::exec

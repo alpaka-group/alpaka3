@@ -33,7 +33,6 @@ Download the installer from https://cmake.org/download/
 - NVIDIA GPUs: CUDA Toolkit (https://developer.nvidia.com/cuda-toolkit)
 - AMD GPUs: ROCm / HIP (https://rocmdocs.amd.com/en/latest/index.html)
 - Intel GPUs: OneAPI Toolkit (https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html#gs.9x3lnh)
-- TBB backend (host CPU): oneTBB 2021.10 or newer.
 
 alpaka as Dependency in Your Application
 ++++++++++++++++++++++++++++++++++++++++
@@ -235,8 +234,8 @@ To use a specific accelerator in alpaka, two steps are required.
 2. Select a specific accelerator in the source code.
 
 By default, only the host API is available which allows to use the executors 'serial' to running on CPUs without using multithreading.
-If OpenMP is available on the system, additionally the executor `ompBlocks` can be used to run on all cores of the CPU.
-If Intel oneTBB (2021.10 or newer) is present and `-Dalpaka_DEP_TBB=ON` the `tbbBlocks` executor exposes a task-based CPU path using TBB.
+If OpenMP is available on the system, additionally the executor `cpuOmpBlocks` can be used to run on all cores of the CPU.
+If oneAPI TBB is available on the system, additionally the executor `cpuTbbBlocks` can be used to run on all cores of the CPU.
 CMake option `alpaka_DEP_*` controls whether a parallelization framework is used and introduces a dependency on third-party libraries.
 This allows the usage of the coresponding executor e.g. `gpuCuda`, `gpuHip` or `oneApi`
 `alpaka_EXEC_*` activates or deactivates which execution schemas will be used for examples/tests and benchmarks.
@@ -255,17 +254,14 @@ This allows the usage of the coresponding executor e.g. `gpuCuda`, `gpuHip` or `
   cmake --build . --parallel
   ctest --output-on-failure
 
-**compile for CPU with oneTBB (task-based blocks):**
+**compile for CPU with (serial and oneAPI TBB):**
 
 .. code-block::
 
   spack load cmake@3.29.1
   spack load intel-oneapi-tbb@2021.10.0
 
-  # Requires llvm/clang >= 16 for libc++ support on some platforms
-  spack load llvm@16.0.2
-
-  cmake ../alpaka3 -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_DEP_TBB=ON
+  cmake ../alpaka3 -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_DEP_TBB=ON -Dalpaka_DEP_OMP=OFF
   cmake --build . --parallel
   ctest --output-on-failure
 

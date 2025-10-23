@@ -21,7 +21,6 @@
 #include <cstdint>
 #include <memory>
 #include <sstream>
-#include <utility>
 
 namespace alpaka::onHost
 {

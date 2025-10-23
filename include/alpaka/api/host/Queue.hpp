@@ -1,4 +1,4 @@
-/* Copyright 2024 René Widera, Mehmet Yusufoglu
+/* Copyright 2024 René Widera
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -8,11 +8,8 @@
 #include "alpaka/api/host/Api.hpp"
 #include "alpaka/api/host/Event.hpp"
 #include "alpaka/api/host/exec/OmpBlocks.hpp"
-#if ALPAKA_TBB
-#    include "alpaka/api/host/exec/TbbBlocks.hpp"
-#    include "alpaka/onHost/internal/TbbArenaContext.hpp"
-#endif
 #include "alpaka/api/host/exec/Serial.hpp"
+#include "alpaka/api/host/exec/TbbBlocks.hpp"
 #include "alpaka/api/util.hpp"
 #include "alpaka/core/CallbackThread.hpp"
 #include "alpaka/core/alignedAlloc.hpp"
@@ -28,7 +25,6 @@
 #include <cstdint>
 #include <cstring>
 #include <future>
-#include <optional>
 #include <sstream>
 
 namespace alpaka::onHost
@@ -84,19 +80,6 @@ namespace alpaka::onHost
              * For non-blocking queue @c m_workerThread is taking care of the execution order
              */
             std::mutex m_mutex;
-
-#if ALPAKA_TBB
-            /** Optional TBB task arena for isolating CpuTbbBlocks executor work.
-             *
-             * When TBB support is enabled, each queue can maintain its own arena to:
-             * - Prevent cross-queue task interference
-             * - Control per-queue concurrency limits
-             * - Improve cache locality for queue-specific kernels
-             *
-             * The arena is only initialized when first needed by a TBB executor task.
-             */
-            std::optional<internal::TbbArenaContext> m_tbbArena;
-#endif
 
             /** Submit a task to the queue.
              *
@@ -160,47 +143,14 @@ namespace alpaka::onHost
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::queue);
                 auto deviceKind = alpaka::getDeviceKind(m_device);
                 submit(
-                    [kernelBundle,
-                     executor,
-                     threadBlocking,
-                     deviceKind
-                // TODO : Is there a better way than using alpaka_TBB precompile branching
-#if ALPAKA_TBB
-                     // give this since member m_tbbArena is needed if executor is TbbBlocks
-                     ,
-                     this
-#endif
-                ]()
+                    [kernelBundle, executor, threadBlocking, deviceKind]()
                     {
-#if ALPAKA_TBB
-                        // Wrap TBB executor tasks in the queue's arena for isolation
-                        if constexpr(std::is_same_v<decltype(executor), alpaka::exec::CpuTbbBlocks const>)
-                        {
-                            // Lazy-initialize arena on first TBB task
-                            if(!m_tbbArena)
-                                m_tbbArena.emplace();
-
-                            m_tbbArena->execute(
-                                [&]()
-                                {
-                                    auto moreLayer = Dict{
-                                        DictEntry(object::api, api::host),
-                                        DictEntry(object::deviceKind, deviceKind),
-                                        DictEntry(object::exec, executor)};
-                                    onAcc::Acc acc = makeAcc(executor, threadBlocking);
-                                    acc(kernelBundle, moreLayer);
-                                });
-                        }
-                        else
-#endif
-                        {
-                            auto moreLayer = Dict{
-                                DictEntry(object::api, api::host),
-                                DictEntry(object::deviceKind, deviceKind),
-                                DictEntry(object::exec, executor)};
-                            onAcc::Acc acc = makeAcc(executor, threadBlocking);
-                            acc(kernelBundle, moreLayer);
-                        }
+                        auto moreLayer = Dict{
+                            DictEntry(object::api, api::host),
+                            DictEntry(object::deviceKind, deviceKind),
+                            DictEntry(object::exec, executor)};
+                        onAcc::Acc acc = makeAcc(executor, threadBlocking);
+                        acc(kernelBundle, moreLayer);
                     });
             }
 
@@ -218,56 +168,17 @@ namespace alpaka::onHost
                 auto threadBlocking = internal::adjustThreadSpec(*m_device.get(), executor, frameSpec, kernelBundle);
                 auto deviceKind = alpaka::getDeviceKind(m_device);
 
-                /** Package kernel execution as a task and submit to queue's worker thread.
-                 * For blocking queues, executes immediately; for non-blocking queues, enqueues for async execution.
-                 * The lambda captures all kernel parameters and executor context needed for later execution.
-                 */
                 submit(
-                    [kernelBundle,
-                     executor,
-                     threadBlocking,
-                     deviceKind,
-                     frameSpec
-#if ALPAKA_TBB
-                     ,
-                     // give this since member m_tbbArena is needed if executor is TbbBlocks
-                     this
-#endif
-                ]()
+                    [kernelBundle, executor, threadBlocking, deviceKind, frameSpec]()
                     {
-#if ALPAKA_TBB
-                        // Wrap TBB executor tasks in the queue's arena for isolation
-                        if constexpr(std::is_same_v<T_Executor, alpaka::exec::CpuTbbBlocks>)
-                        {
-                            // Lazy-initialize arena on first TBB task
-                            if(!m_tbbArena)
-                                m_tbbArena.emplace();
-
-                            m_tbbArena->execute(
-                                [&]()
-                                {
-                                    auto moreLayer = Dict{
-                                        DictEntry(frame::count, frameSpec.m_numFrames),
-                                        DictEntry(frame::extent, frameSpec.m_frameExtent),
-                                        DictEntry(object::api, api::host),
-                                        DictEntry(object::deviceKind, deviceKind),
-                                        DictEntry(object::exec, executor)};
-                                    onAcc::Acc acc = makeAcc(executor, threadBlocking);
-                                    acc(kernelBundle, moreLayer);
-                                });
-                        }
-                        else
-#endif
-                        {
-                            auto moreLayer = Dict{
-                                DictEntry(frame::count, frameSpec.m_numFrames),
-                                DictEntry(frame::extent, frameSpec.m_frameExtent),
-                                DictEntry(object::api, api::host),
-                                DictEntry(object::deviceKind, deviceKind),
-                                DictEntry(object::exec, executor)};
-                            onAcc::Acc acc = makeAcc(executor, threadBlocking);
-                            acc(kernelBundle, moreLayer);
-                        }
+                        auto moreLayer = Dict{
+                            DictEntry(frame::count, frameSpec.m_numFrames),
+                            DictEntry(frame::extent, frameSpec.m_frameExtent),
+                            DictEntry(object::api, api::host),
+                            DictEntry(object::deviceKind, deviceKind),
+                            DictEntry(object::exec, executor)};
+                        onAcc::Acc acc = makeAcc(executor, threadBlocking);
+                        acc(kernelBundle, moreLayer);
                     });
             }
 
