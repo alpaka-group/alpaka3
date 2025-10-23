@@ -1,4 +1,4 @@
-/* Copyright 2024 René Widera
+/* Copyright 2024 René Widera, Mehmet Yusufoglu
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -25,6 +25,10 @@ namespace alpaka::onHost::example
 #ifndef ALPAKA_DISABLE_EXEC_CpuOmpBlocks
         ,
         exec::cpuOmpBlocks
+#endif
+#ifndef ALPAKA_DISABLE_EXEC_CpuTbbBlocks
+        ,
+        exec::cpuTbbBlocks
 #endif
 #ifndef ALPAKA_DISABLE_EXEC_CpuSerial
         ,

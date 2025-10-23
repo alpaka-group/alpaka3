@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2025 Benjamin Worpitz, René Widera
+# Copyright 2014-2025 Benjamin Worpitz, René Widera, Mehmet Yusufoglu
 # SPDX-License-Identifier: MPL-2.0
 #
 
@@ -89,6 +89,7 @@ include(CheckLanguage)
 option(alpaka_DEP_CUDA "Enable the CUDA as dependency, allows the usage of api::Cuda and exec::gpuCuda." OFF)
 option(alpaka_DEP_HIP "Enable the HIP as dependency, allows the usage of api::Hip and exec::gpuHip" OFF)
 option(alpaka_DEP_OMP "Enable the OpenMP as dependency, allows the usage of exec::cpuOmpBlocks" ON)
+option(alpaka_DEP_TBB "Enable the Intel oneTBB dependency, allows the usage of exec::cpuTbbBlocks" OFF)
 option(alpaka_DEP_ONEAPI "Enable the Intel oneAPI SYCL dependency, allows using exec::oneApi" OFF)
 
 # Unified compiler options
@@ -185,11 +186,23 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 endif()
 
 ## OpenMP
-# Thereis no way to get the correct flags for the language CUDA or HIP
+# There is no way to get the correct flags for the language CUDA or HIP
 if(alpaka_DEP_OMP)
     find_package(OpenMP REQUIRED COMPONENTS CXX)
     target_link_libraries(alpaka_target_host INTERFACE OpenMP::OpenMP_CXX)
     message(STATUS "OpenMP found: ${OpenMP_CXX_VERSION}")
+endif()
+
+# TBB stays optional: we only link and define ALPAKA_TBB when alpaka_DEP_TBB is ON. If the
+# dependency remains OFF (even though alpaka_EXEC_TbbBlocks defaults to ON) the executor is
+# compiled out via ALPAKA_DISABLE_EXEC_CpuTbbBlocks so runtime output never claims a TBB backend.
+if(alpaka_DEP_TBB)
+    find_package(TBB 2021.10 REQUIRED COMPONENTS tbb)
+    target_link_libraries(alpaka_target_host INTERFACE TBB::tbb)
+    target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_TBB=1)
+    message(STATUS "oneTBB found: ${TBB_VERSION}")
+else()
+    target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_TBB=0)
 endif()
 
 ## search for atomic ref
@@ -336,6 +349,10 @@ endif()
 option(alpaka_EXEC_CpuOmpBlocks "Enable/Disable OpenMP blocks executor in examples/benchmarks and tests" ON)
 if(NOT alpaka_EXEC_CpuOmpBlocks)
     target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_DISABLE_EXEC_CpuOmpBlocks)
+endif()
+option(alpaka_EXEC_TbbBlocks "Enable/Disable TBB blocks executor in examples/benchmarks and tests" ON)
+if((NOT alpaka_EXEC_TbbBlocks) OR (NOT alpaka_DEP_TBB))
+    target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_DISABLE_EXEC_CpuTbbBlocks)
 endif()
 option(alpaka_EXEC_GpuCuda "Enable/Disable CUDA executor in examples/benchmarks and tests" ON)
 if(NOT alpaka_EXEC_GpuCuda)

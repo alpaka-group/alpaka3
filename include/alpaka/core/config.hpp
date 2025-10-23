@@ -1,5 +1,5 @@
 /* Copyright 2023 Benjamin Worpitz, Matthias Werner, René Widera, Sergei Bastrakov, Jeffrey Kelling,
- *                Bernhard Manfred Gruber, Jan Stephan
+ *                Bernhard Manfred Gruber, Jan Stephan, Mehmet Yusufoglu
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -271,5 +271,28 @@
 #        define ALPAKA_OMP ALPAKA_YYYYMM_TO_VERSION(_OPENMP)
 #    else
 #        define ALPAKA_OMP ALPAKA_VERSION_NUMBER_NOT_AVAILABLE
+#    endif
+#endif
+
+// oneTBB
+// Use _has_include to detect oneTBB version if available, there is no predefined macro like openmp case _OPENMP
+// When the header is available we define ALPAKA_TBB to the real version, otherwise it drops back to
+// ALPAKA_VERSION_NUMBER_NOT_AVAILABLE.
+#if !defined(ALPAKA_TBB)
+#    // When classic Tbb is supported, add  <tbb/tbb_stddef.h> as a fallback of oneTBB.
+#    if defined(__has_include)
+#        if __has_include(<oneapi/tbb/version.h>)
+#            include <oneapi/tbb/version.h>
+#        endif
+#    endif
+#    // TBB headers define TBB_VERSION_* when present; otherwise we fall back to NOT_AVAILABLE.
+#    if defined(TBB_VERSION_MAJOR)
+#        if defined(TBB_VERSION_PATCH)
+#            define ALPAKA_TBB ALPAKA_VERSION_NUMBER(TBB_VERSION_MAJOR, TBB_VERSION_MINOR, TBB_VERSION_PATCH)
+#        else
+#            define ALPAKA_TBB ALPAKA_VERSION_NUMBER(TBB_VERSION_MAJOR, TBB_VERSION_MINOR, 0)
+#        endif
+#    else
+#        define ALPAKA_TBB ALPAKA_VERSION_NUMBER_NOT_AVAILABLE
 #    endif
 #endif

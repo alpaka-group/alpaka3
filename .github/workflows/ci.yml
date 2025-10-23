@@ -33,6 +33,8 @@ jobs:
         config:
           - { compiler: gcc, version: "12", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: gcc, version: "13", cuda: "no", hip: "no", container: "ubuntu:24.04" }
+          # tbb backend on
+          - { compiler: gcc, version: "13", cuda: "no", hip: "no", container: "ubuntu:24.04", tbb: "on" }
           - { compiler: gcc, version: "14", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0" }
           - { compiler: clang, version: "17", cuda: "no", hip: "no", container: "ubuntu:24.04" }
@@ -40,6 +42,7 @@ jobs:
           - { compiler: clang, version: "19", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: clang, version: "20", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04" }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", tbb: "on" }
           - { compiler: nvcc, version: "", cuda: "12.5", hip: "no", container: "nvidia/cuda:12.5.1-devel-ubuntu24.04" }
           - { compiler: nvcc, version: "", cuda: "12.6", hip: "no", container: "nvidia/cuda:12.6.3-devel-ubuntu24.04" }
           - { compiler: nvcc, version: "", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04" }
@@ -51,6 +54,8 @@ jobs:
           - { compiler: clang, version: "20", cuda: "no", hip: "7.0", container: "rocm/dev-ubuntu-24.04:7.0" }
           - { compiler: icpx, version: "2025.1", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.1.0-0-devel-ubuntu24.04" }
           - { compiler: icpx, version: "2025.2", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.2.0-0-devel-ubuntu24.04" }
+          # Use/validate oneAPI-provided oneTBB package with the latest icpx toolchain
+          - { compiler: icpx, version: "2025.2", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.2.0-0-devel-ubuntu24.04", tbb: "on" }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "asan" }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "tsan" }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "lsan" }
@@ -80,6 +85,13 @@ jobs:
           echo "TSAN_OPTIONS=suppressions=${SANITIZERS_DIR}/tsan_suppressions.txt,ignore_noninstrumented_modules=1" >> $GITHUB_ENV
           echo "LSAN_OPTIONS=suppressions=${SANITIZERS_DIR}/lsan_suppressions.txt" >> $GITHUB_ENV
           echo "UBSAN_OPTIONS=suppressions=${SANITIZERS_DIR}/ubsan_suppressions.txt" >> $GITHUB_ENV
+
+      - name: Install oneTBB
+        if: matrix.config.tbb == 'on' && matrix.config.compiler != 'icpx'
+        run: |
+          # GCC/Clang jobs use the distro-provided oneTBB development package to satisfy find_package(TBB)
+          apt-get update
+          apt-get install -y libtbb-dev
 
       # Install GCC if specified
       - name: Install GCC
@@ -149,6 +161,11 @@ jobs:
         if: matrix.config.compiler == 'icpx'
         run: |
           echo "test is adding -DCMAKE_CXX_FLAGS='-fsycl -fsycl-targets=spir64_x86_64' to speedup execution"
+          if [ "${{ matrix.config.tbb }}" = "on" ]; then
+            # oneAPI containers ship oneTBB under /opt/intel/oneapi/tbb; expose it so CMake can locate TBBConfig.cmake
+            echo "TBB_DIR=/opt/intel/oneapi/tbb/latest/lib/cmake/tbb" >> $GITHUB_ENV
+            echo "TBBROOT=/opt/intel/oneapi/tbb/latest" >> $GITHUB_ENV
+          fi
 
       # Configure CMake with the selected compiler and options
       - name: Configure CMake
@@ -180,6 +197,7 @@ jobs:
                 ${{ matrix.config.cuda != 'no' && '-Dalpaka_DEP_CUDA=ON' || '' }} \
                 ${{ matrix.config.hip != 'no' && '-DCMAKE_CXX_COMPILER=clang++ -Dalpaka_DEP_HIP=ON -Dalpaka_DEP_OMP=OFF \
                    -DCMAKE_HIP_ARCHITECTURES=gfx906 -DAMDGPU_TARGETS=gfx906' || '' }} \
+           ${{ matrix.config.tbb == 'on' && '-Dalpaka_DEP_TBB=ON' || '' }} \
                 ${{ matrix.config.sanitizer == 'asan' && '-Dalpaka_ASAN=ON' || '' }} \
                 ${{ matrix.config.sanitizer == 'tsan' && '-Dalpaka_TSAN=ON' || '' }} \
                 ${{ matrix.config.sanitizer == 'lsan' && '-Dalpaka_LSAN=ON' || '' }} \

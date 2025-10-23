@@ -1,4 +1,4 @@
-/* Copyright 2024 René Widera
+/* Copyright 2024 René Widera, Mehmet Yusufoglu
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <memory>
 #include <sstream>
+#include <utility>
 
 namespace alpaka::onHost
 {
@@ -169,6 +170,12 @@ namespace alpaka::onHost
 #if ALPAKA_OMP
         template<typename T_Platform>
         struct IsExecutorSupportedBy::Op<exec::CpuOmpBlocks, cpu::Device<T_Platform>> : std::true_type
+        {
+        };
+#endif
+#if ALPAKA_TBB
+        template<typename T_Platform>
+        struct IsExecutorSupportedBy::Op<exec::CpuTbbBlocks, cpu::Device<T_Platform>> : std::true_type
         {
         };
 #endif

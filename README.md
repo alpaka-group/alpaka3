@@ -84,7 +84,7 @@ alpaka is providing Cmake targets based on the optional activated dependencies `
         - **none** of the APIs (expect `host`) will be added because these dependencies are mutual exclusive
         - you should add the required executor targets manually
 
-Note `alpaka_DEP_OMP` is linked into the target `alpaka::headers` because it influences only `host` executors but is not providing additional alpaka API support.
+Note `alpaka_DEP_OMP` and `alpaka_DEP_TBB` are linked into the target `alpaka::headers` because they influence only host executors but do not provide additional alpaka API support. When enabling `alpaka_DEP_TBB`, make sure Intel oneTBB version 2021.10 or newer (including 2022.x releases) is available.
 
 After linking alpaka targets to your application you should call `alpaka_finalize(targetName)` for each target which is using alpaka.
 `alpaka_finalize` is a CMake function that ensures all necessary compile definitions and options are set for your target.
