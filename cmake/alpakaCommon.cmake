@@ -193,16 +193,11 @@ if(alpaka_DEP_OMP)
     message(STATUS "OpenMP found: ${OpenMP_CXX_VERSION}")
 endif()
 
-# TBB stays optional: we only link and define ALPAKA_TBB when alpaka_DEP_TBB is ON. If the
-# dependency remains OFF (even though alpaka_EXEC_TbbBlocks defaults to ON) the executor is
-# compiled out via ALPAKA_DISABLE_EXEC_CpuTbbBlocks so runtime output never claims a TBB backend.
+# Check for optional TBB
 if(alpaka_DEP_TBB)
     find_package(TBB 2021.10 REQUIRED COMPONENTS tbb)
     target_link_libraries(alpaka_target_host INTERFACE TBB::tbb)
-    target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_TBB=1)
     message(STATUS "oneTBB found: ${TBB_VERSION}")
-else()
-    target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_TBB=0)
 endif()
 
 ## search for atomic ref

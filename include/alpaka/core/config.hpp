@@ -275,11 +275,11 @@
 #endif
 
 // oneTBB
-// Use _has_include to detect oneTBB version if available, there is no predefined macro like openmp case _OPENMP
+// Use _has_include to detect oneTBB version if available, there is no predefined macro like OpenMP _OPENMP
 // When the header is available we define ALPAKA_TBB to the real version, otherwise it drops back to
 // ALPAKA_VERSION_NUMBER_NOT_AVAILABLE.
 #if !defined(ALPAKA_TBB)
-#    // When classic Tbb is supported, add  <tbb/tbb_stddef.h> as a fallback of oneTBB.
+#    // Does not provide a macro we can check therefore we need to load the headers first to set ALPAKA_TBB
 #    if defined(__has_include)
 #        if __has_include(<oneapi/tbb/version.h>)
 #            include <oneapi/tbb/version.h>
