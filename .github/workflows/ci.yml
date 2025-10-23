@@ -161,11 +161,7 @@ jobs:
         if: matrix.config.compiler == 'icpx'
         run: |
           echo "test is adding -DCMAKE_CXX_FLAGS='-fsycl -fsycl-targets=spir64_x86_64' to speedup execution"
-          if [ "${{ matrix.config.tbb }}" = "on" ]; then
-            # oneAPI containers ship oneTBB under /opt/intel/oneapi/tbb; expose it so CMake can locate TBBConfig.cmake
-            echo "TBB_DIR=/opt/intel/oneapi/tbb/latest/lib/cmake/tbb" >> $GITHUB_ENV
-            echo "TBBROOT=/opt/intel/oneapi/tbb/latest" >> $GITHUB_ENV
-          fi
+          # for TBB there is nothing to do because TBB is configured in the container correctly
 
       # Configure CMake with the selected compiler and options
       - name: Configure CMake
