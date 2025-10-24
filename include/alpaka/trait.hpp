@@ -101,7 +101,7 @@ namespace alpaka
          */
         template<typename T, typename = void>
         struct IsKernelTriviallyCopyable
-#if ALPAKA_COMP_NVCC
+#if ALPAKA_LANG_CUDA && ALPAKA_COMP_NVCC
             : std::bool_constant<
                   std::is_trivially_copyable_v<T> || __nv_is_extended_device_lambda_closure_type(T)
                   || __nv_is_extended_host_device_lambda_closure_type(T)>
