@@ -21,14 +21,23 @@ namespace alpaka::onHost::internal
 #elif defined(__riscv)
             // do not use vectors if the vector extension is not set
             sizeof(T_Type);
-        // ARM e.g. nvidia grace hopper
-#elif defined(__ARM_FEATURE_SVE) || defined(__ARM_FEATURE_SVE2_AES) || defined(__ARM_FEATURE_DOTPROD)
-            64u;
 #elif defined(__AVX2__)
             32u;
 #elif defined(__SSE__) || defined(__SSE2__) || defined(__SSE4_1__) || defined(__SSE4_2__)
             16u;
-#elif defined(__ARM_NEON__)
+// Macro to be define by the user to enable SVE backend and specify SVE size
+#elif defined(SVE_VECTOR_BITS)
+            SVE_VECTOR_BITS / 8;
+// If user has specified SVE vector lenght using the flag -msve-vector-bits
+#elif defined(__ARM_FEATURE_SVE_BITS)
+            __ARM_FEATURE_SVE_BITS / 8;
+// ARM e.g. nvidia grace hopper
+#elif defined(__ARM_FEATURE_SVE2_AES)
+            16u;
+// ARM e.g AWS Graviton 3
+#elif defined(__ARM_FEATURE_SVE)
+            32u;
+#elif defined(__ARM_NEON)
             16u;
 #elif defined(__ALTIVEC__)
             16u;
