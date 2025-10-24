@@ -8,8 +8,7 @@
 #include "DataGen.hpp"
 #include "Defines.hpp"
 #include "Functor.hpp"
-
-#include <alpaka/onHost/demangledName.hpp>
+#include "alpaka/onHost/demangledName.hpp"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_message.hpp>

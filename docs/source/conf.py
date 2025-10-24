@@ -5,6 +5,18 @@ import os
 import subprocess
 import shutil
 
+def generate_single_header(app, exception):
+    # Destination folder relative to conf.py
+    single_header_path = os.path.abspath(os.path.join(app.builder.outdir))
+    os.makedirs(single_header_path, exist_ok=True)
+
+    # Path to your script
+    script_path = os.path.abspath(os.path.join(app.srcdir, '..', '..', 'scripts', 'create-single-header.sh'))
+
+    # Call the script with the destination folder as argument
+    subprocess.run([script_path, single_header_path], check=True)
+    print(f"Generated single header in {single_header_path}")
+
 def build_doxygen():
     subprocess.call("cd ..; doxygen", shell=True)
     subprocess.call("cd ..; doxygen Doxyfile_dev", shell=True)
@@ -38,6 +50,8 @@ def copy_doxygen_html(app, exception):
     copy_doxygen(dst, src)
 
 def setup(app):
+    # Hook into the 'builder-inited' event to run the function before the build starts
+    app.connect('build-finished', generate_single_header)
     app.connect('build-finished', copy_doxygen_html)
 
 # -- Project information -----------------------------------------------------
@@ -74,7 +88,7 @@ extensions = [
 ]
 
 doxylink = {
-    'alpaka': ("doxygen/alpaka.tag", "doxygen/" , "doxygen_dev/"),
+    'alpaka': ("doxygen/alpaka.tag", "doxygen/" , "doxygen_dev/", "alpaka.hpp"),
 }
 
 # Add any paths that contain templates here, relative to this directory.

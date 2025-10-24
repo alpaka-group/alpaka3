@@ -1,14 +1,32 @@
 Code Example
 ============
 
-The following example shows a small hello word example written with alpaka that can be run on different processors.
+Play online with Compiler Explorer
+++++++++++++++++++++++++++++++++++
+
+The followed example can be executed online using `Godbolt Compiler Explorer <https://godbolt.org/z/bE7dbrv5f>`__. [#f1]_
+
+.. literalinclude:: ../../snippets/example/30_elementWiseMultiplication.cpp
+   :language: cpp
+   :start-after: BEGIN-EXAMPLE-elementWiseMultiplication
+   :end-before: END-EXAMPLE-elementWiseMultiplication
+   :dedent:
+
+.. note::
+
+   Do not forget to set the compiler flags to compile with C++20 and optimization if you would like to inspect the assembler, e.g. ``-std=c++20 -O3``.
+   If you would like to see vectorization you should set the corresponding flags, e.g. for **avx2** ``-march=haswell``.
+
+.. [#f1] In pull requests, to test the modified code in Godbolt Compiler Explorer, replace the include with `the link to this file <../alpaka.hpp>`_.
+
+Use alpaka in your project
+++++++++++++++++++++++++++
+
+The following example shows a small vector add example written with alpaka that can be run on different processors.
 
 .. literalinclude:: ../../../example/vectorAdd/src/vectorAdd.cpp
    :language: C++
    :caption: vectorAdd.cpp
-
-Use alpaka in your project
-++++++++++++++++++++++++++
 
 We recommend to use CMake for integrating alpaka into your own project.
 
@@ -23,11 +41,11 @@ The ``add_subdirectory`` method does not require alpaka to be installed. Instead
    :caption: CMakeLists.txt
 
    cmake_minimum_required(VERSION 3.25)
-   project("myexample" CXX)
+   project("vectorAdd" CXX)
 
    add_subdirectory("<path to alpaka>" "${CMAKE_BINARY_DIR}/alpaka")
 
-   add_executable(${PROJECT_NAME} helloWorld.cpp)
+   add_executable(${PROJECT_NAME} vectorAdd.cpp)
    target_link_libraries(${PROJECT_NAME} PUBLIC alpaka::alpaka)
    alpaka_finalize(${PROJECT_NAME})
 
@@ -39,7 +57,7 @@ In the CMake configuration phase of the project, you must activate the accelerat
     mkdir build && cd build
     cmake .. -Dalpaka_DEP_CUDA=ON
     cmake --build .
-    ./myexample
+    ./vectorAdd
 
 .. A complete list of CMake flags for the  accelerator can be found :doc:`here </advanced/cmake>`.
 

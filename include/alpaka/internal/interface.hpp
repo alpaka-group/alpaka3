@@ -9,8 +9,7 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/mem/Alignment.hpp"
 #include "alpaka/onHost/Handle.hpp"
-
-#include <alpaka/onHost/demangledName.hpp>
+#include "alpaka/onHost/demangledName.hpp"
 
 namespace alpaka
 {

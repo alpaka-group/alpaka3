@@ -10,7 +10,6 @@
 #    include "alpaka/api/oneApi/Api.hpp"
 #    include "alpaka/api/syclGeneric/Platform.hpp"
 #    include "alpaka/internal/interface.hpp"
-#    include "alpaka/onHost/example/executors.hpp"
 #    include "alpaka/onHost/internal/interface.hpp"
 #    include "alpaka/tag.hpp"
 

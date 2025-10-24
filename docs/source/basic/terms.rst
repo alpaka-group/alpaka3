@@ -18,7 +18,6 @@ This is also reflected in alpaka's namespaces:
 Functions in the namespace ``alpaka::onAcc`` are available *onAcc*.
 If a function or object is in namespace ``alpaka``, it is usable *onHost* and *onAcc*, e.g. ``alpaka::MdSpan``.
 
-.. rubric::
 .. [#f1] There are cases where the ``host`` and ``accelerator`` processor are the same physical processor, e.g. a CPU. In this case there is only a logical distinction.
 
 Host
@@ -32,7 +31,6 @@ Properties:
     - *onHost* supports all features of the used C++ standard [#f2]_.
     - Not all memory accessible *onAcc* is accessible *onHost* too.
 
-.. rubric::
 .. [#f2] In theory, all C++ functionality can be used but in practice there are limitations from the SDKs used by the backends. For example, the CUDA SDK does not support C++20 modules (valid for CUDA 13.x and before).
 
 Accelerator
