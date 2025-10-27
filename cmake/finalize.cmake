@@ -57,16 +57,33 @@ endfunction()
 
 ### Copy a source file to the build tree
 ##
-## The copied file will be placed in a subdirectory named api_name inside the original directory structure.
+## The copied file will be placed in a subdirectory:
+## ${CMAKE_BINARY_DIR}/alpaka_build_files/${api_name}/${PROJECT_NAME}/<relative_to_project_root>/${SRC_FILE_NAME}
 ## All source file properties set on the original file will be copied to the new file.
-## The path of the copied file is returned via the OUT_VAR variable.
+## The path including the file name of the copied file is returned via the OUT_VAR variable.
+##
+## Copying the original file to a unique destination is required to set language properties per file.
+## A file can only have one language property but alpaka support using different languages for the same files of a target.
+##
+## example:
+##   CMAKE_BINARY_DIR=build (defined by CMake configure)
+##   PROJECT_NAME=vectorAdd (defined by CMake configure)
+##
+##   SRC_FILE=alpaka3/example/src/vector_add.cpp
+##   api_name=cuda
+##   OUT_VAR=alpaka3/build/alpaka_build_files/cuda/vectorAdd/example/src/vector_add.cpp
 function(copy_with_structure SRC_FILE api_name OUT_VAR)
     # get the absolut path to derive in the next command the relative path to CMAKE_CURRENT_LIST_DIR
     get_filename_component(SRC_FILE_ABSOLUTE "${SRC_FILE}" REALPATH)
     file(RELATIVE_PATH SRC_FILE_RELATIVE ${CMAKE_CURRENT_LIST_DIR} ${SRC_FILE_ABSOLUTE})
 
     get_filename_component(SRC_DIR ${SRC_FILE_RELATIVE} DIRECTORY)
-    string(REPLACE "${CMAKE_SOURCE_DIR}/" "" REL_PATH "${SRC_DIR}")
+    string(REPLACE "${CMAKE_SOURCE_DIR}/" "" REL_PATH_TMP "${SRC_DIR}")
+
+    # If the destination directory and the source file have not a common directory e.g. because of symlink usage
+    # we replace ../ with ./ to avoid that we try to create the destination file somewhere in the filesystem where
+    # we maybe do not have write access.
+    string(REPLACE "../" "./" REL_PATH "${REL_PATH_TMP}")
 
     get_filename_component(SRC_FILE_NAME ${SRC_FILE} NAME)
 
