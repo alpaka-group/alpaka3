@@ -47,8 +47,8 @@ Define in-kernel thread indexing type
     :end-before: END-CHEATSHEET-init
     :dedent:
 
-Usage of multi-dimensional vectors required for extents or indecision
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Usage of multi-dimensional vectors required for extents or indexing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-vectorCreate
@@ -244,8 +244,8 @@ Allocate a buffer
     :end-before: END-CHEATSHEET-allocBuffer
     :dedent:
 
-Copy multidimensiona buffer/view or span data
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Copy multidimensional buffer/view or span data
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
     :start-after: BEGIN-CHEATSHEET-memcpy

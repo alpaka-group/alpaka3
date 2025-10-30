@@ -55,7 +55,7 @@ struct FooDynMemKernel
 
         ALPAKA_FN_ACC void operator()(onAcc::concepts::Acc auto const& acc) const
         {
-            // Access within the kernel, it is a plane pointer.
+            // Access within the kernel, it is a plain pointer.
             // You are responsible to guarantee in bounds accesses.
             DataType* dynS = onAcc::getDynSharedMem<DataType>(acc);
         }
@@ -69,7 +69,7 @@ struct DynSharedMemTrait
 {
     ALPAKA_FN_ACC void operator()(onAcc::concepts::Acc auto const& acc) const
     {
-        // Access within the kernel, it is a plane pointer.
+        // Access within the kernel, it is a plain pointer.
         // You are responsible to guarantee in bounds accesses.
         int* dynS = onAcc::getDynSharedMem<int>(acc);
     }
@@ -296,7 +296,7 @@ auto main() -> int
             unused(rawPtr);
 
             // BEGIN-CHEATSHEET-getPitches
-            // memory in bytes to the next element in the buffer along the pitch dimension
+            // number of bytes to the next element along the pitch dimension
             concepts::Vector auto bufferPitches = onHost::getPitches(buffer);
             // END-CHEATSHEET-getPitches
 
