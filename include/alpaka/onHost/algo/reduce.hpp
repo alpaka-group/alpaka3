@@ -55,7 +55,7 @@ namespace alpaka::onHost
         DataType const& neutralElement,
         alpaka::concepts::IMdSpan auto out,
         auto&& binaryReduceFn,
-        alpaka::concepts::IGeneratorOrMdSpan auto&& in)
+        alpaka::concepts::IDataSource auto&& in)
         requires(std::same_as<DataType, alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>>)
     {
         auto executor = supportedExecutors(queue.getDevice(), exec::allExecutors);

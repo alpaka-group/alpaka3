@@ -24,7 +24,7 @@ namespace alpaka::onHost::internal
             onAcc::concepts::Acc auto const& acc,
             alpaka::concepts::IMdSpan auto&& output,
             auto const& func,
-            alpaka::concepts::IGeneratorOrMdSpan auto&&... inputs) const
+            alpaka::concepts::IDataSource auto&&... inputs) const
         {
             auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
             if constexpr(isSpecializationOf_v<ALPAKA_TYPEOF(func), StencilFunc>)
@@ -85,7 +85,7 @@ namespace alpaka::onHost::internal
         alpaka::concepts::Executor auto const exec,
         alpaka::concepts::IMdSpan auto&& out,
         auto&& fn,
-        alpaka::concepts::IGeneratorOrMdSpan auto&&... in)
+        alpaka::concepts::IDataSource auto&&... in)
     {
         auto extentMd = onHost::getExtents(out);
         using DataType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>;

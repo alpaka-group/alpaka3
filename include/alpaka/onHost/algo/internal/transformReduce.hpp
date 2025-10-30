@@ -33,7 +33,7 @@ namespace alpaka::onHost::internal
             alpaka::concepts::IMdSpan auto output,
             auto const& reduceFunc,
             auto const& transformFunc,
-            alpaka::concepts::IGeneratorOrMdSpan auto&&... inputs) const
+            alpaka::concepts::IDataSource auto&&... inputs) const
         {
             static_assert(
                 std::is_same_v<ALPAKA_TYPEOF(neutralElement), alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(output)>>,
@@ -150,7 +150,7 @@ namespace alpaka::onHost::internal
             auto& result,
             auto&& reduceFunc,
             auto&& transformFunc,
-            alpaka::concepts::IGeneratorOrMdSpan auto&&... inputs)
+            alpaka::concepts::IDataSource auto&&... inputs)
         {
             // Use the generic transformFunc and the variant reduceFunc
             if constexpr(isSpecializationOf_v<ALPAKA_TYPEOF(transformFunc), StencilFunc>)
@@ -215,7 +215,7 @@ namespace alpaka::onHost::internal
         auto&& reduceFn,
         auto&& transformFn,
         auto&& in0,
-        alpaka::concepts::IGeneratorOrMdSpan auto&&... in)
+        alpaka::concepts::IDataSource auto&&... in)
     {
         auto extentMd = onHost::getExtents(in0);
         using IndexType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(extentMd)>;

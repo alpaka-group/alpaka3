@@ -64,7 +64,7 @@ namespace alpaka::onHost
         alpaka::concepts::IMdSpan auto out,
         auto&& binaryReduceFn,
         auto&& transformFn,
-        alpaka::concepts::IGeneratorOrMdSpan auto&&... in)
+        alpaka::concepts::IDataSource auto&&... in)
         requires(std::same_as<DataType, alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>>)
     {
         internal::transformReduce(
@@ -88,7 +88,7 @@ namespace alpaka::onHost
         alpaka::concepts::IMdSpan auto out,
         auto&& binaryReduceFn,
         auto&& transformFn,
-        alpaka::concepts::IGeneratorOrMdSpan auto&&... in)
+        alpaka::concepts::IDataSource auto&&... in)
         requires(std::same_as<DataType, alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>>)
     {
         auto executor = supportedExecutors(queue.getDevice(), exec::allExecutors);

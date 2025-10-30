@@ -47,7 +47,7 @@ namespace alpaka::onHost
         alpaka::concepts::Executor auto const exec,
         alpaka::concepts::VectorOrScalar auto const& extents,
         auto&& fn,
-        alpaka::concepts::IGeneratorOrMdSpan auto&&... inOut)
+        alpaka::concepts::IDataSource auto&&... inOut)
     {
         internal::concurrent<T_DataType>(queue, exec, extents, ALPAKA_FORWARD(fn), ALPAKA_FORWARD(inOut)...);
     }
@@ -61,7 +61,7 @@ namespace alpaka::onHost
         Queue<T_Device, T_QueueKind> const& queue,
         alpaka::concepts::VectorOrScalar auto const& extents,
         auto&& fn,
-        alpaka::concepts::IGeneratorOrMdSpan auto&&... inOut)
+        alpaka::concepts::IDataSource auto&&... inOut)
     {
         auto executor = supportedExecutors(queue.getDevice(), exec::allExecutors);
         internal::concurrent<T_DataType>(

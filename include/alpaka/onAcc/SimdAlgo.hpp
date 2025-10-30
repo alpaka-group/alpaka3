@@ -71,8 +71,8 @@ namespace alpaka::onAcc
         ALPAKA_FN_INLINE ALPAKA_FN_ACC constexpr void concurrent(
             auto const& acc,
             auto&& func,
-            alpaka::concepts::IGeneratorOrMdSpan auto&& data0,
-            alpaka::concepts::IGeneratorOrMdSpan auto&&... dataN) const
+            alpaka::concepts::IDataSource auto&& data0,
+            alpaka::concepts::IDataSource auto&&... dataN) const
         {
             concurrent(acc, data0.getExtents(), ALPAKA_FORWARD(func), ALPAKA_FORWARD(data0), ALPAKA_FORWARD(dataN)...);
         }
@@ -84,8 +84,8 @@ namespace alpaka::onAcc
             auto const& acc,
             alpaka::concepts::Vector auto extents,
             auto&& func,
-            alpaka::concepts::IGeneratorOrMdSpan auto&& data0,
-            alpaka::concepts::IGeneratorOrMdSpan auto&&... dataN) const
+            alpaka::concepts::IDataSource auto&& data0,
+            alpaka::concepts::IDataSource auto&&... dataN) const
         {
             using ValueType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data0)>;
             concurrent<
@@ -124,8 +124,8 @@ namespace alpaka::onAcc
         ALPAKA_FN_INLINE ALPAKA_FN_ACC constexpr void concurrent(
             auto const& acc,
             auto&& func,
-            alpaka::concepts::IGeneratorOrMdSpan auto&& data0,
-            alpaka::concepts::IGeneratorOrMdSpan auto&&... dataN) const
+            alpaka::concepts::IDataSource auto&& data0,
+            alpaka::concepts::IDataSource auto&&... dataN) const
         {
             concurrent<T_maxConcurrencyInByte, T_MemAlignment>(
                 acc,
@@ -143,8 +143,8 @@ namespace alpaka::onAcc
             auto const& acc,
             alpaka::concepts::Vector auto extents,
             auto&& func,
-            alpaka::concepts::IGeneratorOrMdSpan auto&& data0,
-            alpaka::concepts::IGeneratorOrMdSpan auto&&... dataN) const
+            alpaka::concepts::IDataSource auto&& data0,
+            alpaka::concepts::IDataSource auto&&... dataN) const
         {
             ConcurrentAlgo::template concurrent<T_maxConcurrencyInByte, T_MemAlignment>(
                 acc,
@@ -176,8 +176,8 @@ namespace alpaka::onAcc
             auto const& neutralElement,
             auto&& reduceFunc,
             auto&& transformFunc,
-            alpaka::concepts::IGeneratorOrMdSpan auto&& data0,
-            alpaka::concepts::IGeneratorOrMdSpan auto&&... dataN) const
+            alpaka::concepts::IDataSource auto&& data0,
+            alpaka::concepts::IDataSource auto&&... dataN) const
         {
             return transformReduce(
                 acc,
@@ -198,8 +198,8 @@ namespace alpaka::onAcc
             auto const& neutralElement,
             auto&& reduceFunc,
             auto&& transformFunc,
-            alpaka::concepts::IGeneratorOrMdSpan auto&& data0,
-            alpaka::concepts::IGeneratorOrMdSpan auto&&... dataN) const
+            alpaka::concepts::IDataSource auto&& data0,
+            alpaka::concepts::IDataSource auto&&... dataN) const
         {
             using ValueType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data0)>;
             return transformReduce<
@@ -245,8 +245,8 @@ namespace alpaka::onAcc
             auto const& neutralElement,
             auto&& reduceFunc,
             auto&& transformFunc,
-            alpaka::concepts::IGeneratorOrMdSpan auto&& data0,
-            alpaka::concepts::IGeneratorOrMdSpan auto&&... dataN) const
+            alpaka::concepts::IDataSource auto&& data0,
+            alpaka::concepts::IDataSource auto&&... dataN) const
         {
             return transformReduce<T_maxConcurrencyInByte, T_MemAlignment>(
                 acc,
@@ -268,8 +268,8 @@ namespace alpaka::onAcc
             auto const& neutralElement,
             auto&& reduceFunc,
             auto&& transformFunc,
-            alpaka::concepts::IGeneratorOrMdSpan auto&& data0,
-            alpaka::concepts::IGeneratorOrMdSpan auto&&... dataN) const
+            alpaka::concepts::IDataSource auto&& data0,
+            alpaka::concepts::IDataSource auto&&... dataN) const
         {
             return ReduceAlgo::template transformReduce<T_maxConcurrencyInByte, T_MemAlignment>(
                 acc,

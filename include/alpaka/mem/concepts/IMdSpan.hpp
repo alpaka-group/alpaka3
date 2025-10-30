@@ -7,6 +7,7 @@
 #include "alpaka/Vec.hpp"
 #include "alpaka/mem/Alignment.hpp"
 #include "alpaka/mem/concepts/ExpectedValueType.hpp"
+#include "alpaka/mem/concepts/IDataSource.hpp"
 #include "alpaka/trait.hpp"
 
 #include <concepts>
@@ -55,17 +56,13 @@ namespace alpaka::concepts
         template<typename T, typename T_Mut, typename T_Const>
         concept IMdSpan
             = requires(T t, T_Mut mut_t, T_Const const_t, alpaka::Vec<typename T::index_type, T::dim()> vec) {
-                  typename T::value_type;
+                  requires IDataSource<T, T_Mut, T_Const>;
+
                   typename T::reference;
                   typename T::const_reference;
                   typename T::pointer;
                   typename T::const_pointer;
                   typename T::index_type;
-
-                  requires std::movable<T_Mut>;
-                  /// The bool operator returns true if access to the memory is valid. For example, memory access may
-                  /// be invalid after moving the DataSource.
-                  static_cast<bool>(t);
 
                   { T::dim() } -> std::same_as<uint32_t>;
                   { *mut_t } -> std::same_as<typename T::reference>;
@@ -89,12 +86,6 @@ namespace alpaka::concepts
                   };
 
                   /// @todo add getSlice, getConstSlice and getView, getConstView functions
-
-                  { t.getAlignment() } -> alpaka::concepts::Alignment;
-                  /// @todo implement concept alpaka::concepts::Extents and use it as return value
-                  t.getExtents();
-                  /// @todo implement concept alpaka::concepts::Pitches and use it as return value
-                  t.getPitches();
               };
 
     } // namespace impl

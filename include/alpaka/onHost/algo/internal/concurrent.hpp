@@ -21,7 +21,7 @@ namespace alpaka::onHost::internal
             onAcc::concepts::Acc auto const& acc,
             alpaka::concepts::VectorOrScalar auto const& extents,
             auto const& func,
-            alpaka::concepts::IGeneratorOrMdSpan auto&&... inputs) const
+            alpaka::concepts::IDataSource auto&&... inputs) const
         {
             Vec const extentMd = extents;
             auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
@@ -46,7 +46,7 @@ namespace alpaka::onHost::internal
         alpaka::concepts::Executor auto const exec,
         alpaka::concepts::VectorOrScalar auto const& extents,
         auto&& fn,
-        alpaka::concepts::IGeneratorOrMdSpan auto&&... in)
+        alpaka::concepts::IDataSource auto&&... in)
     {
         Vec const extentMd = extents;
         auto frameSpec = getFrameSpec<T_DataType>(queue.getDevice(), extentMd);

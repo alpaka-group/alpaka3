@@ -5,6 +5,7 @@
 #pragma once
 
 #include "alpaka/api/trait.hpp"
+#include "alpaka/mem/concepts/IDataSource.hpp"
 #include "alpaka/onHost/algo/internal/transform.hpp"
 
 namespace alpaka::onHost
@@ -52,7 +53,7 @@ namespace alpaka::onHost
         alpaka::concepts::Executor auto const exec,
         alpaka::concepts::IMdSpan auto&& out,
         auto&& fn,
-        alpaka::concepts::IGeneratorOrMdSpan auto&&... in)
+        alpaka::concepts::IDataSource auto&&... in)
     {
         internal::transform(queue, exec, ALPAKA_FORWARD(out), ALPAKA_FORWARD(fn), ALPAKA_FORWARD(in)...);
     }
@@ -66,7 +67,7 @@ namespace alpaka::onHost
         Queue<T_Device, T_QueueKind> const& queue,
         alpaka::concepts::IMdSpan auto&& out,
         auto&& fn,
-        alpaka::concepts::IGeneratorOrMdSpan auto&&... in)
+        alpaka::concepts::IDataSource auto&&... in)
     {
         auto executor = supportedExecutors(queue.getDevice(), exec::allExecutors);
         transform(queue, std::get<0>(executor), ALPAKA_FORWARD(out), ALPAKA_FORWARD(fn), ALPAKA_FORWARD(in)...);

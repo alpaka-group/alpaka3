@@ -6,7 +6,7 @@
 
 #include "alpaka/Simd.hpp"
 #include "alpaka/internal/interface.hpp"
-#include "alpaka/mem/concepts/IGenerator.hpp"
+#include "alpaka/mem/DataPitches.hpp"
 
 namespace alpaka
 {
@@ -83,6 +83,18 @@ namespace alpaka
         constexpr auto getExtents() const
         {
             return m_extents;
+        }
+
+        constexpr auto getPitches() const
+        {
+            return alpaka::calculatePitchesFromExtents<value_type>(getExtents());
+        }
+
+        [[nodiscard]] constexpr explicit operator bool() const noexcept
+        {
+            // TODO(SimeonEhrig) check if this is correct
+            // maybe extents is really moveable
+            return true;
         }
 
     private:

@@ -77,7 +77,7 @@ void iMdSpanCallByUniversalReference(concepts::IMdSpan auto&&)
 }
 
 TEMPLATE_TEST_CASE_SIG(
-    "IMdSpan, IView and IBuffer concept test",
+    "IDataSource, IMdSpan, IView and IBuffer concept test",
     "[mem][concepts]",
     ((typename TElem, uint32_t Dim), TElem, Dim),
     (int, 1),
@@ -92,12 +92,27 @@ TEMPLATE_TEST_CASE_SIG(
     concepts::Vector auto const extents = Vec<uint32_t, Dim>{}.all(size);
     concepts::Vector auto const pitches = alpaka::calculatePitchesFromExtents<int>(extents);
 
+    SECTION("test alpaka::LinearizedIdxGenerator object")
+    {
+        using GenType = alpaka::LinearizedIdxGenerator<uint32_t, Dim>;
+        GenType gen(extents);
+        STATIC_REQUIRE(std::same_as<typename GenType::value_type, uint32_t>);
+
+        STATIC_REQUIRE(alpaka::concepts::IDataSource<GenType>);
+        STATIC_REQUIRE(alpaka::concepts::IDataSource<GenType const>);
+        STATIC_REQUIRE(alpaka::concepts::IDataSource<GenType&>);
+        STATIC_REQUIRE_FALSE(alpaka::concepts::IMdSpan<GenType>);
+        STATIC_REQUIRE_FALSE(alpaka::concepts::IView<GenType>);
+        STATIC_REQUIRE_FALSE(alpaka::concepts::IBuffer<GenType>);
+    }
+
     SECTION("test alpaka::MdSpan object")
     {
         MdSpan mdSpan(ptr, extents, pitches);
         using MdSpanType = decltype(mdSpan);
         STATIC_REQUIRE(std::same_as<typename MdSpanType::value_type, TElem>);
 
+        STATIC_REQUIRE(alpaka::concepts::IDataSource<MdSpanType>);
         STATIC_REQUIRE(alpaka::concepts::IMdSpan<MdSpanType>);
         STATIC_REQUIRE(alpaka::concepts::IMdSpan<MdSpanType const>);
         STATIC_REQUIRE(alpaka::concepts::IMdSpan<MdSpanType&>);
@@ -124,6 +139,7 @@ TEMPLATE_TEST_CASE_SIG(
         MdSpanArrayType mdSpanArray(static_data);
         STATIC_REQUIRE(std::same_as<typename MdSpanArrayType::value_type, TElem>);
 
+        STATIC_REQUIRE(alpaka::concepts::IDataSource<MdSpanArrayType>);
         STATIC_REQUIRE(alpaka::concepts::IMdSpan<MdSpanArrayType>);
         STATIC_REQUIRE(alpaka::concepts::IMdSpan<MdSpanArrayType const>);
         STATIC_REQUIRE(alpaka::concepts::IMdSpan<MdSpanArrayType&>);
@@ -148,6 +164,7 @@ TEMPLATE_TEST_CASE_SIG(
         using ViewType = decltype(view);
         STATIC_REQUIRE(std::same_as<typename ViewType::value_type, TElem>);
 
+        STATIC_REQUIRE(alpaka::concepts::IDataSource<ViewType>);
         STATIC_REQUIRE(alpaka::concepts::IMdSpan<ViewType>);
         STATIC_REQUIRE(alpaka::concepts::IView<ViewType>);
         STATIC_REQUIRE_FALSE(alpaka::concepts::IBuffer<ViewType>);
@@ -160,6 +177,7 @@ TEMPLATE_TEST_CASE_SIG(
         using BufferType = decltype(buffer);
         STATIC_REQUIRE(std::same_as<typename BufferType::value_type, TElem>);
 
+        STATIC_REQUIRE(alpaka::concepts::IDataSource<BufferType>);
         STATIC_REQUIRE(alpaka::concepts::IMdSpan<BufferType>);
         STATIC_REQUIRE(alpaka::concepts::IView<BufferType>);
         STATIC_REQUIRE(alpaka::concepts::IBuffer<BufferType>);
