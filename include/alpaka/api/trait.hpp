@@ -1,4 +1,4 @@
-/* Copyright 2024 René Widera
+/* Copyright 2024 René Widera, Mehmet Yusufoglu
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -72,6 +72,19 @@ namespace alpaka
                 {
                     static_assert(sizeof(T_Api) && false, "GetCachelineSize for the current used API is not defined.");
                     return 42u;
+                }
+            };
+        };
+
+        struct GetWarpSize
+        {
+            template<alpaka::concepts::Api T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
+            struct Op
+            {
+                consteval uint32_t operator()(T_Api const, T_DeviceKind const) const
+                {
+                    static_assert(sizeof(T_Api) && false, "Missing definition of GetWarpSize for API.");
+                    return 1u;
                 }
             };
         };
@@ -157,6 +170,18 @@ namespace alpaka
         alpaka::concepts::DeviceKind auto const deviceType)
     {
         return trait::GetCachelineSize::Op<ALPAKA_TYPEOF(api), ALPAKA_TYPEOF(deviceType)>{}(api, deviceType);
+    }
+
+    /**
+     * Get the number of threads grouped into a warp (lock-step execution group).
+     *
+     * This consteval helper is meant for template code that only knows the API/device tags. When a concrete device or
+     * accelerator instance is available, prefer the runtime APIs (`DeviceProperties::getWarpSizes()`,
+     * `alpaka::onAcc::warp::getSize(acc)`) so backend-specific tuning remains accurate.
+     */
+    consteval uint32_t getWarpSize(concepts::Api auto const api, alpaka::concepts::DeviceKind auto const deviceType)
+    {
+        return trait::GetWarpSize::Op<ALPAKA_TYPEOF(api), ALPAKA_TYPEOF(deviceType)>{}(api, deviceType);
     }
 
     namespace onAcc::trait

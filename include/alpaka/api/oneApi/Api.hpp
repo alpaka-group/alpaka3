@@ -1,4 +1,4 @@
-/* Copyright 2024 René Widera, Simeon Ehrig
+/* Copyright 2024 René Widera, Simeon Ehrig, Mehmet Yusufoglu
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -94,6 +94,15 @@ namespace alpaka
             }
         };
 
+        template<>
+        struct GetWarpSize::Op<api::OneApi, deviceKind::Cpu>
+        {
+            consteval uint32_t operator()(api::OneApi const, deviceKind::Cpu const) const
+            {
+                return 1u;
+            }
+        };
+
         // for GPU
         template<typename T_Type, concepts::GpuType T_DeviceKind>
         struct GetArchSimdWidth::Op<T_Type, api::OneApi, T_DeviceKind>
@@ -128,6 +137,15 @@ namespace alpaka
                 // loading 16 byte per thread will result in optimal memory bandwith
                 // copied from CUDA/HIP -> not verified if this is the optional value
                 return 16u;
+            }
+        };
+
+        template<concepts::GpuType T_DeviceKind>
+        struct GetWarpSize::Op<api::OneApi, T_DeviceKind>
+        {
+            consteval uint32_t operator()(api::OneApi const, T_DeviceKind const) const
+            {
+                return 32u;
             }
         };
     } // namespace trait

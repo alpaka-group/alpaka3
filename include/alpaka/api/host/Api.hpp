@@ -1,4 +1,4 @@
-/* Copyright 2024 René Widera
+/* Copyright 2024 René Widera, Mehmet Yusufoglu
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -80,6 +80,15 @@ namespace alpaka
             constexpr uint32_t operator()(api::Host const, deviceKind::Cpu const) const
             {
                 return alpaka::onHost::internal::getCPUCachelineSize();
+            }
+        };
+
+        template<>
+        struct GetWarpSize::Op<api::Host, deviceKind::Cpu>
+        {
+            consteval uint32_t operator()(api::Host const, deviceKind::Cpu const) const
+            {
+                return 1u;
             }
         };
 

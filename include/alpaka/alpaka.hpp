@@ -1,4 +1,4 @@
-/* Copyright 2024 René Widera
+/* Copyright 2024 René Widera, Mehmet Yusufoglu
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -10,8 +10,11 @@
 #include "alpaka/Vec.hpp"
 #include "alpaka/api/api.hpp"
 #include "alpaka/api/cpu.hpp"
+#include "alpaka/api/host/warp.hpp"
 #include "alpaka/api/oneApi.hpp"
+#include "alpaka/api/oneApi/warp.hpp"
 #include "alpaka/api/unifiedCudaHip.hpp"
+#include "alpaka/api/unifiedCudaHip/warp.hpp"
 #include "alpaka/apply.hpp"
 #include "alpaka/core/Dict.hpp"
 #include "alpaka/core/Tag.hpp"
@@ -33,6 +36,7 @@
 #include "alpaka/onAcc/interface.hpp"
 #include "alpaka/onAcc/memFence.hpp"
 #include "alpaka/onAcc/tag.hpp"
+#include "alpaka/onAcc/warp.hpp"
 #include "alpaka/onHost/Device.hpp"
 #include "alpaka/onHost/DeviceSelector.hpp"
 #include "alpaka/onHost/Queue.hpp"

@@ -1,4 +1,4 @@
-/* Copyright 2024 René Widera
+/* Copyright 2024 René Widera, Mehmet Yusufoglu
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -11,8 +11,13 @@
 #include "alpaka/onHost/trait.hpp"
 #include "alpaka/utility.hpp"
 
+#if ALPAKA_LANG_HIP
+#    include <hip/hip_runtime.h>
+#endif
+
 #include <memory>
 #include <sstream>
+#include <type_traits>
 
 namespace alpaka
 {
@@ -96,6 +101,43 @@ namespace alpaka
                 // loading 16 byte per thread will result in optimal memory bandwith
                 return 16u;
             }
+        };
+
+        template<>
+        struct GetWarpSize::Op<api::Hip, deviceKind::AmdGpu>
+        {
+            // Follow legacy Alpaka by sourcing HIP’s runtime `warpSize`, but guard it with a constant-evaluation
+            // check so host code still sees a compile-time value while device kernels receive the builtin result.
+#if ALPAKA_LANG_HIP
+            // HIP’s `warpSize` is a device builtin with a non-constexpr conversion, so we rely on
+            // `std::is_constant_evaluated()` to substitute documented wavefront defaults for compile-time requests.
+            // gfx9 hardware reports 64-lane wavefronts, while gfx10 and later default to 32 lanes per HIP docs.
+            constexpr uint32_t operator()(api::Hip const, deviceKind::AmdGpu const) const
+            {
+                if(std::is_constant_evaluated())
+                {
+                    // HIP does not publish a compile-time constant, so fall back to legacy GCN default.
+                    return 64u;
+                }
+                else
+                {
+#    if defined(__HIP_DEVICE_COMPILE__)
+                    // Runtime device path: hipcc provides the `warpSize` builtin for the active GPU.
+                    return static_cast<uint32_t>(warpSize);
+#    else
+                    // Host-only code path: there is no runtime query without a device handle, so choose legacy
+                    // default.
+                    return 64u;
+#    endif
+                }
+            }
+#else
+            consteval uint32_t operator()(api::Hip const, deviceKind::AmdGpu const) const
+            {
+                // Default to 64 for compatibility with older GCN architectures when HIP not available
+                return 64u;
+            }
+#endif
         };
     } // namespace trait
 } // namespace alpaka

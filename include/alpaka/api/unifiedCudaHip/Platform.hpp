@@ -130,8 +130,9 @@ namespace alpaka::onHost
                 auto prop = DeviceProperties{};
                 prop.m_name = devProp.name;
                 prop.m_maxThreadsPerBlock = devProp.maxThreadsPerBlock;
-                prop.m_warpSize = devProp.warpSize;
                 prop.m_multiProcessorCount = devProp.multiProcessorCount;
+                prop.m_warpSizes = std::vector<uint32_t>{static_cast<uint32_t>(devProp.warpSize)};
+                prop.m_preferredWarpSize = prop.m_warpSizes.front();
 
                 return prop;
             }

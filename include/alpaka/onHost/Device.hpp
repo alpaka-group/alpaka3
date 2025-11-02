@@ -324,7 +324,7 @@ namespace alpaka::onHost
         using ExtentVecType = ALPAKA_TYPEOF(extents);
         using IndexType = alpaka::trait::GetValueType_t<ExtentVecType>;
         auto props = device.getDeviceProperties();
-        IndexType warpSize = static_cast<IndexType>(props.m_warpSize);
+        IndexType warpSize = static_cast<IndexType>(props.getPreferredWarpSize());
         // try to create a specification with a frame size of 512 elements
         IndexType numFrameElemets = 512;
         // avoid non-power of two values

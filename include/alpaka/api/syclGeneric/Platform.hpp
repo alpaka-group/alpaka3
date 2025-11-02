@@ -15,10 +15,12 @@
 
 #    include <sycl/sycl.hpp>
 
+#    include <algorithm>
 #    include <map>
 #    include <memory>
 #    include <numeric>
 #    include <optional>
+#    include <type_traits>
 
 namespace alpaka
 {
@@ -230,18 +232,35 @@ namespace alpaka
                     auto prop = DeviceProperties{};
                     prop.m_name = dev.get_info<sycl::info::device::name>();
                     prop.m_maxThreadsPerBlock = dev.get_info<sycl::info::device::max_work_group_size>();
-                    std::vector<std::size_t> wrap_sizes = dev.get_info<sycl::info::device::sub_group_sizes>();
-                    // @todo do not reduce wrap size to a single value, return all values
-                    prop.m_warpSize = static_cast<uint32_t>(std::reduce(
-                        wrap_sizes.begin(),
-                        wrap_sizes.end(),
-                        std::size_t{0},
-                        [](std::size_t a, std::size_t b)
+                    std::vector<std::size_t> subgroupSizes = dev.get_info<sycl::info::device::sub_group_sizes>();
+                    std::vector<uint32_t> warpSizes;
+                    warpSizes.reserve(subgroupSizes.size());
+                    for(auto const size : subgroupSizes)
+                    {
+                        auto const clamped = static_cast<uint32_t>(size <= 32u ? size : 32u);
+                        if(clamped == 0u)
                         {
-                            // The CPU runtime supports a sub-group size of 64, but the SYCL implementation
-                            // currently does not
-                            return std::max(a, b) <= 32 ? std::max(a, b) : 32;
-                        }));
+                            continue;
+                        }
+                        if(std::find(warpSizes.begin(), warpSizes.end(), clamped) == warpSizes.end())
+                        {
+                            warpSizes.push_back(clamped);
+                        }
+                    }
+                    if(warpSizes.empty())
+                    {
+                        warpSizes.push_back(1u);
+                    }
+                    else if constexpr(std::is_same_v<T_DeviceKind, deviceKind::Cpu>)
+                    {
+                        // SYCL CPU backends may report subgroup widths > 1, but Alpaka maps OneAPI-CPU warp ops to
+                        // SingleThread behaviour (warp size == 1). Forcing the property to {1} keeps host-side logic
+                        // and tests aligned with the emulated runtime semantics.
+                        warpSizes.clear();
+                        warpSizes.push_back(1u);
+                    }
+                    prop.m_warpSizes = std::move(warpSizes);
+                    prop.m_preferredWarpSize = prop.m_warpSizes.front();
                     prop.m_multiProcessorCount = dev.get_info<sycl::info::device::max_compute_units>();
 
                     return prop;

@@ -14,6 +14,7 @@
 
 #include <memory>
 #include <sstream>
+#include <vector>
 
 namespace alpaka::onHost
 {
@@ -117,8 +118,9 @@ namespace alpaka::onHost
                 auto prop = DeviceProperties{};
                 prop.m_name = getCpuName();
                 prop.m_maxThreadsPerBlock = std::numeric_limits<uint32_t>::max();
-                prop.m_warpSize = 1u;
                 prop.m_multiProcessorCount = std::thread::hardware_concurrency();
+                prop.m_warpSizes = std::vector<uint32_t>{1u};
+                prop.m_preferredWarpSize = 1u;
 
                 return prop;
             }

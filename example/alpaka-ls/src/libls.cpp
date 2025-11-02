@@ -6,6 +6,7 @@
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
 
+#include <cstddef>
 #include <iostream>
 #include <random>
 
@@ -28,7 +29,26 @@ void forEachDeviceType(auto const deviceSpec)
         std::cout << "\t\tid                   : " << d << "\n";
         std::cout << "\t\tname                 : " << devProps.getName() << "\n";
         std::cout << "\t\tmulti processor count: " << devProps.m_multiProcessorCount << "\n";
-        std::cout << "\t\twarp size            : " << devProps.m_warpSize << "\n";
+        std::cout << "\t\twarp sizes           : ";
+        if(devProps.m_warpSizes.empty())
+        {
+            std::cout << "[unknown]";
+        }
+        else
+        {
+            std::cout << "[";
+            for(std::size_t i = 0u; i < devProps.m_warpSizes.size(); ++i)
+            {
+                if(i != 0u)
+                {
+                    std::cout << ", ";
+                }
+                std::cout << devProps.m_warpSizes[i];
+            }
+            std::cout << "]";
+        }
+        std::cout << "\n";
+        std::cout << "\t\tpreferred warp size  : " << devProps.getPreferredWarpSize() << "\n";
         std::cout << "\t\tmax threads per block: " << devProps.m_maxThreadsPerBlock << "\n";
         auto executors = onHost::getExecutorsList(deviceSpec, onHost::example::enabledExecutors);
         std::cout << "\t\texecutors            : ";

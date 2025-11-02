@@ -1,4 +1,4 @@
-/* Copyright 2024 René Widera
+/* Copyright 2024 René Widera, Mehmet Yusufoglu
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -10,6 +10,10 @@
 #include "alpaka/core/config.hpp"
 #include "alpaka/onHost/trait.hpp"
 #include "alpaka/utility.hpp"
+
+#if ALPAKA_LANG_CUDA
+#    include <device_launch_parameters.h>
+#endif
 
 #include <memory>
 #include <sstream>
@@ -96,6 +100,21 @@ namespace alpaka
             {
                 // loading 16 byte per thread will result in optimal memory bandwith
                 return 16u;
+            }
+        };
+
+        template<>
+        struct GetWarpSize::Op<api::Cuda, deviceKind::NvidiaGpu>
+        {
+            // CUDA headers expose `warpSize` as a true compile-time constant on the host, so consteval can fold it
+            // while keeping the trait usable in both host and device contexts.
+            consteval uint32_t operator()(api::Cuda const, deviceKind::NvidiaGpu const) const
+            {
+#if ALPAKA_LANG_CUDA && defined(warpSize)
+                return static_cast<uint32_t>(warpSize);
+#else
+                return 32u;
+#endif
             }
         };
     } // namespace trait
