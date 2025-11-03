@@ -1,26 +1,31 @@
 /* Copyright 2024 René Widera
  * SPDX-License-Identifier: MPL-2.0
  */
-#if ALPAKA_LANG_SYCL != 0
-#    include <alpaka/alpaka.hpp>
-#    include <alpaka/onHost/example/executors.hpp>
-#    include <alpaka/onHost/executeForEach.hpp>
 
-#    include <catch2/catch_template_test_macros.hpp>
-#    include <catch2/catch_test_macros.hpp>
+#include <alpaka/alpaka.hpp>
+#include <alpaka/onHost/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
 
-#    include <iostream>
+#include <catch2/catch_template_test_macros.hpp>
+#include <catch2/catch_test_macros.hpp>
+
+#include <iostream>
 
 using namespace alpaka;
 using namespace alpaka::onHost;
 
 using TestApis = std::decay_t<decltype(allBackends(enabledApis, onHost::example::enabledExecutors))>;
 
+/* We can not check passing the attributes 'const', 'static' or 'constexpr' because this is not supported by OneApi
+ * 2025.2 with AMD gpus.
+ * Therefore, we are testing only empty attributes and 'inline' attribute to fucus on supported code only.
+ */
+ALPAKA_DEVICE_GLOBAL_EXTERN(, (alpaka::Vec<uint32_t, 2u>), initialised_vector);
+ALPAKA_DEVICE_GLOBAL(, (alpaka::Vec<uint32_t, 2u>), initialised_vector, 42u, 43u);
 
-ALPAKA_DEVICE_GLOBAL(const, (alpaka::Vec<uint32_t, 2u>), initialised_vector, 42u, 43u);
-ALPAKA_DEVICE_GLOBAL(constexpr, uint32_t, initialised_scalar, 43u);
-ALPAKA_DEVICE_GLOBAL(, uint32_t[2], fixed_sized_array, 44u, 45u);
-ALPAKA_DEVICE_GLOBAL(, uint32_t[2][3], fixed_sized_array2D, {9u, 5u}, {6u, 11u, 45u});
+ALPAKA_DEVICE_GLOBAL(, uint32_t, initialised_scalar, 43u);
+ALPAKA_DEVICE_GLOBAL(, uint32_t[2], fixed_sized_array, {44u, 45u});
+ALPAKA_DEVICE_GLOBAL(, uint32_t[2][3], fixed_sized_array2D, {{9u, 5u}, {6u, 11u, 45u}});
 
 struct DeviceGlobalMemKernelVec
 {
@@ -155,5 +160,3 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
         }
     }
 }
-
-#endif
