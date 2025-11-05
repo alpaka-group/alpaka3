@@ -88,23 +88,23 @@ namespace alpaka
          */
         constexpr const_reference operator*() const
         {
-            return *this->m_ptr;
+            return *this->data();
         }
 
         constexpr reference operator*()
         {
-            return *this->m_ptr;
+            return *this->data();
         }
 
         /** get origin pointer */
         constexpr const_pointer data() const
         {
-            return this->m_ptr;
+            return reinterpret_cast<const_pointer>(this->m_ptr);
         }
 
         constexpr pointer data()
         {
-            return this->m_ptr;
+            return reinterpret_cast<pointer>(this->m_ptr);
         }
 
         constexpr auto begin() const
