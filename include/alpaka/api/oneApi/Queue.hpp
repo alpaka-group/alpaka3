@@ -12,6 +12,7 @@
 #    include "alpaka/api/oneApi/StaticSharedMemory.hpp"
 #    include "alpaka/api/syclGeneric/Queue.hpp"
 #    include "alpaka/api/syclGeneric/onAcc.hpp"
+#    include "alpaka/onAcc/internal/globalMem.hpp"
 #    include "alpaka/onHost/internal/interface.hpp"
 
 
@@ -111,6 +112,54 @@ namespace alpaka::onHost::internal
                     extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
                     dstExtentWithoutColumn.product());
             }
+
+            if(queue.isBlocking())
+                ev.wait_and_throw();
+        }
+    };
+
+    // copy to device global memory
+    template<typename T_Device, typename T_Source, typename T_Storage, typename T>
+    struct internal::MemcpyDeviceGlobal::
+        Op<syclGeneric::Queue<T_Device>, onAcc::internal::GlobalDeviceMemoryWrapper<T_Storage, T>, T_Source>
+    {
+        void operator()(
+            syclGeneric::Queue<T_Device>& queue,
+            onAcc::internal::GlobalDeviceMemoryWrapper<T_Storage, T> dest,
+            auto&& source) const
+        {
+            ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
+            sycl::queue sycl_queue = queue.getNativeHandle();
+            void const* srcPtr{nullptr};
+            if constexpr(std::is_pointer_v<ALPAKA_TYPEOF(source)>)
+                srcPtr = source;
+            else
+                srcPtr = toVoidPtr(alpaka::onHost::data(source));
+            [[maybe_unused]] sycl::event ev = sycl_queue.memcpy(dest.getHandle(alpaka::api::oneApi), srcPtr);
+
+            if(queue.isBlocking())
+                ev.wait_and_throw();
+        }
+    };
+
+    // copy from device global memory
+    template<typename T_Device, typename T_Dest, typename T_Storage, typename T>
+    struct internal::MemcpyDeviceGlobal::
+        Op<syclGeneric::Queue<T_Device>, T_Dest, onAcc::internal::GlobalDeviceMemoryWrapper<T_Storage, T>>
+    {
+        void operator()(
+            syclGeneric::Queue<T_Device>& queue,
+            auto&& dest,
+            onAcc::internal::GlobalDeviceMemoryWrapper<T_Storage, T> source) const
+        {
+            ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
+            sycl::queue sycl_queue = queue.getNativeHandle();
+            void* destPtr{nullptr};
+            if constexpr(std::is_pointer_v<ALPAKA_TYPEOF(dest)>)
+                destPtr = dest;
+            else
+                destPtr = toVoidPtr(alpaka::onHost::data(dest));
+            [[maybe_unused]] sycl::event ev = sycl_queue.memcpy(destPtr, source.getHandle(alpaka::api::oneApi));
 
             if(queue.isBlocking())
                 ev.wait_and_throw();

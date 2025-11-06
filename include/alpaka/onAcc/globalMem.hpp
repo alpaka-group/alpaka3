@@ -44,7 +44,14 @@
                                                                                                                       \
     struct ALPAKA_PP_CAT(AlpakaGlobalStorage, name)                                                                   \
     {                                                                                                                 \
-        ALPAKA_DEVICE_GLOBAL_GET_HOST(attributes, dataType, name, __VA_ARGS__)                                        \
+        constexpr auto& get(alpaka::api::Host) const                                                                  \
+        {                                                                                                             \
+            return alpaka_onHost::name.value;                                                                         \
+        }                                                                                                             \
+        constexpr auto& getHandle(alpaka::api::Host) const                                                            \
+        {                                                                                                             \
+            return alpaka_onHost::name;                                                                               \
+        }                                                                                                             \
         ALPAKA_DEVICE_GLOBAL_GET_CUDA_HIP(attributes, dataType, name, __VA_ARGS__)                                    \
         ALPAKA_DEVICE_GLOBAL_GET_ONEAPI(attributes, dataType, name, __VA_ARGS__)                                      \
     };                                                                                                                \

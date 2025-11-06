@@ -8,7 +8,24 @@
 #include "alpaka/concepts/types.hpp"
 #include "alpaka/core/PP.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/mem/MdSpan.hpp"
 #include "alpaka/mem/MdSpanArray.hpp"
+
+/** @file global device memory implementation for all APIs
+ *
+ * We need many precompiler macros to handle the device global feature.
+ * The reason is that we would like to have the possibility to create a variable where the same name can be used on all
+ * devices. Each device will have it's own instance of memory and via a global instance GlobalDeviceMemoryWrapper we
+ * redirect queries to the corresponding instance of memory based on the alpaka API.
+ *
+ * OneAPI Sycl is the only API which does not allow querying the device pointer of a global variable from the host.
+ * That's why we have special implementations of onHost::memcpy() which using the device global object directly.
+ * That's also the reason why we can not use the global memory for onHost::fill() or onHost::memset().
+ */
+namespace alpaka::onHost::internal
+{
+    struct MemcpyDeviceGlobal;
+} // namespace alpaka::onHost::internal
 
 /** Create a device global variable for the API host */
 #define ALPAKA_DEVICE_GLOBAL_DATA_HOST(attributes, dataType, name, ...)                                               \
@@ -24,18 +41,6 @@
     {                                                                                                                 \
         extern attributes alpaka::onAcc::internal::GlobalDeviceMemoryDataWrapper<ALPAKA_PP_REMOVE_BRACKETS(dataType)> \
             name;                                                                                                     \
-    }
-
-/** Access operator for usage in AlpakaGlobalStorage for API host */
-#define ALPAKA_DEVICE_GLOBAL_GET_HOST(attributes, dataType, name, ...)                                                \
-    template<typename T_Api>                                                                                          \
-    requires(std::is_same_v<alpaka::api::Host, T_Api>)                                                                \
-    constexpr auto& get(T_Api) const                                                                                  \
-    {                                                                                                                 \
-        static_assert(                                                                                                \
-            std::is_same_v<alpaka::api::Host, ALPAKA_TYPEOF(thisApi())>,                                              \
-            "This call is only allowed from the host or a kernel running on CPU.");                                   \
-        return alpaka_onHost::name.data;                                                                              \
     }
 
 #if ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP
@@ -54,13 +59,15 @@
         requires(std::is_same_v<alpaka::api::Cuda, T_Api> || std::is_same_v<alpaka::api::Hip, T_Api>)                 \
         constexpr auto& get(T_Api) const                                                                              \
         {                                                                                                             \
-            static_assert(                                                                                            \
-                sizeof(T_Api)                                                                                         \
-                    && (ALPAKA_LANG_CUDA != ALPAKA_VERSION_NUMBER_NOT_AVAILABLE                                       \
-                        || ALPAKA_LANG_HIP != ALPAKA_VERSION_NUMBER_NOT_AVAILABLE),                                   \
-                "This call requires a CUDA/HIP compiler.");                                                           \
-            return alpaka_onAccCudaHip::name.data;                                                                    \
+            return alpaka_onAccCudaHip::name.value;                                                                   \
+        }                                                                                                             \
+        template<typename T_Api>                                                                                      \
+        requires(std::is_same_v<alpaka::api::Cuda, T_Api> || std::is_same_v<alpaka::api::Hip, T_Api>)                 \
+        constexpr auto& getHandle(T_Api) const                                                                        \
+        {                                                                                                             \
+            return alpaka_onAccCudaHip::name.value;                                                                   \
         }
+
 #else
 #    define ALPAKA_DEVICE_GLOBAL_DATA_CUDA_HIP(attributes, dataType, name, ...)
 #    define ALPAKA_DEVICE_GLOBAL_GET_CUDA_HIP(attributes, dataType, name, ...)
@@ -114,10 +121,13 @@
         requires(std::is_same_v<alpaka::api::OneApi, T_Api>)                                                          \
         constexpr auto& get(T_Api) const                                                                              \
         {                                                                                                             \
-            static_assert(                                                                                            \
-                sizeof(T_Api) && ALPAKA_LANG_SYCL != ALPAKA_VERSION_NUMBER_NOT_AVAILABLE,                             \
-                "This call requires a SYCL compiler.");                                                               \
-            return alpaka_onAccOneAPI::name.get().data;                                                               \
+            return alpaka_onAccOneAPI::name.get().value;                                                              \
+        }                                                                                                             \
+        template<typename T_Api>                                                                                      \
+        requires(std::is_same_v<alpaka::api::OneApi, T_Api>)                                                          \
+        constexpr auto& getHandle(T_Api) const                                                                        \
+        {                                                                                                             \
+            return alpaka_onAccOneAPI::name;                                                                          \
         }
 #else
 #    define ALPAKA_DEVICE_GLOBAL_DATA_ONEAPI(attributes, dataType, name, ...)
@@ -135,11 +145,21 @@ namespace alpaka::onAcc::internal
     template<typename T>
     struct GlobalDeviceMemoryDataWrapper
     {
-        constexpr GlobalDeviceMemoryDataWrapper(auto const&... args) : data{ALPAKA_FORWARD(args)...}
+        constexpr GlobalDeviceMemoryDataWrapper(auto const&... args) : value{ALPAKA_FORWARD(args)...}
         {
         }
 
-        T data;
+        T value;
+
+        T* data()
+        {
+            return &value;
+        }
+
+        T const* data() const
+        {
+            return &value;
+        }
     };
 
     /** Specialization of GlobalDeviceMemoryDataWrapper for C static arrays.
@@ -150,13 +170,40 @@ namespace alpaka::onAcc::internal
     template<alpaka::concepts::CStaticArray T>
     struct GlobalDeviceMemoryDataWrapper<T>
     {
-        T data;
+        T value;
+        using value_type = std::remove_all_extents_t<T>;
+
+        value_type* data()
+        {
+            return reinterpret_cast<value_type*>(&value);
+        }
+
+        value_type const* data() const
+        {
+            return reinterpret_cast<value_type const*>(&value);
+        }
     };
 
     /** Helper class to provide access to device global memory variables */
     template<typename T_Storage, typename T_Type>
     struct GlobalDeviceMemoryWrapper : private T_Storage
     {
+    private:
+        friend struct onHost::internal::MemcpyDeviceGlobal;
+
+        /** Get the handle to call native API specific memcopy for global device memory operation
+         *
+         * @attention This method is for internal usage only.
+         *
+         * @return type depends on the native API e.g Cuda, OneApi, ...
+         */
+        template<alpaka::concepts::Api T_Api>
+        constexpr decltype(auto) getHandle(T_Api api) const
+        {
+            return T_Storage::getHandle(api);
+        }
+
+    public:
         using type = T_Type;
 
         constexpr decltype(auto) get() const

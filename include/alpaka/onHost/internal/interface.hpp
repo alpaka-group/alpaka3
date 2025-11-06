@@ -13,6 +13,13 @@
 #include "alpaka/onHost/ThreadSpec.hpp"
 #include "alpaka/tag.hpp"
 
+namespace alpaka::onAcc::internal
+{
+    // forward declaration to avoid cyclic includes
+    template<typename T_Storage, typename T_Type>
+    struct GlobalDeviceMemoryWrapper;
+} // namespace alpaka::onAcc::internal
+
 namespace alpaka::onHost
 {
     namespace internal
@@ -346,6 +353,21 @@ namespace alpaka::onHost
             struct Op
             {
                 void operator()(T_Queue& queue, auto&&, T_Source const&, T_Extents const&) const;
+            };
+        };
+
+        struct MemcpyDeviceGlobal
+        {
+            template<typename T_Queue, typename T_Dest, typename T_Source>
+            struct Op
+            {
+                /** copy data from or to the device global memory
+                 *
+                 * It is only allowed to copy data from or to the host.
+                 * Copy from device global variable to device global variables is not supported.
+                 * The host data is allowed te be a host accessible pointer.
+                 */
+                void operator()(T_Queue& queue, T_Dest&&, T_Source&&) const;
             };
         };
 

@@ -220,6 +220,42 @@ namespace alpaka::onHost
             std::decay_t<decltype(extentsVec)>>{}(*queue.get(), ALPAKA_FORWARD(dest), source, extentsVec);
     }
 
+    /** copy data byte wise from a container or host pointer to global device memory
+     *
+     * @param queue the copy will be executed after all previous work in this queue is finished
+     * @param[in,out] dest must be device global memory on the device of the queue the data should be written to
+     * @param[in] source can be a container/view or host accessible pointer from which the data will be copied
+     */
+    template<typename T_Device, alpaka::concepts::QueueKind T_QueueKind, typename T_Storage, typename T>
+    inline void memcpy(
+        Queue<T_Device, T_QueueKind> const& queue,
+        onAcc::internal::GlobalDeviceMemoryWrapper<T_Storage, T> dest,
+        auto&& source)
+    {
+        internal::MemcpyDeviceGlobal::Op<
+            std::decay_t<decltype(*queue.get())>,
+            onAcc::internal::GlobalDeviceMemoryWrapper<T_Storage, T>,
+            std::decay_t<decltype(source)>>{}(*queue.get(), dest, ALPAKA_FORWARD(source));
+    }
+
+    /** copy data byte wise from global device memory to a container or host pointer
+     *
+     * @param queue the copy will be executed after all previous work in this queue is finished
+     * @param[in,out] dest can be a container/view or host accessible pointer the data should be written to
+     * @param[in] source must be device global memory on the device of the queue from which the data will be copied
+     */
+    template<typename T_Device, alpaka::concepts::QueueKind T_QueueKind, typename T_Storage, typename T>
+    inline void memcpy(
+        Queue<T_Device, T_QueueKind> const& queue,
+        auto&& dest,
+        onAcc::internal::GlobalDeviceMemoryWrapper<T_Storage, T> source)
+    {
+        internal::MemcpyDeviceGlobal::Op<
+            std::decay_t<decltype(*queue.get())>,
+            std::decay_t<decltype(dest)>,
+            onAcc::internal::GlobalDeviceMemoryWrapper<T_Storage, T>>{}(*queue.get(), ALPAKA_FORWARD(dest), source);
+    }
+
     /** fill memory byte wise
      *
      * @param[in,out] dest can be a container/view where the data should be written to
