@@ -239,8 +239,6 @@ auto example(T_Cfg const& cfg, size_t numElements, size_t numberOfRuns, bool ena
             if(result != EXIT_SUCCESS)
                 return result;
         }
-
-        ++completedRuns;
     }
 
     if(completedRuns > 0u)
