@@ -209,8 +209,8 @@ cpp_id_attributes = [
     "ALPAKA_FN_HOST_ACC",
     "ALPAKA_FN_INLINE",
     "ALPAKA_NO_HOST_ACC_WARNING",
-    "ALPAKA_STATIC_ACC_MEM_CONSTANT",
-    "ALPAKA_STATIC_ACC_MEM_GLOBAL",
+    "ALPAKA_FORWARD",
+    "ALPAKA_TYPEOF",
 ]
 
 # -- processing --
