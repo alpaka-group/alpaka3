@@ -455,8 +455,8 @@ namespace alpaka::onHost
                     ApiInterface,
                     ApiInterface::setDevice(onHost::getNativeHandle(queue.m_device)));
 
-                auto* destPtr = (void*) onHost::data(dest);
-                auto* const srcPtr = (void*) onHost::data(source);
+                void* destPtr = toVoidPtr(onHost::data(dest));
+                void const* srcPtr = toVoidPtr(onHost::data(source));
 
                 auto copyKind = unifiedCudaHip::MemcpyKind<
                     ApiInterface,
@@ -497,7 +497,8 @@ namespace alpaka::onHost
                     typename ApiInterface::Memcpy3DParms_t memCpy3DParms{};
 
                     memCpy3DParms.srcPtr = ApiInterface::makePitchedPtr(
-                        srcPtr,
+                        // CUDA/HIP does not support const for pitched pointer
+                        const_cast<void*>(srcPtr),
                         source.getPitches().y(),
                         source.getExtents().x(),
                         source.getExtents().y());
@@ -541,7 +542,7 @@ namespace alpaka::onHost
                     ApiInterface,
                     ApiInterface::setDevice(onHost::getNativeHandle(queue.m_device)));
 
-                auto* destPtr = (void*) onHost::data(dest);
+                void* destPtr = toVoidPtr(onHost::data(dest));
 
                 constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
                 if constexpr(dim == 1u)
