@@ -13,7 +13,6 @@ cmake_minimum_required(VERSION 3.25)
 ################################################################################
 
 alpaka_install_catch2()
-
 #------------------------------------------------------------------------------
 # Search for sub folders in the given folder.
 # Creates a Catch2 test executable for each .cpp file in each sub folder.
@@ -32,7 +31,11 @@ function(alpaka_add_test_target target_prefix folder)
     foreach(test_folder ${test_folders})
         if(IS_DIRECTORY ${test_folder})
             message(DEBUG "test folder: ${test_folder}")
-
+            get_filename_component(test_folder_name ${test_folder} NAME)
+            if(test_folder_name STREQUAL "alpakaTune" AND NOT alpaka_TUNER)
+                message(STATUS "Skipping alpakaTune tests (reason: alpaka_TUNER=OFF)")
+                continue()
+            endif()
             file(GLOB test_sources "${test_folder}/**")
 
             # iterate over all sub folders
