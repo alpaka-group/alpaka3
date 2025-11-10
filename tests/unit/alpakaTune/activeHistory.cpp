@@ -8,13 +8,13 @@
 #include <cstdint>
 
 // Adjust these include paths to your tree:
-#include <alpaka/tune/api.hpp>
+#include <alpaka/onHost/tune/api.hpp>
 
-using namespace alpaka::tune;
+using namespace alpaka::onHost::tune;
 
-TEST_CASE("ActiveHistory starts empty", "[ActiveHistory]")
+TEST_CASE("[TunerActiveHistory] starts empty", "")
 {
-    IO::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
+    store::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
 
     REQUIRE(hist.size() == 0);
     REQUIRE(hist.getOrderedHistory().empty());
@@ -25,9 +25,9 @@ TEST_CASE("ActiveHistory starts empty", "[ActiveHistory]")
     REQUIRE(hist.getAll().empty());
 }
 
-TEST_CASE("getOrCreate inserts new entry (copy) and preserves insertion order", "[ActiveHistory]")
+TEST_CASE("[TunerActiveHistory] getOrCreate inserts new entry (copy) and preserves insertion order", "")
 {
-    IO::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
+    store::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
 
     auto& e1 = hist.getOrCreate(config::Config<std::uint32_t, 3>{{{1, 2, 3}}});
 
@@ -49,9 +49,9 @@ TEST_CASE("getOrCreate inserts new entry (copy) and preserves insertion order", 
     REQUIRE(&it->second == &e1);
 }
 
-TEST_CASE("getOrCreate deduplicates by key (move overload)", "[ActiveHistory]")
+TEST_CASE("[TunerActiveHistory] getOrCreate deduplicates by key (move overload)", "")
 {
-    IO::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
+    store::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
 
     auto& e1 = hist.getOrCreate(config::Config<std::uint32_t, 3>{{{1, 2, 3}}});
 
@@ -63,9 +63,9 @@ TEST_CASE("getOrCreate deduplicates by key (move overload)", "[ActiveHistory]")
     REQUIRE(hist.getOrderedHistory().size() == 1);
 }
 
-TEST_CASE("Multiple distinct inserts maintain order", "[ActiveHistory]")
+TEST_CASE("[TunerActiveHistory] Multiple distinct inserts maintain order", "")
 {
-    IO::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
+    store::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
 
     auto& e1 = hist.getOrCreate(config::Config<std::uint32_t, 3>{{{1, 2, 3}}});
     auto& e2 = hist.getOrCreate(config::Config<std::uint32_t, 3>{{{4, 5, 6}}});
@@ -80,9 +80,9 @@ TEST_CASE("Multiple distinct inserts maintain order", "[ActiveHistory]")
     REQUIRE(&ord[2].get() == &e3);
 }
 
-TEST_CASE("getRecord present/absent behavior", "[ActiveHistory]")
+TEST_CASE("[TunerActiveHistory] getRecord present/absent behavior", "")
 {
-    IO::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
+    store::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
 
     REQUIRE_FALSE(hist.getRecord(config::Config<std::uint32_t, 3>{{{9, 9, 9}}}).has_value());
 
@@ -93,9 +93,9 @@ TEST_CASE("getRecord present/absent behavior", "[ActiveHistory]")
     REQUIRE(&r->get() == &e1);
 }
 
-TEST_CASE("contains by Entry and by TConfig", "[ActiveHistory]")
+TEST_CASE("[TunerActiveHistory] contains by Entry and by TConfig", "")
 {
-    IO::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
+    store::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
 
     config::Config<std::uint32_t, 3> const c1{{{5, 5, 5}}};
     config::Config<std::uint32_t, 3> const c2{{{6, 6, 6}}};
@@ -107,9 +107,9 @@ TEST_CASE("contains by Entry and by TConfig", "[ActiveHistory]")
     REQUIRE_FALSE(hist.contains(c2));
 }
 
-TEST_CASE("getAll const and non-const access reflect same storage", "[ActiveHistory]")
+TEST_CASE("[TunerActiveHistory] getAll const and non-const access reflect same storage", "")
 {
-    IO::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
+    store::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
 
     hist.getOrCreate(config::Config<std::uint32_t, 3>{{{1, 2, 3}}});
     hist.getOrCreate(config::Config<std::uint32_t, 3>{{{2, 3, 4}}});
@@ -117,16 +117,16 @@ TEST_CASE("getAll const and non-const access reflect same storage", "[ActiveHist
     REQUIRE(hist.size() == 2);
 
     auto& map = hist.getAll();
-    IO::RuntimeHistory<config::Config<std::uint32_t, 3>> const& chist = hist;
+    store::RuntimeHistory<config::Config<std::uint32_t, 3>> const& chist = hist;
     auto const& cmap = chist.getAll();
 
     REQUIRE(map.size() == cmap.size());
     REQUIRE(map.size() == hist.size());
 }
 
-TEST_CASE("contains returns false and true accordingly", "[ActiveHistory]")
+TEST_CASE("[TunerActiveHistory] contains returns false and true accordingly", "")
 {
-    IO::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
+    store::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
     auto config = config::Config<std::uint32_t, 3>{{{1, 2, 3}}};
     REQUIRE_FALSE(hist.contains(config));
 
@@ -141,9 +141,9 @@ TEST_CASE("contains returns false and true accordingly", "[ActiveHistory]")
     REQUIRE(hist.getOrderedHistory().size() == 1);
 }
 
-TEST_CASE("References in orderedHistory remain valid across rehashes", "[ActiveHistory]")
+TEST_CASE("[TunerActiveHistory] References in orderedHistory remain valid across rehashes", "")
 {
-    IO::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
+    store::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
 
     auto& e1 = hist.getOrCreate(config::Config<std::uint32_t, 3>{{{10, 20, 30}}});
     auto* p1_from_order = &hist.getOrderedHistory().front().get();
@@ -160,14 +160,14 @@ TEST_CASE("References in orderedHistory remain valid across rehashes", "[ActiveH
     REQUIRE(p1_from_order == &e1);
 }
 
-TEST_CASE("Entries expose working MetricContainer state", "[ActiveHistory]")
+TEST_CASE("[TunerActiveHistory] Entries expose working MetricContainer state", "[ActiveHistory]")
 {
-    IO::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
+    store::RuntimeHistory<config::Config<std::uint32_t, 3>> hist;
 
     auto& e = hist.getOrCreate(config::Config<std::uint32_t, 3>{{{1, 1, 1}}});
 
     // Fresh entry
-    REQUIRE(e.state == config::ConfigState::Uninitialized);
+    REQUIRE(e.state == internal::config::ConfigState::Uninitialized);
     REQUIRE(e.getMeasurements().size() == 0);
     try
     {
@@ -178,15 +178,21 @@ TEST_CASE("Entries expose working MetricContainer state", "[ActiveHistory]")
         // pushing a metric on a uninitialized config should throw an exception.
         REQUIRE(exception.what() != nullptr);
     }
-    e.state = config::ConfigState::Empty; // manually initializing
-    // First push -> transitions to WarmUp
-    e.pushMetric(100.0);
-    REQUIRE(e.state == config::ConfigState::WarmUp);
-    REQUIRE(!e.getMeasurements().empty());
+    e.state = internal::config::ConfigState::Initialized; // manually initializing
 
-    // Second push -> meets warmUpThreshold (==1), records a sample, transitions to Initialized
-    e.pushMetric(110.0);
-    REQUIRE(e.state == config::ConfigState::Initialized);
+    e.pushMetric(100.0);
+    REQUIRE(e.state == internal::config::ConfigState::WarmUp);
+
+
+    REQUIRE(e.getMeasurements().empty());
+
+    // Transition to InProcess
+    for(auto i = 0; i < std::remove_cvref_t<decltype(e)>::warmUpThreshold; i++)
+    {
+        e.pushMetric(100.0);
+    }
+    // 1+warmUpThreshold runs completed -> InProcess
+    REQUIRE(e.state == internal::config::ConfigState::InProcess);
     REQUIRE(e.getMeasurements().size() == 1);
 
     // More pushes record samples and increase run count
@@ -195,5 +201,5 @@ TEST_CASE("Entries expose working MetricContainer state", "[ActiveHistory]")
     REQUIRE(e.getMeasurements().size() >= 3);
 
     // Median can be queried (should not throw); tags live in global scope in your code
-    (void) e.getMeasurements().get(median_t{}).as<t_ns>();
+    (void) e.getMeasurements().get(internal::median_t{}).as<internal::t_ns>();
 }

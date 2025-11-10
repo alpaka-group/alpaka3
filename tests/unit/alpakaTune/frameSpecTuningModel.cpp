@@ -2,13 +2,12 @@
 // Created by tim on 17.10.25.
 //
 #include <alpaka/alpaka.hpp>
-#include <alpaka/tune/tunable/Tunable.hpp>
-#include <alpaka/tune/tunable/frameSpecTuningModel.hpp>
+#include <alpaka/onHost/tune/tunable/FrameSpecTuningModel.hpp>
+#include <alpaka/onHost/tune/tunable/tunables.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 using namespace alpaka;
-using namespace alpaka::tune;
-namespace frame = alpaka::tune::frame;
+using namespace alpaka::onHost::tune;
 
 TEST_CASE("[FrameSpecTuningModel] - default construction disables all tuneables", "")
 {
@@ -26,12 +25,12 @@ TEST_CASE("[FrameSpecTuningModel] - builder enables tuneable and get*Tune return
 {
     using V2u = Vec<uint32_t, 2u>;
     auto spec = onHost::FrameSpec{V2u{1, 1}, V2u{8, 8}};
-
+    using namespace alpaka::onHost::tune;
     // prepare tuneables
-    TunableMD<tune::frame::numFrames, V2u> numFramesTune{{V2u{1, 1}, V2u{2, 2}}};
-    TunableMD<tune::frame::frameExtent, V2u> frameExtentTune{{V2u{4, 4}, V2u{8, 8}}};
-    TunableMD<tune::frame::numBlocks, V2u> numBlocksTune{{V2u{1, 1}, V2u{2, 2}}};
-    TunableMD<tune::frame::numThreads, V2u> numThreadsTune{{V2u{32, 1}, V2u{64, 2}}};
+    TunableMD<alpaka::onHost::tune::frame::numFrames, V2u> numFramesTune{{V2u{1, 1}, V2u{2, 2}}};
+    TunableMD<alpaka::onHost::tune::frame::frameExtent, V2u> frameExtentTune{{V2u{4, 4}, V2u{8, 8}}};
+    TunableMD<alpaka::onHost::tune::frame::numBlocks, V2u> numBlocksTune{{V2u{1, 1}, V2u{2, 2}}};
+    TunableMD<alpaka::onHost::tune::frame::numThreads, V2u> numThreadsTune{{V2u{32, 1}, V2u{64, 2}}};
 
     auto tuned = FrameSpecTuningModel{spec}
                      .withNumFramesTune(numFramesTune)
@@ -130,8 +129,8 @@ TEST_CASE("[FrameSpecTuningModel] - end-to-end: custom tuneables are preserved t
     using V2u = Vec<uint32_t, 2u>;
     auto spec = onHost::FrameSpec{V2u{1, 1}, V2u{16, 16}};
 
-    TunableMD<tune::frame::frameExtent, V2u> frameExtentTune{{V2u{8, 8}, V2u{16, 16}}};
-    TunableMD<tune::frame::numThreads, V2u> numThreadsTune{{V2u{32, 1}, V2u{64, 2}}};
+    TunableMD<alpaka::onHost::tune::frame::frameExtent, V2u> frameExtentTune{{V2u{8, 8}, V2u{16, 16}}};
+    TunableMD<alpaka::onHost::tune::frame::numThreads, V2u> numThreadsTune{{V2u{32, 1}, V2u{64, 2}}};
 
     auto tuned = FrameSpecTuningModel{spec}.withFrameExtentTune(frameExtentTune).withNumThreadsTune(numThreadsTune);
 

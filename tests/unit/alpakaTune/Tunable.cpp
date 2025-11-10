@@ -1,16 +1,15 @@
 //
 // Created by tim on 10.10.25.
 //
-#include "alpaka/tune/tunable/Tunable.hpp"
-
 #include "alpaka/UniqueId.hpp"
+#include "alpaka/onHost/tune/tunable/tunables.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <string>
 #include <tuple>
 
-using namespace alpaka::tune;
+using namespace alpaka::onHost::tune;
 
 ///
 ///

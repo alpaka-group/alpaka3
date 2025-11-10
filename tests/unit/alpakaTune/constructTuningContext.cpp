@@ -35,14 +35,13 @@ TEMPLATE_LIST_TEST_CASE("Session builder with shallow frameExtent+numBlocks", ""
     Queue queue = device.makeQueue();
     auto exec = cfg[object::exec];
     using V2u = alpaka::Vec<uint32_t, 2u>;
-    auto build = alpaka::tune::TuningBuilder{};
-    auto session = alpaka::tune::TuningBuilder{}.withContextSpecifier("ab").buildSession();
+    auto build = tune::TuningBuilder{};
+    auto session = tune::TuningBuilder{}.withContextSpecifier("ab").buildSession();
     auto spec = FrameSpec{V2u{1, 1}, V2u{8, 8}};
-    auto frameModel = alpaka::tune::FrameSpecTuningModel{spec}.withFrameExtentTune().withNumBlocksTune();
+    auto frameModel = tune::FrameSpecTuningModel{spec}.withFrameExtentTune().withNumBlocksTune();
 
     auto kernelBundle = KernelBundle{kernelDummy{}};
-    auto environmentPtr
-        = alpaka::tune::detail::internal::setup_enqueue(queue, exec, frameModel, kernelBundle, session);
+    auto environmentPtr = tune::internal::core::setup_enqueue(queue, exec, frameModel, kernelBundle, session);
     auto& environment_state = environmentPtr->env_environmentState;
     REQUIRE(environmentPtr != nullptr);
 }
@@ -75,7 +74,7 @@ TEMPLATE_LIST_TEST_CASE(
     TestApis)
 {
     using namespace alpaka;
-    using namespace alpaka::tune;
+    using namespace alpaka::onHost::tune;
     using V2u = Vec<uint32_t, 2u>;
     auto cfg = TestType::makeDict();
     auto deviceSpec = cfg[object::deviceSpec];
@@ -100,7 +99,7 @@ TEMPLATE_LIST_TEST_CASE(
     auto kernelBundle = KernelBundle{ExampleKernelA{}, userTune};
 
     // Enqueue/setup path should succeed; tuner will replace shallow frame tunables
-    auto envPtr = alpaka::tune::detail::internal::setup_enqueue(queue, exec, frameModel, kernelBundle, session);
+    auto envPtr = tune::internal::core::setup_enqueue(queue, exec, frameModel, kernelBundle, session);
     REQUIRE(envPtr != nullptr);
 }
 
@@ -115,10 +114,7 @@ TEMPLATE_LIST_TEST_CASE(
     TestApis)
 {
     using namespace alpaka;
-    using namespace alpaka::tune;
-    using V2u = Vec<uint32_t, 2u>;
-    using namespace alpaka;
-    using namespace alpaka::tune;
+    using namespace alpaka::onHost::tune;
     using V2u = Vec<uint32_t, 2u>;
     auto cfg = TestType::makeDict();
     auto deviceSpec = cfg[object::deviceSpec];
@@ -148,17 +144,15 @@ TEMPLATE_LIST_TEST_CASE(
     auto kernelBundle = KernelBundle{ExampleKernelB{}, userVecTune};
 
     // Enqueue/setup path should succeed with user-defined spaces already in the model
-    auto envPtr = alpaka::tune::detail::internal::setup_enqueue(queue, exec, frameModel, kernelBundle, session);
+    auto envPtr = tune::internal::core::setup_enqueue(queue, exec, frameModel, kernelBundle, session);
     REQUIRE(envPtr != nullptr);
 }
 
 TEMPLATE_LIST_TEST_CASE("ALL shallow combinations", "[FrameSpecTuningModel][enqueue][Tuner Decide]", TestApis)
 {
     using namespace alpaka;
-    using namespace alpaka::tune;
+    using namespace alpaka::onHost::tune;
     using V2u = Vec<uint32_t, 2u>;
-    using namespace alpaka;
-    using namespace alpaka::tune;
     using V2u = Vec<uint32_t, 2u>;
     auto cfg = TestType::makeDict();
     auto deviceSpec = cfg[object::deviceSpec];
@@ -183,6 +177,6 @@ TEMPLATE_LIST_TEST_CASE("ALL shallow combinations", "[FrameSpecTuningModel][enqu
     auto kernelBundle = KernelBundle{ExampleKernelA{}};
 
     // Enqueue/setup path should succeed with user-defined spaces already in the model
-    auto envPtr = alpaka::tune::detail::internal::setup_enqueue(queue, exec, frameModel, kernelBundle, session);
+    auto envPtr = tune::internal::core::setup_enqueue(queue, exec, frameModel, kernelBundle, session);
     REQUIRE(envPtr != nullptr);
 }

@@ -76,7 +76,7 @@ static constexpr auto compileTimeTunableID = alpaka::uniqueId();
 
 // trait to define a compile time tunable for the kernel
 template<typename T>
-struct tune::trait::CompileTimeTuneableTrait<VectorAddTunedKernel<T>>
+struct onHost::tune::trait::CompileTimeTuneableTrait<VectorAddTunedKernel<T>>
 {
     static constexpr auto tuned_indices = alpaka::CVec<std::size_t, static_cast<std::size_t>(0)>{};
     using t = typename T::type;
@@ -84,7 +84,8 @@ struct tune::trait::CompileTimeTuneableTrait<VectorAddTunedKernel<T>>
     static auto tuneAbleDefinitions()
     {
         using type = uint32_t;
-        auto tune1 = CTunable<compileTimeTunableID, generate::c_LogSpace<type(1), type(64), type(2)>::values>();
+        using Seq = typename onHost::tune::generate::c_LogSpace<type(1), type(64), type(2)>::values;
+        auto tune1 = CTunable<compileTimeTunableID, Seq>();
         return std::tuple{tune1};
     }
 }; // namespace trait
@@ -146,8 +147,8 @@ auto example(auto const deviceSpec, auto const exec, size_t numElements, size_t 
     uint32_t elementsPerWorker = getNumElemPerThread<Data>(queue);
     auto dataBlocking = onHost::FrameSpec{divCeil(extent, chunkSize * elementsPerWorker), chunkSize};
     // define a custom tunable for the numThreads
-    auto myNumThreadsTune = alpaka::tune::Tunable<tune::frame::numThreads, Vec<size_t, 1u>>{
-        alpaka::tune::generate::linSpace(Vec<size_t, 1u>{32}, Vec<size_t, 1u>{512}, Vec<size_t, 1u>{32}),
+    auto myNumThreadsTune = alpaka::onHost::tune::Tunable<onHost::tune::frame::numThreads, Vec<size_t, 1u>>{
+        alpaka::onHost::tune::generate::linSpace(Vec<size_t, 1u>{32}, Vec<size_t, 1u>{512}, Vec<size_t, 1u>{32}),
         512, // startValue
         "numThreadsTune"}; // custom name
     /*
@@ -155,19 +156,20 @@ auto example(auto const deviceSpec, auto const exec, size_t numElements, size_t 
      * specification. such as number of frames, number of the frameExtent, number if blocks, number of threads.
      */
     auto specTuningModel
-        = alpaka::tune::FrameSpecTuningModel{dataBlocking}
+        = onHost::tune::FrameSpecTuningModel{dataBlocking}
               .withNumBlocksTune() /* numBlocks should be tunable: let the tuner decide*/.withNumThreadsTune(
                   myNumThreadsTune) /* insert the custom tunable*/;
     auto session
-        = alpaka::tune::TuningBuilder{}
+        = onHost::tune::TuningBuilder{}
 
               // set the tuning strategy
-              .withStrategy(alpaka::tune::strategy::randomSample{})
+              .withStrategy(onHost::tune::strategy::RandomSample{})
               // define a constraint between multiple tunables
-              .template withConstraint<tune::frame::numThreads, tune::frame::numBlocks>(
+              .template withConstraint<onHost::tune::frame::numThreads, onHost::tune::frame::numBlocks>(
                   [&](auto numThreads, auto numBlocks) /*only matches if both IDs are present.*/
                   {
-                      bool blocksHigherOneIfPossible = (dataBlocking.m_numFrames.x() == 1) || (numBlocks > 1);
+                      bool blocksHigherOneIfPossible
+                          = (dataBlocking.m_numFrames.x() == 1) || (numBlocks.product() > 1);
                       return blocksHigherOneIfPossible && numThreads.x() % 32 == 0; /* based on our definition this is
                                                         always true -- only showcase constraint definition */
                   })
@@ -190,7 +192,8 @@ auto example(auto const deviceSpec, auto const exec, size_t numElements, size_t 
               // a tuning session can incooperate a json based checkpoint and restart logic.
               .withPersistentHistory("vectorAddKernel_History.json")
               .buildSession();
-    alpaka::tune::Vars::setRunsPerConfig(10);
+    // set the number of runs per paramater configuration manually (can changed during runtime using
+    alpaka::onHost::tune::Vars::setRunsPerConfig(10);
     // Instantiate the kernel function object
     VectorAddTunedKernel<std::integral_constant<uint32_t, 1u>> kernel;
     auto const taskKernel = KernelBundle{kernel, bufAccA, bufAccB, bufAccC, extent};

@@ -1,14 +1,14 @@
-#include "alpaka/tune/core/sessionBuilder.hpp"
+#include "alpaka/onHost/tune/core/SessionBuilder.hpp"
 
-#include <alpaka/tune/core/tuningSession.hpp>
-#include <alpaka/tune/interfaces/MetricInterface.hpp>
-#include <alpaka/tune/interfaces/strategy.hpp>
-#include <alpaka/tune/tunable/Tunable.hpp>
+#include <alpaka/onHost/tune/core/TuningSession.hpp>
+#include <alpaka/onHost/tune/interfaces/metricInterface.hpp>
+#include <alpaka/onHost/tune/interfaces/strategy.hpp>
+#include <alpaka/onHost/tune/tunable/tunables.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
-using namespace alpaka::tune;
-namespace frame = alpaka::tune::frame;
+using namespace alpaka::onHost::tune;
+namespace frame = alpaka::onHost::tune::frame;
 
 // =============================================================
 //  Dummy types satisfying concepts
@@ -17,7 +17,8 @@ namespace frame = alpaka::tune::frame;
 struct DummyMetricInterface
 {
     // required data member
-    alpaka::tune::detail::returnComparison returnComparison = alpaka::tune::detail::returnComparison::LowerIsBetter;
+    alpaka::onHost::tune::internal::returnComparison returnComparison
+        = alpaka::onHost::tune::internal::returnComparison::LowerIsBetter;
 
     // required methods
     void start()
@@ -100,8 +101,10 @@ TEST_CASE("builder accepts custom metric interface", "[TuningBuilder][metric]")
 
 TEST_CASE("add constraint through withConstraint()", "[TuningBuilder][constraint]")
 {
-    auto builder = TuningBuilder{}.withConstraint<alpaka::tune::frame::numThreads, alpaka::tune::frame::frameExtent>(
-        [](auto a, auto b) { return a <= b; });
+    auto builder
+        = TuningBuilder{}
+              .withConstraint<alpaka::onHost::tune::frame::numThreads, alpaka::onHost::tune::frame::frameExtent>(
+                  [](auto a, auto b) { return a <= b; });
 
     using BType = decltype(builder);
     STATIC_REQUIRE(std::tuple_size_v<typename BType::T_ConstraintTuple_Type> == 1);
@@ -111,8 +114,8 @@ TEST_CASE("multiple constraints can be added via chaining", "[TuningBuilder][con
 {
     auto builder
         = TuningBuilder{}
-              .withConstraint<alpaka::tune::frame::numFrames, ::frame::numBlocks>([](auto a, auto b)
-                                                                                  { return a >= b; })
+              .withConstraint<alpaka::onHost::tune::frame::numFrames, ::frame::numBlocks>([](auto a, auto b)
+                                                                                          { return a >= b; })
               .withConstraint<::frame::frameExtent, ::frame::numThreads>([](auto a, auto b) { return a >= b; });
 
     using BType = decltype(builder);
@@ -154,13 +157,14 @@ TEST_CASE("complex chained builder integration", "[TuningBuilder][integration]")
     DummyMetricInterface metric{};
     DummyStrategy strategy{};
 
-    auto builder = TuningBuilder{}
-                       .withPersistentHistory("integration.toml")
-                       .withStrategy(strategy)
-                       .withMetricInterface(metric)
-                       .withConstraint<alpaka::tune::frame::numThreads, alpaka::tune::frame::frameExtent>(
-                           [](auto a, auto b) { return a <= b; })
-                       .withContextSpecifier("gpu1", std::to_string(512), "problemX");
+    auto builder
+        = TuningBuilder{}
+              .withPersistentHistory("integration.toml")
+              .withStrategy(strategy)
+              .withMetricInterface(metric)
+              .withConstraint<alpaka::onHost::tune::frame::numThreads, alpaka::onHost::tune::frame::frameExtent>(
+                  [](auto a, auto b) { return a <= b; })
+              .withContextSpecifier("gpu1", std::to_string(512), "problemX");
 
     auto session = builder.buildSession();
 
@@ -170,8 +174,9 @@ TEST_CASE("complex chained builder integration", "[TuningBuilder][integration]")
     using BType = decltype(builder);
     STATIC_REQUIRE(std::tuple_size_v<typename BType::T_ConstraintTuple_Type> == 1);
 
-    auto session1
-        = alpaka::tune::TuningBuilder{}.withStrategy(strategy::exhaustiveSearch{}).withContextSpecifier("sess-CTune");
+    auto session1 = alpaka::onHost::tune::TuningBuilder{}
+                        .withStrategy(strategy::ExhaustiveSearch{})
+                        .withContextSpecifier("sess-CTune");
     std::cout << "size: " << session1.m_sessionSpecifiers.size() << std::endl;
     auto session2 = session1.withPersistentHistory("out.json");
     std::cout << "size: " << session2.m_sessionSpecifiers.size() << std::endl;

@@ -48,7 +48,7 @@
 #include "alpaka/onHost/mem/stdContainer.hpp"
 #include "alpaka/tag.hpp"
 #if ALPAKA_TUNER
-#    include "alpaka/tune/api.hpp"
+#    include "alpaka/onHost/tune/api.hpp"
 #endif
 #include "alpaka/utility.hpp"
 

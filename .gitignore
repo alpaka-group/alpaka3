@@ -6,7 +6,7 @@
 /docs/cheatsheet/cheatsheet.pdf
 
 **/build*/
-
+.build_cmake/
 # tmp files
 *~
 .*.swp

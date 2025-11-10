@@ -1,12 +1,12 @@
 //
 // Created by tim on 08.10.25.
 //
-#include "alpaka/tune/tunable/Tunable.hpp"
+#include "alpaka/onHost/tune/tunable/tunables.hpp"
 
 #include <alpaka/alpaka.hpp>
 
 #include <catch2/catch_test_macros.hpp>
-using namespace alpaka::tune;
+using namespace alpaka::onHost::tune;
 
 TEST_CASE("Runtime LinSpace generates correct sequence", "[LinSpace]")
 {
@@ -63,7 +63,7 @@ TEST_CASE("Tuneable compatible", "[c_LogSpace]")
     using ExpectedTuple = std::
         tuple<std::integral_constant<type, 1>, std::integral_constant<type, 3>, std::integral_constant<type, 9>>;
     constexpr auto testTuple = TuneTuple{};
-    utils::for_each_enumerate(
+    internal::utils::for_each_enumerate(
         testTuple,
         [&]<std::size_t I>([[maybe_unused]] auto&& elem)
         {

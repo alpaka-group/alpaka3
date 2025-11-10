@@ -4,9 +4,9 @@
 //
 // Created by tim on 06.10.25.
 //
-#include "alpaka/tune/tunable/Tunable.hpp"
+#include "alpaka/onHost/tune/tunable/tunables.hpp"
 
-#include <alpaka/tune/utils/compileTimeTemplates.hpp>
+#include <alpaka/onHost/tune/utils/compileTimeTemplates.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -142,7 +142,7 @@ struct TestKernelArbitrary
     }
 };
 
-namespace alpaka
+namespace alpaka::onHost
 {
 
 
@@ -156,8 +156,7 @@ namespace alpaka
 
             static auto tuneAbleDefinitions()
             {
-                auto tune1
-                    = tune::CTunable<static_cast<std::size_t>(0), CVec<t, 1>, CVec<t, 2>, CVec<t, 8>, CVec<t, 10>>{};
+                auto tune1 = CTunable<static_cast<std::size_t>(0), CVec<t, 1>, CVec<t, 2>, CVec<t, 8>, CVec<t, 10>>{};
                 return std::tuple{tune1};
             }
         };
@@ -220,16 +219,16 @@ namespace alpaka
         TestKernel<CVec<uint32_t, 0>> tuned{};
         [[maybe_unused]] auto bundle = KernelBundle{tuned};
         using kernelFn = typename decltype(bundle)::KernelFn;
-        static_assert(alpaka::tune::trait::hasUserDefinedCTuneable<kernelFn>::value);
-        [[maybe_unused]] static auto variants =
-            typename tune::trait::RegisteredCTuneables<std::decay_t<kernelFn>>::T_KernelVariants{};
+        static_assert(tune::trait::hasUserDefinedCTuneable<kernelFn>::value);
+        [[maybe_unused]] static auto variants = typename tune::internal::compileTimeHelpers::RegisteredCTuneables<
+            std::decay_t<kernelFn>>::T_KernelVariants{};
         auto vals = std::tuple{CVec<uint32_t, 1>{}, CVec<uint32_t, 2>{}, CVec<uint32_t, 8>{}, CVec<uint32_t, 10>{}};
-        alpaka::tune::utils::for_each_enumerate(
+        tune::internal::utils::for_each_enumerate(
             variants,
             [&]<typename T0>(T0 const& val, auto idx)
             {
                 static_assert(std::is_convertible_v<typename T0::Param1, CVec<uint32_t, 18>>);
-                alpaka::tune::utils::visitIndex(idx, vals, [&](auto const& val2) { CHECK(val.getValue() == val2); });
+                tune::internal::utils::visitIndex(idx, vals, [&](auto const& val2) { CHECK(val.getValue() == val2); });
             });
     };
 
@@ -238,17 +237,18 @@ namespace alpaka
         TestKernelThreeDim<nonTrivial, CVec<uint32_t, 12>, float_t> tuned{};
         [[maybe_unused]] auto bundle = KernelBundle{tuned};
         using kernelFn = typename decltype(bundle)::KernelFn;
-        static_assert(alpaka::tune::trait::hasUserDefinedCTuneable<kernelFn>::value);
-        static auto variants = typename tune::trait::RegisteredCTuneables<std::decay_t<kernelFn>>::T_KernelVariants{};
+        static_assert(tune::trait::hasUserDefinedCTuneable<kernelFn>::value);
+        static auto variants = typename tune::internal::compileTimeHelpers::RegisteredCTuneables<
+            std::decay_t<kernelFn>>::T_KernelVariants{};
         auto vals = std::tuple{CVec<uint32_t, 1>{}, CVec<uint32_t, 2>{}, CVec<uint32_t, 8>{}, CVec<uint32_t, 10>{}};
-        alpaka::tune::utils::for_each_enumerate(
+        tune::internal::utils::for_each_enumerate(
             variants,
             [&]<typename T0>(T0 const& val, auto idx)
             {
                 static_assert(std::is_same_v<typename T0::Param1, nonTrivial>);
                 static_assert(std::is_convertible_v<typename T0::Param2, CVec<uint32_t, 18>>);
                 static_assert(std::is_same_v<typename T0::Param3, float_t>);
-                alpaka::tune::utils::visitIndex(idx, vals, [&](auto const& val2) { CHECK(val.getValue() == val2); });
+                tune::internal::utils::visitIndex(idx, vals, [&](auto const& val2) { CHECK(val.getValue() == val2); });
             });
     };
 
@@ -257,18 +257,18 @@ namespace alpaka
         TestKernelMD<nonTrivial, CVec<uint32_t, 12>, CVec<uint32_t, 11>> tuned{};
         [[maybe_unused]] auto bundle = KernelBundle{tuned};
         using kernelFn = typename decltype(bundle)::KernelFn;
-        static_assert(alpaka::tune::trait::hasUserDefinedCTuneable<kernelFn>::value);
+        static_assert(tune::trait::hasUserDefinedCTuneable<kernelFn>::value);
 
         constexpr auto testIndicies
             = std::tuple{std::array<uint32_t, 2>{0, 2}, std::array<uint32_t, 2>{1, 1}, std::array<uint32_t, 2>{3, 0}};
         constexpr auto expectedValues_1 = std::tuple{CVec<uint32_t, 1>{}, CVec<uint32_t, 2>{}, CVec<uint32_t, 10>{}};
         constexpr auto expectedValues_2
             = std::tuple{CVec<uint32_t, 200>{}, CVec<uint32_t, 20>{}, CVec<uint32_t, 15>{}};
-        tune::utils::for_each_enumerate(
+        tune::internal::utils::for_each_enumerate(
             testIndicies,
             [&]<std::size_t I>(auto const& mdim_Idx)
             {
-                alpaka::tune::CompileTimeHelpers::runtime_Kernel_dispatch<kernelFn>(
+                tune::internal::compileTimeHelpers::runtime_Kernel_dispatch<kernelFn>(
                     mdim_Idx,
                     [&]<typename T_KernelBundle>(T_KernelBundle&& element)
                     {
@@ -286,7 +286,7 @@ namespace alpaka
     {
         using kernelFn = TestKernelArbitrary<nonTrivial, foo, bar>;
 
-        static_assert(alpaka::tune::trait::hasUserDefinedCTuneable<kernelFn>::value);
+        static_assert(tune::trait::hasUserDefinedCTuneable<kernelFn>::value);
 
         // Now 3-dimensional indices for three parameters
         constexpr auto testIndices = std::tuple{
@@ -306,11 +306,11 @@ namespace alpaka
         constexpr auto expectedValues_3
             = std::tuple{CVec<uint32_t, 4u, 5u>{}, CVec<uint32_t, 1u, 2u>{}, CVec<uint32_t, 3u, 2u>{}};
 
-        tune::utils::for_each_enumerate(
+        tune::internal::utils::for_each_enumerate(
             testIndices,
             [&]<std::size_t I>(auto const& mdimIdx)
             {
-                alpaka::tune::CompileTimeHelpers::runtime_Kernel_dispatch<kernelFn>(
+                tune::internal::compileTimeHelpers::runtime_Kernel_dispatch<kernelFn>(
                     mdimIdx,
                     [&]<typename T_KernelBundle>(T_KernelBundle&& element)
                     {
@@ -322,4 +322,4 @@ namespace alpaka
                     });
             });
     }
-} // namespace alpaka
+} // namespace alpaka::onHost
