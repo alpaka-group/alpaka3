@@ -14,9 +14,9 @@ namespace alpaka::tune::config
     enum class ConfigState
     {
         Uninitialized, ///< New config which has not been seen yet
-        Empty, ///< Seen config with no samples taken yet.
+        Initialized, ///< Seen config with no samples taken yet.
         WarmUp, ///< Collecting warm-up samples (not used in stats or write out).
-        Initialized, ///< Collecting steady-state samples.
+        InProcess, ///< Collecting steady-state samples.
         CICriteriaReached, ///< CI reached
         Retired, ///< fully evaluated configs
         Invalid ///< -due to constraints; metrics cleared.
@@ -63,7 +63,9 @@ namespace alpaka::tune::config
         }
 
         /**
-         * @brief Add a timing sample and update state/flags.
+         * @brief Add a timing sample and update state/flags for the ConfigRecords lifecycle.
+         *
+         * pushMetric is only called during the active tuning process (we did not reach the global break criteria yet)
          *
          * Transitions Uninitialized → WarmUp → Initialized once the warm-up
          * threshold is reached. Sets @c fullFlag when the metrics container
@@ -78,26 +80,20 @@ namespace alpaka::tune::config
             case ConfigState::Uninitialized:
                 throw std::runtime_error("pushing metrics on a new Config is not allowed!");
                 break;
-            case ConfigState::Empty:
+            case ConfigState::Initialized:
                 state = ConfigState::WarmUp;
-                metrics.push<10>(val, false);
                 warm_up_runs++;
                 break;
             case ConfigState::WarmUp:
 
                 if(warm_up_runs++ >= warmUpThreshold)
                 {
-                    metrics.clear();
                     metrics.push<10>(val, false);
-                    state = ConfigState::Initialized;
+                    state = ConfigState::InProcess;
                     nr_runs++;
                 }
-                else
-                {
-                    metrics.push<10>(val, false);
-                }
                 break;
-            case ConfigState::Initialized:
+            case ConfigState::InProcess:
                 if(metrics.push<10>(val, true))
                     state = ConfigState::CICriteriaReached;
                 ++nr_runs;
@@ -108,9 +104,11 @@ namespace alpaka::tune::config
                 break;
 
             case ConfigState::Retired:
-                this->metrics.history.push_back(val);
-                // only append values to history median does not change anymore
-                ++nr_runs;
+                // append nothing do nothing (avoids draining system memory, when very heavy workloads are performed
+                // in dense tuning space)
+                // this could be changed in the future (to implement some form of dynamic best config selection)
+                // since pushMetric only occurs during the active tuning process
+                // -- and we generally allow retired configs to be selected by the strategy --
                 break;
             case ConfigState::Invalid:
                 metrics.clear();

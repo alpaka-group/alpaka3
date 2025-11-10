@@ -37,7 +37,7 @@ namespace alpaka::tune::config
         auto const& best = state.getBestConfig().value().get();
         if(best == stored)
             return;
-        if(stored.state != config::ConfigState::Initialized)
+        if(stored.state != config::ConfigState::InProcess)
             return;
         auto res = best.compare(stored); // kruskal wallis comparison
 

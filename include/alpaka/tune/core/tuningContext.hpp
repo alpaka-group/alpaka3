@@ -185,18 +185,39 @@ namespace alpaka::tune
                     = std::min(alpaka::tune::Vars::getMaxTotalConfigs(), env_tuningModel.getMaxPossibleRuns());
                 env_environmentState.maxValidEvaluations
                     = std::min(env_environmentState.maxConfigsTotal, alpaka::tune::Vars::getMaxValidConfigs());
+                // ---
+                // SETUP initial Config
+                // ---
+                // Use the best config directly from persistent storage directly
+                if(env_environmentState.getBestConfig().has_value())
+                {
+                    std::cout << " best config has value" << std::endl;
+                    // the best config is already in the history at this point -- use getOrCreate as additional
+                    // failsafe
+                    auto mutableBestConfig
+                        = getHistory().getOrCreate(env_environmentState.getBestConfig().value().get().m_config);
+                    // push best into the queue and update head pointer.
+                    env_config_queue.try_insertAdjustHead(mutableBestConfig);
+                    return;
+                }
                 // Seed initial configuration and queue it if valid.
                 auto initConfigTmp = env_tuningModel.getInitConfig();
-
-                config::ConfigRecord<T_Config>& configEntry = getHistory().getOrCreate(initConfigTmp);
-                if(configEntry.state == config::ConfigState::Uninitialized)
+                std::string s;
+                for(auto const val : initConfigTmp)
+                {
+                    s += std::to_string(val) + ",";
+                }
+                std::cout << " init config: " << s << std::endl;
+                config::ConfigRecord<T_Config>& firstEntry = getHistory().getOrCreate(initConfigTmp);
+                if(firstEntry.state == config::ConfigState::Uninitialized)
                 {
                     ++this->env_environmentState.numberOfCheckedConfigs;
-                    configEntry.state = config::ConfigState::Empty;
-                    if(!violatesConstraint(configEntry))
+                    firstEntry.state = config::ConfigState::Initialized;
+                    if(!violatesConstraint(firstEntry))
                     {
                         ++this->env_environmentState.numValidConfigs;
-                        env_config_queue.push_back(configEntry);
+                        // push into the queue and force head pointer to be at this config.
+                        env_config_queue.try_insertAdjustHead(firstEntry);
                     }
                 }
             }

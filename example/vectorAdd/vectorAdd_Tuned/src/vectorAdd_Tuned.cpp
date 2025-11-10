@@ -84,7 +84,8 @@ struct tune::trait::CompileTimeTuneableTrait<VectorAddTunedKernel<T>>
     static auto tuneAbleDefinitions()
     {
         using type = uint32_t;
-        auto tune1 = CTunable<compileTimeTunableID, generate::c_LogSpace<type(1), type(64), type(2)>::values>();
+        using Seq = typename generate::c_LogSpace<type(1), type(64), type(2)>::values;
+        auto tune1 = CTunable<compileTimeTunableID, Seq>();
         return std::tuple{tune1};
     }
 }; // namespace trait
@@ -167,7 +168,8 @@ auto example(auto const deviceSpec, auto const exec, size_t numElements, size_t 
               .template withConstraint<tune::frame::numThreads, tune::frame::numBlocks>(
                   [&](auto numThreads, auto numBlocks) /*only matches if both IDs are present.*/
                   {
-                      bool blocksHigherOneIfPossible = (dataBlocking.m_numFrames.x() == 1) || (numBlocks > 1);
+                      bool blocksHigherOneIfPossible
+                          = (dataBlocking.m_numFrames.x() == 1) || (numBlocks.product() > 1);
                       return blocksHigherOneIfPossible && numThreads.x() % 32 == 0; /* based on our definition this is
                                                         always true -- only showcase constraint definition */
                   })

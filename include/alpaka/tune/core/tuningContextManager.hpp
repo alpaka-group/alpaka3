@@ -66,22 +66,17 @@ namespace alpaka::tune
 
                 return;
             }
-
-
             if(this->env_environmentState.globalBreakCriteriaFinished())
             {
                 emptyTheQueue(std::forward<T_Args>(launchArgs)...);
                 return;
             }
-
             if(handleFullQueue(std::forward<T_Args>(launchArgs)...))
             {
                 return;
             }
-
             // SELECT valid config via Strategy
             auto nextConfig = selectNextConfig();
-
             if(this->env_environmentState.strategyCriteriaReached())
             {
                 emptyTheQueue(std::forward<T_Args>(launchArgs)...);
@@ -94,10 +89,7 @@ namespace alpaka::tune
                 emptyTheQueue(std::forward<T_Args>(launchArgs)...);
                 return;
             }
-
-
-            this->env_config_queue.push_back(entry.value().get()); // insert valid + new config entry to queue
-
+            this->env_config_queue.try_insert(entry.value().get()); // insert valid + new config entry to queue
             emptyTheQueue(std::forward<T_Args>(launchArgs)...);
         }
 
@@ -114,7 +106,7 @@ namespace alpaka::tune
         template<typename... T_Args>
         void emptyTheQueue(T_Args&&... launchArgs)
         {
-            auto configWrapper = this->env_config_queue.get();
+            auto configWrapper = this->env_config_queue.getConfigFromQueue();
             if(configWrapper.has_value())
             {
                 auto& config = configWrapper.value().get();
@@ -122,6 +114,8 @@ namespace alpaka::tune
                 update(config, metric); // update Metric
                 return;
             }
+            std::cout << " reach breaking criteria " << std::endl;
+            std::cout << " filename is empty: " << this->env_persistentHistory.m_filename.empty() << std::endl;
             if(!writtenPersistent && !this->env_environmentState.sessionFinished)
             {
                 if(!this->env_persistentHistory.m_filename.empty())
@@ -146,10 +140,10 @@ namespace alpaka::tune
         template<typename... T_Args>
         bool handleFullQueue(T_Args&&... launchArgs)
         {
-            auto configWrapper = this->env_config_queue.get();
             if(this->env_config_queue.full()
                || this->env_config_queue.size() >= this->env_environmentState.maxConfigsTotal)
             {
+                auto configWrapper = this->env_config_queue.getConfigFromQueue();
                 auto& config = configWrapper.value().get();
                 double_t metric = applyAndExecute(std::forward<T_Args>(launchArgs)..., config);
                 update(config, metric); // Update Metric
@@ -308,7 +302,7 @@ namespace alpaka::tune
             if(newConfig)
             {
                 ++this->env_environmentState.numberOfCheckedConfigs;
-                configRecord.state = config::ConfigState::Empty;
+                configRecord.state = config::ConfigState::Initialized;
             }
             // enforce constraints
             if(Base::violatesConstraint(configRecord))

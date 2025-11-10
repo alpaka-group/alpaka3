@@ -145,7 +145,7 @@ TEMPLATE_LIST_TEST_CASE(
     ///
     // Kernel bundle includes the user tunable as an argument
     auto kernelBundle = KernelBundle{ExampleKernelA{}, uCurrBufAcc.getMdSpan(), V2u{2, 2}, V2u{2, 2}, 4, userTune};
-    for(auto i = 0; i < (64 * (10 + 1)) + 2; i++) // sufficient number of tuning times
+    for(auto i = 0; i < (64 * (10 + 5)); i++) // sufficient number of tuning times
     {
         // queue.enqueue(exec, spec, kernelBundle);
         session.enqueue(queue, exec, frameModel, kernelBundle);
@@ -211,7 +211,7 @@ TEMPLATE_LIST_TEST_CASE("enqueue with CTunable", "[CTune][enqueue][full run]", T
         V2u{2, 2},
         V2u{2, 2},
         4};
-    for(auto i = 0; i < 64 * (10 + 2); i++) // sufficient number of tuning runs
+    for(auto i = 0; i < 64 * (10 + 5); i++) // sufficient number of tuning runs -- 3 consecutive runs, 1 run is warmUp,
     {
         // queue.enqueue(exec, spec, kernelBundle);
         session.enqueue(queue, exec, frameModel, kernelBundle);

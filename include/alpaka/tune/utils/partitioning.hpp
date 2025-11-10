@@ -97,7 +97,7 @@ namespace alpaka::tune::partitioning
         if(values.empty())
         {
             // failsave if all dims of partitionedVec > maxVal
-            values.push_back(maxVal);
+            values.emplace_back(maxVal);
         }
         return values;
     }

@@ -407,14 +407,14 @@ namespace alpaka::tune::IO
                         continue;
                     }
 
-                    entry.state = config::ConfigState::Empty;
+                    entry.state = config::ConfigState::Initialized;
                     entry.stamp = state.numValidConfigs++;
 
 
                     if(jcfg.contains("measurements") && jcfg["measurements"].is_array()
                        && jcfg["measurements"].size() > 0)
                     {
-                        entry.state = config::ConfigState::Initialized;
+                        entry.state = config::ConfigState::InProcess;
                     }
 
                     for(auto const& m : jcfg["measurements"])
@@ -476,7 +476,7 @@ namespace alpaka::tune::IO
             for(auto const& ref : history.getOrderedHistory())
             {
                 auto const& rec = ref.get();
-                if(rec.state == config::ConfigState::Empty || rec.state == config::ConfigState::Uninitialized
+                if(rec.state == config::ConfigState::Initialized || rec.state == config::ConfigState::Uninitialized
                    || rec.state == config::ConfigState::WarmUp)
                     continue;
 

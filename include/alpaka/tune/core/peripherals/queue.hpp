@@ -15,7 +15,7 @@
 namespace alpaka::tune::core::peripherals
 {
 
-#define MAXQUEUESIZE 1
+#define MAXQUEUESIZE 50
 #define MAXCONSECUTIVERUNS 3
 
     /**
@@ -28,7 +28,8 @@ namespace alpaka::tune::core::peripherals
      *
      * Configurations are stored as optional references, and the queue ensures that
      * each entry is revisited up to a limited number of consecutive times before
-     * rotating to another configuration (which is selected randomly). Retired configurations are automatically
+     * rotating to another configuration (which is selected randomly with a deterministic fallback).
+     * Retired configurations are automatically
      * recycled and removed from active scheduling.
      *
      *
@@ -41,18 +42,21 @@ namespace alpaka::tune::core::peripherals
     struct ConfigQueue
     {
         using OptionalRef = std::optional<std::reference_wrapper<T_Configs>>;
-        static constexpr uint32_t maxQueueSize = MAXQUEUESIZE;
+        uint32_t maxQueueSize = MAXQUEUESIZE;
 
         std::vector<OptionalRef> configs;
         std::vector<uint32_t> consecutiveRuns;
         std::queue<uint32_t> freeSlots;
-
+        uint32_t buildUpCount = 0;
         uint32_t validCount = 0;
         uint32_t maxConsecutiveRuns = MAXCONSECUTIVERUNS;
+        // HEAD index pointer
         std::optional<uint32_t> lastIndex = std::nullopt;
 
         ConfigQueue()
         {
+            maxQueueSize = std::max<uint32_t>(maxQueueSize, 3); // minum queue size is 3
+            maxConsecutiveRuns = std::max<uint32_t>(maxConsecutiveRuns, 2); // minimum consecutive runs is 2
             configs.resize(maxQueueSize);
             consecutiveRuns.resize(maxQueueSize, 0u);
             for(uint32_t i = 0; i < maxQueueSize; ++i)
@@ -90,28 +94,39 @@ namespace alpaka::tune::core::peripherals
          *
          * @param config Configuration record to insert.
          */
-        void push_back(T_Configs& config)
+        void try_insert(T_Configs& config)
         {
             // if the strategy returns an already retired config we reset its state or otherwise it will never be
             // used by the Queue, if multiple entries of the same config are in the queue the
             // retirement of one will mean the implicit retirement of the rest
             if(config.state == config::ConfigState::Retired)
             {
-                config.state = config::ConfigState::Initialized;
+                config.state = config::ConfigState::InProcess;
             }
             if(!freeSlots.empty())
             {
+                buildUpCount = std::min<uint32_t>(++buildUpCount, configs.size());
                 uint32_t idx = freeSlots.front();
                 freeSlots.pop();
                 configs[idx] = std::ref(config);
                 consecutiveRuns[idx] = 0u;
                 ++validCount;
             }
-            else
+            // if the queue is already full -- we simply return, failsafe that might prevent certain configs to ever be
+            // executed, which is as a non-critical error -- not overflowing the queue has to be ensured by the caller
+        }
+
+        /**
+         * @brief Inserts a configuration record into the queue. And adjusts the HEAD pointer to select this particular
+         * config**/
+        void try_insertAdjustHead(T_Configs& config)
+        {
+            if(!freeSlots.empty())
             {
-                configs.emplace_back(std::ref(config));
-                consecutiveRuns.emplace_back(0u);
-                ++validCount;
+                buildUpCount = std::min<uint32_t>(++buildUpCount, configs.size());
+                uint32_t idx = freeSlots.front();
+                try_insert(config);
+                lastIndex = idx;
             }
         }
 
@@ -130,65 +145,131 @@ namespace alpaka::tune::core::peripherals
          * @return A reference to a valid configuration if available, or
          *         @c std::nullopt if the queue is empty or no valid entries remain.
          */
-        std::optional<std::reference_wrapper<T_Configs>> get()
+        std::optional<std::reference_wrapper<T_Configs>> getConfigFromQueue()
         {
             if(validCount == 0)
                 return std::nullopt;
 
-            // Try to reuse the last returned config
-            if(lastIndex.has_value())
+            // 1) Try reusing the last configuration.
+            auto reused = reuseLastConfig();
+            if(reused.has_value())
+                return reused;
+            // 2) Try randomized search for a fresh candidate.
+            auto found = pickRandomConfigFromQueue();
+            if(found.has_value())
+                return found;
+
+            // 3) Deterministic fallback traversal of all slots.
+            return fallbackTraversal();
+        }
+
+    private:
+        /** @brief Called upon switching to a different config -> transition to warmUp state (warm up cache and
+           pipelines with the new configuration)
+        */
+        void resetConfigToWarmUpState(T_Configs& configRecord)
+        {
+            configRecord.state = config::ConfigState::WarmUp;
+            configRecord.warm_up_runs = 0;
+        }
+
+        /// @brief Drops an entry at idx that is retired and returns its slot to the free list.
+        void dropConfig(uint32_t idx)
+        {
+            auto& opt = configs[idx];
+            if(opt)
             {
-                uint32_t idx = lastIndex.value();
-                auto& opt = configs[idx];
-                bool configRetired = (opt->get().state == config::ConfigState::Retired);
-                if(opt && !configRetired)
-                {
-                    if(consecutiveRuns[idx] < maxConsecutiveRuns)
-                    {
-                        ++consecutiveRuns[idx];
-                        return opt.value();
-                    }
-                    // reset counter after max consecutive runs
-                    consecutiveRuns[idx] = 0u;
-                }
-                else if(opt && configRetired)
-                {
-                    opt.reset();
-                    freeSlots.push(idx);
-                    --validCount;
-                    consecutiveRuns[idx] = 0u;
-                    lastIndex.reset();
-                }
+                opt.reset();
+                freeSlots.push(idx);
+                --validCount;
+                consecutiveRuns[idx] = 0u;
+            }
+        }
+
+        /** @brief Attempts to return the last used configuration if still valid and under the reuse limit specified
+         * by(@c maxConsecutiveRuns).*/
+        std::optional<std::reference_wrapper<T_Configs>> reuseLastConfig()
+        {
+            if(!lastIndex.has_value())
+                return std::nullopt;
+
+            uint32_t const idx = lastIndex.value();
+
+            if(!configs[idx].has_value())
+            {
+                lastIndex.reset();
+                return std::nullopt;
             }
 
-            // Pick a random new one
+            auto& cfg = configs[idx]->get();
+            if(cfg.state == config::ConfigState::Retired)
+            {
+                dropConfig(idx);
+                lastIndex.reset();
+                return std::nullopt;
+            }
+
+            if(consecutiveRuns[idx] < maxConsecutiveRuns)
+            {
+                ++consecutiveRuns[idx];
+                return configs[idx].value();
+            }
+            lastIndex.reset();
+            // reuse limit reached; reset consecutive counter to allow others a chance
+            consecutiveRuns[idx] = 0u;
+            return std::nullopt;
+        }
+
+        /// @brief Searches randomly up to configs.size() attempts for a valid non-retired configuration.
+        std::optional<std::reference_wrapper<T_Configs>> pickRandomConfigFromQueue()
+        {
             auto& rng = alpaka::tune::strategy::RNG::get();
-            std::uniform_int_distribution<uint32_t> dist(0u, static_cast<uint32_t>(configs.size() - 1));
+            std::uniform_int_distribution<uint32_t> dist(0u, static_cast<uint32_t>(buildUpCount - 1));
 
             for(uint32_t attempts = 0; attempts < configs.size(); ++attempts)
             {
-                uint32_t idx = dist(rng);
-                auto& opt = configs[idx];
-                if(!opt)
+                uint32_t const idx = dist(rng);
+
+                if(!configs[idx])
                     continue;
 
-                T_Configs& cfg = opt->get();
-
+                auto& cfg = configs[idx]->get();
                 if(cfg.state == config::ConfigState::Retired)
                 {
-                    opt.reset();
-                    freeSlots.push(idx);
-                    --validCount;
-                    consecutiveRuns[idx] = 0u;
+                    dropConfig(idx);
                     continue;
                 }
-
+                // reset cfg to warmUp state
+                resetConfigToWarmUpState(cfg);
                 lastIndex = idx;
                 consecutiveRuns[idx] = 1u;
-                return cfg;
+                return configs[idx].value();
             }
 
-            // Nothing valid found
+            return std::nullopt;
+        }
+
+        /// @brief Linearly scans all entries to find the next available non-retired configuration.
+        std::optional<std::reference_wrapper<T_Configs>> fallbackTraversal()
+        {
+            for(uint32_t idx = 0; idx < configs.size(); ++idx)
+            {
+                if(!configs[idx])
+                    continue;
+
+                auto& cfg = configs[idx]->get();
+                if(cfg.state == config::ConfigState::Retired)
+                {
+                    dropConfig(idx);
+                    continue;
+                }
+                // reset cfg to warmUp state
+                resetConfigToWarmUpState(cfg);
+                lastIndex = idx;
+                consecutiveRuns[idx] = 1u;
+                return configs[idx].value();
+            }
+
             lastIndex.reset();
             return std::nullopt;
         }

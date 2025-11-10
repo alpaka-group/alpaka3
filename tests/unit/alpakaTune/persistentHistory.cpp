@@ -52,7 +52,7 @@ static void set_record_state_to_ready(
 {
     using Entry = typename alpaka::tune::IO::RuntimeHistory<TConfig>::Entry;
     auto& e = hist.getOrCreate(cfg);
-    e.state = alpaka::tune::config::ConfigState::Initialized; // required pre-state
+    e.state = alpaka::tune::config::ConfigState::InProcess; // required pre-state
     for(double s : samples)
     {
         e.pushMetric(s);
