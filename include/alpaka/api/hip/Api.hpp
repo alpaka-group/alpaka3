@@ -107,11 +107,14 @@ namespace alpaka
         struct GetWarpSize::Op<api::Hip, deviceKind::AmdGpu>
         {
             // Follow legacy Alpaka by sourcing HIP’s runtime `warpSize`, but guard it with a constant-evaluation
-            // check so host code still sees a compile-time value while device kernels receive the builtin result.
+            // check so host code still sees a compile-time value while device kernels receive the builtin result.a
+            // Three cases:
+            // 1. Compile-time + Host then is_constant_evaluated() == true return 64u;
+            // 2. Runtime + Device ( since __HIP_DEVICE_COMPILE__ is true ) then use warpSize builti
+            // 3. RUntime Fallback to 64 for host code where __HIP_DEVICE_COMPILE__ is not defined. Return 64u.
 #if ALPAKA_LANG_HIP
             // HIP’s `warpSize` is a device builtin with a non-constexpr conversion, so we rely on
-            // `std::is_constant_evaluated()` to substitute documented wavefront defaults for compile-time requests.
-            // gfx9 hardware reports 64-lane wavefronts, while gfx10 and later default to 32 lanes per HIP docs.
+            // `std::is_constant_evaluated()` to substitute documented wavefront defaults for compile-time requests
             constexpr uint32_t operator()(api::Hip const, deviceKind::AmdGpu const) const
             {
                 if(std::is_constant_evaluated())
@@ -119,6 +122,7 @@ namespace alpaka
                     // HIP does not publish a compile-time constant, so fall back to legacy GCN default.
                     return 64u;
                 }
+                // Runtime path
                 else
                 {
 #    if defined(__HIP_DEVICE_COMPILE__)
