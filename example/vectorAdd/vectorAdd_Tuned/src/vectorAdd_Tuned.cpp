@@ -1,0 +1,343 @@
+#include <alpaka/alpaka.hpp>
+#include <alpaka/onHost/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
+
+#include <chrono>
+#include <cstdlib>
+#include <iostream>
+#include <random>
+#include <typeinfo>
+
+using namespace alpaka;
+
+auto validateResult(auto const& bufHostC, auto const& bufHostA, auto const& bufHostB, std::size_t extent) -> int
+{
+    using Data = uint32_t;
+    static constexpr int MAX_PRINT_FALSE_RESULTS = 20;
+    int falseResults = 0;
+    for(std::size_t i(0u); i < extent; ++i)
+    {
+        Data const& val(bufHostC[i]);
+        Data const correctResult(bufHostA[i] + bufHostB[i]);
+        if(val != correctResult)
+        {
+            if(falseResults < MAX_PRINT_FALSE_RESULTS)
+                std::cerr << "C[" << i << "] == " << val << " != " << correctResult << std::endl;
+            ++falseResults;
+        }
+    }
+
+    if(falseResults == 0)
+        return EXIT_SUCCESS;
+
+    std::cout << "Found " << falseResults << " false results, printed no more than " << MAX_PRINT_FALSE_RESULTS << "\n"
+              << "Execution results incorrect!" << std::endl;
+    std::cout << std::endl;
+    return EXIT_FAILURE;
+}
+
+//! A vector addition kernel.
+template<typename SimdConcurrency>
+class VectorAddTunedKernel
+{
+public:
+    //! The kernel entry point.
+    //!
+    //! \tparam TAcc The accelerator environment to be executed on.
+    //! \tparam TElem The matrix element type.
+    //! \param acc The accelerator to be executed on.
+    //! \param A The first source vector.
+    //! \param B The second source vector.
+    //! \param C The destination vector.
+    //! \param numElements The number of elements.
+    ALPAKA_FN_ACC auto operator()(
+        auto const& acc,
+        alpaka::concepts::IMdSpan auto const A,
+        alpaka::concepts::IMdSpan auto const B,
+        alpaka::concepts::IMdSpan auto C,
+        auto const& numElements) const -> void
+    {
+        using namespace alpaka;
+        static_assert(ALPAKA_TYPEOF(numElements)::dim() == 1, "The VectorAddKernel expects 1-dimensional indices!");
+
+        auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
+        simdGrid.concurrent<SimdConcurrency::value>(
+            acc,
+            numElements,
+            [&](auto const&, auto&& simdA, auto&& simdB, auto&& simdC) constexpr
+            { simdC = simdA.load() + simdB.load(); },
+            A,
+            B,
+            C);
+    }
+};
+
+static constexpr auto compileTimeTunableID = alpaka::uniqueId();
+
+// trait to define a compile time tunable for the kernel
+template<typename T>
+struct tune::trait::CompileTimeTuneableTrait<VectorAddTunedKernel<T>>
+{
+    static constexpr auto tuned_indices = alpaka::CVec<std::size_t, static_cast<std::size_t>(0)>{};
+    using t = typename T::type;
+
+    static auto tuneAbleDefinitions()
+    {
+        using type = uint32_t;
+        auto tune1 = CTunable<compileTimeTunableID, generate::c_LogSpace<type(1), type(64), type(2)>::values>();
+        return std::tuple{tune1};
+    }
+}; // namespace trait
+
+// In standard projects, you typically do not execute the code with any available accelerator.
+// Instead, a single accelerator is selected once from the active accelerators and the kernels are executed with the
+// selected accelerator only. If you use the example as the starting point for your project, you can rename the
+// example() function to main() and move the accelerator tag to the function body.
+auto example(auto const deviceSpec, auto const exec, size_t numElements, size_t numberOfRuns) -> int
+{
+    using namespace alpaka;
+    using IdxVec = Vec<std::size_t, 1u>;
+
+    // Define problem size
+    IdxVec const extent(numElements);
+
+    // Define the buffer element type
+    using Data = uint32_t;
+
+    std::cout << "Number of elements: " << numElements << std::endl;
+    std::cout << "Element type: " << onHost::demangledName<Data>() << std::endl;
+    std::cout << "Number of runs: " << numberOfRuns << std::endl;
+
+    std::cout << "Using alpaka accelerator: " << onHost::demangledName(exec) << " for "
+              << deviceSpec.getApi().getName() << " " << deviceSpec.getDeviceKind().getName() << std::endl;
+
+    // Select a device
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    onHost::Device devAcc = devSelector.makeDevice(0);
+
+
+    // Create a queue on the device
+    onHost::Queue queue = devAcc.makeQueue();
+
+    // Allocate 3 host memory buffers
+    auto bufHostA = onHost::allocHost<Data>(extent);
+    auto bufHostB = onHost::allocHostLike(bufHostA);
+    auto bufHostC = onHost::allocHostLike(bufHostA);
+
+    // C++14 random generator for uniformly distributed numbers in {1,..,42}
+    std::random_device rd{};
+    std::default_random_engine eng{rd()};
+    std::uniform_int_distribution<Data> dist(1, 42);
+
+    for(auto i(0u); i < extent.x(); ++i)
+    {
+        bufHostA[i] = dist(eng);
+        bufHostB[i] = dist(eng);
+        bufHostC[i] = 0;
+    }
+
+    // Allocate 3 buffers on the accelerator
+    auto bufAccA = onHost::allocLike(devAcc, bufHostA);
+    auto bufAccB = onHost::allocLike(devAcc, bufHostB);
+    auto bufAccC = onHost::allocLike(devAcc, bufHostC);
+
+    Vec<size_t, 1u> chunkSize = 256u;
+    // how many elements one worker should compute to ensure vectorization or instruction parallelism
+    uint32_t elementsPerWorker = getNumElemPerThread<Data>(queue);
+    auto dataBlocking = onHost::FrameSpec{divCeil(extent, chunkSize * elementsPerWorker), chunkSize};
+    // define a custom tunable for the numThreads
+    auto myNumThreadsTune = alpaka::tune::Tunable<tune::frame::numThreads, Vec<size_t, 1u>>{
+        alpaka::tune::generate::linSpace(Vec<size_t, 1u>{32}, Vec<size_t, 1u>{512}, Vec<size_t, 1u>{32}),
+        512, // startValue
+        "numThreadsTune"}; // custom name
+    /*
+     * Define a FrameSpecTuningModel - a template which lets you tune every parameter that is part of the Frame
+     * specification. such as number of frames, number of the frameExtent, number if blocks, number of threads.
+     */
+    auto specTuningModel
+        = alpaka::tune::FrameSpecTuningModel{dataBlocking}
+              .withNumBlocksTune() /* numBlocks should be tunable: let the tuner decide*/.withNumThreadsTune(
+                  myNumThreadsTune) /* insert the custom tunable*/;
+    auto session
+        = alpaka::tune::TuningBuilder{}
+
+              // set the tuning strategy
+              .withStrategy(alpaka::tune::strategy::randomSample{})
+              // define a constraint between multiple tunables
+              .template withConstraint<tune::frame::numThreads, tune::frame::numBlocks>(
+                  [&](auto numThreads, auto numBlocks) /*only matches if both IDs are present.*/
+                  {
+                      bool blocksHigherOneIfPossible = (dataBlocking.m_numFrames.x() == 1) || (numBlocks > 1);
+                      return blocksHigherOneIfPossible && numThreads.x() % 32 == 0; /* based on our definition this is
+                                                        always true -- only showcase constraint definition */
+                  })
+              // define a constraint for the compile time Tunable
+              .template withConstraint<compileTimeTunableID>(
+                  [&](auto const&
+                          compileTimeTunable /*compileTimeTunables are exposed as std::variants in the constraint*/)
+                  {
+                      return std::visit(
+                          [](auto const& val)
+                          {
+                              // val is the *active type* inside the variant
+                              return (val & (val - 1)) == 0;
+                          },
+                          compileTimeTunable);
+                  })
+              // set context specifier - can be used to further restrict the current tuning context (interesting use
+              // for example bufferSize)
+              .withContextSpecifier("VectorAddTuning")
+              // a tuning session can incooperate a json based checkpoint and restart logic.
+              .withPersistentHistory("vectorAddKernel_History.json")
+              .buildSession();
+    alpaka::tune::Vars::setRunsPerConfig(10);
+    // Instantiate the kernel function object
+    VectorAddTunedKernel<std::integral_constant<uint32_t, 1u>> kernel;
+    auto const taskKernel = KernelBundle{kernel, bufAccA, bufAccB, bufAccC, extent};
+
+    // Copy Host -> Acc
+    onHost::memcpy(queue, bufAccA, bufHostA);
+    onHost::memcpy(queue, bufAccB, bufHostB);
+
+    double totalKernelRuntime = 0.0;
+    double totalCopyRuntime = 0.0;
+    std::size_t completedRuns = 0u;
+    for(; completedRuns < numberOfRuns; ++completedRuns)
+    {
+        // set the device memory to all zeros (byte-wise, not element-wise)
+        onHost::memset(queue, bufAccC, uint8_t{0});
+        // Kernel execution timing
+        onHost::wait(queue);
+        auto const beginT = std::chrono::high_resolution_clock::now();
+        // Enqueue the kernel into the previously defined tuningSession with the defined frameSpecTuningModel -- works
+        // like a alpaka::enqueue
+        session.enqueue(queue, exec, specTuningModel, taskKernel);
+        // wait in case we are using an asynchronous queue to time actual kernel runtime
+        onHost::wait(queue);
+        auto const endT = std::chrono::high_resolution_clock::now();
+        double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
+        totalKernelRuntime += kernelRuntime;
+
+        // Copy back the result
+        auto beginCopyT = std::chrono::high_resolution_clock::now();
+        onHost::memcpy(queue, bufHostC, bufAccC);
+        onHost::wait(queue);
+        auto const endCopyT = std::chrono::high_resolution_clock::now();
+        double copyRuntime = std::chrono::duration<double>(endCopyT - beginCopyT).count();
+        totalCopyRuntime += copyRuntime;
+
+        if(completedRuns == 0u)
+        {
+            if(int const result = validateResult(bufHostC, bufHostA, bufHostB, extent.x()); result != EXIT_SUCCESS)
+                return result;
+        }
+    }
+
+    if(completedRuns > 0u)
+    {
+        double avgKernelRuntime = totalKernelRuntime / static_cast<double>(completedRuns);
+        double avgCopyRuntime = totalCopyRuntime / static_cast<double>(completedRuns);
+        std::cout << "Average time for kernel execution: " << avgKernelRuntime << "s" << std::endl;
+        std::cout << "Average time for HtoD copy: " << avgCopyRuntime << "s" << std::endl;
+    }
+
+    std::cout << "Execution results correct!" << std::endl;
+    std::cout << std::endl;
+    return EXIT_SUCCESS;
+}
+
+void help(char* argv[])
+{
+    std::cerr << argv[0] << " [-n  numElements] [-h]" << std::endl;
+}
+
+auto main(int argc, char* argv[]) -> int
+{
+    size_t numElements = 123456;
+    size_t numberOfRuns = 1;
+
+    int opt;
+    while((opt = getopt(argc, argv, "hn:r:")) != -1)
+    {
+        switch(opt)
+        {
+        case 'n':
+            try
+            {
+                numElements = std::stoul(optarg, nullptr, 0);
+            }
+            catch(std::invalid_argument const& e)
+            {
+                std::cerr << "Error: invalid argument '" << optarg << "'.\n";
+                return EXIT_FAILURE;
+            }
+            catch(std::out_of_range const& e)
+            {
+                std::cerr << "Error: value '" << optarg << "' out of range for size_t.\n";
+                return EXIT_FAILURE;
+            }
+            break;
+        case 'r':
+            try
+            {
+                numberOfRuns = std::stoul(optarg, nullptr, 0);
+            }
+            catch(std::invalid_argument const& e)
+            {
+                std::cerr << "Error: invalid number of runs '" << optarg << "'.\n";
+                return EXIT_FAILURE;
+            }
+            catch(std::out_of_range const& e)
+            {
+                std::cerr << "Error: number of runs '" << optarg << "' out of range for size_t.\n";
+                return EXIT_FAILURE;
+            }
+            if(numberOfRuns == 0)
+            {
+                std::cerr << "Error: number of runs must be greater than zero.\n";
+                return EXIT_FAILURE;
+            }
+            break;
+        case 'h':
+            help(argv);
+            exit(EXIT_SUCCESS);
+        default:
+            help(argv);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    using namespace alpaka;
+
+    /* Execute the example once for each backend (device specification + executor)
+     *
+     * If you would like to execute it for a single accelerator only you can use the following code.
+     *  @code{.cpp}
+     *  auto deviceSpec = onHost::DeviceSpec{api::cuda, deviceKind::nvidiaGpu};
+     *  auto executor = exec::gpuCuda;
+     *  return example(deviceSpec, executor, numElements);
+     *  @endcode
+     *
+     * Some examples for device specifications (depending on the active dependencies).
+     *
+     *   onHost::DeviceSpec{api::host, deviceKind::cpu}
+     *   onHost::DeviceSpec{api::cuda, deviceKind::nvidiaGpu}
+     *   onHost::DeviceSpec{api::hip, deviceKind::amdGpu}
+     *   onHost::DeviceSpec{api::oneApi, deviceKind::intelGpu}
+     *
+     * A list of api's and device kinds can be found
+     * https://alpaka3.readthedocs.io/en/latest/basic/cheatsheet.html#available-apis
+     * A list of executors can be found
+     * https://alpaka3.readthedocs.io/en/latest/basic/cheatsheet.html#executors
+     */
+    return onHost::executeForEachIfHasDevice(
+        [=](auto const& backend)
+        {
+            return example(
+                backend[alpaka::object::deviceSpec],
+                backend[alpaka::object::exec],
+                numElements,
+                numberOfRuns);
+        },
+        onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
+}

@@ -358,3 +358,15 @@ option(alpaka_EXEC_OneApi "Enable/Disable Intel OneAPI SYCL executor in examples
 if(NOT alpaka_EXEC_OneApi)
     target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_DISABLE_EXEC_OneApi)
 endif()
+option(alpaka_TUNER "Enable the alpaka tuning mechanism." ON)
+if(alpaka_TUNER)
+    include(${_alpaka_ROOT_DIR}/cmake/tuner.cmake)
+
+    set(ALPAKA_TUNER_VALUE 1)
+else()
+    set(ALPAKA_TUNER_VALUE 0)
+endif()
+target_compile_definitions(
+    alpaka_target_headers
+    INTERFACE ALPAKA_CMAKE_TARGET_HEADERS ALPAKA_TUNER=${ALPAKA_TUNER_VALUE}
+)
