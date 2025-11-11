@@ -239,7 +239,10 @@ namespace alpaka
                         {
                             // The CPU runtime supports a sub-group size of 64, but the SYCL implementation
                             // currently does not
-                            return std::max(a, b) <= 32 ? std::max(a, b) : 32;
+                            if constexpr(T_DeviceKind{} == deviceKind::cpu)
+                                return std::max(a, b) <= 32 ? std::max(a, b) : 32;
+                            else
+                                return std::max(a, b);
                         }));
                     prop.m_multiProcessorCount = dev.get_info<sycl::info::device::max_compute_units>();
 

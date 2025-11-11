@@ -5,8 +5,10 @@
 
 #include "alpaka/api/concepts/api.hpp"
 #include "alpaka/api/cuda/IdxLayer.hpp"
+#include "alpaka/api/cuda/computeApi.hpp"
 #include "alpaka/api/generic.hpp"
 #include "alpaka/api/hip/IdxLayer.hpp"
+#include "alpaka/api/hip/computeApi.hpp"
 #include "alpaka/api/unifiedCudaHip/ComputeApi.hpp"
 #include "alpaka/api/unifiedCudaHip/Event.hpp"
 #include "alpaka/api/unifiedCudaHip/MemcpyKind.hpp"
@@ -182,6 +184,7 @@ namespace alpaka::onHost
             T_NumFrames const numFrames,
             T_FrameSize const frameExtent)
         {
+            constexpr auto warpSizeValue = alpaka::onAcc::unifiedCudaHip::internal::WarpSize::Get<T_DeviceKind>{}();
             auto acc = onAcc::Acc{
                 Dict{
                     DictEntry(layer::block, onAcc::unifiedCudaHip::BlockLayer{optimizedThreadSpec}),
@@ -191,7 +194,8 @@ namespace alpaka::onHost
                     DictEntry(action::threadBlockSync, onAcc::unifiedCudaHip::Sync{}),
                     DictEntry(object::api, T_Api{}),
                     DictEntry(object::deviceKind, T_DeviceKind{}),
-                    DictEntry(object::exec, T_Executor{})},
+                    DictEntry(object::exec, T_Executor{}),
+                    DictEntry(object::warpSize, warpSizeValue)},
             };
             kernelBundle(acc);
         }
@@ -204,6 +208,7 @@ namespace alpaka::onHost
             typename T_OptimizedThreadSpec>
         __global__ void gpuKernel(TKernelBundle const kernelBundle, T_OptimizedThreadSpec const optimizedThreadSpec)
         {
+            constexpr auto warpSizeValue = alpaka::onAcc::unifiedCudaHip::internal::WarpSize::Get<T_DeviceKind>{}();
             auto acc = onAcc::Acc{
                 Dict{
                     DictEntry(layer::block, onAcc::unifiedCudaHip::BlockLayer{optimizedThreadSpec}),
@@ -211,7 +216,8 @@ namespace alpaka::onHost
                     DictEntry(action::threadBlockSync, onAcc::unifiedCudaHip::Sync{}),
                     DictEntry(object::api, T_Api{}),
                     DictEntry(object::deviceKind, T_DeviceKind{}),
-                    DictEntry(object::exec, T_Executor{})},
+                    DictEntry(object::exec, T_Executor{}),
+                    DictEntry(object::warpSize, warpSizeValue)},
             };
             kernelBundle(acc);
         }

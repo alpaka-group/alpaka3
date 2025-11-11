@@ -18,6 +18,7 @@
 #include <cassert>
 #include <stdexcept>
 #include <tuple>
+#include <type_traits>
 
 #if ALPAKA_OMP
 
@@ -70,9 +71,10 @@ namespace alpaka::onHost
                     auto const threadLayerEntry = DictEntry{layer::thread, onAcc::cpu::OneLayer<NumThreadsVecType>{}};
                     auto const blockSharedMemEntry = DictEntry{layer::shared, std::ref(blockSharedMem)};
                     auto const blockSyncEntry = DictEntry{action::threadBlockSync, onAcc::cpu::NoOp{}};
+                    auto const warpSizeEntry = DictEntry{object::warpSize, std::integral_constant<uint32_t, 1u>{}};
 
                     auto acc = onAcc::Acc(joinDict(
-                        Dict{blockLayerEntry, threadLayerEntry, blockSharedMemEntry, blockSyncEntry},
+                        Dict{blockLayerEntry, threadLayerEntry, blockSharedMemEntry, blockSyncEntry, warpSizeEntry},
                         additionalDict));
 
                     using ThreadIdxType = typename NumThreadsVecType::type;

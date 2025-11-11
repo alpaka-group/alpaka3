@@ -65,6 +65,18 @@ namespace alpaka::onAcc
         {
             return T_Storage::operator[](object::deviceKind);
         }
+
+        /** Get the warp size
+         *
+         * To be able to use the warp size as constexpr value you must call the static function via the type
+         * `Acc_t::getWarpSize()` else the warp size can only be used as runtime value.
+         * Alternative you can use the free function onAcc::getWarpSize<Acc_t>();
+         */
+        static constexpr uint32_t getWarpSize()
+        {
+            constexpr uint32_t w = ALPAKA_TYPEOF(std::declval<T_Storage>()[object::warpSize])::value;
+            return w;
+        }
     };
 
     namespace concepts
@@ -155,6 +167,12 @@ namespace alpaka::onAcc
     constexpr auto getDynSharedMem(concepts::Acc auto const& acc) -> T*
     {
         return internalCompute::declareDynamicSharedMem<T>(acc);
+    }
+
+    template<concepts::Acc T_Acc>
+    constexpr uint32_t getWarpSize()
+    {
+        return T_Acc::getWarpSize();
     }
 
 } // namespace alpaka::onAcc
