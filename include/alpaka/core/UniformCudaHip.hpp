@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "alpaka/core/Cuda.hpp"
+#include "alpaka/core/common.hpp"
 #include "alpaka/core/config.hpp"
 
 #include <initializer_list>
@@ -28,20 +28,18 @@ namespace alpaka::uniform_cuda_hip::detail
     {
         if(error != TApi::success)
         {
-            auto const sError = std::string{
-                std::string(file) + "(" + std::to_string(line) + ") " + std::string(desc) + " : '"
-                + TApi::getErrorName(error) + "': '" + std::string(TApi::getErrorString(error)) + "'!"};
-
-            if constexpr(!TThrow || ALPAKA_DEBUG >= ALPAKA_DEBUG_MINIMAL)
-                std::cerr << sError << std::endl;
-
-            ALPAKA_DEBUG_BREAK;
             // reset the last error to allow user side error handling. Using std::ignore to discard unneeded
             // return values is suggested by the C++ core guidelines.
             std::ignore = TApi::getLastError();
 
             if constexpr(TThrow)
+            {
+                auto const sError = std::string{
+                    std::string(file) + "(" + std::to_string(line) + ") " + std::string(desc) + " : '"
+                    + TApi::getErrorName(error) + "': '" + std::string(TApi::getErrorString(error)) + "'!"};
+
                 throw std::runtime_error(sError);
+            }
         }
     }
 

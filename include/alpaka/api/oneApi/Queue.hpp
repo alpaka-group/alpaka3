@@ -4,17 +4,15 @@
 
 #pragma once
 
+#include "alpaka/api/generic.hpp"
+#include "alpaka/api/oneApi/StaticSharedMemory.hpp"
+#include "alpaka/api/syclGeneric/Queue.hpp"
+#include "alpaka/api/syclGeneric/onAcc.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/onAcc/internal/globalMem.hpp"
+#include "alpaka/onHost/internal/interface.hpp"
 
 #if ALPAKA_LANG_ONEAPI
-
-#    include "alpaka/api/generic.hpp"
-#    include "alpaka/api/oneApi/StaticSharedMemory.hpp"
-#    include "alpaka/api/syclGeneric/Queue.hpp"
-#    include "alpaka/api/syclGeneric/onAcc.hpp"
-#    include "alpaka/onAcc/internal/globalMem.hpp"
-#    include "alpaka/onHost/internal/interface.hpp"
-
 
 #    ifndef ALPAKA_SYCL_NUM_MAX_SHARED_MEMORY_ALLOCATIONS
 #        define ALPAKA_SYCL_NUM_MAX_SHARED_MEMORY_ALLOCATIONS 32u

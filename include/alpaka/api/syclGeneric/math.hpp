@@ -5,15 +5,14 @@
 
 #pragma once
 
+#include "alpaka/api/api.hpp"
+#include "alpaka/api/syclGeneric/tag.hpp"
+#include "alpaka/core/common.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/math/Complex.hpp"
+#include "alpaka/math/internal/math.hpp"
 
 #if ALPAKA_LANG_SYCL
-
-#    include "alpaka/api/api.hpp"
-#    include "alpaka/api/syclGeneric/tag.hpp"
-#    include "alpaka/core/common.hpp"
-#    include "alpaka/math/internal/Complex.hpp"
-#    include "alpaka/math/internal/math.hpp"
 
 #    include <sycl/sycl.hpp>
 

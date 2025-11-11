@@ -4,7 +4,7 @@
 
 #include "Functor.hpp"
 #include "TestTemplate.hpp"
-#include "alpaka/math/internal/Complex.hpp"
+#include "alpaka/math/Complex.hpp"
 
 #include <alpaka/alpaka.hpp>
 #include <alpaka/meta/meta.hpp>

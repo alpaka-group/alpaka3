@@ -4,16 +4,15 @@
 
 #pragma once
 
+#include "Queue.hpp"
+#include "alpaka/Vec.hpp"
+#include "alpaka/api/syclGeneric/Event.hpp"
+#include "alpaka/api/syclGeneric/Queue.hpp"
+#include "alpaka/api/util.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/onHost/mem/SharedBuffer.hpp"
 
 #if ALPAKA_LANG_SYCL
-
-#    include "Queue.hpp"
-#    include "alpaka/Vec.hpp"
-#    include "alpaka/api/syclGeneric/Event.hpp"
-#    include "alpaka/api/syclGeneric/Queue.hpp"
-#    include "alpaka/api/util.hpp"
-#    include "alpaka/onHost/mem/SharedBuffer.hpp"
 
 #    include <sycl/sycl.hpp>
 

@@ -4,14 +4,15 @@
 
 #pragma once
 
+#include "alpaka/api/unifiedCudaHip/Event.hpp"
+#include "alpaka/api/unifiedCudaHip/Queue.hpp"
+#include "alpaka/api/util.hpp"
+#include "alpaka/core/UniformCudaHip.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/onHost/mem/SharedBuffer.hpp"
 
 #if ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP
-#    include "alpaka/api/unifiedCudaHip/Event.hpp"
-#    include "alpaka/api/unifiedCudaHip/Queue.hpp"
-#    include "alpaka/api/util.hpp"
-#    include "alpaka/core/UniformCudaHip.hpp"
-#    include "alpaka/onHost/mem/SharedBuffer.hpp"
+
 
 #    include <cstdint>
 #    include <memory>

@@ -5,15 +5,16 @@
 
 #pragma once
 
+#include "alpaka/api/hip/Api.hpp"
+#include "alpaka/api/unifiedCudaHip/Platform.hpp"
+#include "alpaka/core/UniformCudaHip.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/internal/interface.hpp"
+#include "alpaka/onHost/interface.hpp"
 
 #if ALPAKA_LANG_HIP
-#    include "alpaka/api/hip/Api.hpp"
-#    include "alpaka/api/unifiedCudaHip/Platform.hpp"
+
 #    include "alpaka/core/ApiHipRt.hpp"
-#    include "alpaka/core/UniformCudaHip.hpp"
-#    include "alpaka/internal/interface.hpp"
-#    include "alpaka/onHost/interface.hpp"
 
 namespace alpaka::onHost
 {

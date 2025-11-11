@@ -5,15 +5,16 @@
 
 #pragma once
 
+#include "alpaka/api/unifiedCudaHip/Device.hpp"
+#include "alpaka/api/unifiedCudaHip/Platform.hpp"
+#include "alpaka/core/UniformCudaHip.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/internal/interface.hpp"
+#include "alpaka/onHost/Handle.hpp"
+#include "alpaka/onHost/interface.hpp"
 
 #if ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP
-#    include "alpaka/api/unifiedCudaHip/Device.hpp"
-#    include "alpaka/api/unifiedCudaHip/Platform.hpp"
-#    include "alpaka/core/UniformCudaHip.hpp"
-#    include "alpaka/internal/interface.hpp"
-#    include "alpaka/onHost/Handle.hpp"
-#    include "alpaka/onHost/interface.hpp"
+
 
 #    include <memory>
 #    include <mutex>

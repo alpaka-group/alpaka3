@@ -4,14 +4,13 @@
 
 #pragma once
 
+#include "alpaka/api/syclGeneric/tag.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/onAcc/atomicOp.hpp"
+#include "alpaka/onAcc/internal/interface.hpp"
+#include "alpaka/onAcc/scope.hpp"
 
 #if ALPAKA_LANG_SYCL
-
-#    include "alpaka/api/syclGeneric/tag.hpp"
-#    include "alpaka/onAcc/atomicOp.hpp"
-#    include "alpaka/onAcc/internal/interface.hpp"
-#    include "alpaka/onAcc/scope.hpp"
 
 #    include <sycl/sycl.hpp>
 

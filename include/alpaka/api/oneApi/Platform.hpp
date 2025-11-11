@@ -4,14 +4,14 @@
 
 #pragma once
 
+#include "alpaka/api/oneApi/Api.hpp"
+#include "alpaka/api/syclGeneric/Platform.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/internal/interface.hpp"
+#include "alpaka/onHost/internal/interface.hpp"
+#include "alpaka/tag.hpp"
 
 #if ALPAKA_LANG_ONEAPI
-#    include "alpaka/api/oneApi/Api.hpp"
-#    include "alpaka/api/syclGeneric/Platform.hpp"
-#    include "alpaka/internal/interface.hpp"
-#    include "alpaka/onHost/internal/interface.hpp"
-#    include "alpaka/tag.hpp"
 
 namespace alpaka
 {
