@@ -76,10 +76,13 @@ namespace
                 // Each active lane should toggle exactly its bit when voting true.
                 auto const bitMask = static_cast<ResultType>(ResultType{1} << idx);
                 // Exactly one lane voting true elevates its corresponding bit.
+                // Example: active lanes {0,1,2,3}; choosing idx=2 makes lane 2 vote true while others vote false,
+                // yielding 0b0100.
                 warpCheck(success, onAcc::warp::ballot(acc, lane == idx ? 1 : 0) == bitMask);
 
                 auto const expected = ((ResultType{1} << activeLaneCount) - ResultType{1}) & ~bitMask;
                 // Everyone except the toggled lane voting true should set all other bits.
+                // Example: active lanes {0,1,2,3}; choosing idx=2 makes predicates {1,1,0,1}, yielding 0b1011.
                 warpCheck(success, onAcc::warp::ballot(acc, lane == idx ? 0 : 1) == expected);
             }
         }

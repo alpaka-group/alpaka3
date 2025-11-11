@@ -47,10 +47,17 @@ namespace
             warpCheck(success, threadsPerBlock == warpExtent);
 
             auto const lane = static_cast<std::int32_t>(onAcc::warp::getLaneIdx(acc));
-
+            // Exercise trivial zero-offset and max-offset cases.
+            // For zero offset, each lane should see its own value.
             warpCheck(success, onAcc::warp::shflXor(acc, 42, 0u) == 42);
+            // For zero offset, each lane should see its own value.
             warpCheck(success, onAcc::warp::shflXor(acc, lane, 0u) == lane);
+            // For offset one, each lane should xor with 1 to find its partner.
+            // For example, lane 0 with offset 1 should see lane 1's value, lane 1 should see lane 0's value, and so
+            // on.
             warpCheck(success, onAcc::warp::shflXor(acc, lane, 1u) == (lane ^ 1));
+            // Max offset should behave like zero offset since no lanes exist beyond the warp size.
+            // For example, lane 2 with max offset should see lane 2's own value.
             warpCheck(success, onAcc::warp::shflXor(acc, 5, std::numeric_limits<std::uint32_t>::max()) == 5);
 
             auto const epsilon = std::numeric_limits<float>::epsilon();

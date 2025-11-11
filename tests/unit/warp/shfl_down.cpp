@@ -28,6 +28,7 @@ namespace
         ALPAKA_FN_ACC void operator()(TAcc const& acc, concepts::MdSpan<bool> auto success) const
         {
             // With one lane the shuffle-down must simply return the input value.
+            // No lanes exist below to pull from. 42 is assumed to be returned as-is.
             warpCheck(success, onAcc::warp::shflDown(acc, 42, 0u) == 42);
             warpCheck(success, onAcc::warp::shflDown(acc, 12, 0u) == 12);
             float const ans = onAcc::warp::shflDown(acc, 3.3f, 0u);
@@ -48,8 +49,13 @@ namespace
 
             auto const lane = static_cast<std::int32_t>(onAcc::warp::getLaneIdx(acc));
 
+            // With zero offset, every lane should see the source literal unchanged.
             warpCheck(success, onAcc::warp::shflDown(acc, 42, 0u) == 42);
+            // A zero-width shuffle leaves each lane's original value intact.
             warpCheck(success, onAcc::warp::shflDown(acc, lane, 0u) == lane);
+            // Offset of one shifts values toward higher indices, clamping at the partition boundary.
+            // For example, lane 0 with offset 1 should see lane 1's value, lane 1 should see lane 2's value, and so
+            // on, with the last lane seeing its own value.
             warpCheck(success, onAcc::warp::shflDown(acc, lane, 1u) == (lane + 1 < warpExtent ? lane + 1 : lane));
 
             auto const epsilon = std::numeric_limits<float>::epsilon();
@@ -66,6 +72,9 @@ namespace
                         static_cast<std::uint32_t>(idx),
                         static_cast<std::uint32_t>(width));
                     auto const expectedInt = (lane + idx < sectionEnd) ? lane + idx : lane;
+                    // Each lane should see the value from the lane at the offset below, or clamp to its own value if
+                    // out of range. For example, if lane 2 with offset 1 should see lane 3's value, but if lane 3 is
+                    // the last lane in the partition, it sees its own value.
                     warpCheck(success, shuffled == expectedInt);
 
                     auto const ans = onAcc::warp::shflDown(
@@ -95,7 +104,10 @@ namespace
 
                 if(lane + idx < warpExtent / 2)
                 {
+                    // Each lane should see the value from the lane at the offset below within the active sub-group.
+                    // Example: lane 0 with offset 1 reads lane 1, lane 1 reads lane 2, etc., until the subgroup ends.
                     warpCheck(success, shuffled == lane + idx);
+                    // Floating payload mirrors the integer expectation for the same in-range partner lane.
                     warpCheck(success, alpaka::math::abs(ans - expectFloat) < epsilon);
                 }
             }

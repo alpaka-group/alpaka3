@@ -28,7 +28,10 @@ namespace
         {
             // Single-lane warp should mirror scalar any-vote behaviour.
             warpCheck(success, onAcc::warp::getSize(acc) == 1u);
+            // assumes non-zero values evaluate as true
+            // active mask cannot be empty because at least one lane is active always
             warpCheck(success, onAcc::warp::any(acc, 42));
+            // assumes zero evaluates as false
             warpCheck(success, !onAcc::warp::any(acc, 0));
         }
     };
@@ -39,9 +42,11 @@ namespace
         ALPAKA_FN_ACC void operator()(TAcc const& acc, concepts::MdSpan<bool> auto success, std::uint32_t idx) const
         {
             auto const warpExtent = static_cast<std::int32_t>(onAcc::warp::getSize(acc));
+            // for all participating lanes ensure warp size > 1
             warpCheck(success, warpExtent > 1);
 
             auto const threadsPerBlock = static_cast<std::int32_t>(acc[alpaka::layer::thread].count().product());
+            // for all participating lanes ensure threads per block equals warp size
             warpCheck(success, threadsPerBlock == warpExtent);
 
             auto const lane = static_cast<std::int32_t>(onAcc::warp::getLaneIdx(acc));
@@ -57,11 +62,14 @@ namespace
             warpCheck(success, onAcc::warp::any(acc, 42));
 
             auto const castIdx = static_cast<std::int32_t>(idx);
-            // Only the targeted lane voting true should flip the result to true.
+            // Only the non-targeted even lanes vote true here; the chosen lane contributes false, so the collective
+            // stays true. Example: active lanes {0,2,4,6}; choosing idx=2 yields predicates {1,0,1,1}.
             warpCheck(success, onAcc::warp::any(acc, lane == castIdx ? 0 : 1));
 
             auto const expected = (idx % 2u == 0u);
-            // The inverse predicate confirms votes only register from even lanes.
+            // The inverse predicate now gives the selected lane the only true vote; the result is true only if that
+            // lane is active. Example: active lanes {0,2,4,6}; choosing idx=2 yields predicates {0,1,0,0}, so the vote
+            // is true.
             warpCheck(success, onAcc::warp::any(acc, lane == castIdx ? 1 : 0) == expected);
         }
     };

@@ -28,7 +28,10 @@ namespace
         {
             // Scalar warp should behave exactly like a single-thread vote.
             warpCheck(success, onAcc::warp::getSize(acc) == 1u);
+            // assumes non-zero values evaluate as true
+            // at least one lane is active always, hence it cannot be false
             warpCheck(success, onAcc::warp::all(acc, 42));
+            // assumes zero evaluates as false
             warpCheck(success, !onAcc::warp::all(acc, 0));
         }
     };
@@ -48,16 +51,25 @@ namespace
             if(lane % 3 != 0)
             {
                 // Only every third lane participates in the collective vote.
+                // Other lanes exit silently below.
                 return;
             }
 
+            // All participating lanes vote false hence the inverse must be true.
             warpCheck(success, !onAcc::warp::all(acc, 0));
+            // assumes non-zero values evaluate as true
+            // All participating lanes vote true hence the result must be true.
             warpCheck(success, onAcc::warp::all(acc, 42));
 
+
             auto const castIdx = static_cast<std::int32_t>(idx);
+            // Example: active lanes {0,3,6}; choosing idx=3 yields predicates {0,1,0}, so unanimity fails.
             warpCheck(success, !onAcc::warp::all(acc, lane == castIdx ? 1 : 0));
 
             auto const expected = (idx % 3u != 0u);
+            // Every active lane except the triggering one votes true; the result is true only if that lane is
+            // inactive. Example: idx=4 (masked lane) leaves predicates {1,1,1} and the vote succeeds, whereas idx=3
+            // produces {1,0,1} and fails.
             warpCheck(success, onAcc::warp::all(acc, lane == castIdx ? 0 : 1) == expected);
         }
     };

@@ -34,6 +34,7 @@ namespace
             warpCheck(success, onAcc::warp::shfl(acc, 42, 0u) == 42);
             // Shuffle pulls the value from lane 0, so every lane should see the literal 12.
             warpCheck(success, onAcc::warp::shfl(acc, 12, 0u) == 12);
+            // Float variant verifies the template handles other trivially copyable types.
             float const result = onAcc::warp::shfl(acc, 3.3f, 0u);
             warpCheck(success, result == 3.3f);
         }
@@ -53,9 +54,14 @@ namespace
             // Lane ID drives the expected source values for each shuffle check.
             auto const lane = static_cast<std::int32_t>(onAcc::warp::getLaneIdx(acc));
 
+            // Exercise trivial zero-offset and max-offset cases.
+            // Broadcasting from literal lane 0 must work regardless of the caller lane.
             warpCheck(success, onAcc::warp::shfl(acc, 42, 0u) == 42);
+            // Using the current lane as the payload and requesting src=0 should always give back 0.
             warpCheck(success, onAcc::warp::shfl(acc, lane, 0u) == 0);
+            // Requesting src=1 broadcasts lane 1's value to every participant.
             warpCheck(success, onAcc::warp::shfl(acc, lane, 1u) == 1);
+            // Large src index is clamped to the logical width; value must remain unchanged.
             warpCheck(success, onAcc::warp::shfl(acc, 5, std::numeric_limits<std::uint32_t>::max()) == 5);
 
             auto const epsilon = std::numeric_limits<float>::epsilon();
@@ -65,6 +71,7 @@ namespace
                 for(int idx = 0; idx < width; ++idx)
                 {
                     auto const section = width * (lane / width);
+                    // Integer payloads should resolve to the subgroup-relative source index.
                     auto const shuffle = onAcc::warp::shfl(
                         acc,
                         lane,
@@ -72,6 +79,7 @@ namespace
                         static_cast<std::uint32_t>(width));
                     warpCheck(success, shuffle == idx + section);
 
+                    // Floating payloads exercise non-integral types under the same subgroup restriction.
                     auto const ans = onAcc::warp::shfl(
                         acc,
                         4.0f - static_cast<float>(lane),
@@ -91,9 +99,11 @@ namespace
             for(int idx = 0; idx < warpExtent / 2; ++idx)
             {
                 // Active sub-group must always read the value produced by the chosen lane.
+                // Within the lower half, shuffling with src=idx must reproduce the selected lane.
                 warpCheck(success, onAcc::warp::shfl(acc, lane, static_cast<std::uint32_t>(idx)) == idx);
                 auto const ans
                     = onAcc::warp::shfl(acc, 4.0f - static_cast<float>(lane), static_cast<std::uint32_t>(idx));
+                // Float payload confirms the same behaviour holds across types for the masked subgroup.
                 auto const expect = 4.0f - static_cast<float>(idx);
                 warpCheck(success, alpaka::math::abs(ans - expect) < epsilon);
             }

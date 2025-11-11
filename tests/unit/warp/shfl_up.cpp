@@ -41,9 +41,11 @@ namespace
         ALPAKA_FN_ACC void operator()(TAcc const& acc, concepts::MdSpan<bool> auto success) const
         {
             auto const warpExtent = static_cast<std::int32_t>(onAcc::warp::getSize(acc));
+            // Ensure multi-lane warp path is exercised.
             warpCheck(success, warpExtent > 1);
 
             auto const threadsPerBlock = static_cast<std::int32_t>(acc[alpaka::layer::thread].count().product());
+            // Confirm launch configuration matches warp size, since shuffles operate within warps.
             warpCheck(success, threadsPerBlock == warpExtent);
 
             auto const lane = static_cast<std::int32_t>(onAcc::warp::getLaneIdx(acc));
@@ -51,8 +53,11 @@ namespace
             // With zero offset, every lane should see the source literal unchanged.
             warpCheck(success, onAcc::warp::shflUp(acc, 42, 0u) == 42);
             // A zero-width shuffle leaves each lane's original value intact.
+            // For example, lane 2 with offset 0 should see lane 2's own value.
             warpCheck(success, onAcc::warp::shflUp(acc, lane, 0u) == lane);
             // Offset of one shifts values toward lower indices, clamping at the partition boundary.
+            // For example, lane 0 with offset 1 should see lane 0's own value, lane 1 should see lane 0's value, and
+            // so on.
             warpCheck(success, onAcc::warp::shflUp(acc, lane, 1u) == (lane - 1 >= 0 ? lane - 1 : lane));
 
             auto const epsilon = std::numeric_limits<float>::epsilon();
@@ -68,6 +73,9 @@ namespace
                         static_cast<std::uint32_t>(idx),
                         static_cast<std::uint32_t>(width));
                     auto const expectedInt = (lane - idx >= sectionStart) ? lane - idx : lane;
+                    // Each lane should see the value from the lane at the offset above, or clamp to its own value if
+                    // out of range. For example, if lane 2 with offset 1 should see lane 1's value, but if lane 1 is
+                    // the first lane in the partition, it sees its own value
                     warpCheck(success, shuffled == expectedInt);
 
                     auto const ans = onAcc::warp::shflUp(
@@ -95,6 +103,7 @@ namespace
                     = onAcc::warp::shflUp(acc, 4.0f - static_cast<float>(lane), static_cast<std::uint32_t>(idx));
                 auto const expect
                     = (lane - idx >= 0) ? 4.0f - static_cast<float>(lane - idx) : 4.0f - static_cast<float>(lane);
+                // Each lane should see the value from the lane at the offset above within the active sub-group.
                 warpCheck(success, shuffled == (lane - idx >= 0 ? lane - idx : lane));
                 warpCheck(success, alpaka::math::abs(ans - expect) < epsilon);
             }
