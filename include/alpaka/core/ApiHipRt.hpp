@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <alpaka/core/config.hpp>
+#include "alpaka/core/config.hpp"
 
 #if ALPAKA_LANG_HIP
 
