@@ -8,3 +8,4 @@ race:docs_test_cheatsheet
 
 # omp library is not instrumented, exclude it
 race:libgomp.so
+race:libomp.so
