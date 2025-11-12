@@ -3,29 +3,30 @@
  */
 #pragma once
 
+#include "alpaka/api/concepts/api.hpp"
+#include "alpaka/api/cuda/IdxLayer.hpp"
+#include "alpaka/api/generic.hpp"
+#include "alpaka/api/hip/IdxLayer.hpp"
+#include "alpaka/api/unifiedCudaHip/ComputeApi.hpp"
+#include "alpaka/api/unifiedCudaHip/Event.hpp"
+#include "alpaka/api/unifiedCudaHip/MemcpyKind.hpp"
+#include "alpaka/api/unifiedCudaHip/concepts.hpp"
+#include "alpaka/api/util.hpp"
+#include "alpaka/core/CallbackThread.hpp"
+#include "alpaka/core/UniformCudaHip.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/internal/interface.hpp"
+#include "alpaka/onAcc/Acc.hpp"
+#include "alpaka/onAcc/internal/globalMem.hpp"
+#include "alpaka/onHost/FrameSpec.hpp"
+#include "alpaka/onHost/Handle.hpp"
+#include "alpaka/onHost/interface.hpp"
+#include "alpaka/onHost/internal/interface.hpp"
+#include "alpaka/onHost/mem/SharedBuffer.hpp"
 
 #if ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP
-#    include "alpaka/api/concepts/api.hpp"
-#    include "alpaka/api/cuda/IdxLayer.hpp"
-#    include "alpaka/api/generic.hpp"
-#    include "alpaka/api/hip/IdxLayer.hpp"
-#    include "alpaka/api/unifiedCudaHip/ComputeApi.hpp"
-#    include "alpaka/api/unifiedCudaHip/Event.hpp"
-#    include "alpaka/api/unifiedCudaHip/MemcpyKind.hpp"
-#    include "alpaka/api/unifiedCudaHip/concepts.hpp"
-#    include "alpaka/api/util.hpp"
+
 #    include "alpaka/core/ApiCudaRt.hpp"
-#    include "alpaka/core/CallbackThread.hpp"
-#    include "alpaka/core/UniformCudaHip.hpp"
-#    include "alpaka/internal/interface.hpp"
-#    include "alpaka/onAcc/Acc.hpp"
-#    include "alpaka/onAcc/internal/globalMem.hpp"
-#    include "alpaka/onHost/FrameSpec.hpp"
-#    include "alpaka/onHost/Handle.hpp"
-#    include "alpaka/onHost/interface.hpp"
-#    include "alpaka/onHost/internal/interface.hpp"
-#    include "alpaka/onHost/mem/SharedBuffer.hpp"
 
 #    include <cstdint>
 #    include <sstream>

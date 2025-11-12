@@ -105,12 +105,11 @@ namespace alpaka::onHost
 #endif
                     // return a ready future-like placeholder; reuse CallbackThread interface minimally
                     std::promise<void> p;
+                    auto f = p.get_future();
                     p.set_value();
 #if defined(__GNUC__) && !defined(__clang__)
 #    pragma GCC diagnostic pop
 #endif
-                    auto f = p.get_future();
-
                     // to keep the uniform interface with the non-blocking case,
                     // return by moving the f since it is move-only
                     return f;

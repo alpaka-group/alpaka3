@@ -5,7 +5,6 @@
 #pragma once
 
 #include "alpaka/Vec.hpp"
-#include "alpaka/api/cuda/IdxLayer.hpp"
 #include "alpaka/core/config.hpp"
 
 #if ALPAKA_LANG_HIP

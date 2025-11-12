@@ -10,7 +10,7 @@
 #include "alpaka/core/Unreachable.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/core/decay.hpp"
-#include "alpaka/math/internal/Complex.hpp"
+#include "alpaka/math/Complex.hpp"
 #include "alpaka/math/internal/math.hpp"
 
 #include <cmath>

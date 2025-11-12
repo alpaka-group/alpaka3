@@ -4,17 +4,17 @@
 
 #pragma once
 
+#include "alpaka/api/util.hpp"
+#include "alpaka/core/CallbackThread.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/interface.hpp"
+#include "alpaka/internal/interface.hpp"
+#include "alpaka/onHost/concepts.hpp"
+#include "alpaka/onHost/internal/interface.hpp"
+#include "alpaka/onHost/logger/logger.hpp"
+
 
 #if ALPAKA_LANG_SYCL
-
-#    include "alpaka/api/util.hpp"
-#    include "alpaka/core/CallbackThread.hpp"
-#    include "alpaka/interface.hpp"
-#    include "alpaka/internal/interface.hpp"
-#    include "alpaka/onHost/concepts.hpp"
-#    include "alpaka/onHost/internal/interface.hpp"
-#    include "alpaka/onHost/logger/logger.hpp"
 
 #    include <sycl/sycl.hpp>
 

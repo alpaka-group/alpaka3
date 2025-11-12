@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include "alpaka/core/common.hpp"
-
 #include <cmath>
 #include <complex>
 

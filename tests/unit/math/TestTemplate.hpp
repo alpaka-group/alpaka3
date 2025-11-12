@@ -201,11 +201,9 @@ namespace mathtest
 
             INFO("Operator: " << functor);
             INFO("Type: " << alpaka::onHost::demangledName<TData>()); // Compiler specific.
-#if ALPAKA_DEBUG_FULL
             INFO(
                 "The args buffer: \n"
                 << std::setprecision(std::numeric_limits<Underlying>::digits10 + 1) << args << "\n");
-#endif
             for(size_t i = 0; i < args.getCapacity(); ++i)
             {
                 TData stdExpectedResult{};

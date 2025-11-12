@@ -4,14 +4,13 @@
 
 #pragma once
 
+#include "alpaka/api/syclGeneric/Device.hpp"
+#include "alpaka/core/Dict.hpp"
+#include "alpaka/core/Sycl.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/internal/interface.hpp"
 
 #if ALPAKA_LANG_SYCL
-
-#    include "Device.hpp"
-#    include "alpaka/core/Dict.hpp"
-#    include "alpaka/core/Sycl.hpp"
-#    include "alpaka/internal/interface.hpp"
 
 #    include <sycl/sycl.hpp>
 

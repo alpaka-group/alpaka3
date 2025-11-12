@@ -5,6 +5,7 @@
 #pragma once
 
 #include "alpaka/api/unifiedCudaHip/concepts.hpp"
+#include "alpaka/core/common.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/onAcc/internal/interface.hpp"
 #include "alpaka/tag.hpp"
@@ -12,8 +13,6 @@
 #include <cstddef>
 
 #if ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP
-
-#    include "alpaka/core/common.hpp"
 
 namespace alpaka::onAcc
 {

@@ -4,14 +4,13 @@
 
 #pragma once
 
+#include "alpaka/Vec.hpp"
+#include "alpaka/core/Assert.hpp"
+#include "alpaka/core/Dict.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/tag.hpp"
 
 #if ALPAKA_LANG_SYCL
-
-#    include "alpaka/Vec.hpp"
-#    include "alpaka/core/Assert.hpp"
-#    include "alpaka/core/Dict.hpp"
-#    include "alpaka/tag.hpp"
 
 #    include <sycl/sycl.hpp>
 

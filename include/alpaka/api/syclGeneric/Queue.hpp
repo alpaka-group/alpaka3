@@ -4,21 +4,20 @@
 
 #pragma once
 
+#include "alpaka/api/syclGeneric/Event.hpp"
+#include "alpaka/api/util.hpp"
+#include "alpaka/core/CallbackThread.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/interface.hpp"
+#include "alpaka/internal/interface.hpp"
+#include "alpaka/onAcc/Acc.hpp"
+#include "alpaka/onHost/concepts.hpp"
+#include "alpaka/onHost/interface.hpp"
+#include "alpaka/onHost/internal/interface.hpp"
+#include "alpaka/onHost/mem/SharedBuffer.hpp"
+#include "alpaka/onHost/trait.hpp"
 
 #if ALPAKA_LANG_SYCL
-
-#    include "alpaka/api/syclGeneric/Event.hpp"
-#    include "alpaka/api/util.hpp"
-#    include "alpaka/core/CallbackThread.hpp"
-#    include "alpaka/interface.hpp"
-#    include "alpaka/internal/interface.hpp"
-#    include "alpaka/onAcc/Acc.hpp"
-#    include "alpaka/onHost/concepts.hpp"
-#    include "alpaka/onHost/interface.hpp"
-#    include "alpaka/onHost/internal/interface.hpp"
-#    include "alpaka/onHost/mem/SharedBuffer.hpp"
-#    include "alpaka/onHost/trait.hpp"
 
 #    include <sycl/sycl.hpp>
 

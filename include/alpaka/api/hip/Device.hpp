@@ -4,12 +4,12 @@
 
 #pragma once
 
+#include "alpaka/api/unifiedCudaHip/Device.hpp"
 #include "alpaka/core/config.hpp"
+#include "alpaka/onHost/trait.hpp"
 
 #if ALPAKA_LANG_HIP
-#    include "alpaka/api/unifiedCudaHip/Device.hpp"
 #    include "alpaka/core/ApiHipRt.hpp"
-#    include "alpaka/onHost/trait.hpp"
 
 #    include <type_traits>
 
