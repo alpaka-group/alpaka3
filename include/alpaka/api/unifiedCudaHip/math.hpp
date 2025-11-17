@@ -1,5 +1,5 @@
 /* Copyright 2023 Axel Huebl, Benjamin Worpitz, Matthias Werner, Bert Wesarg, Valentin Gehrke, René Widera,
- * Jan Stephan, Andrea Bocci, Bernhard Manfred Gruber, Jeffrey Kelling, Sergei Bastrakov
+ * Jan Stephan, Andrea Bocci, Bernhard Manfred Gruber, Jeffrey Kelling, Sergei Bastrakov, Mehmet Yusufoglu
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -11,6 +11,7 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/core/decay.hpp"
 #include "alpaka/math/Complex.hpp"
+#include "alpaka/math/internal/ieee754.hpp"
 #include "alpaka/math/internal/math.hpp"
 
 #include <cmath>
@@ -502,19 +503,13 @@ namespace alpaka::math::internal
         }
     };
 
+    // Shared helper keeps CUDA/HIP IEEE predicates aligned with host behavior under fast-math.
     template<std::floating_point T_Arg>
     struct Isnan::Op<CudaHipMath, T_Arg>
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float> || is_decayed_v<T_Arg, double>)
-            {
-                return ::isnan(arg);
-            }
-            else
-                static_assert(!sizeof(T_Arg), "Unsupported data type");
-
-            ALPAKA_UNREACHABLE(T_Arg{});
+            return ieeeIsnan(arg);
         }
     };
 
@@ -523,7 +518,7 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            return ::isinf(arg);
+            return ieeeIsinf(arg);
         }
     };
 
@@ -532,7 +527,7 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            return ::isfinite(arg);
+            return ieeeIsfinite(arg);
         }
     };
 

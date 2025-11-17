@@ -1,4 +1,4 @@
-/* Copyright 2025 René Widera
+/* Copyright 2025 René Widera, Mehmet Yusufoglu
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -6,6 +6,7 @@
 #pragma once
 
 #include "alpaka/internal/interface.hpp"
+#include "alpaka/math/internal/ieee754.hpp"
 #include "alpaka/onAcc/SimdAlgo.hpp"
 #include "alpaka/onAcc/interface.hpp"
 #include "alpaka/onHost/FrameSpec.hpp"
@@ -16,6 +17,27 @@
 
 namespace alpaka::internal::generic
 {
+    namespace math
+    {
+        template<typename T>
+        ALPAKA_FN_HOST_ACC constexpr bool isnan(T const& value)
+        {
+            return alpaka::math::internal::ieeeIsnan(value);
+        }
+
+        template<typename T>
+        ALPAKA_FN_HOST_ACC constexpr bool isinf(T const& value)
+        {
+            return alpaka::math::internal::ieeeIsinf(value);
+        }
+
+        template<typename T>
+        ALPAKA_FN_HOST_ACC constexpr bool isfinite(T const& value)
+        {
+            return alpaka::math::internal::ieeeIsfinite(value);
+        }
+    } // namespace math
+
     /** assign a value to each element of the destination
      *
      * @todo replace the kernel as soon as we have an algorithm forEach callable from host

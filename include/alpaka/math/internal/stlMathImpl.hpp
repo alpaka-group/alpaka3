@@ -1,5 +1,5 @@
 /* Copyright 2023 Alexander Matthes, Axel Huebl, Benjamin Worpitz, Matthias Werner, Bernhard Manfred Gruber,
- * Jeffrey Kelling, Sergei Bastrakov, Andrea Bocci, René Widera
+ * Jeffrey Kelling, Sergei Bastrakov, Andrea Bocci, René Widera, Mehmet Yusufoglu
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -10,12 +10,11 @@
 
 #include "alpaka/core/Unreachable.hpp"
 #include "alpaka/core/decay.hpp"
+#include "alpaka/math/internal/ieee754.hpp"
 #include "alpaka/math/internal/math.hpp"
 #include "alpaka/math/internal/stlMath.hpp"
 
-#include <bit>
 #include <cmath>
-#include <cstdint>
 #include <type_traits>
 
 namespace alpaka::math::internal
@@ -77,27 +76,7 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(StlMath, T_Arg const& arg) const -> bool
         {
-            if constexpr(std::is_same_v<T_Arg, float>)
-            {
-                constexpr uint32_t expMask = 0x7F80'0000;
-                constexpr uint32_t fracMask = 0x007F'FFFF;
-                uint32_t bits = std::bit_cast<uint32_t>(arg);
-                bool result = ((bits & expMask) == expMask) && (bits & fracMask);
-                return result;
-            }
-            else if constexpr(std::is_same_v<T_Arg, double>)
-            {
-                constexpr uint64_t expMask = 0x7FF0'0000'0000'0000ULL;
-                constexpr uint64_t fracMask = 0x000F'FFFF'FFFF'FFFFULL;
-                uint64_t bits = std::bit_cast<uint64_t>(arg);
-                bool result = ((bits & expMask) == expMask) && (bits & fracMask);
-                return result;
-            }
-            else
-            {
-                static_assert(!sizeof(T_Arg), "Unsupported floating-point type");
-                ALPAKA_UNREACHABLE(T_Arg{});
-            }
+            return ieeeIsnan(arg);
         }
     };
 
@@ -108,27 +87,7 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(StlMath, T_Arg const& arg) const -> bool
         {
-            if constexpr(std::is_same_v<T_Arg, float>)
-            {
-                constexpr uint32_t expMask = 0x7F80'0000;
-                constexpr uint32_t fracMask = 0x007F'FFFF;
-                uint32_t bits = std::bit_cast<uint32_t>(arg);
-                bool result = ((bits & expMask) == expMask) && !(bits & fracMask);
-                return result;
-            }
-            else if constexpr(std::is_same_v<T_Arg, double>)
-            {
-                constexpr uint64_t expMask = 0x7FF0'0000'0000'0000ULL;
-                constexpr uint64_t fracMask = 0x000F'FFFF'FFFF'FFFFULL;
-                uint64_t bits = std::bit_cast<uint64_t>(arg);
-                bool result = ((bits & expMask) == expMask) && !(bits & fracMask);
-                return result;
-            }
-            else
-            {
-                static_assert(!sizeof(T_Arg), "Unsupported floating-point type");
-                ALPAKA_UNREACHABLE(T_Arg{});
-            }
+            return ieeeIsinf(arg);
         }
     };
 
@@ -139,25 +98,7 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(StlMath, T_Arg const& arg) const -> bool
         {
-            if constexpr(std::is_same_v<T_Arg, float>)
-            {
-                constexpr uint32_t expMask = 0x7F80'0000;
-                uint32_t bits = std::bit_cast<uint32_t>(arg);
-                bool result = (bits & expMask) != expMask;
-                return result;
-            }
-            else if constexpr(std::is_same_v<T_Arg, double>)
-            {
-                constexpr uint64_t expMask = 0x7FF0'0000'0000'0000ULL;
-                uint64_t bits = std::bit_cast<uint64_t>(arg);
-                bool result = (bits & expMask) != expMask;
-                return result;
-            }
-            else
-            {
-                static_assert(!sizeof(T_Arg), "Unsupported floating-point type");
-                ALPAKA_UNREACHABLE(T_Arg{});
-            }
+            return ieeeIsfinite(arg);
         }
     };
 
