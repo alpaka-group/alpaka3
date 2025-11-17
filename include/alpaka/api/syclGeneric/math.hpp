@@ -1,5 +1,5 @@
 /* Copyright 2023 Axel Huebl, Benjamin Worpitz, Matthias Werner, Bert Wesarg, Valentin Gehrke, René Widera,
- * Jan Stephan, Andrea Bocci, Bernhard Manfred Gruber, Jeffrey Kelling, Sergei Bastrakov
+ * Jan Stephan, Andrea Bocci, Bernhard Manfred Gruber, Jeffrey Kelling, Sergei Bastrakov, Mehmet Yusufoglu
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -10,6 +10,7 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/math/Complex.hpp"
+#include "alpaka/math/internal/ieee754.hpp"
 #include "alpaka/math/internal/math.hpp"
 
 #if ALPAKA_LANG_SYCL
@@ -319,12 +320,13 @@ namespace alpaka::math::internal
         }
     };
 
+    // Route SYCL predicates through shared helper to match host/CUDA semantics exactly.
     template<std::floating_point T_Arg>
     struct Isnan::Op<SyclMath, T_Arg>
     {
         constexpr auto operator()(SyclMath, T_Arg const& arg) const
         {
-            return static_cast<bool>(sycl::isnan(arg));
+            return ieeeIsnan(arg);
         }
     };
 
@@ -333,7 +335,7 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(SyclMath, T_Arg const& arg) const
         {
-            return static_cast<bool>(sycl::isinf(arg));
+            return ieeeIsinf(arg);
         }
     };
 
@@ -342,7 +344,7 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(SyclMath, T_Arg const& arg) const
         {
-            return static_cast<bool>(sycl::isfinite(arg));
+            return ieeeIsfinite(arg);
         }
     };
 
