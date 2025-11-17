@@ -5,6 +5,7 @@
 #pragma once
 
 #include "alpaka/core/Unreachable.hpp"
+#include "alpaka/core/common.hpp"
 
 #include <bit>
 #include <cstdint>
