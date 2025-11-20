@@ -25,7 +25,20 @@
  * https://llvm.org/docs/AMDGPUUsage.html#processors
  */
 
-#        if defined(__gfx1153__)
+#        if defined(__gfx1251__)
+/* RDNA 4 APU variant */
+#            define ALPAKA_AMDGPU_ARCH ALPAKA_VRRPP_TO_VERSION(120501)
+#        elif defined(__gfx1250__)
+/* RDNA 4 APU (APU) */
+#            define ALPAKA_AMDGPU_ARCH ALPAKA_VRRPP_TO_VERSION(120500)
+#        elif defined(__gfx1201__)
+/* RDNA 4 dGPU (RX 9070 / RX 9070 GRE / 9070 XT) */
+#            define ALPAKA_AMDGPU_ARCH ALPAKA_VRRPP_TO_VERSION(120001)
+#        elif defined(__gfx1200__)
+/* RDNA 4 dGPU (RX 9060 / RX 9060 XT) */
+#            define ALPAKA_AMDGPU_ARCH ALPAKA_VRRPP_TO_VERSION(120000)
+
+#        elif defined(__gfx1153__)
 /* RDNA 3.5 iGPU (Medusa Point / Strix Halo successor) */
 #            define ALPAKA_AMDGPU_ARCH ALPAKA_VRRPP_TO_VERSION(110503)
 #        elif defined(__gfx1152__)
