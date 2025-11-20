@@ -259,6 +259,8 @@
 // ONE API must be detected via the ICPX compiler see
 // https://www.intel.com/content/www/us/en/docs/dpcpp-cpp-compiler/developer-guide-reference/2023-2/use-predefined-macros-to-specify-intel-compilers.html
 #        define ALPAKA_LANG_ONEAPI ALPAKA_COMP_ICPX
+#    else
+#        define ALPAKA_LANG_ONEAPI ALPAKA_VERSION_NUMBER_NOT_AVAILABLE
 #    endif
 #endif
 

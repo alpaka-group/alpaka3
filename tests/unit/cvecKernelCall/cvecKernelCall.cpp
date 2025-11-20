@@ -25,8 +25,8 @@ using TestApis = std::decay_t<decltype(allBackends(enabledApis, onHost::example:
 
 struct KernelCVecFrameExtents
 {
-    template<typename T>
-    ALPAKA_FN_ACC void operator()(T const& acc, auto result) const
+    template<onAcc::concepts::Acc T_Acc>
+    ALPAKA_FN_ACC void operator()(T_Acc const& acc, auto result) const
     {
         alpaka::concepts::CVector auto frameExtent = acc[alpaka::frame::extent];
         // compile will fail if the type is silently cast to non CVec type
@@ -36,6 +36,12 @@ struct KernelCVecFrameExtents
         static_assert(blockThreadCount2 == blockThreadCount);
         static_assert(frameExtent.x() == 43u);
         result[0] = frameExtent.x() == 43u;
+
+        // warp size must be accessible at compile time, this is only possible if we us ethe accelerator type
+        constexpr uint32_t warpSize = ALPAKA_TYPEOF(acc)::getWarpSize();
+        constexpr uint32_t warpSizeFn = onAcc::getWarpSize<T_Acc>();
+
+        static_assert(warpSize == warpSizeFn);
     }
 };
 
@@ -77,13 +83,19 @@ TEMPLATE_LIST_TEST_CASE("CVec frame extent kernel call", "", TestApis)
 
 struct KernelCVecThreadExtents
 {
-    template<typename T>
-    ALPAKA_FN_ACC void operator()(T const& acc, auto result) const
+    template<onAcc::concepts::Acc T_Acc>
+    ALPAKA_FN_ACC void operator()(T_Acc const& acc, auto result) const
     {
         // compile will fail if the type is silently cast to non CVec type
         alpaka::concepts::CVector auto blockThreadCount = acc[alpaka::layer::thread].count();
         static_assert(blockThreadCount.x() == 1u);
         result[0] = blockThreadCount.x() == 1u;
+
+        // warp size must be accessible at compile time, this is only possible if we us ethe accelerator type
+        constexpr uint32_t warpSize = ALPAKA_TYPEOF(acc)::getWarpSize();
+        constexpr uint32_t warpSizeFn = onAcc::getWarpSize<T_Acc>();
+
+        static_assert(warpSize == warpSizeFn);
     }
 };
 

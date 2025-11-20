@@ -17,18 +17,135 @@
 #include "alpaka/onHost/mem/SharedBuffer.hpp"
 #include "alpaka/onHost/trait.hpp"
 
+#include <algorithm>
+#include <future>
+#include <sstream>
+#include <type_traits>
+
 #if ALPAKA_LANG_SYCL
 
 #    include <sycl/sycl.hpp>
-
-#    include <algorithm>
-#    include <future>
-#    include <sstream>
 
 namespace alpaka::onHost
 {
     namespace syclGeneric
     {
+        /** Dispatch a compile time warp size to the kernel
+         *
+         * The runtime provided warp size of the device is transformed into a compile time warp size.
+         * During the kernel (lambda) call in cgh.parallel_for() the lambda must be annotated with
+         * `[[sycl::reqd_sub_group_size(WARP_SIZE)]]`. In cases where the warp size is not supported by device a
+         * compiler warning will be shown, therefore a second stage during the call of parallel_for() is required where
+         * we check if we know based on macro defines provided by the compiler which subgroup sizes (warp size) are
+         * supported for the device ther kernel is currently compiled. In cases, where the macro definition to detect
+         * the target device is not in the list (file: core/syclConfig.hpp) we allow all subgroup sizes generated from
+         * the runtime dispatcher in this trait. This is also the case if we not compile ahead of time for a device.
+         * @attention If a warning `-Wincorrect-sub-group-size` is shown this mean we generated a kernel with an
+         * unsupported warp size, triggered by the on host runtime dispatch in this trait.
+         *
+         * The reason why we do not want to execute the runtime dispatch within the parallel_for, equal to what
+         * mainline alpaka is doing, is that any kernel instance should have only one code patch to avoid possible
+         * register pressure due to a code path which will maybe never called but is generated in the kernel.
+         * This complicated approach gives us the guarantee that the runtime device warp size is used during the kernel
+         * generation.
+         */
+        struct Warpsize
+        {
+            template<alpaka::concepts::DeviceKind T_DeviceKind>
+            struct Dispatch
+            {
+                auto operator()(T_DeviceKind deviceKind, auto&& fn) const;
+            };
+        };
+
+        template<>
+        struct Warpsize::Dispatch<alpaka::deviceKind::Cpu>
+        {
+            auto operator()(alpaka::deviceKind::Cpu, auto&& fn, uint32_t warpSize) const
+            {
+                switch(warpSize)
+                {
+                case 1u:
+                    return fn(std::integral_constant<uint32_t, 1u>{});
+                case 2u:
+                    return fn(std::integral_constant<uint32_t, 2u>{});
+                case 4u:
+                    return fn(std::integral_constant<uint32_t, 4u>{});
+                case 8u:
+                    return fn(std::integral_constant<uint32_t, 8u>{});
+                case 16u:
+                    return fn(std::integral_constant<uint32_t, 16u>{});
+                case 32u:
+                    return fn(std::integral_constant<uint32_t, 32u>{});
+                default:
+                    throw std::runtime_error(
+                        std::string("Sycl warp size runtime dispatch, unsupported warpSize: ")
+                        + std::to_string(warpSize));
+                    return fn(std::integral_constant<uint32_t, 1u>{});
+                }
+            }
+        };
+
+        template<>
+        struct Warpsize::Dispatch<alpaka::deviceKind::IntelGpu>
+        {
+            auto operator()(alpaka::deviceKind::IntelGpu, auto&& fn, uint32_t warpSize) const
+            {
+                switch(warpSize)
+                {
+                case 8u:
+                    return fn(std::integral_constant<uint32_t, 8u>{});
+                case 16u:
+                    return fn(std::integral_constant<uint32_t, 16u>{});
+                case 32u:
+                    return fn(std::integral_constant<uint32_t, 32u>{});
+                default:
+                    throw std::runtime_error(
+                        std::string("Sycl warp size runtime dispatch, unsupported warpSize: ")
+                        + std::to_string(warpSize));
+                    return fn(std::integral_constant<uint32_t, 32u>{});
+                }
+            }
+        };
+
+        template<>
+        struct Warpsize::Dispatch<alpaka::deviceKind::AmdGpu>
+        {
+            auto operator()(alpaka::deviceKind::AmdGpu, auto&& fn, uint32_t warpSize) const
+            {
+                switch(warpSize)
+                {
+                case 32u:
+                    return fn(std::integral_constant<uint32_t, 32u>{});
+                case 64u:
+                    return fn(std::integral_constant<uint32_t, 64u>{});
+                default:
+                    throw std::runtime_error(
+                        std::string("Sycl warp size runtime dispatch, unsupported warpSize: ")
+                        + std::to_string(warpSize));
+                    return fn(std::integral_constant<uint32_t, 32u>{});
+                }
+            }
+        };
+
+        template<>
+        struct Warpsize::Dispatch<alpaka::deviceKind::NvidiaGpu>
+        {
+            auto operator()(alpaka::deviceKind::NvidiaGpu, auto&& fn, uint32_t warpSize) const
+            {
+                switch(warpSize)
+                {
+                case 32u:
+                    return fn(std::integral_constant<uint32_t, 32u>{});
+                default:
+                    throw std::runtime_error(
+                        std::string("Sycl warp size runtime dispatch, unsupported warpSize: ")
+                        + std::to_string(warpSize));
+                    return fn(std::integral_constant<uint32_t, 32u>{});
+                }
+            }
+        };
+
         template<typename T_Device>
         struct Queue : std::enable_shared_from_this<Queue<T_Device>>
         {
@@ -43,6 +160,18 @@ namespace alpaka::onHost
                 // TODO: check if this is the correct order
                 { return sycl::range<dim>(vec[I]...); }(std::make_index_sequence<dim>{});
             };
+
+            inline constexpr auto dispatchWarpSize(auto&& fn) const
+            {
+                auto warpSize
+                    = internal::GetDeviceProperties::Op<ALPAKA_TYPEOF(*m_device.get())>{}(*m_device.get()).m_warpSize;
+
+                return Warpsize::Dispatch<ALPAKA_TYPEOF(getDeviceKind())>{}(
+                    getDeviceKind(),
+                    ALPAKA_FORWARD(fn),
+                    warpSize);
+            }
+
 
         public:
             Queue(internal::concepts::DeviceHandle auto device, uint32_t const idx, bool isBlocking)
@@ -145,7 +274,6 @@ namespace alpaka::onHost
             core::CallbackThread m_callBackThread;
             bool m_isBlocking{false};
         };
-
 
     } // namespace syclGeneric
 
@@ -279,8 +407,8 @@ namespace alpaka::onHost
             auto deleter = [queueDep = std::move(queueDependency), ptr]()
             {
                 sycl::queue sycl_queue = queueDep->getNativeHandle();
-                /* Always enqueue into a queue, even if the queue is blocking, to track possible in queue dependencies.
-                 * sycl::free() is safe to be called within a hast_task
+                /* Always enqueue into a queue, even if the queue is blocking, to track possible in queue
+                 * dependencies. sycl::free() is safe to be called within a hast_task
                  */
                 [[maybe_unused]] sycl::event ev = sycl_queue.submit(
                     [&](sycl::handler& cgh) { cgh.host_task([=]() { sycl::free(toVoidPtr(ptr), sycl_queue); }); });

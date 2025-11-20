@@ -33,6 +33,12 @@ namespace alpaka
         ALPAKA_TAG(deviceSpec);
 
         ALPAKA_TAG(dynSharedMemBytes);
+
+        struct WarpSize
+        {
+        };
+
+        constexpr WarpSize warpSize;
     } // namespace object
 
     namespace queueKind
