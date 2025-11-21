@@ -237,6 +237,19 @@ namespace alpaka::onHost
             addDestructorAction([any]() { onHost::wait(any); });
         }
 
+        /** Keep the buffer alive until at least the current spot in the queue, even if it runs out of scope.
+         * This ensures that the buffer is and stays valid in previously enqueued kernels.
+         *
+         * @param queue The queue to enqueue to.
+         */
+        void keepAlive(auto& queue)
+        {
+            // enqueue an empty lambda that keeps a copy of the buffer
+            // as long as the copy lives (which is as long as it takes the queue to get to this point), the buffer will
+            // stay valid
+            queue.enqueue([*this] {});
+        }
+
         /** Return the number of SharedBuffers which points to the same memory */
         [[nodiscard]] constexpr long getUseCount() const noexcept
         {
