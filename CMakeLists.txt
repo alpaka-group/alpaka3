@@ -78,7 +78,7 @@ install(
 )
 
 configure_package_config_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/alpakaConfig.cmake.in
+    ${_alpaka_ROOT_DIR}/cmake/alpakaConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/alpakaConfig.cmake
     INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/alpaka
 )
@@ -90,3 +90,11 @@ install(DIRECTORY ${_alpaka_TESTING_DIR} DESTINATION ${CMAKE_INSTALL_DATAROOTDIR
 
 # File is required to validate the C++20 feature std::atomic_ref
 install(FILES "${_alpaka_FEATURE_TESTS_DIR}/StdAtomicRef.cpp" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/alpaka/tests)
+
+# Load alpaka's languages after FetchContent_MakeAvailable()
+#
+# This macro must be called after FetchContent_MakeAvailable() used to load alpaka.
+# The reason is that this is the only way in CMake allowing alpaka to load the required languages.
+macro(alpaka_FetchContent_Finalize)
+    include("${alpaka_SOURCE_DIR}/cmake/alpakaFetchContentFinalize.cmake")
+endmacro()
