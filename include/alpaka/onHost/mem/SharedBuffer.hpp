@@ -247,7 +247,12 @@ namespace alpaka::onHost
             // enqueue an empty lambda that keeps a copy of the buffer
             // as long as the copy lives (which is as long as it takes the queue to get to this point), the buffer will
             // stay valid
-            queue.enqueue([*this] {});
+            auto del = m_deleter;
+            auto task = [_ = std::move(del)] {};
+
+            internal::Enqueue::NestedTask<std::decay_t<decltype(*queue.get())>, std::decay_t<decltype(task)>>{}(
+                *queue.get(),
+                task);
         }
 
         /** Return the number of SharedBuffers which points to the same memory */

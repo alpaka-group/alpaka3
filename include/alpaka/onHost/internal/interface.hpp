@@ -199,6 +199,15 @@ namespace alpaka::onHost
                 }
             };
 
+            template<typename T_Queue, typename T_Task>
+            struct NestedTask
+            {
+                void operator()(T_Queue& queue, T_Task const& task) const
+                {
+                    queue.nestedEnqueue(task);
+                }
+            };
+
             template<typename T_Queue, typename T_Event>
             struct Event
             {

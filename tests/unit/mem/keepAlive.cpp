@@ -10,6 +10,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <future>
+#include <iostream>
 
 using namespace alpaka;
 
@@ -21,12 +22,18 @@ struct IotaKernel
 {
     ALPAKA_FN_ACC void operator()(auto const& acc, concepts::MdSpan<ValType> auto out) const
     {
-        for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange(out.getExtents())))
-            out[i] = static_cast<ValType>(i.x());
+        // the kernel should run for some time to increase the likelihood of a race condition occurring and the test
+        // failing in case the keepAlive isn't working
+        // proper synchronization isn't really possible generically and well-behavedly
+        for(auto i = 0; i < 1000; ++i)
+        {
+            for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange(out.getExtents())))
+                onAcc::atomicExch(acc, &out[i], static_cast<ValType>(i.x()));
+        }
     }
 };
 
-TEMPLATE_LIST_TEST_CASE("deferred_alloc_with_future_blocking_test", "[alpaka3]", TestApis)
+TEMPLATE_LIST_TEST_CASE("keep alive", "", TestApis)
 {
     auto cfg = TestType::makeDict();
     auto deviceSpec = cfg[object::deviceSpec];
@@ -41,30 +48,22 @@ TEMPLATE_LIST_TEST_CASE("deferred_alloc_with_future_blocking_test", "[alpaka3]",
 
     onHost::Device device = devSelector.makeDevice(0);
 
-    std::cout << deviceSpec.getApi().getName() << "on " << device.getName() << std::endl;
+    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
 
     onHost::Queue queue = device.makeQueue();
 
-    constexpr std::size_t N = 64;
-
+    constexpr std::size_t N = 256;
     auto originalBuffer = onHost::alloc<int>(device, N);
-
-    std::promise<void> promise;
-    std::future<void> fut = promise.get_future();
-
-    // prevent the queue from running until we set the future
-    queue.enqueue([&fut] { fut.wait(); });
 
     {
         // enqueue everything in this scope
         // it can't start running before we start the queue
-        auto scopedBuffer = onHost::allocDeferred<int>(queue, N);
+        auto scopedBuffer = onHost::alloc<int>(device, N);
+
+        auto framespec = getFrameSpec<int>(device, scopedBuffer.getExtents());
 
         // fill scoped buffer
-        queue.enqueue(
-            exec,
-            getFrameSpec<int>(device, scopedBuffer.getExtents()),
-            KernelBundle{IotaKernel{}, scopedBuffer});
+        queue.enqueue(exec, framespec, KernelBundle{IotaKernel{}, scopedBuffer});
 
         // copy back to the original
         onHost::memcpy(queue, originalBuffer, scopedBuffer);
@@ -72,10 +71,6 @@ TEMPLATE_LIST_TEST_CASE("deferred_alloc_with_future_blocking_test", "[alpaka3]",
         // scoped buffer runs out of scope, keep alive until the queue gets here
         scopedBuffer.keepAlive(queue);
     }
-
-    // let the queue start now
-    promise.set_value();
-
     onHost::wait(queue);
 
     // validate that the original buffer got the iota correctly copied

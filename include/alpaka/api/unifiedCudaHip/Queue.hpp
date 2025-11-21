@@ -125,6 +125,11 @@ namespace alpaka::onHost
 
             friend struct onHost::internal::Enqueue;
 
+            void nestedEnqueue(auto const& task)
+            {
+                m_callBackThread.submit(task);
+            }
+
             friend struct onHost::internal::Wait;
 
             void wait() const
@@ -360,14 +365,16 @@ namespace alpaka::onHost
                 auto data = std::unique_ptr<HostFuncData>(reinterpret_cast<HostFuncData*>(arg));
                 auto& queue = data->q;
                 auto f = queue.m_callBackThread.submit([d = std::move(data)] { d->t(); });
+                // std::cout << "f.wait " << std::this_thread::get_id() << std::endl;
                 f.wait();
+                // std::cout << "f waited" << std::endl;
             }
 
             void operator()(unifiedCudaHip::Queue<T_Device>& queue, T_Task const& task) const
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
-
+                // std::cout << "thread id: " << std::this_thread::get_id() << std::endl;
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
                     ApiInterface,
                     ApiInterface::launchHostFunc(

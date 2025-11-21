@@ -193,6 +193,11 @@ namespace alpaka::onHost
                 submit([task]() { task(); });
             }
 
+            void nestedEnqueue(auto const& task)
+            {
+                m_workerThread.submit(task);
+            }
+
             friend struct alpaka::internal::GetDeviceType;
 
             auto getDeviceKind() const
