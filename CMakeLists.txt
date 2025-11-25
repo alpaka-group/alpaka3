@@ -95,6 +95,6 @@ install(FILES "${_alpaka_FEATURE_TESTS_DIR}/StdAtomicRef.cpp" DESTINATION ${CMAK
 #
 # This macro must be called after FetchContent_MakeAvailable() used to load alpaka.
 # The reason is that this is the only way in CMake allowing alpaka to load the required languages.
-macro(alpaka_FetchContent_Finalize)
+macro(alpaka_fetchcontent_finalize)
     include("${alpaka_SOURCE_DIR}/cmake/alpakaFetchContentFinalize.cmake")
 endmacro()
