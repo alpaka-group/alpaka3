@@ -39,7 +39,7 @@ struct KernelCVecFrameExtents
 
         // warp size must be accessible at compile time, this is only possible if we us ethe accelerator type
         constexpr uint32_t warpSize = ALPAKA_TYPEOF(acc)::getWarpSize();
-        constexpr uint32_t warpSizeFn = onAcc::getWarpSize<T_Acc>();
+        constexpr uint32_t warpSizeFn = onAcc::warp::getSize<T_Acc>();
 
         static_assert(warpSize == warpSizeFn);
     }
@@ -93,7 +93,7 @@ struct KernelCVecThreadExtents
 
         // warp size must be accessible at compile time, this is only possible if we us ethe accelerator type
         constexpr uint32_t warpSize = ALPAKA_TYPEOF(acc)::getWarpSize();
-        constexpr uint32_t warpSizeFn = onAcc::getWarpSize<T_Acc>();
+        constexpr uint32_t warpSizeFn = onAcc::warp::getSize<T_Acc>();
 
         static_assert(warpSize == warpSizeFn);
     }
