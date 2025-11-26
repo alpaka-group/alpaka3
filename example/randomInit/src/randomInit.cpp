@@ -3,8 +3,8 @@
  */
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/example/executeForEach.hpp>
-#include <alpaka/example/executors.hpp>
+#include <alpaka/onHost/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
 
 #include <cmath>
 #include <iostream>
@@ -72,9 +72,9 @@ struct RandomInitKernelUniform
         // Initialize the Philox engine with the global frame element ID as the seed
         {
             // Philox generates uniform integer random numbers
-            alpaka::rand::Philox4x32x10 engine(static_cast<uint32_t>(seed));
+            alpaka::rand::engine::Philox4x32x10 engine(static_cast<uint32_t>(seed));
 
-            auto seedVec = alpaka::Vec<uint32_t, 1>{static_cast<uint32_t>(seed)};
+            auto seedVec = alpaka::Vec{static_cast<uint32_t>(seed)};
             // Define workgroup
             auto workGroup = alpaka::onAcc::WorkerGroup{seedVec, totalFrameExtens};
 
@@ -82,9 +82,11 @@ struct RandomInitKernelUniform
             // Iterate over the workgroup
             for(auto [index] : alpaka::onAcc::makeIdxMap(acc, workGroup, alpaka::IdxRange{size}))
             {
-                // Generate numbers in [0,1). Philox engine already generated uniform random numbers but they are
+                // Generate numbers in [0,1). Philox engine already generates uniform random numbers but they are
                 // integers.
-                alpaka::rand::UniformReal<float> dist;
+                alpaka::rand::distribution::UniformReal<float> dist;
+                // get random numbers floating for any vector size
+
                 auto val = dist(engine);
 
                 // Calculate the bin index for the histogram
@@ -116,9 +118,9 @@ struct RandomInitKernel
             alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{totalFrameExtens}))
         // Initialize the Philox engine with the global frame element ID as the seed
         {
-            alpaka::rand::Philox4x32x10 engine(static_cast<uint32_t>(seed));
+            alpaka::rand::engine::Philox4x32x10 engine(static_cast<uint32_t>(seed));
 
-            auto seedVec = alpaka::Vec<uint32_t, 1>{static_cast<uint32_t>(seed)};
+            auto seedVec = alpaka::Vec{static_cast<uint32_t>(seed)};
             // Define workgroup
             auto workGroup = alpaka::onAcc::WorkerGroup{seedVec, totalFrameExtens};
 
@@ -129,7 +131,7 @@ struct RandomInitKernel
                 // Generate a random 32-bit unsigned integer
                 uint32_t val = engine();
                 // Calculate the bin index for the histogram
-                uint32_t binIndex = static_cast<uint32_t>(val % numberOfBins);
+                auto binIndex = static_cast<uint32_t>(val % numberOfBins);
 
                 // Atomically increment the bin count in the histogram
                 alpaka::onAcc::atomicAdd(acc, &outBins[binIndex], 1);
@@ -157,7 +159,7 @@ struct RandomInitKernelVec
             uint32_t engineIndex = index / 4;
 
             // Setup generator and distribution.
-            alpaka::rand::Philox4x32x10Vector engine(engineIndex);
+            alpaka::rand::engine::Philox4x32x10Vector engine(engineIndex);
 
             // Generate a vector of 4 random numbers, 32 bit integers
             auto valVec = engine();
@@ -167,7 +169,7 @@ struct RandomInitKernelVec
 
             auto val = valVec[offset];
             // Calculate the bin index for the histogram
-            uint32_t binIndex = static_cast<uint32_t>(val % numberOfBins);
+            auto binIndex = static_cast<uint32_t>(val % numberOfBins);
 
             // Atomically increment the bin count in the histogram
             alpaka::onAcc::atomicAdd(acc, &outBins[binIndex], 1);
@@ -182,8 +184,8 @@ bool testRandomInitKernels(
     uint32_t numElements)
 {
     // Buffer size
-    const uint32_t size = numElements;
-    const uint32_t numBins = numberOfBins;
+    uint32_t const size = numElements;
+    uint32_t const numBins = numberOfBins;
 
     // Allocate input and output host buffers in pinned memory accessible by the Platform devices
     auto outBins_h = alpaka::onHost::alloc<int>(host, numBins);
@@ -198,7 +200,7 @@ bool testRandomInitKernels(
     alpaka::onHost::Queue queue = device.makeQueue();
 
     // Allocate output buffer on the device
-    auto outBins_d = alpaka::onHost::allocMirror(device, outBins_h);
+    auto outBins_d = alpaka::onHost::allocLike(device, outBins_h);
 
     // Copy the initial data to the device
     alpaka::onHost::memcpy(queue, outBins_d, outBins_h);
@@ -328,7 +330,6 @@ int example(auto const cfg, size_t numElements)
     {
         return EXIT_FAILURE;
     }
-
     auto deviceSelector = alpaka::onHost::makeDeviceSelector(deviceSpec);
 
 
@@ -397,7 +398,7 @@ auto main(int argc, char* argv[]) -> int
 
     using namespace alpaka;
     // Execute the example once for each enabled API and executor.
-    return executeForEachIfHasDevice(
+    return onHost::executeForEachIfHasDevice(
         [=](auto const& tag) { return example(tag, numElements); },
-        onHost::allBackends(onHost::enabledApis));
+        onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
 }

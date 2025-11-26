@@ -24,4 +24,3 @@ add_subdirectory("vectorAdd/")
 add_subdirectory("tutorial/")
 add_subdirectory("alpaka-ls/")
 add_subdirectory("randomInit/")
-

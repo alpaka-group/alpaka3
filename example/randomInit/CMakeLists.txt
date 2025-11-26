@@ -17,7 +17,6 @@ set(_TARGET_NAME randomInit)
 
 project(${_TARGET_NAME} LANGUAGES CXX)
 
-
 #-------------------------------------------------------------------------------
 # Find alpaka.
 
@@ -36,13 +35,9 @@ endif()
 #-------------------------------------------------------------------------------
 # Add executable.
 
-alpaka_add_executable(
-    ${_TARGET_NAME}
-    src/randomInit.cpp)
-target_link_libraries(
-    ${_TARGET_NAME}
-    PUBLIC alpaka::alpaka)
-
+add_executable(${_TARGET_NAME} src/randomInit.cpp)
+target_link_libraries(${_TARGET_NAME} PUBLIC alpaka::alpaka)
+alpaka_finalize(${_TARGET_NAME})
 set_target_properties(${_TARGET_NAME} PROPERTIES FOLDER example)
 
 add_test(NAME ${_TARGET_NAME} COMMAND ${_TARGET_NAME})

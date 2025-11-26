@@ -8,16 +8,16 @@
 
 #include <cstdint>
 
-namespace alpaka::rand
+namespace alpaka::rand::engine::internal
 {
     /// Get high 32 bits of a 64-bit number
-    ALPAKA_FN_HOST_ACC inline constexpr auto high32Bits(std::uint64_t const x) -> std::uint32_t
+    inline constexpr auto high32Bits(std::uint64_t const x) -> std::uint32_t
     {
         return static_cast<std::uint32_t>(x >> 32);
     }
 
     /// Get low 32 bits of a 64-bit number
-    ALPAKA_FN_HOST_ACC inline constexpr auto low32Bits(std::uint64_t const x) -> std::uint32_t
+    inline constexpr auto low32Bits(std::uint64_t const x) -> std::uint32_t
     {
         return static_cast<std::uint32_t>(x & 0xffff'ffff);
     }
@@ -30,7 +30,7 @@ namespace alpaka::rand
      * @param resultLow low 32 bits of the product a*b
      */
     // TODO: See single-instruction implementations in original Philox source code
-    ALPAKA_FN_HOST_ACC inline constexpr void multiplyAndSplit64to32(
+    inline constexpr void multiplyAndSplit64to32(
         std::uint64_t const a,
         std::uint64_t const b,
         std::uint32_t& resultHigh,
@@ -40,4 +40,4 @@ namespace alpaka::rand
         resultHigh = high32Bits(res64);
         resultLow = low32Bits(res64);
     }
-} // namespace alpaka::rand
+} // namespace alpaka::rand::engine::internal
