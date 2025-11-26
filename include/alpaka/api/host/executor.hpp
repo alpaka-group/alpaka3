@@ -6,6 +6,8 @@
 
 #include "alpaka/api/host/tag.hpp"
 #include "alpaka/api/trait.hpp"
+#include "alpaka/onAcc/internal/atomic.hpp"
+#include "alpaka/onAcc/scope.hpp"
 #include "alpaka/tag.hpp"
 
 #include <string>
@@ -85,30 +87,57 @@ namespace alpaka
 
 namespace alpaka::onAcc::trait
 {
-    template<>
-    struct GetAtomicImpl::Op<alpaka::exec::CpuSerial>
+    template<typename T_AtomicScope>
+    struct GetAtomicImpl::Op<alpaka::exec::CpuSerial, T_AtomicScope>
     {
-        constexpr decltype(auto) operator()(alpaka::exec::CpuSerial const) const
+        constexpr decltype(auto) operator()(alpaka::exec::CpuSerial const, T_AtomicScope const) const
         {
             return alpaka::onAcc::internal::stlAtomic;
         }
     };
 
     template<>
-    struct GetAtomicImpl::Op<alpaka::exec::CpuOmpBlocks>
+    struct GetAtomicImpl::Op<alpaka::exec::CpuSerial, onAcc::scope::Block>
     {
-        constexpr decltype(auto) operator()(alpaka::exec::CpuOmpBlocks const) const
+        constexpr decltype(auto) operator()(alpaka::exec::CpuSerial const, onAcc::scope::Block const) const
+        {
+            return alpaka::onAcc::internal::nonAtomic;
+        }
+    };
+
+    template<typename T_AtomicScope>
+    struct GetAtomicImpl::Op<alpaka::exec::CpuOmpBlocks, T_AtomicScope>
+    {
+        constexpr decltype(auto) operator()(alpaka::exec::CpuOmpBlocks const, T_AtomicScope const) const
         {
             return alpaka::onAcc::internal::stlAtomic;
         }
     };
 
     template<>
-    struct GetAtomicImpl::Op<alpaka::exec::CpuTbbBlocks>
+    struct GetAtomicImpl::Op<alpaka::exec::CpuOmpBlocks, onAcc::scope::Block>
     {
-        constexpr decltype(auto) operator()(alpaka::exec::CpuTbbBlocks const) const
+        constexpr decltype(auto) operator()(alpaka::exec::CpuOmpBlocks const, onAcc::scope::Block const) const
+        {
+            return alpaka::onAcc::internal::nonAtomic;
+        }
+    };
+
+    template<typename T_AtomicScope>
+    struct GetAtomicImpl::Op<alpaka::exec::CpuTbbBlocks, T_AtomicScope>
+    {
+        constexpr decltype(auto) operator()(alpaka::exec::CpuTbbBlocks const, T_AtomicScope const) const
         {
             return alpaka::onAcc::internal::stlAtomic;
+        }
+    };
+
+    template<>
+    struct GetAtomicImpl::Op<alpaka::exec::CpuTbbBlocks, onAcc::scope::Block>
+    {
+        constexpr decltype(auto) operator()(alpaka::exec::CpuTbbBlocks const, onAcc::scope::Block const) const
+        {
+            return alpaka::onAcc::internal::nonAtomic;
         }
     };
 

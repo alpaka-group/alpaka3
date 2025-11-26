@@ -36,10 +36,10 @@ namespace alpaka
 
 namespace alpaka::onAcc::trait
 {
-    template<>
-    struct GetAtomicImpl::Op<alpaka::exec::GpuCuda>
+    template<typename T_AtomicScope>
+    struct GetAtomicImpl::Op<alpaka::exec::GpuCuda, T_AtomicScope>
     {
-        constexpr decltype(auto) operator()(alpaka::exec::GpuCuda const) const
+        constexpr decltype(auto) operator()(alpaka::exec::GpuCuda const, T_AtomicScope const) const
         {
             return internal::cudaHipAtomic;
         }

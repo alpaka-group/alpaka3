@@ -22,10 +22,10 @@ namespace alpaka::onAcc
     //! \param addr The value to change atomically.
     //! \param value The value used in the atomic operation.
     template<typename TOp, typename T, typename T_Scope = scope::Device>
-    constexpr auto atomicOp(auto const& acc, T* const addr, T const& value, T_Scope const = T_Scope()) -> T
+    constexpr auto atomicOp(auto const& acc, T* const addr, T const& value, T_Scope const scope = T_Scope()) -> T
     {
         static_assert(!std::is_same_v<T_Scope, scope::System>, "System scope is currently not supported.");
-        auto atomicImpl = trait::getAtomicImpl(acc[object::exec]);
+        auto atomicImpl = trait::getAtomicImpl(acc[object::exec], scope);
         return internalCompute::Atomic::Op<TOp, ALPAKA_TYPEOF(atomicImpl), T, T_Scope>::atomicOp(
             atomicImpl,
             addr,
@@ -45,10 +45,10 @@ namespace alpaka::onAcc
         T* const addr,
         T const& compare,
         T const& value,
-        T_Scope const = T_Scope()) -> T
+        T_Scope const scope = T_Scope()) -> T
     {
         static_assert(!std::is_same_v<T_Scope, scope::System>, "System scope is currently not supported.");
-        auto atomicImpl = trait::getAtomicImpl(acc[object::exec]);
+        auto atomicImpl = trait::getAtomicImpl(acc[object::exec], scope);
         return internalCompute::Atomic::Op<TOp, ALPAKA_TYPEOF(atomicImpl), T, T_Scope>::atomicOp(
             atomicImpl,
             addr,

@@ -32,10 +32,10 @@ namespace alpaka
 
     namespace onAcc::trait
     {
-        template<>
-        struct GetAtomicImpl::Op<alpaka::exec::OneApi>
+        template<typename T_AtomicScope>
+        struct GetAtomicImpl::Op<alpaka::exec::OneApi, T_AtomicScope>
         {
-            constexpr decltype(auto) operator()(alpaka::exec::OneApi const) const
+            constexpr decltype(auto) operator()(alpaka::exec::OneApi const, T_AtomicScope const) const
             {
                 return alpaka::onAcc::internal::syclAtomic;
             }
