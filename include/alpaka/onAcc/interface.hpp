@@ -14,8 +14,9 @@
 #include "alpaka/Vec.hpp"
 #include "alpaka/concepts.hpp"
 #include "alpaka/mem/BoundaryIter.hpp"
-#include "alpaka/mem/Iter.hpp"
 #include "alpaka/mem/MdSpan.hpp"
+#include "alpaka/onAcc/DomainSpec.hpp"
+#include "alpaka/onAcc/internal/MakeIter.hpp"
 #include "alpaka/onAcc/internal/interface.hpp"
 #include "alpaka/onAcc/layout.hpp"
 #include "alpaka/onAcc/traverse.hpp"
@@ -23,6 +24,15 @@
 /** functionality which is usable on the accelerator compute device from within a kernel. */
 namespace alpaka::onAcc
 {
+    namespace concepts
+    {
+        template<typename T>
+        concept IdxMapping = internal::trait::isIdxMapping_v<T>;
+
+        template<typename T>
+        concept IdxTraversing = internal::trait::isIdxTraversing_v<T>;
+    } // namespace concepts
+
     /**@{
      * @name range‑based loop indexable index container
      */
