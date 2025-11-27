@@ -44,6 +44,14 @@ namespace alpaka::onAcc::trait
             return internal::cudaHipAtomic;
         }
     };
+    template<>
+    struct GetIntrinsicImpl::Op<alpaka::exec::GpuCuda>
+    {
+        constexpr decltype(auto) operator()(alpaka::exec::GpuCuda const) const
+        {
+            return internal::cudaHipIntrinsic;
+        }
+    };
 } // namespace alpaka::onAcc::trait
 
 namespace alpaka::unifiedCudaHip::trait

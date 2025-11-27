@@ -40,5 +40,14 @@ namespace alpaka
                 return alpaka::onAcc::internal::syclAtomic;
             }
         };
+
+        template<>
+        struct GetIntrinsicImpl::Op<alpaka::exec::OneApi>
+        {
+            constexpr decltype(auto) operator()(alpaka::exec::OneApi const) const
+            {
+                return alpaka::onAcc::internal::syclIntrinsic;
+            }
+        };
     } // namespace onAcc::trait
 } // namespace alpaka

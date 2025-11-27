@@ -13,6 +13,12 @@ namespace alpaka
         };
 
         constexpr auto syclAtomic = SyclAtomic{};
+
+        struct SyclIntrinsic
+        {
+        };
+
+        constexpr auto syclIntrinsic = SyclIntrinsic{};
     } // namespace onAcc::internal
 
     namespace math::internal

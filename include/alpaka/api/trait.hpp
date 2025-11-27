@@ -182,5 +182,27 @@ namespace alpaka
         {
             return GetAtomicImpl::Op<T_Executor, T_AtomicScope>{}(executor, atomicScope);
         }
+
+        /** Defines the implementation used for atomic operations toghether with the used executor */
+        struct GetIntrinsicImpl
+        {
+            template<alpaka::concepts::Executor T_Executor>
+            struct Op
+            {
+                constexpr decltype(auto) operator()(T_Executor const) const
+                {
+                    static_assert(
+                        sizeof(T_Executor) && false,
+                        "Intrinsic implementation for the current used executor is not defined.");
+                    return 0;
+                }
+            };
+        };
+
+        template<alpaka::concepts::Executor T_Executor>
+        constexpr decltype(auto) getIntrinsicImpl(T_Executor const executor)
+        {
+            return GetIntrinsicImpl::Op<T_Executor>{}(executor);
+        }
     } // namespace onAcc::trait
 } // namespace alpaka
