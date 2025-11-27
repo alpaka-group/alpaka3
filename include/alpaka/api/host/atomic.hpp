@@ -26,9 +26,11 @@ namespace alpaka::onAcc
 #if defined(ALPAKA_DISABLE_STD_ATOMIC_REF)
         template<typename T>
         using atomic_ref = boost::atomic_ref<T>;
+        constexpr auto memory_order_relaxed = boost::memory_order_relaxed;
 #else
         template<typename T>
         using atomic_ref = std::atomic_ref<T>;
+        constexpr auto memory_order_relaxed = std::memory_order_relaxed;
 #endif
     } // namespace detail
 
@@ -60,7 +62,7 @@ namespace alpaka::onAcc
             {
                 isSupportedByAtomicAtomicRef<T>();
                 detail::atomic_ref<T> ref(*addr);
-                return ref.fetch_add(value);
+                return ref.fetch_add(value, detail::memory_order_relaxed);
             }
         };
 
@@ -72,7 +74,7 @@ namespace alpaka::onAcc
             {
                 isSupportedByAtomicAtomicRef<T>();
                 detail::atomic_ref<T> ref(*addr);
-                return ref.fetch_sub(value);
+                return ref.fetch_sub(value, detail::memory_order_relaxed);
             }
         };
 
@@ -87,7 +89,7 @@ namespace alpaka::onAcc
                 T old = ref;
                 T result = old;
                 result = std::min(result, value);
-                while(!ref.compare_exchange_weak(old, result))
+                while(!ref.compare_exchange_weak(old, result, detail::memory_order_relaxed))
                 {
                     result = old;
                     result = std::min(result, value);
@@ -107,7 +109,7 @@ namespace alpaka::onAcc
                 T old = ref;
                 T result = old;
                 result = std::max(result, value);
-                while(!ref.compare_exchange_weak(old, result))
+                while(!ref.compare_exchange_weak(old, result, detail::memory_order_relaxed))
                 {
                     result = old;
                     result = std::max(result, value);
@@ -126,7 +128,7 @@ namespace alpaka::onAcc
                 detail::atomic_ref<T> ref(*addr);
                 T old = ref;
                 T result = value;
-                while(!ref.compare_exchange_weak(old, result))
+                while(!ref.compare_exchange_weak(old, result, detail::memory_order_relaxed))
                 {
                     result = value;
                 }
@@ -144,7 +146,7 @@ namespace alpaka::onAcc
                 detail::atomic_ref<T> ref(*addr);
                 T old = ref;
                 T result = ((old >= value) ? 0 : static_cast<T>(old + 1));
-                while(!ref.compare_exchange_weak(old, result))
+                while(!ref.compare_exchange_weak(old, result, detail::memory_order_relaxed))
                 {
                     result = ((old >= value) ? 0 : static_cast<T>(old + 1));
                 }
@@ -162,7 +164,7 @@ namespace alpaka::onAcc
                 detail::atomic_ref<T> ref(*addr);
                 T old = ref;
                 T result = ((old >= value) ? 0 : static_cast<T>(old - 1));
-                while(!ref.compare_exchange_weak(old, result))
+                while(!ref.compare_exchange_weak(old, result, detail::memory_order_relaxed))
                 {
                     result = ((old >= value) ? 0 : static_cast<T>(old - 1));
                 }
@@ -178,7 +180,7 @@ namespace alpaka::onAcc
             {
                 isSupportedByAtomicAtomicRef<T>();
                 detail::atomic_ref<T> ref(*addr);
-                return ref.fetch_and(value);
+                return ref.fetch_and(value, detail::memory_order_relaxed);
             }
         };
 
@@ -190,7 +192,7 @@ namespace alpaka::onAcc
             {
                 isSupportedByAtomicAtomicRef<T>();
                 detail::atomic_ref<T> ref(*addr);
-                return ref.fetch_or(value);
+                return ref.fetch_or(value, detail::memory_order_relaxed);
             }
         };
 
@@ -202,7 +204,7 @@ namespace alpaka::onAcc
             {
                 isSupportedByAtomicAtomicRef<T>();
                 detail::atomic_ref<T> ref(*addr);
-                return ref.fetch_xor(value);
+                return ref.fetch_xor(value, detail::memory_order_relaxed);
             }
         };
 
@@ -230,7 +232,7 @@ namespace alpaka::onAcc
 #if ALPAKA_COMP_GNUC || ALPAKA_COMP_CLANG
 #    pragma GCC diagnostic pop
 #endif
-                } while(!ref.compare_exchange_weak(old, result));
+                } while(!ref.compare_exchange_weak(old, result, detail::memory_order_relaxed));
                 return old;
             }
         };
