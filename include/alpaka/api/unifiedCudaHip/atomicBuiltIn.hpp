@@ -24,20 +24,6 @@ namespace alpaka::onAcc
     };
 } // namespace alpaka::onAcc
 
-#    if !defined(ALPAKA_HOST_ONLY)
-
-#        if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) && !ALPAKA_LANG_CUDA
-#            error If ALPAKA_ACC_GPU_CUDA_ENABLED is set, the compiler has to support CUDA!
-#        endif
-
-#        if defined(ALPAKA_ACC_GPU_HIP_ENABLED) && !ALPAKA_LANG_HIP
-#            error If ALPAKA_ACC_GPU_HIP_ENABLED is set, the compiler has to support HIP!
-#        endif
-
-//! clang is providing a builtin for different atomic functions even if these is not supported for architectures < 6.0
-#        define CLANG_CUDA_PTX_WORKAROUND                                                                             \
-            (ALPAKA_COMP_CLANG && ALPAKA_LANG_CUDA && ALPAKA_ARCH_PTX < ALPAKA_VERSION_NUMBER(6, 0, 0))
-
 //! These types must be in the global namespace for checking existence of respective functions in global namespace via
 //! SFINAE, so we use inline namespace.
 inline namespace alpakaGlobal
@@ -77,7 +63,6 @@ inline namespace alpakaGlobal
         }
     };
 
-#        if !CLANG_CUDA_PTX_WORKAROUND
     template<typename T>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicCas,
@@ -93,8 +78,6 @@ inline namespace alpakaGlobal
             return atomicCAS_block(add, compare, value);
         }
     };
-#        endif
-
 
     // Add.
     template<typename T, typename T_Scope>
@@ -111,8 +94,6 @@ inline namespace alpakaGlobal
         }
     };
 
-
-#        if !CLANG_CUDA_PTX_WORKAROUND
     template<typename T>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicAdd,
@@ -126,17 +107,8 @@ inline namespace alpakaGlobal
             return atomicAdd_block(add, value);
         }
     };
-#        endif
 
-#        if CLANG_CUDA_PTX_WORKAROUND
-    // clang is providing a builtin for atomicAdd even if these is not supported by the current architecture
-    template<typename T_Scope>
-    struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicAdd, double, T_Scope> : std::false_type
-    {
-    };
-#        endif
-
-#        if (ALPAKA_LANG_HIP)
+#    if (ALPAKA_LANG_HIP)
     // HIP shows bad performance with builtin atomicAdd(float*,float) for the hierarchy threads therefore we do not
     // call the buildin method and instead use the atomicCAS emulation. For details see:
     // https://github.com/alpaka-group/alpaka/issues/1657
@@ -144,7 +116,7 @@ inline namespace alpakaGlobal
     struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicAdd, float, alpaka::onAcc::scope::Block> : std::false_type
     {
     };
-#        endif
+#    endif
 
     // Sub.
 
@@ -162,7 +134,6 @@ inline namespace alpakaGlobal
         }
     };
 
-#        if !CLANG_CUDA_PTX_WORKAROUND
     template<typename T>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicSub,
@@ -176,7 +147,6 @@ inline namespace alpakaGlobal
             return atomicSub_block(add, value);
         }
     };
-#        endif
 
     // Min.
     template<typename T, typename T_Scope>
@@ -193,7 +163,6 @@ inline namespace alpakaGlobal
         }
     };
 
-#        if !CLANG_CUDA_PTX_WORKAROUND
     template<typename T>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicMin,
@@ -207,10 +176,9 @@ inline namespace alpakaGlobal
             return atomicMin_block(add, value);
         }
     };
-#        endif
 
 // disable HIP atomicMin: see https://github.com/ROCm-Developer-Tools/hipamd/pull/40
-#        if (ALPAKA_LANG_HIP)
+#    if (ALPAKA_LANG_HIP)
     template<typename T_Scope>
     struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMin, float, T_Scope> : std::false_type
     {
@@ -231,7 +199,7 @@ inline namespace alpakaGlobal
     {
     };
 
-#            if !__has_builtin(__hip_atomic_compare_exchange_strong)
+#        if !__has_builtin(__hip_atomic_compare_exchange_strong)
     template<typename T_Scope>
     struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMin, unsigned long long, T_Scope> : std::false_type
     {
@@ -242,8 +210,8 @@ inline namespace alpakaGlobal
         : std::false_type
     {
     };
-#            endif
 #        endif
+#    endif
 
     // Max.
 
@@ -261,7 +229,6 @@ inline namespace alpakaGlobal
         }
     };
 
-#        if !CLANG_CUDA_PTX_WORKAROUND
     template<typename T>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicMax,
@@ -275,10 +242,9 @@ inline namespace alpakaGlobal
             return atomicMax_block(add, value);
         }
     };
-#        endif
 
     // disable HIP atomicMax: see https://github.com/ROCm-Developer-Tools/hipamd/pull/40
-#        if (ALPAKA_LANG_HIP)
+#    if (ALPAKA_LANG_HIP)
     template<typename T_Scope>
     struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMax, float, T_Scope> : std::false_type
     {
@@ -299,7 +265,7 @@ inline namespace alpakaGlobal
     {
     };
 
-#            if !__has_builtin(__hip_atomic_compare_exchange_strong)
+#        if !__has_builtin(__hip_atomic_compare_exchange_strong)
     template<typename T_Scope>
     struct AlpakaBuiltInAtomic<alpaka::onAcc::AtomicMax, unsigned long long, T_Scope> : std::false_type
     {
@@ -310,8 +276,8 @@ inline namespace alpakaGlobal
         : std::false_type
     {
     };
-#            endif
 #        endif
+#    endif
 
 
     // Exch.
@@ -330,7 +296,6 @@ inline namespace alpakaGlobal
         }
     };
 
-#        if !CLANG_CUDA_PTX_WORKAROUND
     template<typename T>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicExch,
@@ -344,7 +309,6 @@ inline namespace alpakaGlobal
             return atomicExch_block(add, value);
         }
     };
-#        endif
 
     // Inc.
 
@@ -362,7 +326,6 @@ inline namespace alpakaGlobal
         }
     };
 
-#        if !CLANG_CUDA_PTX_WORKAROUND
     template<typename T>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicInc,
@@ -376,7 +339,6 @@ inline namespace alpakaGlobal
             return atomicInc_block(add, value);
         }
     };
-#        endif
 
     // Dec.
 
@@ -394,7 +356,6 @@ inline namespace alpakaGlobal
         }
     };
 
-#        if !CLANG_CUDA_PTX_WORKAROUND
     template<typename T>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicDec,
@@ -408,7 +369,6 @@ inline namespace alpakaGlobal
             return atomicDec_block(add, value);
         }
     };
-#        endif
 
     // And.
 
@@ -426,7 +386,6 @@ inline namespace alpakaGlobal
         }
     };
 
-#        if !CLANG_CUDA_PTX_WORKAROUND
     template<typename T>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicAnd,
@@ -440,7 +399,6 @@ inline namespace alpakaGlobal
             return atomicAnd_block(add, value);
         }
     };
-#        endif
 
     // Or.
 
@@ -458,7 +416,6 @@ inline namespace alpakaGlobal
         }
     };
 
-#        if !CLANG_CUDA_PTX_WORKAROUND
     template<typename T>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicOr,
@@ -472,7 +429,6 @@ inline namespace alpakaGlobal
             return atomicOr_block(add, value);
         }
     };
-#        endif
 
     // Xor.
 
@@ -490,7 +446,6 @@ inline namespace alpakaGlobal
         }
     };
 
-#        if !CLANG_CUDA_PTX_WORKAROUND
     template<typename T>
     struct AlpakaBuiltInAtomic<
         alpaka::onAcc::AtomicXor,
@@ -504,11 +459,7 @@ inline namespace alpakaGlobal
             return atomicXor_block(add, value);
         }
     };
-#        endif
 
 } // namespace alpakaGlobal
-
-#        undef CLANG_CUDA_PTX_WORKAROUND
-#    endif
 
 #endif
