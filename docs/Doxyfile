@@ -2535,12 +2535,7 @@ INCLUDE_FILE_PATTERNS  =
 # recursively expanded use the := operator instead of the = operator.
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
-PREDEFINED             = ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED \
-                         ALPAKA_ACC_CPU_B_SEQ_T_THREADS_ENABLED \
-                         ALPAKA_ACC_CPU_B_OMP2_T_SEQ_ENABLED \
-                         ALPAKA_ACC_CPU_B_SEQ_T_OMP2_ENABLED \
-                         ALPAKA_ACC_GPU_CUDA_ENABLED \
-                         __CUDACC__ \
+PREDEFINED             = __CUDACC__ \
                          _OPENMP=201307
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
