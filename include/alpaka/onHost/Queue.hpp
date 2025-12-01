@@ -360,7 +360,7 @@ namespace alpaka::onHost
      * @param queue queue handle
      * @param extents number of elements for each dimension
      * @return Shared buffer to the allocated memory. The buffer will be freed after the last instance to the
-     * memory is destroyed. The deallocation is asynchronous performed in the the queue which is used for the
+     * memory is destroyed. The deallocation is asynchronous performed in the queue which is used for the
      * allocation.
      */
     template<typename T_Type, typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
@@ -388,13 +388,13 @@ namespace alpaka::onHost
      * @param queue queue handle
      * @param[in] view other memory where the extents will be derived from
      * @return Shared buffer to the allocated memory. The buffer will be freed after the last instance to the
-     * memory is destroyed. The deallocation is asynchronous performed in the the queue which is used for the
+     * memory is destroyed. The deallocation is asynchronous performed in the queue which is used for the
      * allocation.
      */
     template<typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
-    inline auto allocLikeAsync(Queue<T_Device, T_QueueKind> const& queue, auto const& view)
+    inline auto allocLikeDeferred(Queue<T_Device, T_QueueKind> const& queue, auto const& view)
     {
-        return allocDeferred<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(queue, getExtents(view));
+        return allocDeferred<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(queue, internal::getExtents(view));
     }
 
     /** @} */

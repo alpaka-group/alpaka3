@@ -81,7 +81,7 @@ struct TestWithMdSpan
         using OutDataType = decltype(std::get<1>(setup)(std::declval<DataType>(), std::declval<DataType>()));
         onHost::SharedBuffer computeBufferOut = onHost::allocDeferred<OutDataType>(computeQueue, extentMd);
         onHost::SharedBuffer computeBufferIn0 = onHost::allocDeferred<DataType>(computeQueue, extentMd);
-        onHost::SharedBuffer computeBufferIn1 = onHost::allocLikeAsync(computeQueue, computeBufferIn0);
+        onHost::SharedBuffer computeBufferIn1 = onHost::allocLikeDeferred(computeQueue, computeBufferIn0);
         onHost::SharedBuffer hostBufferIota = onHost::allocLike(onHost::makeHostDevice(), computeBufferIn0);
         onHost::SharedBuffer hostBufferOut = onHost::allocLike(onHost::makeHostDevice(), computeBufferOut);
 
