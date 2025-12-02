@@ -27,22 +27,35 @@ namespace alpaka::concepts
                   /// access may be invalid after moving the DataSource.
                   static_cast<bool>(t);
 
-                  // only if no reference is not defined, check if the access operator returns a value
-                  requires requires { typename T::reference; } || requires {
-                      { mut_t[vec] } -> std::same_as<typename T::value_type>;
-                  };
-                  requires requires { typename T::const_reference; } || requires {
-                      { const_t[vec] } -> std::same_as<typename T::value_type>;
-                  };
+                  // check multi-dimensional mutable access operator
+                  requires
+                      (requires { typename T::reference; } &&
+                          requires {{ mut_t[vec] } -> std::same_as<typename T::reference>; }) ||
+                      (!requires { typename T::reference; } &&
+                          requires {{ mut_t[vec] } -> std::same_as<typename T::value_type>; });
 
-                  // only if no reference type is defined and for 1D, the access operator with an integral is available
-                  requires requires { typename T::reference; } || requires { requires(T::dim() > 1); } || requires {
-                      { mut_t[0] } -> std::same_as<typename T::value_type>;
-                  };
-                  requires requires { typename T::const_reference; } || requires { requires(T::dim() > 1); }
-                               || requires {
-                                      { const_t[0] } -> std::same_as<typename T::value_type>;
-                                  };
+                  // check multi-dimensional const access operator
+                  requires
+                      (requires { typename T::const_reference; } &&
+                          requires {{ const_t[vec] } -> std::same_as<typename T::const_reference>; }) ||
+                      (!requires { typename T::const_reference; } &&
+                          requires {{ const_t[vec] } -> std::same_as<typename T::value_type>; });
+
+                  // check 1-dimensional mutable access operator
+                  requires
+                      (T::dim() != 1u) ||
+                      (T::dim() == 1u && requires { typename T::reference; } &&
+                          requires {{ mut_t[0] } -> std::same_as<typename T::reference>; }) ||
+                      (T::dim() == 1u && !requires { typename T::reference; } &&
+                          requires {{ mut_t[0] } -> std::same_as<typename T::value_type>; });
+
+                  // check 1-dimensional const access operator
+                  requires
+                      (T::dim() != 1u) ||
+                      (T::dim() == 1u && requires { typename T::const_reference; } &&
+                          requires {{ const_t[0] } -> std::same_as<typename T::const_reference>; }) ||
+                      (T::dim() == 1u && !requires { typename T::const_reference; } &&
+                          requires {{ const_t[0] } -> std::same_as<typename T::value_type>; });
 
                   // typically the alignment of the value_type.
                   { t.getAlignment() } -> alpaka::concepts::Alignment;
