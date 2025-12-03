@@ -244,6 +244,11 @@ namespace alpaka::onHost
             friend struct alpaka::onHost::internal::Enqueue;
             friend struct onHost::internal::AllocDeferred;
 
+            void nestedEnqueue(auto const& task)
+            {
+                m_callBackThread.submit(task);
+            }
+
             auto getDeviceKind() const
             {
                 return alpaka::internal::getDeviceKind(*m_device.get());

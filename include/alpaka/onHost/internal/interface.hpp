@@ -76,7 +76,7 @@ namespace alpaka::onHost
 
         inline constexpr auto getDevice(auto&& any)
         {
-            return GetDevice::Op<std::decay_t<decltype(any)>>{}(any);
+            return GetDevice::Op<ALPAKA_TYPEOF(any)>{}(any);
         }
 
         struct GetNativeHandle
@@ -93,7 +93,7 @@ namespace alpaka::onHost
 
         inline auto getNativeHandle(auto&& any)
         {
-            return GetNativeHandle::Op<std::decay_t<decltype(any)>>{}(any);
+            return GetNativeHandle::Op<ALPAKA_TYPEOF(any)>{}(any);
         }
 
         struct MakeQueue
@@ -134,7 +134,7 @@ namespace alpaka::onHost
 
         inline void wait(auto&& any)
         {
-            Wait::Op<std::decay_t<decltype(any)>>{}(any);
+            Wait::Op<ALPAKA_TYPEOF(any)>{}(any);
         }
 
         struct WaitFor
@@ -220,7 +220,7 @@ namespace alpaka::onHost
 
         inline void enqueue(auto& queue, auto const& task)
         {
-            Enqueue::Task<std::decay_t<decltype(queue)>, std::decay_t<decltype(task)>>{}(queue, task);
+            Enqueue::Task<ALPAKA_TYPEOF(queue), ALPAKA_TYPEOF(task)>{}(queue, task);
         }
 
         template<typename TKernelFn, typename... TArgs>
@@ -231,9 +231,9 @@ namespace alpaka::onHost
             KernelBundle<TKernelFn, TArgs...> const& kernelBundle)
         {
             Enqueue::Kernel<
-                std::decay_t<decltype(queue)>,
-                std::decay_t<decltype(executor)>,
-                std::decay_t<decltype(blockCfg)>,
+                ALPAKA_TYPEOF(queue),
+                ALPAKA_TYPEOF(executor),
+                ALPAKA_TYPEOF(blockCfg),
                 KernelBundle<TKernelFn, TArgs...>>{}(queue, executor, blockCfg, kernelBundle);
         }
 
@@ -284,13 +284,13 @@ namespace alpaka::onHost
 
             static decltype(auto) data(auto&& any)
             {
-                return Op<std::decay_t<decltype(any)>>{}(any);
+                return Op<ALPAKA_TYPEOF(any)>{}(any);
             }
 
             template<typename T_Any>
             static decltype(auto) data(Handle<T_Any>&& anyHandle)
             {
-                return Op<std::decay_t<decltype(*anyHandle.get())>>{}(*anyHandle.get());
+                return Op<ALPAKA_TYPEOF(*anyHandle.get())>{}(*anyHandle.get());
             }
         };
 
@@ -428,7 +428,7 @@ namespace alpaka::onHost
 
         inline auto getExtents(auto&& any)
         {
-            return GetExtents::Op<std::decay_t<decltype(any)>>{}(any);
+            return GetExtents::Op<ALPAKA_TYPEOF(any)>{}(any);
         }
 
         template<typename T_Any>
@@ -451,7 +451,7 @@ namespace alpaka::onHost
 
         inline auto getPitches(auto&& any)
         {
-            return GetPitches::Op<std::decay_t<decltype(any)>>{}(any);
+            return GetPitches::Op<ALPAKA_TYPEOF(any)>{}(any);
         }
 
         template<typename T_Any>

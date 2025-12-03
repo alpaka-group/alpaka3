@@ -238,7 +238,11 @@ namespace alpaka::onHost
         }
 
         /** Keep the buffer alive until at least the current spot in the queue, even if it runs out of scope.
-         * This ensures that the buffer is and stays valid in previously enqueued kernels.
+         * This ensures that the buffer is and stays valid in previously enqueued kernels. There is *no* guarantee
+         * that the buffer is deleted immediately when the last reference to it is deleted.
+         *
+         * This differs from `destructorWaitFor`, because that function waits, while `keepAlive` does not block
+         * anything, it just extends lifetime.
          *
          * @param queue The queue to enqueue to.
          */
@@ -250,9 +254,7 @@ namespace alpaka::onHost
             auto del = m_deleter;
             auto task = [_ = std::move(del)] {};
 
-            internal::Enqueue::NestedTask<std::decay_t<decltype(*queue.get())>, std::decay_t<decltype(task)>>{}(
-                *queue.get(),
-                task);
+            internal::Enqueue::NestedTask<ALPAKA_TYPEOF(*queue.get()), ALPAKA_TYPEOF(task)>{}(*queue.get(), task);
         }
 
         /** Return the number of SharedBuffers which points to the same memory */
@@ -268,7 +270,7 @@ namespace alpaka::onHost
         }
 
     private:
-        /** @todo move this to trais or somewhere else that it can be used everywhere */
+        /** @todo move this to traits or somewhere else that it can be used everywhere */
         template<alpaka::concepts::Pointer T>
         using ConstPtr_t = std::add_pointer_t<std::add_const_t<std::remove_pointer_t<T>>>;
 
