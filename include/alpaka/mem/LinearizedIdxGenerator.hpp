@@ -92,8 +92,6 @@ namespace alpaka
 
         [[nodiscard]] constexpr explicit operator bool() const noexcept
         {
-            // TODO(SimeonEhrig) check if this is correct
-            // maybe extents is really moveable
             return true;
         }
 

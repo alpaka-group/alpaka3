@@ -42,16 +42,12 @@ namespace alpaka::concepts
          * alpaka::concepts::Alignment
          *
          * @section membertypes Member types
-         * - <b>T::value_type</b>: The element type. May or may not be const.
          * - <b>T::reference</b>: The element reference type is either const or non-const, depending on
          *`T::value_type`.
          * - <b>T::const_reference</b>: The constant reference type for an element. Always const.
          * - <b>T::pointer</b>: The element pointer type is either const or non-const, depending on
          *`T::value_type`.
          * - <b>T::const_pointer</b>: The constant pointer type for an element. Always pointer-to-const.
-         * - <b>T::index_type</b>: The index type of the pitch.
-         *
-         * @note The access operator [] with an integral as an argument is only available if the dimension is one.
          **/
         template<typename T, typename T_Mut, typename T_Const>
         concept IMdSpan
@@ -62,28 +58,11 @@ namespace alpaka::concepts
                   typename T::const_reference;
                   typename T::pointer;
                   typename T::const_pointer;
-                  typename T::index_type;
 
-                  { T::dim() } -> std::same_as<uint32_t>;
                   { *mut_t } -> std::same_as<typename T::reference>;
                   { *const_t } -> std::same_as<typename T::const_reference>;
                   { mut_t.data() } -> std::same_as<typename T::pointer>;
                   { const_t.data() } -> std::same_as<typename T::const_pointer>;
-                  /// @todo check for a MDIterator concept
-                  t.begin();
-                  t.end();
-                  t.cbegin();
-                  t.cend();
-
-                  { mut_t[vec] } -> std::same_as<typename T::reference>;
-                  { const_t[vec] } -> std::same_as<typename T::const_reference>;
-                  // only if MdSpan like object is 1D, the access operator with an integral is available
-                  requires(T::dim() > 1) || requires {
-                      { mut_t[typename T::index_type{0}] } -> std::same_as<typename T::reference>;
-                  };
-                  requires(T::dim() > 1) || requires {
-                      { const_t[typename T::index_type{0}] } -> std::same_as<typename T::const_reference>;
-                  };
 
                   /// @todo add getSlice, getConstSlice and getView, getConstView functions
               };

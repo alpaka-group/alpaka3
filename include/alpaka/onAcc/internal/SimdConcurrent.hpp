@@ -10,7 +10,7 @@
 #include "alpaka/api/trait.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/mem/concepts.hpp"
-#include "alpaka/mem/concepts/IGeneratorOrMdSpan.hpp"
+#include "alpaka/mem/concepts/IDataSource.hpp"
 #include "alpaka/onAcc/WorkerGroup.hpp"
 #include "alpaka/onAcc/interface.hpp"
 

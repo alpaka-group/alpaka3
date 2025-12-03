@@ -15,6 +15,30 @@ namespace alpaka::concepts
 {
     namespace impl
     {
+        /** @brief Interface concept for objects describing a multidimensional data source.
+         *
+         * @details
+         *
+         * An object that implements the interface returns a value for a multidimensional index. Therefore, it behaves
+         * like multidimensional memory that can only be read. It is not permitted to write a new value to an index
+         * position. An `IDataSource` object has an immutable, fixed multidimensional size. The `IDataSource` object is
+         * not required to reference the storage. It can create data instant.
+         *
+         * The immutable extent is required for algorithms such as `alpaka::onHost::transform`.
+         *
+         * @param t Object that implements the `IDataSource` interface. May or may not have a const modifier.
+         * @param mut_t Mutable object that implements the `IDataSource` interface. Does not have a const modifier.
+         * @param const_t Constant object that implements the `IDataSource` interface. Does have a const modifier.
+         * @param vec Vector with the same number of elements as the dimension of the `IDataSource` like object.
+         * Used to call the access operator.
+         *
+         *
+         * @section membertypes Member types
+         * - <b>T::value_type</b>: The element type. May or may not be const.
+         * - <b>T::index_type</b>: The index type of the pitch.
+         *
+         * @note The access operator [] with an integral as an argument is only available if the dimension is one.
+         **/
         template<typename T, typename T_Mut, typename T_Const>
         concept IDataSource
             = requires(T t, T_Mut mut_t, T_Const const_t, alpaka::Vec<typename T::index_type, T::dim()> vec) {
@@ -26,6 +50,8 @@ namespace alpaka::concepts
                   /// The bool operator returns true if the access operator returns valid values. For example, memory
                   /// access may be invalid after moving the DataSource.
                   static_cast<bool>(t);
+
+                  { T::dim() } -> std::same_as<uint32_t>;
 
                   // check multi-dimensional mutable access operator
                   requires
@@ -59,10 +85,7 @@ namespace alpaka::concepts
 
                   // typically the alignment of the value_type.
                   { t.getAlignment() } -> alpaka::concepts::Alignment;
-                  /** @todo implement concept alpaka::concepts::Extents and use it as return value
-                   * @todo in general a generator is not required to have extents but our algorithm e.g. onHost::reduce
-                   *will not work without extents
-                   **/
+                  /// @todo implement concept alpaka::concepts::Extents and use it as return value
                   t.getExtents();
                   /// @todo implement concept alpaka::concepts::Pitches and use it as return value
                   t.getPitches();
