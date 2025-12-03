@@ -244,7 +244,7 @@ namespace alpaka::onHost
             friend struct alpaka::onHost::internal::Enqueue;
             friend struct onHost::internal::AllocDeferred;
 
-            void nestedEnqueue(auto const& task)
+            void enqueueHostFnAsync(auto const& task)
             {
                 m_callBackThread.submit(task);
             }
@@ -283,8 +283,7 @@ namespace alpaka::onHost
     } // namespace syclGeneric
 
     template<typename T_Device, typename T_Task>
-    struct internal::Enqueue::Task<syclGeneric::Queue<T_Device>, T_Task>
-
+    struct internal::Enqueue::HostTask<syclGeneric::Queue<T_Device>, T_Task>
     {
         /** It is not allowed to execute sycl methods within a SYCL host_task therefore we use a callback host
          * thread to execute the host function which is allowing to use sycl methods.

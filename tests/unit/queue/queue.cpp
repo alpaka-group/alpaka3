@@ -429,7 +429,7 @@ TEMPLATE_LIST_TEST_CASE("host task callback", "", TestApis)
 
     std::promise<bool> promise;
 
-    queue.enqueue(
+    queue.enqueueHostFn(
         [&]()
         {
             std::cout << "Host Callback executed!" << std::endl;
@@ -460,17 +460,17 @@ TEMPLATE_LIST_TEST_CASE("host task", "", TestApis)
 
     bool flag = false;
     auto task = [&] { flag = true; };
-    queue.enqueue(task); // lvalue
+    queue.enqueueHostFn(task); // lvalue
     onHost::wait(queue);
     CHECK(flag == true);
 
     flag = false;
-    queue.enqueue(std::move(task)); // xvalue
+    queue.enqueueHostFn(std::move(task)); // xvalue
     onHost::wait(queue);
     CHECK(flag == true);
 
     flag = false;
-    queue.enqueue([&] { flag = true; }); // prvalue
+    queue.enqueueHostFn([&] { flag = true; }); // prvalue
     onHost::wait(queue);
     CHECK(flag == true);
 }
@@ -495,7 +495,7 @@ TEMPLATE_LIST_TEST_CASE("queue wait should work", "", TestApis)
     onHost::Queue queue = device.makeQueue();
 
     std::atomic<bool> callbackFinished{false};
-    queue.enqueue(
+    queue.enqueueHostFn(
         [&callbackFinished]() noexcept
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(100u));
@@ -547,7 +547,7 @@ TEMPLATE_LIST_TEST_CASE("task is destroyed after execution", "", TestApis)
     };
 
     std::atomic<bool> destroyed{false};
-    queue.enqueue(Task{destroyed});
+    queue.enqueueHostFn(Task{destroyed});
 
     onHost::wait(queue);
     CHECK(destroyed == true);

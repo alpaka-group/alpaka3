@@ -224,7 +224,7 @@ TEMPLATE_LIST_TEST_CASE("device global mem copy", "", TestApis)
         // check that we can copy from host to device
         onHost::memcpy(queue, globalScalar, &val);
         // reset host value
-        queue.enqueue([&]() { val = 0u; });
+        queue.enqueueHostFn([&]() { val = 0u; });
         // check that we can copy from device to host
         onHost::memcpy(queue, &val, globalScalar);
         queue.enqueue(exec, FrameSpec{numBlocks, blockExtent}, KernelBundle{DeviceGlobalMemCpyScalarKernel{}, dBuff});
@@ -253,7 +253,7 @@ TEMPLATE_LIST_TEST_CASE("device global mem copy", "", TestApis)
         val[1][2] = newValue;
         onHost::memcpy(queue, global2DCArray, val);
         // reset host value
-        queue.enqueue([&]() { val[1][2] = 0u; });
+        queue.enqueueHostFn([&]() { val[1][2] = 0u; });
         onHost::memcpy(queue, val, global2DCArray);
         queue.enqueue(
             exec,

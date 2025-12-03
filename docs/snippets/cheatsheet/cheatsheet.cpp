@@ -218,9 +218,10 @@ auto main() -> int
         auto blockingQueue = device.makeQueue(queueKind::blocking);
         // END-CHEATSHEET-makeQueue
 
-        // BEGIN-CHEATSHEET-enqueueTask
-        queue.enqueue(task);
-        // END-CHEATSHEET-enqueueTask
+        // BEGIN-CHEATSHEET-enqueueHostTask
+        queue.enqueueHostFn(task);
+        queue.enqueueHostFnAsync(task);
+        // END-CHEATSHEET-enqueueHostTask
 
         // BEGIN-CHEATSHEET-waitQueue
         onHost::wait(queue);

@@ -50,6 +50,6 @@ TEST_CASE("host device", "[docs]")
 
     // Getting a queue to enqueue asynchronous work
     onHost::Queue hostQueue = hostDevice.makeQueue();
-    hostQueue.enqueue([]() { std::cout << "Hallo host task" << std::endl; });
+    hostQueue.enqueueHostFn([]() { std::cout << "Hallo host task" << std::endl; });
     onHost::wait(hostQueue);
 }

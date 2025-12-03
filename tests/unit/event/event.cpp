@@ -107,7 +107,7 @@ TEMPLATE_LIST_TEST_CASE("basic queue wait for event", "", TestApis)
     queue0.enqueue(ev);
     onHost::wait(ev);
     CHECK(ev.isComplete() == true);
-    queue0.enqueue([]() { std::this_thread::sleep_for(std::chrono::milliseconds(100u)); });
+    queue0.enqueueHostFn([]() { std::this_thread::sleep_for(std::chrono::milliseconds(100u)); });
     queue0.enqueue(ev);
     queue1.waitFor(ev);
     onHost::wait(queue1);

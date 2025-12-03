@@ -125,7 +125,7 @@ namespace alpaka::onHost
 
             friend struct onHost::internal::Enqueue;
 
-            void nestedEnqueue(auto const& task)
+            void enqueueHostFnAsync(auto const& task)
             {
                 m_callBackThread.submit(task);
             }
@@ -346,7 +346,7 @@ namespace alpaka::onHost
     namespace internal
     {
         template<typename T_Device, typename T_Task>
-        struct Enqueue::Task<unifiedCudaHip::Queue<T_Device>, T_Task>
+        struct Enqueue::HostTask<unifiedCudaHip::Queue<T_Device>, T_Task>
         {
             struct HostFuncData
             {

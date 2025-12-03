@@ -252,9 +252,7 @@ namespace alpaka::onHost
             // as long as the copy lives (which is as long as it takes the queue to get to this point), the buffer will
             // stay valid
             auto del = m_deleter;
-            auto task = [_ = std::move(del)] {};
-
-            internal::Enqueue::NestedTask<ALPAKA_TYPEOF(*queue.get()), ALPAKA_TYPEOF(task)>{}(*queue.get(), task);
+            queue.enqueueHostFnAsync([_ = std::move(del)] {});
         }
 
         /** Return the number of SharedBuffers which points to the same memory */

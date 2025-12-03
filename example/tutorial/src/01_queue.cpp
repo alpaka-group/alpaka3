@@ -22,7 +22,7 @@ int main()
 
     std::cout << "Enqueue some work\n";
 
-    queue.enqueue(
+    queue.enqueueHostFn(
         []() noexcept
         {
             std::cout << "  - host task running...\n";

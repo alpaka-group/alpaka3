@@ -152,9 +152,24 @@ namespace alpaka::onHost
          *
          * @param task task to be executed on the host side
          */
-        void enqueue(auto const& task) const
+        void enqueueHostFn(auto const& task) const
         {
-            return internal::Enqueue::Task<std::decay_t<decltype(*m_queue.get())>, std::decay_t<decltype(task)>>{}(
+            return internal::Enqueue::HostTask<ALPAKA_TYPEOF(*m_queue.get()), ALPAKA_TYPEOF(task)>{}(
+                *m_queue.get(),
+                task);
+        }
+
+        /** Enqueue an operation which is executed asynchronously on the host side
+         *
+         * The enqueued operation will be started when the queue reaches the task. The queue will immediately continue,
+         * the task may run immediately or some time later. Because this task is asynchronous, it may contain vendor
+         * library functions, which would not be valid in a `enqueueHostFn` task.
+         *
+         * @param task task to be executed asynchronously on the host side
+         */
+        void enqueueHostFnAsync(auto const& task) const
+        {
+            return internal::Enqueue::HostTaskAsync<ALPAKA_TYPEOF(*m_queue.get()), ALPAKA_TYPEOF(task)>{}(
                 *m_queue.get(),
                 task);
         }

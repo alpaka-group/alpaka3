@@ -187,13 +187,13 @@ namespace alpaka::onHost
              * @attention Do NOT enqueue a task which captures the queue internally to keep the queue alive as
              * dependency. In this case the destructure of the queue is not called.
              */
-            void enqueue(auto const& task)
+            void enqueueHostFn(auto const& task)
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 submit([task]() { task(); });
             }
 
-            void nestedEnqueue(auto const& task)
+            void enqueueHostFnAsync(auto const& task)
             {
                 m_workerThread.submit(task);
             }

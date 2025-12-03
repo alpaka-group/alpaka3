@@ -80,7 +80,7 @@ TEMPLATE_LIST_TEST_CASE("keep alive", "", TestApis)
     onHost::wait(queue);
 
     bool correct = true;
-    for(auto i = 0; i < N; ++i)
+    for(IdxType i = 0; i < N; ++i)
     {
         if(hostResult[i] != static_cast<ValType>(i))
             correct = false;
