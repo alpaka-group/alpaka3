@@ -244,11 +244,6 @@ namespace alpaka::onHost
             friend struct alpaka::onHost::internal::Enqueue;
             friend struct onHost::internal::AllocDeferred;
 
-            void enqueueHostFnAsync(auto const& task)
-            {
-                m_callBackThread.submit(task);
-            }
-
             auto getDeviceKind() const
             {
                 return alpaka::internal::getDeviceKind(*m_device.get());
@@ -302,6 +297,27 @@ namespace alpaka::onHost
             [[maybe_unused]] sycl::event ev
                 = queue.m_queue.submit([&queue, task](sycl::handler& cgh)
                                        { cgh.host_task([&queue, task]() { callHostTask(queue, task); }); });
+            if(queue.isBlocking())
+                ev.wait_and_throw();
+        }
+    };
+
+    template<typename T_Device, typename T_Task>
+    struct internal::Enqueue::HostTaskAsync<syclGeneric::Queue<T_Device>, T_Task>
+    {
+        // same as for Enqueue::HostTask, but not waiting for the task to finish
+        static void callHostTaskAsync(syclGeneric::Queue<T_Device>& queue, T_Task task)
+        {
+            queue.m_callBackThread.submit([t = std::move(task)] { t(); });
+            // don't wait, we're async
+        }
+
+        void operator()(syclGeneric::Queue<T_Device>& queue, T_Task const& task) const
+        {
+            ALPAKA_LOG_FUNCTION(onHost::logger::queue);
+            [[maybe_unused]] sycl::event ev
+                = queue.m_queue.submit([&queue, task](sycl::handler& cgh)
+                                       { cgh.host_task([&queue, task]() { callHostTaskAsync(queue, task); }); });
             if(queue.isBlocking())
                 ev.wait_and_throw();
         }

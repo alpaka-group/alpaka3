@@ -350,7 +350,7 @@ namespace alpaka::onHost
         {
             struct HostFuncData
             {
-                // We don't need to keep the queue alive, because in it's dtor it will synchronize with the CUDA/HIP
+                // We don't need to keep the queue alive, because in its dtor it will synchronize with the CUDA/HIP
                 // stream and wait until all host functions and the CallbackThread are done. It's actually an error to
                 // copy the queue into the host function. Destroying it here would call CUDA/HIP APIs from the host
                 // function. Passing it further to the Callback thread, would make the Callback thread hold a task
@@ -378,6 +378,40 @@ namespace alpaka::onHost
                     ApiInterface::launchHostFunc(
                         queue.getNativeHandle(),
                         uniformCudaHipRtHostFunc,
+                        new HostFuncData{queue, task}));
+
+                queue.conditionalWait();
+            }
+        };
+
+        template<typename T_Device, typename T_Task>
+        struct Enqueue::HostTaskAsync<unifiedCudaHip::Queue<T_Device>, T_Task>
+        {
+            // same as for Enqueue::HostTask, but not waiting for the task to finish
+            struct HostFuncData
+            {
+                unifiedCudaHip::Queue<T_Device>& q;
+                T_Task t;
+            };
+
+            static void uniformCudaHipRtHostFuncAsync(void* arg)
+            {
+                auto data = std::unique_ptr<HostFuncData>(reinterpret_cast<HostFuncData*>(arg));
+                auto& queue = data->q;
+                queue.m_callBackThread.submit([d = std::move(data)] { d->t(); });
+                // don't wait, we're async
+            }
+
+            void operator()(unifiedCudaHip::Queue<T_Device>& queue, T_Task const& task) const
+            {
+                ALPAKA_LOG_FUNCTION(onHost::logger::queue);
+                using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
+
+                ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
+                    ApiInterface,
+                    ApiInterface::launchHostFunc(
+                        queue.getNativeHandle(),
+                        uniformCudaHipRtHostFuncAsync,
                         new HostFuncData{queue, task}));
 
                 queue.conditionalWait();

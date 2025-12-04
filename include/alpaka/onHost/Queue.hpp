@@ -161,9 +161,9 @@ namespace alpaka::onHost
 
         /** Enqueue an operation which is executed asynchronously on the host side
          *
-         * The enqueued operation will be started when the queue reaches the task. The queue will immediately continue,
-         * the task may run immediately or some time later. Because this task is asynchronous, it may contain vendor
-         * library functions, which would not be valid in a `enqueueHostFn` task.
+         * The enqueued operation will be started after all preceding tasks in the queue, but it may run after
+         * subsequent tasks in the queue. Because this task is asynchronous, it may contain vendor library functions,
+         * which may not be valid in an `enqueueHostFn` task.
          *
          * @param task task to be executed asynchronously on the host side
          */

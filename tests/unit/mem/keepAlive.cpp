@@ -57,8 +57,7 @@ TEMPLATE_LIST_TEST_CASE("keep alive", "", TestApis)
 
     {
         // enqueue everything in this scope
-        // it can't start running before we start the queue
-        auto scopedBuffer = onHost::alloc<int>(device, N);
+        auto scopedBuffer = onHost::allocDeferred<int>(queue, N);
 
         auto framespec = getFrameSpec<int>(device, scopedBuffer.getExtents());
 
