@@ -38,7 +38,8 @@ namespace alpaka::onAcc::unifiedCudaHip::internal
 #            endif
 #        endif
 #    else
-            return std::integral_constant<uint32_t, 0u>{};
+            // return one to avoid division by zero warnings when the host path is parsed.
+            return std::integral_constant<uint32_t, 1u>{};
 #    endif
         }
     };

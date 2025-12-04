@@ -23,7 +23,7 @@
 
 namespace alpaka::onAcc::warp::internal
 {
-    template<concepts::Acc T_Acc>
+    template<alpaka::onAcc::concepts::Acc T_Acc>
     constexpr uint32_t getSize()
     {
         return T_Acc::getWarpSize();
@@ -43,18 +43,47 @@ namespace alpaka::onAcc::warp::internal
         };
     };
 
-    struct GetLanIdx
+    struct GetLaneIdx
     {
         template<alpaka::onAcc::concepts::Acc T_Acc, alpaka::concepts::Api T_Api>
         struct Op
         {
             constexpr auto operator()(T_Acc const&, T_Api api) const
             {
-                static_assert(sizeof(T_Acc) && false, "Missing warp GetLanIdx implementation for the accelerator.");
+                static_assert(sizeof(T_Acc) && false, "Missing warp GetLaneIdx implementation for the accelerator.");
                 return 0u;
             }
         };
     };
+
+    /** Return the lane index of the current thread within its warp. */
+    constexpr uint32_t getLaneIdx(alpaka::onAcc::concepts::Acc auto const& acc)
+    {
+        using Acc = ALPAKA_TYPEOF(acc);
+        using Api = ALPAKA_TYPEOF(acc[object::api]);
+        return GetLaneIdx::Op<Acc, Api>{}(acc, Api{});
+    }
+
+    struct GetWarpIdx
+    {
+        template<alpaka::onAcc::concepts::Acc T_Acc, alpaka::concepts::Api T_Api>
+        struct Op
+        {
+            constexpr auto operator()(T_Acc const&, T_Api api) const
+            {
+                static_assert(sizeof(T_Acc) && false, "Missing warp GetWarpIdx implementation for the accelerator.");
+                return 0u;
+            }
+        };
+    };
+
+    /** Return the warp index within the block. */
+    constexpr uint32_t getWarpIdx(alpaka::onAcc::concepts::Acc auto const& acc)
+    {
+        using Acc = ALPAKA_TYPEOF(acc);
+        using Api = ALPAKA_TYPEOF(acc[object::api]);
+        return GetWarpIdx::Op<Acc, Api>{}(acc, Api{});
+    }
 
     struct All
     {

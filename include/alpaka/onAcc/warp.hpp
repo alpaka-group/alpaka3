@@ -40,9 +40,13 @@ namespace alpaka::onAcc::warp
     /** Return the lane index of the current thread within its warp. */
     constexpr uint32_t getLaneIdx(alpaka::onAcc::concepts::Acc auto const& acc)
     {
-        using Acc = ALPAKA_TYPEOF(acc);
-        using Api = ALPAKA_TYPEOF(acc[object::api]);
-        return internal::GetLanIdx::Op<Acc, Api>{}(acc, Api{});
+        return internal::getLaneIdx(acc);
+    }
+
+    /** Return the warp index within the block. */
+    constexpr uint32_t getWarpIdx(alpaka::onAcc::concepts::Acc auto const& acc)
+    {
+        return internal::getWarpIdx(acc);
     }
 
     /** Evaluates predicate for all active threads of the warp

@@ -26,17 +26,30 @@ namespace alpaka::onAcc::warp::internal
     };
 
     template<alpaka::onAcc::concepts::Acc T_Acc>
-    struct GetLanIdx::Op<T_Acc, api::Hip>
+    struct GetLaneIdx::Op<T_Acc, api::Hip>
     {
         constexpr __device__ auto operator()(T_Acc const& acc, api::Hip) const
         {
 #    if defined(__HIP_DEVICE_COMPILE__)
-            constexpr uint32_t warpExtent = onAcc::warp::internal::getSize<ALPAKA_TYPEOF(acc)>();
-            return __lane_id() % warpExtent;
+            return __lane_id();
 #    else
             // only for the host side deduction path, result is wrong but this is fine
             return __lane_id();
 #    endif
+        }
+    };
+
+    template<alpaka::onAcc::concepts::Acc T_Acc>
+    struct GetWarpIdx::Op<T_Acc, api::Hip>
+    {
+        constexpr __device__ uint32_t operator()(T_Acc const& acc, api::Hip) const
+        {
+            constexpr uint32_t warpExtent = onAcc::warp::internal::getSize<ALPAKA_TYPEOF(acc)>();
+            alpaka::concepts::Vector auto blockThreadCount
+                = acc.getExtentsOf(onAcc::origin::block, onAcc::unit::threads);
+            alpaka::concepts::Vector auto threadIdxInBlock
+                = acc.getIdxWithin(alpaka::onAcc::origin::block, alpaka::onAcc::unit::threads);
+            return linearize(blockThreadCount, threadIdxInBlock) / warpExtent;
         }
     };
 

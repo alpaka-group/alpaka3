@@ -19,6 +19,7 @@ namespace alpaka::onAcc
      */
     namespace origin
     {
+        ALPAKA_TAG(warp);
         ALPAKA_TAG(block);
         ALPAKA_TAG(grid);
     } // namespace origin
@@ -29,6 +30,7 @@ namespace alpaka::onAcc
      */
     namespace unit
     {
+        ALPAKA_TAG(warps);
         ALPAKA_TAG(threads);
         ALPAKA_TAG(blocks);
     } // namespace unit
@@ -37,6 +39,11 @@ namespace alpaka::onAcc
     {
         template<typename T>
         struct IsOrigin : std::false_type
+        {
+        };
+
+        template<>
+        struct IsOrigin<ALPAKA_TYPEOF(origin::warp)> : std::true_type
         {
         };
 
@@ -57,6 +64,11 @@ namespace alpaka::onAcc
 
         template<>
         struct IsUnit<ALPAKA_TYPEOF(unit::threads)> : std::true_type
+        {
+        };
+
+        template<>
+        struct IsUnit<ALPAKA_TYPEOF(unit::warps)> : std::true_type
         {
         };
 

@@ -106,8 +106,24 @@ namespace alpaka::onAcc
         constexpr auto blocksInGrid = WorkerGroup{origin::grid, unit::blocks};
         constexpr auto threadsInBlock = WorkerGroup{origin::block, unit::threads};
 
-        constexpr auto linearThreadsInGrid = WorkerGroup{origin::grid, unit::threads, linearized};
+        /** Representation of all threads in a warp as a linearized worker group */
+        constexpr auto linearThreadsInWarp = WorkerGroup{origin::warp, unit::threads};
         constexpr auto linearThreadsInBlock = WorkerGroup{origin::block, unit::threads, linearized};
+        constexpr auto linearThreadsInGrid = WorkerGroup{origin::grid, unit::threads, linearized};
+
+        /** Representation of all warps in a thread block as a linearized worker group
+         *
+         * @attention If the number of threads in a block is not a multiple of the warp size you can have partial
+         * warps.
+         */
+        constexpr auto linearWarpsInBlock = WorkerGroup{origin::block, unit::warps};
+        /** Representation of all warps in the grid as a linearized worker group
+         *
+         * @attention Since a thread block is not required to have as many threads a warp has, you can not assume that
+         * number of warps * warp size is the total number of threads.
+         */
+        constexpr auto linearWarpsInGrid = WorkerGroup{origin::grid, unit::warps};
+
         constexpr auto linearBlocksInGrid = WorkerGroup{origin::grid, unit::blocks, linearized};
     } // namespace worker
 

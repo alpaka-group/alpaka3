@@ -41,13 +41,24 @@ namespace alpaka::onAcc::warp::internal
     };
 
     template<alpaka::onAcc::concepts::Acc T_Acc>
-    struct GetLanIdx::Op<T_Acc, api::OneApi>
+    struct GetLaneIdx::Op<T_Acc, api::OneApi>
     {
         constexpr auto operator()(T_Acc const& acc, api::OneApi) const
         {
             sycl::sub_group sg = sycl::ext::oneapi::this_work_item::get_sub_group();
             // lane id within the warp subgroup
             return sg.get_local_id()[0];
+        }
+    };
+
+    template<alpaka::onAcc::concepts::Acc T_Acc>
+    struct GetWarpIdx::Op<T_Acc, api::OneApi>
+    {
+        constexpr auto operator()(T_Acc const& acc, api::OneApi) const
+        {
+            sycl::sub_group sg = sycl::ext::oneapi::this_work_item::get_sub_group();
+            // lane id within the warp subgroup
+            return sg.get_group_linear_id();
         }
     };
 

@@ -26,14 +26,27 @@ namespace alpaka::onAcc::warp::internal
     };
 
     template<alpaka::onAcc::concepts::Acc T_Acc>
-    struct GetLanIdx::Op<T_Acc, api::Cuda>
+    struct GetLaneIdx::Op<T_Acc, api::Cuda>
     {
         constexpr __device__ auto operator()(T_Acc const& acc, api::Cuda) const
         {
-            constexpr uint32_t warpExtent = onAcc::warp::internal::getSize<ALPAKA_TYPEOF(acc)>();
             unsigned lIdx;
             asm volatile("mov.u32 %0, %laneid;" : "=r"(lIdx));
-            return lIdx % warpExtent;
+            return lIdx;
+        }
+    };
+
+    template<alpaka::onAcc::concepts::Acc T_Acc>
+    struct GetWarpIdx::Op<T_Acc, api::Cuda>
+    {
+        constexpr __device__ uint32_t operator()(T_Acc const& acc, api::Cuda) const
+        {
+            constexpr uint32_t warpExtent = onAcc::warp::internal::getSize<ALPAKA_TYPEOF(acc)>();
+            alpaka::concepts::Vector auto blockThreadCount
+                = acc.getExtentsOf(onAcc::origin::block, onAcc::unit::threads);
+            alpaka::concepts::Vector auto threadIdxInBlock
+                = acc.getIdxWithin(alpaka::onAcc::origin::block, alpaka::onAcc::unit::threads);
+            return linearize(blockThreadCount, threadIdxInBlock) / warpExtent;
         }
     };
 

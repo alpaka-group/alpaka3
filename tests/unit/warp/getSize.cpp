@@ -40,8 +40,34 @@ namespace
             constexpr uint32_t warpExtent = onAcc::warp::getSize<ALPAKA_TYPEOF(acc)>();
             warpCheck(success, warpExtent == expectedWarpSize);
             // laneIdx should be in range [0;warpSize)
-            auto const laneIdx = static_cast<std::int32_t>(onAcc::warp::getLaneIdx(acc));
+            uint32_t const laneIdx = onAcc::warp::getLaneIdx(acc);
             warpCheck(success, laneIdx < warpExtent);
+
+            concepts::Vector auto numTheradsPerWarp = acc.getExtentsOf(onAcc::origin::warp, onAcc::unit::threads);
+            warpCheck(success, warpExtent == numTheradsPerWarp.x());
+
+            uint32_t const numWarps = acc[layer::thread].count().product() / warpExtent;
+            uint32_t const warpIdx = onAcc::warp::getWarpIdx(acc);
+            warpCheck(success, warpIdx < numWarps);
+            concepts::Vector auto blockThreadCount = acc.getExtentsOf(onAcc::origin::block, onAcc::unit::threads);
+            concepts::Vector auto threadIdx = acc.getIdxWithin(onAcc::origin::block, onAcc::unit::threads);
+            uint32_t warpIdxByThreadIdx = linearize(blockThreadCount, threadIdx) / warpExtent;
+            warpCheck(success, warpIdx == warpIdxByThreadIdx);
+
+            concepts::Vector auto warpIdxInBlock = acc.getIdxWithin(onAcc::origin::block, onAcc::unit::warps);
+            warpCheck(success, warpIdx == warpIdxInBlock.x());
+
+            // we started one warp per block therefore the block index is equal to the warp index in the grid
+            concepts::Vector auto warpIdxInGrid = acc.getIdxWithin(onAcc::origin::grid, onAcc::unit::warps);
+            warpCheck(success, acc[layer::block].idx().x() == warpIdxInGrid.x());
+
+            // number of threads per block is equal to the warp size so we have always one warp ni  ablock
+            concepts::Vector auto numWarpsInBlock = acc.getExtentsOf(onAcc::origin::block, onAcc::unit::warps);
+            warpCheck(success, 1u == numWarpsInBlock.x());
+
+            // we started 5 thread blocks each with warp size threads
+            concepts::Vector auto numWarpsInGrid = acc.getExtentsOf(onAcc::origin::grid, onAcc::unit::warps);
+            warpCheck(success, 5u == numWarpsInGrid.x());
         }
     };
 } // namespace
@@ -68,12 +94,12 @@ TEMPLATE_LIST_TEST_CASE("warp size trait matches runtime size", "[warp][getSize]
     auto successHost = onHost::allocHost<bool>(1u);
     auto successDev = onHost::allocLike(device, successHost);
     auto const blocks = Vec<std::uint32_t, 1u>{5u};
-    auto const threads = Vec<std::uint32_t, 1u>{4u * warpExtent};
+    auto const threads = Vec<std::uint32_t, 1u>{warpExtent};
 
     onHost::memset(queue, successDev, static_cast<std::uint8_t>(true));
     queue.enqueue(
         exec,
-        onHost::FrameSpec{blocks, threads},
+        onHost::ThreadSpec{blocks, threads},
         // Pass the host-side expectation down to the device for verification.
         KernelBundle{GetSizeKernel{}, successDev, static_cast<std::uint32_t>(warpExtent)});
     onHost::memcpy(queue, successHost, successDev);

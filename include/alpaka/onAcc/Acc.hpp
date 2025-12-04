@@ -30,7 +30,10 @@ namespace alpaka::onAcc
         constexpr Acc& operator=(Acc const&) = delete;
         constexpr Acc& operator=(Acc&&) = delete;
 
-        /** Get the n-dimensional indices within the origin in the quantity of the selected unit */
+        /** Get the n-dimensional indices within the origin in the quantity of the selected unit
+         *
+         * @attention if origin or unit is warp/s a one dimensional vector is returned
+         */
         constexpr alpaka::concepts::Vector auto getIdxWithin(concepts::Origin auto origin, concepts::Unit auto unit)
             const
         {
@@ -40,7 +43,10 @@ namespace alpaka::onAcc
                 unit);
         }
 
-        /** Get the n-dimensional extents of an origin in the quantity of the selected unit */
+        /** Get the n-dimensional extents of an origin in the quantity of the selected unit
+         *
+         * @attention if origin or unit is warp/s a one dimensional vector is returned
+         */
         constexpr alpaka::concepts::Vector auto getExtentsOf(concepts::Origin auto origin, concepts::Unit auto unit)
             const
         {

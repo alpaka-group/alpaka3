@@ -20,6 +20,14 @@ namespace alpaka::onAcc
 
         constexpr auto linearThreadsInGrid = internal::IdxRangeLazy{origin::grid, unit::threads, linearized};
         constexpr auto linearBlocksInGrid = internal::IdxRangeLazy{origin::grid, unit::blocks, linearized};
+        /** Range of all warps in a grid. */
+        constexpr auto linearWarpsInGrid = internal::IdxRangeLazy{origin::grid, unit::warps};
+
+        /** Range of all warps in a block. */
+        constexpr auto linearWarpsInBlock = internal::IdxRangeLazy{origin::block, unit::warps};
         constexpr auto linearThreadsInBlock = internal::IdxRangeLazy{origin::block, unit::threads, linearized};
+
+        /** Range of all threads in a warp. */
+        constexpr auto linearThreadsInWarp = internal::IdxRangeLazy{origin::warp, unit::threads};
     } // namespace range
 } // namespace alpaka::onAcc
