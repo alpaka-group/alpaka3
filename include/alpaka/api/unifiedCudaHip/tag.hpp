@@ -25,7 +25,7 @@ namespace alpaka
     namespace math::internal
     {
         struct CudaHipMath
-        { 
+        {
         };
 
         constexpr auto cudaHipMath = CudaHipMath{};

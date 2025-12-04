@@ -33,7 +33,6 @@
 #include "alpaka/onAcc/SimdAlgo.hpp"
 #include "alpaka/onAcc/WorkerGroup.hpp"
 #include "alpaka/onAcc/atomic.hpp"
-#include "alpaka/onAcc/intrinsic.hpp"
 #include "alpaka/onAcc/globalMem.hpp"
 #include "alpaka/onAcc/interface.hpp"
 #include "alpaka/onAcc/internal/interfaceImpl.hpp"

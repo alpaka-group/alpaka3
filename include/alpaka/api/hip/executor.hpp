@@ -44,6 +44,7 @@ namespace alpaka::onAcc::trait
             return internal::cudaHipAtomic;
         }
     };
+
     template<>
     struct GetIntrinsicImpl::Op<alpaka::exec::GpuHip>
     {

@@ -7,8 +7,8 @@
 #include "alpaka/api/host/tag.hpp"
 #include "alpaka/api/trait.hpp"
 #include "alpaka/onAcc/internal/atomic.hpp"
+#include "alpaka/onAcc/internal/stlIntrinsic.hpp"
 #include "alpaka/onAcc/scope.hpp"
-#include "alpaka/intrinsic/internal/stlIntrinsic.hpp"
 #include "alpaka/tag.hpp"
 
 #include <string>

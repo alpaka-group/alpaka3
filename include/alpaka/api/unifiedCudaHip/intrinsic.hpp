@@ -17,31 +17,34 @@
 
 #pragma once
 
-#include <alpaka/api/unifiedCudaHip/tag.hpp>
-#include <alpaka/api/trait.hpp>
-#include <alpaka/api/cuda/executor.hpp>
-#include <alpaka/intrinsic/internal/intrinsic.hpp>
+#include "alpaka/api/cuda/executor.hpp"
+#include "alpaka/api/trait.hpp"
+#include "alpaka/api/unifiedCudaHip/tag.hpp"
+#include "alpaka/core/common.hpp"
+#include "alpaka/onAcc/internal/intrinsic.hpp"
 
-#if (ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP) && (defined(__CUDACC__) || defined(__HIP__))
-#    include <alpaka/core/common.hpp>
-#endif
+#include <bit>
 
-#if (ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP) && (defined(__CUDACC__) || defined(__HIP__))
-namespace alpaka::intrinsic::internal
+#if (ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP)
+namespace alpaka::onAcc::internal::intrinsic
 {
     template<typename T_Arg>
     struct Popcount::Op<alpaka::onAcc::internal::CudaHipIntrinsic, T_Arg>
     {
-        __device__ auto operator()(alpaka::onAcc::internal::CudaHipIntrinsic const&, T_Arg const& val) const
+        __device__ auto operator()(alpaka::onAcc::internal::CudaHipIntrinsic const, T_Arg const& val) const
         {
-            if constexpr(sizeof(T_Arg) <= 4)
+            if constexpr(sizeof(T_Arg) == 4u)
             {
-                return __popc(static_cast<unsigned int>(val));
+                return __popc(std::bit_cast<unsigned int>(val));
+            }
+            else if constexpr(sizeof(T_Arg) == 8u)
+            {
+                return __popcll(std::bit_cast<unsigned long long>(val));
             }
             else
-            {
-                return __popcll(static_cast<unsigned long long>(val));
-            }
+                static_assert(!sizeof(T_Arg), "Unsupported data type, sizeof() must be 4 or 8");
+
+            ALPAKA_UNREACHABLE(int{});
         }
     };
 } // namespace alpaka::intrinsic::internal

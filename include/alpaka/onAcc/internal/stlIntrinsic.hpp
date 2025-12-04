@@ -4,19 +4,19 @@
 
 #pragma once
 
-#include <alpaka/api/host/tag.hpp>
-#include <alpaka/intrinsic/internal/intrinsic.hpp>
+#include "alpaka/api/host/tag.hpp"
+#include "alpaka/onAcc/internal/intrinsic.hpp"
 
 #include <bit>
 #include <concepts>
 #include <type_traits>
 
-namespace alpaka::intrinsic::internal
+namespace alpaka::onAcc::internal::intrinsic
 {
     template<typename T_Arg>
     struct Popcount::Op<alpaka::onAcc::internal::StlIntrinsic, T_Arg>
     {
-        constexpr auto operator()(alpaka::onAcc::internal::StlIntrinsic const&, T_Arg const& val) const
+        constexpr auto operator()(alpaka::onAcc::internal::StlIntrinsic const, T_Arg const& val) const
         {
             if constexpr(std::is_unsigned_v<T_Arg>)
             {
@@ -28,4 +28,4 @@ namespace alpaka::intrinsic::internal
             }
         }
     };
-} // namespace alpaka::intrinsic::internal
+} // namespace alpaka::onAcc::internal::intrinsic

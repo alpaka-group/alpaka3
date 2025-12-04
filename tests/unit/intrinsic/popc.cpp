@@ -30,15 +30,12 @@ using TestBackends
 struct PopcountKernel
 {
     template<typename TAcc>
-    ALPAKA_FN_ACC void operator()(
-        TAcc const& acc,
-        uint64_t const* const input,
-        uint64_t* const output,
-        size_t const size) const
+    ALPAKA_FN_ACC void operator()(TAcc const& acc, concepts::IMdSpan auto output, concepts::IMdSpan auto const input)
+        const
     {
-        for(auto [index] : alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{size}))
+        for(auto [index] : onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, IdxRange{input.getExtents()}))
         {
-            output[index] = alpaka::onAcc::popcount(acc, input[index]);
+            output[index] = onAcc::popcount(acc, input[index]);
         }
     }
 };
@@ -65,32 +62,32 @@ TEMPLATE_LIST_TEST_CASE("popcount", "[intrinsic][popc]", TestBackends)
     std::vector<uint64_t> hostInput = {
         0,
         1,
-        0x123456789ABCDEF0,
-        0xFFFFFFFFFFFFFFFF,
-        0xAAAAAAAAAAAAAAAA,
-        0x5555555555555555,
+        0x1234'5678'9ABC'DEF0,
+        0xFFFF'FFFF'FFFF'FFFF,
+        0xAAAA'AAAA'AAAA'AAAA,
+        0x5555'5555'5555'5555,
     };
     size_t const size = hostInput.size();
 
     // Allocate device memory
     auto devInput = alpaka::onHost::alloc<uint64_t>(devAcc, hostInput.size());
-    auto devOutput = alpaka::onHost::alloc<uint64_t>(devAcc, hostInput.size());
+    auto devOutput = alpaka::onHost::alloc<int>(devAcc, hostInput.size());
 
     // Copy data from host to device
     alpaka::onHost::memcpy(queue, devInput, hostInput);
 
     // Define execution parameters
-    auto const frameSpec = alpaka::onHost::FrameSpec{1u, (uint32_t)size};
+    auto const frameSpec = alpaka::onHost::getFrameSpec<uint64_t>(devAcc, devInput.getExtents());
 
     // Create kernel
     PopcountKernel kernel;
-    auto const taskKernel = alpaka::KernelBundle{kernel, devInput.data(), devOutput.data(), size};
+    auto const taskKernel = alpaka::KernelBundle{kernel, devOutput, devInput};
 
     // Execute the kernel
     queue.enqueue(computeExec, frameSpec, taskKernel);
 
     // Copy data from device to host
-    std::vector<uint64_t> hostOutput(size);
+    std::vector<int> hostOutput(size);
     alpaka::onHost::memcpy(queue, hostOutput, devOutput);
 
     // Wait for the queue to finish
@@ -99,12 +96,8 @@ TEMPLATE_LIST_TEST_CASE("popcount", "[intrinsic][popc]", TestBackends)
     // Verification
     for(size_t i = 0; i < size; ++i)
     {
-        uint64_t val = hostInput[i];
-        int expected = 0;
-        while (val > 0) {
-            if (val & 1) expected++;
-            val >>= 1;
-        }
+        auto val = hostInput[i];
+        int expected = std::popcount(val);
         CHECK(hostOutput[i] == expected);
     }
 }

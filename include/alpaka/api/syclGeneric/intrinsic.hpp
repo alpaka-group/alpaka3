@@ -7,23 +7,24 @@
 #include "alpaka/api/syclGeneric/tag.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/core/config.hpp"
-#include "alpaka/intrinsic/internal/intrinsic.hpp"
+#include "alpaka/onAcc/internal/intrinsic.hpp"
 
 #if ALPAKA_LANG_SYCL
 
 #    include <sycl/sycl.hpp>
+
 #    include <concepts>
 
-namespace alpaka::intrinsic::internal
+namespace alpaka::onAcc::intrinsic::internal
 {
     template<typename T_Arg>
     struct Popcount::Op<alpaka::onAcc::internal::SyclIntrinsic, T_Arg>
     {
-        constexpr auto operator()(alpaka::onAcc::internal::SyclIntrinsic const&, T_Arg const& val) const
+        constexpr auto operator()(alpaka::onAcc::internal::SyclIntrinsic const, T_Arg const& val) const
         {
             return sycl::popcount(val);
         }
     };
-} // namespace alpaka::intrinsic::internal
+} // namespace alpaka::onAcc::intrinsic::internal
 
 #endif
