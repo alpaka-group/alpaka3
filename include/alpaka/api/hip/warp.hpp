@@ -30,12 +30,8 @@ namespace alpaka::onAcc::warp::internal
     {
         constexpr __device__ auto operator()(T_Acc const& acc, api::Hip) const
         {
-#    if defined(__HIP_DEVICE_COMPILE__)
+            // for the host side deduction path, result is wrong but this is fine
             return __lane_id();
-#    else
-            // only for the host side deduction path, result is wrong but this is fine
-            return __lane_id();
-#    endif
         }
     };
 

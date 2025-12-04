@@ -70,7 +70,7 @@ TEMPLATE_LIST_TEST_CASE("warp iota1D", "", TestApis)
 
     onHost::wait(queue);
     /* Use an odd number that to avoid any assumptions about number of threads.
-     * Note that for a thread serialized executor alpaak will internally use a single thread per block what is equal to
+     * Note that for a thread serialized executor alpaka will internally use a single thread per block what is equal to
      * the warp size.
      */
     auto frameSize = Vec{warpSize + 3u};
