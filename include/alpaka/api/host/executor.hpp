@@ -141,7 +141,8 @@ namespace alpaka::onAcc::trait
             return alpaka::onAcc::internal::nonAtomic;
         }
     };
-
+    
+    template<>
     struct GetIntrinsicImpl::Op<alpaka::exec::CpuSerial>
     {
         constexpr decltype(auto) operator()(alpaka::exec::CpuSerial const) const
