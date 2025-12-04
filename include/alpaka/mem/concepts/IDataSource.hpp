@@ -52,20 +52,23 @@ namespace alpaka::concepts
 
             { T::dim() } -> std::same_as<uint32_t>;
 
-            // check multi-dimensional access operator
-            // if T has a member type `reference`, it must at least satisfy the IMdSpan interface
-            // in this case, this definition of the access operator is no longer valid
-            requires
-                      (!requires { typename T::reference; } &&
-                          requires {{ t[vec] } -> std::same_as<typename T::value_type>; })
-                          || requires { typename T::reference; };
+            /* check multi-dimensional access operator
+            if T has a member type `reference`, it must at least satisfy the IMdSpan interface
+            in this case, this definition of the access operator is no longer valid */
+            requires (
+                // guard condition: if one of the requirements is satisfied, ignore the actual requirement
+                requires { typename T::reference; } ||
+                // actual requirement:
+                !requires { typename T::reference; } &&
+                    requires {{ t[vec] } -> std::same_as<typename T::value_type>; });
 
             // check 1-dimensional access operator
-            requires
-                      (T::dim() != 1u) ||
-                      (T::dim() == 1u && !requires { typename T::reference; } &&
-                          requires {{ t[0] } -> std::same_as<typename T::value_type>; })
-                      || requires { typename T::reference; };
+            requires(
+                // guard condition: if one of the requirements is satisfied, ignore the actual requirement
+                T::dim() != 1u) || requires { typename T::reference; } ||
+                // actual requirement:
+                (T::dim() == 1u && !requires { typename T::reference; } &&
+                    requires {{ t[0] } -> std::same_as<typename T::value_type>; });
 
             // typically the alignment of the value_type.
             { t.getAlignment() } -> alpaka::concepts::Alignment;
