@@ -32,9 +32,9 @@ namespace alpaka::rand::engine
     {
     public:
         /// Philox algorithm: 10 rounds, 4 numbers of size 32.
-        using EngineParams = alpaka::rand::engine::internal::PhiloxParams<4, 32, 10>;
+        using EngineParams = internal::PhiloxParams<4, 32, 10>;
         /// Engine outputs a single number
-        using EngineVariant = alpaka::rand::engine::internal::PhiloxSingle<EngineParams>;
+        using EngineVariant = internal::PhiloxSingle<EngineParams>;
 
         /** Initialize a new Philox engine
          *
@@ -42,7 +42,7 @@ namespace alpaka::rand::engine
          * @param subsequence Select a subsequence of size 2^64
          * @param offset Skip \a offset numbers form the start of the subsequence
          */
-        ALPAKA_FN_HOST_ACC explicit Philox4x32x10(
+        constexpr explicit Philox4x32x10(
             std::uint64_t const seed = 0,
             std::uint64_t const subsequence = 0,
             std::uint64_t const offset = 0)
@@ -55,17 +55,17 @@ namespace alpaka::rand::engine
         // https://en.cppreference.com/w/cpp/named_req/UniformRandomBitGenerator
         using result_type = std::uint32_t;
 
-        static ALPAKA_FN_HOST_ACC constexpr auto min() -> result_type
+        static constexpr auto min() -> result_type
         {
             return 0;
         }
 
-        static ALPAKA_FN_HOST_ACC constexpr auto max() -> result_type
+        static constexpr auto max() -> result_type
         {
             return std::numeric_limits<result_type>::max();
         }
 
-        ALPAKA_FN_HOST_ACC auto operator()() -> result_type
+        constexpr auto operator()() -> result_type
         {
             return engineVariant();
         }
@@ -88,8 +88,8 @@ namespace alpaka::rand::engine
     class Philox4x32x10Vector
     {
     public:
-        using EngineParams = engine::internal::PhiloxParams<4, 32, 10>;
-        using EngineVariant = engine::internal::PhiloxVector<EngineParams>;
+        using EngineParams = internal::PhiloxParams<4, 32, 10>;
+        using EngineVariant = internal::PhiloxVector<EngineParams>;
 
         /** Initialize a new Philox engine
          *
@@ -97,7 +97,7 @@ namespace alpaka::rand::engine
          * @param subsequence Select a subsequence of size 2^64
          * @param offset Number of numbers to skip form the start of the subsequence.
          */
-        ALPAKA_FN_HOST_ACC explicit Philox4x32x10Vector(
+        constexpr explicit Philox4x32x10Vector(
             std::uint32_t const seed = 0,
             std::uint32_t const subsequence = 0,
             std::uint32_t const offset = 0)
@@ -106,22 +106,22 @@ namespace alpaka::rand::engine
         }
 
         template<typename TScalar>
-        using ResultContainer = typename EngineVariant::template ResultContainer<TScalar>;
+        using ResultContainer = EngineVariant::ResultContainer<TScalar>;
 
         using ResultInt = std::uint32_t;
         using ResultVec = decltype(std::declval<EngineVariant>()());
 
-        static ALPAKA_FN_HOST_ACC constexpr auto min() -> ResultInt
+        static constexpr auto min() -> ResultInt
         {
             return 0;
         }
 
-        static ALPAKA_FN_HOST_ACC constexpr auto max() -> ResultInt
+        static constexpr auto max() -> ResultInt
         {
             return std::numeric_limits<ResultInt>::max();
         }
 
-        ALPAKA_FN_HOST_ACC auto operator()() -> ResultVec
+        constexpr auto operator()() -> ResultVec
         {
             return engineVariant();
         }

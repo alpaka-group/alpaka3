@@ -37,7 +37,7 @@ namespace alpaka::rand::engine::internal
         template<typename TDistributionResultScalar>
         using ResultContainer = Vec<TDistributionResultScalar, TParams::counterSize>;
 
-        ALPAKA_FN_HOST_ACC explicit PhiloxBaseCommon(State&& state) : state(std::move(state))
+        constexpr explicit PhiloxBaseCommon(State&& state) : state(std::move(state))
         {
         }
 
@@ -49,7 +49,7 @@ namespace alpaka::rand::engine::internal
          * @param counter reference to the counter which is to be advanced
          */
         template<typename T, auto N>
-        static ALPAKA_FN_HOST_ACC void advanceCounter(alpaka::Vec<T, N>& counter)
+        static constexpr void advanceCounter(alpaka::Vec<T, N>& counter)
         {
             ++counter[0];
 
@@ -86,7 +86,7 @@ namespace alpaka::rand::engine::internal
          *
          * @param offset number of N-vectors to skip
          */
-        ALPAKA_FN_HOST_ACC void skip4(uint64_t offset)
+        constexpr void skip4(uint64_t offset)
         {
             Counter& counter = this->state.counter;
             Counter temp = counter;
@@ -102,7 +102,7 @@ namespace alpaka::rand::engine::internal
          *
          * @param subsequence number of subsequences to skip
          */
-        ALPAKA_FN_HOST_ACC void skipSubsequence(uint64_t subsequence)
+        constexpr void skipSubsequence(uint64_t subsequence)
         {
             Counter& counter = this->state.counter;
             Counter temp = counter;

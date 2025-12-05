@@ -70,7 +70,7 @@ namespace alpaka::rand::engine::internal
          * @param key value of the key
          * @return shuffled counter
          */
-        static ALPAKA_FN_HOST_ACC auto singleRound(Counter const& counter, Key const& key)
+        static constexpr auto singleRound(Counter const& counter, Key const& key)
         {
             std::uint32_t H0, L0, H1, L1;
             multiplyAndSplit64to32(counter[0], PhiloxConstants::MULTIPLITER_4x32_0(), H0, L0);
@@ -83,7 +83,7 @@ namespace alpaka::rand::engine::internal
          * @param key the key to be bumped
          * @return the bumped key
          */
-        static ALPAKA_FN_HOST_ACC auto bumpKey(Key const& key)
+        static constexpr auto bumpKey(Key const& key)
         {
             return Key{key[0] + PhiloxConstants::WEYL_32_0(), key[1] + PhiloxConstants::WEYL_32_1()};
         }
@@ -94,13 +94,13 @@ namespace alpaka::rand::engine::internal
          * @param key_in initial state of the key
          * @return result of the PRNG shuffle; has the same size as the counter
          */
-        static ALPAKA_FN_HOST_ACC auto nRounds(Counter const& counter_in, Key const& key_in) -> Counter
+        static constexpr auto nRounds(Counter const& counter_in, Key const& key_in) -> Counter
         {
             Key key{key_in};
             Counter counter = singleRound(counter_in, key);
 
             // Use a constexpr variable to ensure the unroll factor is a compile-time constant
-            static constexpr unsigned rounds = numRounds();
+            constexpr unsigned rounds = numRounds();
 
             for(unsigned int n = 0; n < rounds; ++n)
             {
@@ -118,7 +118,7 @@ namespace alpaka::rand::engine::internal
          * @param key initial state of the key
          * @return result of the PRNG shuffle; has the same size as the counter
          */
-        static ALPAKA_FN_HOST_ACC auto generate(Counter const& counter, Key const& key) -> Counter
+        static constexpr auto generate(Counter const& counter, Key const& key) -> Counter
         {
             return nRounds(counter, key);
         }

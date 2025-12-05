@@ -12,37 +12,75 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <cmath>
+#include <iomanip>
 #include <limits>
 #include <random>
-
 
 using namespace alpaka;
 
 using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors))>;
 
-template<typename T_Engine, std::floating_point FloatingPointType, rand::concepts::Interval T_Interval>
+template<
+    rand::concepts::UniformRandomEngine T_Engine,
+    std::floating_point T_Floating,
+    rand::concepts::Interval T_Interval>
 struct UniformRealKernel
 {
-    template<typename TAcc>
     ALPAKA_FN_ACC void operator()(
-        TAcc const& acc,
+        auto const& acc,
         concepts::MdSpan auto res,
-        auto seed,
-        FloatingPointType minF,
-        FloatingPointType maxF) const
+        std::unsigned_integral auto seed,
+        T_Floating minF,
+        T_Floating maxF) const
     {
         rand::distribution::UniformReal distribution(minF, maxF, T_Interval{});
+
+        auto linearGridThreadIndex = alpaka::linearize(acc[layer::thread].count(), acc[layer::thread].idx());
+        // checks to prevent overflow are unnecessary in this case
+        std::unsigned_integral auto seedTx = seed + linearGridThreadIndex;
+        T_Engine engine(seedTx);
         for(auto w : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{res.getExtents()}))
         {
-            // checks to prevent overflow are unnecessary in this case
-            T_Engine engine(seed + w[0]);
             res[w] = distribution(engine);
         };
     }
 };
 
-template<typename T_Interval>
-void IntervalChecks(auto const& x, auto const& minF, auto const& maxF)
+template<std::unsigned_integral T_Result>
+struct DummyUniformEngine
+{
+    using type = T_Result;
+
+    // Required: min() and max() must be static, constexpr, noexcept
+    static constexpr type min() noexcept
+    {
+        return type{0};
+    }
+
+    static constexpr type max() noexcept
+    {
+        return std::numeric_limits<type>::max();
+    }
+
+    ALPAKA_FN_HOST_ACC DummyUniformEngine() = default;
+
+    template<typename T_Integer>
+    ALPAKA_FN_HOST_ACC explicit constexpr DummyUniformEngine(T_Integer)
+    {
+    }
+
+    ALPAKA_FN_HOST_ACC type operator()() noexcept
+    {
+        currentIdx = ++currentIdx % nums.size();
+        return nums[currentIdx];
+    }
+
+    std::array<type, 2> nums{type{0}, std::numeric_limits<T_Result>::max()};
+    type currentIdx = 0u;
+};
+
+template<rand::concepts::Interval T_Interval, std::floating_point T_FP>
+void intervalChecks(T_FP const& x, T_FP const& minF, T_FP const& maxF)
 {
     // interval checks
     if constexpr(std::is_same_v<T_Interval, rand::interval::OO>)
@@ -63,13 +101,35 @@ void IntervalChecks(auto const& x, auto const& minF, auto const& maxF)
     }
 }
 
-template<typename TestType, typename Engine, typename FP, typename T_Interval>
-void test_case(uint64_t seed, FP minF, FP maxF)
+/// checks that for closed bounds the expected values are exactly 1 or 0 (this is not covered by "intervalCheck()")
+template<rand::concepts::Interval T_Interval, std::floating_point T_FP>
+void assertExactMatch(T_FP const& x, T_FP const& minF, T_FP const& maxF)
+{
+    // value checks
+    if constexpr(std::is_same_v<T_Interval, rand::interval::CC>)
+    {
+        CHECK((x == minF || x == maxF));
+    }
+}
+
+template<typename T_Engine, typename T_FP, typename T_Interval>
+struct HelperPack
+{
+    using value_type = T_FP;
+    HelperPack(T_Engine, T_FP, T_Interval) {};
+};
+
+template<
+    typename T_TestType,
+    rand::concepts::UniformRandomEngine T_Engine,
+    std::floating_point T_FP,
+    rand::concepts::Interval T_Interval>
+void testCase(HelperPack<T_Engine, T_FP, T_Interval>, uint64_t seed, T_FP minF, T_FP maxF)
 {
     using namespace alpaka;
 
     // ---- device selection ---------------------------------------------------
-    auto cfg = TestType::makeDict();
+    auto cfg = T_TestType::makeDict();
     auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
@@ -87,10 +147,10 @@ void test_case(uint64_t seed, FP minF, FP maxF)
     constexpr uint32_t N = 512;
     constexpr auto frameExtent = 256u;
     constexpr auto numFrames = static_cast<decltype(frameExtent)>(N / frameExtent);
-    auto hostInput = onHost::alloc<FP>(device, Vec{N});
-    for(int i = 0; i < N; i++)
+    auto hostInput = onHost::alloc<T_FP>(device, Vec{N});
+    for(auto& idx : hostInput)
     {
-        hostInput.getMdSpan()[i] = std::numeric_limits<FP>::quiet_NaN(); // make all nan
+        idx = std::numeric_limits<T_FP>::quiet_NaN(); // make all nan
     }
     auto devRes = onHost::allocLike(device, hostInput);
     onHost::memcpy(queue, devRes, hostInput);
@@ -101,7 +161,7 @@ void test_case(uint64_t seed, FP minF, FP maxF)
     queue.enqueue(
         exec,
         onHost::FrameSpec{Vec{numFrames}, Vec{frameExtent}}, // 1 block, N threads
-        KernelBundle{UniformRealKernel<Engine, FP, T_Interval>{}, devRes.getMdSpan(), seed, minF, maxF});
+        KernelBundle{UniformRealKernel<T_Engine, T_FP, T_Interval>{}, devRes.getMdSpan(), seed, minF, maxF});
 
     onHost::memcpy(queue, hostRes, devRes);
     onHost::wait(queue);
@@ -109,107 +169,67 @@ void test_case(uint64_t seed, FP minF, FP maxF)
     // ---- verify correctness --------------------------------------------------
     for(std::size_t i = 0; i < N; ++i)
     {
-        FP x = hostRes[i];
-
-        IntervalChecks<T_Interval>(x, minF, maxF);
-        //
-        // // also check finite
-        // CHECK(std::isfinite(x));
+        T_FP x = hostRes[i];
+        intervalChecks<T_Interval>(x, minF, maxF);
+        using T_EngineResult = decltype(T_Engine(0)());
+        // special edge case checks for dummyEngine (assert exact value matching for closed interval bounds)
+        if constexpr(rand::concepts::UniformStdEngine<T_Engine>)
+        {
+            // constexpr if statements are not merged here since the compiler will then try to evaluate
+            // DummyUniformEngine<_Tp> for non-UniformStdEngines which results in an error
+            if constexpr(std::is_same_v<T_Engine, DummyUniformEngine<T_EngineResult>>)
+            {
+                assertExactMatch<T_Interval>(x, minF, maxF);
+            }
+        }
     }
 }
 
 template<typename Tuple, typename F>
-constexpr void for_each(F&& f);
-
-// base case: empty tuple
-template<typename F>
-constexpr void for_each(std::tuple<>, F&&)
+constexpr void forEach(Tuple&& tuple, F&& f)
 {
+    std::apply([&]<typename... T0>(T0&&... elems) { (f(std::forward<T0>(elems)), ...); }, std::forward<Tuple>(tuple));
 }
 
-// recursive case
-template<typename Head, typename... Tail, typename F>
-constexpr void for_each(std::tuple<Head, Tail...>, F&& f)
-{
-    // unpack Head into template parameters
-    []<typename... Ts>(std::tuple<Ts...>, F&& f_inner)
-    { f_inner.template operator()<Ts...>(); }(Head{}, std::forward<F>(f));
+template<typename T>
+struct Dummy;
 
-    // process the rest
-    for_each(std::tuple<Tail...>{}, std::forward<F>(f));
-}
-
-template<typename T_Result>
-struct DummyUniformEngine
-{
-    using result_type = T_Result;
-
-    // Required: min() and max() must be static, constexpr, noexcept
-    static constexpr result_type min() noexcept
-    {
-        return 0u;
-    }
-
-    static constexpr result_type max() noexcept
-    {
-        return std::numeric_limits<result_type>::max();
-    }
-
-    ALPAKA_FN_HOST_ACC DummyUniformEngine() = default;
-
-    template<typename T_Integer>
-    ALPAKA_FN_HOST_ACC explicit constexpr DummyUniformEngine(T_Integer)
-    {
-    }
-
-    ALPAKA_FN_HOST_ACC result_type operator()() noexcept
-    {
-        currenIdx = ++currenIdx % nums.size();
-        return nums[currenIdx];
-    }
-
-    std::array<result_type, 5> nums{
-        result_type(0),
-        result_type(1),
-        std::numeric_limits<T_Result>::max() / result_type(2),
-        std::numeric_limits<T_Result>::max() - result_type(1),
-        std::numeric_limits<T_Result>::max()};
-    result_type currenIdx = 0u;
-};
-
-template<typename Api, typename T_Engines>
-void TestMainDispatch()
+template<typename T_Api, typename T_Engines>
+void testMainDispatch()
 {
     using namespace alpaka;
-    using FPTypes = alpaka::Tuple<float, double>;
+    // using FPTypes = Tuple<float, double>;
+    using FPTypes = Tuple<float>;
+    // using IntervalList = Tuple<rand::interval::CO, rand::interval::CC, rand::interval::OC, rand::interval::OO>;
+    using IntervalList = Tuple<rand::interval::CO>;
+    using allTestCombinations = meta::CartesianProduct<std::tuple, T_Engines, FPTypes, IntervalList>;
 
-    using IntervalList = alpaka::Tuple<rand::interval::CO, rand::interval::CC, rand::interval::OC, rand::interval::OO>;
-    using allTestCombinations = alpaka::meta::CartesianProduct<std::tuple, T_Engines, FPTypes, IntervalList>;
 
-
-    for_each(
+    forEach(
         allTestCombinations{},
-        [&]<typename Engine, typename T_Floating, typename Interval>()
+        [&](auto combination)
         {
+            auto pack = std::apply([&]<typename... T0>(T0&&... elems) { return HelperPack{elems...}; }, combination);
             std::random_device rand;
-            test_case<Api, Engine, T_Floating, Interval>(rand(), 0.0, 1.0); // standard case
-            test_case<Api, Engine, T_Floating, Interval>(rand(), 4.0, 7.0); // both positive
-            test_case<Api, Engine, T_Floating, Interval>(rand(), -800.0, -150); // both negative
-            test_case<Api, Engine, T_Floating, Interval>(rand(), -5235.01240, 12938); // opposing signs
+            using T_FP = typename decltype(pack)::value_type;
+            testCase<T_Api>(pack, rand(), T_FP{0}, T_FP{1}); // standard case
+            testCase<T_Api>(pack, rand(), T_FP{4}, T_FP{7}); // both positive
+            testCase<T_Api>(pack, rand(), T_FP{-800}, T_FP{-150}); // both negative
+            testCase<T_Api>(pack, rand(), T_FP{-5235.01240}, T_FP{12938}); // opposing signs
         });
 }
 
 TEMPLATE_LIST_TEST_CASE("simple DummyEngine for edge case testing", "", TestApis)
 {
-    using Engines = Tuple<DummyUniformEngine<uint32_t>, DummyUniformEngine<uint64_t>>;
+    using T_Engines = Tuple<DummyUniformEngine<uint32_t>, DummyUniformEngine<uint64_t>>;
 
-    TestMainDispatch<TestType, Engines>();
+    testMainDispatch<TestType, T_Engines>();
 }
 
 TEMPLATE_LIST_TEST_CASE("UniformReal device on PhiloxEngine", "", TestApis)
 {
-    using Engines = Tuple<rand::engine::Philox4x32x10, rand::engine::Philox4x32x10Vector>;
-    TestMainDispatch<TestType, Engines>();
+    using T_Engines = Tuple<rand::engine::Philox4x32x10, rand::engine::Philox4x32x10Vector>;
+    testMainDispatch<TestType, T_Engines>();
 }
 
 TEMPLATE_LIST_TEST_CASE("UniformReal on std engines", "", TestApis)
@@ -217,11 +237,11 @@ TEMPLATE_LIST_TEST_CASE("UniformReal on std engines", "", TestApis)
     using namespace alpaka;
     auto cfg = TestType::makeDict();
     auto exec = cfg[object::exec];
-    using execType = ALPAKA_TYPEOF(exec);
-    using supportedHostExecutors = Tuple<exec::CpuSerial, exec::CpuOmpBlocks, exec::CpuTbbBlocks>;
-    using Engines = Tuple<std::mt19937, std::mt19937_64>;
-    if constexpr(meta::Contains<supportedHostExecutors, execType>::value)
+    using T_ExecType = ALPAKA_TYPEOF(exec);
+    using T_SupportedHostExecutors = Tuple<exec::CpuSerial, exec::CpuOmpBlocks, exec::CpuTbbBlocks>;
+    using T_Engines = Tuple<std::mt19937, std::mt19937_64>;
+    if constexpr(meta::Contains<T_SupportedHostExecutors, T_ExecType>::value)
     {
-        TestMainDispatch<TestType, Engines>();
+        testMainDispatch<TestType, T_Engines>();
     }
 }

@@ -38,7 +38,7 @@ namespace alpaka::rand::engine::internal
          *
          * @return The next array of random numbers
          */
-        ALPAKA_FN_HOST_ACC auto nextVector()
+        constexpr auto nextVector()
         {
             this->advanceCounter(this->state.counter);
             return this->nRounds(this->state.counter, this->state.key);
@@ -49,7 +49,7 @@ namespace alpaka::rand::engine::internal
          * Unlike its counterpart in \a PhiloxSingle, this function advances the state in multiples of the
          * counter size thus skipping the entire array of numbers.
          */
-        ALPAKA_FN_HOST_ACC void skip(uint64_t offset)
+        constexpr void skip(uint64_t offset)
         {
             this->skip4(offset);
         }
@@ -61,7 +61,7 @@ namespace alpaka::rand::engine::internal
          * @param subsequence Select a subsequence of size 2^64
          * @param offset Skip \a offset numbers form the start of the subsequence
          */
-        ALPAKA_FN_HOST_ACC explicit PhiloxVector(uint64_t seed = 0, uint64_t subsequence = 0, uint64_t offset = 0)
+        constexpr explicit PhiloxVector(uint64_t seed = 0, uint64_t subsequence = 0, uint64_t offset = 0)
             : Base(State{{0, 0, 0, 0}, {low32Bits(seed), high32Bits(seed)}})
         {
             this->skipSubsequence(subsequence);
@@ -73,7 +73,7 @@ namespace alpaka::rand::engine::internal
          *
          * @return The next vector of random numbers
          */
-        ALPAKA_FN_HOST_ACC auto operator()()
+        constexpr auto operator()()
         {
             return nextVector();
         }

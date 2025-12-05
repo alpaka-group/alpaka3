@@ -41,7 +41,7 @@ namespace alpaka::rand::engine::internal
          * Advances the full internal counter array, resets the position pointer and stores the intermediate
          * result to be recalled when the user requests a number.
          */
-        ALPAKA_FN_HOST_ACC void advanceState()
+        constexpr void advanceState()
         {
             this->advanceCounter(this->state.counter);
             this->state.result = this->nRounds(this->state.counter, this->state.key);
@@ -56,10 +56,11 @@ namespace alpaka::rand::engine::internal
          *
          * @return The next random number
          */
-        ALPAKA_FN_HOST_ACC auto nextNumber()
+        constexpr auto nextNumber()
         {
             // Element zero will always contain the next valid random number.
-            auto result = this->state.result[this->state.position++];
+            auto result = this->state.result[0];
+            ++this->state.position;
             if(this->state.position == TParams::counterSize)
             {
                 advanceState();
@@ -82,7 +83,7 @@ namespace alpaka::rand::engine::internal
         }
 
         /// Skips the next \a offset numbers
-        ALPAKA_FN_HOST_ACC void skip(uint64_t offset)
+        constexpr void skip(uint64_t offset)
         {
             static_assert(TParams::counterSize == 4, "Only counterSize is supported.");
             this->state.position = static_cast<decltype(this->state.position)>(this->state.position + (offset & 3));
@@ -106,7 +107,7 @@ namespace alpaka::rand::engine::internal
          * @param subsequence Select a subsequence of size 2^64
          * @param offset Skip \a offset numbers form the start of the subsequence
          */
-        ALPAKA_FN_HOST_ACC PhiloxSingle(uint64_t seed = 0, uint64_t subsequence = 0, uint64_t offset = 0)
+        constexpr PhiloxSingle(uint64_t seed = 0, uint64_t subsequence = 0, uint64_t offset = 0)
             : Base(State{{0, 0, 0, 0}, {low32Bits(seed), high32Bits(seed)}, {0, 0, 0, 0}, 0u})
         {
             this->skipSubsequence(subsequence);
@@ -118,7 +119,7 @@ namespace alpaka::rand::engine::internal
          *
          * @return The next random number
          */
-        ALPAKA_FN_HOST_ACC auto operator()()
+        constexpr auto operator()()
         {
             return nextNumber();
         }
