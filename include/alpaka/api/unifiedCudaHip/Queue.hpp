@@ -124,12 +124,6 @@ namespace alpaka::onHost
             }
 
             friend struct onHost::internal::Enqueue;
-
-            void enqueueHostFnAsync(auto const& task)
-            {
-                m_callBackThread.submit(task);
-            }
-
             friend struct onHost::internal::Wait;
 
             void wait() const

@@ -283,10 +283,9 @@ namespace alpaka::onHost
         /** It is not allowed to execute sycl methods within a SYCL host_task therefore we use a callback host
          * thread to execute the host function which is allowing to use sycl methods.
          */
-        static void callHostTask(syclGeneric::Queue<T_Device>& queue, T_Task task)
+        static auto callHostTask(syclGeneric::Queue<T_Device>& queue, T_Task task)
         {
-            auto f = queue.m_callBackThread.submit([t = std::move(task)] { t(); });
-            f.wait();
+            return queue.m_callBackThread.submit([t = std::move(task)] { t(); });
         }
 
         void operator()(syclGeneric::Queue<T_Device>& queue, T_Task const& task) const
@@ -294,9 +293,16 @@ namespace alpaka::onHost
             ALPAKA_LOG_FUNCTION(onHost::logger::queue);
             // using the queue by reference is fine here, because the queue is not destroyed while the task is
             // executed.
-            [[maybe_unused]] sycl::event ev
-                = queue.m_queue.submit([&queue, task](sycl::handler& cgh)
-                                       { cgh.host_task([&queue, task]() { callHostTask(queue, task); }); });
+            [[maybe_unused]] sycl::event ev = queue.m_queue.submit(
+                [&queue, task](sycl::handler& cgh)
+                {
+                    cgh.host_task(
+                        [&queue, task]()
+                        {
+                            auto f = callHostTask(queue, task);
+                            f.wait();
+                        });
+                });
             if(queue.isBlocking())
                 ev.wait_and_throw();
         }
@@ -306,18 +312,15 @@ namespace alpaka::onHost
     struct internal::Enqueue::HostTaskAsync<syclGeneric::Queue<T_Device>, T_Task>
     {
         // same as for Enqueue::HostTask, but not waiting for the task to finish
-        static void callHostTaskAsync(syclGeneric::Queue<T_Device>& queue, T_Task task)
-        {
-            queue.m_callBackThread.submit([t = std::move(task)] { t(); });
-            // don't wait, we're async
-        }
-
         void operator()(syclGeneric::Queue<T_Device>& queue, T_Task const& task) const
         {
             ALPAKA_LOG_FUNCTION(onHost::logger::queue);
-            [[maybe_unused]] sycl::event ev
-                = queue.m_queue.submit([&queue, task](sycl::handler& cgh)
-                                       { cgh.host_task([&queue, task]() { callHostTaskAsync(queue, task); }); });
+            [[maybe_unused]] sycl::event ev = queue.m_queue.submit(
+                [&queue, task](sycl::handler& cgh)
+                {
+                    cgh.host_task([&queue, task]()
+                                  { HostTask<syclGeneric::Queue<T_Device>, T_Task>::callHostTask(queue, task); });
+                });
             if(queue.isBlocking())
                 ev.wait_and_throw();
         }
