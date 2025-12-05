@@ -6,4 +6,5 @@
 
 #include "alpaka/api/cuda/intrinsic.hpp"
 #include "alpaka/api/hip/intrinsic.hpp"
+#include "alpaka/api/host/intrinsic.hpp"
 #include "alpaka/api/oneApi/intrinsic.hpp"

@@ -35,7 +35,7 @@ struct PopcountKernel
     {
         for(auto [index] : onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, IdxRange{input.getExtents()}))
         {
-            output[index] = onAcc::popcount(acc, input[index]);
+            output[index] = popcount(input[index]);
         }
     }
 };

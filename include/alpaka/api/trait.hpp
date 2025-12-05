@@ -35,6 +35,28 @@ namespace alpaka
             return GetMathImpl::Op<T_Api>{}(api);
         }
 
+        /** Defines the implementation used for intrinsics */
+        struct GetIntrinsicImpl
+        {
+            template<alpaka::concepts::Api T_Api>
+            struct Op
+            {
+                constexpr decltype(auto) operator()(T_Api const) const
+                {
+                    static_assert(
+                        sizeof(T_Api) && false,
+                        "Intrinsic implementation for the current used API is not defined.");
+                    return 0;
+                }
+            };
+        };
+
+        template<alpaka::concepts::Api T_Api>
+        constexpr decltype(auto) getIntrinsicImpl(T_Api const api)
+        {
+            return GetIntrinsicImpl::Op<T_Api>{}(api);
+        }
+
         struct GetArchSimdWidth
         {
             template<typename T_Type, alpaka::concepts::Api T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
@@ -181,28 +203,6 @@ namespace alpaka
         constexpr decltype(auto) getAtomicImpl(T_Executor const executor, T_AtomicScope const atomicScope)
         {
             return GetAtomicImpl::Op<T_Executor, T_AtomicScope>{}(executor, atomicScope);
-        }
-
-        /** Defines the implementation used for atomic operations toghether with the used executor */
-        struct GetIntrinsicImpl
-        {
-            template<alpaka::concepts::Executor T_Executor>
-            struct Op
-            {
-                constexpr decltype(auto) operator()(T_Executor const) const
-                {
-                    static_assert(
-                        sizeof(T_Executor) && false,
-                        "Intrinsic implementation for the current used executor is not defined.");
-                    return 0;
-                }
-            };
-        };
-
-        template<alpaka::concepts::Executor T_Executor>
-        constexpr decltype(auto) getIntrinsicImpl(T_Executor const executor)
-        {
-            return GetIntrinsicImpl::Op<T_Executor>{}(executor);
         }
     } // namespace onAcc::trait
 } // namespace alpaka

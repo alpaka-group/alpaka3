@@ -1,22 +1,21 @@
-/* Copyright 2025 The alpaka team
+/* Copyright 2025 Luca Venerando Greco, René Widera
  * SPDX-License-Identifier: MPL-2.0
  */
 
 #pragma once
 
 #include "alpaka/api/host/tag.hpp"
-#include "alpaka/onAcc/internal/intrinsic.hpp"
+#include "alpaka/internal/intrinsic.hpp"
 
 #include <bit>
-#include <concepts>
 #include <type_traits>
 
-namespace alpaka::onAcc::internal::intrinsic
+namespace alpaka::internal::intrinsic
 {
     template<typename T_Arg>
-    struct Popcount::Op<alpaka::onAcc::internal::StlIntrinsic, T_Arg>
+    struct Popcount::Op<alpaka::internal::StlIntrinsic, T_Arg>
     {
-        constexpr auto operator()(alpaka::onAcc::internal::StlIntrinsic const, T_Arg const& val) const
+        constexpr auto operator()(alpaka::internal::StlIntrinsic const, T_Arg const& val) const
         {
             if constexpr(std::is_unsigned_v<T_Arg>)
             {
@@ -28,4 +27,4 @@ namespace alpaka::onAcc::internal::intrinsic
             }
         }
     };
-} // namespace alpaka::onAcc::internal::intrinsic
+} // namespace alpaka::internal::intrinsic

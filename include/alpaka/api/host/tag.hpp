@@ -13,11 +13,14 @@ namespace alpaka::onAcc
         };
 
         constexpr auto stlAtomic = StlAtomic{};
-
-        struct StlIntrinsic
-        {
-        };
-
-        constexpr auto stlIntrinsic = StlIntrinsic{};
     } // namespace internal
 } // namespace alpaka::onAcc
+
+namespace alpaka::internal
+{
+    struct StlIntrinsic
+    {
+    };
+
+    constexpr auto stlIntrinsic = StlIntrinsic{};
+} // namespace alpaka::internal

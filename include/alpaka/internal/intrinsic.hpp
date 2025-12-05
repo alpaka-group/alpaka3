@@ -1,10 +1,10 @@
-/* Copyright 2025 The alpaka team
+/* Copyright 2025 Luca Venerando Greco, René Widera
  * SPDX-License-Identifier: MPL-2.0
  */
 
 #pragma once
 
-namespace alpaka::onAcc::internal::intrinsic
+namespace alpaka::internal::intrinsic
 {
     struct Popcount
     {
@@ -14,4 +14,4 @@ namespace alpaka::onAcc::internal::intrinsic
             auto operator()(T_IntrinsicImpl const, T_Arg const& val) const;
         };
     };
-} // namespace alpaka::onAcc::internal::intrinsic
+} // namespace alpaka::internal::intrinsic

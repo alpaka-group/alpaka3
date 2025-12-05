@@ -1,30 +1,27 @@
-/* Copyright 2025 The alpaka team
+/* Copyright 2025 Luca Venerando Greco, René Widera
  * SPDX-License-Identifier: MPL-2.0
  */
 
 #pragma once
 
 #include "alpaka/api/syclGeneric/tag.hpp"
-#include "alpaka/core/common.hpp"
 #include "alpaka/core/config.hpp"
-#include "alpaka/onAcc/internal/intrinsic.hpp"
-
-#include <concepts>
+#include "alpaka/internal/intrinsic.hpp"
 
 #if ALPAKA_LANG_SYCL
 
 #    include <sycl/sycl.hpp>
 
-namespace alpaka::onAcc::internal::intrinsic
+namespace alpaka::internal::intrinsic
 {
     template<typename T_Arg>
-    struct Popcount::Op<alpaka::onAcc::internal::SyclIntrinsic, T_Arg>
+    struct Popcount::Op<alpaka::internal::SyclIntrinsic, T_Arg>
     {
-        constexpr auto operator()(alpaka::onAcc::internal::SyclIntrinsic const, T_Arg const& val) const
+        constexpr auto operator()(alpaka::internal::SyclIntrinsic const, T_Arg const& val) const
         {
             return sycl::popcount(val);
         }
     };
-} // namespace alpaka::onAcc::internal::intrinsic
+} // namespace alpaka::internal::intrinsic
 
 #endif

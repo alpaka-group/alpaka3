@@ -6,8 +6,8 @@
 
 #include "alpaka/api/host/tag.hpp"
 #include "alpaka/api/trait.hpp"
+#include "alpaka/internal/stlIntrinsic.hpp"
 #include "alpaka/onAcc/internal/atomic.hpp"
-#include "alpaka/onAcc/internal/stlIntrinsic.hpp"
 #include "alpaka/onAcc/scope.hpp"
 #include "alpaka/tag.hpp"
 
@@ -139,33 +139,6 @@ namespace alpaka::onAcc::trait
         constexpr decltype(auto) operator()(alpaka::exec::CpuTbbBlocks const, onAcc::scope::Block const) const
         {
             return alpaka::onAcc::internal::nonAtomic;
-        }
-    };
-
-    template<>
-    struct GetIntrinsicImpl::Op<alpaka::exec::CpuSerial>
-    {
-        constexpr decltype(auto) operator()(alpaka::exec::CpuSerial const) const
-        {
-            return alpaka::onAcc::internal::stlIntrinsic;
-        }
-    };
-
-    template<>
-    struct GetIntrinsicImpl::Op<alpaka::exec::CpuOmpBlocks>
-    {
-        constexpr decltype(auto) operator()(alpaka::exec::CpuOmpBlocks const) const
-        {
-            return alpaka::onAcc::internal::stlIntrinsic;
-        }
-    };
-
-    template<>
-    struct GetIntrinsicImpl::Op<alpaka::exec::CpuTbbBlocks>
-    {
-        constexpr decltype(auto) operator()(alpaka::exec::CpuTbbBlocks const)
-        {
-            return alpaka::onAcc::internal::stlIntrinsic;
         }
     };
 } // namespace alpaka::onAcc::trait

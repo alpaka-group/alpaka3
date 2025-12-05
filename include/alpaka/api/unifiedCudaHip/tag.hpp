@@ -13,13 +13,6 @@ namespace alpaka
         };
 
         constexpr auto cudaHipAtomic = CudaHipAtomic{};
-
-        struct CudaHipIntrinsic
-        {
-        };
-
-        constexpr auto cudaHipIntrinsic = CudaHipIntrinsic{};
-
     } // namespace onAcc::internal
 
     namespace math::internal
@@ -30,4 +23,13 @@ namespace alpaka
 
         constexpr auto cudaHipMath = CudaHipMath{};
     } // namespace math::internal
+
+    namespace internal
+    {
+        struct CudaHipIntrinsic
+        {
+        };
+
+        constexpr auto cudaHipIntrinsic = CudaHipIntrinsic{};
+    } // namespace internal
 } // namespace alpaka
