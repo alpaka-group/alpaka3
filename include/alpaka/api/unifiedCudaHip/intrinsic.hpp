@@ -47,5 +47,5 @@ namespace alpaka::onAcc::internal::intrinsic
             ALPAKA_UNREACHABLE(int{});
         }
     };
-} // namespace alpaka::intrinsic::internal
+} // namespace alpaka::onAcc::internal::intrinsic
 #endif

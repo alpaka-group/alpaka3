@@ -36,6 +36,7 @@
 #include "alpaka/onAcc/globalMem.hpp"
 #include "alpaka/onAcc/interface.hpp"
 #include "alpaka/onAcc/internal/interfaceImpl.hpp"
+#include "alpaka/onAcc/intrinsic.hpp"
 #include "alpaka/onAcc/memFence.hpp"
 #include "alpaka/onAcc/range.hpp"
 #include "alpaka/onAcc/tag.hpp"

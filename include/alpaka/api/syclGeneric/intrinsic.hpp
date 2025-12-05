@@ -9,13 +9,13 @@
 #include "alpaka/core/config.hpp"
 #include "alpaka/onAcc/internal/intrinsic.hpp"
 
+#include <concepts>
+
 #if ALPAKA_LANG_SYCL
 
 #    include <sycl/sycl.hpp>
 
-#    include <concepts>
-
-namespace alpaka::onAcc::intrinsic::internal
+namespace alpaka::onAcc::internal::intrinsic
 {
     template<typename T_Arg>
     struct Popcount::Op<alpaka::onAcc::internal::SyclIntrinsic, T_Arg>
@@ -25,6 +25,6 @@ namespace alpaka::onAcc::intrinsic::internal
             return sycl::popcount(val);
         }
     };
-} // namespace alpaka::onAcc::intrinsic::internal
+} // namespace alpaka::onAcc::internal::intrinsic
 
 #endif
