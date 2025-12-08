@@ -9,7 +9,6 @@
 #include "alpaka/core/RemoveRestrict.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/core/config.hpp"
-#include "alpaka/mem/concepts.hpp"
 #include "alpaka/onHost/demangledName.hpp"
 #include "alpaka/trait.hpp"
 #include "alpaka/utility.hpp"

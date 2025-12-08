@@ -6,7 +6,7 @@
 
 #include "alpaka/Vec.hpp"
 #include "alpaka/core/common.hpp"
-#include "alpaka/mem/concepts.hpp"
+#include "alpaka/mem/concepts/IMdSpan.hpp"
 
 #include <cstdint>
 #include <iterator>

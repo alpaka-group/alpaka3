@@ -9,7 +9,7 @@
 #include "alpaka/internal/interface.hpp"
 #include "alpaka/mem/BoundaryIter.hpp"
 #include "alpaka/mem/MdSpan.hpp"
-#include "alpaka/mem/concepts.hpp"
+#include "alpaka/mem/concepts/IMdSpan.hpp"
 #include "alpaka/mem/concepts/detail/InnerTypeAllowedCast.hpp"
 #include "alpaka/mem/trait.hpp"
 #include "alpaka/onHost/interface.hpp"

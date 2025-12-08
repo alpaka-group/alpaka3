@@ -6,7 +6,7 @@
 
 #include "alpaka/Vec.hpp"
 #include "alpaka/core/common.hpp"
-#include "alpaka/mem/concepts.hpp"
+#include "alpaka/mem/concepts/IDataStorage.hpp"
 #include "alpaka/onAcc/internal/SimdConcurrent.hpp"
 #include "alpaka/onAcc/internal/SimdTransformReduce.hpp"
 

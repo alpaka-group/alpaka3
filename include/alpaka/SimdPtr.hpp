@@ -8,7 +8,7 @@
 #include "alpaka/Vec.hpp"
 #include "alpaka/internal/interface.hpp"
 #include "alpaka/mem/Alignment.hpp"
-#include "alpaka/mem/concepts.hpp"
+#include "alpaka/mem/concepts/IDataStorage.hpp"
 #include "alpaka/mem/concepts/IMdSpan.hpp"
 #include "alpaka/trait.hpp"
 

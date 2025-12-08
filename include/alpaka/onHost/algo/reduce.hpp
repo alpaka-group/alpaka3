@@ -5,7 +5,7 @@
 #pragma once
 
 #include "alpaka/api/trait.hpp"
-#include "alpaka/mem/concepts.hpp"
+#include "alpaka/mem/concepts/IDataStorage.hpp"
 #include "alpaka/onHost/algo/internal/transformReduce.hpp"
 
 namespace alpaka::onHost
