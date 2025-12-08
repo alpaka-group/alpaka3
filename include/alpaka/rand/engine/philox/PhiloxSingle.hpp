@@ -67,13 +67,11 @@ namespace alpaka::rand::engine::internal
             }
             else
             {
-                // Shift state results to allow hard coded access to element zero.
-                // This will avoid high register usage on NVIDIA devices.
-                // \todo Check if this shifting of the result vector is decreasing CPU performance.
-                //       If so this optimization for GPUs (mostly NVIDIA) should be moved into
-                //       PhiloxBaseCudaArray.
-
-                //
+                /* Shift state results to allow hard coded access to element zero.
+                 * This will avoid high register usage on NVIDIA devices.
+                 * @todo Check if this shifting of the result vector is decreasing CPU performance.
+                 *       If so this optimization for GPUs (mostly NVIDIA/AMD) should be made optional.
+                 */
                 this->state.result[0] = this->state.result[1];
                 this->state.result[1] = this->state.result[2];
                 this->state.result[2] = this->state.result[3];

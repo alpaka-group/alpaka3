@@ -13,8 +13,8 @@ namespace alpaka::rand::engine::internal
      *
      * Relies on `PhiloxStateless` to provide the PRNG and adds state to handling the counting.
      *
-     * @tparam TParams Philox algorithm parameters \sa PhiloxParams
-     * @tparam TImpl engine type implementation (CRTP)
+     * @tparam T_Params Philox algorithm parameters \sa PhiloxParams
+     * @tparam T_Impl engine type implementation (CRTP)
      *
      * static const data members are transformed into functions, because GCC
      * assumes types with static data members to be not mappable and makes not
@@ -22,20 +22,20 @@ namespace alpaka::rand::engine::internal
      * OpenMP <= 4.5 standard. In OpenMP >= 5.0 types with any kind of static
      * data member are mappable.
      */
-    template<typename TParams, typename TImpl>
-    class PhiloxBaseCommon : public PhiloxStateless<TParams>
+    template<typename T_Params, typename T_Impl>
+    class PhiloxBaseCommon : public PhiloxStateless<T_Params>
     {
     public:
-        using Counter = typename PhiloxStateless<TParams>::Counter;
-        using Key = typename PhiloxStateless<TParams>::Key;
+        using Counter = typename PhiloxStateless<T_Params>::Counter;
+        using Key = typename PhiloxStateless<T_Params>::Key;
         /// State type
-        using State = PhiloxState<Counter, Key, TImpl>;
+        using State = PhiloxState<Counter, Key, T_Impl>;
 
         /// Internal engine state
         State state;
         /// Distribution container type
         template<typename TDistributionResultScalar>
-        using ResultContainer = Vec<TDistributionResultScalar, TParams::counterSize>;
+        using ResultContainer = Vec<TDistributionResultScalar, T_Params::counterSize>;
 
         constexpr explicit PhiloxBaseCommon(State&& state) : state(std::move(state))
         {
@@ -53,26 +53,14 @@ namespace alpaka::rand::engine::internal
         {
             ++counter[0];
 
-
             /* 128-bit carry */
-
-
             if(counter[0] == 0)
-
             {
                 ++counter[1];
-
-
                 if(counter[1] == 0)
-
-
                 {
                     ++counter[2];
-
-
                     if(counter[2] == 0)
-
-
                     {
                         ++counter[3];
                     }

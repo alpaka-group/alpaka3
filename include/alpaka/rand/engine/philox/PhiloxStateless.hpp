@@ -32,24 +32,24 @@ namespace alpaka::rand::engine::internal
      * Checks the validity of passed-in parameters and calls the backend methods to perform N rounds of the
      * Philox shuffle.
      *
-     * @tparam TParams Philox algorithm parameters \sa PhiloxParams
+     * @tparam T_Params Philox algorithm parameters \sa PhiloxParams
      */
-    template<typename TParams>
+    template<typename T_Params>
     class PhiloxStateless
     {
         static constexpr unsigned numRounds()
         {
-            return TParams::rounds;
+            return T_Params::rounds;
         }
 
         static constexpr unsigned vectorSize()
         {
-            return TParams::counterSize;
+            return T_Params::counterSize;
         }
 
         static constexpr unsigned numberWidth()
         {
-            return TParams::width;
+            return T_Params::width;
         }
 
         static_assert(numRounds() > 0, "Number of Philox rounds must be > 0.");
@@ -60,8 +60,8 @@ namespace alpaka::rand::engine::internal
         static_assert(numberWidth() == 32, "Philox implemented only for 32 bit numbers.");
 
     public:
-        using Counter = alpaka::Vec<std::uint32_t, TParams::counterSize>;
-        using Key = alpaka::Vec<std::uint32_t, TParams::counterSize / 2>;
+        using Counter = alpaka::Vec<std::uint32_t, T_Params::counterSize>;
+        using Key = alpaka::Vec<std::uint32_t, T_Params::counterSize / 2>;
 
     protected:
         /** Single round of the Philox shuffle

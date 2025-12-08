@@ -4,7 +4,6 @@
 
 #pragma once
 
-
 #include <cstdint>
 
 namespace alpaka::rand::engine::internal
@@ -16,35 +15,35 @@ namespace alpaka::rand::engine::internal
 
     /**  Philox state
      *
-     * @tparam TCounter Type of the Counter array
-     * @tparam TKey Type of the Key array
+     * @tparam T_Counter Type of the Counter array
+     * @tparam T_Key Type of the Key array
      */
-    template<typename TCounter, typename TKey, typename Impl>
+    template<typename T_Counter, typename T_Key, typename Impl>
     struct PhiloxState;
 
     /** Philox state specialization for vector engine
      * more memory/register efficient
      *
      */
-    template<typename TCounter, typename TKey, typename T_Params>
-    struct PhiloxState<TCounter, TKey, PhiloxVector<T_Params>>
+    template<typename T_Counter, typename T_Key, typename T_Params>
+    struct PhiloxState<T_Counter, T_Key, PhiloxVector<T_Params>>
     {
-        using Counter = TCounter;
-        using Key = TKey;
+        using Counter = T_Counter;
+        using Key = T_Key;
         Counter counter;
         Key key;
     };
 
     /** Philox state specialization for single value engine
      *
-     * @tparam TCounter Type of the Counter array
-     * @tparam TKey Type of the Key array
+     * @tparam T_Counter Type of the Counter array
+     * @tparam T_Key Type of the Key array
      */
-    template<typename TCounter, typename TKey, typename T_Params>
-    struct PhiloxState<TCounter, TKey, PhiloxSingle<T_Params>>
+    template<typename T_Counter, typename T_Key, typename T_Params>
+    struct PhiloxState<T_Counter, T_Key, PhiloxSingle<T_Params>>
     {
-        using Counter = TCounter;
-        using Key = TKey;
+        using Counter = T_Counter;
+        using Key = T_Key;
 
         Counter counter;
         Key key;

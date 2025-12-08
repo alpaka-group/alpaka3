@@ -9,27 +9,25 @@
 
 namespace alpaka::rand::engine::internal
 {
-
-
     /** Philox engine generating a vector of numbers
      *
      * This engine's operator() will return a vector of numbers corresponding to the full size of its counter.
      * This is a convenience vs. memory size tradeoff since the user has to deal with the output array
      * themselves, but the internal state comprises only of a single counter and a key.
      *
-     * @tparam TParams Basic parameters for the Philox algorithm
+     * @tparam T_Params Basic parameters for the Philox algorithm
      */
-    template<typename TParams>
-    class PhiloxVector : public PhiloxBaseCommon<TParams, PhiloxVector<TParams>>
+    template<typename T_Params>
+    class PhiloxVector : public PhiloxBaseCommon<T_Params, PhiloxVector<T_Params>>
     {
     public:
-        using Base = PhiloxBaseCommon<TParams, PhiloxVector<TParams>>;
+        using Base = PhiloxBaseCommon<T_Params, PhiloxVector<T_Params>>;
 
         /// Counter type
         using Counter = typename Base::Counter;
         /// Key type
         using Key = typename Base::Key;
-        using State = PhiloxState<Counter, Key, PhiloxVector<TParams>>;
+        using State = PhiloxState<Counter, Key, PhiloxVector<T_Params>>;
         template<typename TDistributionResultScalar>
         using ResultContainer = typename Base::template ResultContainer<TDistributionResultScalar>;
 
