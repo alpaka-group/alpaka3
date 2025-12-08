@@ -113,8 +113,8 @@ namespace alpaka::example::scan
     public:
         ALPAKA_FN_ACC void operator()(
             auto const& acc,
-            concepts::MdSpan auto const& inputVec,
-            concepts::MdSpan auto outputVec,
+            concepts::IMdSpan auto const& inputVec,
+            concepts::IMdSpan auto outputVec,
             auto... blockSums) const
         {
             using DeviceType = ALPAKA_TYPEOF(acc.getDeviceKind());
@@ -335,8 +335,8 @@ namespace alpaka::example::scan
     public:
         ALPAKA_FN_ACC void operator()(
             auto const& acc,
-            concepts::MdSpan auto const& blockSums,
-            concepts::MdSpan auto outputVec) const
+            concepts::IMdSpan auto const& blockSums,
+            concepts::IMdSpan auto outputVec) const
         {
             concepts::Vector auto numElements = outputVec.getExtents();
             concepts::CVector auto numThreadsPerBlock = acc[layer::thread].count();

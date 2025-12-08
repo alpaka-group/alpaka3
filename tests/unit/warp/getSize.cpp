@@ -28,7 +28,7 @@ namespace
         template<typename TAcc>
         ALPAKA_FN_ACC void operator()(
             TAcc const& acc,
-            concepts::MdSpan<bool> auto success,
+            concepts::IMdSpan<bool> auto success,
             std::uint32_t expectedWarpSize) const
         {
             // Compare device-reported warp extent against the precomputed traits.

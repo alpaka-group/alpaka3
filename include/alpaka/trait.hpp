@@ -64,12 +64,6 @@ namespace alpaka
         template<typename T>
         using GetValueType_t = typename GetValueType<T>::type;
 
-        // true for alpaka MdSpan implementations
-        template<typename T>
-        struct IsMdSpan : std::false_type
-        {
-        };
-
         /** Check if a type used as kernel argument is trivially copyable
          *
          * @attention In case this trait is specialized for a user type, the user should be sure that the result of
@@ -129,9 +123,6 @@ namespace alpaka
 
     template<typename T_From, typename T_To>
     constexpr bool isConvertible_v = concepts::Convertible<T_From, T_To>;
-
-    template<typename T>
-    constexpr bool isMdSpan_v = trait::IsMdSpan<T>::value;
 
     namespace concepts
     {

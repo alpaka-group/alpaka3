@@ -15,7 +15,7 @@ namespace alpaka::example::nBody
     /** @brief Initialize the given 1-dimensional MdSpan with random masses.
      * @note This is a host function.
      */
-    template<concepts::MdSpan<BaseType> T_View>
+    template<concepts::IMdSpan<BaseType> T_View>
     void initMasses(T_View& masses)
     {
         auto rd = std::random_device{};
@@ -29,7 +29,7 @@ namespace alpaka::example::nBody
     /** @brief Initialize the given x, y, and z-positions with random values.
      * @note This is a host function.
      */
-    template<concepts::MdSpan<BaseType> T_View>
+    template<concepts::IMdSpan<BaseType> T_View>
     void initPositions(T_View& xPositions, T_View& yPositions, T_View& zPositions)
     {
         // most numbers should fall within the square that is plotted
@@ -69,7 +69,7 @@ namespace alpaka::example::nBody
      * used to generate tangential velocities to the coordinate center.
      * @note This is a host function.
      */
-    template<concepts::MdSpan<BaseType> T_View>
+    template<concepts::IMdSpan<BaseType> T_View>
     void initVelocities(
         T_View& xVelocities,
         T_View& yVelocities,
@@ -94,7 +94,7 @@ namespace alpaka::example::nBody
 #ifdef PNGWRITER_ENABLED
     using Color = Simd<BaseType, 3>;
 
-    template<concepts::MdSpan<Color> T_View>
+    template<concepts::IMdSpan<Color> T_View>
     void initColors(T_View& colors)
     {
         auto rd = std::random_device{};

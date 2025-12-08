@@ -25,7 +25,7 @@ struct LastSetDataBlockIdx
 {
     ALPAKA_FN_ACC void operator()(
         auto const& acc,
-        alpaka::concepts::MdSpan auto out,
+        alpaka::concepts::IMdSpan auto out,
         alpaka::concepts::Vector auto extentMd) const
     {
         for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange(extentMd)))

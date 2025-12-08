@@ -15,7 +15,7 @@ using namespace alpaka;
 
 struct AddOne
 {
-    ALPAKA_FN_ACC void operator()(auto const& acc, concepts::MdSpan auto out) const
+    ALPAKA_FN_ACC void operator()(auto const& acc, concepts::IMdSpan auto out) const
     {
         for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{out.getExtents()}))
         {
@@ -71,9 +71,9 @@ struct MDVectorAdd
 {
     ALPAKA_FN_ACC void operator()(
         auto const& acc,
-        concepts::MdSpan auto out,
-        concepts::MdSpan auto in0,
-        concepts::MdSpan auto in1) const
+        concepts::IMdSpan auto out,
+        concepts::IMdSpan auto in0,
+        concepts::IMdSpan auto in1) const
     {
         ALPAKA_ASSERT_ACC(out.getExtents() == in0.getExtents());
         ALPAKA_ASSERT_ACC(out.getExtents() == in1.getExtents());

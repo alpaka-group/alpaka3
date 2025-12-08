@@ -480,7 +480,7 @@ namespace alpaka::onHost
                 ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
                 auto executors = supportedExecutors(getDevice(queue), exec::allExecutors);
                 // avoid that we pass a SharedBuffer and convert non alpaka data views
-                alpaka::concepts::MdSpan<T_Value> auto dataView = makeView(dest);
+                alpaka::concepts::IView<T_Value> auto dataView = makeView(dest);
 
                 alpaka::internal::generic::fill(
                     queue,

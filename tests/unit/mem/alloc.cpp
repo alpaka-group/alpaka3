@@ -18,7 +18,8 @@ using TestBackends
 
 struct IotaValidate
 {
-    ALPAKA_FN_ACC void operator()(auto const& acc, concepts::MdSpan<int> auto success, concepts::MdSpan auto in) const
+    ALPAKA_FN_ACC void operator()(auto const& acc, concepts::IMdSpan<int> auto success, concepts::IMdSpan auto in)
+        const
     {
         for(auto [i] : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange(in.getExtents())))
         {
@@ -31,7 +32,7 @@ struct IotaValidate
     }
 };
 
-void validateAccess(auto device, alpaka::concepts::Executor auto exec, concepts::MdSpan auto deviceAccessibleData)
+void validateAccess(auto device, alpaka::concepts::Executor auto exec, concepts::IMdSpan auto deviceAccessibleData)
 {
     auto deviceStatus = onHost::alloc<int>(device, 1);
     auto hostStatus = onHost::allocHostLike(deviceStatus);
@@ -162,7 +163,7 @@ TEMPLATE_LIST_TEST_CASE("alloc zero bytes", "", TestDeviceSpecs)
  *
  * @param data multi-dimensional data which is checked
  */
-void validateAlignment(alpaka::concepts::MdSpan auto data)
+void validateAlignment(alpaka::concepts::IMdSpan auto data)
 {
     using DataType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data)>;
     constexpr uint32_t alignment = alpaka::getAlignment(data).template get<DataType>();

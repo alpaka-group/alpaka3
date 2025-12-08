@@ -22,9 +22,9 @@ struct VectorAddKernel1D
     template<typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc,
-        alpaka::concepts::MdSpan auto const in1,
-        alpaka::concepts::MdSpan auto const in2,
-        alpaka::concepts::MdSpan auto out,
+        alpaka::concepts::IMdSpan auto const in1,
+        alpaka::concepts::IMdSpan auto const in2,
+        alpaka::concepts::IMdSpan auto out,
         Vec1D size) const
     {
         auto threadIdxInGrid = acc.getIdxWithin(alpaka::onAcc::origin::grid, alpaka::onAcc::unit::threads);
@@ -46,9 +46,9 @@ struct VectorAddKernel3D
     template<typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc,
-        alpaka::concepts::MdSpan auto const in1,
-        alpaka::concepts::MdSpan auto const in2,
-        alpaka::concepts::MdSpan auto out,
+        alpaka::concepts::IMdSpan auto const in1,
+        alpaka::concepts::IMdSpan auto const in2,
+        alpaka::concepts::IMdSpan auto out,
         Vec3D size) const
     {
         auto threadIndexMD = acc[alpaka::layer::thread].idx();

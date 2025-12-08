@@ -62,7 +62,7 @@ void iotaTest(auto& queue, auto exec, auto const extents, auto frameSize)
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);
 
-    alpaka::concepts::MdSpan auto mdSpan = hBuff.getMdSpan();
+    alpaka::concepts::IMdSpan auto mdSpan = hBuff.getMdSpan();
 
     meta::ndLoopIncIdx(extents, [&](auto idx) { CHECK(idx == pCast<T_MemIdxType>(mdSpan[idx])); });
 }

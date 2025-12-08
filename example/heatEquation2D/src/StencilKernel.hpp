@@ -28,8 +28,8 @@ struct StencilKernel
     template<typename TAcc>
     ALPAKA_FN_ACC auto operator()(
         TAcc const& acc,
-        alpaka::concepts::MdSpan auto const uCurrBuf,
-        alpaka::concepts::MdSpan auto uNextBuf,
+        alpaka::concepts::IMdSpan auto const uCurrBuf,
+        alpaka::concepts::IMdSpan auto uNextBuf,
         alpaka::concepts::Vector auto const chunkSize,
         alpaka::concepts::CVector auto sharedMemExtents,
         alpaka::concepts::Vector auto numNodes,

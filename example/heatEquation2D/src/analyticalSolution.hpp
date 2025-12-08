@@ -60,7 +60,7 @@ auto validateSolution(
 //! \param dataMdSpan buffer holding the solution at tMax
 //! \param dx
 //! \param dy
-template<alpaka::concepts::MdSpan T_MdSpan>
+template<alpaka::concepts::IMdSpan T_MdSpan>
 auto initalizeBuffer(T_MdSpan dataMdSpan, double const dx, double const dy) -> void
 {
     auto extents = dataMdSpan.getExtents();

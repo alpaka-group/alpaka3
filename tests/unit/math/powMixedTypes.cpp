@@ -58,7 +58,7 @@ struct PowMixedTypesTestKernel
     template<typename TAcc, typename TArg1, typename TArg2>
     ALPAKA_FN_ACC auto operator()(
         TAcc const& acc,
-        concepts::MdSpan<bool> auto success,
+        concepts::IMdSpan<bool> auto success,
         TArg1 const arg1,
         TArg2 const arg2) const -> void
     {

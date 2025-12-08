@@ -30,7 +30,7 @@ namespace alpaka
         }
 
     public:
-        constexpr MdForwardIterEnd(alpaka::concepts::MdSpan auto const& mdSpan)
+        constexpr MdForwardIterEnd(alpaka::concepts::IMdSpan auto const& mdSpan)
             : m_extentSlowDim{mdSpan.getExtents()[0]}
         {
         }
@@ -54,10 +54,10 @@ namespace alpaka
         index_type m_extentSlowDim;
     };
 
-    template<alpaka::concepts::MdSpan T_MdSpan>
+    template<alpaka::concepts::IMdSpan T_MdSpan>
     ALPAKA_FN_HOST_ACC MdForwardIterEnd(T_MdSpan const&) -> MdForwardIterEnd<typename T_MdSpan::index_type>;
 
-    template<alpaka::concepts::MdSpan T_MdSpan>
+    template<alpaka::concepts::IMdSpan T_MdSpan>
     class MdForwardIter
     {
         using index_type = typename T_MdSpan::index_type;

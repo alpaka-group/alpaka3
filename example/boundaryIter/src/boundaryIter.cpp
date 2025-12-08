@@ -19,8 +19,8 @@ struct BoundaryExampleKernel
 {
     ALPAKA_FN_ACC auto operator()(
         auto const& acc,
-        concepts::MdSpan auto const view,
-        concepts::MdSpan auto viewTarget,
+        concepts::IMdSpan auto const view,
+        concepts::IMdSpan auto viewTarget,
         concepts::BoundaryDirection auto const& bd) const
     {
         for(auto idx : onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, IdxRange{view.getExtents()}, bd))

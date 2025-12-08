@@ -25,7 +25,7 @@ namespace
     struct AllMultiThreadKernel
     {
         template<typename TAcc>
-        ALPAKA_FN_ACC void operator()(TAcc const& acc, concepts::MdSpan<bool> auto success, std::uint32_t idx) const
+        ALPAKA_FN_ACC void operator()(TAcc const& acc, concepts::IMdSpan<bool> auto success, std::uint32_t idx) const
         {
             constexpr uint32_t warpExtent = onAcc::warp::getSize<ALPAKA_TYPEOF(acc)>();
 

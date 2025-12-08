@@ -342,7 +342,7 @@ namespace custom
 struct AdlKernel
 {
     template<typename Acc>
-    ALPAKA_FN_ACC void operator()(Acc const&, alpaka::concepts::MdSpan auto success) const noexcept
+    ALPAKA_FN_ACC void operator()(Acc const&, alpaka::concepts::IMdSpan auto success) const noexcept
     {
         using custom::Custom;
 

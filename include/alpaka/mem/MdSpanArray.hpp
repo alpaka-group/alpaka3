@@ -240,13 +240,4 @@ namespace alpaka
         using InnerMutable = MdSpanArray<std::remove_const_t<T_ArrayType>, T_MemAlignment>;
         using InnerConst = MdSpanArray<std::add_const_t<T_ArrayType>, T_MemAlignment>;
     };
-
-    namespace trait
-    {
-        template<typename T>
-        requires(isSpecializationOf_v<std::remove_cvref_t<T>, MdSpanArray>)
-        struct IsMdSpan<T> : std::true_type
-        {
-        };
-    } // namespace trait
 } // namespace alpaka

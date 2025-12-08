@@ -68,8 +68,8 @@ struct SimdForEachKernel
     ALPAKA_FN_ACC void operator()(
         auto const& acc,
         auto const& func,
-        alpaka::concepts::MdSpan auto const& arg0,
-        alpaka::concepts::MdSpan auto const&... args) const
+        alpaka::concepts::IMdSpan auto const& arg0,
+        alpaka::concepts::IMdSpan auto const&... args) const
     {
         auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
         simdGrid.concurrent(acc, arg0.getExtents(), func, arg0, args...);

@@ -284,7 +284,7 @@ namespace alpaka::onHost
      * because the view was allocated with a UVM allocator.
      *
      */
-    inline bool isDataAccessible(concepts::Device auto const& device, alpaka::concepts::View auto const& view)
+    inline bool isDataAccessible(concepts::Device auto const& device, alpaka::concepts::IView auto const& view)
     {
         return internal::IsDataAccessible::FirstPath<ALPAKA_TYPEOF(*device.get()), ALPAKA_TYPEOF(view)>{}(
                    *device.get(),
@@ -300,7 +300,7 @@ namespace alpaka::onHost
      * @param queue queue handle
      */
     template<typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
-    inline bool isDataAccessible(Queue<T_Device, T_QueueKind> const& queue, alpaka::concepts::View auto const& view)
+    inline bool isDataAccessible(Queue<T_Device, T_QueueKind> const& queue, alpaka::concepts::IView auto const& view)
     {
         return internal::IsDataAccessible::FirstPath<ALPAKA_TYPEOF(*queue.getDevice().get()), ALPAKA_TYPEOF(view)>{}(
                    *queue.getDevice().get(),

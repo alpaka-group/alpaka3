@@ -17,7 +17,7 @@ namespace alpaka::example::nBody
     template<typename T_View>
     void writePng(
         ParticleData<T_View> const& particles,
-        concepts::MdSpan<Color> auto const& colors,
+        concepts::IMdSpan<Color> auto const& colors,
         std::string const& filename)
     {
         // Create a black image

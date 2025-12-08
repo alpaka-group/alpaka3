@@ -31,9 +31,9 @@ namespace mathtest
         template<typename TFunctor>
         ALPAKA_FN_ACC auto operator()(
             onAcc::concepts::Acc auto const& acc,
-            concepts::MdSpan auto results,
+            concepts::IMdSpan auto results,
             TFunctor const& functor,
-            concepts::MdSpan auto args) const noexcept -> void
+            concepts::IMdSpan auto args) const noexcept -> void
         {
             for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{TCapacity}))
             {

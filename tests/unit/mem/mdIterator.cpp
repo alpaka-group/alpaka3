@@ -15,7 +15,7 @@ using namespace alpaka::onHost;
 TEST_CASE("mdIterator", "")
 {
     constexpr auto numElements = CVec<size_t, 17, 31>{};
-    alpaka::concepts::MdSpan auto span = onHost::allocHost<uint32_t>(numElements);
+    alpaka::concepts::IMdSpan auto span = onHost::allocHost<uint32_t>(numElements);
 
     size_t counter = 0u;
     for(uint32_t& v : span)

@@ -343,12 +343,3 @@ namespace alpaka::internal
     };
 
 } // namespace alpaka::internal
-
-namespace alpaka::trait
-{
-    template<typename T>
-    requires(isSpecializationOf_v<std::remove_cvref_t<T>, alpaka::onHost::SharedBuffer>)
-    struct IsMdSpan<T> : std::true_type
-    {
-    };
-} // namespace alpaka::trait

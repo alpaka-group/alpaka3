@@ -17,7 +17,8 @@ using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, 
 
 struct RaceCheckKernel
 {
-    ALPAKA_FN_ACC void operator()(auto const& acc, concepts::MdSpan<int> auto success, concepts::MdSpan auto in) const
+    ALPAKA_FN_ACC void operator()(auto const& acc, concepts::IMdSpan<int> auto success, concepts::IMdSpan auto in)
+        const
     {
         for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange(in.getExtents())))
         {

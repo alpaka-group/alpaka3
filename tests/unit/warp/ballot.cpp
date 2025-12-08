@@ -27,7 +27,7 @@ namespace
     struct BallotMultiThreadKernel
     {
         template<typename TAcc>
-        ALPAKA_FN_ACC void operator()(TAcc const& acc, concepts::MdSpan<bool> auto success) const
+        ALPAKA_FN_ACC void operator()(TAcc const& acc, concepts::IMdSpan<bool> auto success) const
         {
             // use runtime warp size to avoid compiler warning later
             uint32_t warpExtent = onAcc::warp::getSize<ALPAKA_TYPEOF(acc)>();

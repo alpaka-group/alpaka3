@@ -352,7 +352,7 @@ namespace alpaka
      *
      * @param view The given view; only the dimension of the view matters.
      */
-    [[nodiscard]] constexpr auto makeBoundaryDirIterator(concepts::View auto const& view)
+    [[nodiscard]] constexpr auto makeBoundaryDirIterator(concepts::IView auto const& view)
     {
         return makeBoundaryDirIterator<static_cast<uint32_t>(ALPAKA_TYPEOF(view)::dim())>();
     }

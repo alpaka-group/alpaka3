@@ -29,10 +29,10 @@ struct Kernel
 
         // BEGIN-CHEATSHEET-staticSharedMem
         // two-dimensional matrix with 4 columns, 3 rows with elements of the type float
-        concepts::MdSpan auto sharedMdArray
+        concepts::IMdSpan auto sharedMdArray
             = alpaka::onAcc::declareSharedMdArray<float, alpaka::uniqueId()>(acc, CVec<uint32_t, 3, 4>{});
         // or with a preprocessor unique id
-        concepts::MdSpan auto sharedMdArray2
+        concepts::IMdSpan auto sharedMdArray2
             = alpaka::onAcc::declareSharedMdArray<float, __COUNTER__>(acc, CVec<uint32_t, 3, 4>{});
         // a single scalar
         DataType scalar = alpaka::onAcc::declareSharedVar<float, alpaka::uniqueId()>(acc, CVec<uint32_t, 3, 4>{});
@@ -246,7 +246,7 @@ auto main() -> int
             // BEGIN-CHEATSHEET-allocHostBuffer
             // Allocate memory for the alpaka buffer, which is a dynamic 3-dimensional array
             // Memory allocations support any dimensionality
-            concepts::View auto hostBuffer = onHost::allocHost<DataType>(extent3D);
+            concepts::IView auto hostBuffer = onHost::allocHost<DataType>(extent3D);
             // END-CHEATSHEET-allocHostBuffer
 
             unused(hostBuffer);
@@ -257,7 +257,7 @@ auto main() -> int
             // BEGIN-CHEATSHEET-makeViewFromPtr
             auto extent = Vec{numElements};
             DataType* ptr = externPtr;
-            concepts::View auto hostView = makeView(api::host, ptr, extent);
+            concepts::IView auto hostView = makeView(api::host, ptr, extent);
             // END-CHEATSHEET-makeViewFromPtr
 
             unused(hostView);
@@ -278,16 +278,16 @@ auto main() -> int
             // BEGIN-CHEATSHEET-makeViewStdArray
             std::array array = std::array<DataType, 2>{42u, 23};
             // call within host code: api::host is automatically assumed
-            concepts::View auto hostView = makeView(array);
+            concepts::IView auto hostView = makeView(array);
             // call from within a cuda kernel: api::cuda is automatically assumed
-            concepts::View auto deviceView = makeView(array);
+            concepts::IView auto deviceView = makeView(array);
             // END-CHEATSHEET-makeViewStdArray
 
             unused(hostView, deviceView);
         }
 
         {
-            concepts::View auto buffer = onHost::allocHost<DataType>(numElements);
+            concepts::IView auto buffer = onHost::allocHost<DataType>(numElements);
             buffer.destructorWaitFor(queue);
             // BEGIN-CHEATSHEET-dataPtr
             DataType* rawPtr = onHost::data(buffer);
@@ -317,19 +317,19 @@ auto main() -> int
             // BEGIN-CHEATSHEET-allocBuffer
             // the allocation is providing a shared buffer which will be
             // automatically freed if the last handle runs out of a life-time
-            concepts::View auto devBuffer = onHost::alloc<DataType>(device, extentMd);
+            concepts::IView auto devBuffer = onHost::alloc<DataType>(device, extentMd);
             // allocate memory which lives on the host but is accessible from the device too
-            concepts::View auto devMappedBuffer = onHost::allocMapped<DataType>(device, extentMd);
+            concepts::IView auto devMappedBuffer = onHost::allocMapped<DataType>(device, extentMd);
             // allocate memory can be accessed from host and device (unified memory),
             // the real location depends on the native backend e.g. CUDA, OneApi, ...
-            concepts::View auto devUnifiedBuffer = onHost::allocUnified<DataType>(device, extentMd);
+            concepts::IView auto devUnifiedBuffer = onHost::allocUnified<DataType>(device, extentMd);
             // allocate memory that is accessible after it is processed in the queue
-            concepts::View auto devDeferredBuffer = onHost::allocDeferred<DataType>(queue, extentMd);
+            concepts::IView auto devDeferredBuffer = onHost::allocDeferred<DataType>(queue, extentMd);
             // allocate memory accessible from host
-            concepts::View auto hostBuffer = onHost::allocHost<DataType>(extentMd);
+            concepts::IView auto hostBuffer = onHost::allocHost<DataType>(extentMd);
             // Data will not be automatically freed, user must take care that
             // the original data life-time is longer than the non-owning view.
-            concepts::View auto devNonOwningView = devBuffer.getView();
+            concepts::IView auto devNonOwningView = devBuffer.getView();
             // END-CHEATSHEET-allocBuffer
 
             unused(devMappedBuffer, devUnifiedBuffer, devNonOwningView, devDeferredBuffer);

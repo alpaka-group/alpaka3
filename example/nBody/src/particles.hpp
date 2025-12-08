@@ -28,7 +28,7 @@ namespace alpaka::example::nBody
      *
      * @tparam T_View The type of view used for each of the arrays.
      */
-    template<concepts::MdSpan<BaseType> T_View>
+    template<concepts::IMdSpan<BaseType> T_View>
     struct ParticleData
     {
         T_View masses;
@@ -84,7 +84,7 @@ namespace alpaka::example::nBody
 } // namespace alpaka::example::nBody
 
 // Implement this trait to allow using ParticleData as an alpaka kernel argument.
-template<alpaka::concepts::MdSpan<alpaka::example::nBody::BaseType> T_ViewType>
+template<alpaka::concepts::IMdSpan<alpaka::example::nBody::BaseType> T_ViewType>
 struct alpaka::trait::IsKernelArgumentTriviallyCopyable<alpaka::example::nBody::ParticleData<T_ViewType>>
     : std::true_type
 {

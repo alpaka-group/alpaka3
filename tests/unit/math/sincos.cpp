@@ -25,7 +25,7 @@ struct SinCosTestKernel
 {
     ALPAKA_NO_HOST_ACC_WARNING
     template<typename TAcc, typename FP>
-    ALPAKA_FN_ACC auto operator()(TAcc const& acc, concepts::MdSpan<bool> auto success, FP const arg) const -> void
+    ALPAKA_FN_ACC auto operator()(TAcc const& acc, concepts::IMdSpan<bool> auto success, FP const arg) const -> void
     {
         // if arg is hardcoded then compiler can optimize it out
         // (PTX kernel (float) was just empty)

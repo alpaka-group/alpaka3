@@ -292,7 +292,7 @@ TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
  *
  * The wrapper is disabling the copy and move operations to within alpaka.
  */
-template<alpaka::concepts::MdSpan T_Span>
+template<alpaka::concepts::IMdSpan T_Span>
 struct TestMdSpan
 {
     using value_type = typename T_Span::value_type;

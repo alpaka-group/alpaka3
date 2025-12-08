@@ -26,8 +26,10 @@ namespace
     struct ActivemaskMultiThreadKernel
     {
         template<typename TAcc>
-        ALPAKA_FN_ACC void operator()(TAcc const& acc, concepts::MdSpan<bool> auto success, std::uint32_t inactiveLane)
-            const
+        ALPAKA_FN_ACC void operator()(
+            TAcc const& acc,
+            concepts::IMdSpan<bool> auto success,
+            std::uint32_t inactiveLane) const
         {
             // test if the warp size can be constexpr
             constexpr uint32_t warpExtent = onAcc::warp::getSize<ALPAKA_TYPEOF(acc)>();

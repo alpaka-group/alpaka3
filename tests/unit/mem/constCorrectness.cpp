@@ -27,7 +27,7 @@ using namespace alpaka;
  * the buffer/view had an outer const before. The reason why we can not transform the outer const into an inner const
  * is that we requires this within @c KernelBundle to forward the kernel user arguments in a tuple to the user kernel.
  */
-void requiresMutableBufferMd(concepts::MdSpan auto buffer)
+void requiresMutableBufferMd(concepts::IMdSpan auto buffer)
 {
     static_assert(!std::is_const_v<std::remove_pointer_t<decltype(buffer.data())>>);
     static_assert(!std::is_const_v<std::remove_reference_t<decltype(buffer[Vec{0, 0}])>>);

@@ -130,12 +130,12 @@ namespace alpaka
             return T_Api{};
         }
 
-        constexpr alpaka::concepts::MdSpan auto getMdSpan() const
+        constexpr alpaka::concepts::IMdSpan auto getMdSpan() const
         {
             return BaseMdSpan::getConstMdSpan();
         }
 
-        constexpr alpaka::concepts::MdSpan auto getMdSpan()
+        constexpr alpaka::concepts::IMdSpan auto getMdSpan()
         {
             return BaseMdSpan{*this};
         }
@@ -261,15 +261,6 @@ namespace alpaka
         alpaka::concepts::Vector T_UserPitches>
     ALPAKA_FN_HOST_ACC View(T_Any, T_Type*, T_UserExtents const&, T_UserPitches const&)
         -> View<ALPAKA_TYPEOF(getApi(std::declval<T_Any>())), T_Type, typename T_UserPitches::UniVec, Alignment<>>;
-
-    namespace trait
-    {
-        template<typename T>
-        requires(isSpecializationOf_v<std::remove_cvref_t<T>, alpaka::View>)
-        struct IsMdSpan<T> : std::true_type
-        {
-        };
-    } // namespace trait
 } // namespace alpaka
 
 namespace alpaka::internal
