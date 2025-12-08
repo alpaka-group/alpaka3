@@ -1,0 +1,458 @@
+/* Copyright 2025 Anton Reinhard
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
+#pragma once
+
+
+#include "alpaka/CVec.hpp"
+#include "alpaka/Simd.hpp"
+#include "alpaka/Vec.hpp"
+#include "alpaka/core/common.hpp"
+#include "alpaka/mem/MdSpan.hpp"
+#include "alpaka/onAcc/Acc.hpp"
+#include "alpaka/onAcc/SimdAlgo.hpp"
+#include "alpaka/onHost/interface.hpp"
+#include "alpaka/onHost/logger/logger.hpp"
+#include "alpaka/trait.hpp"
+
+#include <array> // std::array
+#include <cstddef> // std::size_t
+#include <tuple> // std::tuple
+#include <type_traits> // is_same_v
+#include <typeinfo>
+
+namespace alpaka::onHost::internal
+{
+    enum ScanType
+    {
+        EXCLUSIVE_SCAN,
+        INCLUSIVE_SCAN
+    };
+
+    constexpr std::size_t numNvidiaBanks = 32u;
+    constexpr std::size_t numAmdBanks = 32u;
+    constexpr std::size_t numIntelBanks = 16u;
+
+    template<alpaka::concepts::DeviceKind TDeviceKind, typename T_Idx, typename T_Data>
+    consteval T_Idx maximumMiniBlockSize()
+    {
+        if constexpr(TDeviceKind{} == deviceKind::nvidiaGpu)
+            return static_cast<T_Idx>(8);
+        else if constexpr(TDeviceKind{} == deviceKind::amdGpu)
+            return static_cast<T_Idx>(8);
+        else if constexpr(TDeviceKind{} == deviceKind::intelGpu)
+            return static_cast<T_Idx>(8);
+        else
+            return static_cast<T_Idx>(32768) / sizeof(T_Data);
+    }
+
+    /* This function introduces padding to the shared memory accesses to reduce bank conflicts between threads. The
+     * template parameter is the device kind, which dictates how many memory banks are assumed. For CPU or
+     * unknown/unimplemented device kinds, infinite memory banks are assumed, i.e., no padding is used.
+     */
+    template<typename TDeviceKind, typename T_Idx>
+    constexpr T_Idx conflictFreeAccess(auto const& n)
+    {
+        if constexpr(TDeviceKind{} == deviceKind::nvidiaGpu)
+            return n + n / static_cast<T_Idx>(numNvidiaBanks);
+        else if constexpr(TDeviceKind{} == deviceKind::amdGpu)
+            return n + n / static_cast<T_Idx>(numAmdBanks);
+        else if constexpr(TDeviceKind{} == deviceKind::intelGpu)
+            return n + n / static_cast<T_Idx>(numIntelBanks);
+        else // cpu or unknown backend does nothing
+            return n;
+    }
+
+    /* Do a muting exclusive scan on the given miniblock, and return the total sum.
+     */
+    template<typename T_Idx, typename T_Data>
+    ALPAKA_FN_ACC T_Data scanMiniBlock(T_Data* block, alpaka::concepts::CVector<T_Idx> auto const& extent)
+    {
+        // -- UP-SWEEP / REDUCE --
+        for(T_Idx d = extent.x() / T_Idx{2}, offset = T_Idx{1}; d > 0; d >>= 1, offset <<= 1)
+        {
+            for(auto frameElem = T_Idx{0}; frameElem < T_Idx{2} * d; frameElem += T_Idx{2})
+            {
+                T_Idx left = offset * (frameElem + T_Idx{1}) - T_Idx{1};
+                T_Idx right = offset * (frameElem + T_Idx{2}) - T_Idx{1};
+                block[right] += block[left];
+            }
+        }
+
+        // save total sum
+        T_Data blockSum = block[extent.x() - T_Idx{1}];
+
+        // set 0
+        block[extent.x() - T_Idx{1}] = T_Data{0};
+
+        // -- DOWN-SWEEP --
+        for(T_Idx d = 1, offset = extent.x() / T_Idx{2}; d < extent.x(); d <<= 1, offset >>= 1)
+        {
+            for(auto frameElem = T_Idx{0}; frameElem < T_Idx{2} * d; frameElem += T_Idx{2})
+            {
+                T_Idx left = offset * (frameElem + T_Idx{1}) - T_Idx{1};
+                T_Idx right = offset * (frameElem + T_Idx{2}) - T_Idx{1};
+                auto t = block[left];
+                block[left] = block[right];
+                block[right] += t;
+            }
+        }
+        return blockSum;
+    }
+
+    /* Do an add increment on the given miniblock, adding the given blockSum to each element.
+     */
+    template<typename T_Idx, typename T_Data>
+    ALPAKA_FN_ACC void addIncrements(
+        T_Data* block,
+        T_Data const& blockSum,
+        alpaka::concepts::CVector<T_Idx> auto const& extent)
+    {
+        for(auto i = T_Idx{0}; i < extent.x(); ++i)
+        {
+            block[i] += blockSum;
+        }
+    }
+
+    /* This kernel calculates an exclusive scan for each block individually. The algorithm is based on Blelloch, with
+     * the improvement from Lichterman, written up in the CUDA blog (see 39.2.5):
+     * https://developer.nvidia.com/gpugems/gpugems3/part-vi-gpu-computing/chapter-39-parallel-prefix-sum-scan-cuda
+     */
+    template<ScanType SCAN_TYPE, typename T_Idx, typename T_Data>
+    class Scan_ScanBlocksKernel
+    {
+    public:
+        ALPAKA_FN_ACC void operator()(
+            alpaka::onHost::concepts::Device auto const& acc,
+            alpaka::concepts::IDataSource auto const& inputVec,
+            alpaka::concepts::IMdSpan auto outputVec,
+            auto... blockSums) const
+        {
+            using DeviceType = ALPAKA_TYPEOF(acc.getDeviceKind());
+            alpaka::concepts::Vector auto numFrames = acc[frame::count];
+
+            alpaka::concepts::CVector auto numThreadsPerBlock = acc[layer::thread].count();
+            alpaka::concepts::CVector auto frameExtent = acc[frame::extent];
+            constexpr auto elsPerThread = frameExtent.x() / numThreadsPerBlock.x();
+            alpaka::concepts::CVector auto chunkExtent = CVec<T_Idx, elsPerThread * numThreadsPerBlock.x()>{};
+            alpaka::concepts::Vector auto numElements = inputVec.getExtents();
+
+            constexpr auto miniBlockSize = std::min(maximumMiniBlockSize<DeviceType, T_Idx, T_Data>(), elsPerThread);
+            constexpr auto miniBlocksPerThread = elsPerThread / miniBlockSize;
+            constexpr auto miniBlocksPerChunk = chunkExtent.x() / miniBlockSize;
+
+            constexpr auto LocalArrayLength = miniBlocksPerThread * miniBlockSize;
+            using LocalArray = T_Data[LocalArrayLength];
+
+            ALPAKA_LOG_INFO(
+                onHost::logger::memory,
+                [&]()
+                {
+                    std::stringstream ss;
+                    ss << "scan kernel: {";
+                    ss << "frameExtent: " << frameExtent;
+                    ss << ", numThreadsPerBlock: " << numThreadsPerBlock;
+                    ss << ", elsPerThread: " << elsPerThread;
+                    ss << ", chunkExtent: " << chunkExtent;
+                    ss << ", miniBlockSize: " << miniBlockSize;
+                    ss << ", miniBlocksPerThread: " << miniBlocksPerThread;
+                    ss << "}" return ss.str();
+                });
+
+            auto const validElementsInLastFrame = (numElements - T_Idx{1}) % chunkExtent + T_Idx{1};
+
+            /* This kernel is called with 1-dimensional frame extents.
+             *
+             * All thread blocks will be used to iterate over the frames. Each thread block will handle one or more
+             * frames.
+             */
+            for(auto frameIdx :
+                onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec<T_Idx, 1u>{0}, numFrames}))
+            {
+                bool const lastFrameFull = validElementsInLastFrame == chunkExtent;
+                bool const isLastFrame = frameIdx == numFrames - T_Idx{1};
+
+                // allocate "per-thread" register memory to store all mini blocks of a thread persistently
+                LocalArray regMem;
+
+                auto tmp = onAcc::declareSharedMdArray<T_Data, uniqueId()>(
+                    acc,
+                    CVec<T_Idx, conflictFreeAccess<DeviceType>(miniBlocksPerChunk - T_Idx{1}) + T_Idx{1}>{});
+                auto const frameOffset = chunkExtent * frameIdx;
+
+                for(auto frameElem : onAcc::makeIdxMap(
+                        acc,
+                        onAcc::worker::threadsInBlock,
+                        IdxRange{CVec<T_Idx, 0u>{}, chunkExtent, CVec<T_Idx, elsPerThread>{}}))
+                {
+                    // -- COPY TO SHARED MEM --
+                    if((!lastFrameFull && isLastFrame) || elsPerThread % T_Idx{4} != T_Idx{0})
+                    {
+                        // load into miniblocks buffer, from frameElem to frameElem + elsPerThread
+                        for(auto i = T_Idx{0}; i < elsPerThread; ++i)
+                        {
+                            if(frameOffset + frameElem + i < numElements)
+                                regMem[i] = inputVec[frameOffset + frameElem + i];
+                            else
+                                regMem[i] = 0;
+                        }
+                    }
+                    else
+                    {
+                        MdSpanArray<LocalArray, alpaka::Alignment<16>> regMemMd{regMem};
+
+                        for(auto i = T_Idx{0}; i < elsPerThread; i += T_Idx{4})
+                        {
+                            auto inputVecView = SimdPtr{
+                                inputVec,
+                                Vec{frameOffset + frameElem + i},
+                                Alignment<16>{},
+                                CVec<T_Idx, 4>{}};
+                            auto regView = SimdPtr{regMemMd, Vec{i}, Alignment<16>{}, CVec<T_Idx, 4>{}};
+
+                            regView = inputVecView.load();
+                        }
+                    }
+
+                    // -- HANDLE MINI BLOCKS OF THIS THREAD --
+                    for(auto miniBlockOffset = T_Idx{0}; miniBlockOffset < elsPerThread;
+                        miniBlockOffset += miniBlockSize)
+                    {
+                        // scan miniblock
+                        auto miniBlockSum = scanMiniBlock(regMem + miniBlockOffset, CVec<T_Idx, miniBlockSize>{});
+
+                        // write miniblock sum into shared memory
+                        tmp[conflictFreeAccess<DeviceType>((frameElem + miniBlockOffset) / miniBlockSize)]
+                            = miniBlockSum;
+                    }
+                }
+
+                // -- UP-SWEEP / REDUCE --
+                for(T_Idx d = miniBlocksPerChunk / T_Idx{2}, offset = T_Idx{1}; d > 0; d >>= 1, offset <<= 1)
+                {
+                    onAcc::syncBlockThreads(acc);
+                    for(auto frameElem : onAcc::makeIdxMap(
+                            acc,
+                            onAcc::worker::threadsInBlock,
+                            IdxRange{CVec<T_Idx, 0>{}, Vec<T_Idx, 1>{T_Idx{2} * d}, T_Idx{2}}))
+                    {
+                        T_Idx left = offset * (frameElem + T_Idx{1}).x() - T_Idx{1};
+                        T_Idx right = offset * (frameElem + T_Idx{2}).x() - T_Idx{1};
+                        left = conflictFreeAccess<DeviceType>(left);
+                        right = conflictFreeAccess<DeviceType>(right);
+                        tmp[right] += tmp[left];
+                    }
+                }
+                onAcc::syncBlockThreads(acc);
+
+                for([[maybe_unused]] auto frameElem :
+                    onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{1}))
+                {
+                    // -- SAVE BLOCK SUMS --
+                    if constexpr(sizeof...(blockSums))
+                    {
+                        auto _blockSums = std::get<0>(std::make_tuple(blockSums...));
+                        _blockSums[frameIdx] = tmp[conflictFreeAccess<DeviceType>(miniBlocksPerChunk - T_Idx{1})];
+                    }
+
+                    // -- SET 0 --
+                    tmp[conflictFreeAccess<DeviceType>(miniBlocksPerChunk - T_Idx{1})] = 0;
+                }
+
+                // -- DOWN-SWEEP --
+                for(T_Idx d = 1, offset = miniBlocksPerChunk / T_Idx{2}; d < miniBlocksPerChunk; d <<= 1, offset >>= 1)
+                {
+                    onAcc::syncBlockThreads(acc);
+                    for(auto frameElem : onAcc::makeIdxMap(
+                            acc,
+                            onAcc::worker::threadsInBlock,
+                            IdxRange{CVec<T_Idx, 0>{}, Vec<T_Idx, 1>{T_Idx{2} * d}, T_Idx{2}}))
+                    {
+                        T_Idx left = offset * (frameElem.x() + T_Idx{1}) - T_Idx{1};
+                        T_Idx right = offset * (frameElem.x() + T_Idx{2}) - T_Idx{1};
+                        left = conflictFreeAccess<DeviceType>(left);
+                        right = conflictFreeAccess<DeviceType>(right);
+                        auto t = tmp[left];
+                        tmp[left] = tmp[right];
+                        tmp[right] += t;
+                    }
+                }
+                onAcc::syncBlockThreads(acc);
+
+                // -- WRITE BACK --
+                for(auto frameElem : onAcc::makeIdxMap(
+                        acc,
+                        onAcc::worker::threadsInBlock,
+                        IdxRange{CVec<T_Idx, 0u>{}, chunkExtent, CVec<T_Idx, elsPerThread>{}}))
+                {
+                    // -- HANDLE MINI BLOCKS OF THIS THREAD --
+                    for(auto miniBlockOffset = T_Idx{0}; miniBlockOffset < elsPerThread;
+                        miniBlockOffset += miniBlockSize)
+                    {
+                        // load block sum from shared memory
+                        T_Data blockSum;
+                        if(frameOffset + frameElem + miniBlockOffset < numElements)
+                        {
+                            blockSum = tmp[conflictFreeAccess<DeviceType>(
+                                (frameElem.x() + miniBlockOffset) / miniBlockSize)];
+                        }
+
+                        // add block sum to mini block
+                        addIncrements<T_Idx>(regMem + miniBlockOffset, blockSum, CVec<T_Idx, miniBlockSize>{});
+                    }
+
+                    if((!lastFrameFull && isLastFrame) || elsPerThread % T_Idx{4} != T_Idx{0})
+                    {
+                        // write back to global mem, from frameElem to frameElem + elsPerThread
+                        for(auto i = T_Idx{0}; i < elsPerThread; ++i)
+                        {
+                            if(frameOffset + frameElem + i < numElements)
+                            {
+                                if constexpr(SCAN_TYPE == EXCLUSIVE_SCAN)
+                                    outputVec[frameOffset + frameElem + i] = regMem[i];
+                                else if constexpr(SCAN_TYPE == INCLUSIVE_SCAN)
+                                    outputVec[frameOffset + frameElem + i]
+                                        = inputVec[frameOffset + frameElem + i] + regMem[i];
+                            }
+                        }
+                    }
+                    else
+                    {
+                        MdSpanArray<LocalArray, alpaka::Alignment<16>> regMemMd{regMem};
+
+                        for(auto i = T_Idx{0}; i < elsPerThread; i += T_Idx{4})
+                        {
+                            auto outputVecView = SimdPtr{
+                                outputVec,
+                                Vec{frameOffset + frameElem + i},
+                                Alignment<16>{},
+                                CVec<T_Idx, 4>{}};
+                            auto regView = SimdPtr{regMemMd, Vec{i}, Alignment<16>{}, CVec<T_Idx, 4>{}};
+                            if constexpr(SCAN_TYPE == EXCLUSIVE_SCAN)
+                                outputVecView = regView.load();
+                            else if constexpr(SCAN_TYPE == INCLUSIVE_SCAN)
+                            {
+                                auto inputVecView = SimdPtr{
+                                    inputVec,
+                                    Vec{frameOffset + frameElem + i},
+                                    Alignment<16>{},
+                                    CVec<T_Idx, 4>{}};
+                                outputVecView = inputVecView.load() + regView.load();
+                            }
+                        }
+                    }
+                }
+                onAcc::syncBlockThreads(acc);
+            }
+        }
+    };
+
+    /* Add prefix sum from previous blocks (blockSums) to all elements in each block.
+     */
+    template<typename T_Idx>
+    class Scan_AddIncrementsKernel
+    {
+    public:
+        ALPAKA_FN_ACC void operator()(
+            alpaka::onHost::concepts::Device auto const& acc,
+            alpaka::concepts::IMdSpan auto const& blockSums,
+            alpaka::concepts::IMdSpan auto outputVec) const
+        {
+            alpaka::concepts::Vector auto numElements = outputVec.getExtents();
+            alpaka::concepts::CVector auto numThreadsPerBlock = acc[layer::thread].count();
+            alpaka::concepts::CVector auto frameExtent = acc[frame::extent];
+            constexpr auto elsPerThread = frameExtent.x() / numThreadsPerBlock.x();
+            alpaka::concepts::CVector auto chunkExtent = CVec<T_Idx, elsPerThread * numThreadsPerBlock.x()>{};
+
+            auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
+            simdGrid.concurrent(
+                acc,
+                numElements,
+                [&](auto const&, auto&& simdOut) constexpr
+                { simdOut = simdOut.load() + blockSums[simdOut.getIdx() / chunkExtent]; },
+                outputVec);
+        }
+    };
+
+    auto scanBufferSize(alpaka::concepts::Vector auto const& extents)
+    {
+        static_assert(extents.size() == 1);
+
+        using T_Idx = ALPAKA_TYPEOF(extents)::type;
+        constexpr auto chunkExtent = CVec<T_Idx, 2048u>{};
+        auto elements = extents;
+
+        auto bufSize = T_Idx{0};
+        while(elements > T_Idx{1})
+        {
+            elements = divCeil(elements, chunkExtent);
+
+            // buffer is for increments and blockSums, so *2 is necessary
+            bufSize += 2 * elements;
+        }
+
+        return bufSize;
+    }
+
+    template<ScanType SCAN_TYPE, typename T_Idx, typename T_Data>
+    void scan(
+        alpaka::concepts::Executor auto& exec,
+        alpaka::onHost::concepts::Device auto& devAcc,
+        auto& queue,
+        alpaka::concepts::IDataSource<T_Data> auto& inputVec,
+        alpaka::concepts::IMdSpan<T_Data> auto& outputVec,
+        alpaka::concepts::IMdSpan<T_Data> auto& buffer)
+    {
+        // Instantiate the kernel function object with the given scan type
+        Scan_ScanBlocksKernel<SCAN_TYPE, T_Idx, T_Data> scanBlocks;
+
+        // Define chunkExtent
+        constexpr auto chunkExtent = CVec<T_Idx, 2048u>{};
+        auto numFrames = divCeil(inputVec.getExtents(), chunkExtent);
+        auto const frameSpec = onHost::FrameSpec{numFrames, chunkExtent, CVec<T_Idx, 256u>{}};
+
+        if(frameSpec.m_numFrames > T_Idx{1})
+        {
+            // problem does not fit in 1 frame, recurse
+            Scan_AddIncrementsKernel<T_Idx> addIncrements;
+
+            assert(buffer.getExtents() >= frameSpec.m_numFrames * 2);
+
+            // get the view to the necessary elements in the buffer for increments and blockSums
+            auto increments = buffer.getSubView(frameSpec.m_numFrames);
+            auto blockSums = buffer.getSubView(frameSpec.m_numFrames, frameSpec.m_numFrames);
+
+            // the unused elements in the buffer are used for recursion to the next scan call
+            auto bufferNext = buffer.getSubView(frameSpec.m_numFrames * 2, buffer.size() - frameSpec.m_numFrames * 2);
+
+            // enqueue the kernel execution tasks
+            queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec, increments});
+
+            // always recurse into exclusive scan
+            scan<EXCLUSIVE_SCAN, T_Idx>(exec, devAcc, queue, increments, blockSums, bufferNext);
+            queue.enqueue(exec, frameSpec, KernelBundle{addIncrements, blockSums, outputVec});
+        }
+        else
+        {
+            // problem fits within 1 frame
+            queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec});
+        }
+    }
+
+    template<ScanType SCAN_TYPE, typename T_Idx, typename T_Data>
+    void scan(
+        alpaka::concepts::Executor auto& exec,
+        alpaka::onHost::concepts::Device auto& devAcc,
+        auto& queue,
+        alpaka::concepts::IDataSource<T_Data> auto& inputVec,
+        alpaka::concepts::IMdSpan<T_Data> auto& outputVec)
+    {
+        auto buf = onHost::allocDeferred<T_Data>(queue, scanBufferSize(inputVec.getExtents()));
+
+        scan<SCAN_TYPE, T_Idx, T_Data>(exec, devAcc, queue, inputVec, outputVec, buf);
+
+        buf.keepAlive(queue);
+    }
+
+} // namespace alpaka::onHost::internal
