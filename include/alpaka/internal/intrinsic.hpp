@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace alpaka::internal::intrinsic
 {
     struct Popcount
@@ -11,7 +13,16 @@ namespace alpaka::internal::intrinsic
         template<typename T_IntrinsicImpl, typename T_Arg>
         struct Op
         {
-            auto operator()(T_IntrinsicImpl const, T_Arg const& val) const;
+            int32_t operator()(T_IntrinsicImpl const, T_Arg const& val) const;
+        };
+    };
+
+    struct Ffs
+    {
+        template<typename T_IntrinsicImpl, typename T_Arg>
+        struct Op
+        {
+            int32_t operator()(T_IntrinsicImpl const, T_Arg const& val) const;
         };
     };
 } // namespace alpaka::internal::intrinsic

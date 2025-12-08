@@ -35,12 +35,26 @@ struct TestKernel
     {
         for(auto [index] : onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, IdxRange{input.getExtents()}))
         {
-            output[index] = popcount(input[index]);
+            output[index] = ffs(input[index]);
         }
     }
 };
 
-TEMPLATE_LIST_TEST_CASE("popcount", "[intrinsic][popc]", TestBackends)
+template<typename TValue>
+static int32_t naiveFfs(TValue value)
+{
+    if(value == 0)
+        return 0;
+    std::int32_t result = 1;
+    while((value & 1) == 0)
+    {
+        value >>= 1;
+        result++;
+    }
+    return result;
+}
+
+TEMPLATE_LIST_TEST_CASE("ffs", "[intrinsic][ffs]", TestBackends)
 {
     using Backend = TestType;
     auto cfg = Backend::makeDict();
@@ -59,14 +73,7 @@ TEMPLATE_LIST_TEST_CASE("popcount", "[intrinsic][popc]", TestBackends)
     alpaka::onHost::Queue queue = devAcc.makeQueue();
 
     // Input data
-    std::vector<uint64_t> hostInput = {
-        0,
-        1,
-        0x1234'5678'9ABC'DEF0,
-        0xFFFF'FFFF'FFFF'FFFF,
-        0xAAAA'AAAA'AAAA'AAAA,
-        0x5555'5555'5555'5555,
-    };
+    std::vector<uint64_t> hostInput = {0, 1, 2, 1llu << 32, 1llu << 63};
     size_t const size = hostInput.size();
 
     // Allocate device memory
@@ -97,7 +104,7 @@ TEMPLATE_LIST_TEST_CASE("popcount", "[intrinsic][popc]", TestBackends)
     for(size_t i = 0; i < size; ++i)
     {
         auto val = hostInput[i];
-        int expected = std::popcount(val);
+        int expected = naiveFfs(val);
         CHECK(hostOutput[i] == expected);
     }
 }

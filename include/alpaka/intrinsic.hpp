@@ -9,13 +9,28 @@
 #include "alpaka/api/trait.hpp"
 #include "internal/intrinsic.hpp"
 
+#include <climits>
+
 namespace alpaka
 {
-    constexpr auto popcount(auto const& arg)
+    /** Returns the number of bits set to 1. */
+    constexpr int32_t popcount(auto const& arg)
+        requires(sizeof(ALPAKA_TYPEOF(arg)) == 4u || sizeof(ALPAKA_TYPEOF(arg)) == 8u)
     {
-        auto const intrinsicImpl = alpaka::trait::getIntrinsicImpl(thisApi());
+        constexpr auto intrinsicImpl = trait::getIntrinsicImpl(thisApi());
         return internal::intrinsic::Popcount::Op<ALPAKA_TYPEOF(intrinsicImpl), ALPAKA_TYPEOF(arg)>{}(
             intrinsicImpl,
             arg);
+    }
+
+    /* Position of the least significant bit set to 1.
+     *
+     * @return 1-based position of the first set bit, zero for input value 0.
+     */
+    constexpr int32_t ffs(auto const& arg)
+        requires(sizeof(ALPAKA_TYPEOF(arg)) == 4u || sizeof(ALPAKA_TYPEOF(arg)) == 8u)
+    {
+        constexpr auto intrinsicImpl = trait::getIntrinsicImpl(thisApi());
+        return internal::intrinsic::Ffs::Op<ALPAKA_TYPEOF(intrinsicImpl), ALPAKA_TYPEOF(arg)>{}(intrinsicImpl, arg);
     }
 } // namespace alpaka
