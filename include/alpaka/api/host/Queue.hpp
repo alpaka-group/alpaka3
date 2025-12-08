@@ -195,6 +195,7 @@ namespace alpaka::onHost
 
             void enqueueHostFnAsync(auto const& task)
             {
+                ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 m_workerThread.submit(task);
             }
 
