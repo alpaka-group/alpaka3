@@ -49,7 +49,7 @@ namespace alpaka::example::scan
     public:
         ALPAKA_FN_ACC void operator()(
             auto const& acc,
-            concepts::IMdSpan auto const& inputVec,
+            concepts::IDataSource auto const inputVec,
             concepts::IMdSpan auto outputVec,
             auto... blockSums) const
         {
@@ -175,7 +175,12 @@ namespace alpaka::example::scan
     };
 
     template<ScanType SCAN_TYPE>
-    void scan(auto& exec, auto& devAcc, auto& queue, auto const& inputVec, auto outputVec)
+    void scan(
+        auto& exec,
+        auto& devAcc,
+        auto& queue,
+        concepts::IDataSource auto const& inputVec,
+        concepts::IMdSpan auto outputVec)
     {
         // Instantiate the kernel function object
         Scan_ScanBlocksKernel<SCAN_TYPE> scanBlocks;

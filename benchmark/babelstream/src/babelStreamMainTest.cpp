@@ -68,8 +68,8 @@ struct SimdForEachKernel
     ALPAKA_FN_ACC void operator()(
         auto const& acc,
         auto const& func,
-        alpaka::concepts::IMdSpan auto const& arg0,
-        alpaka::concepts::IMdSpan auto const&... args) const
+        alpaka::concepts::IDataSource auto arg0,
+        alpaka::concepts::IDataSource auto... args) const
     {
         auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
         simdGrid.concurrent(acc, arg0.getExtents(), func, arg0, args...);
@@ -204,14 +204,14 @@ void testKernels(auto const deviceSpec, auto const exec)
     auto arraySize = static_cast<Idx>(arraySizeMain);
 
     // Acc buffers
-    auto bufAccInputA = onHost::alloc<DataType>(devAcc, arraySize);
-    auto bufAccInputB = onHost::allocLike(devAcc, bufAccInputA);
-    auto bufAccOutputC = onHost::allocLike(devAcc, bufAccInputA);
+    concepts::IBuffer auto bufAccInputA = onHost::alloc<DataType>(devAcc, arraySize);
+    concepts::IBuffer auto bufAccInputB = onHost::allocLike(devAcc, bufAccInputA);
+    concepts::IBuffer auto bufAccOutputC = onHost::allocLike(devAcc, bufAccInputA);
 
     // Host buffer as the result
-    auto bufHostOutputA = onHost::allocHostLike(bufAccInputA);
-    auto bufHostOutputB = onHost::allocHostLike(bufAccInputB);
-    auto bufHostOutputC = onHost::allocHostLike(bufAccOutputC);
+    concepts::IBuffer auto bufHostOutputA = onHost::allocHostLike(bufAccInputA);
+    concepts::IBuffer auto bufHostOutputB = onHost::allocHostLike(bufAccInputB);
+    concepts::IBuffer auto bufHostOutputC = onHost::allocHostLike(bufAccOutputC);
 
     /* Each frame will have 64 elements processed by each thread.
      * The number of frames is calculated based on the array size and the number of elements processed by each thread.
