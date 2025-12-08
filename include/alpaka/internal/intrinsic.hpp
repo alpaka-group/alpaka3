@@ -25,4 +25,13 @@ namespace alpaka::internal::intrinsic
             int32_t operator()(T_IntrinsicImpl const, T_Arg const& val) const;
         };
     };
+
+    struct Clz
+    {
+        template<typename T_IntrinsicImpl, typename T_Arg>
+        struct Op
+        {
+            int32_t operator()(T_IntrinsicImpl const, T_Arg const& val) const;
+        };
+    };
 } // namespace alpaka::internal::intrinsic

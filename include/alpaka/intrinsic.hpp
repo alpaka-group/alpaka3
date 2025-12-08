@@ -33,4 +33,15 @@ namespace alpaka
         constexpr auto intrinsicImpl = trait::getIntrinsicImpl(thisApi());
         return internal::intrinsic::Ffs::Op<ALPAKA_TYPEOF(intrinsicImpl), ALPAKA_TYPEOF(arg)>{}(intrinsicImpl, arg);
     }
+
+    /* Return the number of most significant zero bits
+     *
+     * @return number consecutive most significant zero bits, zero for input value 0.
+     */
+    constexpr int32_t clz(auto const& arg)
+        requires(sizeof(ALPAKA_TYPEOF(arg)) == 4u || sizeof(ALPAKA_TYPEOF(arg)) == 8u)
+    {
+        constexpr auto intrinsicImpl = alpaka::trait::getIntrinsicImpl(thisApi());
+        return internal::intrinsic::Clz::Op<ALPAKA_TYPEOF(intrinsicImpl), ALPAKA_TYPEOF(arg)>{}(intrinsicImpl, arg);
+    }
 } // namespace alpaka

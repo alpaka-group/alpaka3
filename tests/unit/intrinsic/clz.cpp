@@ -14,7 +14,7 @@ using namespace alpaka;
 using TestBackends
     = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors))>;
 
-struct TestKernel
+struct PopcountKernel
 {
     template<typename TAcc>
     ALPAKA_FN_ACC void operator()(TAcc const& acc, concepts::IMdSpan auto output, concepts::IMdSpan auto const input)
@@ -22,12 +22,12 @@ struct TestKernel
     {
         for(auto [index] : onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, IdxRange{input.getExtents()}))
         {
-            output[index] = popcount(input[index]);
+            output[index] = clz(input[index]);
         }
     }
 };
 
-TEMPLATE_LIST_TEST_CASE("popcount", "[intrinsic][popc]", TestBackends)
+TEMPLATE_LIST_TEST_CASE("clz", "[intrinsic][clz]", TestBackends)
 {
     using Backend = TestType;
     auto cfg = Backend::makeDict();
@@ -46,14 +46,7 @@ TEMPLATE_LIST_TEST_CASE("popcount", "[intrinsic][popc]", TestBackends)
     alpaka::onHost::Queue queue = devAcc.makeQueue();
 
     // Input data
-    std::vector<uint64_t> hostInput = {
-        0,
-        1,
-        0x1234'5678'9ABC'DEF0,
-        0xFFFF'FFFF'FFFF'FFFF,
-        0xAAAA'AAAA'AAAA'AAAA,
-        0x5555'5555'5555'5555,
-    };
+    std::vector<uint64_t> hostInput = {0, 1, 2, 1llu << 32, 1llu << 63};
     size_t const size = hostInput.size();
 
     // Allocate device memory
@@ -67,7 +60,7 @@ TEMPLATE_LIST_TEST_CASE("popcount", "[intrinsic][popc]", TestBackends)
     auto const frameSpec = alpaka::onHost::getFrameSpec<uint64_t>(devAcc, devInput.getExtents());
 
     // Create kernel
-    TestKernel kernel;
+    PopcountKernel kernel;
     auto const taskKernel = alpaka::KernelBundle{kernel, devOutput, devInput};
 
     // Execute the kernel
@@ -84,7 +77,7 @@ TEMPLATE_LIST_TEST_CASE("popcount", "[intrinsic][popc]", TestBackends)
     for(size_t i = 0; i < size; ++i)
     {
         auto val = hostInput[i];
-        int expected = std::popcount(val);
+        int expected = std::countl_zero(val);
         CHECK(hostOutput[i] == expected);
     }
 }

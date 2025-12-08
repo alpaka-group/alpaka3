@@ -57,6 +57,28 @@ namespace alpaka::internal::intrinsic
             ALPAKA_UNREACHABLE(int{});
         }
     };
+
+    template<typename T_Arg>
+    struct Clz::Op<alpaka::internal::SyclIntrinsic, T_Arg>
+    {
+        constexpr auto operator()(alpaka::internal::SyclIntrinsic const, T_Arg const& val) const
+        {
+            if constexpr(sizeof(T_Arg) == 4u)
+            {
+                auto value = std::bit_cast<unsigned int>(val);
+                return sycl::clz(value);
+            }
+            else if constexpr(sizeof(T_Arg) == 8u)
+            {
+                auto value = std::bit_cast<unsigned long long>(val);
+                return sycl::clz(value);
+            }
+            else
+                static_assert(!sizeof(T_Arg), "Unsupported data type, sizeof() must be 4 or 8");
+
+            ALPAKA_UNREACHABLE(int{});
+        }
+    };
 } // namespace alpaka::internal::intrinsic
 
 #endif
