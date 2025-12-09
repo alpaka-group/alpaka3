@@ -18,7 +18,8 @@
 
 using namespace alpaka;
 
-using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors))>;
+using TestBackends
+    = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors))>;
 
 template<
     rand::concepts::UniformRandomEngine T_Engine,
@@ -26,9 +27,9 @@ template<
     rand::concepts::Interval T_Interval>
 struct UniformRealKernel
 {
-    ALPAKA_FN_ACC void operator()(
+    constexpr void operator()(
         auto const& acc,
-        concepts::MdSpan auto res,
+        concepts::IMdSpan auto res,
         std::unsigned_integral auto seed,
         T_Floating minF,
         T_Floating maxF) const
@@ -62,16 +63,16 @@ struct DummyUniformEngine
         return std::numeric_limits<type>::max();
     }
 
-    ALPAKA_FN_HOST_ACC DummyUniformEngine() = default;
+    constexpr DummyUniformEngine() = default;
 
     template<typename T_Integer>
-    ALPAKA_FN_HOST_ACC explicit constexpr DummyUniformEngine(T_Integer)
+    explicit constexpr DummyUniformEngine(T_Integer)
     {
     }
 
-    ALPAKA_FN_HOST_ACC type operator()() noexcept
+    constexpr type operator()() noexcept
     {
-        currentIdx = ++currentIdx % nums.size();
+        currentIdx = (currentIdx++) % nums.size();
         return nums[currentIdx];
     }
 
@@ -116,6 +117,7 @@ template<typename T_Engine, typename T_FP, typename T_Interval>
 struct HelperPack
 {
     using value_type = T_FP;
+
     HelperPack(T_Engine, T_FP, T_Interval) {};
 };
 
@@ -145,9 +147,8 @@ void testCase(HelperPack<T_Engine, T_FP, T_Interval>, uint64_t seed, T_FP minF, 
 
     // ---- allocate output buffer (1D of N values) ----------------------------
     constexpr uint32_t N = 512;
-    constexpr auto frameExtent = 256u;
-    constexpr auto numFrames = static_cast<decltype(frameExtent)>(N / frameExtent);
-    auto hostInput = onHost::alloc<T_FP>(device, Vec{N});
+
+    auto hostInput = onHost::allocHost<T_FP>(Vec{N});
     for(auto& idx : hostInput)
     {
         idx = std::numeric_limits<T_FP>::quiet_NaN(); // make all nan
@@ -160,7 +161,7 @@ void testCase(HelperPack<T_Engine, T_FP, T_Interval>, uint64_t seed, T_FP minF, 
     // ---- launch kernel -------------------------------------------------------
     queue.enqueue(
         exec,
-        onHost::FrameSpec{Vec{numFrames}, Vec{frameExtent}}, // 1 block, N threads
+        onHost::getFrameSpec<T_FP>(device, Vec{N}),
         KernelBundle{UniformRealKernel<T_Engine, T_FP, T_Interval>{}, devRes.getMdSpan(), seed, minF, maxF});
 
     onHost::memcpy(queue, hostRes, devRes);
@@ -219,20 +220,20 @@ void testMainDispatch()
         });
 }
 
-TEMPLATE_LIST_TEST_CASE("simple DummyEngine for edge case testing", "", TestApis)
+TEMPLATE_LIST_TEST_CASE("simple DummyEngine for edge case testing", "", TestBackends)
 {
     using T_Engines = Tuple<DummyUniformEngine<uint32_t>, DummyUniformEngine<uint64_t>>;
 
     testMainDispatch<TestType, T_Engines>();
 }
 
-TEMPLATE_LIST_TEST_CASE("UniformReal device on PhiloxEngine", "", TestApis)
+TEMPLATE_LIST_TEST_CASE("UniformReal device on PhiloxEngine", "", TestBackends)
 {
     using T_Engines = Tuple<rand::engine::Philox4x32x10, rand::engine::Philox4x32x10Vector>;
     testMainDispatch<TestType, T_Engines>();
 }
 
-TEMPLATE_LIST_TEST_CASE("UniformReal on std engines", "", TestApis)
+TEMPLATE_LIST_TEST_CASE("UniformReal on std engines", "", TestBackends)
 {
     using namespace alpaka;
     auto cfg = TestType::makeDict();
