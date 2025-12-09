@@ -5,7 +5,39 @@
 #
 
 cmake_minimum_required(VERSION 3.25)
-project(alpaka)
+
+# Find alpaka version.
+file(
+    STRINGS
+    "${CMAKE_CURRENT_LIST_DIR}/include/alpaka/version.hpp"
+    alpaka_VERSION_MAJOR_HPP
+    REGEX "#define ALPAKA_VERSION_MAJOR "
+)
+file(
+    STRINGS
+    "${CMAKE_CURRENT_LIST_DIR}/include/alpaka/version.hpp"
+    alpaka_VERSION_MINOR_HPP
+    REGEX "#define ALPAKA_VERSION_MINOR "
+)
+file(
+    STRINGS
+    "${CMAKE_CURRENT_LIST_DIR}/include/alpaka/version.hpp"
+    alpaka_VERSION_PATCH_HPP
+    REGEX "#define ALPAKA_VERSION_PATCH "
+)
+
+string(REGEX MATCH "([0-9]+)" alpaka_VERSION_MAJOR ${alpaka_VERSION_MAJOR_HPP})
+string(REGEX MATCH "([0-9]+)" alpaka_VERSION_MINOR ${alpaka_VERSION_MINOR_HPP})
+string(REGEX MATCH "([0-9]+)" alpaka_VERSION_PATCH ${alpaka_VERSION_PATCH_HPP})
+
+set(PACKAGE_VERSION "${alpaka_VERSION_MAJOR}.${alpaka_VERSION_MINOR}.${alpaka_VERSION_PATCH}")
+
+project(
+    alpaka
+    VERSION ${alpaka_VERSION_MAJOR}.${alpaka_VERSION_MINOR}.${alpaka_VERSION_PATCH}
+    DESCRIPTION "The alpaka library is a header-only C++20 abstraction library for accelerator development."
+    HOMEPAGE_URL "https://github.com/alpaka-group/alpaka3"
+)
 
 # This file's directory.
 set(_alpaka_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})

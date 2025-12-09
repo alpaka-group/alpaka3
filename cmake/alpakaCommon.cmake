@@ -114,6 +114,11 @@ if(NOT TARGET alpaka)
     target_compile_definitions(alpaka_target_headers INTERFACE ALPAKA_CMAKE_TARGET_HEADERS)
 
     add_library(alpaka INTERFACE)
+    set_target_properties(alpaka PROPERTIES VERSION ${PROJECT_VERSION})
+
+    get_target_property(version alpaka VERSION)
+    message(STATUS "Alpaka version: ${version}")
+
     add_library(alpaka::alpaka ALIAS alpaka)
     target_compile_definitions(alpaka INTERFACE ALPAKA_CMAKE_TARGET_ALPAKA)
 
