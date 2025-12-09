@@ -51,7 +51,8 @@ def copy_doxygen_html(app, exception):
 
 def setup(app):
     # Hook into the 'builder-inited' event to run the function before the build starts
-    app.connect('build-finished', generate_single_header)
+    if not "ALPAKA_NO_SINGLE_HEADER" in os.environ:
+        app.connect('build-finished', generate_single_header)
     app.connect('build-finished', copy_doxygen_html)
 
 # -- Project information -----------------------------------------------------
@@ -228,6 +229,8 @@ else:
 
     html_theme = "sphinx_rtd_theme"
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+
+    logger.info("single header build can be skipped with the environment variable 'ALPAKA_NO_SINGLE_HEADER=1'")
 
     if shutil.which("doxygen"):
         if not "ALPAKA_NO_DOXYGEN" in os.environ:
