@@ -25,8 +25,8 @@ struct VectorAddKernel1D
     template<typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc,
-        alpaka::concepts::IDataSource auto const in1,
-        alpaka::concepts::IDataSource auto const in2,
+        alpaka::concepts::IDataSource auto const& in1,
+        alpaka::concepts::IDataSource auto const& in2,
         alpaka::concepts::IMdSpan auto out) const
     {
         // product() returns a scalar therefore we need the explicit Vec1D type
@@ -92,8 +92,8 @@ struct VectorAddKernel3D
     template<typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc,
-        alpaka::concepts::IDataSource auto const in1,
-        alpaka::concepts::IDataSource auto const in2,
+        alpaka::concepts::IDataSource auto const& in1,
+        alpaka::concepts::IDataSource auto const& in2,
         alpaka::concepts::IMdSpan auto out) const
     {
         auto numFramesMD = acc[alpaka::frame::count];

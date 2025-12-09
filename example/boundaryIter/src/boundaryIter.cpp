@@ -19,7 +19,7 @@ struct BoundaryExampleKernel
 {
     ALPAKA_FN_ACC auto operator()(
         auto const& acc,
-        concepts::IMdSpan auto const view,
+        concepts::IMdSpan auto const& view,
         concepts::IMdSpan auto viewTarget,
         concepts::BoundaryDirection auto const& bd) const
     {

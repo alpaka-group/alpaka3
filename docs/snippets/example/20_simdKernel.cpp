@@ -18,8 +18,8 @@ struct MDVectorSimdAdd
     ALPAKA_FN_ACC void operator()(
         auto const& acc,
         concepts::IMdSpan auto out,
-        concepts::IDataSource auto const in0,
-        concepts::IDataSource auto const in1) const
+        concepts::IDataSource auto const& in0,
+        concepts::IDataSource auto const& in1) const
     {
         ALPAKA_ASSERT_ACC(out.getExtents() == in0.getExtents());
         ALPAKA_ASSERT_ACC(out.getExtents() == in1.getExtents());

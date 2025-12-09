@@ -22,8 +22,8 @@ struct VectorAddKernel1D
     template<typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc,
-        alpaka::concepts::IDataSource auto const in1,
-        alpaka::concepts::IDataSource auto const in2,
+        alpaka::concepts::IDataSource auto const& in1,
+        alpaka::concepts::IDataSource auto const& in2,
         alpaka::concepts::IMdSpan auto out,
         Vec1D size) const
     {
@@ -46,8 +46,8 @@ struct VectorAddKernel3D
     template<typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc,
-        alpaka::concepts::IDataSource auto const in1,
-        alpaka::concepts::IDataSource auto const in2,
+        alpaka::concepts::IDataSource auto const& in1,
+        alpaka::concepts::IDataSource auto const& in2,
         alpaka::concepts::IMdSpan auto out,
         Vec3D size) const
     {

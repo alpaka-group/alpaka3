@@ -49,7 +49,7 @@ namespace alpaka::example::scan
     public:
         ALPAKA_FN_ACC void operator()(
             auto const& acc,
-            concepts::IDataSource auto const inputVec,
+            concepts::IDataSource auto const& inputVec,
             concepts::IMdSpan auto outputVec,
             auto... blockSums) const
         {
