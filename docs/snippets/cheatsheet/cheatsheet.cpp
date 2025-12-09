@@ -220,7 +220,7 @@ auto main() -> int
 
         // BEGIN-CHEATSHEET-enqueueHostTask
         queue.enqueueHostFn(task);
-        queue.enqueueHostFnAsync(task);
+        queue.enqueueHostFnDeferred(task);
         // END-CHEATSHEET-enqueueHostTask
 
         // BEGIN-CHEATSHEET-waitQueue

@@ -200,11 +200,11 @@ namespace alpaka::onHost
             };
 
             template<typename T_Queue, typename T_Task>
-            struct HostTaskAsync
+            struct HostTaskDeferred
             {
                 void operator()(T_Queue& queue, T_Task const& task) const
                 {
-                    queue.enqueueHostFnAsync(task);
+                    queue.enqueueHostFnDeferred(task);
                 }
             };
 
@@ -223,9 +223,9 @@ namespace alpaka::onHost
             Enqueue::HostTask<ALPAKA_TYPEOF(queue), ALPAKA_TYPEOF(task)>{}(queue, task);
         }
 
-        inline void enqueueHostFnAsync(auto& queue, auto const& task)
+        inline void enqueueHostFnDeferred(auto& queue, auto const& task)
         {
-            Enqueue::HostTaskAsync<ALPAKA_TYPEOF(queue), ALPAKA_TYPEOF(task)>{}(queue, task);
+            Enqueue::HostTaskDeferred<ALPAKA_TYPEOF(queue), ALPAKA_TYPEOF(task)>{}(queue, task);
         }
 
         template<typename TKernelFn, typename... TArgs>

@@ -379,7 +379,7 @@ namespace alpaka::onHost
         };
 
         template<typename T_Device, typename T_Task>
-        struct Enqueue::HostTaskAsync<unifiedCudaHip::Queue<T_Device>, T_Task>
+        struct Enqueue::HostTaskDeferred<unifiedCudaHip::Queue<T_Device>, T_Task>
         {
             // same as for Enqueue::HostTask, but not waiting for the task to finish
             struct HostFuncData

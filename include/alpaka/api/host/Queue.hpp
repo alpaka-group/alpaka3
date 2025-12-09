@@ -193,7 +193,7 @@ namespace alpaka::onHost
                 submit([task]() { task(); });
             }
 
-            void enqueueHostFnAsync(auto const& task)
+            void enqueueHostFnDeferred(auto const& task)
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 m_workerThread.submit(task);

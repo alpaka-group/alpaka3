@@ -297,7 +297,7 @@ namespace alpaka::onHost
     };
 
     template<typename T_Device, typename T_Task>
-    struct internal::Enqueue::HostTaskAsync<syclGeneric::Queue<T_Device>, T_Task>
+    struct internal::Enqueue::HostTaskDeferred<syclGeneric::Queue<T_Device>, T_Task>
     {
         // same as for Enqueue::HostTask, but not waiting for the task to finish
         void operator()(syclGeneric::Queue<T_Device>& queue, T_Task const& task) const

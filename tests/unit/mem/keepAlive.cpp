@@ -20,7 +20,7 @@ using ValType = int;
 
 struct IotaKernel
 {
-    ALPAKA_FN_ACC void operator()(auto const& acc, concepts::MdSpan<ValType> auto out) const
+    ALPAKA_FN_ACC void operator()(auto const& acc, concepts::IMdSpan<ValType> auto out) const
     {
         // the kernel should run for some time to increase the likelihood of a race condition occurring and the test
         // failing in case the keepAlive isn't working

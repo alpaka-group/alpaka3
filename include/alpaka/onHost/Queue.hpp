@@ -167,9 +167,9 @@ namespace alpaka::onHost
          *
          * @param task task to be executed asynchronously on the host side
          */
-        void enqueueHostFnAsync(auto const& task) const
+        void enqueueHostFnDeferred(auto const& task) const
         {
-            return internal::Enqueue::HostTaskAsync<ALPAKA_TYPEOF(*m_queue.get()), ALPAKA_TYPEOF(task)>{}(
+            return internal::Enqueue::HostTaskDeferred<ALPAKA_TYPEOF(*m_queue.get()), ALPAKA_TYPEOF(task)>{}(
                 *m_queue.get(),
                 task);
         }
