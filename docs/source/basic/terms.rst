@@ -1,7 +1,7 @@
 Terms & Structure
 =================
 
-.. sectionauthor:: Simeon Ehrig
+.. sectionauthor:: Simeon Ehrig, René Widera
 
 
 Host and Accelerator
@@ -57,3 +57,88 @@ Device
 
 Kernel
 ------
+
+.. _basic-data-storage:
+
+Data Storage
+------------
+
+Data Storage objects are memory or memory-like objects that are available across API calls and kernels.
+Each Data Storage object either points to physical memory and uses it to read and write values, or generates data when read.
+The physical memory used is usually the RAM of a CPU, the VRAM of a GPU, or the unified memory (RAM) of an APU.
+
+The properties of a Data Storage object are described by the interface concept that it fulfills.
+Alpaka offers 4 interface concepts that complement each other.
+A data storage object must fulfill at least the ``alpaka::concepts::impl::IDataSource``.
+The ordering is ``IDataSource -> IMdSpan -> IView -> IBuffer``.
+
+.. figure:: images/data_storage_interface_hierarchy.svg
+
+   The Data Storage interface hierarchy
+
+Each interface describes the minimum functionality that a Data Storage object must provide.
+This means that an interface that extends another interface must also meet the requirements of the base interface.
+For example, IDataSource requires a function that returns the :ref:`extents <Extents>` of the Data Storage object.
+``IMdSpan``, ``IView``, and ``IBuffer`` (indirectly) extend the ``IDataSource`` interface and therefore also provide this functionality.
+
+IDataSource
+```````````
+
+An object that implements the ``IDataSource`` interface behaves like a multidimensional memory that can only be read.
+It is mainly used for generators that do not refer to physical memory.
+Instead, it generates the returned data directly, depending on the memory access index and preconfigured values from the generator's construction time.
+A concrete generator is the `LinearizedIdxGenerator <https://alpaka3.readthedocs.io/en/latest/doxygen/structalpaka_1_1LinearizedIdxGenerator.html>`_.
+
+An ``IDataSource`` Data Storage object contains three components: ``Extents``, ``Pitches`` and ``Alignment``.
+``Pitches`` and ``Alignment`` are only relevant if you want to access the physical storage without the access operator.
+Therefore, these two terms are explained in the :ref:`advanced section <memory-layout-of-multidimensional-data-storage>`.
+The :ref:`extents <Extents>` are described in the next section.
+
+Got to the `IDataSource Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IDataSource.html>`_
+
+Extents
++++++++
+
+The ``Extents`` define the number of dimensions and the size of each dimension.
+The order of the dimensions corresponds to C/C++.
+The memory is row-oriented. The fastest index is the outer right one.
+
+.. code-block:: cpp
+
+    auto extents = alpaka::Vec<uint32_t, 2u>{3u, 5u};
+    auto buffer = alpaka::onHost::allocUnified<int>(extents);
+    // access element column 3 and row 1
+    int value = buffer[alpaka::Vec{1u, 3u}];
+
+
+.. figure:: images/extents_access_example.svg
+
+    Memory layout of a Data Storage object with the extents [3, 5]. Access to memory at position [1, 3]. For simplicity, pitches and alignment are not shown in the figure.
+
+
+IMdSpan
+```````
+
+An ``IMdSpan`` Data Storage object object points to physical memory. This allows memory to be read and written.
+It does not manage the lifetime of the memory it pointing to it.
+This means that deleting an ``IMdSpan`` Data Storage object does not free up memory.
+In addition, the user is responsible for ensuring that an ``IMdSpan`` Data Storage object references valid memory.
+It does not store any information about the associated :ref:`API <API>`.
+
+Got to the `IMdSpan Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IMdSpan.html>`_
+
+IView
+`````
+
+An ``IView`` Data Storage object is almost identical to an ``IMdSpan`` Data Storage object.
+The difference is that it stores information about the associated :ref:`API <API>`.
+
+Got to the `IView Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IDataSource.html>`_
+
+IBuffer
+```````
+
+An ``IBuffer`` Data Storage object is pointing to memory and manages its lifetime.
+When all ``IBuffer`` Data Storage objects that are pointing to the same memory are deleted, the memory is freed.
+
+Got to the `IBuffer Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IBuffer.html>`_

@@ -63,7 +63,8 @@ Individual chapters are based on the information of the chapters before.
    :maxdepth: 1
 
    advanced/cmake.rst
-   basic/benchmark.rst
+   advanced/datastorage.rst
+   advanced/benchmark.rst
 
 .. toctree::
    :caption: Developer

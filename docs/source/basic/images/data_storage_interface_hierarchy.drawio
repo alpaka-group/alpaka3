@@ -1,0 +1,43 @@
+<mxfile host="embed.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0" version="29.2.6">
+  <diagram id="ZukJtH96eZ0nAWynVqsB" name="Seite-1">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="J5MPoutx_njrzbuB6CCt-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="240" width="500" x="140" y="61" as="geometry" />
+        </mxCell>
+        <mxCell id="1xzGRdas92AsIudjKrJp-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;sketch=1;curveFitting=1;jiggle=2;" value="" vertex="1">
+          <mxGeometry height="240" width="500" x="140" y="61" as="geometry" />
+        </mxCell>
+        <mxCell id="J5MPoutx_njrzbuB6CCt-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=default;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="200" width="390" x="140" y="81" as="geometry" />
+        </mxCell>
+        <mxCell id="1xzGRdas92AsIudjKrJp-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;sketch=1;curveFitting=1;jiggle=2;" value="" vertex="1">
+          <mxGeometry height="200" width="390" x="140" y="81" as="geometry" />
+        </mxCell>
+        <mxCell id="J5MPoutx_njrzbuB6CCt-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="160" width="300" x="140" y="101" as="geometry" />
+        </mxCell>
+        <mxCell id="1xzGRdas92AsIudjKrJp-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;sketch=1;curveFitting=1;jiggle=2;" value="" vertex="1">
+          <mxGeometry height="160" width="300" x="140" y="101" as="geometry" />
+        </mxCell>
+        <mxCell id="J5MPoutx_njrzbuB6CCt-8" parent="1" style="ellipse;whiteSpace=wrap;html=1;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="120" width="200" x="140" y="121" as="geometry" />
+        </mxCell>
+        <mxCell id="1xzGRdas92AsIudjKrJp-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;sketch=1;curveFitting=1;jiggle=2;" value="IDataSource" vertex="1">
+          <mxGeometry height="120" width="200" x="140" y="121" as="geometry" />
+        </mxCell>
+        <mxCell id="1xzGRdas92AsIudjKrJp-5" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;sketch=1;curveFitting=1;jiggle=2;" value="IMdSpan" vertex="1">
+          <mxGeometry height="30" width="60" x="360" y="166" as="geometry" />
+        </mxCell>
+        <mxCell id="1xzGRdas92AsIudjKrJp-6" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;sketch=1;curveFitting=1;jiggle=2;" value="&lt;div&gt;IView&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="60" x="450" y="166" as="geometry" />
+        </mxCell>
+        <mxCell id="1xzGRdas92AsIudjKrJp-7" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;sketch=1;curveFitting=1;jiggle=2;" value="IBuffer" vertex="1">
+          <mxGeometry height="30" width="60" x="550" y="166" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
