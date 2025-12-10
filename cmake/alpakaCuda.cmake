@@ -99,7 +99,7 @@ if(CMAKE_CUDA_COMPILER)
         target_link_libraries(alpaka INTERFACE alpaka_target_cuda)
     endif()
 
-    message(STATUS "cuda" ${_alpaka_CUDA_HOST_COMPILER})
+    message(STATUS "cuda with host compiler: " ${_alpaka_CUDA_HOST_COMPILER})
 
     ## GCC compiler flag to show a longer stack for concept diagnostics
     if(${_alpaka_CUDA_HOST_COMPILER} STREQUAL "GNU")

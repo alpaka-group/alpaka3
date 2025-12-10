@@ -8,7 +8,7 @@ cmake_minimum_required(VERSION 3.25)
 project(alpaka)
 
 # This file's directory.
-set(_alpaka_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
+set(_alpaka_ROOT_DIR ${alpaka_SOURCE_DIR})
 
 # Compiler feature tests.
 set(_alpaka_FEATURE_TESTS_DIR "${_alpaka_ROOT_DIR}/cmake/tests")
@@ -41,22 +41,22 @@ endif()
 if(alpaka_DOCS)
     include(CTest)
     enable_testing()
-    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/docs/snippets")
+    add_subdirectory("${_alpaka_ROOT_DIR}/docs/snippets")
 endif()
 
 if(alpaka_BENCHMARKS)
     enable_testing()
-    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/benchmark")
+    add_subdirectory("${_alpaka_ROOT_DIR}/benchmark")
 endif()
 
 if(alpaka_EXAMPLES)
     enable_testing()
-    add_subdirectory(example)
+    add_subdirectory("${_alpaka_ROOT_DIR}/example")
 endif()
 
 if(alpaka_HEADERCHECKS)
     enable_testing()
-    add_subdirectory(headerCheck)
+    add_subdirectory("${_alpaka_ROOT_DIR}/headerCheck")
 endif()
 
 # Installation and config
@@ -96,5 +96,8 @@ install(FILES "${_alpaka_FEATURE_TESTS_DIR}/StdAtomicRef.cpp" DESTINATION ${CMAK
 # This macro must be called after FetchContent_MakeAvailable() used to load alpaka.
 # The reason is that this is the only way in CMake allowing alpaka to load the required languages.
 macro(alpaka_fetchcontent_finalize)
-    include("${alpaka_SOURCE_DIR}/cmake/alpakaFetchContentFinalize.cmake")
+    message(
+        WARNING
+        "alpaka_fetchcontent_finalize() is deprecated and will be removed soon. Except for removing the call to this function, no additional changes are required."
+    )
 endmacro()

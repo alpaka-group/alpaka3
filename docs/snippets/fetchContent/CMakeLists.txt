@@ -18,6 +18,8 @@ FetchContent_Declare(alpaka3 GIT_REPOSITORY https://github.com/alpaka-group/alpa
 # This downloads, configures, and makes the library targets available
 FetchContent_MakeAvailable(alpaka3)
 # Finalize the alpaka FetchContent setup and activate the required CMake languages
+# This can be removed and is only required for the transition from the current development branch to the version where
+# alpaka_finalize() is handling everything.
 alpaka_fetchcontent_finalize()
 
 # Define the device specification for your application
