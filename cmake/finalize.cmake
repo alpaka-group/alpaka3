@@ -5,7 +5,7 @@
 
 ### Provide the alpaka target names linked to a target
 ##
-## The target alpaka::alpaka and alpaka will insecurely be resolved to the actual targets linked to it.
+## All targets will recursively be resolved to the actual targets linked to it.
 ## target names are: ALPAKA, CUDA, HIP, ONEAPI, HEADERS, HOST
 ##
 ## The output will be appended to the list variable provided as alpaka_target_list.
@@ -15,26 +15,22 @@ function(alpaka_get_targets_recursive target alpaka_target_list)
     set(libs "${libs_linked_interface};${libs_linked}")
 
     foreach(lib ${libs})
+        # we need to check all sub target in case alpaka is a transitive linked target
+        if(TARGET ${lib})
+            alpaka_get_targets_recursive(${lib} sub_targets)
+            list(APPEND ${alpaka_target_list} ${sub_targets})
+        endif()
+        # check if one of the following alpaka targets is linked
         if(lib MATCHES "alpaka::alpaka|^alpaka$")
-            alpaka_get_targets_recursive(${lib} sub_targets)
             list(APPEND ${alpaka_target_list} "ALPAKA")
-            list(APPEND ${alpaka_target_list} ${sub_targets})
         elseif(lib MATCHES "alpaka_target_cuda|alpaka::cuda")
-            alpaka_get_targets_recursive(${lib} sub_targets)
             list(APPEND ${alpaka_target_list} "CUDA")
-            list(APPEND ${alpaka_target_list} ${sub_targets})
         elseif(lib MATCHES "alpaka_target_hip|alpaka::hip")
-            alpaka_get_targets_recursive(${lib} sub_targets)
             list(APPEND ${alpaka_target_list} "HIP")
-            list(APPEND ${alpaka_target_list} ${sub_targets})
         elseif(lib MATCHES "alpaka_target_oneapi|alpaka::oneapi")
-            alpaka_get_targets_recursive(${lib} sub_targets)
             list(APPEND ${alpaka_target_list} "ONEAPI")
-            list(APPEND ${alpaka_target_list} ${sub_targets})
         elseif(lib MATCHES "alpaka_target_host|alpaka::host")
-            alpaka_get_targets_recursive(${lib} sub_targets)
             list(APPEND ${alpaka_target_list} "HOST")
-            list(APPEND ${alpaka_target_list} ${sub_targets})
         elseif(lib MATCHES "alpaka_target_headers|alpaka::headers")
             list(APPEND ${alpaka_target_list} "HEADERS")
         endif()
