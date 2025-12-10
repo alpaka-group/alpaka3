@@ -3,12 +3,10 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 
-# @file This file simply load alpakaCommon.cmake after alpaka is installed with FetchContent.
-# The reason is that languages bust be set in the configure setup of CMake.
-# Calling FetchContent_MakeAvailable() is not enough therefore this file must be loaded.
-# alpaka's CMakeLists.txt is providing a helper alpaka_FetchContent_Finalize() to load this cmake files.
-
-# alpaka root directory provided after FetchContent_MakeAvailable() was called.
+# @file This file simply load alpakaCommon.cmake after alpaka is installed with FetchContent or is used via add_subdirectory.
+# The reason is that languages must be set in the configure setup of CMake.
+# Using alpaka via add_Subdirectory or FetchContent_Declare is not loading the languages correctly.
+# This file will be included from alpaka_finalize() once it detects that _alpaka_ROOT_DIR is not set.
 set(_alpaka_ROOT_DIR "${alpaka_SOURCE_DIR}")
 
 # Compiler feature tests.

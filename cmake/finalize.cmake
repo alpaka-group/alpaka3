@@ -114,18 +114,7 @@ function(copy_with_structure SRC_FILE api_name OUT_VAR)
     set(${OUT_VAR} ${DEST_FILE} PARENT_SCOPE)
 endfunction()
 
-### Update target properties and source file properties to enable compilation with the selected alpaka targets.
-##
-## This function must be called after all alpaka targets have been linked to the target.
-## It will set the LANGUAGE property of source files to CUDA or HIP if necessary.
-## Depending on the linked targets some source files will be copied to a different location in the build tree to avoid conflicts with the LANGUAGE property.
-## All source file properties added to the original source files before the finalize call will be copied to the copied files.
-## Attention: Source file properties added to the original source files after the finalize call can not be captured and will not forward to the compiler.
-##
-## Calling this method twice for the same target will result in an undefined behaviour.
-## Linking non alpaka targets after calling this method is allowed.
-## If new source files are added to the target after calling this method they will not be handled by alpaka.
-function(alpaka_finalize target)
+function(alpaka_internal_finalize target)
     # Decide backend based on linked alpaka target
     list(REMOVE_DUPLICATES alpaka_target_list)
     alpaka_get_targets(${target} alpaka_target_list)
@@ -279,3 +268,22 @@ function(alpaka_finalize target)
         endif()
     endif()
 endfunction()
+
+### Update target properties and source file properties to enable compilation with the selected alpaka targets.
+##
+## This function must be called after all alpaka targets have been linked to the target.
+## It will set the LANGUAGE property of source files to CUDA or HIP if necessary.
+## Depending on the linked targets some source files will be copied to a different location in the build tree to avoid conflicts with the LANGUAGE property.
+## All source file properties added to the original source files before the finalize call will be copied to the copied files.
+## Attention: Source file properties added to the original source files after the finalize call can not be captured and will not forward to the compiler.
+##
+## Calling this method twice for the same target will result in an undefined behaviour.
+## Linking non alpaka targets after calling this method is allowed.
+## If new source files are added to the target after calling this method they will not be handled by alpaka.
+## In cases where alpaka is used via cmake fetch content or add_subdirectory the languages depending on alpaka's CMake flags will be loaded.
+macro(alpaka_finalize target)
+    if(NOT _alpaka_ROOT_DIR)
+        include("${alpaka_SOURCE_DIR}/cmake/alpakaPrepareForAddSubdirectoryUsage.cmake")
+    endif()
+    alpaka_internal_finalize(${target})
+endmacro()
