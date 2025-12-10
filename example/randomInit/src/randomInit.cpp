@@ -1,21 +1,22 @@
-/* Copyright 2024 Tapish Narwal, Mehmet Yusufoglu
+/* Copyright 2024-2025 Tapish Narwal, Mehmet Yusufoglu, Tim Hanel
  * SPDX-License-Identifier: MPL-2.0
  */
 
+#include "randomInitNormal.hpp"
+
 #include <alpaka/alpaka.hpp>
+#include <alpaka/onHost/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
 
 #include <cmath>
 #include <iostream>
-#include <numeric>
-#include <random>
 #include <vector>
-
 constexpr uint32_t numberOfBins = 1024;
 constexpr uint32_t numberOfElements = 8 * 1024 * 1024;
 constexpr uint32_t blockSize = 1024;
 
 // Function to validate the histogram
-bool validateHistogram(std::vector<int> const& histogram, int expectedValue)
+bool validateHistogram(auto const& histogram, int32_t const expectedValue)
 {
     if(histogram.empty())
     {
@@ -28,11 +29,11 @@ bool validateHistogram(std::vector<int> const& histogram, int expectedValue)
 
     // Find min and max values in the histogram
     auto minmax = std::minmax_element(histogram.begin(), histogram.end());
-    int minValue = *minmax.first;
-    int maxValue = *minmax.second;
+    uint32_t minValue = *minmax.first;
+    uint32_t maxValue = *minmax.second;
 
     // Calculate the allowed difference
-    int allowedDifference = static_cast<int>(expectedValue * tolerance);
+    uint32_t allowedDifference = static_cast<uint32_t>(expectedValue * tolerance);
 
     // Check if the difference between max and min is within the tolerance
     bool isValid = (maxValue - minValue) <= allowedDifference;
@@ -76,23 +77,22 @@ struct RandomInitKernelUniform
             // Define workgroup
             auto workGroup = alpaka::onAcc::WorkerGroup{seedVec, totalFrameExtens};
 
-
             // Iterate over the workgroup
-            for([[maybe_unused]] auto [index] : alpaka::onAcc::makeIdxMap(acc, workGroup, alpaka::IdxRange{size}))
+            for(auto [index] : alpaka::onAcc::makeIdxMap(acc, workGroup, alpaka::IdxRange{size}))
             {
                 // Generate numbers in [0,1). Philox engine already generates uniform random numbers but they are
                 // integers.
                 alpaka::rand::distribution::UniformReal<float> dist;
                 // get random numbers floating for any vector size
 
-                auto val = dist(engine);
+                auto const val = dist(engine);
 
                 // Calculate the bin index for the histogram
                 // Since the values are in [0,1), we multiply by the number of bins to get the bin index
                 // The bin index is in the range [0, numberOfBins)
                 uint32_t binIndex = val * numberOfBins;
                 // Atomically increment the bin count in the histogram
-                alpaka::onAcc::atomicAdd(acc, &outBins[binIndex], 1);
+                alpaka::onAcc::atomicAdd(acc, &outBins[binIndex], uint32_t{1});
             }
         }
     }
@@ -124,15 +124,15 @@ struct RandomInitKernel
 
 
             // Iterate over the workgroup
-            for([[maybe_unused]] auto [index] : alpaka::onAcc::makeIdxMap(acc, workGroup, alpaka::IdxRange{size}))
+            for(auto [index] : alpaka::onAcc::makeIdxMap(acc, workGroup, alpaka::IdxRange{size}))
             {
                 // Generate a random 32-bit unsigned integer
                 uint32_t val = engine();
                 // Calculate the bin index for the histogram
-                auto binIndex = static_cast<uint32_t>(val % numberOfBins);
+                auto binIndex = (val % numberOfBins);
 
                 // Atomically increment the bin count in the histogram
-                alpaka::onAcc::atomicAdd(acc, &outBins[binIndex], 1);
+                alpaka::onAcc::atomicAdd(acc, &outBins[binIndex], uint32_t{1});
             }
         }
     }
@@ -170,7 +170,7 @@ struct RandomInitKernelVec
             auto binIndex = static_cast<uint32_t>(val % numberOfBins);
 
             // Atomically increment the bin count in the histogram
-            alpaka::onAcc::atomicAdd(acc, &outBins[binIndex], 1);
+            alpaka::onAcc::atomicAdd(acc, &outBins[binIndex], uint32_t{1});
         }
     }
 };
@@ -181,12 +181,13 @@ bool testRandomInitKernels(
     auto computeExec,
     uint32_t numElements)
 {
+    using T_Data = uint32_t;
     // Buffer size
     uint32_t const size = numElements;
-    uint32_t const numBins = numberOfBins;
+    constexpr uint32_t numBins = numberOfBins;
 
     // Allocate input and output host buffers in pinned memory accessible by the Platform devices
-    auto outBins_h = alpaka::onHost::alloc<int>(host, numBins);
+    auto outBins_h = alpaka::onHost::alloc<T_Data>(host, numBins);
 
     // Fill the histogram buffer with zeros
     for(uint32_t i = 0; i < numBins; ++i)
@@ -204,10 +205,9 @@ bool testRandomInitKernels(
     alpaka::onHost::memcpy(queue, outBins_d, outBins_h);
 
     // Frame size
-    auto frameSize = alpaka::Vec<uint32_t, 1>{alpaka::divCeil(numElements, blockSize)};
 
     // Launch the 1-dimensional kernel with scalar size
-    auto frameSpec = alpaka::onHost::FrameSpec{frameSize, alpaka::Vec<uint32_t, 1>{blockSize}};
+    auto frameSpec = alpaka::onHost::getFrameSpec<T_Data>(device, alpaka::Vec{blockSize});
 
     // TEST - 1: Philox Generator generates integer random numbers
     std::cout << "- Testing RandomInitKernel with a grid of " << frameSpec << "\n";
@@ -220,7 +220,7 @@ bool testRandomInitKernels(
     alpaka::onHost::wait(queue);
 
     // Validate RandomInitKernel Results
-    std::vector<int> histogram(std::data(outBins_h), std::data(outBins_h) + numBins);
+    std::vector<T_Data> randomInitHist(std::data(outBins_h), std::data(outBins_h) + numBins);
 
     // Define a lambda to perform validation and printing
     auto validateResult = [&](char const* kernelName, auto& histogram)
@@ -228,10 +228,8 @@ bool testRandomInitKernels(
         std::cout << "Validating " << kernelName << " results:\n";
 
         // Validate the histogram
-        int expectedValue = size / numBins;
-        bool isHistogramValid = validateHistogram(histogram, expectedValue);
-
-        bool isValid = isHistogramValid;
+        uint32_t expectedValue = size / numBins;
+        bool const isHistogramValid = validateHistogram(histogram, expectedValue);
 
         if(isHistogramValid)
         {
@@ -242,11 +240,11 @@ bool testRandomInitKernels(
             std::cerr << "Histogram Validation failed: Histogram distribution is not within the expected tolerance.\n";
         }
 
-        return isValid;
+        return isHistogramValid;
     };
 
     // Validate and print results for RandomInitKernel
-    bool isValid = validateResult("RandomInitKernel", histogram);
+    bool isValid = validateResult("RandomInitKernel", randomInitHist);
 
     // TEST - 2 Test RandomInitKernelUniform which generates real random numbers in [0,1)
     // Fill the histogram buffer with zeros
@@ -271,10 +269,10 @@ bool testRandomInitKernels(
     alpaka::onHost::wait(queue);
 
     // Validate RandomInitKernelUniform Results
-    std::vector<int> histogram2(std::data(outBins_h), std::data(outBins_h) + numBins);
+    std::vector<T_Data> randomInitUniformHist(std::data(outBins_h), std::data(outBins_h) + numBins);
 
     // Validate and print results for RandomInitKernelUniform
-    isValid &= validateResult("RandomInitKernelUniform", histogram2);
+    isValid &= validateResult("RandomInitKernelUniform", randomInitUniformHist);
 
     // TEST - 3 Test RandomInitKernelVec which generates integer random numbers
     // Fill the histogram buffer with zeros
@@ -299,15 +297,15 @@ bool testRandomInitKernels(
     alpaka::onHost::wait(queue);
 
     // Validate Results
-    std::vector<int> histogram3(std::data(outBins_h), std::data(outBins_h) + numBins);
+    std::vector randomInitVecHist(std::data(outBins_h), std::data(outBins_h) + numBins);
 
     // Validate and print results
-    isValid &= validateResult("RandomInitKernelVec", histogram3);
+    isValid &= validateResult("RandomInitKernelVec", randomInitVecHist);
 
     return isValid;
 }
 
-int example(auto const cfg, size_t numElements)
+int exampleUniformDist(auto const cfg, size_t numElements)
 {
     using namespace alpaka;
 
@@ -317,8 +315,8 @@ int example(auto const cfg, size_t numElements)
 
     // Use the single host device
     auto hostSelector = alpaka::onHost::makeDeviceSelector(api::host, deviceKind::cpu);
-    alpaka::onHost::Device host = hostSelector.makeDevice(0);
-    std::cout << "\n Host:   " << alpaka::onHost::getName(host) << "\n";
+    onHost::Device host = hostSelector.makeDevice(0);
+    std::cout << "\n Host:   " << getName(host) << "\n";
 
     // Require at least one device
     // require at least one device
@@ -328,12 +326,12 @@ int example(auto const cfg, size_t numElements)
     {
         return EXIT_FAILURE;
     }
-    auto deviceSelector = alpaka::onHost::makeDeviceSelector(deviceSpec);
+    auto deviceSelector = onHost::makeDeviceSelector(deviceSpec);
 
 
     // Use the first device
-    alpaka::onHost::Device device = deviceSelector.makeDevice(0);
-    std::cout << "Device: " << alpaka::onHost::getName(device) << "\n";
+    onHost::Device device = deviceSelector.makeDevice(0);
+    std::cout << "Device: " << onHost::getName(device) << "\n";
 
     bool resultIsCorrect = testRandomInitKernels(host, device, computeExec, numElements);
 
@@ -374,12 +372,12 @@ auto main(int argc, char* argv[]) -> int
             {
                 numElements = std::stoul(optarg, nullptr, 0);
             }
-            catch(std::invalid_argument const& e)
+            catch(std::invalid_argument const&)
             {
                 std::cerr << "Error: invalid argument '" << optarg << "'.\n";
                 return EXIT_FAILURE;
             }
-            catch(std::out_of_range const& e)
+            catch(std::out_of_range const&)
             {
                 std::cerr << "Error: value '" << optarg << "' out of range for size_t.\n";
                 return EXIT_FAILURE;
@@ -397,6 +395,10 @@ auto main(int argc, char* argv[]) -> int
     using namespace alpaka;
     // Execute the example once for each enabled API and executor.
     return onHost::executeForEachIfHasDevice(
-        [=](auto const& tag) { return example(tag, numElements); },
-        onHost::allBackends(onHost::enabledApis, exec::enabledExecutors));
+        [=](auto const& tag)
+        {
+            auto retVal = exampleUniformDist(tag, numElements) || exampleNormalDist(tag, numElementsNormal);
+            return retVal;
+        },
+        onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
 }

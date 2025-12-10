@@ -164,7 +164,7 @@ namespace alpaka::rand::distribution::internal
      *
      * Adapts the engine output to the required bit length and converts the integer
      * to a normalized floating point value in the requested interval */
-    template<concepts::Interval T_Interval, typename T_Engine, std::floating_point T_Result>
+    template<concepts::Interval T_Interval, std::floating_point T_Result, typename T_Engine>
     constexpr auto getNormalizedUniformReal(T_Engine& engine) -> T_Result
     {
         using T_EngineResult = std::remove_cvref_t<decltype(engine())>;
@@ -221,21 +221,21 @@ namespace alpaka::rand::distribution::internal
     class UniformRealBase
     {
     public:
-        using value_type = T_Floating;
+        using result_type = T_Floating;
 
         using Interval_type = T_Interval;
 
         constexpr explicit UniformRealBase(T_Floating min, T_Floating max, [[maybe_unused]] T_Interval)
-            : _min(min)
-            , _max(max)
-            , _range(_max - _min) // abs is a fail-safe in case min>max
+            : m_min(min)
+            , m_max(max)
+            , m_range(m_max - m_min) // abs is a fail-safe in case min>max
         {
         }
 
     protected:
-        T_Floating const _min;
-        T_Floating const _max;
-        T_Floating const _range;
+        T_Floating const m_min;
+        T_Floating const m_max;
+        T_Floating const m_range;
     };
 } // namespace alpaka::rand::distribution::internal
 
@@ -293,7 +293,7 @@ namespace alpaka::rand::distribution
          * (OC,CO,OO) may introduce yet another small non-uniform bias -- @see scaleInterval().
          */
         template<concepts::UniformRandomEngine T_Engine>
-        constexpr auto operator()(T_Engine& engine) noexcept -> T_Result
+        constexpr auto operator()(T_Engine& engine) const -> T_Result
         {
             return engineDispatch(engine);
         }
@@ -303,11 +303,11 @@ namespace alpaka::rand::distribution
          * concept (e.g. Philox4x32x10)
          */
         template<concepts::UniformStdEngine T_Engine>
-        constexpr auto engineDispatch(T_Engine& engine) -> T_Result
+        constexpr auto engineDispatch(T_Engine& engine) const -> T_Result
         {
             using T_EngineResult = ALPAKA_TYPEOF(engine());
             checkValueConformity<T_EngineResult>();
-            T_Result res = internal::getNormalizedUniformReal<T_Interval, T_Engine, T_Result>(engine);
+            T_Result res = internal::getNormalizedUniformReal<T_Interval, T_Result, T_Engine>(engine);
             // @TODO potentially add underflow protection as suggested by https://doi.org/10.1145/3503512
             return scaleInterval(res);
         }
@@ -316,7 +316,7 @@ namespace alpaka::rand::distribution
          * enable efficient double precision uniform_real generation (reducing the number of invocations)
          */
         template<concepts::UniformVectorEngine T_Engine>
-        constexpr auto engineDispatch(T_Engine& engine) -> T_Result
+        constexpr auto engineDispatch(T_Engine& engine) const -> T_Result
         {
             using T_EngineResult = ALPAKA_TYPEOF(engine());
             using valueType = typename T_EngineResult::type;
@@ -327,8 +327,9 @@ namespace alpaka::rand::distribution
                 static_cast<uint32_t>(sizeof(T_Result)),
                 static_cast<uint32_t>(sizeof(valueType)),
                 dim>(engine);
-            using TdispatchWrapper = decltype(dispatchWrapper);
-            T_Result res = internal::getNormalizedUniformReal<T_Interval, TdispatchWrapper, T_Result>(dispatchWrapper);
+            using T_DispatchWrapper = decltype(dispatchWrapper);
+            T_Result res
+                = internal::getNormalizedUniformReal<T_Interval, T_Result, T_DispatchWrapper>(dispatchWrapper);
             return scaleInterval(res);
         }
 
@@ -337,24 +338,28 @@ namespace alpaka::rand::distribution
          *
          * To enforce adherence to the requested interval, the result is shifted to the next representable
          * value using std::nextafter.
+         * WARNING: std::nextafter is not constexpr in cpp20 -> this might cause problems on some devices (regarding
+         * missing __device__ annotations) and requires often unnecessary runtime evaluation -- future
+         * maintainers should consider creating a constexpr adaptation of std::nextafter
          *
          * @note This introduces a(-/another) small non-uniform bias. The current implementation is inherently
-         *       non-uniform due to integer-to-floating-point mapping.
-         * @see  https://doi.org/10.1007/978-3-030-50417-5_2
+         *       non-uniform due to integer-to-floating-point mapping @see  https://doi.org/10.1007/978-3-030-50417-5_2
+
+
          */
         constexpr auto scaleInterval(T_Result const& normalizedVal) const -> T_Result
         {
-            T_Result res = normalizedVal * this->_range + this->_min;
+            T_Result res = normalizedVal * this->m_range + this->m_min;
 
             if constexpr(std::is_same_v<T_Interval, interval::OC> || std::is_same_v<T_Interval, interval::OO>)
             {
-                if(res == this->_min)
-                    res = std::nextafter(this->_min, this->_max);
+                if(res == this->m_min)
+                    res = std::nextafter(this->m_min, this->m_max);
             }
             if constexpr(std::is_same_v<T_Interval, interval::CO> || std::is_same_v<T_Interval, interval::OO>)
             {
-                if(res == this->_max)
-                    res = std::nextafter(this->_max, this->_min);
+                if(res == this->m_max)
+                    res = std::nextafter(this->m_max, this->m_min);
             }
             return res;
         }

@@ -36,6 +36,7 @@ endif()
 # Add executable.
 
 add_executable(${_TARGET_NAME} src/randomInit.cpp)
+target_include_directories(${_TARGET_NAME} PRIVATE src)
 target_link_libraries(${_TARGET_NAME} PUBLIC alpaka::alpaka)
 alpaka_finalize(${_TARGET_NAME})
 set_target_properties(${_TARGET_NAME} PROPERTIES FOLDER example)
