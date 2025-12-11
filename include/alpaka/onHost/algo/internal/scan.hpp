@@ -33,6 +33,7 @@ namespace alpaka::onHost::internal
     constexpr std::size_t numNvidiaBanks = 32u;
     constexpr std::size_t numAmdBanks = 32u;
     constexpr std::size_t numIntelBanks = 16u;
+    constexpr std::size_t chunkSize = 2048u;
 
     template<alpaka::concepts::DeviceKind TDeviceKind, typename T_Idx, typename T_Data>
     consteval T_Idx maximumMiniBlockSize()
@@ -52,7 +53,7 @@ namespace alpaka::onHost::internal
      * unknown/unimplemented device kinds, infinite memory banks are assumed, i.e., no padding is used.
      */
     template<typename TDeviceKind, typename T_Idx>
-    constexpr T_Idx conflictFreeAccess(auto const& n)
+    constexpr T_Idx conflictFreeAccess(T_Idx const& n)
     {
         if constexpr(TDeviceKind{} == deviceKind::nvidiaGpu)
             return n + n / static_cast<T_Idx>(numNvidiaBanks);
@@ -124,7 +125,7 @@ namespace alpaka::onHost::internal
     {
     public:
         ALPAKA_FN_ACC void operator()(
-            alpaka::onHost::concepts::Device auto const& acc,
+            auto const& acc,
             alpaka::concepts::IDataSource auto const& inputVec,
             alpaka::concepts::IMdSpan auto outputVec,
             auto... blockSums) const
@@ -145,21 +146,6 @@ namespace alpaka::onHost::internal
             constexpr auto LocalArrayLength = miniBlocksPerThread * miniBlockSize;
             using LocalArray = T_Data[LocalArrayLength];
 
-            ALPAKA_LOG_INFO(
-                onHost::logger::memory,
-                [&]()
-                {
-                    std::stringstream ss;
-                    ss << "scan kernel: {";
-                    ss << "frameExtent: " << frameExtent;
-                    ss << ", numThreadsPerBlock: " << numThreadsPerBlock;
-                    ss << ", elsPerThread: " << elsPerThread;
-                    ss << ", chunkExtent: " << chunkExtent;
-                    ss << ", miniBlockSize: " << miniBlockSize;
-                    ss << ", miniBlocksPerThread: " << miniBlocksPerThread;
-                    ss << "}" return ss.str();
-                });
-
             auto const validElementsInLastFrame = (numElements - T_Idx{1}) % chunkExtent + T_Idx{1};
 
             /* This kernel is called with 1-dimensional frame extents.
@@ -178,7 +164,7 @@ namespace alpaka::onHost::internal
 
                 auto tmp = onAcc::declareSharedMdArray<T_Data, uniqueId()>(
                     acc,
-                    CVec<T_Idx, conflictFreeAccess<DeviceType>(miniBlocksPerChunk - T_Idx{1}) + T_Idx{1}>{});
+                    CVec<T_Idx, conflictFreeAccess<DeviceType, T_Idx>(miniBlocksPerChunk - T_Idx{1}) + T_Idx{1}>{});
                 auto const frameOffset = chunkExtent * frameIdx;
 
                 for(auto frameElem : onAcc::makeIdxMap(
@@ -220,7 +206,8 @@ namespace alpaka::onHost::internal
                         miniBlockOffset += miniBlockSize)
                     {
                         // scan miniblock
-                        auto miniBlockSum = scanMiniBlock(regMem + miniBlockOffset, CVec<T_Idx, miniBlockSize>{});
+                        auto miniBlockSum
+                            = scanMiniBlock<T_Idx, T_Data>(regMem + miniBlockOffset, CVec<T_Idx, miniBlockSize>{});
 
                         // write miniblock sum into shared memory
                         tmp[conflictFreeAccess<DeviceType>((frameElem + miniBlockOffset) / miniBlockSize)]
@@ -355,7 +342,7 @@ namespace alpaka::onHost::internal
     {
     public:
         ALPAKA_FN_ACC void operator()(
-            alpaka::onHost::concepts::Device auto const& acc,
+            auto const& acc,
             alpaka::concepts::IMdSpan auto const& blockSums,
             alpaka::concepts::IMdSpan auto outputVec) const
         {
@@ -377,19 +364,17 @@ namespace alpaka::onHost::internal
 
     auto scanBufferSize(alpaka::concepts::Vector auto const& extents)
     {
-        static_assert(extents.size() == 1);
-
         using T_Idx = ALPAKA_TYPEOF(extents)::type;
-        constexpr auto chunkExtent = CVec<T_Idx, 2048u>{};
-        auto elements = extents;
+        constexpr auto chunkExtent = CVec<T_Idx, chunkSize>{};
+        auto elements = divCeil(extents, chunkExtent);
 
-        auto bufSize = T_Idx{0};
+        auto bufSize = Vec<T_Idx, 1>{0};
         while(elements > T_Idx{1})
         {
-            elements = divCeil(elements, chunkExtent);
-
             // buffer is for increments and blockSums, so *2 is necessary
-            bufSize += 2 * elements;
+            bufSize += Vec<T_Idx, 1>{2u} * elements;
+
+            elements = divCeil(elements, chunkExtent);
         }
 
         return bufSize;
@@ -408,9 +393,26 @@ namespace alpaka::onHost::internal
         Scan_ScanBlocksKernel<SCAN_TYPE, T_Idx, T_Data> scanBlocks;
 
         // Define chunkExtent
-        constexpr auto chunkExtent = CVec<T_Idx, 2048u>{};
+        constexpr auto chunkExtent = CVec<T_Idx, chunkSize>{};
         auto numFrames = divCeil(inputVec.getExtents(), chunkExtent);
         auto const frameSpec = onHost::FrameSpec{numFrames, chunkExtent, CVec<T_Idx, 256u>{}};
+
+        ALPAKA_LOG_INFO(
+            onHost::logger::memory,
+            [&]()
+            {
+                std::stringstream ss;
+                ss << "scan: {";
+                if(SCAN_TYPE == INCLUSIVE_SCAN)
+                    ss << ", scanType= INCLUSIVE_SCAN";
+                else if(SCAN_TYPE == EXCLUSIVE_SCAN)
+                    ss << ", scanType= EXCLUSIVE_SCAN";
+                ss << ", numFrames= " << numFrames;
+                ss << ", chunkExtent= " << chunkExtent;
+                ss << ", value_type=" << onHost::demangledName<T_Data>();
+                ss << "}";
+                return ss.str();
+            });
 
         if(frameSpec.m_numFrames > T_Idx{1})
         {
@@ -424,13 +426,15 @@ namespace alpaka::onHost::internal
             auto blockSums = buffer.getSubView(frameSpec.m_numFrames, frameSpec.m_numFrames);
 
             // the unused elements in the buffer are used for recursion to the next scan call
-            auto bufferNext = buffer.getSubView(frameSpec.m_numFrames * 2, buffer.size() - frameSpec.m_numFrames * 2);
+            auto bufferNext = buffer.getSubView(
+                frameSpec.m_numFrames * CVec<T_Idx, 2>{},
+                buffer.getExtents() - frameSpec.m_numFrames * CVec<T_Idx, 2>{});
 
             // enqueue the kernel execution tasks
             queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec, increments});
 
             // always recurse into exclusive scan
-            scan<EXCLUSIVE_SCAN, T_Idx>(exec, devAcc, queue, increments, blockSums, bufferNext);
+            scan<EXCLUSIVE_SCAN, T_Idx, T_Data>(exec, devAcc, queue, increments, blockSums, bufferNext);
             queue.enqueue(exec, frameSpec, KernelBundle{addIncrements, blockSums, outputVec});
         }
         else

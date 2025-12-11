@@ -45,27 +45,18 @@ namespace alpaka::onHost
         alpaka::concepts::IMdSpan<T_Data> auto outputVec,
         auto... buffer)
     {
+        using T_Idx = ALPAKA_TYPEOF(inputVec.getExtents())::type;
+
         if constexpr(sizeof...(buffer))
         {
             // use the passed buffer
             auto _buffer = std::get<0>(std::make_tuple(buffer...));
-            internal::scan<internal::INCLUSIVE_SCAN, inputVec.index_type, T_Data>(
-                exec,
-                devAcc,
-                queue,
-                inputVec,
-                outputVec,
-                _buffer);
+            internal::scan<internal::INCLUSIVE_SCAN, T_Idx, T_Data>(exec, devAcc, queue, inputVec, outputVec, _buffer);
         }
         else
         {
             // buffer will be allocated on the fly
-            internal::scan<internal::INCLUSIVE_SCAN, inputVec.index_type, T_Data>(
-                exec,
-                devAcc,
-                queue,
-                inputVec,
-                outputVec);
+            internal::scan<internal::INCLUSIVE_SCAN, T_Idx, T_Data>(exec, devAcc, queue, inputVec, outputVec);
         }
     }
 
@@ -80,34 +71,25 @@ namespace alpaka::onHost
      * buffer needs to be. If omitted, it will be allocated and destructed on the fly.
      */
     template<typename T_Data>
-    void inclusiveScan(
+    void inclusiveScanInPlace(
         alpaka::concepts::Executor auto& exec,
         alpaka::onHost::concepts::Device auto& devAcc,
         auto const& queue,
         alpaka::concepts::IMdSpan<T_Data> auto& dataVec,
         auto... buffer)
     {
+        using T_Idx = ALPAKA_TYPEOF(dataVec.getExtents())::type;
+
         if constexpr(sizeof...(buffer))
         {
             // use the passed buffer
             auto _buffer = std::get<0>(std::make_tuple(buffer...));
-            internal::scan<internal::INCLUSIVE_SCAN, dataVec.index_type, T_Data>(
-                exec,
-                devAcc,
-                queue,
-                dataVec,
-                dataVec,
-                _buffer);
+            internal::scan<internal::INCLUSIVE_SCAN, T_Idx, T_Data>(exec, devAcc, queue, dataVec, dataVec, _buffer);
         }
         else
         {
             // buffer will be allocated on the fly
-            internal::scan<internal::INCLUSIVE_SCAN, dataVec.index_type, T_Data>(
-                exec,
-                devAcc,
-                queue,
-                dataVec,
-                dataVec);
+            internal::scan<internal::INCLUSIVE_SCAN, T_Idx, T_Data>(exec, devAcc, queue, dataVec, dataVec);
         }
     }
 
@@ -131,27 +113,18 @@ namespace alpaka::onHost
         alpaka::concepts::IMdSpan<T_Data> auto outputVec,
         auto... buffer)
     {
+        using T_Idx = ALPAKA_TYPEOF(inputVec.getExtents())::type;
+
         if constexpr(sizeof...(buffer))
         {
             // use the passed buffer
             auto _buffer = std::get<0>(std::make_tuple(buffer...));
-            internal::scan<internal::EXCLUSIVE_SCAN, inputVec.index_type, T_Data>(
-                exec,
-                devAcc,
-                queue,
-                inputVec,
-                outputVec,
-                _buffer);
+            internal::scan<internal::EXCLUSIVE_SCAN, T_Idx, T_Data>(exec, devAcc, queue, inputVec, outputVec, _buffer);
         }
         else
         {
             // buffer will be allocated on the fly
-            internal::scan<internal::EXCLUSIVE_SCAN, inputVec.index_type, T_Data>(
-                exec,
-                devAcc,
-                queue,
-                inputVec,
-                outputVec);
+            internal::scan<internal::EXCLUSIVE_SCAN, T_Idx, T_Data>(exec, devAcc, queue, inputVec, outputVec);
         }
     }
 
@@ -166,34 +139,24 @@ namespace alpaka::onHost
      * buffer needs to be. If omitted, it will be allocated and destructed on the fly.
      */
     template<typename T_Data>
-    void exclusiveScan(
+    void exclusiveScanInPlace(
         alpaka::concepts::Executor auto& exec,
         alpaka::onHost::concepts::Device auto& devAcc,
         auto const& queue,
         alpaka::concepts::IMdSpan<T_Data> auto& dataVec,
         auto... buffer)
     {
+        using T_Idx = ALPAKA_TYPEOF(dataVec.getExtents())::type;
         if constexpr(sizeof...(buffer))
         {
             // use the passed buffer
             auto _buffer = std::get<0>(std::make_tuple(buffer...));
-            internal::scan<internal::EXCLUSIVE_SCAN, dataVec.index_type, T_Data>(
-                exec,
-                devAcc,
-                queue,
-                dataVec,
-                dataVec,
-                _buffer);
+            internal::scan<internal::EXCLUSIVE_SCAN, T_Idx, T_Data>(exec, devAcc, queue, dataVec, dataVec, _buffer);
         }
         else
         {
             // buffer will be allocated on the fly
-            internal::scan<internal::EXCLUSIVE_SCAN, dataVec.index_type, T_Data>(
-                exec,
-                devAcc,
-                queue,
-                dataVec,
-                dataVec);
+            internal::scan<internal::EXCLUSIVE_SCAN, T_Idx, T_Data>(exec, devAcc, queue, dataVec, dataVec);
         }
     }
 } // namespace alpaka::onHost
