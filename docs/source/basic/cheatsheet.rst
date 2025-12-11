@@ -131,8 +131,8 @@ Put a task for execution
 ~~~~~~~~~~~~~~~~~~~~~~~~
   .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
     :language: cpp
-    :start-after: BEGIN-CHEATSHEET-enqueueTask
-    :end-before: END-CHEATSHEET-enqueueTask
+    :start-after: BEGIN-CHEATSHEET-enqueueHostTask
+    :end-before: END-CHEATSHEET-enqueueHostTask
     :dedent:
 
 Wait for all operations in the queue

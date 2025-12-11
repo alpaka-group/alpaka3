@@ -51,6 +51,14 @@ Individual chapters are based on the information of the chapters before.
    basic/cheatsheet.rst
 
 .. toctree::
+   :caption: Tutorial
+   :maxdepth: 1
+
+   tutorial/intro.rst
+   tutorial/vector.rst
+   tutorial/device.rst
+
+.. toctree::
    :caption: Advanced
    :maxdepth: 1
 

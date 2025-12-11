@@ -15,23 +15,34 @@ using namespace alpaka;
 
 TEST_CASE("vector 1D", "[docs]")
 {
-    // create a one-dimensional vector of doubles
-    constexpr auto vec0 = Vec{3.0};
+    // BEGIN-TUTORIAL-vectorCreation
+    // create a one-dimensional vector of unsigned int
+    constexpr auto vec0 = Vec{3u};
     // equal to
-    constexpr auto vec1 = Vec<double, 1u>{3.0};
+    constexpr auto vec1 = Vec<uint32_t, 1u>{3u};
+    // a vector is not required to be constexpr
+    auto vec2 = Vec{3u};
+    // END-TUTORIAL-vectorCreation
 
     static_assert(std::is_same_v<ALPAKA_TYPEOF(vec0), ALPAKA_TYPEOF(vec1)>);
+    alpaka::unused(vec2);
 
-    // explicit type conversion from int to double
-    constexpr auto vec2 = Vec<double, 1u>{3};
-    static_assert(std::is_same_v<ALPAKA_TYPEOF(vec0), ALPAKA_TYPEOF(vec2)>);
+    // BEGIN-TUTORIAL-vectorCreationCast
+    // explicit type conversion from double to unsigned int
+    constexpr auto vec3 = Vec<uint32_t, 1u>{3.0};
+    static_assert(std::is_same_v<ALPAKA_TYPEOF(vec0), ALPAKA_TYPEOF(vec3)>);
+    // END-TUTORIAL-vectorCreationCast
 
+    // BEGIN-TUTORIAL-vectorDim
     // check the number of components aka dimensions
-    static_assert(vec0.dim() == 1u);
+    auto vec4 = Vec<uint32_t, 1u>{42u};
+    static_assert(vec4.dim() == 1u);
+    // END-TUTORIAL-vectorDim
 }
 
 TEST_CASE("vector 3D", "[docs]")
 {
+    // BEGIN-TUTORIAL-vectorNamedAccess
     // create a three-dimensional vector of uint32_t
     constexpr auto vec = Vec{5u, 7u, 11u};
 
@@ -46,6 +57,22 @@ TEST_CASE("vector 3D", "[docs]")
     static_assert(vec[0u] == 5u);
 
     static_assert(vec.dim() == 3u);
+    // END-TUTORIAL-vectorNamedAccess
+}
+
+TEST_CASE("CArray 2D iterate", "[docs]")
+{
+    // BEGIN-TUTORIAL-cArray
+    constexpr auto vec = Vec{2u, 3u};
+    float cArray2D[vec.y()][vec.x()] = {{1., 2., 3.}, {4., 5., 6.}};
+
+    for(uint32_t y = 0u; y < vec.y(); ++y)
+    {
+        for(uint32_t x = 0u; x < vec.x(); ++x)
+            printf("%f ", cArray2D[y][x]);
+        printf("\n");
+    }
+    // END-TUTORIAL-cArray
 }
 
 TEST_CASE("compile-time vector", "[docs]")
@@ -65,6 +92,7 @@ TEST_CASE("compile-time vector", "[docs]")
     static_assert(cvec[0u] == 5u);
 }
 
+// BEGIN-TUTORIAL-CVec0
 void foo(concepts::CVector<uint32_t> auto value)
 {
     static_assert(value.dim() == 3u);
@@ -75,26 +103,44 @@ void foo(concepts::CVector<uint32_t> auto value)
     static_assert(value.z() == 5u);
 }
 
+// END-TUTORIAL-CVec0
+
 TEST_CASE("compile-time vector as function argument", "[docs]")
 {
+    // BEGIN-TUTORIAL-CVec1
     constexpr auto cvec = CVec<uint32_t, 5u, 7u, 11u>{};
 
     // compile-time vectors can be passed as function argument and kept compile-time values
     foo(cvec);
+    // END-TUTORIAL-CVec1
+}
+
+TEST_CASE("compile-time vector operations", "[docs]")
+{
+    // BEGIN-TUTORIAL-CVecOp
+    constexpr auto cvec0 = CVec<uint32_t, 5u, 7u>{};
+    constexpr auto cvec1 = CVec<uint32_t, 37u, 35u>{};
+
+    constexpr Vec result = cvec0 + cvec1;
+    static_assert(result[0] == result[1] && result[0] == 42u);
+    // END-TUTORIAL-CVecOp
 }
 
 TEST_CASE("compile-time vector calculations", "[docs]")
 {
+    // BEGIN-TUTORIAL-vectorPlus
     constexpr concepts::CVector auto cvec0 = CVec<uint32_t, 1u, 2u, 3u>{};
     constexpr concepts::CVector auto cvec1 = CVec<uint32_t, 13u, 17u, 19u>{};
 
     // performing operations on a compile-time vector will result in a runtime vector type
     constexpr concepts::Vector auto vResult = cvec0 + cvec1;
     static_assert(vResult.z() == 14u && vResult.y() == 19u && vResult.x() == 22u);
+    // END-TUTORIAL-vectorPlus
 }
 
 TEST_CASE("vector swizzle", "[docs]")
 {
+    // BEGIN-TUTORIAL-vectorSwizzle
     constexpr concepts::Vector auto cvec0 = CVec<uint32_t, 3u, 5u, 7u>{};
 
     // permutate the vector arguments
@@ -103,10 +149,12 @@ TEST_CASE("vector swizzle", "[docs]")
     static_assert(vResult.z() == 5u && vResult.y() == 3u && vResult.x() == 7u);
     // access components via operator[], order [0,1,...,dim-1])
     static_assert(vResult[0] == 5u && vResult[1] == 3u && vResult[2] == 7u);
+    // END-TUTORIAL-vectorSwizzle
 }
 
 TEST_CASE("vector ref", "[docs]")
 {
+    // BEGIN-TUTORIAL-vectorSwizzleRef
     concepts::Vector auto vec0 = Vec{3u, 5u, 7u};
 
     // creates a permuted view to an existing vector to modify only a subset of arguments
@@ -114,10 +162,12 @@ TEST_CASE("vector ref", "[docs]")
     vecView = 42u;
     CHECK((vec0.z() == 42u && vec0.y() == 5u && vec0.x() == 42u));
     CHECK((vec0[0] == 42u && vec0[1] == 5u && vec0[2] == 42u));
+    // END-TUTORIAL-vectorSwizzleRef
 }
 
 TEST_CASE("vector operations", "[docs]")
 {
+    // BEGIN-TUTORIAL-vectorReduction
     constexpr concepts::Vector<size_t> auto vec0 = Vec<size_t, 3u>{3llu, 5llu, 7llu};
 
     // accumulate all elements of a vector
@@ -126,12 +176,13 @@ TEST_CASE("vector operations", "[docs]")
     static_assert(vec0.reduce(std::plus{}) == 15u);
 
     // All vector operations requires that the lhs type is equal to the vector component type.
-    // This is relaxed if the rhs or lhs of a vector can be upcasted without precision loss, or sign flips, and are
-    // scalar values. Operations with two vectors requires equal value types. In this example `7u` is upcasted to
+    // This is relaxed if the rhs or lhs of a vector can be up-casted without precision loss, or sign flips, and are
+    // scalar values. Operations with two vectors requires equal value types. In this example `7u` is up-casted to
     // size_t.
     constexpr concepts::Vector auto vec1 = vec0 >= 7u;
     static_assert(vec1.z() == false && vec1.y() == false && vec1.x() == true);
     static_assert(vec1.reduce(std::logical_and{}) == false);
+    // END-TUTORIAL-vectorReduction
 }
 
 TEST_CASE("simd", "[docs]")
