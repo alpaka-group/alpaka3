@@ -27,9 +27,9 @@ void forEachDeviceType(auto const deviceSpec)
         onHost::DeviceProperties devProps = computeDevSelector.getDeviceProperties(d);
         std::cout << "\t\tid                   : " << d << "\n";
         std::cout << "\t\tname                 : " << devProps.getName() << "\n";
-        std::cout << "\t\tmulti processor count: " << devProps.m_multiProcessorCount << "\n";
-        std::cout << "\t\twarp size            : " << devProps.m_warpSize << "\n";
-        std::cout << "\t\tmax threads per block: " << devProps.m_maxThreadsPerBlock << "\n";
+        std::cout << "\t\tmulti processor count: " << devProps.multiProcessorCount << "\n";
+        std::cout << "\t\twarp size            : " << devProps.warpSize << "\n";
+        std::cout << "\t\tmax threads per block: " << devProps.maxThreadsPerBlock << "\n";
         auto executors = onHost::getExecutorsList(deviceSpec, onHost::example::enabledExecutors);
         std::cout << "\t\texecutors            : ";
         std::apply(

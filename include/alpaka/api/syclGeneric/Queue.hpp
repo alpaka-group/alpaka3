@@ -164,7 +164,7 @@ namespace alpaka::onHost
             inline constexpr auto dispatchWarpSize(auto&& fn) const
             {
                 auto warpSize
-                    = internal::GetDeviceProperties::Op<ALPAKA_TYPEOF(*m_device.get())>{}(*m_device.get()).m_warpSize;
+                    = internal::GetDeviceProperties::Op<ALPAKA_TYPEOF(*m_device.get())>{}(*m_device.get()).warpSize;
 
                 return Warpsize::Dispatch<ALPAKA_TYPEOF(getDeviceKind())>{}(
                     getDeviceKind(),

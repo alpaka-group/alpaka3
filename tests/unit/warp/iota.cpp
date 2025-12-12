@@ -59,7 +59,7 @@ TEMPLATE_LIST_TEST_CASE("warp iota1D", "", TestApis)
     std::cout << device.getName() << std::endl;
 
     auto deviceProperties = devSelector.getDeviceProperties(0);
-    uint32_t warpSize = deviceProperties.m_warpSize;
+    uint32_t warpSize = deviceProperties.warpSize;
 
     onHost::Queue queue = device.makeQueue();
     Vec extent = Vec{warpSize * 123u};

@@ -325,7 +325,7 @@ namespace alpaka::onHost
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::device);
                 auto numThreadsPerBlocks = dataBlocking.getThreadSpec().m_numThreads;
-                auto const maxThreadsPerBlock = device.m_properties.m_maxThreadsPerBlock;
+                auto const maxThreadsPerBlock = device.m_properties.maxThreadsPerBlock;
 
                 auto result = api::util::adjustToLimit(numThreadsPerBlocks, maxThreadsPerBlock);
                 return ThreadSpec{dataBlocking.getThreadSpec().m_numBlocks, result};

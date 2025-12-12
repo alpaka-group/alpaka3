@@ -115,10 +115,10 @@ namespace alpaka::onHost
             {
                 ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::device);
                 auto prop = DeviceProperties{};
-                prop.m_name = getCpuName();
-                prop.m_maxThreadsPerBlock = std::numeric_limits<uint32_t>::max();
-                prop.m_warpSize = 1u;
-                prop.m_multiProcessorCount = std::thread::hardware_concurrency();
+                prop.name = getCpuName();
+                prop.maxThreadsPerBlock = std::numeric_limits<uint32_t>::max();
+                prop.warpSize = 1u;
+                prop.multiProcessorCount = std::thread::hardware_concurrency();
 
                 return prop;
             }

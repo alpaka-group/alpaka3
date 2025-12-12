@@ -129,10 +129,10 @@ namespace alpaka::onHost
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(ApiInterface, ApiInterface::getDeviceProperties(&devProp, deviceIdx));
 
                 auto prop = DeviceProperties{};
-                prop.m_name = devProp.name;
-                prop.m_maxThreadsPerBlock = devProp.maxThreadsPerBlock;
-                prop.m_warpSize = devProp.warpSize;
-                prop.m_multiProcessorCount = devProp.multiProcessorCount;
+                prop.name = devProp.name;
+                prop.maxThreadsPerBlock = devProp.maxThreadsPerBlock;
+                prop.warpSize = devProp.warpSize;
+                prop.multiProcessorCount = devProp.multiProcessorCount;
 
                 return prop;
             }

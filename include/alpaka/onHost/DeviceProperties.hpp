@@ -15,21 +15,21 @@ namespace alpaka::onHost
     {
         auto getName() const
         {
-            return m_name;
+            return name;
         }
 
-        std::string m_name;
-        uint32_t m_multiProcessorCount;
-        uint32_t m_warpSize;
-        uint32_t m_maxThreadsPerBlock;
+        std::string name;
+        uint32_t multiProcessorCount;
+        uint32_t warpSize;
+        uint32_t maxThreadsPerBlock;
     };
 
     inline std::ostream& operator<<(std::ostream& s, DeviceProperties const& p)
     {
-        s << "name: " << p.m_name << "\n";
-        s << "multiProcessorCount: " << p.m_multiProcessorCount << "\n";
-        s << "warpSize: " << p.m_warpSize << "\n";
-        s << "maxThreadsPerBlock: " << p.m_maxThreadsPerBlock << "\n";
+        s << "name: " << p.name << "\n";
+        s << "multiProcessorCount: " << p.multiProcessorCount << "\n";
+        s << "warpSize: " << p.warpSize << "\n";
+        s << "maxThreadsPerBlock: " << p.maxThreadsPerBlock << "\n";
         return s;
     };
 } // namespace alpaka::onHost

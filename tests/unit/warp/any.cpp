@@ -81,7 +81,7 @@ TEMPLATE_LIST_TEST_CASE("warp any vote observes active lanes", "[warp][any]", Wa
     }
 
     auto deviceProperties = selector.getDeviceProperties(0);
-    auto const warpExtent = deviceProperties.m_warpSize;
+    auto const warpExtent = deviceProperties.warpSize;
 
     auto device = selector.makeDevice(0);
     auto queue = device.makeQueue(queueKind::blocking);

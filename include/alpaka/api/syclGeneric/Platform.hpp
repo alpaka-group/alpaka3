@@ -227,11 +227,11 @@ namespace alpaka
                     sycl::device const dev = platform.syclDevices[deviceIdx];
 
                     auto prop = DeviceProperties{};
-                    prop.m_name = dev.get_info<sycl::info::device::name>();
-                    prop.m_maxThreadsPerBlock = dev.get_info<sycl::info::device::max_work_group_size>();
+                    prop.name = dev.get_info<sycl::info::device::name>();
+                    prop.maxThreadsPerBlock = dev.get_info<sycl::info::device::max_work_group_size>();
                     std::vector<std::size_t> wrap_sizes = dev.get_info<sycl::info::device::sub_group_sizes>();
                     // @todo do not reduce wrap size to a single value, return all values
-                    prop.m_warpSize = static_cast<uint32_t>(std::reduce(
+                    prop.warpSize = static_cast<uint32_t>(std::reduce(
                         wrap_sizes.begin(),
                         wrap_sizes.end(),
                         std::size_t{0},
@@ -244,7 +244,7 @@ namespace alpaka
                             else
                                 return std::max(a, b);
                         }));
-                    prop.m_multiProcessorCount = dev.get_info<sycl::info::device::max_compute_units>();
+                    prop.multiProcessorCount = dev.get_info<sycl::info::device::max_compute_units>();
 
                     return prop;
                 }

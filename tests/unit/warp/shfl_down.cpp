@@ -121,7 +121,7 @@ TEMPLATE_LIST_TEST_CASE("warp shflDown shifts toward higher lanes", "[warp][shfl
     }
 
     auto deviceProperties = selector.getDeviceProperties(0);
-    auto const warpExtent = deviceProperties.m_warpSize;
+    auto const warpExtent = deviceProperties.warpSize;
 
     auto device = selector.makeDevice(0);
     auto queue = device.makeQueue(queueKind::blocking);

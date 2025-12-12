@@ -42,9 +42,8 @@ TEST_CASE("show host devices", "[docs]")
     {
         std::cout << "Device " << i << ":\n";
         std::cout << "  - name              " << computeDevSelector.getDeviceProperties(i).getName() << "\n";
-        std::cout << "  - #multi-processors " << computeDevSelector.getDeviceProperties(i).m_multiProcessorCount
-                  << "\n";
-        std::cout << "  - warp size         " << computeDevSelector.getDeviceProperties(i).m_warpSize << "\n";
+        std::cout << "  - #multi-processors " << computeDevSelector.getDeviceProperties(i).multiProcessorCount << "\n";
+        std::cout << "  - warp size         " << computeDevSelector.getDeviceProperties(i).warpSize << "\n";
     }
     // END-TUTORIAL-devProperties
 }

@@ -36,7 +36,7 @@ namespace alpaka::onHost
                 , m_properties{internal::getDeviceProperties(*m_platform.get(), m_idx)}
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::device);
-                m_properties.m_name += " id=" + std::to_string(m_idx);
+                m_properties.name += " id=" + std::to_string(m_idx);
             }
 
             ~Device()
@@ -101,7 +101,7 @@ namespace alpaka::onHost
 
             std::string getName() const
             {
-                return m_properties.m_name;
+                return m_properties.name;
             }
 
             friend struct internal::GetNativeHandle;
@@ -325,7 +325,7 @@ namespace alpaka::onHost
 #if 0
                using IdxType = typename T_NumBlocks::type;
                // @todo get this number from device properties
-               static auto const maxBlocks = device.m_properties.m_multiProcessorCount;
+               static auto const maxBlocks = device.m_properties.multiProcessorCount;
 
 
                while(numThreadBlocks.product() > maxBlocks)

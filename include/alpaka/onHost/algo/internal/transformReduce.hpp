@@ -235,7 +235,7 @@ namespace alpaka::onHost::internal
                 multiprocessorScaling = 32u;
             }
 
-            auto const numMultiProcessors = queue.getDevice().getDeviceProperties().m_multiProcessorCount;
+            auto const numMultiProcessors = queue.getDevice().getDeviceProperties().multiProcessorCount;
             auto adjsutedNumFrames = alpaka::api::util::adjustToLimit(
                 frameSpec.m_numFrames,
                 static_cast<IndexType>(numMultiProcessors * multiprocessorScaling));
