@@ -4,7 +4,7 @@ Device Selection
 In this section you will learn how to select a device to accelerate your compute kernels.
 Devices must be explicitly selected by the user; *alpaka* does not provide a single way to select your compute device.
 The reason for this is that device selection depends strongly on your application and workflow.
-It could be that your project wants to use only a single compute device, e.g. a NVIDIA GPU, or that you want to support using all available compute devices in your host system.
+It could be that your project only wants to use a single compute device, e.g. an NVIDIA GPU, or that you want to support using all available compute devices in your host system.
 You could make the device selection part of your CMake workflow, or you might want to provide command-line parameters to select the device.
 
 To select a device you need an ``api`` and a ``deviceKind``.
@@ -21,7 +21,7 @@ If you use a combination that is not supported because the required dependency i
     :end-before: END-TUTORIAL-devSelect
     :dedent:
 
-We create an object that can allocate a device of the given device kind for us, but before we need to check if there is a device available.
+We create an object that can allocate a device of the given device kind for us, but first we need to check if there is a device available.
 Maybe there is no device available due to driver issues.
 
   .. literalinclude:: ../../snippets/example/05_device.cpp
@@ -38,7 +38,7 @@ Before we take a device let's check the device properties e.g. the name and warp
     :end-before: END-TUTORIAL-devProperties
     :dedent:
 
-Only taking the device with ``makeDevice()`` and the device index if there is a device available, else you will get an exception at runtime.
+Calling ``makeDevice()`` using the device index to obtain the device only succeeds if the device is available, else you will get a runtime exception.
 
   .. literalinclude:: ../../snippets/example/05_device.cpp
     :language: cpp
@@ -46,7 +46,7 @@ Only taking the device with ``makeDevice()`` and the device index if there is a 
     :end-before: END-TUTORIAL-devHandleCount
     :dedent:
 
-The device with the api ``host`` and the device kind ``cpu`` which represents your host system CPU is always available, therefore you have a short cut interface function available.
+The device with the api ``host`` and the device kind ``cpu`` which represents your host system CPU is always available, therefore you have a shortcut interface function available.
 
   .. literalinclude:: ../../snippets/example/05_device.cpp
     :language: cpp

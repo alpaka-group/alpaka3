@@ -110,7 +110,7 @@ TEST_CASE("compile-time vector as function argument", "[docs]")
     // BEGIN-TUTORIAL-CVec1
     constexpr auto cvec = CVec<uint32_t, 5u, 7u, 11u>{};
 
-    // compile-time vectors can be passed as function argument and kept compile-time values
+    // compile-time vectors can be passed as function arguments and preserve compile-time values
     foo(cvec);
     // END-TUTORIAL-CVec1
 }
@@ -143,7 +143,7 @@ TEST_CASE("vector swizzle", "[docs]")
     // BEGIN-TUTORIAL-vectorSwizzle
     constexpr concepts::Vector auto cvec0 = CVec<uint32_t, 3u, 5u, 7u>{};
 
-    // permutate the vector arguments
+    // permute the vector arguments
     constexpr concepts::Vector auto vResult = cvec0[CVec<uint32_t, 1u, 0u, 2u>{}];
     // access components via names, order [z,y,x]
     static_assert(vResult.z() == 5u && vResult.y() == 3u && vResult.x() == 7u);
@@ -157,7 +157,7 @@ TEST_CASE("vector ref", "[docs]")
     // BEGIN-TUTORIAL-vectorSwizzleRef
     concepts::Vector auto vec0 = Vec{3u, 5u, 7u};
 
-    // creates a permuted view to an existing vector to modify only a subset of arguments
+    // creates a permuted view to an existing vector to modify only a subset of components
     concepts::Vector auto vecView = vec0.ref(CVec<uint32_t, 0u, 2u>{});
     vecView = 42u;
     CHECK((vec0.z() == 42u && vec0.y() == 5u && vec0.x() == 42u));
@@ -175,9 +175,9 @@ TEST_CASE("vector operations", "[docs]")
     // same as above but supports all std functional operations
     static_assert(vec0.reduce(std::plus{}) == 15u);
 
-    // All vector operations requires that the lhs type is equal to the vector component type.
-    // This is relaxed if the rhs or lhs of a vector can be up-casted without precision loss, or sign flips, and are
-    // scalar values. Operations with two vectors requires equal value types. In this example `7u` is up-casted to
+    // All vector operations require that the lhs type is equal to the vector component type.
+    // This is relaxed if the rhs or lhs of a vector can be up-casted without precision loss, or sign flips, and is a
+    // scalar value. Operations with two vectors require equal value types. In this example `7u` is up-casted to
     // size_t.
     constexpr concepts::Vector auto vec1 = vec0 >= 7u;
     static_assert(vec1.z() == false && vec1.y() == false && vec1.x() == true);

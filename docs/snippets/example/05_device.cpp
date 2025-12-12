@@ -26,7 +26,7 @@ TEST_CASE("show host devices", "[docs]")
     // END-TUTORIAL-devCount
 
     // BEGIN-TUTORIAL-devHandleCount
-    // Check always the number of available compute devices! Alpaka is always creating a valid DeviceSelector even for
+    // Always check the number of available compute devices! Alpaka always creates a valid DeviceSelector even for
     // unsupported combinations of an api and deviceKind.
     if(numComputeDevs > 0)
     {

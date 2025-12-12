@@ -2,10 +2,10 @@ Vector
 ======
 
 The vectors ``Vec`` and ``CVec`` are among the most important objects you will use in *alpaka*.
-A vector is a tuple with a compile-time known number of components of the same type, similar to ``std::array``.
-The number of components is called the number of dimensions ``dim``.
+A vector is a container with a compile-time known number of components of the same type, similar to ``std::array``.
+The number of components is called ``dim``, as it is the dimensionality (number of dimensions) of the vector.
 As you can imagine, a vector is used to describe a multi-dimensional point or distance, e.g. to describe the extents of memory or to access a value in memory.
-The number of dimensions in *alpaka* is not limited.
+The number of dimensions of a vector in *alpaka* is not limited.
 
 ``Vec`` is a vector whose component values are stored at runtime, while ``CVec`` stores the components in the template signature, which allows compile-time information to be propagated to called functions and used there at compile time.
 A vector is designed for integral values, but using a vector with floating-point numbers also works.
@@ -19,7 +19,7 @@ Vec
     :end-before: END-TUTORIAL-vectorCreation
     :dedent:
 
-A vector is not implicitly casting the value type except during the initialization.
+A vector does not implicitly cast the value type except during initialization.
 
   .. literalinclude:: ../../snippets/example/00_vector.cpp
     :language: cpp
@@ -35,8 +35,8 @@ The dimension of the vector can be queried via ``dim()``.
     :end-before: END-TUTORIAL-vectorDim
     :dedent:
 
-The dimensions in a muti-dimensional vector can be accessed via named functions or index.
-If you are coming from Cuda/Hip you should take care that order of the named access to dimensions is ``w/z/y/x``.
+The dimensions in a muti-dimensional vector can be accessed via named functions or indices.
+If you are coming from CUDA/HIP you should take care that order of the named access to dimensions is ``w/z/y/x``.
 
   .. literalinclude:: ../../snippets/example/00_vector.cpp
     :language: cpp
@@ -44,9 +44,9 @@ If you are coming from Cuda/Hip you should take care that order of the named acc
     :end-before: END-TUTORIAL-vectorNamedAccess
     :dedent:
 
-The next example show how to iterate over a C array where the size is is defined by a vector.
-The slow moving index is the left most with the index ``0`` and the fast moving index is ``dim() - 1u``.
-In later tutorials we will show that you should use the most right index for the fast moving loop over *alpaka* allocated memory too.
+The next example shows how to iterate over a C array where the size is defined by a vector.
+The slow moving index is the leftmost with the index ``0`` and the fast moving index is ``dim() - 1u``.
+In later tutorials we will show that you should use the rightmost index for the fast moving loop over *alpaka* allocated memory too.
 
   .. literalinclude:: ../../snippets/example/00_vector.cpp
     :language: cpp
@@ -61,8 +61,8 @@ Output:
     1.000000 2.000000 3.000000
     4.000000 5.000000 6.000000
 
-You can porm typical arithmetic operation on vectors, e.g. ``+``, ``-``, ...
-Operations on a vector working element wise, except ``==`` and ``!=``.
+You can perform typical arithmetic operations on vectors, e.g. ``+``, ``-``, ...
+Operations on a vector work element wise, except for ``==`` and ``!=``.
 
   .. literalinclude:: ../../snippets/example/00_vector.cpp
     :language: cpp
@@ -80,9 +80,9 @@ The swizzle operator is using :ref:`cvec`, which will be shown later.
     :end-before: END-TUTORIAL-vectorSwizzle
     :dedent:
 
-Sometimes it is useful to assign values only to few components.
-The next example is permuting the initial vector and broadcast assign a scalar to all selected components only.
-Note, that you can only assign vectors with the same dimensionality and value type, or scalars those are lossless convertible.
+Sometimes it is useful to assign values only to a few components.
+The next example permutes the initial vector and broadcast-assigns a scalar to all selected components only.
+Note that you can only assign vectors with the same dimensionality and value type, or scalars those are lossless convertible.
 
   .. literalinclude:: ../../snippets/example/00_vector.cpp
     :language: cpp
@@ -90,7 +90,7 @@ Note, that you can only assign vectors with the same dimensionality and value ty
     :end-before: END-TUTORIAL-vectorSwizzleRef
     :dedent:
 
-Since most operators of a vector working element wise you need sometimes reduction methods like ``sum()`` or ``product()`` to accumulate all components to a single scalar value.
+Since most vector operators work element wise, you need sometimes reduction methods like ``sum()`` or ``product()`` to accumulate all components to a single scalar value.
 
   .. literalinclude:: ../../snippets/example/00_vector.cpp
     :language: cpp
@@ -116,7 +116,7 @@ The next code will show you that you can use ``static_assert()`` which would not
     :end-before: END-TUTORIAL-CVec1
     :dedent:
 
-If you call operators like ``+`` on a ``CVec`` variable it will be changed to ``Vec`` and it will not keeps the results compile time available if you pass the result to a function.
+If you call operators like ``+`` on a ``CVec`` variable, the result type will be ``Vec`` and it will not keep the results compile time available if you pass the result to a function.
 In this example it can only be validated with ``static_assert()`` because the operation is marked ``constexpr``.
 
   .. literalinclude:: ../../snippets/example/00_vector.cpp
