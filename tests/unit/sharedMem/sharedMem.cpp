@@ -1,18 +1,18 @@
 /* Copyright 2024 René Widera
  * SPDX-License-Identifier: MPL-2.0
  */
-#if 1
-#    include <alpaka/alpaka.hpp>
-#    include <alpaka/onHost/example/executors.hpp>
-#    include <alpaka/onHost/executeForEach.hpp>
 
-#    include <catch2/catch_template_test_macros.hpp>
-#    include <catch2/catch_test_macros.hpp>
+#include <alpaka/alpaka.hpp>
+#include <alpaka/onHost/example/executors.hpp>
+#include <alpaka/onHost/executeForEach.hpp>
 
-#    include <chrono>
-#    include <functional>
-#    include <iostream>
-#    include <thread>
+#include <catch2/catch_template_test_macros.hpp>
+#include <catch2/catch_test_macros.hpp>
+
+#include <chrono>
+#include <functional>
+#include <iostream>
+#include <thread>
 
 using namespace alpaka;
 
@@ -86,8 +86,6 @@ TEMPLATE_LIST_TEST_CASE("block shared iota", "", TestApis)
         CHECK(i == ptr[i]);
     }
 }
-
-#endif
 
 /** Validate shared memory aliasing and uniqueness.
  *

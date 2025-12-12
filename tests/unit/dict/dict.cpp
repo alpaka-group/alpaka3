@@ -11,7 +11,7 @@
 #include <functional>
 
 using namespace alpaka;
-#if 1
+
 TEST_CASE("dict mutate entry", "")
 {
     ALPAKA_TAG(a_);
@@ -54,4 +54,3 @@ TEST_CASE("dict mutate entry", "")
     CHECK(joinedDict[a_] == 1);
     CHECK(joinedDict[c_] == 5);
 }
-#endif

@@ -110,8 +110,6 @@ struct IotaKernelND
     }
 };
 
-#if 1
-
 TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
 {
     auto cfg = TestType::makeDict();
@@ -144,9 +142,6 @@ TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
     onHost::wait(queue);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx == hBuff[idx]); });
 }
-#endif
-
-#if 1
 
 TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
 {
@@ -180,7 +175,6 @@ TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
     onHost::wait(queue);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx == hBuff[idx]); });
 }
-#endif
 
 TEMPLATE_LIST_TEST_CASE("iota4D", "", TestApis)
 {

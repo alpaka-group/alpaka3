@@ -67,8 +67,6 @@ void iotaTest(auto& queue, auto exec, auto const extents, auto frameSize)
     meta::ndLoopIncIdx(extents, [&](auto idx) { CHECK(idx == pCast<T_MemIdxType>(mdSpan[idx])); });
 }
 
-#if 1
-
 template<bool T_signedMemIdx, bool T_signedLoopIdx, bool T_signedKernelIdx>
 void callTests(auto cfg)
 {
@@ -217,4 +215,3 @@ TEMPLATE_LIST_TEST_CASE("kernel_precision_iotaNd", "", TestApis)
     callTests<false, true, true>(cfg);
     callTests<true, true, true>(cfg);
 }
-#endif
