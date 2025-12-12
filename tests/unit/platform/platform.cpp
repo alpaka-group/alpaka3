@@ -41,17 +41,3 @@ TEST_CASE("api creation", "")
         },
         getDeviceSpecsFor(enabledApis));
 }
-#if 0
-using MyTypes = std::decay_t<decltype(enabledApis)>;
-
-TEMPLATE_LIST_TEST_CASE("platform creation", "[template][list]", MyTypes)
-{
-    Platform platform = makePlatform(TestType{});
-    auto numDevices = platform.getDeviceCount();
-    for(uint32_t i = 0; i < numDevices; ++i)
-    {
-        Device device = platform.makeDevice(0);
-        std::cout << "platform="<<platform.getName()<< "device="<<device.getName() << std::endl;
-    }
-}
-#endif
