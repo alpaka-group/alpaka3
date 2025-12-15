@@ -273,7 +273,7 @@ namespace alpaka::onAcc
         {
             return ReduceAlgo::template transformReduce<T_maxConcurrencyInByte, T_MemAlignment>(
                 acc,
-                data0.getExtents(),
+                extents,
                 neutralElement,
                 ALPAKA_FORWARD(reduceFunc),
                 ALPAKA_FORWARD(transformFunc),
