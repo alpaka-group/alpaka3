@@ -22,8 +22,8 @@ using TestBackends
 template<typename T_Data>
 int validateResult(
     auto queue,
-    concepts::IDataSource<T_Data> auto& inputData,
-    auto const& bufY,
+    concepts::IDataSource<T_Data> auto const& inputData,
+    concepts::IDataSource<T_Data> auto const& bufY,
     std::size_t numElements,
     onHost::internal::ScanType scanType)
 {
@@ -89,13 +89,13 @@ void testExclusiveScan(
     // exclusive scan, no buffer
     std::cout << "exclusive scan, no buffer" << std::endl;
     onHost::memcpy(computeQueue, inBuf, hostIn);
-    onHost::exclusiveScan<T_Data>(exec, computeDev, computeQueue, inBuf, outBuf);
+    onHost::exclusiveScan(exec, computeDev, computeQueue, outBuf, inBuf);
     auto res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::EXCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 
     // exclusive scan, in-place
     std::cout << "exclusive scan, no buffer, in-place" << std::endl;
-    onHost::exclusiveScanInPlace<T_Data>(exec, computeDev, computeQueue, inBuf);
+    onHost::exclusiveScanInPlace(exec, computeDev, computeQueue, inBuf);
     res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::EXCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 
@@ -106,13 +106,13 @@ void testExclusiveScan(
     // exclusive scan, with buffer
     std::cout << "exclusive scan, with buffer" << std::endl;
     onHost::memcpy(computeQueue, inBuf, hostIn);
-    onHost::exclusiveScan<T_Data>(exec, computeDev, computeQueue, inBuf, outBuf, intermediateBuffer);
+    onHost::exclusiveScan(exec, computeDev, computeQueue, intermediateBuffer, outBuf, inBuf);
     res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::EXCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 
     // exclusive scan, in-place with buffer
     std::cout << "exclusive scan, with buffer, in-place" << std::endl;
-    onHost::exclusiveScanInPlace<T_Data>(exec, computeDev, computeQueue, inBuf, intermediateBuffer);
+    onHost::exclusiveScanInPlace(exec, computeDev, computeQueue, intermediateBuffer, inBuf);
     res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::EXCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 }
@@ -131,13 +131,13 @@ void testInclusiveScan(
     // inclusive scan, no buffer
     std::cout << "inclusive scan, no buffer" << std::endl;
     onHost::memcpy(computeQueue, inBuf, hostIn);
-    onHost::inclusiveScan<T_Data>(exec, computeDev, computeQueue, inBuf, outBuf);
+    onHost::inclusiveScan(exec, computeDev, computeQueue, outBuf, inBuf);
     auto res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::INCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 
     // inclusive scan, in-place
     std::cout << "inclusive scan, no buffer, in-place" << std::endl;
-    onHost::inclusiveScanInPlace<T_Data>(exec, computeDev, computeQueue, inBuf);
+    onHost::inclusiveScanInPlace(exec, computeDev, computeQueue, inBuf);
     res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::INCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 
@@ -148,13 +148,13 @@ void testInclusiveScan(
     // inclusive scan, with buffer
     std::cout << "inclusive scan, with buffer" << std::endl;
     onHost::memcpy(computeQueue, inBuf, hostIn);
-    onHost::inclusiveScan<T_Data>(exec, computeDev, computeQueue, inBuf, outBuf, intermediateBuffer);
+    onHost::inclusiveScan(exec, computeDev, computeQueue, intermediateBuffer, outBuf, inBuf);
     res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::INCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 
     // inclusive scan, in-place with buffer
     std::cout << "inclusive scan, with buffer, in-place" << std::endl;
-    onHost::inclusiveScanInPlace<T_Data>(exec, computeDev, computeQueue, inBuf, intermediateBuffer);
+    onHost::inclusiveScanInPlace(exec, computeDev, computeQueue, intermediateBuffer, inBuf);
     res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::INCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 }
