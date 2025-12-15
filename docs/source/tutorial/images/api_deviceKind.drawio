@@ -1,0 +1,49 @@
+<mxfile host="embed.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0" version="29.2.7">
+  <diagram name="Seite-1" id="IbwfVimuGqMdNV2DvXlu">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="hEfLK6W_RHBmZPWY_AR3-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e51400;strokeColor=#B20000;fontColor=#ffffff;sketch=1;curveFitting=1;jiggle=2;" value="&lt;b&gt;&lt;font style=&quot;font-size: 25px; color: rgb(0, 0, 0);&quot;&gt;api&lt;/font&gt;&lt;/b&gt;" vertex="1">
+          <mxGeometry height="60" width="890" x="40" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="hEfLK6W_RHBmZPWY_AR3-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;gradientColor=#ea6b66;sketch=1;curveFitting=1;jiggle=2;" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;host&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="300" x="40" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="hEfLK6W_RHBmZPWY_AR3-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;gradientColor=#ea6b66;sketch=1;curveFitting=1;jiggle=2;" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;cuda&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="350" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="hEfLK6W_RHBmZPWY_AR3-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;gradientColor=#ea6b66;sketch=1;curveFitting=1;jiggle=2;" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;hip&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="480" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="hEfLK6W_RHBmZPWY_AR3-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;gradientColor=#ea6b66;sketch=1;curveFitting=1;jiggle=2;" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;oneApi&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="320" x="610" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="hEfLK6W_RHBmZPWY_AR3-7" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#008a00;fontColor=#ffffff;strokeColor=#005700;sketch=1;curveFitting=1;jiggle=2;" value="&lt;b&gt;&lt;font style=&quot;font-size: 25px; color: rgb(0, 0, 0);&quot;&gt;deviceKind&lt;/font&gt;&lt;/b&gt;" vertex="1">
+          <mxGeometry height="60" width="890" x="40" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="hEfLK6W_RHBmZPWY_AR3-8" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;gradientColor=#97d077;sketch=1;curveFitting=1;jiggle=2;" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;cpu&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="300" x="40" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="hEfLK6W_RHBmZPWY_AR3-9" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;gradientColor=#97d077;sketch=1;curveFitting=1;jiggle=2;" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;nvidiaGpu&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="350" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="hEfLK6W_RHBmZPWY_AR3-10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;gradientColor=#97d077;sketch=1;curveFitting=1;jiggle=2;" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;nvidiaGpu&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="80" x="850" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="hEfLK6W_RHBmZPWY_AR3-11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;gradientColor=#97d077;sketch=1;curveFitting=1;jiggle=2;" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;amdGpu&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="480" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="hEfLK6W_RHBmZPWY_AR3-12" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;gradientColor=#97d077;sketch=1;curveFitting=1;jiggle=2;" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;amdGpu&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="80" x="770" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="hEfLK6W_RHBmZPWY_AR3-13" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;gradientColor=#97d077;sketch=1;curveFitting=1;jiggle=2;" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;intelGpu&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="80" x="690" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="hEfLK6W_RHBmZPWY_AR3-14" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;gradientColor=#97d077;sketch=1;curveFitting=1;jiggle=2;" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;cpu&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="80" x="610" y="380" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
