@@ -159,7 +159,11 @@ TEST_CASE("vector ref", "[docs]")
 
     // creates a permuted view to an existing vector to modify only a subset of components
     concepts::Vector auto vecView = vec0.ref(CVec<uint32_t, 0u, 2u>{});
+    static_assert(vecView.dim() == 2u);
+    CHECK((vecView[0] == 3u && vecView[1] == 7u));
     vecView = 42u;
+    CHECK((vecView[0] == 42u && vecView[1] == 42u));
+
     CHECK((vec0.z() == 42u && vec0.y() == 5u && vec0.x() == 42u));
     CHECK((vec0[0] == 42u && vec0[1] == 5u && vec0[2] == 42u));
     // END-TUTORIAL-vectorSwizzleRef
