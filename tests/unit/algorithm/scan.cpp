@@ -97,7 +97,7 @@ void testExclusiveScan(
 
 
     onHost::SharedBuffer intermediateBuffer
-        = onHost::alloc<T_Data>(computeDev, onHost::getScanBufferSize(inBuf.getExtents()));
+        = onHost::alloc<char>(computeDev, onHost::getScanBufferSize<T_Data>(inBuf.getExtents()));
 
     // exclusive scan, with buffer
     std::cout << "exclusive scan, with buffer" << std::endl;
@@ -139,7 +139,7 @@ void testInclusiveScan(
 
 
     onHost::SharedBuffer intermediateBuffer
-        = onHost::allocDeferred<T_Data>(computeQueue, onHost::getScanBufferSize(inBuf.getExtents()));
+        = onHost::alloc<char>(computeDev, onHost::getScanBufferSize<T_Data>(inBuf.getExtents()));
 
     // inclusive scan, with buffer
     std::cout << "inclusive scan, with buffer" << std::endl;
