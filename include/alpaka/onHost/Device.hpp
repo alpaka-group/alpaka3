@@ -329,7 +329,7 @@ namespace alpaka::onHost
         IndexType numFrameElemets = 512;
         // avoid non-power of two values
         auto fastDimensionValue = roundDownToPowerOfTwo(std::min(warpSize, extents.x()));
-        auto frameExtents = ExtentVecType::all(1).rAssign(fastDimensionValue);
+        auto frameExtents = ExtentVecType::fill(1).rAssign(fastDimensionValue);
         numFrameElemets /= frameExtents.x();
         // distribute remainder frame elements
         while(numFrameElemets > IndexType{1})
@@ -355,7 +355,7 @@ namespace alpaka::onHost
         }
         IndexType elementsPerFrameItem = static_cast<IndexType>(getNumElemPerThread<T_DataType>(device));
         alpaka::concepts::Vector auto numFrames
-            = divExZero(extents, frameExtents * frameExtents.all(1).rAssign(elementsPerFrameItem));
+            = divExZero(extents, frameExtents * frameExtents.fill(1).rAssign(elementsPerFrameItem));
         // The frame specification is not required to be a multiple of the extent, it can be smaller.
         auto frameSpec = onHost::FrameSpec{numFrames, frameExtents};
         return frameSpec;

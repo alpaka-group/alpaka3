@@ -95,7 +95,7 @@ struct TestWithMdSpan
         auto computeDev = computeQueue.getDevice();
         using DataType = T_DataType;
         using OutDataType = ALPAKA_TYPEOF(std::get<0>(setup));
-        onHost::SharedBuffer computeBufferOut = onHost::alloc<OutDataType>(computeDev, extentMd.all(1));
+        onHost::SharedBuffer computeBufferOut = onHost::alloc<OutDataType>(computeDev, extentMd.fill(1));
         onHost::SharedBuffer computeBufferIn0 = onHost::alloc<DataType>(computeDev, extentMd);
         onHost::SharedBuffer computeBufferIn1 = onHost::allocLike(computeDev, computeBufferIn0);
         onHost::SharedBuffer hostBufferIota = onHost::allocHostLike(computeBufferIn0);
@@ -252,7 +252,7 @@ struct TestWithGenerator
         auto computeDev = computeQueue.getDevice();
         using DataType = T_DataType;
         using OutDataType = ALPAKA_TYPEOF(std::get<0>(setup));
-        onHost::SharedBuffer computeBufferOut = onHost::alloc<OutDataType>(computeDev, extentMd.all(1));
+        onHost::SharedBuffer computeBufferOut = onHost::alloc<OutDataType>(computeDev, extentMd.fill(1));
         onHost::SharedBuffer computeBufferIn0 = onHost::alloc<DataType>(computeDev, extentMd);
         auto generator = LinearizedIdxGenerator{extentMd};
         onHost::SharedBuffer hostBufferIota = onHost::allocHostLike(computeBufferIn0);

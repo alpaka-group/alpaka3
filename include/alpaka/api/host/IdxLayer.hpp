@@ -22,22 +22,22 @@ namespace alpaka::onAcc
 
             constexpr auto idx() const
             {
-                return IndexVecType::all(0);
+                return IndexVecType::fill(0);
             }
 
             constexpr auto idx() const requires alpaka::concepts::CVector<IndexVecType>
             {
-                return IndexVecType::template all<0>();
+                return IndexVecType::template fill<0>();
             }
 
             constexpr auto count() const
             {
-                return IndexVecType::all(1);
+                return IndexVecType::fill(1);
             }
 
             constexpr auto count() const requires alpaka::concepts::CVector<IndexVecType>
             {
-                return IndexVecType::template all<1u>();
+                return IndexVecType::template fill<1u>();
             }
         };
 

@@ -204,7 +204,7 @@ namespace alpaka
          * @param value Value which is set for all dimensions
          * @return new Simd<...>
          */
-        static constexpr auto all(concepts::Convertible<T_Type> auto const& value)
+        static constexpr auto fill(concepts::Convertible<T_Type> auto const& value)
         {
             Simd result([=](uint32_t const) { return static_cast<T_Type>(value); });
             return result;

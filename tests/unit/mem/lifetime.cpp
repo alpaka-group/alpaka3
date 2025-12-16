@@ -15,7 +15,7 @@ TEST_CASE("move MdSpan", "[mem][mdspan][lifetime]")
     constexpr size_t size = 10;
     std::vector<int> data(size);
     int* ptr = data.data();
-    concepts::Vector auto extents = Vec<uint32_t, 1>{}.all(size);
+    concepts::Vector auto extents = Vec<uint32_t, 1>{}.fill(size);
     concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
 
     using MutMdSpan = MdSpan<int, decltype(extents), decltype(pitches)>;
@@ -46,7 +46,7 @@ TEST_CASE("move View", "[mem][view][lifetime]")
     constexpr size_t size = 10;
     std::vector<int> data(size);
     int* ptr = data.data();
-    concepts::Vector auto extents = Vec<uint32_t, 1>{}.all(size);
+    concepts::Vector auto extents = Vec<uint32_t, 1>{}.fill(size);
     concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
 
     using MutView = View<alpaka::api::Host, int, decltype(extents)>;
@@ -108,7 +108,7 @@ struct LivingMemory
 
 TEST_CASE("lifetime of shared memory", "[mem][sharedBuffer][lifetime]")
 {
-    concepts::Vector auto extents = Vec<uint32_t, 2>{}.all(1);
+    concepts::Vector auto extents = Vec<uint32_t, 2>{}.fill(1);
     concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
 
     LivingMemory lv_mem1;
@@ -186,7 +186,7 @@ void funcUniversalRefMoved(auto&& buffer, long const expected_use_count)
 
 TEST_CASE("pass shared memory to function", "[mem][sharedBuffer][lifetime]")
 {
-    concepts::Vector auto extents = Vec<uint32_t, 2>{}.all(1);
+    concepts::Vector auto extents = Vec<uint32_t, 2>{}.fill(1);
     concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
 
     LivingMemory lv_mem1;

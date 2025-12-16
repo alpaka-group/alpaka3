@@ -38,7 +38,7 @@ TEST_CASE("mdspan inner const copy constructor", "[mem][mdspan][correctness][cop
     constexpr size_t size = 10;
     int* ptr = nullptr;
     int const* const_ptr = nullptr;
-    concepts::Vector auto extents = Vec<uint32_t, 3>{}.all(size);
+    concepts::Vector auto extents = Vec<uint32_t, 3>{}.fill(size);
     concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
 
     using MutMdSpan = MdSpan<int, decltype(extents), decltype(pitches)>;
@@ -71,7 +71,7 @@ TEST_CASE("mdspan inner const assignment operator", "[mem][mdspan][correctness][
     constexpr size_t size = 10;
     int* ptr = nullptr;
     int const* const_ptr = nullptr;
-    concepts::Vector auto extents = Vec<uint32_t, 2>{}.all(size);
+    concepts::Vector auto extents = Vec<uint32_t, 2>{}.fill(size);
     concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
 
     using MutMdSpan = MdSpan<int, decltype(extents), decltype(pitches)>;
@@ -95,7 +95,7 @@ TEST_CASE("mdspan inner const move operator", "[mem][mdspan][correctness][moveCo
     constexpr size_t size = 10;
     int* ptr = nullptr;
     int const* const_ptr = nullptr;
-    concepts::Vector auto extents = Vec<uint32_t, 2>{}.all(size);
+    concepts::Vector auto extents = Vec<uint32_t, 2>{}.fill(size);
     concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
 
     using MutMdSpan = MdSpan<int, decltype(extents), decltype(pitches)>;
@@ -161,7 +161,7 @@ TEST_CASE("function calls with mdspan object", "[mem][mdspan][correctness]")
     constexpr size_t size = 10;
     int* ptr = nullptr;
     int const* const_ptr = nullptr;
-    concepts::Vector auto extents = Vec<uint32_t, 1>{}.all(size);
+    concepts::Vector auto extents = Vec<uint32_t, 1>{}.fill(size);
     concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
 
     MdSpan mdspan{ptr, extents, pitches};
@@ -273,7 +273,7 @@ TEST_CASE("View inner const copy constructor", "[mem][view][correctness][copyCon
     constexpr size_t size = 10;
     int* ptr = nullptr;
     int const* const_ptr = nullptr;
-    concepts::Vector auto extents = Vec<uint32_t, 3>{}.all(size);
+    concepts::Vector auto extents = Vec<uint32_t, 3>{}.fill(size);
     concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
 
     using MutView = View<alpaka::api::Host, int, decltype(extents)>;
@@ -306,7 +306,7 @@ TEST_CASE("View inner const assignment operator", "[mem][view][correctness][copy
     constexpr size_t size = 10;
     int* ptr = nullptr;
     int const* const_ptr = nullptr;
-    concepts::Vector auto extents = Vec<uint32_t, 2>{}.all(size);
+    concepts::Vector auto extents = Vec<uint32_t, 2>{}.fill(size);
     concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
 
     using MutView = View<alpaka::api::Host, int, decltype(extents)>;
@@ -330,7 +330,7 @@ TEST_CASE("View inner const move constructor and move assignment operator", "[me
     constexpr size_t size = 10;
     int* ptr = nullptr;
     int const* const_ptr = nullptr;
-    concepts::Vector auto extents = Vec<uint32_t, 3>{}.all(size);
+    concepts::Vector auto extents = Vec<uint32_t, 3>{}.fill(size);
     concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
 
     using MutView = View<alpaka::api::Host, int, decltype(extents)>;
@@ -360,7 +360,7 @@ TEST_CASE("sharedBuffer inner const copy constructor", "[mem][sharedBuffer][corr
     constexpr size_t size = 10;
     int* ptr = nullptr;
     int const* const_ptr = nullptr;
-    concepts::Vector auto extents = Vec<uint32_t, 3>{}.all(size);
+    concepts::Vector auto extents = Vec<uint32_t, 3>{}.fill(size);
     concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
 
     using MutSharedBuffer = onHost::SharedBuffer<alpaka::api::Host, int, decltype(extents)>;
@@ -393,7 +393,7 @@ TEST_CASE("sharedBuffer inner const assignment operator", "[mem][sharedBuffer][c
     constexpr size_t size = 10;
     int* ptr = nullptr;
     int const* const_ptr = nullptr;
-    concepts::Vector auto extents = Vec<uint32_t, 2>{}.all(size);
+    concepts::Vector auto extents = Vec<uint32_t, 2>{}.fill(size);
     concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
 
     using MutSharedBuffer = onHost::SharedBuffer<alpaka::api::Host, int, decltype(extents)>;
@@ -417,7 +417,7 @@ TEST_CASE("sharedBuffer inner const move operator", "[mem][sharedBuffer][correct
     constexpr size_t size = 10;
     int* ptr = nullptr;
     int const* const_ptr = nullptr;
-    concepts::Vector auto extents = Vec<uint32_t, 3>{}.all(size);
+    concepts::Vector auto extents = Vec<uint32_t, 3>{}.fill(size);
     concepts::Vector auto pitches = alpaka::calculatePitchesFromExtents<int>(extents);
 
     using MutSharedBuffer = onHost::SharedBuffer<alpaka::api::Host, int, decltype(extents)>;

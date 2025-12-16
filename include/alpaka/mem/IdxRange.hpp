@@ -33,11 +33,11 @@ namespace alpaka
         constexpr IdxRange(T_Begin const& begin, T_End const& end)
             : m_begin{begin}
             , m_end{end}
-            , m_stride{T_End::all(1u)}
+            , m_stride{T_End::fill(1u)}
         {
         }
 
-        constexpr IdxRange(T_End const& extent) : m_begin{T_End::all(0u)}, m_end{extent}, m_stride{T_End::all(1u)}
+        constexpr IdxRange(T_End const& extent) : m_begin{T_End::fill(0u)}, m_end{extent}, m_stride{T_End::fill(1u)}
         {
         }
 
@@ -107,8 +107,8 @@ namespace alpaka
         auto const range,
         alpaka::BoundaryDirection<T_dim, T_LowHaloVec, T_UpHaloVec> const& boundaryDir)
     {
-        auto m_begin = Vec<uint32_t, T_dim>::all(0u);
-        auto m_end = Vec<uint32_t, T_dim>::all(0u);
+        auto m_begin = Vec<uint32_t, T_dim>::fill(0u);
+        auto m_end = Vec<uint32_t, T_dim>::fill(0u);
         for(uint32_t i = 0; i < T_dim; ++i)
         {
             switch(boundaryDir.data[i])

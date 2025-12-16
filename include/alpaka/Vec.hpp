@@ -149,7 +149,7 @@ namespace alpaka
             }
 
             template<T T_value>
-            static constexpr auto all()
+            static constexpr auto fill()
             {
                 using IotaSeq = std::make_integer_sequence<T, dim()>;
                 return integerSequenceToCVec(IotaSeq{}, [](auto&&) constexpr { return T_value; });
@@ -273,7 +273,7 @@ namespace alpaka
          * @param value Value which is set for all dimensions
          * @return new Vec<...>
          */
-        static constexpr auto all(concepts::Convertible<T_Type> auto const& value)
+        static constexpr auto fill(concepts::Convertible<T_Type> auto const& value)
         {
             if constexpr(requires { detail::TemplateSignatureStorage_v<T_Storage>; })
             {
@@ -289,9 +289,9 @@ namespace alpaka
 
         template<auto T_v>
         requires(isConvertible_v<ALPAKA_TYPEOF(T_v), T_Type>)
-        static constexpr auto all() requires requires { T_Storage::template all<T_v>(); }
+        static constexpr auto fill() requires requires { T_Storage::template fill<T_v>(); }
         {
-            return Vec<T_Type, T_dim, ALPAKA_TYPEOF(T_Storage::template all<static_cast<T_Type>(T_v)>())>{};
+            return Vec<T_Type, T_dim, ALPAKA_TYPEOF(T_Storage::template fill<static_cast<T_Type>(T_v)>())>{};
         }
 
         constexpr Vec toRT() const
@@ -996,7 +996,7 @@ namespace alpaka
     requires(std::is_same_v<trait::GetValueType_t<T_Vector0>, trait::GetValueType_t<T_Vector1>>)
     [[nodiscard]] ALPAKA_FN_HOST_ACC constexpr concepts::Vector auto divCeil(T_Vector0 a, T_Vector1 b)
     {
-        return (a + b - T_Vector0::all(1)) / b;
+        return (a + b - T_Vector0::fill(1)) / b;
     }
 
     template<concepts::Vector T_Vector0, concepts::Vector T_Vector1>

@@ -129,7 +129,7 @@ namespace alpaka
                     [&](auto i)
                     {
                         // rAssign() is used because, SIMD vectors can only be loaded from the fast moving index
-                        return linearIdxGenerator[idx + T_Idx::all(0).rAssign(i)];
+                        return linearIdxGenerator[idx + T_Idx::fill(0).rAssign(i)];
                     });
             }
         };

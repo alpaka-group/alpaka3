@@ -53,7 +53,7 @@ namespace alpaka::internal::generic
                 [value](auto const& acc, auto destSimdPtr) constexpr
                 {
                     using SimdType = ALPAKA_TYPEOF(destSimdPtr.load());
-                    destSimdPtr = SimdType::all(value);
+                    destSimdPtr = SimdType::fill(value);
                 },
                 dest);
         }
@@ -73,12 +73,12 @@ namespace alpaka::internal::generic
 
         using ExtentsType = ALPAKA_TYPEOF(extents);
         using IndexType = typename ExtentsType::type;
-        auto virtualFrameExtent = ExtentsType::all(1u);
+        auto virtualFrameExtent = ExtentsType::fill(1u);
         // 512 is randomly chosen because it is on all devices a good value for a value assign kernel
         virtualFrameExtent.x() = std::min(static_cast<IndexType>(512u * elementsPerFrameItem), extents.x());
 
         auto numFrames = divExZero(extents, virtualFrameExtent);
-        auto realFrameExtent = ExtentsType::all(1u);
+        auto realFrameExtent = ExtentsType::fill(1u);
         realFrameExtent.x() = IndexType{512u};
 
         auto frameSpec = onHost::FrameSpec{numFrames, realFrameExtent};

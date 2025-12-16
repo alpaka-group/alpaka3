@@ -72,7 +72,7 @@ namespace alpaka::meta
     template<typename TExtentVec, typename TFnObj>
     auto ndLoopIncIdx(TExtentVec& idx, TExtentVec const& extent, TFnObj const& f) -> void
     {
-        idx = TExtentVec::all(0);
+        idx = TExtentVec::fill(0);
         ndLoop(std::make_index_sequence<TExtentVec::dim()>(), idx, extent, f);
     }
 
@@ -81,7 +81,7 @@ namespace alpaka::meta
     {
         // TExtentVec could be a CVec therefore we need to make it writable
         using IndexVector = typename TExtentVec::UniVec;
-        auto idx = IndexVector::all(0);
+        auto idx = IndexVector::fill(0);
 
         ndLoop(std::make_index_sequence<TExtentVec::dim()>(), idx, IndexVector{extent}, f);
     }

@@ -64,7 +64,7 @@ namespace alpaka::onHost::internal
             auto traverseOverFrames = alpaka::onAcc::makeIdxMap(
                 acc,
                 alpaka::onAcc::worker::blocksInGrid,
-                alpaka::IdxRange{frameDataExtent.all(0), frameDataExtent, frameExtent});
+                alpaka::IdxRange{frameDataExtent.fill(0), frameDataExtent, frameExtent});
 
             for(auto frameIdx : traverseOverFrames)
             {
@@ -256,7 +256,7 @@ namespace alpaka::onHost::internal
                 return ss.str();
             });
 
-        onHost::fill(queue, out, neutralElement, out.getExtents().all(1));
+        onHost::fill(queue, out, neutralElement, out.getExtents().fill(1));
         queue.enqueue(
             exec,
             frameSpec,

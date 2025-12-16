@@ -275,7 +275,7 @@ namespace alpaka::onHost
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel);
                 /// @todo add shortcut to create a CVec with equal values
                 auto const allOne
-                    = ALPAKA_TYPEOF(iotaCVec<typename T_NumThreads::type, T_NumThreads::dim()>())::template all<1u>();
+                    = ALPAKA_TYPEOF(iotaCVec<typename T_NumThreads::type, T_NumThreads::dim()>())::template fill<1u>();
                 return ThreadSpec{allOne, allOne};
             }
 
@@ -288,7 +288,7 @@ namespace alpaka::onHost
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel);
                 /// @todo add shortcut to create a CVec with equal values
                 auto const allOne
-                    = ALPAKA_TYPEOF(iotaCVec<typename T_NumThreads::type, T_NumThreads::dim()>())::template all<1u>();
+                    = ALPAKA_TYPEOF(iotaCVec<typename T_NumThreads::type, T_NumThreads::dim()>())::template fill<1u>();
                 return ThreadSpec{allOne, allOne};
             }
         };
@@ -311,7 +311,7 @@ namespace alpaka::onHost
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel);
                 auto numThreadBlocks = dataBlocking.getThreadSpec().m_numBlocks;
-                return ThreadSpec{numThreadBlocks, T_NumThreads::template all<1u>()};
+                return ThreadSpec{numThreadBlocks, T_NumThreads::template fill<1u>()};
             }
 
             auto operator()(
@@ -322,7 +322,7 @@ namespace alpaka::onHost
             {
                 ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::kernel);
                 auto numThreadBlocks = dataBlocking.getThreadSpec().m_numBlocks;
-                auto const numThreads = Vec<typename T_NumThreads::type, T_NumThreads::dim()>::all(1);
+                auto const numThreads = Vec<typename T_NumThreads::type, T_NumThreads::dim()>::fill(1);
                 return ThreadSpec{numThreadBlocks, numThreads};
             }
         };

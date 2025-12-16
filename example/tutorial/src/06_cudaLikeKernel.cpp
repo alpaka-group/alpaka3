@@ -209,7 +209,7 @@ void testVectorAddKernel3D(alpaka::onHost::concepts::Device auto device, auto co
          * We map threads to blocks in this example.
          */
         threadSpec.m_numBlocks *= threadSpec.m_numThreads;
-        threadSpec.m_numThreads = Vec3D::all(1u);
+        threadSpec.m_numThreads = Vec3D::fill(1u);
     }
 
     std::cout << "Testing VectorAddKernel with vector indices with " << threadSpec.m_numBlocks << " blocks and "

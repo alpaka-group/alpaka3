@@ -74,7 +74,7 @@ void validate(auto& queue, auto& device, auto exec, auto testCase)
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);
     // validate that all data is zero
-    meta::ndLoopIncIdx(extentMd, [&](auto idx) { CHECK(hBuff[idx] == ALPAKA_TYPEOF(extentMd)::all(0)); });
+    meta::ndLoopIncIdx(extentMd, [&](auto idx) { CHECK(hBuff[idx] == ALPAKA_TYPEOF(extentMd)::fill(0)); });
 }
 
 TEMPLATE_LIST_TEST_CASE("kernelCallMD", "", TestApis)

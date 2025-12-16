@@ -74,7 +74,7 @@ namespace alpaka
         }
 
     public:
-        constexpr MdForwardIter(T_MdSpan const& mdSpan) : m_mdSpan(mdSpan), m_current{IterIdxVecType::all(0u)}
+        constexpr MdForwardIter(T_MdSpan const& mdSpan) : m_mdSpan(mdSpan), m_current{IterIdxVecType::fill(0u)}
         {
         }
 

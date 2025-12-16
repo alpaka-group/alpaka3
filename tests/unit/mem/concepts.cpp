@@ -89,7 +89,7 @@ TEMPLATE_TEST_CASE_SIG(
 {
     constexpr size_t size = 10;
     TElem* ptr = nullptr;
-    concepts::Vector auto const extents = Vec<uint32_t, Dim>{}.all(size);
+    concepts::Vector auto const extents = Vec<uint32_t, Dim>{}.fill(size);
     concepts::Vector auto const pitches = alpaka::calculatePitchesFromExtents<int>(extents);
 
     SECTION("test alpaka::LinearizedIdxGenerator object")

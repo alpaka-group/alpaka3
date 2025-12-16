@@ -81,9 +81,9 @@ struct SimdInitOp
     constexpr void operator()(auto const&, auto a, auto b, auto c) const
     {
         using SimdType = ALPAKA_TYPEOF(a.load());
-        a = SimdType::all(initA);
-        b = SimdType::all(initB);
-        c = SimdType::all(initC);
+        a = SimdType::fill(initA);
+        b = SimdType::fill(initB);
+        c = SimdType::fill(initC);
     }
 };
 

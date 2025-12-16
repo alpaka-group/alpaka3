@@ -126,7 +126,7 @@ struct CompileTimeKernel2D
         static_assert(iota2 == Vec{0, 1});
 
         // CVec fallback to Vec for different operations
-        constexpr auto allVec = CVec<int, 2u, 2u>::all(1u);
+        constexpr auto allVec = CVec<int, 2u, 2u>::fill(1u);
         static_assert(allVec == Vec{1, 1});
 
         constexpr auto typeLambda = [](auto const typeDummy) constexpr

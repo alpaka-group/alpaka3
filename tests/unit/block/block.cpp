@@ -27,7 +27,7 @@ struct BlockIotaKernel
         for(auto blockIdx : onAcc::makeIdxMap(
                 acc,
                 onAcc::worker::blocksInGrid,
-                IdxRange{ALPAKA_TYPEOF(numBlocks)::all(0), numBlocks * numDataElemInBlock, numDataElemInBlock},
+                IdxRange{ALPAKA_TYPEOF(numBlocks)::fill(0), numBlocks * numDataElemInBlock, numDataElemInBlock},
                 onAcc::traverse::tiled,
                 onAcc::layout::contiguous))
         {
