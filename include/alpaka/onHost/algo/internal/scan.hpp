@@ -9,7 +9,6 @@
 #include "alpaka/Simd.hpp"
 #include "alpaka/Vec.hpp"
 #include "alpaka/core/common.hpp"
-#include "alpaka/mem/MdSpan.hpp"
 #include "alpaka/onAcc/Acc.hpp"
 #include "alpaka/onAcc/SimdAlgo.hpp"
 #include "alpaka/onHost/interface.hpp"
