@@ -11,6 +11,7 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/onAcc/Acc.hpp"
 #include "alpaka/onAcc/SimdAlgo.hpp"
+#include "alpaka/onAcc/warp.hpp"
 #include "alpaka/onHost/interface.hpp"
 #include "alpaka/onHost/logger/logger.hpp"
 #include "alpaka/trait.hpp"
@@ -29,10 +30,6 @@ namespace alpaka::onHost::internal
         INCLUSIVE_SCAN
     };
 
-    // TODO: use compile time warp sizes
-    constexpr std::size_t numNvidiaBanks = 32u;
-    constexpr std::size_t numAmdBanks = 32u;
-    constexpr std::size_t numIntelBanks = 16u;
     constexpr std::size_t chunkSize = 2048u;
 
     template<alpaka::concepts::DeviceKind TDeviceKind, typename T_Idx, typename T_Data>
@@ -52,17 +49,11 @@ namespace alpaka::onHost::internal
      * template parameter is the device kind, which dictates how many memory banks are assumed. For CPU or
      * unknown/unimplemented device kinds, infinite memory banks are assumed, i.e., no padding is used.
      */
-    template<typename TDeviceKind, typename T_Idx>
+    template<typename T_Acc, typename T_Idx>
     constexpr T_Idx conflictFreeAccess(T_Idx const& n)
     {
-        if constexpr(TDeviceKind{} == deviceKind::nvidiaGpu)
-            return n + n / static_cast<T_Idx>(numNvidiaBanks);
-        else if constexpr(TDeviceKind{} == deviceKind::amdGpu)
-            return n + n / static_cast<T_Idx>(numAmdBanks);
-        else if constexpr(TDeviceKind{} == deviceKind::intelGpu)
-            return n + n / static_cast<T_Idx>(numIntelBanks);
-        else // cpu or unknown backend does nothing
-            return n;
+        constexpr auto warpSize = static_cast<T_Idx>(onAcc::warp::getSize<T_Acc>());
+        return n + n / warpSize;
     }
 
     /* Do a muting exclusive scan on the given miniblock, and return the total sum.
@@ -131,6 +122,7 @@ namespace alpaka::onHost::internal
             auto... blockSums) const
         {
             using DeviceType = ALPAKA_TYPEOF(acc.getDeviceKind());
+            using AccType = ALPAKA_TYPEOF(acc);
             alpaka::concepts::Vector auto numFrames = acc[frame::count];
 
             alpaka::concepts::CVector auto numThreadsPerBlock = acc[layer::thread].count();
@@ -162,9 +154,8 @@ namespace alpaka::onHost::internal
                 // allocate "per-thread" register memory to store all mini blocks of a thread persistently
                 LocalArray regMem;
 
-                auto tmp = onAcc::declareSharedMdArray<T_Data, uniqueId()>(
-                    acc,
-                    CVec<T_Idx, conflictFreeAccess<DeviceType, T_Idx>(miniBlocksPerChunk - T_Idx{1}) + T_Idx{1}>{});
+                constexpr auto conflictFreeAdr = conflictFreeAccess<AccType>(miniBlocksPerChunk - T_Idx{1}) + T_Idx{1};
+                auto tmp = onAcc::declareSharedMdArray<T_Data, uniqueId()>(acc, CVec<T_Idx, conflictFreeAdr>{});
                 auto const frameOffset = chunkExtent * frameIdx;
 
                 for(auto frameElem : onAcc::makeIdxMap(
@@ -210,8 +201,7 @@ namespace alpaka::onHost::internal
                             = scanMiniBlock<T_Idx, T_Data>(regMem + miniBlockOffset, CVec<T_Idx, miniBlockSize>{});
 
                         // write miniblock sum into shared memory
-                        tmp[conflictFreeAccess<DeviceType>((frameElem + miniBlockOffset) / miniBlockSize)]
-                            = miniBlockSum;
+                        tmp[conflictFreeAccess<AccType>((frameElem + miniBlockOffset) / miniBlockSize)] = miniBlockSum;
                     }
                 }
 
@@ -226,8 +216,8 @@ namespace alpaka::onHost::internal
                     {
                         T_Idx left = offset * (frameElem + T_Idx{1}).x() - T_Idx{1};
                         T_Idx right = offset * (frameElem + T_Idx{2}).x() - T_Idx{1};
-                        left = conflictFreeAccess<DeviceType>(left);
-                        right = conflictFreeAccess<DeviceType>(right);
+                        left = conflictFreeAccess<AccType>(left);
+                        right = conflictFreeAccess<AccType>(right);
                         tmp[right] += tmp[left];
                     }
                 }
@@ -240,11 +230,11 @@ namespace alpaka::onHost::internal
                     if constexpr(sizeof...(blockSums))
                     {
                         auto _blockSums = std::get<0>(std::make_tuple(blockSums...));
-                        _blockSums[frameIdx] = tmp[conflictFreeAccess<DeviceType>(miniBlocksPerChunk - T_Idx{1})];
+                        _blockSums[frameIdx] = tmp[conflictFreeAccess<AccType>(miniBlocksPerChunk - T_Idx{1})];
                     }
 
                     // -- SET 0 --
-                    tmp[conflictFreeAccess<DeviceType>(miniBlocksPerChunk - T_Idx{1})] = 0;
+                    tmp[conflictFreeAccess<AccType>(miniBlocksPerChunk - T_Idx{1})] = 0;
                 }
 
                 // -- DOWN-SWEEP --
@@ -258,8 +248,8 @@ namespace alpaka::onHost::internal
                     {
                         T_Idx left = offset * (frameElem.x() + T_Idx{1}) - T_Idx{1};
                         T_Idx right = offset * (frameElem.x() + T_Idx{2}) - T_Idx{1};
-                        left = conflictFreeAccess<DeviceType>(left);
-                        right = conflictFreeAccess<DeviceType>(right);
+                        left = conflictFreeAccess<AccType>(left);
+                        right = conflictFreeAccess<AccType>(right);
                         auto t = tmp[left];
                         tmp[left] = tmp[right];
                         tmp[right] += t;
@@ -281,8 +271,8 @@ namespace alpaka::onHost::internal
                         T_Data blockSum;
                         if(frameOffset + frameElem + miniBlockOffset < numElements)
                         {
-                            blockSum = tmp[conflictFreeAccess<DeviceType>(
-                                (frameElem.x() + miniBlockOffset) / miniBlockSize)];
+                            blockSum
+                                = tmp[conflictFreeAccess<AccType>((frameElem.x() + miniBlockOffset) / miniBlockSize)];
                         }
 
                         // add block sum to mini block
