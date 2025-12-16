@@ -114,7 +114,7 @@ TEST_CASE("mdspan inner const move operator", "[mem][mdspan][correctness][moveCo
     ConstMdSpan assign_const_mdspan(const_ptr, extents, pitches);
 
     MutMdSpan assign_mut_mdspan2 = std::move(assign_mut_mdspan);
-    ConstMdSpan assign_const_mdspan2 = std::move(assign_const_mdspan);
+    [[maybe_unused]] ConstMdSpan assign_const_mdspan2 = std::move(assign_const_mdspan);
     [[maybe_unused]] ConstMdSpan assign_const_mdspan3 = std::move(assign_mut_mdspan2);
     // should not compile
     // MutMdSpan assign_mut_mdspan3 = std::move(assign_const_mdspan3);
@@ -262,7 +262,7 @@ TEST_CASE(
     ConstMdSpanArray assign_const_md(const_static_data);
 
     MutMdSpanArray assign_mut_md2 = std::move(assign_mut_md);
-    ConstMdSpanArray assign_const_md2 = std::move(assign_const_md);
+    [[maybe_unused]] ConstMdSpanArray assign_const_md2 = std::move(assign_const_md);
     [[maybe_unused]] ConstMdSpanArray assign_const_md3 = std::move(assign_mut_md2);
     // should not compile
     // MutMdSpanArray assign_mut_md3 = std::move(assign_const_md3);
@@ -349,7 +349,7 @@ TEST_CASE("View inner const move constructor and move assignment operator", "[me
     ConstView assign_const_view(api::host, const_ptr, extents, pitches);
 
     MutView assign_mut_view2 = std::move(assign_mut_view);
-    ConstView assign_const_view2 = std::move(assign_const_view);
+    [[maybe_unused]] ConstView assign_const_view2 = std::move(assign_const_view);
     [[maybe_unused]] ConstView assign_const_view3 = std::move(assign_mut_view2);
     // should not compile
     // MutView assign_mut_view3 = std::move(assign_const_view3);
