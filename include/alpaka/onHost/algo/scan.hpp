@@ -13,21 +13,20 @@
 
 namespace alpaka::onHost
 {
-    /** @brief For a scan of some size, this function returns the necessary buffer size.
+    /** @brief For a scan of some size, this function returns the necessary buffer size in bytes.
      *
      * When multiple scans of the same extents are needed (for example in a loop), this function can be used to only
      * allocate an intermediate buffer once, removing alloc/free overhead. For unique scan calls, the buffer can be
      * omitted in the scan call, in which case it will be allocated and freed on the fly.
      *
+     * @tparam T_Data The type of the data to be scanned.
      * @param extents The extents of the scan.
-     * @return The size of the buffer to allocate in number of elements. The buffer must have the same data type as the
-     * object being scanned.
-     *
-     * TODO: in bytes, require element type
+     * @return The size of the buffer to allocate in **number of bytes**.
      */
+    template<typename T_Data>
     auto getScanBufferSize(alpaka::concepts::VectorOrScalar auto const& extents)
     {
-        return internal::scanBufferSize(extents);
+        return internal::scanBufferSize<T_Data>(extents);
     }
 
     /** @brief Perform an inclusive scan on the input data and write the result to the output data.

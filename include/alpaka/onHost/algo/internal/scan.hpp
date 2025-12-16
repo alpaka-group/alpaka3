@@ -352,6 +352,7 @@ namespace alpaka::onHost::internal
         }
     };
 
+    template<typename T_Data>
     auto scanBufferSize(std::integral auto const& extent)
     {
         using T_Idx = ALPAKA_TYPEOF(extent);
@@ -364,13 +365,14 @@ namespace alpaka::onHost::internal
             elements = divCeil(elements, T_Idx{chunkSize});
         }
 
-        return bufSize;
+        return bufSize * T_Idx{sizeof(T_Data)};
     }
 
+    template<typename T_Data>
     auto scanBufferSize(alpaka::concepts::Vector auto const& extents)
     {
         static_assert(ALPAKA_TYPEOF(extents)::dim() == 1, "scan is only usable for one dimensional buffers");
-        return Vec{scanBufferSize(extents.x())};
+        return Vec{scanBufferSize<T_Data>(extents.x())};
     }
 
     template<ScanType SCAN_TYPE>
@@ -383,14 +385,12 @@ namespace alpaka::onHost::internal
         alpaka::concepts::IDataSource auto& inputVec)
     {
         using T_Data = ALPAKA_TYPEOF(inputVec)::value_type;
+        using T_BufData = ALPAKA_TYPEOF(buffer)::value_type;
         using T_Idx = ALPAKA_TYPEOF(inputVec)::index_type;
 
         static_assert(
             std::is_same_v<T_Data, typename ALPAKA_TYPEOF(outputVec)::value_type>,
             "output vector must have the same data type as input vector");
-        static_assert(
-            std::is_same_v<T_Data, typename ALPAKA_TYPEOF(buffer)::value_type>,
-            "buffer must have the same data type as input vector");
 
         // Instantiate the kernel function object with the given scan type
         Scan_ScanBlocksKernel<SCAN_TYPE, T_Idx, T_Data> scanBlocks;
@@ -422,13 +422,18 @@ namespace alpaka::onHost::internal
             // problem does not fit in 1 frame, recurse
             Scan_AddIncrementsKernel<T_Idx> addIncrements;
 
-            assert(buffer.getExtents() >= frameSpec.m_numFrames);
+            auto bufSizeBytes = frameSpec.m_numFrames * T_Idx{sizeof(T_Data)};
+            assert(buffer.getExtents() * T_Idx{sizeof(T_BufData)} >= bufSizeBytes);
 
-            // get the view to the necessary elements in the buffer for increments and blockSums
-            auto increments = buffer.getSubView(frameSpec.m_numFrames);
+            // get the view to the necessary elements in the buffer for increments
+            auto subBuf = buffer.getSubView(bufSizeBytes);
+            auto increments = MdSpan{
+                reinterpret_cast<T_Data*>(subBuf.data()),
+                frameSpec.m_numFrames,
+                Vec<T_Idx, 1>{sizeof(T_Data)}};
 
             // the unused elements in the buffer are used for recursion to the next scan call
-            auto bufferNext = buffer.getSubView(frameSpec.m_numFrames, buffer.getExtents() - frameSpec.m_numFrames);
+            auto bufferNext = buffer.getSubView(bufSizeBytes, buffer.getExtents() - bufSizeBytes);
 
             // enqueue the kernel execution tasks
             queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec, increments});
@@ -454,7 +459,7 @@ namespace alpaka::onHost::internal
     {
         using T_Data = ALPAKA_TYPEOF(inputVec)::value_type;
 
-        auto buf = onHost::allocDeferred<T_Data>(queue, scanBufferSize(inputVec.getExtents()));
+        auto buf = onHost::alloc<char>(devAcc, scanBufferSize<T_Data>(inputVec.getExtents()));
 
         scan<SCAN_TYPE>(exec, devAcc, queue, buf, outputVec, inputVec);
 
