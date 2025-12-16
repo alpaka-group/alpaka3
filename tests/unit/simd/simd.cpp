@@ -25,7 +25,7 @@ struct CompileTimeKernel1D
         using namespace alpaka;
 
         constexpr auto simd = Simd{3};
-        static_assert(simd.dim() == 1);
+        static_assert(simd.width() == 1);
         static_assert(simd.x() == 3);
         static_assert(simd == Simd{3});
 
@@ -71,7 +71,7 @@ struct CompileTimeKernel2D
         using namespace alpaka;
 
         constexpr auto simd = Simd{3, 7};
-        static_assert(simd.dim() == 2);
+        static_assert(simd.width() == 2);
         static_assert(simd.y() == 3 && simd.x() == 7);
         static_assert(simd == Simd{3, 7});
         static_assert(simd != Simd{7, 3});

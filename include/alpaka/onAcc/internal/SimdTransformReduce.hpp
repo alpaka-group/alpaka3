@@ -163,7 +163,7 @@ namespace alpaka::onAcc::internal
                 requires(alpaka::concepts::Simd<ALPAKA_TYPEOF(a)> && alpaka::concepts::Simd<ALPAKA_TYPEOF(b)>)
             {
                 return loadAncExecuteScalarOp(
-                    std::make_integer_sequence<uint32_t, ALPAKA_TYPEOF(a)::dim()>{},
+                    std::make_integer_sequence<uint32_t, ALPAKA_TYPEOF(a)::width()>{},
                     [this](alpaka::concepts::CVector auto idx, auto const& acc, auto&& func, auto&&... data) constexpr
                     {
                         // recursively call until no Simd type is the result
