@@ -96,10 +96,10 @@ namespace alpaka::onHost
             core::CallbackThread m_callBackThread;
             bool m_isBlocking{false};
 
-            /** Waits until all operations are finished depending wather the queue is blocking or non-blocking.
+            /** Waits until all operations are finished depending on whether the queue is blocking or non-blocking.
              *
              * If the queue is a blocking queue the control flow will be blocked and the method is not returning until
-             * all work in the queue is processed. This methoid should be called after the task is enqueued into the
+             * all work in the queue is processed. This method should be called after the task is enqueued into the
              * native CUDA/HIP queue. There is no need to call this method before enqueuing because the queues are
              * in-order queues and even if another thread is enqueued something before the order is guaranteed.
              */
@@ -392,7 +392,8 @@ namespace alpaka::onHost
             {
                 auto data = std::unique_ptr<HostFuncData>(reinterpret_cast<HostFuncData*>(arg));
                 auto& queue = data->q;
-                queue.m_callBackThread.submit([d = std::move(data)] { d->t(); });
+                auto userQueue = queue.getSharedPtr();
+                queue.m_callBackThread.submit([d = std::move(data), userQueue] { d->t(); });
                 // don't wait, we're async
             }
 

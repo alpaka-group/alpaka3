@@ -305,10 +305,12 @@ namespace alpaka::onHost
             ALPAKA_LOG_FUNCTION(onHost::logger::queue);
             // using the queue by reference is fine here, because the queue is not destroyed while the task is
             // executed.
+            auto userQueue = queue.getSharedPtr();
             [[maybe_unused]] sycl::event ev = queue.m_queue.submit(
-                [&queue, task](sycl::handler& cgh)
+                [userQueue, task](sycl::handler& cgh)
                 {
-                    cgh.host_task([&queue, task]() { queue.m_callBackThread.submit([t = std::move(task)] { t(); }); });
+                    cgh.host_task([userQueue, task]()
+                                  { userQueue.get()->m_callBackThread.submit([t = std::move(task)] { t(); }); });
                 });
             if(queue.isBlocking())
                 ev.wait_and_throw();
