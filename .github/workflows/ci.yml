@@ -48,6 +48,7 @@ jobs:
           - { compiler: nvcc, version: "", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04" }
           - { compiler: nvcc, version: "", cuda: "12.9", hip: "no", container: "nvidia/cuda:12.9.1-devel-ubuntu24.04" }
           - { compiler: nvcc, version: "", cuda: "13.0", hip: "no", container: "nvidia/cuda:13.0.0-devel-ubuntu24.04" }
+          - { compiler: nvcc, version: "", cuda: "13.1", hip: "no", container: "nvidia/cuda:13.1.0-devel-ubuntu24.04" }
           - { compiler: clang, version: "18", cuda: "no", hip: "6.2.4", container: "rocm/dev-ubuntu-24.04:6.2.4" }
           - { compiler: clang, version: "18", cuda: "no", hip: "6.3.4", container: "rocm/dev-ubuntu-24.04:6.3.4" }
           - { compiler: clang, version: "19", cuda: "no", hip: "6.4.2", container: "rocm/dev-ubuntu-24.04:6.4.2" }
