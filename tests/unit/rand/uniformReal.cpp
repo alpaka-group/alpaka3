@@ -72,8 +72,9 @@ struct DummyUniformEngine
 
     constexpr type operator()() noexcept
     {
-        currentIdx = (currentIdx++) % nums.size();
-        return nums[currentIdx];
+        auto idx = currentIdx;
+        currentIdx = (idx + type{1u}) % nums.size();
+        return nums[idx];
     }
 
     std::array<type, 2> nums{type{0}, std::numeric_limits<T_Result>::max()};
