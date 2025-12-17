@@ -59,7 +59,7 @@ namespace alpaka
          * @tparam T_ValueType enforce a value type of T, if not provided the value type is not checked
          */
         template<typename T, typename T_ValueType = alpaka::NotRequired>
-        concept VectorOrScalar = (isVector_v<T> || std::integral<T>)
+        concept VectorOrScalar = (isVector_v<T> || std::integral<T> || std::floating_point<T>)
                                  && (std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
                                      || std::same_as<T_ValueType, alpaka::NotRequired>);
 
