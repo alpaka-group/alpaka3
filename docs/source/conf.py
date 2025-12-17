@@ -88,9 +88,6 @@ extensions = [
     "sphinx.ext.autosectionlabel",
 ]
 
-doxylink = {
-    'alpaka': ("doxygen/alpaka.tag", "doxygen/" , "doxygen_dev/", "alpaka.hpp"),
-}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

@@ -7,7 +7,6 @@ breathe
 sphinx
 sphinxcontrib.programoutput
 sphinxcontrib-napoleon
-sphinxcontrib-doxylink
 sphinx-autoapi
 typeguard
 # generate plots

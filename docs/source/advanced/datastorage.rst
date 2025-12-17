@@ -11,33 +11,11 @@ Using the Interface
 
 When a ``Data Storage`` interface concept is used in a function's argument list, it describes the **minimum** requirements that ``Data Storage`` objects must meet in order to be used to call the function.
 
-.. code-block:: cpp
-
-    void func1(alpaka::concepts::IDataSource auto input){}
-    void func2(alpaka::concepts::IView auto input){}
-
-    int main() {
-        // fulfil the IDataSource interface, but not the IMdSpan interface
-        alpaka::LinearizedIdxGenerator linearizedIdxGenerator;
-        // fulfil the IDataSource and the IMdSpan interface, but not the IView interface
-        alpaka::MdSpan mdpsan;
-        // fulfil the IDataSource, the IMdSpan and the IView interface, but not the IBuffer interface
-        alpaka::View view;
-        // fulfil the IDataSource, the IMdSpan, the IView and the IBuffer interface
-        alpaka::onHost::SharedBuffer sharedBuffer;
-
-        func1(linearizedIdxGenerator);
-        func1(mdpsan);
-        func1(view);
-        func1(sharedBuffer);
-
-        // does not compile, linearizedIdxGenerator does not fulfil the IView interface
-        // func2(linearizedIdxGenerator);
-        // does not compile, mdspan does not fulfil the IView interface
-        // func2(mdpsan);
-        func2(view);
-        func2(sharedBuffer);
-    }
+.. literalinclude:: ../../snippets/dataStorage/datastorage_interface.cpp
+  :language: cpp
+  :start-after: BEGIN-DATASTORAGE-interface
+  :end-before: END-DATASTORAGE-interface
+  :dedent:
 
 Read-only access via const annotation
 -------------------------------------
@@ -51,44 +29,13 @@ Special case: mutable alpaka::concepts::IDataSource
 ``alpaka::concepts::IDataSource`` only requires that data can be read from a ``Data Storage`` object, but not written to it, regardless of the ``const`` annotation.
 However, there are valid cases where a function argument is type-restricted with ``alpaka::concepts::IDataSource`` but requires that data can be written to it, which means that the actual ``Data Storage`` object must implement the ``alpaka::concepts::IMdSpan`` interface.
 
-    .. code-block:: cpp
+.. literalinclude:: ../../snippets/dataStorage/datastorage_writeable_datasource.cpp
+  :language: cpp
+  :start-after: BEGIN-DATASTORAGE-writeableDatasource
+  :end-before: END-DATASTORAGE-writeableDatasource
+  :dedent:
 
-        namespace alpaka::onAcc {
-            struct SimdAlgo{
-                // function is provide by alpaka
-                ALPAKA_FN_INLINE ALPAKA_FN_ACC constexpr void concurrent(
-                    auto const& acc,
-                    auto&& func,
-                    alpaka::concepts::IDataSource auto&& data0,
-                    alpaka::concepts::IDataSource auto&&... dataN) const
-                {
-                    // ...
-                }
-            };
-        }
-
-        // user defined
-        struct SimdCopyOp {
-            constexpr void operator()(auto const&, auto const a, auto c) const
-            {
-                c = a.load();
-            }
-        };
-
-        // user defined
-        struct Kernel {
-            ALPAKA_FN_ACC void operator()(
-                auto const& acc,
-                auto const& func,
-                alpaka::concepts::IDataSource auto const& in,
-                alpaka::concepts::MdSpan auto out) const
-            {
-                auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
-                simdGrid.concurrent(acc, in.getExtents(), SimdCopyOp{}, in, out);
-            }
-        };
-
-``alpaka::onAcc::SimdAlgo.concurrent()`` requires the ``IDataSource`` interface for the ``Data Storage`` object.
+`alpaka::onAcc::SimdAlgo.concurrent() <https://alpaka3.readthedocs.io/en/latest/doxygen/structalpaka_1_1onAcc_1_1SimdAlgo.html#a5face31ec9941f1eeb69fef9ea9fba01>`_ requires the ``IDataSource`` interface for the ``Data Storage`` object.
 The ``IDataSource`` interface only supports reading data. Depending on the user-defined functor, some of the ``Data Storage`` objects must be writable, so they must implement the ``IMdSpan`` interface.
 However, the ``IMdSpan`` interface would prevent the user from using generators that only implement the ``IDataSource`` interface.
 Therefore, the minimum requirement must be the non-constant ``IDataSource`` interface.
@@ -129,27 +76,19 @@ With 2D ``Data Storage``, the first number of a 2D ``Pitch`` stores the size of 
 So if you have a memory pointer and add the ``Pitch[0]``, we jump one column further.
 The ``Pitch[1]`` is again the size of the value type.
 
-.. code-block:: cpp
-
-    auto extents = alpaka::Vec{3u, 5u};
-    auto buffer = alpaka::onHost::allocUnified<int32_t>(extents);
-
-    extents.x() == 5;
-    extents.y() == 3;
-
-    buffer.getPitches().x() == 4; // element size in byte (sizeof(int32_t))
-    buffer.getPitches().y() == 22; // 5 elements with 4 bytes + 2 bytes padding
+.. literalinclude:: ../../snippets/dataStorage/datastorage_pitch.cpp
+  :language: cpp
+  :start-after: BEGIN-DATASTORAGE-pitch2D-example
+  :end-before: END-DATASTORAGE-pitch2D-example
+  :dedent:
 
 To manually calculate the address of a specific element in a ``Data Storage`` using a given memory pointer of element 0 and the ``Pitch``, use the following code:
 
-.. code-block:: cpp
-
-    // pseudo code
-    T* valuePtr = static_cast<T*>(static_cast<std::byte*>(dataPtr) + dot_product(idx, pitches_in_byte))
-    // use alpaka 3 functionality
-    // idx and pitches are alpaka::Vec
-    T* valuePtr = static_cast<T*>(static_cast<std::byte*>(dataPtr) + (idx*pitches).sum())
-
+.. literalinclude:: ../../snippets/dataStorage/datastorage_pitch.cpp
+  :language: cpp
+  :start-after: BEGIN-DATASTORAGE-pitch-manual-calculation
+  :end-before: END-DATASTORAGE-pitch-manual-calculation
+  :dedent:
 
 .. figure:: images/2D_padding_example_linearized.svg
 
@@ -162,18 +101,11 @@ The following example shows 3D memory and the corresponding values for the ``Ext
 
     Cube with [3, 3, 5] elements, each element has a size of 4 bytes and 2 bytes of padding per row and 22 bytes of padding per side.
 
-.. code-block:: cpp
-
-    auto extents = alpaka::Vec{3u, 3u, 5u};
-    auto buffer = alpaka::onHost::allocUnified<int32_t>(extents);
-
-    extents.x() == 5;
-    extents.y() == 3;
-    extents.z() == 3;
-
-    buffer.getPitches().x() == 4; // element size in byte (sizeof(int32_t))
-    buffer.getPitches().y() == 22; // 5 elements with 4 bytes + 2 bytes padding
-    buffer.getPitches().z() == 88; // 3 rows with user data and padding, each 22 bytes long + 22 bytes padding row
+.. literalinclude:: ../../snippets/dataStorage/datastorage_pitch.cpp
+  :language: cpp
+  :start-after: BEGIN-DATASTORAGE-pitch3D-example
+  :end-before: END-DATASTORAGE-pitch3D-example
+  :dedent:
 
 Alignment
 `````````

@@ -202,7 +202,7 @@ namespace alpaka
             return m_extent;
         }
 
-        constexpr T_Extents getPitches() const
+        constexpr T_Pitches getPitches() const
         {
             return m_pitch.getPitches();
         }

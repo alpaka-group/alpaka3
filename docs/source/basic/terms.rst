@@ -103,13 +103,11 @@ The ``Extents`` define the number of dimensions and the size of each dimension.
 The order of the dimensions corresponds to C/C++.
 The memory is row-oriented. The fastest index is the outer right one.
 
-.. code-block:: cpp
-
-    auto extents = alpaka::Vec<uint32_t, 2u>{3u, 5u};
-    auto buffer = alpaka::onHost::allocUnified<int>(extents);
-    // access element column 3 and row 1
-    int value = buffer[alpaka::Vec{1u, 3u}];
-
+.. literalinclude:: ../../snippets/dataStorage/terms_extents.cpp
+  :language: cpp
+  :start-after: BEGIN-DATASTORAGE-termExtents
+  :end-before: END-DATASTORAGE-termExtents
+  :dedent:
 
 .. figure:: images/extents_access_example.svg
 
