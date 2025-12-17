@@ -1,11 +1,11 @@
 #include <alpaka/alpaka.hpp>
 
-int* ptr;
+int ptr = 0;
 
 alpaka::LinearizedIdxGenerator otherLinearizedIdxGenerator{alpaka::Vec{0}};
-alpaka::MdSpan otherMdspan{ptr, alpaka::Vec{0}, alpaka::Vec{0}};
-alpaka::View otherView{alpaka::api::host, ptr, alpaka::Vec{0}, alpaka::Vec{0}};
-alpaka::onHost::SharedBuffer otherSharedBuffer = alpaka::onHost::allocHost<int>(alpaka::Vec{0});
+alpaka::MdSpan otherMdspan{&ptr, alpaka::Vec{size_t{1}}, alpaka::Vec{sizeof(int)}};
+alpaka::View otherView{alpaka::api::host, &ptr, alpaka::Vec{size_t{1}}, alpaka::Vec{sizeof(int)}};
+alpaka::onHost::SharedBuffer otherSharedBuffer = alpaka::onHost::allocHost<int>(alpaka::Vec{1});
 
 // BEGIN-DATASTORAGE-interface
 void func1(alpaka::concepts::IDataSource auto input)
@@ -18,7 +18,7 @@ void func2(alpaka::concepts::IView auto input)
 
 int main()
 {
-    // fulfil the IDataSource interface, but not the IMdSpan interface
+    // fulfill the IDataSource interface, but not the IMdSpan interface
     alpaka::LinearizedIdxGenerator linearizedIdxGenerator = otherLinearizedIdxGenerator;
     // fulfil the IDataSource and the IMdSpan interface, but not the IView interface
     alpaka::MdSpan mdpsan = otherMdspan;

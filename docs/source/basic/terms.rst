@@ -94,7 +94,7 @@ An ``IDataSource`` Data Storage object contains three components: ``Extents``, `
 Therefore, these two terms are explained in the :ref:`advanced section <memory-layout-of-multidimensional-data-storage>`.
 The :ref:`extents <Extents>` are described in the next section.
 
-Got to the `IDataSource Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IDataSource.html>`_
+Go to the `IDataSource Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IDataSource.html>`_
 
 Extents
 +++++++
@@ -117,13 +117,13 @@ The memory is row-oriented. The fastest index is the outer right one.
 IMdSpan
 ```````
 
-An ``IMdSpan`` Data Storage object object points to physical memory. This allows memory to be read and written.
-It does not manage the lifetime of the memory it pointing to it.
+An ``IMdSpan`` Data Storage object points to physical memory. This allows memory to be read and written.
+It does not manage the lifetime of the memory it is pointing to.
 This means that deleting an ``IMdSpan`` Data Storage object does not free up memory.
 In addition, the user is responsible for ensuring that an ``IMdSpan`` Data Storage object references valid memory.
 It does not store any information about the associated :ref:`API <API>`.
 
-Got to the `IMdSpan Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IMdSpan.html>`_
+Go to the `IMdSpan Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IMdSpan.html>`_
 
 IView
 `````
@@ -131,7 +131,7 @@ IView
 An ``IView`` Data Storage object is almost identical to an ``IMdSpan`` Data Storage object.
 The difference is that it stores information about the associated :ref:`API <API>`.
 
-Got to the `IView Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IDataSource.html>`_
+Go to the `IView Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IDataSource.html>`_
 
 IBuffer
 ```````
@@ -139,4 +139,4 @@ IBuffer
 An ``IBuffer`` Data Storage object is pointing to memory and manages its lifetime.
 When all ``IBuffer`` Data Storage objects that are pointing to the same memory are deleted, the memory is freed.
 
-Got to the `IBuffer Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IBuffer.html>`_
+Go to the `IBuffer Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IBuffer.html>`_

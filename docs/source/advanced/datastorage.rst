@@ -20,14 +20,14 @@ When a ``Data Storage`` interface concept is used in a function's argument list,
 Read-only access via const annotation
 -------------------------------------
 
-All objects that implements a ``Data Storage`` interface are const-correct.
+All objects that implement a ``Data Storage`` interface are const-correct.
 If either the value type is ``const`` (e.g., ``alpaka::MdSpan<float const, TExtent, TPitch, TAlignment>``) or the ``Data Storage`` type itself is annotated with ``const`` (e.g., ``alpaka::MdSpan<float, TExtent, TPitch, TAlignment> const``), the values in the storage cannot be changed.
 
 Special case: mutable alpaka::concepts::IDataSource
 ```````````````````````````````````````````````````
 
 ``alpaka::concepts::IDataSource`` only requires that data can be read from a ``Data Storage`` object, but not written to it, regardless of the ``const`` annotation.
-However, there are valid cases where a function argument is type-restricted with ``alpaka::concepts::IDataSource`` but requires that data can be written to it, which means that the actual ``Data Storage`` object must implement the ``alpaka::concepts::IMdSpan`` interface.
+However, there are valid cases where a function argument only requires ``alpaka::concepts::IDataSource`` in the general case but depending on other arguments can require mutability as well.
 
 .. literalinclude:: ../../snippets/dataStorage/datastorage_writeable_datasource.cpp
   :language: cpp
@@ -35,7 +35,7 @@ However, there are valid cases where a function argument is type-restricted with
   :end-before: END-DATASTORAGE-writeableDatasource
   :dedent:
 
-`alpaka::onAcc::SimdAlgo.concurrent() <https://alpaka3.readthedocs.io/en/latest/doxygen/structalpaka_1_1onAcc_1_1SimdAlgo.html#a5face31ec9941f1eeb69fef9ea9fba01>`_ requires the ``IDataSource`` interface for the ``Data Storage`` object.
+For example, `alpaka::onAcc::SimdAlgo.concurrent() <https://alpaka3.readthedocs.io/en/latest/doxygen/structalpaka_1_1onAcc_1_1SimdAlgo.html#a5face31ec9941f1eeb69fef9ea9fba01>`_ requires the ``IDataSource`` interface for the ``Data Storage`` object.
 The ``IDataSource`` interface only supports reading data. Depending on the user-defined functor, some of the ``Data Storage`` objects must be writable, so they must implement the ``IMdSpan`` interface.
 However, the ``IMdSpan`` interface would prevent the user from using generators that only implement the ``IDataSource`` interface.
 Therefore, the minimum requirement must be the non-constant ``IDataSource`` interface.

@@ -41,7 +41,7 @@ constexpr size_t memSizeByte3D = matrixWidthBytes * matrices;
 alpaka::Vec pitches3D = alpaka::Vec{matrixWidthBytes, rowWidthBytes, sizeof(int32_t)};
 std::array<std::byte, memSizeByte3D> mem3D;
 
-// this is a mock function which is required for the source code, which is display in the Sphinx doc
+// this is a mock function which is required for the source code, which is displayed in the Sphinx doc
 template<typename T>
 auto allocHostBufferWithPadding(alpaka::concepts::Vector auto extents)
 {
@@ -59,7 +59,7 @@ auto allocHostBufferWithPadding(alpaka::concepts::Vector auto extents)
     }
 }
 
-TEST_CASE("manual calculate 2D Pitch", "[docs]")
+TEST_CASE("manually calculate 2D Pitch", "[docs]")
 {
     REQUIRE(columns == 5);
     REQUIRE(rows == 3);
