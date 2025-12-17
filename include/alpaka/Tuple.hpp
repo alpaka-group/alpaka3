@@ -36,6 +36,9 @@ namespace alpaka
                 : TupleLeaf<Is, T_Args>{std::forward<T_CArgs>(us)}...
             {
             }
+
+            constexpr TupleImpl() requires(std::is_default_constructible_v<T_Args> && ...)
+            = default;
         };
     } // namespace detail
 
@@ -60,6 +63,9 @@ namespace alpaka
         {
         }
 
+        constexpr Tuple() requires(std::is_default_constructible_v<T_Args> && ...)
+        = default;
+
         /** get element by index
          *
          * @tparam I index which should not be larger than the number of elements -1
@@ -73,7 +79,7 @@ namespace alpaka
         }
 
         template<size_t I>
-        constexpr auto const& get()
+        constexpr auto& get()
         {
             static_assert(I < sizeof...(T_Args), "Index is outside of the allowed range.");
             return static_cast<detail::TupleLeaf<I, std::tuple_element_t<I, StdTuple>>&>(*this).value;

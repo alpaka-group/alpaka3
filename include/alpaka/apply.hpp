@@ -19,7 +19,7 @@ namespace alpaka
             std::index_sequence<T_idx...>)
         {
             using std::get;
-            return func(get<T_idx>(std::forward<T_TupleLike>(tuple))...);
+            return std::forward<T_Func>(func)(get<T_idx>(std::forward<T_TupleLike>(tuple))...);
         }
     } // namespace detail
 

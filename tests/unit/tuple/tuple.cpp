@@ -25,4 +25,10 @@ TEST_CASE("tuple", "")
     tuple1 = tuple;
     CHECK(tuple.get<0>() == tuple1.get<0>());
     CHECK(tuple.get<1>() == tuple1.get<1>());
+
+    auto tuple2 = makeTuple(3, 4);
+    tuple2.get<0>() = 1;
+    tuple2.get<1>() = 2;
+    CHECK(tuple.get<0>() == tuple2.get<0>());
+    CHECK(tuple.get<1>() == tuple2.get<1>());
 }
