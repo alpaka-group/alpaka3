@@ -8,8 +8,8 @@
 ## All targets will recursively be resolved to the actual targets linked to it.
 ## target names are: ALPAKA, CUDA, HIP, ONEAPI, HEADERS, HOST
 ##
-## The output will be appended to the list variable provided as alpaka_target_list.
-function(alpaka_get_targets_recursive target alpaka_target_list)
+## The output will be appended to the list variable provided as out_var.
+function(alpaka_get_targets_recursive target out_var)
     get_target_property(libs_linked ${target} LINK_LIBRARIES)
     get_target_property(libs_linked_interface ${target} INTERFACE_LINK_LIBRARIES)
     set(libs "${libs_linked_interface};${libs_linked}")
@@ -17,38 +17,40 @@ function(alpaka_get_targets_recursive target alpaka_target_list)
     foreach(lib ${libs})
         # we need to check all sub target in case alpaka is a transitive linked target
         if(TARGET ${lib})
+            ## start with an empty list
+            set(sub_targets "")
             alpaka_get_targets_recursive(${lib} sub_targets)
-            list(APPEND ${alpaka_target_list} ${sub_targets})
+            list(APPEND alpaka_target_desc ${sub_targets})
         endif()
         # check if one of the following alpaka targets is linked
         if(lib MATCHES "alpaka::alpaka|^alpaka$")
-            list(APPEND ${alpaka_target_list} "ALPAKA")
+            list(APPEND alpaka_target_desc "ALPAKA")
         elseif(lib MATCHES "alpaka_target_cuda|alpaka::cuda")
-            list(APPEND ${alpaka_target_list} "CUDA")
+            list(APPEND alpaka_target_desc "CUDA")
         elseif(lib MATCHES "alpaka_target_hip|alpaka::hip")
-            list(APPEND ${alpaka_target_list} "HIP")
+            list(APPEND alpaka_target_desc "HIP")
         elseif(lib MATCHES "alpaka_target_oneapi|alpaka::oneapi")
-            list(APPEND ${alpaka_target_list} "ONEAPI")
+            list(APPEND alpaka_target_desc "ONEAPI")
         elseif(lib MATCHES "alpaka_target_host|alpaka::host")
-            list(APPEND ${alpaka_target_list} "HOST")
+            list(APPEND alpaka_target_desc "HOST")
         elseif(lib MATCHES "alpaka_target_headers|alpaka::headers")
-            list(APPEND ${alpaka_target_list} "HEADERS")
+            list(APPEND alpaka_target_desc "HEADERS")
         endif()
     endforeach()
 
-    list(REMOVE_DUPLICATES alpaka_target_list)
+    list(REMOVE_DUPLICATES alpaka_target_desc)
     # Return the list via the output variable
-    set(${alpaka_target_list} ${${alpaka_target_list}} PARENT_SCOPE)
+    set(${out_var} ${alpaka_target_desc} PARENT_SCOPE)
 endfunction()
 
 ### Provide the alpaka target names linked to a target
 ##
 ## out_var will contain a list of alpaka target names linked to the target.
 function(alpaka_get_targets target out_var)
-    alpaka_get_targets_recursive(${target} alpaka_target_list)
-    message(DEBUG "alpaka targets for '${target}': ${alpaka_target_list}")
+    alpaka_get_targets_recursive(${target} alpaka_target_desc)
+    message(DEBUG "alpaka targets for '${target}': ${alpaka_target_desc}")
     # Return the list via the output variable
-    set(${out_var} ${alpaka_target_list} PARENT_SCOPE)
+    set(${out_var} ${alpaka_target_desc} PARENT_SCOPE)
 endfunction()
 
 ### Copy a source file to the build tree
@@ -146,7 +148,7 @@ function(alpaka_internal_finalize target)
         AND index_oneapi EQUAL -1
         AND index_headers EQUAL -1
         AND index_alpaka EQUAL -1
-        AND index_HOST EQUAL -1
+        AND index_host EQUAL -1
     )
         message(
             FATAL_ERROR
