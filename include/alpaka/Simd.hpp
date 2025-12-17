@@ -87,6 +87,44 @@ namespace alpaka
         typename T_Storage = detail::SimdArrayStorage<T_Type, T_width, T_Alignment>>
     struct Simd;
 
+    namespace trait
+    {
+        template<typename T>
+        struct IsSimd : std::false_type
+        {
+        };
+
+        template<typename T_Type, uint32_t T_width, concepts::Alignment T_Alignment, typename T_Storage>
+        struct IsSimd<Simd<T_Type, T_width, T_Alignment, T_Storage>> : std::true_type
+        {
+        };
+    } // namespace trait
+
+    template<typename T>
+    constexpr bool isSimd_v = trait::IsSimd<T>::value;
+
+    namespace concepts
+    {
+        template<typename T>
+        concept Simd = isSimd_v<T>;
+
+        template<typename T>
+        concept SimdMask = Simd<T> && std::same_as<bool, typename T::type>;
+
+        template<typename T>
+        concept SimdOrScalar = (isSimd_v<T> || std::integral<T> || std::floating_point<T>);
+
+        template<typename T, typename T_RequiredComponent>
+        concept TypeOrSimd = (isSimd_v<T> || std::is_same_v<T, T_RequiredComponent>);
+
+        template<typename T, typename T_RequiredComponent>
+        concept SimdOrConvertibleType = (isSimd_v<T> || std::is_convertible_v<T, T_RequiredComponent>);
+    } // namespace concepts
+
+    // friend forward declaration
+    template<concepts::SimdMask T_Mask, concepts::Simd T_Simd>
+    struct SimdWhereExpr;
+
     template<typename T_Type, uint32_t T_width, concepts::Alignment T_Alignment, typename T_Storage>
     struct Simd : private T_Storage
     {
@@ -467,7 +505,7 @@ namespace alpaka
         /** Compares if values in each lane are not equal
          *
          * @param other Simd to compare to
-         * @return true if one component in both SIMD packs are not equal, else false
+         * @return true if one component in both vectors are not equal, else false
          */
         template<typename T_OtherStorage>
         constexpr bool operator!=(Simd<T_Type, T_width, T_OtherStorage> const& rhs) const
@@ -556,6 +594,77 @@ namespace alpaka
                 reduce_range<mid, T_end>(ALPAKA_FORWARD(reduceFunc)));
 #endif
         }
+
+        template<concepts::SimdMask Mask, concepts::Simd T_Simd>
+        friend struct SimdWhereExpr;
+
+        /** create a SIMD vector where all bits are zero or one depedning on the mask value
+         *
+         * @return per lane: all bits one if mask is true, else all bits zero
+         */
+        static constexpr auto valueMask(concepts::Simd auto const& mask)
+            requires(sizeof(T_Type) == 4u || sizeof(T_Type) == 8u)
+        {
+            using ValueMaskType = std::conditional_t<sizeof(T_Type) == 4u, uint32_t, uint64_t>;
+            Simd<ValueMaskType, T_width> result(
+                [&](uint32_t const idx)
+                { return mask[idx] ? std::numeric_limits<ValueMaskType>::max() : ValueMaskType{0u}; });
+            return result;
+        }
+
+        /** element wise conditional value update
+         *
+         * Executes (*this)[i] = mask[i] ? (*this)[i] : t[i] where i is the index of the component.
+         * The implementation is using a control flow free solution.
+         */
+        constexpr auto& update(concepts::SimdMask auto const& mask, concepts::Simd auto const& t)
+            requires(std::is_same_v<typename ALPAKA_TYPEOF(t)::type, T_Type> && requires { t.valueMask(mask); })
+        {
+            auto vm = t.valueMask(mask);
+            using ValueBitMaskType = typename ALPAKA_TYPEOF(vm)::type;
+            for(uint32_t i = 0u; i < T_width; ++i)
+                (*this)[i] = std::bit_cast<T_Type>(
+                    (vm[i] & std::bit_cast<ValueBitMaskType>(t[i]))
+                    | (~vm[i] & std::bit_cast<ValueBitMaskType>((*this)[i])));
+            return *this;
+        }
+
+        /** element wise conditional value update
+         *
+         * Executes (*this)[i] = mask[i] ? (*this)[i] : t[i] where i is the index of the component.
+         */
+        constexpr auto& update(concepts::SimdMask auto const& mask, concepts::Simd auto const& t)
+            requires(std::is_same_v<typename ALPAKA_TYPEOF(t)::type, T_Type> && !requires { t.valueMask(mask); })
+        {
+            for(uint32_t i = 0u; i < T_width; ++i)
+                (*this)[i] = (mask[i] ? static_cast<T_Type>(t[i]) : (*this)[i]);
+            return *this;
+        }
+
+        /** element wise conditional value update where t is a scalar
+         *
+         * The implementation is using a control flow free solution.
+         */
+        constexpr auto& update(concepts::SimdMask auto const& mask, auto const& t)
+            requires concepts::LosslesslyConvertible<ALPAKA_TYPEOF(t), T_Type> && requires { t.valueMask(mask); }
+        {
+            auto vm = t.valueMask(mask);
+            using ValueBitMaskType = typename ALPAKA_TYPEOF(vm)::type;
+            for(uint32_t i = 0u; i < T_width; ++i)
+                (*this)[i] = std::bit_cast<T_Type>(
+                    (vm[i] & std::bit_cast<ValueBitMaskType>(static_cast<T_Type>(t)))
+                    | (~vm[i] & std::bit_cast<ValueBitMaskType>((*this)[i])));
+            return *this;
+        }
+
+        /** element wise conditional value update where t is a scalar */
+        constexpr auto& update(concepts::SimdMask auto const& mask, auto const& t)
+            requires(concepts::LosslesslyConvertible<ALPAKA_TYPEOF(t), T_Type> && !requires { t.valueMask(mask); })
+        {
+            for(uint32_t i = 0u; i < T_width; ++i)
+                (*this)[i] = (mask[i] ? static_cast<T_Type>(t) : (*this)[i]);
+            return (*this);
+        }
     };
 
     template<std::size_t I, typename T_Type, uint32_t T_width, concepts::Alignment T_Alignment, typename T_Storage>
@@ -628,9 +737,9 @@ namespace alpaka
             uint32_t(sizeof...(T_Args) + 1u),
             Alignment<sizeof(T_1) * uint32_t(sizeof...(T_Args) + 1u)>>>;
 
-/** binary operators
- * @{
- */
+    /** binary operators
+     * @{
+     */
 #define ALPAKA_VECTOR_BINARY_OP(typenameOrConcept, resultScalarType, op)                                              \
     template<                                                                                                         \
         typenameOrConcept T_Type,                                                                                     \
@@ -705,35 +814,6 @@ namespace alpaka
 
     /** @} */
 
-
-    template<typename T>
-    struct IsSimd : std::false_type
-    {
-    };
-
-    template<typename T_Type, uint32_t T_width, concepts::Alignment T_Alignment, typename T_Storage>
-    struct IsSimd<Simd<T_Type, T_width, T_Alignment, T_Storage>> : std::true_type
-    {
-    };
-
-    template<typename T>
-    constexpr bool isSimd_v = IsSimd<T>::value;
-
-    namespace concepts
-    {
-        template<typename T>
-        concept Simd = isSimd_v<T>;
-
-        template<typename T>
-        concept SimdOrScalar = (isSimd_v<T> || std::integral<T>);
-
-
-        template<typename T, typename T_RequiredComponent>
-        concept TypeOrSimd = (isSimd_v<T> || std::is_same_v<T, T_RequiredComponent>);
-
-        template<typename T, typename T_RequiredComponent>
-        concept SimdOrConvertibleType = (isSimd_v<T> || std::is_convertible_v<T, T_RequiredComponent>);
-    } // namespace concepts
 
     namespace trait
     {
