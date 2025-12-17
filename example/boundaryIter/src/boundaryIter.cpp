@@ -2,10 +2,7 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
-#include "alpaka/onHost/example/executors.hpp"
-
 #include <alpaka/alpaka.hpp>
-#include <alpaka/onHost/executeForEach.hpp>
 
 #include <iostream>
 
@@ -176,5 +173,5 @@ auto main() -> int
      */
     return onHost::executeForEachIfHasDevice(
         [=](auto const& backend) { return example(backend[object::deviceSpec], backend[object::exec]); },
-        onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
+        onHost::allBackends(onHost::enabledApis, exec::enabledExecutors));
 }

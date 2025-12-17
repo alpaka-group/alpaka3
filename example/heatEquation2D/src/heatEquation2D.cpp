@@ -13,8 +13,6 @@
 #endif
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/onHost/example/executors.hpp>
-#include <alpaka/onHost/executeForEach.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -357,5 +355,5 @@ auto main(int argc, char* argv[]) -> int
                 tMax,
                 enableCheck);
         },
-        onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
+        onHost::allBackends(onHost::enabledApis, exec::enabledExecutors));
 }

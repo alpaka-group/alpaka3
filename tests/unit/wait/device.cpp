@@ -3,8 +3,6 @@
  */
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/onHost/example/executors.hpp>
-#include <alpaka/onHost/executeForEach.hpp>
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -14,7 +12,7 @@ using namespace alpaka;
 // any value for testing
 int const testValue = 49;
 
-using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors))>;
+using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, exec::enabledExecutors))>;
 
 // Simple write kernel used to create actual device work for testing wait(device).
 struct WaitTestWriteKernel

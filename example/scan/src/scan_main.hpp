@@ -210,7 +210,7 @@ auto main(int argc, char* argv[]) -> int
                 enableInPlace,
                 scanType);
         },
-        onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
+        onHost::allBackends(onHost::enabledApis, exec::enabledExecutors));
 
     return result;
 }

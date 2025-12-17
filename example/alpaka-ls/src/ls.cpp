@@ -3,8 +3,6 @@
  */
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/onHost/example/executors.hpp>
-#include <alpaka/onHost/executeForEach.hpp>
 
 #if ALPAKA_OS_WINDOWS
 #    include <direct.h>

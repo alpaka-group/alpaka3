@@ -342,5 +342,5 @@ auto main() -> int
     return onHost::executeForEachIfHasDevice(
         [=](auto const& backend)
         { return example(backend[alpaka::object::deviceSpec], backend[alpaka::object::exec]); },
-        onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
+        onHost::allBackends(onHost::enabledApis, exec::enabledExecutors));
 }

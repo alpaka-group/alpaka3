@@ -3,8 +3,6 @@
  */
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/onHost/example/executors.hpp>
-#include <alpaka/onHost/executeForEach.hpp>
 
 #include <algorithm>
 #include <chrono>
@@ -354,5 +352,5 @@ auto main(int argc, char* argv[]) -> int
      */
     return onHost::executeForEachIfHasDevice(
         [=](auto const& tag) { return example(tag, numElements, numberOfRuns, enableStdForEach); },
-        onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
+        onHost::allBackends(onHost::enabledApis, exec::enabledExecutors));
 }

@@ -4,8 +4,6 @@
 #pragma once
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/onHost/executeForEach.hpp>
-#include <alpaka/onHost/example/executors.hpp>
 
 #include <cstdint>
 #include <iostream>

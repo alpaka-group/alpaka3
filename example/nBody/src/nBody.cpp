@@ -13,8 +13,6 @@
 #endif
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/onHost/example/executors.hpp>
-#include <alpaka/onHost/executeForEach.hpp>
 
 #include <cassert>
 #include <chrono>
@@ -386,7 +384,7 @@ auto main(int argc, char* argv[]) -> int
         return onHost::executeForEachIfHasDevice(
             [=](auto const& backend)
             { return alpaka::example::nBody::benchmark(backend[object::deviceSpec], backend[object::exec], dt); },
-            onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
+            onHost::allBackends(onHost::enabledApis, exec::enabledExecutors));
     }
     else
     {
@@ -402,6 +400,6 @@ auto main(int argc, char* argv[]) -> int
                     numTimeSteps,
                     dt);
             },
-            onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
+            onHost::allBackends(onHost::enabledApis, exec::enabledExecutors));
     }
 }

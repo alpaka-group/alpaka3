@@ -9,8 +9,6 @@
 #include "common.hpp"
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/onHost/example/executors.hpp>
-#include <alpaka/onHost/executeForEach.hpp>
 
 #include <cstddef> // std::size_t
 #include <tuple> // std::tuple

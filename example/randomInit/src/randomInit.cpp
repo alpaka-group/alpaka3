@@ -3,8 +3,6 @@
  */
 
 #include <alpaka/alpaka.hpp>
-#include <alpaka/onHost/example/executors.hpp>
-#include <alpaka/onHost/executeForEach.hpp>
 
 #include <cmath>
 #include <iostream>
@@ -400,5 +398,5 @@ auto main(int argc, char* argv[]) -> int
     // Execute the example once for each enabled API and executor.
     return onHost::executeForEachIfHasDevice(
         [=](auto const& tag) { return example(tag, numElements); },
-        onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors));
+        onHost::allBackends(onHost::enabledApis, exec::enabledExecutors));
 }
