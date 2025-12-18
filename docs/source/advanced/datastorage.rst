@@ -54,12 +54,27 @@ The following section explains how alpaka implements ``Pitches`` and ``Alignment
 Pitches
 ```````
 
-A ``Pitch`` consists of ``Extents`` (user data) plus some padding bytes to achieve a specific size in bytes for optimized memory loads.
+``Pitches`` are a mechanism that enables transparent, optimized data loading for multidimensional ``Data Storage``.
+Depending on the hardware, a processor can load a specific number of bytes with a single load command.
+The size of the user data does not always correspond to the size of the load command.
+If less user data is required than the load command can load, so-called padding bytes are added to fill up the load command.
+
 For example, an Nvidia GPU can load 128 bytes with a single load command.
 If we have a matrix with 32-bit integers (4 bytes) and 5 rows with 30 elements each, each row requires 120 bytes.
-To ensure that each row can be loaded with a single load command and that no data from a second row is loaded, which would result in some rows requiring multiple load commands, 8 bytes of filler characters are added.
+To ensure that each row can be loaded with a single load command and that no data from a second row is loaded, which would result in some rows requiring multiple load commands, 8 bytes of padding bytes are added.
+The same principals are required for vectorization on CPU.
 
-For illustration purposes, we will choose slightly different numbers than in the practical example.
+When the padding bytes are added, the ``Extents`` can no longer be used to calculate the memory location of a specific element.
+The ``Extents`` assume that the memory is contiguous.
+``Pitches`` solves this problem.
+They stores the number of bytes required to jump to the next element in a dimension, including the padding bytes.
+In the simplest case, when 1D ``Data Storage`` is used, the size of the value type in bytes is the same number which the ``Pitch`` stores.
+For example, if the value type is float (32 bits), the ``Pitch`` is 4 bytes.
+With 2D ``Data Storage``, the first number of a 2D ``Pitch`` stores the size of the row in bytes, i.e., ``number_of_elements * sizeof(value_type) + padding_bytes``.
+So if you have a memory pointer and add the ``Pitch[0]``, we jump one row further. 
+``Pitch[1]`` is again the size of the value type.
+
+Compared to the above example from Nvidia, we have chosen slightly different numbers for the example for illustrative purposes.
 The example has 3 rows with 5 elements each.
 Each element has a size of 4 bytes. 2 bytes of padding are added to each row.
 Therefore, the size of a row is ``5 elements * 4 Byte/element + 2 Byte = 22 Byte``.
@@ -68,13 +83,6 @@ Therefore, the size of a row is ``5 elements * 4 Byte/element + 2 Byte = 22 Byte
 
     Matrix with [3, 5] elements, each element has a size of 4 bytes and 2 bytes of padding per row.
 
-
-The ``Pitch`` stores the number of bytes required to jump to the next element in a dimension.
-In the simplest case, when 1D ``Data Storage`` is used, the size of the value type in bytes is the ``Pitch``.
-For example, if the value type is ``float`` (32 bits), the pitch is 4 bytes.
-With 2D ``Data Storage``, the first number of a 2D ``Pitch`` stores the size of the row in bytes, i.e., ``number_of_elements * sizeof(value_type) + padding_bytes``.
-So if you have a memory pointer and add the ``Pitch[0]``, we jump one column further.
-The ``Pitch[1]`` is again the size of the value type.
 
 .. literalinclude:: ../../snippets/dataStorage/datastorage_pitch.cpp
   :language: cpp
