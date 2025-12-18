@@ -205,3 +205,30 @@ TEST_CASE("test alpaka::concepts::IMdSpan optional element type", "[mem][concept
     STATIC_REQUIRE_FALSE(alpaka::concepts::IMdSpan<MdSpanType, float const>);
     STATIC_REQUIRE_FALSE(alpaka::concepts::IMdSpan<InnerConstMdSpanType, float>);
 }
+
+struct NonCopyStruct
+{
+    NonCopyStruct() = default;
+    NonCopyStruct(NonCopyStruct const&) = delete;
+};
+
+TEST_CASE(
+    "test return value type of the access operator for alpaka::concepts::IDataSource and IMdSpan",
+    "[mem][concept]")
+{
+    // the test is motivate by creating a MdSpan<std::atomic<int>>
+    NonCopyStruct mcs;
+
+    STATIC_REQUIRE_FALSE(std::convertible_to<NonCopyStruct, NonCopyStruct>);
+    STATIC_REQUIRE(std::convertible_to<NonCopyStruct&, NonCopyStruct&>);
+
+    concepts::Vector auto const extents = Vec{1u};
+    concepts::Vector auto const pitches = alpaka::calculatePitchesFromExtents<int>(extents);
+
+    alpaka::MdSpan mdspan(&mcs, extents, pitches);
+
+    using MdSpanNonCopyStruct = decltype(mdspan);
+
+    STATIC_REQUIRE(alpaka::concepts::IDataSource<MdSpanNonCopyStruct>);
+    STATIC_REQUIRE(alpaka::concepts::IMdSpan<MdSpanNonCopyStruct>);
+}

@@ -6,7 +6,6 @@
 
 #include "alpaka/Vec.hpp"
 #include "alpaka/mem/Alignment.hpp"
-#include "alpaka/mem/concepts/AssignableTo.hpp"
 #include "alpaka/mem/concepts/ExpectedValueType.hpp"
 #include "alpaka/mem/concepts/IDataSource.hpp"
 #include "alpaka/trait.hpp"
@@ -65,14 +64,14 @@ namespace alpaka::concepts
                   { mut_t.data() } -> std::same_as<typename T::pointer>;
                   { const_t.data() } -> std::same_as<typename T::const_pointer>;
 
-                  { mut_t[vec] } -> AssignableTo<typename T::reference>;
-                  { const_t[vec] } -> AssignableTo<typename T::const_reference>;
+                  { mut_t[vec] } -> std::same_as<typename T::reference>;
+                  { const_t[vec] } -> std::same_as<typename T::const_reference>;
                   // only if MdSpan like object is 1D, the access operator with an integral is available
                   requires(T::dim() != 1u) || (T::dim() == 1u && requires {
-                              { mut_t[typename T::index_type{0}] } -> AssignableTo<typename T::reference>;
+                              { mut_t[typename T::index_type{0}] } -> std::same_as<typename T::reference>;
                           });
                   requires(T::dim() != 1u) || (T::dim() == 1u && requires {
-                              { const_t[typename T::index_type{0}] } -> AssignableTo<typename T::const_reference>;
+                              { const_t[typename T::index_type{0}] } -> std::same_as<typename T::const_reference>;
                           });
                   /// @todo add getSlice, getConstSlice and getView, getConstView functions
               };
