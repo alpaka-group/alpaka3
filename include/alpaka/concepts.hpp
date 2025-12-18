@@ -37,7 +37,7 @@ namespace alpaka
          * @tparam T_dim The dimension the checked type should have
          */
         template<typename T, unsigned int T_dim>
-        concept Dim = requires { T::dim() == T_dim; };
+        concept Dim = (T::dim() == T_dim);
 
         /** @brief Concept to check if the given type is a GPU DeviceKind
          */
