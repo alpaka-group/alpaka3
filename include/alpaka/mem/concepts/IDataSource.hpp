@@ -6,7 +6,6 @@
 
 #include "alpaka/Vec.hpp"
 #include "alpaka/mem/Alignment.hpp"
-#include "alpaka/mem/concepts/AssignableTo.hpp"
 #include "alpaka/mem/concepts/ExpectedValueType.hpp"
 #include "alpaka/trait.hpp"
 
@@ -53,15 +52,22 @@ namespace alpaka::concepts
 
             { T::dim() } -> std::same_as<uint32_t>;
 
-            // check multi-dimensional access operator
-            { t[vec] } -> AssignableTo<typename T::value_type>;
+            /* check multi-dimensional access operator
+             if T has no reference type, the access operator needs to return a copy
+             `|| requires { typename T::reference; }` is only required, that the statement becomes true in any case
+            */
+            requires (!requires { typename T::reference; } &&
+                requires { { t[vec] } -> std::same_as<typename T::value_type>;})
+                || requires { typename T::reference; };
 
             /* check 1-dimensional access operator
             checking for (T::dim() != 1u) disables the access operator requirement for multidimensional
             IDataSources */
-            requires(T::dim() != 1u) || (T::dim() == 1u && requires {
-                        { t[0] } -> AssignableTo<typename T::value_type>;
-                    });
+            requires
+                      (T::dim() != 1u) ||
+                      (T::dim() == 1u && !requires { typename T::reference; } &&
+                          requires {{ t[0] } -> std::same_as<typename T::value_type>; })
+                      || requires { typename T::reference; };
 
             // typically the alignment of the value_type.
             { t.getAlignment() } -> alpaka::concepts::Alignment;
