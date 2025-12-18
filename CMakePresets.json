@@ -117,6 +117,20 @@
       }
     },
     {
+      "name": "rel-cuda-clangCuda",
+      "inherits": [
+        "release-base",
+        "cpu-base"
+      ],
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CUDA_COMPILER": "clang++",
+        "CMAKE_CUDA_HOST_COMPILER": "clang++",
+        "alpaka_DEP_CUDA": "ON",
+        "alpaka_DEP_OMP": "OFF"
+      }
+    },
+    {
       "name": "rel-hip",
       "inherits": [
         "release-base"
@@ -178,6 +192,20 @@
       ],
       "cacheVariables": {
         "CMAKE_CXX_COMPILER": "clang++",
+        "alpaka_DEP_CUDA": "ON",
+        "alpaka_DEP_OMP": "OFF"
+      }
+    },
+    {
+      "name": "dbg-cuda-clangCuda",
+      "inherits": [
+        "debug-base",
+        "cpu-base"
+      ],
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_CUDA_COMPILER": "clang++",
+        "CMAKE_CUDA_HOST_COMPILER": "clang++",
         "alpaka_DEP_CUDA": "ON",
         "alpaka_DEP_OMP": "OFF"
       }
@@ -321,6 +349,10 @@
       "configurePreset": "rel-cuda-nvcc-clang"
     },
     {
+      "name": "rel-cuda-clangCuda",
+      "configurePreset": "rel-cuda-clangCuda"
+    },
+    {
       "name": "rel-hip",
       "configurePreset": "rel-hip"
     },
@@ -343,6 +375,10 @@
     {
       "name": "dbg-cuda-nvcc-clang",
       "configurePreset": "dbg-cuda-nvcc-clang"
+    },
+    {
+      "name": "dbg-cuda-clangCuda",
+      "configurePreset": "dbg-cuda-clangCuda"
     },
     {
       "name": "dbg-hip",
@@ -407,6 +443,10 @@
       "configurePreset": "rel-cuda-nvcc-clang"
     },
     {
+      "name": "rel-cuda-clangCuda",
+      "configurePreset": "rel-cuda-clangCuda"
+    },
+    {
       "name": "rel-hip",
       "configurePreset": "rel-hip"
     },
@@ -429,6 +469,10 @@
     {
       "name": "dbg-cuda-nvcc-clang",
       "configurePreset": "dbg-cuda-nvcc-clang"
+    },
+    {
+      "name": "dbg-cuda-clangCuda",
+      "configurePreset": "dbg-cuda-clangCuda"
     },
     {
       "name": "dbg-hip",
