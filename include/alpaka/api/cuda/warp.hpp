@@ -31,7 +31,11 @@ namespace alpaka::onAcc::warp::internal
         constexpr __device__ auto operator()(T_Acc const& acc, api::Cuda) const
         {
             unsigned lIdx;
+#    if ALPAKA_COMP_NVCC
             asm volatile("mov.u32 %0, %laneid;" : "=r"(lIdx));
+#    else
+            asm("mov.u32 %0, %%laneid;" : "=r"(lIdx));
+#    endif
             return lIdx;
         }
     };

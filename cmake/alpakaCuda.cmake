@@ -35,61 +35,83 @@ if(CMAKE_CUDA_COMPILER)
         set_property(TARGET alpaka_target_cuda PROPERTY CUDA_STANDARD ${alpaka_CXX_STANDARD})
     endif()
 
-    alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--expt-relaxed-constexpr>")
-
-    option(alpaka_CUDA_EXPT_EXTENDED_LAMBDA "Enable CUDA extended lambda support " ON)
-    if(alpaka_CUDA_EXPT_EXTENDED_LAMBDA)
-        alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--extended-lambda>")
-    endif()
-
     alpaka_compiler_option(CUDA_SHOW_REGISTER "Show kernel registers and create device ASM" DEFAULT)
-
-    if(alpaka_CUDA_SHOW_REGISTER STREQUAL ON)
-        alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xptxas -v>")
-    endif()
-
     alpaka_compiler_option(CUDA_KEEP_FILES "Keep all intermediate files that are generated during internal compilation steps 'CMakeFiles/<targetname>.dir'" DEFAULT)
-    if(alpaka_CUDA_KEEP_FILES STREQUAL ON)
-        alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--keep>")
-    endif()
 
-    option(
-        alpaka_CUDA_SHOW_CODELINES
-        "Show kernel lines in cuda-gdb and cuda-memcheck. If alpaka_CUDA_KEEP_FILES is enabled source code will be inlined in ptx."
-        OFF
-    )
-    if(alpaka_CUDA_SHOW_CODELINES)
-        alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--source-in-ptx -lineinfo>")
+    if(CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA")
+        alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--expt-relaxed-constexpr>")
 
-        # This is shaky - We currently don't have a way of checking for the host compiler ID.
-        # See https://gitlab.kitware.com/cmake/cmake/-/issues/20901
-        if(NOT MSVC)
-            alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler -rdynamic>")
+        option(alpaka_CUDA_EXPT_EXTENDED_LAMBDA "Enable CUDA extended lambda support " ON)
+        if(alpaka_CUDA_EXPT_EXTENDED_LAMBDA)
+            alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--extended-lambda>")
         endif()
-        set(alpaka_CUDA_KEEP_FILES ON CACHE BOOL "activate keep files" FORCE)
-    endif()
 
-    if(alpaka_FAST_MATH STREQUAL ON)
-        alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--use_fast_math>")
-    endif()
+        if(alpaka_CUDA_SHOW_REGISTER STREQUAL ON)
+            alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xptxas -v>")
+        endif()
 
-    if(alpaka_FTZ STREQUAL ON)
-        alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--ftz=true>")
-    elseif(alpaka_FTZ STREQUAL OFF)
-        alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--ftz=false>")
-    endif()
+        if(alpaka_CUDA_KEEP_FILES STREQUAL ON)
+            alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--keep>")
+        endif()
 
-    if(alpaka_DEP_OMP)
-        if(NOT MSVC)
-            alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler -fopenmp>")
+        option(
+            alpaka_CUDA_SHOW_CODELINES
+            "Show kernel lines in cuda-gdb and cuda-memcheck. If alpaka_CUDA_KEEP_FILES is enabled source code will be inlined in ptx."
+            OFF
+        )
+        if(alpaka_CUDA_SHOW_CODELINES)
+            alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--source-in-ptx -lineinfo>")
+
+            # This is shaky - We currently don't have a way of checking for the host compiler ID.
+            # See https://gitlab.kitware.com/cmake/cmake/-/issues/20901
+            if(NOT MSVC)
+                alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler -rdynamic>")
+            endif()
+            set(alpaka_CUDA_KEEP_FILES ON CACHE BOOL "activate keep files" FORCE)
+        endif()
+
+        if(alpaka_FAST_MATH STREQUAL ON)
+            alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--use_fast_math>")
+        endif()
+
+        if(alpaka_FTZ STREQUAL ON)
+            alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--ftz=true>")
+        elseif(alpaka_FTZ STREQUAL OFF)
+            alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--ftz=false>")
+        endif()
+
+        if(alpaka_DEP_OMP)
+            if(NOT MSVC)
+                alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler -fopenmp>")
+            else()
+                alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler /openmp>")
+            endif()
+        endif()
+    elseif(CMAKE_CUDA_COMPILER_ID STREQUAL "Clang")
+        if(alpaka_CUDA_SHOW_REGISTER STREQUAL ON)
+            alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcuda-ptxas=-v>")
+        endif()
+
+        if(alpaka_CUDA_KEEP_FILES STREQUAL ON)
+            alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-save-temps>")
+        endif()
+
+        if(alpaka_FAST_MATH STREQUAL ON)
+            alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-ffast-math -ffp-contract=fast>")
+        endif()
+
+        if(alpaka_FTZ STREQUAL ON)
+            alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-fcuda-flush-denormals-to-zero>")
+        endif()
+
+        if(alpaka_DEP_OMP)
+            alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-fopenmp>")
 
             # See https://github.com/alpaka-group/alpaka/issues/1755
             if((${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang") AND (${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER_EQUAL 13))
                 message(STATUS "clang >= 13 detected. Force-setting OpenMP to version 4.5.")
-                alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler -fopenmp-version=45>")
+                alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-fopenmp-version=45>")
             endif()
-        else()
-            alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler /openmp>")
         endif()
     endif()
 
