@@ -392,8 +392,8 @@ namespace alpaka::onHost
             {
                 auto data = std::unique_ptr<HostFuncData>(reinterpret_cast<HostFuncData*>(arg));
                 auto& queue = data->q;
-                auto userQueue = queue.getSharedPtr();
-                queue.m_callBackThread.submit([d = std::move(data), userQueue] { d->t(); });
+                auto queueDependency = queue.getSharedPtr();
+                queue.m_callBackThread.submit([d = std::move(data), queueDependency] { d->t(); });
                 // don't wait, we're async
             }
 
