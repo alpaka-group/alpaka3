@@ -108,7 +108,12 @@ namespace alpaka
      * important that only the argument type is used within the function and not the instance itself.
      * This can be used to keep the function interfaces clean and readable.
      */
-    inline constexpr void unused([[maybe_unused]] auto&&... values)
+    constexpr void unused([[maybe_unused]] auto&&... values)
+    {
+    }
+
+    template<typename... T_UnsedTypes>
+    constexpr void unused()
     {
     }
 

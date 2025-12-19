@@ -61,6 +61,7 @@
 #include "alpaka/rand/engine/philox/philox.hpp"
 #include "alpaka/tag.hpp"
 #include "alpaka/utility.hpp"
+#include "alpaka/vendor/onHost/scan.hpp"
 
 /** main alpaka namespace.
  *

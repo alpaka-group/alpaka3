@@ -9,6 +9,9 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <pstl/glue_execution_defs.h>
+
+#include <execution>
 #include <numeric> // std::exclusive_scan, std::inclusive_scan
 
 namespace alpaka::example::scan
@@ -124,360 +127,81 @@ namespace alpaka::example::scan
         IdxType numElements,
         ScanType scanType,
         bool const enableCheck,
-        bool const /*enableStd*/)
-    {
-        // copy data to accelerator buffer
-        alpaka::onHost::memcpy(queue, bufX, inputData);
-        alpaka::onHost::wait(queue);
-
-        return runExampleGeneric(exec, dev, queue, inputData, bufX, bufY, numElements, scanType, enableCheck);
-    }
-
-    // overload for CpuSerial running std:: implementations if requested
-    int runExample(
-        exec::CpuSerial exec,
-        auto const& dev,
-        auto const& queue,
-        auto const& inputData,
-        auto& bufX,
-        auto& bufY,
-        IdxType numElements,
-        ScanType scanType,
-        bool const enableCheck,
         bool const enableStd)
     {
-        // copy data to accelerator buffer
-        alpaka::onHost::memcpy(queue, bufX, inputData);
-        alpaka::onHost::wait(queue);
-
-        int res = EXIT_SUCCESS;
-
-        if(enableStd)
         {
-            std::cout << std::endl << std::endl;
-            std::cout << "===== EXECUTOR CPU STDLIB =====" << std::endl;
-
-            alpaka::onHost::wait(queue);
-            auto const beginT = std::chrono::high_resolution_clock::now();
-
-            static_assert(!std::is_const_v<typename ALPAKA_TYPEOF(bufY)::value_type>);
-            switch(scanType)
-            {
-            case EXCLUSIVE_SCAN:
-                std::exclusive_scan(bufX.data(), bufX.data() + bufX.getExtents().x(), bufY.data(), 0);
-                break;
-            case INCLUSIVE_SCAN:
-                std::inclusive_scan(bufX.data(), bufX.data() + bufX.getExtents().x(), bufY.data());
-                break;
-            }
-
-            auto const endT = std::chrono::high_resolution_clock::now();
-            double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
-
-            printResults(kernelRuntime, numElements);
-
-            if(enableCheck)
-            {
-                res = validateResult(queue, inputData, bufY, numElements, scanType);
-            }
-
-            // copy data to accelerator buffer for the next generic run
-            alpaka::onHost::memcpy(queue, bufX, inputData);
-            alpaka::onHost::wait(queue);
-        }
-
-        auto resGeneric
-            = runExampleGeneric(exec, dev, queue, inputData, bufX, bufY, numElements, scanType, enableCheck);
-
-        if(resGeneric != EXIT_SUCCESS || res != EXIT_SUCCESS)
-        {
-            return EXIT_FAILURE;
-        }
-        return EXIT_SUCCESS;
-    }
-} // namespace alpaka::example::scan
-
-#if ALPAKA_HAS_CUB
-// only do this when CUB is found
-
-#    include <cub/device/device_scan.cuh>
-
-#    define CUDA_CHECK(condition)                                                                                     \
-        do                                                                                                            \
-        {                                                                                                             \
-            auto error = condition;                                                                                   \
-            if(error != cudaSuccess)                                                                                  \
-            {                                                                                                         \
-                std::cout << "CUDA error: " << error << " line: " << __LINE__ << std::endl;                           \
-                exit(error);                                                                                          \
-            }                                                                                                         \
-        } while(0);
-
-namespace alpaka::example::scan
-{
-    // overload for GpuCuda running cub implementations if requested
-    int runExample(
-        exec::GpuCuda exec,
-        auto const& dev,
-        auto const& queue,
-        auto const& inputData,
-        auto& bufX,
-        auto& bufY,
-        IdxType numElements,
-        ScanType scanType,
-        bool const enableCheck,
-        bool const enableStd)
-    {
-        // copy data to accelerator buffer
-        alpaka::onHost::memcpy(queue, bufX, inputData);
-        alpaka::onHost::wait(queue);
-
-        int res = EXIT_SUCCESS;
-
-        if(enableStd)
-        {
-            std::cout << std::endl << std::endl;
-            std::cout << "===== EXECUTOR CUDA CUB =====" << std::endl;
-
-            // implementation see:
-            // https://nvidia.github.io/cccl/cub/api/structcub_1_1DeviceScan.html#_CPPv4N3cub10DeviceScanE
-
-            auto d_in = bufX.data();
-            auto d_out = bufY.data();
-
-            alpaka::onHost::wait(queue);
-            auto const beginT = std::chrono::high_resolution_clock::now();
-
-            // in order to be fair to the alpaka implementation, which allocates its temporary memory inside the
-            // measured time too, we need to do the same for the cub implementation
-
-            void* d_temp_storage = nullptr;
-            size_t temp_storage_bytes = 0;
-
-            switch(scanType)
-            {
-            case EXCLUSIVE_SCAN:
-                // Determine temporary device storage requirements
-                CUDA_CHECK(
-                    cub::DeviceScan::ExclusiveSum(
-                        d_temp_storage,
-                        temp_storage_bytes,
-                        d_in,
-                        d_out,
-                        numElements,
-                        queue.getNativeHandle()));
-
-                alpaka::onHost::wait(queue);
-
-                // Allocate temporary storage
-                CUDA_CHECK(cudaMalloc(&d_temp_storage, temp_storage_bytes));
-
-                CUDA_CHECK(
-                    cub::DeviceScan::ExclusiveSum(
-                        d_temp_storage,
-                        temp_storage_bytes,
-                        d_in,
-                        d_out,
-                        numElements,
-                        queue.getNativeHandle()));
-                break;
-            case INCLUSIVE_SCAN:
-                // Determine temporary device storage requirements
-                CUDA_CHECK(
-                    cub::DeviceScan::InclusiveSum(
-                        d_temp_storage,
-                        temp_storage_bytes,
-                        d_in,
-                        d_out,
-                        numElements,
-                        queue.getNativeHandle()));
-
-                alpaka::onHost::wait(queue);
-
-                // Allocate temporary storage
-                CUDA_CHECK(cudaMalloc(&d_temp_storage, temp_storage_bytes));
-
-                CUDA_CHECK(
-                    cub::DeviceScan::InclusiveSum(
-                        d_temp_storage,
-                        temp_storage_bytes,
-                        d_in,
-                        d_out,
-                        numElements,
-                        queue.getNativeHandle()));
-                break;
-            }
-            alpaka::onHost::wait(queue);
-
-            if(d_temp_storage)
-                cudaFree(d_temp_storage);
-
-            auto const endT = std::chrono::high_resolution_clock::now();
-            double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
-
-            printResults(kernelRuntime, numElements);
-
-            if(enableCheck)
-            {
-                res = validateResult(queue, inputData, bufY, numElements, scanType);
-            }
-
             // copy data to accelerator buffer
             alpaka::onHost::memcpy(queue, bufX, inputData);
             alpaka::onHost::wait(queue);
-        }
 
-        auto resGeneric
-            = runExampleGeneric(exec, dev, queue, inputData, bufX, bufY, numElements, scanType, enableCheck);
+            int res = EXIT_SUCCESS;
 
-        if(resGeneric != EXIT_SUCCESS || res != EXIT_SUCCESS)
-        {
-            return EXIT_FAILURE;
-        }
-        return EXIT_SUCCESS;
-    }
-} // namespace alpaka::example::scan
-
-#endif
-
-#if ALPAKA_HAS_HIPCUB
-
-#    include <hipcub/device/device_scan.hpp>
-#    include <hipcub/util_allocator.hpp>
-
-namespace alpaka::example::scan
-{
-    using namespace hipcub;
-    hipcub::CachingDeviceAllocator g_allocator; // Caching allocator for device memory
-
-#    define HIP_CHECK(condition)                                                                                      \
-        do                                                                                                            \
-        {                                                                                                             \
-            hipError_t error = condition;                                                                             \
-            if(error != hipSuccess)                                                                                   \
-            {                                                                                                         \
-                std::cout << "HIP error: " << error << " line: " << __LINE__ << std::endl;                            \
-                exit(error);                                                                                          \
-            }                                                                                                         \
-        } while(0);
-
-    // overload for GpuHip running hipcub implementations if requested
-    int runExample(
-        exec::GpuHip exec,
-        auto const& dev,
-        auto const& queue,
-        auto const& inputData,
-        auto& bufX,
-        auto& bufY,
-        IdxType numElements,
-        ScanType scanType,
-        bool const enableCheck,
-        bool const enableStd)
-    {
-        // copy data to accelerator buffer
-        alpaka::onHost::memcpy(queue, bufX, inputData);
-        alpaka::onHost::wait(queue);
-
-        int res = EXIT_SUCCESS;
-
-        if(enableStd)
-        {
-            std::cout << std::endl << std::endl;
-            std::cout << "===== EXECUTOR HIP CUB =====" << std::endl;
-
-            auto d_in = bufX.data();
-            auto d_out = bufY.data();
-
-            alpaka::onHost::wait(queue);
-            auto const beginT = std::chrono::high_resolution_clock::now();
-
-            // in order to be fair to the alpaka implementation, which allocates its temporary memory inside the
-            // measured time too, we need to do the same for the hip cub implementation
-
-            void* d_temp_storage = nullptr;
-            size_t temp_storage_bytes = 0;
-
-            switch(scanType)
+            if(enableStd)
             {
-            case EXCLUSIVE_SCAN:
-                // Determine temporary device storage requirements
-                HIP_CHECK(
-                    hipcub::DeviceScan::ExclusiveSum(
-                        d_temp_storage,
-                        temp_storage_bytes,
-                        d_in,
-                        d_out,
-                        numElements,
-                        queue.getNativeHandle()));
+                constexpr bool disableVendorTest = std::is_same_v<exec::CpuOmpBlocks, ALPAKA_TYPEOF(exec)>;
+                auto scanFn = vendor::onHost::scanFn(dev);
+                if constexpr(scanFn && !disableVendorTest)
+                {
+                    std::cout << std::endl << std::endl;
+                    std::cout << "===== EXECUTOR " << onHost::demangledName(exec)
+                              << " native vendor API =====" << std::endl;
 
-                alpaka::onHost::wait(queue);
+                    // implementation see:
+                    // https://nvidia.github.io/cccl/cub/api/structcub_1_1DeviceScan.html#_CPPv4N3cub10DeviceScanE
+                    alpaka::onHost::wait(queue);
+                    auto const beginT = std::chrono::high_resolution_clock::now();
 
-                // Allocate temporary storage
-                HIP_CHECK(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
+                    // in order to be fair to the alpaka implementation, which allocates its temporary memory inside
+                    // the measured time too, we need to do the same for the cub implementation
 
-                HIP_CHECK(
-                    hipcub::DeviceScan::ExclusiveSum(
-                        d_temp_storage,
-                        temp_storage_bytes,
-                        d_in,
-                        d_out,
-                        numElements,
-                        queue.getNativeHandle()));
-                break;
-            case INCLUSIVE_SCAN:
-                // Determine temporary device storage requirements
-                HIP_CHECK(
-                    hipcub::DeviceScan::InclusiveSum(
-                        d_temp_storage,
-                        temp_storage_bytes,
-                        d_in,
-                        d_out,
-                        numElements,
-                        queue.getNativeHandle()));
+                    switch(scanType)
+                    {
+                    case EXCLUSIVE_SCAN:
+                        {
+                            // Determine temporary device storage requirements
+                            size_t tmpBufferSize = scanFn.getBufferSize(queue, scanFn.exclusive, bufX, bufY);
+                            auto tmp = onHost::alloc<char>(dev, tmpBufferSize);
 
-                alpaka::onHost::wait(queue);
+                            scanFn(queue, scanFn.exclusive, tmp, bufX, bufY);
+                            tmp.keepAlive(queue);
+                        }
+                        break;
+                    case INCLUSIVE_SCAN:
+                        // Determine temporary device storage requirements
+                        size_t tmpBufferSize = scanFn.getBufferSize(queue, scanFn.inclusive, bufX, bufY);
+                        alpaka::onHost::wait(queue);
+                        auto tmp = onHost::alloc<char>(dev, tmpBufferSize);
 
-                // Allocate temporary storage
-                HIP_CHECK(g_allocator.DeviceAllocate(&d_temp_storage, temp_storage_bytes));
+                        scanFn(queue, scanFn.exclusive, tmp, bufX, bufY);
+                        tmp.keepAlive(queue);
+                        break;
+                    }
+                    alpaka::onHost::wait(queue);
 
-                HIP_CHECK(
-                    hipcub::DeviceScan::InclusiveSum(
-                        d_temp_storage,
-                        temp_storage_bytes,
-                        d_in,
-                        d_out,
-                        numElements,
-                        queue.getNativeHandle()));
-                break;
-            }
-            alpaka::onHost::wait(queue);
+                    auto const endT = std::chrono::high_resolution_clock::now();
+                    double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
 
-            if(d_temp_storage)
-                HIP_CHECK(g_allocator.DeviceFree(d_temp_storage));
+                    printResults(kernelRuntime, numElements);
 
-            auto const endT = std::chrono::high_resolution_clock::now();
-            double kernelRuntime = std::chrono::duration<double>(endT - beginT).count();
+                    if(enableCheck)
+                    {
+                        res = validateResult(queue, inputData, bufY, numElements, scanType);
+                    }
 
-            printResults(kernelRuntime, numElements);
-
-            if(enableCheck)
-            {
-                res = validateResult(queue, inputData, bufY, numElements, scanType);
+                    // copy data to accelerator buffer
+                    alpaka::onHost::memcpy(queue, bufX, inputData);
+                    alpaka::onHost::wait(queue);
+                }
             }
 
-            // copy data to accelerator buffer
-            alpaka::onHost::memcpy(queue, bufX, inputData);
-            alpaka::onHost::wait(queue);
-        }
+            auto resGeneric
+                = runExampleGeneric(exec, dev, queue, inputData, bufX, bufY, numElements, scanType, enableCheck);
 
-        auto resGeneric
-            = runExampleGeneric(exec, dev, queue, inputData, bufX, bufY, numElements, scanType, enableCheck);
-
-        if(resGeneric != EXIT_SUCCESS || res != EXIT_SUCCESS)
-        {
-            return EXIT_FAILURE;
+            if(resGeneric != EXIT_SUCCESS || res != EXIT_SUCCESS)
+            {
+                return EXIT_FAILURE;
+            }
+            return EXIT_SUCCESS;
         }
-        return EXIT_SUCCESS;
     }
 } // namespace alpaka::example::scan
-#endif

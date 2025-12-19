@@ -388,6 +388,9 @@ namespace alpaka::onHost::internal
         using T_BufData = ALPAKA_TYPEOF(buffer)::value_type;
         using T_Idx = ALPAKA_TYPEOF(inputVec)::index_type;
 
+        // supress unused warning for release mode
+        alpaka::unused<T_BufData>();
+
         static_assert(
             std::is_same_v<T_Data, typename ALPAKA_TYPEOF(outputVec)::value_type>,
             "output vector must have the same data type as input vector");

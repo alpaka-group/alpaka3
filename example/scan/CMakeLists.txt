@@ -76,7 +76,7 @@ foreach(scanFile ${scanSource})
     endif()
     if(HAS_HIP_CUB)
         target_link_libraries(${scanName} PRIVATE hip::hipcub)
-        target_compile_definitions(${scanName} PRIVATE ALPAKA_HAS_HIPCUB=1)
+        target_compile_definitions(${scanName} PRIVATE ALPAKA_HAS_CUB=1)
     endif()
 
     add_test(NAME ${scanName} COMMAND ${scanName})
