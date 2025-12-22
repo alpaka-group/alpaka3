@@ -318,7 +318,6 @@ int exampleUniformDist(auto const cfg, size_t numElements)
     onHost::Device host = hostSelector.makeDevice(0);
     std::cout << "\n Host:   " << getName(host) << "\n";
 
-    // Require at least one device
     // require at least one device
     std::size_t n = hostSelector.getDeviceCount();
 

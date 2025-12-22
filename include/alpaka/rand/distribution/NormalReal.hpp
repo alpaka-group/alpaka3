@@ -16,11 +16,11 @@ namespace alpaka::rand::distribution
         /**
          * @brief Scalar Box–Muller transform for floating-point types.
          *
-         * Generates independent standard normal deviates from a uniform
+         * Generates independent standard normal samples from a uniform
          * scalar engine. The implementation caches the second sample so
          * that a pair of uniforms yields two normal values.
          *
-         * Ref.: G. E. P. Box and M. E. Muller, “A Note on the Generation of Random Normal Deviates,”
+         * Ref.: G. E. P. Box and M. E. Muller, "A Note on the Generation of Random Normal Deviates,"
          */
         template<std::floating_point T_Fp>
         struct BoxMuller
@@ -62,7 +62,7 @@ namespace alpaka::rand::distribution
     /**
      * @brief Used to sample floating-point values from a normal(-/gaussian) distribution.
      *
-     * Usage is analogue to std::normal_distribution<T_Result> @see
+     * Usage is analogous to std::normal_distribution<T_Result> @see
      * https://en.cppreference.com/w/cpp/numeric/random/normal_distribution.html
      * -> Generates N(mean, stddev).
      * Is using the Box-Muller method of generating normal distributed random numbers from a uniform distribution.
@@ -80,13 +80,13 @@ namespace alpaka::rand::distribution
          * @param mean   Mean of the target normal distribution.
          * @param stdDev Standard deviation of the target normal distribution.
          *
-         * The default is N(0,1). The distribution is samples using the Box-Muller method.
+         * The default is N(0,1). The distribution is sampled using the Box-Muller method.
          * This implementation keeps an internal state, therefore each
          * thread/worker must use its own instance to avoid data races
          * when the same object is accessed concurrently by multiple
          * workers.
          *
-         * Usage is otherwise analogue to std::normal_distribution<T_Result> @see
+         * Usage is otherwise analogous to std::normal_distribution<T_Result> @see
          * https://en.cppreference.com/w/cpp/numeric/random/normal_distribution.html
          */
         constexpr explicit NormalReal(T_Result mean = T_Result{0}, T_Result stdDev = T_Result{1})
@@ -97,9 +97,9 @@ namespace alpaka::rand::distribution
 
         /** Selects a value from a normal (-/gaussian) distribution for the configured (mean,stdDev) settings.
          *
-         * **Input:** a random engine conforming to the `UniformRandomEngine` concept
+         * @param engine a random engine conforming to the `UniformRandomEngine` concept
          * (currently accepts stdlib uniform engines and alpaka engines included in the alpaka::rand::engine namespace)
-         * **Output:** a floating-point value sampled from the configured distribution.
+         * @return a floating-point value sampled from the configured distribution.
          */
         template<concepts::UniformStdEngine T_Engine>
         constexpr result_type operator()(T_Engine& engine)
