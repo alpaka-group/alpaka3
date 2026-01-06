@@ -54,9 +54,9 @@ Install all dependencies:
     # install dependencies
     pip3 install -r requirements.txt
     # install doxygen
-    curl https://www.doxygen.nl/files/doxygen-1.14.0.linux.bin.tar.gz -o /tmp/doxygen.tar.gz
+    curl https://www.doxygen.nl/files/doxygen-1.16.0.linux.bin.tar.gz -o /tmp/doxygen.tar.gz
     tar -xf /tmp/doxygen.tar.gz -C /tmp/
-    cp /tmp/doxygen-1.14.0/bin/doxygen $VIRTUAL_ENV/bin
+    cp /tmp/doxygen-1.16.0/bin/doxygen $VIRTUAL_ENV/bin
 
 Build documentation:
 
