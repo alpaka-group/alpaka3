@@ -143,7 +143,8 @@ namespace alpaka::api::util
         constexpr uint32_t simdPackBytes
             = alpaka::getArchSimdWidth<T_ValueType>(api, deviceKind) * sizeof(T_ValueType);
         constexpr uint32_t bestSimdPackBytes = highestPowerOfTwo(simdPackBytes);
-        constexpr uint32_t alignment = std::max(bestSimdPackBytes, typeAlignmentBytes);
-        return alignment;
+        constexpr uint32_t optimalAlignment = std::max(bestSimdPackBytes, typeAlignmentBytes);
+        constexpr uint32_t adjustedAlignment = getAdjustedAlignment<T_ValueType>(api, deviceKind, optimalAlignment);
+        return adjustedAlignment;
     }
 } // namespace alpaka::api::util

@@ -103,6 +103,19 @@ namespace alpaka
         struct IsExecutor : std::false_type
         {
         };
+
+        /** Adjusting the requested in alignment in order to meet device specific constraints. */
+        struct GetAdjustedAlignment
+        {
+            template<typename T_Type, concepts::Api T_Api, concepts::DeviceKind T_DeviceKind>
+            struct Op
+            {
+                consteval uint32_t operator()(T_Api const, T_DeviceKind const, uint32_t const alignment) const
+                {
+                    return alignment;
+                }
+            };
+        };
     } // namespace trait
 
     template<typename T>
@@ -179,6 +192,25 @@ namespace alpaka
         alpaka::concepts::DeviceKind auto const deviceType)
     {
         return trait::GetCachelineSize::Op<ALPAKA_TYPEOF(api), ALPAKA_TYPEOF(deviceType)>{}(api, deviceType);
+    }
+
+    /**
+     * @brief Adjusts the memory alignment based on a specific API and device kind.
+     * @tparam T_Type The data type being allocated.
+     * @param alignment the previously selected alignment
+     * @return adjusted alignment in bytes
+     */
+    template<typename T_Type>
+    consteval uint32_t getAdjustedAlignment(
+        concepts::Api auto const api,
+        concepts::DeviceKind auto const deviceType,
+        auto const alignment)
+    {
+        auto val = trait::GetAdjustedAlignment::Op<T_Type, ALPAKA_TYPEOF(api), ALPAKA_TYPEOF(deviceType)>{}(
+            api,
+            deviceType,
+            alignment);
+        return val;
     }
 
     namespace onAcc::trait

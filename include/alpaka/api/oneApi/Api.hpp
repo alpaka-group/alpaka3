@@ -130,6 +130,27 @@ namespace alpaka
                 return 16u;
             }
         };
+
+        template<typename T_Type>
+        struct GetAdjustedAlignment::Op<T_Type, api::OneApi, deviceKind::IntelGpu>
+        {
+            consteval uint32_t operator()(api::OneApi const, deviceKind::IntelGpu const, uint32_t const alignmentBytes)
+                const
+            {
+                /* Level Zero imposes a 64 KiB alignment limit.
+                 @see https://www.intel.com/content/www/us/en/developer/articles/release-notes/oneapi-dpcpp/2024.html
+                 Quote: "Limit alignment of allocation requests at 64KB which is the only alignment supported by Level
+                 Zero."
+                */
+                constexpr uint32_t onePageSize = 64u * 1024u;
+                uint32_t tmp = alignmentBytes;
+                while(tmp > onePageSize && tmp >= alignof(T_Type) * 2)
+                {
+                    tmp /= 2;
+                }
+                return tmp;
+            }
+        };
     } // namespace trait
 
     namespace onAcc::internal::trait
