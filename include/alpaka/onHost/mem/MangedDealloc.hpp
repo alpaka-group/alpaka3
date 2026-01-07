@@ -30,12 +30,9 @@ namespace alpaka::onHost::internal
         ~ManagedDealloc()
         {
             // Execute all actions before freeing the memory
+            for(auto& action : actions)
             {
-                std::lock_guard<std::mutex> lock{actionGuard};
-                for(auto& action : actions)
-                {
-                    action();
-                }
+                action();
             }
             freeOp();
         }
