@@ -15,7 +15,7 @@
 #include "alpaka/onHost/Handle.hpp"
 #include "alpaka/onHost/concepts.hpp"
 #include "alpaka/onHost/interface.hpp"
-#include "alpaka/onHost/mem/MangedDealloc.hpp"
+#include "alpaka/onHost/mem/ManagedDealloc.hpp"
 
 #include <cstdint>
 #include <functional>
