@@ -79,13 +79,4 @@ namespace alpaka::onHost
         return simplified;
     }
 
-    /** Get a simplified demangled name of an object
-     *
-     * Template parameters will be left out and the alpaka namespace will be removed.
-     */
-    inline std::string demangledNameShort(auto const& demangledName)
-    {
-        return simplifyDemangedName(demangledName(demangledName));
-    }
-
 } // namespace alpaka::onHost
