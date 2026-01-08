@@ -29,7 +29,7 @@ TEST_CASE("dict mutate entry", "")
     static_assert(hasTag(dictionary, b_));
     static_assert(!hasTag(dictionary, c_));
 
-    static_assert(idx(dictionary, a_) == 0);
+    static_assert(getIdx(dictionary, a_) == 0);
     CHECK(getTag(dictionary, a_) == 42);
     CHECK(getTag(dictionary, b_) == 43);
 

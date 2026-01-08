@@ -58,7 +58,7 @@ namespace alpaka::onAcc
 
         static constexpr bool hasKey(auto key)
         {
-            constexpr auto idx = Idx<ALPAKA_TYPEOF(key), std::decay_t<T_Storage>>::value;
+            constexpr auto idx = alpaka::internal::KeyIdx<ALPAKA_TYPEOF(key), std::decay_t<T_Storage>>::value;
             return idx != -1;
         }
 

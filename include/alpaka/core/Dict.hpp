@@ -15,60 +15,63 @@
 
 namespace alpaka
 {
-    // https://stackoverflow.com/a/64606884
-    template<typename X, typename T_Tuple>
-    struct Idx
+    namespace internal
     {
-        static_assert(sizeof(T_Tuple) && false);
-    };
-
-    template<typename X, template<typename...> typename T_Tuple, typename... T>
-    struct Idx<X, T_Tuple<T...>>
-    {
-        template<std::size_t... idx>
-        static constexpr ssize_t find_idx(std::index_sequence<idx...>)
+        // https://stackoverflow.com/a/64606884
+        template<typename X, typename T_Tuple>
+        struct KeyIdx
         {
-            ssize_t found_idx = -1;
-            // notUsed is required to avoid warning that the expression is not used
-            [[maybe_unused]] bool notUsed
-                = ((std::is_same_v<X, typename T::KeyType> && (found_idx = idx, true)) || ...);
-            return found_idx;
-        }
+            static_assert(sizeof(T_Tuple) && false);
+        };
 
-    public:
-        static constexpr ssize_t value = find_idx(std::index_sequence_for<T...>{});
-    };
-
-    template<typename X, template<typename...> typename T_Tuple>
-    class Idx<X, T_Tuple<>>
-    {
-        static constexpr ssize_t find_idx(std::index_sequence<>)
+        template<typename X, template<typename...> typename T_Tuple, typename... T>
+        struct KeyIdx<X, T_Tuple<T...>>
         {
-            return -1;
-        }
+            template<std::size_t... idx>
+            static constexpr ssize_t find_idx(std::index_sequence<idx...>)
+            {
+                ssize_t found_idx = -1;
+                // notUsed is required to avoid warning that the expression is not used
+                [[maybe_unused]] bool notUsed
+                    = ((std::is_same_v<X, typename T::KeyType> && (found_idx = idx, true)) || ...);
+                return found_idx;
+            }
 
-    public:
-        static constexpr ssize_t value = find_idx(std::index_sequence_for<>{});
-    };
+        public:
+            static constexpr ssize_t value = find_idx(std::index_sequence_for<T...>{});
+        };
+
+        template<typename X, template<typename...> typename T_Tuple>
+        class KeyIdx<X, T_Tuple<>>
+        {
+            static constexpr ssize_t find_idx(std::index_sequence<>)
+            {
+                return -1;
+            }
+
+        public:
+            static constexpr ssize_t value = find_idx(std::index_sequence_for<>{});
+        };
+    } // namespace internal
 
     template<typename T_Key, typename T_Tuple>
-    inline consteval ssize_t idx(T_Tuple&& t, T_Key const& key = T_Key{})
+    inline consteval ssize_t getIdx(T_Tuple&& t, T_Key const& key = T_Key{})
     {
-        constexpr auto idx = Idx<T_Key, std::decay_t<T_Tuple>>::value;
+        constexpr auto idx = internal::KeyIdx<T_Key, std::decay_t<T_Tuple>>::value;
         return idx;
     }
 
     template<typename T_Key, typename T_Tuple>
     consteval bool hasTag(T_Tuple&& t, T_Key const& key = T_Key{})
     {
-        constexpr auto idx = Idx<T_Key, std::decay_t<T_Tuple>>::value;
+        constexpr auto idx = internal::KeyIdx<T_Key, std::decay_t<T_Tuple>>::value;
         return idx != -1;
     }
 
     template<typename T_Key, typename T_Tuple>
     inline constexpr decltype(auto) getTag(T_Tuple&& t, T_Key const& key = T_Key{})
     {
-        constexpr auto idx = Idx<T_Key, std::decay_t<T_Tuple>>::value;
+        constexpr auto idx = internal::KeyIdx<T_Key, std::decay_t<T_Tuple>>::value;
         static_assert(idx != -1, "Member in dict missing!");
         static_assert(idx < std::tuple_size_v<std::decay_t<T_Tuple>>, "index out of range!");
         return unWrapp(get<idx>(std::forward<T_Tuple>(t)).value);
