@@ -384,9 +384,8 @@ namespace alpaka::onHost::internal
         alpaka::concepts::IMdSpan auto& outputVec,
         alpaka::concepts::IDataSource auto& inputVec)
     {
-        using T_Data = ALPAKA_TYPEOF(inputVec)::value_type;
-        using T_BufData = ALPAKA_TYPEOF(buffer)::value_type;
-        using T_Idx = ALPAKA_TYPEOF(inputVec)::index_type;
+        using T_Data = typename ALPAKA_TYPEOF(inputVec)::value_type;
+        using T_Idx = typename ALPAKA_TYPEOF(inputVec)::index_type;
 
         static_assert(
             std::is_same_v<T_Data, typename ALPAKA_TYPEOF(outputVec)::value_type>,
@@ -423,7 +422,7 @@ namespace alpaka::onHost::internal
             Scan_AddIncrementsKernel<T_Idx> addIncrements;
 
             auto bufSizeBytes = frameSpec.m_numFrames * T_Idx{sizeof(T_Data)};
-            assert(buffer.getExtents() * T_Idx{sizeof(T_BufData)} >= bufSizeBytes);
+            assert(buffer.getExtents() * T_Idx{sizeof(typename ALPAKA_TYPEOF(buffer)::value_type)} >= bufSizeBytes);
 
             // get the view to the necessary elements in the buffer for increments
             auto subBuf = buffer.getSubView(bufSizeBytes);
