@@ -78,19 +78,14 @@ TEST_CASE("manually calculate 2D Pitch", "[docs]")
     alpaka::Vec extents = alpaka::Vec{3u, 5u};
     auto buffer = allocHostBufferWithPadding<int32_t>(extents);
 
-    extents.x() == 5u;
-    extents.y() == 3u;
-
-    buffer.getPitches().x() == 4u; // element size in byte (sizeof(int32_t))
-    buffer.getPitches().y() == 22u; // 5 elements with 4 bytes + 2 bytes padding
-    // END-DATASTORAGE-pitch2D-example
-
     REQUIRE(extents.x() == 5u);
     REQUIRE(extents.y() == 3u);
 
+    // element size in byte (sizeof(int32_t))
     REQUIRE(buffer.getPitches().x() == 4u);
+    // 5 elements with 4 bytes + 2 bytes padding
     REQUIRE(buffer.getPitches().y() == 22u);
-
+    // END-DATASTORAGE-pitch2D-example
 
     int32_t value = 1;
     for(size_t row = 0u; row < rows; ++row)
@@ -170,24 +165,17 @@ TEST_CASE("manual calculate 3D Pitch", "[docs]")
     alpaka::Vec extents = alpaka::Vec{3u, 3u, 5u};
     auto buffer = allocHostBufferWithPadding<int32_t>(extents);
 
-    extents.x() == 5u;
-    extents.y() == 3u;
-    extents.z() == 3u;
-
-    buffer.getPitches().x() == 4u; // element size in byte (sizeof(int32_t))
-    buffer.getPitches().y() == 22u; // 5 elements with 4 bytes + 2 bytes padding
-    // 3 rows with user data and padding, each 22 bytes long + 22 bytes padding for empty row
-    buffer.getPitches().z() == 88u;
-    // END-DATASTORAGE-pitch3D-example
-
     REQUIRE(extents.x() == 5u);
     REQUIRE(extents.y() == 3u);
     REQUIRE(extents.z() == 3u);
 
+    // element size in byte (sizeof(int32_t))
     REQUIRE(buffer.getPitches().x() == 4u);
+    // 5 elements with 4 bytes + 2 bytes padding
     REQUIRE(buffer.getPitches().y() == 22u);
+    // 3 rows with user data and padding, each 22 bytes long + 22 bytes padding for empty row
     REQUIRE(buffer.getPitches().z() == 88u);
-
+    // END-DATASTORAGE-pitch3D-example
 
     int32_t value = 1;
     for(size_t matrix = 0u; matrix < matrices; ++matrix)
