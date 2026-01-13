@@ -377,9 +377,9 @@ namespace alpaka::onHost::internal
 
     template<ScanType SCAN_TYPE>
     void scan(
-        alpaka::concepts::Executor auto& exec,
-        alpaka::onHost::concepts::Device auto& devAcc,
         auto& queue,
+        alpaka::onHost::concepts::Device auto& devAcc,
+        alpaka::concepts::Executor auto& exec,
         alpaka::concepts::IMdSpan auto& buffer,
         alpaka::concepts::IMdSpan auto& outputVec,
         alpaka::concepts::IDataSource auto& inputVec)
@@ -438,7 +438,7 @@ namespace alpaka::onHost::internal
             queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec, increments});
 
             // always recurse into exclusive scan
-            scan<EXCLUSIVE_SCAN>(exec, devAcc, queue, bufferNext, increments, increments);
+            scan<EXCLUSIVE_SCAN>(queue, devAcc, exec, bufferNext, increments, increments);
             queue.enqueue(exec, frameSpec, KernelBundle{addIncrements, increments, outputVec});
         }
         else
@@ -450,9 +450,9 @@ namespace alpaka::onHost::internal
 
     template<ScanType SCAN_TYPE>
     void scan(
-        alpaka::concepts::Executor auto& exec,
-        alpaka::onHost::concepts::Device auto& devAcc,
         auto& queue,
+        alpaka::onHost::concepts::Device auto& devAcc,
+        alpaka::concepts::Executor auto& exec,
         alpaka::concepts::IMdSpan auto& outputVec,
         alpaka::concepts::IDataSource auto const& inputVec)
     {
@@ -460,7 +460,7 @@ namespace alpaka::onHost::internal
 
         auto buf = onHost::alloc<char>(devAcc, scanBufferSize<T_Data>(inputVec.getExtents()));
 
-        scan<SCAN_TYPE>(exec, devAcc, queue, buf, outputVec, inputVec);
+        scan<SCAN_TYPE>(queue, devAcc, exec, buf, outputVec, inputVec);
 
         buf.keepAlive(queue);
     }

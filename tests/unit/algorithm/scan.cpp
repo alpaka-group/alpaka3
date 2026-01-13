@@ -15,8 +15,7 @@
 
 using namespace alpaka;
 
-using TestBackends
-    = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, onHost::example::enabledExecutors))>;
+using TestBackends = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, exec::enabledExecutors))>;
 
 template<typename T_Data>
 int validateResult(
@@ -85,13 +84,13 @@ void testExclusiveScan(
     // exclusive scan, no buffer
     std::cout << "exclusive scan, no buffer" << std::endl;
     onHost::memcpy(computeQueue, inBuf, hostIn);
-    onHost::exclusiveScan(exec, computeQueue, outBuf, inBuf);
+    onHost::exclusiveScan(computeQueue, exec, outBuf, inBuf);
     auto res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::EXCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 
     // exclusive scan, in-place
     std::cout << "exclusive scan, no buffer, in-place" << std::endl;
-    onHost::exclusiveScanInPlace(exec, computeQueue, inBuf);
+    onHost::exclusiveScanInPlace(computeQueue, exec, inBuf);
     res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::EXCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 
@@ -102,13 +101,13 @@ void testExclusiveScan(
     // exclusive scan, with buffer
     std::cout << "exclusive scan, with buffer" << std::endl;
     onHost::memcpy(computeQueue, inBuf, hostIn);
-    onHost::exclusiveScan(exec, computeQueue, intermediateBuffer, outBuf, inBuf);
+    onHost::exclusiveScan(computeQueue, exec, intermediateBuffer, outBuf, inBuf);
     res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::EXCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 
     // exclusive scan, in-place with buffer
     std::cout << "exclusive scan, with buffer, in-place" << std::endl;
-    onHost::exclusiveScanInPlace(exec, computeQueue, intermediateBuffer, inBuf);
+    onHost::exclusiveScanInPlace(computeQueue, exec, intermediateBuffer, inBuf);
     res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::EXCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 }
@@ -127,13 +126,13 @@ void testInclusiveScan(
     // inclusive scan, no buffer
     std::cout << "inclusive scan, no buffer" << std::endl;
     onHost::memcpy(computeQueue, inBuf, hostIn);
-    onHost::inclusiveScan(exec, computeQueue, outBuf, inBuf);
+    onHost::inclusiveScan(computeQueue, exec, outBuf, inBuf);
     auto res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::INCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 
     // inclusive scan, in-place
     std::cout << "inclusive scan, no buffer, in-place" << std::endl;
-    onHost::inclusiveScanInPlace(exec, computeQueue, inBuf);
+    onHost::inclusiveScanInPlace(computeQueue, exec, inBuf);
     res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::INCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 
@@ -144,13 +143,13 @@ void testInclusiveScan(
     // inclusive scan, with buffer
     std::cout << "inclusive scan, with buffer" << std::endl;
     onHost::memcpy(computeQueue, inBuf, hostIn);
-    onHost::inclusiveScan(exec, computeQueue, intermediateBuffer, outBuf, inBuf);
+    onHost::inclusiveScan(computeQueue, exec, intermediateBuffer, outBuf, inBuf);
     res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::INCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 
     // inclusive scan, in-place with buffer
     std::cout << "inclusive scan, with buffer, in-place" << std::endl;
-    onHost::inclusiveScanInPlace(exec, computeQueue, intermediateBuffer, inBuf);
+    onHost::inclusiveScanInPlace(computeQueue, exec, intermediateBuffer, inBuf);
     res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::INCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 }
