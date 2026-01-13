@@ -78,24 +78,24 @@ TEST_CASE("manually calculate 2D Pitch", "[docs]")
     alpaka::Vec extents = alpaka::Vec{3u, 5u};
     auto buffer = allocHostBufferWithPadding<int32_t>(extents);
 
-    extents.x() == 5;
-    extents.y() == 3;
+    extents.x() == 5u;
+    extents.y() == 3u;
 
-    buffer.getPitches().x() == 4; // element size in byte (sizeof(int32_t))
-    buffer.getPitches().y() == 22; // 5 elements with 4 bytes + 2 bytes padding
+    buffer.getPitches().x() == 4u; // element size in byte (sizeof(int32_t))
+    buffer.getPitches().y() == 22u; // 5 elements with 4 bytes + 2 bytes padding
     // END-DATASTORAGE-pitch2D-example
 
-    REQUIRE(extents.x() == 5);
-    REQUIRE(extents.y() == 3);
+    REQUIRE(extents.x() == 5u);
+    REQUIRE(extents.y() == 3u);
 
-    REQUIRE(buffer.getPitches().x() == 4);
-    REQUIRE(buffer.getPitches().y() == 22);
+    REQUIRE(buffer.getPitches().x() == 4u);
+    REQUIRE(buffer.getPitches().y() == 22u);
 
 
     int32_t value = 1;
-    for(auto row = 0; row < rows; ++row)
+    for(size_t row = 0u; row < rows; ++row)
     {
-        for(auto col = 0; col < columns; ++col)
+        for(size_t col = 0u; col < columns; ++col)
         {
             buffer[alpaka::Vec{row, col}] = value++;
         }
@@ -110,10 +110,10 @@ TEST_CASE("manually calculate 2D Pitch", "[docs]")
         size_t offset = 0;
         // should be equal with the value, which was set over the MdSpan
         int32_t expected_value = 1;
-        for(auto row = 0; row < rows; ++row)
+        for(size_t row = 0u; row < rows; ++row)
         {
             // step 4 bytes each time because of the user values
-            for(auto col = 0; col < columns; ++col)
+            for(size_t col = 0u; col < columns; ++col)
             {
                 int32_t value = *(reinterpret_cast<int32_t*>(memPtr + offset));
                 REQUIRE_MESSAGE(value == expected_value, "coord: [" << row << ", " << col << "]\noffset: " << offset);
@@ -121,7 +121,7 @@ TEST_CASE("manually calculate 2D Pitch", "[docs]")
                 offset += sizeof(int32_t);
             }
             // step 2 times one byte because of the row padding
-            for(auto pitch = 0; pitch < pitchRow; ++pitch)
+            for(size_t pitch = 0u; pitch < pitchRow; ++pitch)
             {
                 REQUIRE(*(memPtr + offset) == std::byte{0});
                 offset += 1;
@@ -170,31 +170,31 @@ TEST_CASE("manual calculate 3D Pitch", "[docs]")
     alpaka::Vec extents = alpaka::Vec{3u, 3u, 5u};
     auto buffer = allocHostBufferWithPadding<int32_t>(extents);
 
-    extents.x() == 5;
-    extents.y() == 3;
-    extents.z() == 3;
+    extents.x() == 5u;
+    extents.y() == 3u;
+    extents.z() == 3u;
 
-    buffer.getPitches().x() == 4; // element size in byte (sizeof(int32_t))
-    buffer.getPitches().y() == 22; // 5 elements with 4 bytes + 2 bytes padding
+    buffer.getPitches().x() == 4u; // element size in byte (sizeof(int32_t))
+    buffer.getPitches().y() == 22u; // 5 elements with 4 bytes + 2 bytes padding
     // 3 rows with user data and padding, each 22 bytes long + 22 bytes padding for empty row
-    buffer.getPitches().z() == 88;
+    buffer.getPitches().z() == 88u;
     // END-DATASTORAGE-pitch3D-example
 
-    REQUIRE(extents.x() == 5);
-    REQUIRE(extents.y() == 3);
-    REQUIRE(extents.z() == 3);
+    REQUIRE(extents.x() == 5u);
+    REQUIRE(extents.y() == 3u);
+    REQUIRE(extents.z() == 3u);
 
-    REQUIRE(buffer.getPitches().x() == 4);
-    REQUIRE(buffer.getPitches().y() == 22);
-    REQUIRE(buffer.getPitches().z() == 88);
+    REQUIRE(buffer.getPitches().x() == 4u);
+    REQUIRE(buffer.getPitches().y() == 22u);
+    REQUIRE(buffer.getPitches().z() == 88u);
 
 
     int32_t value = 1;
-    for(auto matrix = 0; matrix < matrices; ++matrix)
+    for(size_t matrix = 0u; matrix < matrices; ++matrix)
     {
-        for(auto row = 0; row < rows; ++row)
+        for(size_t row = 0u; row < rows; ++row)
         {
-            for(auto col = 0; col < columns; ++col)
+            for(size_t col = 0u; col < columns; ++col)
             {
                 buffer[alpaka::Vec{matrix, row, col}] = value++;
             }
@@ -210,12 +210,12 @@ TEST_CASE("manual calculate 3D Pitch", "[docs]")
         size_t offset = 0;
         // should be equal with the value, which was set over the MdSpan
         int32_t expected_value = 1;
-        for(auto matrix = 0; matrix < matrices; ++matrix)
+        for(size_t matrix = 0u; matrix < matrices; ++matrix)
         {
-            for(auto row = 0; row < rows; ++row)
+            for(size_t row = 0u; row < rows; ++row)
             {
                 // step 4 bytes each time because of the user values
-                for(auto col = 0; col < columns; ++col)
+                for(size_t col = 0u; col < columns; ++col)
                 {
                     int32_t value = *(reinterpret_cast<int32_t*>(memPtr + offset));
                     REQUIRE_MESSAGE(
@@ -225,7 +225,7 @@ TEST_CASE("manual calculate 3D Pitch", "[docs]")
                     offset += sizeof(int32_t);
                 }
                 // step 2 times one byte because of the row padding
-                for(auto pitch = 0; pitch < pitchRow; ++pitch)
+                for(size_t pitch = 0u; pitch < pitchRow; ++pitch)
                 {
                     REQUIRE_MESSAGE(
                         *(memPtr + offset) == std::byte{0},
@@ -235,7 +235,7 @@ TEST_CASE("manual calculate 3D Pitch", "[docs]")
             }
             // step 22 bytes to finish the matrix
             // the 22 bytes are a complete row with padding
-            for(auto pitch = 0; pitch < rowWidthBytes; ++pitch)
+            for(size_t pitch = 0u; pitch < rowWidthBytes; ++pitch)
             {
                 REQUIRE_MESSAGE(
                     *(memPtr + offset) == std::byte{0},
@@ -251,11 +251,11 @@ TEST_CASE("manual calculate 3D Pitch", "[docs]")
     {
         std::byte* memPtr = mem3D.data();
         int32_t expected_value = 1;
-        for(size_t matrix = 0; matrix < matrices; ++matrix)
+        for(size_t matrix = 0u; matrix < matrices; ++matrix)
         {
-            for(size_t row = 0; row < rows; ++row)
+            for(size_t row = 0u; row < rows; ++row)
             {
-                for(size_t col = 0; col < columns; ++col)
+                for(size_t col = 0u; col < columns; ++col)
                 {
                     REQUIRE_MESSAGE(
                         get_element<int32_t>(memPtr, alpaka::Vec{matrix, row, col}, pitches3D) == expected_value,
