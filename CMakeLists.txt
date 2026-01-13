@@ -97,6 +97,8 @@ include(GNUInstallDirs)
 
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
+write_basic_package_version_file("alpakaConfigVersion.cmake" VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion)
+
 install(
     FILES
         "${_alpaka_ROOT_DIR}/cmake/finalize.cmake"
@@ -106,6 +108,7 @@ install(
         "${_alpaka_ROOT_DIR}/cmake/alpakaOneApi.cmake"
         "${_alpaka_ROOT_DIR}/cmake/buildDependencies.cmake"
         "${_alpaka_ROOT_DIR}/cmake/common.cmake"
+        "${PROJECT_BINARY_DIR}/alpakaConfigVersion.cmake"
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/alpaka
 )
 
