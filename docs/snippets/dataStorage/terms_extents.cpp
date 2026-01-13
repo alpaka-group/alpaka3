@@ -9,5 +9,7 @@ int main()
     int value = buffer[alpaka::Vec{1u, 3u}];
     // END-DATASTORAGE-termExtents
 
+    alpaka::unused(value);
+
     return 0;
 }
