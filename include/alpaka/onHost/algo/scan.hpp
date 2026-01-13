@@ -31,115 +31,115 @@ namespace alpaka::onHost
 
     /** @brief Perform an inclusive scan on the input data and write the result to the output data.
      *
-     * @param exec The executor to run with.
      * @param queue The queue to enqueue to.
+     * @param exec The executor to run with.
      * @param buffer (optional) The internally used buffer. Use the scanBufferSize() function to check how big the
      * buffer needs to be. If omitted, it will be allocated and destructed on the fly.
      * @param outputVec The output data. To perform an in-place scan, use the overload with only one data object.
      * @param inputVec The input data. Can be const.
      */
     void inclusiveScan(
-        alpaka::concepts::Executor auto& exec,
         auto const& queue,
+        alpaka::concepts::Executor auto& exec,
         alpaka::concepts::IMdSpan auto& buffer,
         alpaka::concepts::IMdSpan auto& outputVec,
         alpaka::concepts::IDataSource auto const& inputVec)
     {
         auto devAcc = queue.getDevice();
-        internal::scan<internal::INCLUSIVE_SCAN>(exec, devAcc, queue, buffer, outputVec, inputVec);
+        internal::scan<internal::INCLUSIVE_SCAN>(queue, devAcc, exec, buffer, outputVec, inputVec);
     }
 
     void inclusiveScan(
-        alpaka::concepts::Executor auto& exec,
         auto const& queue,
+        alpaka::concepts::Executor auto& exec,
         alpaka::concepts::IMdSpan auto& outputVec,
         alpaka::concepts::IDataSource auto const& inputVec)
     {
         auto devAcc = queue.getDevice();
-        internal::scan<internal::INCLUSIVE_SCAN>(exec, devAcc, queue, outputVec, inputVec);
+        internal::scan<internal::INCLUSIVE_SCAN>(queue, devAcc, exec, outputVec, inputVec);
     }
 
     /** @brief Perform an inclusive scan on data in-place.
      *
-     * @param exec The executor to run with.
      * @param queue The queue to enqueue to.
+     * @param exec The executor to run with.
      * @param buffer (optional) The internally used buffer. Use the scanBufferSize() function to check how big the
      * buffer needs to be. If omitted, it will be allocated and destructed on the fly.
      * @param dataVec The vector to scan, will be overwritten with the result.
      */
     void inclusiveScanInPlace(
-        alpaka::concepts::Executor auto& exec,
         auto const& queue,
+        alpaka::concepts::Executor auto& exec,
         alpaka::concepts::IMdSpan auto& buffer,
         alpaka::concepts::IMdSpan auto& dataVec)
     {
         auto devAcc = queue.getDevice();
-        internal::scan<internal::INCLUSIVE_SCAN>(exec, devAcc, queue, buffer, dataVec, dataVec);
+        internal::scan<internal::INCLUSIVE_SCAN>(queue, devAcc, exec, buffer, dataVec, dataVec);
     }
 
     void inclusiveScanInPlace(
-        alpaka::concepts::Executor auto& exec,
         auto const& queue,
+        alpaka::concepts::Executor auto& exec,
         alpaka::concepts::IMdSpan auto& dataVec)
     {
         auto devAcc = queue.getDevice();
-        internal::scan<internal::INCLUSIVE_SCAN>(exec, devAcc, queue, dataVec, dataVec);
+        internal::scan<internal::INCLUSIVE_SCAN>(queue, devAcc, exec, dataVec, dataVec);
     }
 
     /** @brief Perform an exclusive scan on the input data and write the result to the output data.
      *
-     * @param exec The executor to run with.
      * @param queue The queue to enqueue to.
+     * @param exec The executor to run with.
      * @param buffer (optional) The internally used buffer. Use the scanBufferSize() function to check how big the
      * buffer needs to be. If omitted, it will be allocated and destructed on the fly.
      * @param outputVec The output data. To perform an in-place scan, use the overload with only one data object.
      * @param inputVec The input data. Can be const.
      */
     void exclusiveScan(
-        alpaka::concepts::Executor auto& exec,
         auto const& queue,
+        alpaka::concepts::Executor auto& exec,
         alpaka::concepts::IMdSpan auto& buffer,
         alpaka::concepts::IMdSpan auto& outputVec,
         alpaka::concepts::IDataSource auto const& inputVec)
     {
         auto devAcc = queue.getDevice();
-        internal::scan<internal::EXCLUSIVE_SCAN>(exec, devAcc, queue, buffer, outputVec, inputVec);
+        internal::scan<internal::EXCLUSIVE_SCAN>(queue, devAcc, exec, buffer, outputVec, inputVec);
     }
 
     void exclusiveScan(
-        alpaka::concepts::Executor auto& exec,
         auto const& queue,
+        alpaka::concepts::Executor auto& exec,
         alpaka::concepts::IMdSpan auto& outputVec,
         alpaka::concepts::IDataSource auto const& inputVec)
     {
         auto devAcc = queue.getDevice();
-        internal::scan<internal::EXCLUSIVE_SCAN>(exec, devAcc, queue, outputVec, inputVec);
+        internal::scan<internal::EXCLUSIVE_SCAN>(queue, devAcc, exec, outputVec, inputVec);
     }
 
     /** @brief Perform an exclusive scan on data in-place.
      *
-     * @param exec The executor to run with.
      * @param queue The queue to enqueue to.
+     * @param exec The executor to run with.
      * @param buffer (optional) The internally used buffer. Use the scanBufferSize() function to check how big the
      * buffer needs to be. If omitted, it will be allocated and destructed on the fly.
      * @param dataVec The vector to scan, will be overwritten with the result.
      */
     void exclusiveScanInPlace(
-        alpaka::concepts::Executor auto& exec,
         auto const& queue,
+        alpaka::concepts::Executor auto& exec,
         alpaka::concepts::IMdSpan auto& buffer,
         alpaka::concepts::IMdSpan auto& dataVec)
     {
         auto devAcc = queue.getDevice();
-        internal::scan<internal::EXCLUSIVE_SCAN>(exec, devAcc, queue, buffer, dataVec, dataVec);
+        internal::scan<internal::EXCLUSIVE_SCAN>(queue, devAcc, exec, buffer, dataVec, dataVec);
     }
 
     void exclusiveScanInPlace(
-        alpaka::concepts::Executor auto& exec,
         auto const& queue,
+        alpaka::concepts::Executor auto& exec,
         alpaka::concepts::IMdSpan auto& dataVec)
     {
         auto devAcc = queue.getDevice();
-        internal::scan<internal::EXCLUSIVE_SCAN>(exec, devAcc, queue, dataVec, dataVec);
+        internal::scan<internal::EXCLUSIVE_SCAN>(queue, devAcc, exec, dataVec, dataVec);
     }
 } // namespace alpaka::onHost
