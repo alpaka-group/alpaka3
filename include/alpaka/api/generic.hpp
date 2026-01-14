@@ -67,30 +67,17 @@ namespace alpaka::internal::generic
         T_Value elementValue)
     {
         ALPAKA_LOG_FUNCTION(onHost::logger::memory);
-        uint32_t elementsPerFrameItem = getNumElemPerThread<T_Value>(internalQueue);
 
         auto extents = onHost::getExtents(dest);
-
-        using ExtentsType = ALPAKA_TYPEOF(extents);
-        using IndexType = typename ExtentsType::type;
-        auto virtualFrameExtent = ExtentsType::fill(1u);
-        // 512 is randomly chosen because it is on all devices a good value for a value assign kernel
-        virtualFrameExtent.x() = std::min(static_cast<IndexType>(512u * elementsPerFrameItem), extents.x());
-
-        auto numFrames = divExZero(extents, virtualFrameExtent);
-        auto realFrameExtent = ExtentsType::fill(1u);
-        realFrameExtent.x() = IndexType{512u};
-
-        auto frameSpec = onHost::FrameSpec{numFrames, realFrameExtent};
+        auto frameSpec = onHost::internal::getFrameSpec<T_Value>(*onHost::internal::getDevice(internalQueue), extents);
 
         ALPAKA_LOG_INFO(
             onHost::logger::memory,
             [&]()
             {
                 std::stringstream ss;
-                ss << "fill{ extents=" << extents << ", elementsPerFrameItem" << elementsPerFrameItem
-                   << ", dst=" << dest << ", value_type=" << onHost::demangledName(elementValue) << ", " << frameSpec
-                   << " }";
+                ss << "fill{ extents=" << extents << ", elementsPerFrameItem" << ", dst=" << dest
+                   << ", value_type=" << onHost::demangledName(elementValue) << ", frameSpec=" << frameSpec << " }";
                 return ss.str();
             });
 

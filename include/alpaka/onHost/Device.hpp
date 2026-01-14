@@ -321,43 +321,6 @@ namespace alpaka::onHost
     template<typename T_DataType, typename T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
     inline constexpr auto getFrameSpec(onHost::Device<T_Api, T_DeviceKind> const& device, auto&& extents)
     {
-        using ExtentVecType = ALPAKA_TYPEOF(extents);
-        using IndexType = alpaka::trait::GetValueType_t<ExtentVecType>;
-        auto props = device.getDeviceProperties();
-        IndexType warpSize = static_cast<IndexType>(props.warpSize);
-        // try to create a specification with a frame size of 512 elements
-        IndexType numFrameElemets = 512;
-        // avoid non-power of two values
-        auto fastDimensionValue = roundDownToPowerOfTwo(std::min(warpSize, extents.x()));
-        auto frameExtents = ExtentVecType::fill(1).rAssign(fastDimensionValue);
-        numFrameElemets /= frameExtents.x();
-        // distribute remainder frame elements
-        while(numFrameElemets > IndexType{1})
-        {
-            uint32_t maxIdx = ExtentVecType::dim() - 1u;
-            IndexType maxValue = 0;
-            for(auto i = 0u; i < ExtentVecType::dim(); ++i)
-            {
-                auto v = extents[i] / frameExtents[i] / IndexType{2};
-                if(maxValue < v)
-                {
-                    maxIdx = i;
-                    maxValue = v;
-                }
-            }
-            // apply the change only if we not oversubscribe the extents
-            auto v = extents[maxIdx] / frameExtents[maxIdx] / IndexType{2};
-            if(v >= IndexType{1})
-                frameExtents[maxIdx] *= IndexType{2};
-            else
-                break;
-            numFrameElemets /= IndexType{2};
-        }
-        IndexType elementsPerFrameItem = static_cast<IndexType>(getNumElemPerThread<T_DataType>(device));
-        alpaka::concepts::Vector auto numFrames
-            = divExZero(extents, frameExtents * frameExtents.fill(1).rAssign(elementsPerFrameItem));
-        // The frame specification is not required to be a multiple of the extent, it can be smaller.
-        auto frameSpec = onHost::FrameSpec{numFrames, frameExtents};
-        return frameSpec;
+        return internal::getFrameSpec<T_DataType>(*device.get(), extents);
     }
 } // namespace alpaka::onHost

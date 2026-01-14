@@ -465,5 +465,54 @@ namespace alpaka::onHost
             return GetPitches::Op<ALPAKA_TYPEOF(*any.get())>{}(*any.get());
         }
 
+        /** get a SIMD optimized frame spec
+         *
+         * @param internalDevice must be a alpaka internal device implementation
+         */
+        template<typename T_DataType>
+        inline constexpr auto getFrameSpec(auto const& internalDevice, auto&& extents)
+        {
+            auto deviceKind = alpaka::internal::getDeviceKind(internalDevice);
+            auto deviceApi = alpaka::internal::getApi(internalDevice);
+            using ExtentVecType = ALPAKA_TYPEOF(extents);
+            using IndexType = alpaka::trait::GetValueType_t<ExtentVecType>;
+            auto props = internal::GetDeviceProperties::Op<ALPAKA_TYPEOF(internalDevice)>{}(internalDevice);
+            IndexType warpSize = static_cast<IndexType>(props.warpSize);
+            // try to create a specification with a frame size of 512 elements
+            IndexType numFrameElements = 512;
+            // avoid non-power of two values
+            auto fastDimensionValue = roundDownToPowerOfTwo(std::min(warpSize, extents.x()));
+            auto frameExtents = ExtentVecType::fill(1).rAssign(fastDimensionValue);
+            numFrameElements /= frameExtents.x();
+            // distribute remainder frame elements
+            while(numFrameElements > IndexType{1})
+            {
+                uint32_t maxIdx = ExtentVecType::dim() - 1u;
+                IndexType maxValue = 0;
+                for(auto i = 0u; i < ExtentVecType::dim(); ++i)
+                {
+                    auto v = extents[i] / frameExtents[i] / IndexType{2};
+                    if(maxValue < v)
+                    {
+                        maxIdx = i;
+                        maxValue = v;
+                    }
+                }
+                // apply the change only if we not oversubscribe the extents
+                auto v = extents[maxIdx] / frameExtents[maxIdx] / IndexType{2};
+                if(v >= IndexType{1})
+                    frameExtents[maxIdx] *= IndexType{2};
+                else
+                    break;
+                numFrameElements /= IndexType{2};
+            }
+            IndexType elementsPerFrameItem
+                = static_cast<IndexType>(getNumElemPerThread<T_DataType>(deviceApi, deviceKind));
+            alpaka::concepts::Vector auto numFrames
+                = divExZero(extents, frameExtents * frameExtents.fill(1).rAssign(elementsPerFrameItem));
+            // The frame specification is not required to be a multiple of the extent, it can be smaller.
+            auto frameSpec = onHost::FrameSpec{numFrames, frameExtents};
+            return frameSpec;
+        }
     } // namespace internal
 } // namespace alpaka::onHost
