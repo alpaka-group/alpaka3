@@ -144,7 +144,7 @@ namespace alpaka::onHost
     //! \return The total number of bytes of global memory.
     //! Adapted from David Robert Nadeau:
     //! http://nadeausoftware.com/articles/2012/09/c_c_tip_how_get_physical_memory_size_system
-    inline auto getTotalGlobalMemSizeBytes() -> std::size_t
+    inline auto getGlobalMemCapacityBytes() -> std::size_t
     {
 #if ALPAKA_OS_WINDOWS
         MEMORYSTATUSEX status;
@@ -174,7 +174,7 @@ namespace alpaka::onHost
         std::uint64_t size(0);
         std::size_t sizeLen{sizeof(size)};
         if(sysctl(mib, 2, &size, &sizeLen, nullptr, 0) < 0)
-            throw std::logic_error("getTotalGlobalMemSizeBytes failed calling sysctl!");
+            throw std::logic_error("getGlobalMemCapacityBytes failed calling sysctl!");
         return static_cast<std::size_t>(size);
 
 #    elif defined(_SC_AIX_REALMEM) // AIX.
@@ -196,12 +196,12 @@ namespace alpaka::onHost
         std::uint32_t size(0);
         std::size_t const sizeLen{sizeof(size)};
         if(sysctl(mib, 2, &size, &sizeLen, nullptr, 0) < 0)
-            throw std::logic_error("getTotalGlobalMemSizeBytes failed calling sysctl!");
+            throw std::logic_error("getGlobalMemCapacityBytes failed calling sysctl!");
         return static_cast<std::size_t>(size);
 #    endif
 
 #else
-#    error "getTotalGlobalMemSizeBytes not implemented for this system!"
+#    error "getGlobalMemCapacityBytes not implemented for this system!"
 #endif
     }
 

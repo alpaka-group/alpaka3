@@ -245,6 +245,7 @@ namespace alpaka
                                 return std::max(a, b);
                         }));
                     prop.multiProcessorCount = dev.get_info<sycl::info::device::max_compute_units>();
+                    prop.globalMemCapacityBytes = dev.get_info<sycl::info::device::global_mem_size>();
 
                     return prop;
                 }

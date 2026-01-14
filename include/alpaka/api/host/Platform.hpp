@@ -119,6 +119,7 @@ namespace alpaka::onHost
                 prop.maxThreadsPerBlock = std::numeric_limits<uint32_t>::max();
                 prop.warpSize = 1u;
                 prop.multiProcessorCount = std::thread::hardware_concurrency();
+                prop.globalMemCapacityBytes = getGlobalMemCapacityBytes();
 
                 return prop;
             }
