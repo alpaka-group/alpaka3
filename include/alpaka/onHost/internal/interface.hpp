@@ -414,6 +414,18 @@ namespace alpaka::onHost
             };
         };
 
+        struct GetFreeGlobalMemBytes
+        {
+            template<typename T_Any>
+            struct Op
+            {
+                size_t operator()(auto const& device) const
+                {
+                    return device.getFreeGlobalMemBytes();
+                }
+            };
+        };
+
         inline DeviceProperties getDeviceProperties(auto const& platform, uint32_t idx)
         {
             return GetDeviceProperties::Op<ALPAKA_TYPEOF(platform)>{}(platform, idx);

@@ -7,6 +7,7 @@
 #include "alpaka/api/host/Api.hpp"
 #include "alpaka/api/host/Event.hpp"
 #include "alpaka/api/host/Queue.hpp"
+#include "alpaka/api/host/sysInfo.hpp"
 #include "alpaka/api/util.hpp"
 #include "alpaka/core/alignedAlloc.hpp"
 #include "alpaka/internal/interface.hpp"
@@ -149,9 +150,15 @@ namespace alpaka::onHost
                 return alpaka::internal::getDeviceKind(*m_platform.get());
             }
 
+            auto getFreeGlobalMemBytes() const
+            {
+                return onHost::getFreeGlobalMemBytes();
+            }
+
             friend struct internal::Alloc;
             friend struct alpaka::internal::GetApi;
             friend struct internal::GetDeviceProperties;
+            friend struct internal::GetFreeGlobalMemBytes;
             friend struct internal::AdjustThreadSpec;
             friend struct internal::AllocDeferred;
             friend struct internal::AllocUnified;
