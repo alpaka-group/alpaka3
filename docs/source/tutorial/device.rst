@@ -1,6 +1,8 @@
 Device Selection
 ================
 
+.. _device-selection:
+
 In this section you will learn how to select a device to accelerate your compute kernels.
 Devices must be explicitly selected by the user; *alpaka* does not provide a single way to select your compute device.
 The reason for this is that device selection depends strongly on your application and workflow.

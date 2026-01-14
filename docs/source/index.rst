@@ -57,6 +57,8 @@ Individual chapters are based on the information of the chapters before.
    tutorial/intro.rst
    tutorial/vector.rst
    tutorial/device.rst
+   tutorial/queue.rst
+   tutorial/memory.rst
 
 .. toctree::
    :caption: Advanced
