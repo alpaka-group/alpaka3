@@ -13,9 +13,9 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 ################################################################################
 # Project.
 
-set(_TARGET_NAME vectorAdd)
+set(_TARGET_NAME radixSort)
 
-project(radixsort LANGUAGES CXX VERSION 0.0.0.1)
+project(${_TARGET_NAME} LANGUAGES CXX VERSION 0.0.0.1)
 
 #-------------------------------------------------------------------------------
 # Find alpaka.
@@ -35,8 +35,14 @@ endif()
 #-------------------------------------------------------------------------------
 # Add executable.
 
+find_package(Boost CONFIG REQUIRED COMPONENTS program_options)
+
 add_executable(${_TARGET_NAME} src/radixSort.cpp)
-target_include_directories(${_TARGET_NAME} PRIVATE src)
+target_include_directories(${_TARGET_NAME} PRIVATE radixsort)
+
+target_include_directories(${_TARGET_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
+target_link_libraries(${_TARGET_NAME} PRIVATE Boost::program_options)
+
 target_link_libraries(${_TARGET_NAME} PUBLIC alpaka::alpaka)
 alpaka_finalize(${_TARGET_NAME})
 
