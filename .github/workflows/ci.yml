@@ -37,17 +37,23 @@ jobs:
           - { compiler: gcc, version: "13", cuda: "no", hip: "no", container: "ubuntu:24.04", tbb: "on" }
           - { compiler: gcc, version: "14", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0" }
+          # clang host compiler
           - { compiler: clang, version: "17", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: clang, version: "18", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: clang, version: "19", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: clang, version: "20", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04" }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", tbb: "on" }
+          # nvcc CUDA
           - { compiler: nvcc, version: "", cuda: "12.5", hip: "no", container: "nvidia/cuda:12.5.1-devel-ubuntu24.04" }
           - { compiler: nvcc, version: "", cuda: "12.6", hip: "no", container: "nvidia/cuda:12.6.3-devel-ubuntu24.04" }
           - { compiler: nvcc, version: "", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04" }
           - { compiler: nvcc, version: "", cuda: "12.9", hip: "no", container: "nvidia/cuda:12.9.1-devel-ubuntu24.04" }
           - { compiler: nvcc, version: "", cuda: "13.0", hip: "no", container: "nvidia/cuda:13.0.0-devel-ubuntu24.04" }
+          # clang-cuda (device compile with clang)
+          - { compiler: clang, version: "20", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04" }
+          - { compiler: clang, version: "21", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04" }
+          # clang with ROCm HIP
           - { compiler: clang, version: "18", cuda: "no", hip: "6.2.4", container: "rocm/dev-ubuntu-24.04:6.2.4" }
           - { compiler: clang, version: "18", cuda: "no", hip: "6.3.4", container: "rocm/dev-ubuntu-24.04:6.3.4" }
           - { compiler: clang, version: "19", cuda: "no", hip: "6.4.2", container: "rocm/dev-ubuntu-24.04:6.4.2" }
@@ -192,7 +198,8 @@ jobs:
                 -DCMAKE_BUILD_TYPE=Release \
                 ${alpaka_cmake_flags} -Dalpaka_DEP_OMP=ON \
                 ${{ matrix.config.compiler == 'icpx' && '-DCMAKE_CXX_COMPILER=icpx -DCMAKE_CXX_FLAGS="-fsycl -fsycl-targets=spir64_x86_64" -Dalpaka_DEP_ONEAPI=ON -Dalpaka_ONEAPI_IntelGpu=OFF -Dalpaka_EXEC_CpuSerial=OFF -Dalpaka_DEP_OMP=OFF' || '' }} \
-                ${{ matrix.config.cuda != 'no' && '-Dalpaka_DEP_CUDA=ON' || '' }} \
+                ${{ matrix.config.cuda != 'no' && '-Dalpaka_DEP_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=80' || '' }} \
+                ${{ matrix.config.cuda != 'no' && matrix.config.compiler == 'clang' && '-Dalpaka_DEP_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=80 -DCMAKE_CUDA_COMPILER=clang++ -DCMAKE_CUDA_HOST_COMPILER=clang++ -Dalpaka_SUPPRESS_TARGET_WARNING=ON -Dalpaka_DEP_OMP=OFF' || '' }} \
                 ${{ matrix.config.hip != 'no' && '-DCMAKE_CXX_COMPILER=clang++ -Dalpaka_DEP_HIP=ON -Dalpaka_DEP_OMP=OFF \
                    -DCMAKE_HIP_ARCHITECTURES=gfx906 -DAMDGPU_TARGETS=gfx906' || '' }} \
                 ${{ matrix.config.tbb == 'on' && '-Dalpaka_DEP_TBB=ON' || '' }} \

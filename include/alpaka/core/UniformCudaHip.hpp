@@ -8,6 +8,7 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/core/config.hpp"
 
+#include <algorithm>
 #include <initializer_list>
 #include <stdexcept>
 #include <string>
