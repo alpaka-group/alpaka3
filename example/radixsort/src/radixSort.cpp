@@ -41,7 +41,7 @@ namespace alpaka::example::radixSort
 
                 for(auto frameElemIdxMD : onAcc::makeIdxMap(acc, onAcc::worker::linearThreadsInBlock, IdxRange{acc[frame::extent].product()}))
                 {
-                    auto const globalDataIdxMD = frameIdxMD * acc[frame::count] + frameElemIdxMD;
+                    auto const globalDataIdxMD = frameIdxMD * acc[frame::extent] + frameElemIdxMD;
 
                     if (globalDataIdxMD.x() < inputElements) {
                         auto number = input[globalDataIdxMD];
