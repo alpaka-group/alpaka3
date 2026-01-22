@@ -59,6 +59,8 @@ jobs:
           - { compiler: clang, version: "19", cuda: "no", hip: "6.4.2", container: "rocm/dev-ubuntu-24.04:6.4.2" }
           - { compiler: clang, version: "20", cuda: "no", hip: "7.0", container: "rocm/dev-ubuntu-24.04:7.0" }
           - { compiler: clang, version: "20", cuda: "no", hip: "7.1", container: "rocm/dev-ubuntu-24.04:7.1" }
+          - { compiler: clang, version: "22", cuda: "no", hip: "7.2", container: "rocm/dev-ubuntu-24.04:7.2" }
+          # SYCL
           - { compiler: icpx, version: "2025.1", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.1.3-0-devel-ubuntu24.04" }
           - { compiler: icpx, version: "2025.2", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.2.2-0-devel-ubuntu24.04" }
           - { compiler: icpx, version: "2025.3", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.3.0-0-devel-ubuntu24.04" }
