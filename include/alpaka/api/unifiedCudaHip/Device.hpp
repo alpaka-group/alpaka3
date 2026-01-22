@@ -146,12 +146,23 @@ namespace alpaka::onHost
                 return alpaka::internal::getDeviceKind(*m_platform.get());
             }
 
+            auto getFreeGlobalMemBytes() const
+            {
+                std::size_t freeGlobalMemBytes(0u);
+                std::size_t globalMemCapacityBytes(0u);
+                ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
+                    ApiInterface,
+                    ApiInterface::memGetInfo(&freeGlobalMemBytes, &globalMemCapacityBytes));
+                return freeGlobalMemBytes;
+            }
+
             friend struct onHost::internal::Alloc;
             friend struct onHost::internal::AllocDeferred;
             friend struct onHost::internal::AllocUnified;
             friend struct onHost::internal::AllocMapped;
             friend struct alpaka::internal::GetApi;
             friend struct internal::GetDeviceProperties;
+            friend struct internal::GetFreeGlobalMemBytes;
             friend struct internal::AdjustThreadSpec;
             friend struct onHost::internal::IsDataAccessible;
         };

@@ -41,6 +41,8 @@ TEMPLATE_LIST_TEST_CASE("kernel no arguments", "", TestApis)
     onHost::Device device = devSelector.makeDevice(0);
 
     std::cout << device.getName() << std::endl;
+    std::cout << "mem     :" << device.getDeviceProperties().globalMemCapacityBytes << std::endl;
+    std::cout << "free mem:" << device.getFreeGlobalMemBytes() << std::endl;
 
     onHost::Queue queue = device.makeQueue(queueKind::blocking);
     std::cout << "exec=" << onHost::demangledName(exec) << std::endl;

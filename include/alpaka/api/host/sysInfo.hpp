@@ -207,7 +207,7 @@ namespace alpaka::onHost
 
     //! \return The free number of bytes of global memory.
     //! \throws std::logic_error if not implemented on the system and std::runtime_error on other errors.
-    inline auto getFreeGlobalMemSizeBytes() -> std::size_t
+    inline auto getFreeGlobalMemBytes() -> std::size_t
     {
 #if ALPAKA_OS_WINDOWS
         MEMORYSTATUSEX status;
