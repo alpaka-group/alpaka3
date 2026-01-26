@@ -36,7 +36,6 @@ namespace alpaka::onHost
                 , m_properties{internal::getDeviceProperties(*m_platform.get(), m_idx)}
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::device);
-                m_properties.name += " id=" + std::to_string(m_idx);
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(ApiInterface, ApiInterface::setDevice(idx));
             }
 
