@@ -140,6 +140,7 @@ namespace alpaka::onHost
                 prop.warpSize = devProp.warpSize;
                 prop.multiProcessorCount = devProp.multiProcessorCount;
                 prop.globalMemCapacityBytes = globalMemCapacityBytes;
+                prop.sharedMemPerBlockBytes = devProp.sharedMemPerBlock;
 
                 return prop;
             }

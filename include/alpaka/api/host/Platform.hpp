@@ -6,6 +6,7 @@
 
 #include "alpaka/api/host/Api.hpp"
 #include "alpaka/api/host/Device.hpp"
+#include "alpaka/api/host/block/mem/SharedStorage.hpp"
 #include "alpaka/api/host/sysInfo.hpp"
 #include "alpaka/internal/interface.hpp"
 #include "alpaka/onHost/Handle.hpp"
@@ -120,6 +121,7 @@ namespace alpaka::onHost
                 prop.warpSize = 1u;
                 prop.multiProcessorCount = std::thread::hardware_concurrency();
                 prop.globalMemCapacityBytes = getGlobalMemCapacityBytes();
+                prop.sharedMemPerBlockBytes = ALPAKA_BLOCK_SHARED_DYN_MEMBER_ALLOC_KIB * 1024u;
 
                 return prop;
             }

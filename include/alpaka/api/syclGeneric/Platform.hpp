@@ -246,6 +246,7 @@ namespace alpaka
                         }));
                     prop.multiProcessorCount = dev.get_info<sycl::info::device::max_compute_units>();
                     prop.globalMemCapacityBytes = dev.get_info<sycl::info::device::global_mem_size>();
+                    prop.sharedMemPerBlockBytes = dev.get_info<sycl::info::device::local_mem_size>();
 
                     return prop;
                 }

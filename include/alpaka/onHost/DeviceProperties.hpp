@@ -31,13 +31,15 @@ namespace alpaka::onHost
          * amount of system memory.
          */
         size_t globalMemCapacityBytes;
+        /** The amount of shared memory per thread block in bytes. */
+        uint32_t sharedMemPerBlockBytes;
         /** The name of the device. */
         std::string name;
         /** The number of multiprocessors.*/
         uint32_t multiProcessorCount;
         /** The warp size.
          *
-         * Number of threads that are executed in lock-step.
+         * Number of threads per thread block that are executed in lock-step.
          */
         uint32_t warpSize;
         /** The maximum total number of threads per thread block. */
@@ -51,6 +53,7 @@ namespace alpaka::onHost
         s << "warpSize: " << p.warpSize << "\n";
         s << "maxThreadsPerBlock: " << p.maxThreadsPerBlock << "\n";
         s << "globalMemCapacityBytes: " << p.globalMemCapacityBytes << "\n";
+        s << "sharedMemPerBlockBytes: " << p.sharedMemPerBlockBytes << "\n";
         return s;
     };
 } // namespace alpaka::onHost
