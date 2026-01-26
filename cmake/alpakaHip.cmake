@@ -19,7 +19,7 @@ if(CMAKE_HIP_COMPILER)
     find_package(hip REQUIRED)
 
     set(_alpaka_HIP_MIN_VER 6.0)
-    set(_alpaka_HIP_MAX_VER 7.0)
+    set(_alpaka_HIP_MAX_VER 7.2)
 
     checkcompilercxxsupport(HIP ${alpaka_CXX_STANDARD})
 
