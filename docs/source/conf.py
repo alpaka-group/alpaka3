@@ -85,7 +85,7 @@ extensions = [
     "sphinx_rtd_theme",
     "sphinxcontrib.programoutput",
     #    'matplotlib.sphinxext.plot_directive'
-    "sphinx.ext.autosectionlabel",
+    #    "sphinx.ext.autosectionlabel",
 ]
 
 

@@ -49,11 +49,17 @@ Properties:
 
     If a :ref:`Kernel` is enqueued to the host CPU, it is required to follow the limitations of ``accelerators``. This means it must not call operating system methods even if it is technically possible, since this will break portability.
 
+.. _api:
+
 API
 ---
 
+.. _device:
+
 Device
 ------
+
+.. _kernel:
 
 Kernel
 ------
@@ -78,7 +84,7 @@ The ordering is ``IDataSource -> IMdSpan -> IView -> IBuffer``.
 
 Each interface describes the minimum functionality that a Data Storage object must provide.
 This means that an interface that extends another interface must also meet the requirements of the base interface.
-For example, IDataSource requires a function that returns the :ref:`extents <Extents>` of the Data Storage object.
+For example, IDataSource requires a function that returns the :ref:`extents <extents>` of the Data Storage object.
 ``IMdSpan``, ``IView``, and ``IBuffer`` (indirectly) extend the ``IDataSource`` interface and therefore also provide this functionality.
 
 IDataSource
@@ -95,6 +101,8 @@ Therefore, these two terms are explained in the :ref:`advanced section <memory-l
 The :ref:`extents <Extents>` are described in the next section.
 
 Go to the `IDataSource Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IDataSource.html>`_
+
+.. _extents:
 
 Extents
 +++++++
@@ -121,7 +129,7 @@ An ``IMdSpan`` Data Storage object points to physical memory. This allows memory
 It does not manage the lifetime of the memory it is pointing to.
 This means that deleting an ``IMdSpan`` Data Storage object does not free up memory.
 In addition, the user is responsible for ensuring that an ``IMdSpan`` Data Storage object references valid memory.
-It does not store any information about the associated :ref:`API <API>`.
+It does not store any information about the associated :ref:`API <api>`.
 
 Go to the `IMdSpan Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IMdSpan.html>`_
 
@@ -129,7 +137,7 @@ IView
 `````
 
 An ``IView`` Data Storage object is almost identical to an ``IMdSpan`` Data Storage object.
-The difference is that it stores information about the associated :ref:`API <API>`.
+The difference is that it stores information about the associated :ref:`API <api>`.
 
 Go to the `IView Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IDataSource.html>`_
 
