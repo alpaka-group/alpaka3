@@ -17,12 +17,12 @@ build:
   jobs:
     pre_build:
       # upgrade to doxygen 1.16
-      - wget https://www.doxygen.nl/files/doxygen-1.16.0.linux.bin.tar.gz
-      - tar -xf doxygen-1.16.0.linux.bin.tar.gz
+      - wget https://www.doxygen.nl/files/doxygen-1.16.1.linux.bin.tar.gz
+      - tar -xf doxygen-1.16.1.linux.bin.tar.gz
       # we cannot uninstall or replace the existing doxygen installed via apt
       # place the doxygen executable in the Python environment bin folder
       # the Python environment bin folder is located before the system paths in PATH
-      - cp $PWD/doxygen-1.16.0/bin/doxygen $READTHEDOCS_VIRTUALENV_PATH/bin
+      - cp $PWD/doxygen-1.16.1/bin/doxygen $READTHEDOCS_VIRTUALENV_PATH/bin
       - doxygen --version
       - pwd
       - ls -la
