@@ -346,3 +346,125 @@ Code Sanitizers for CPU
   .. code-block:: markdown
 
       Enable memory leak sanitizer.
+
+Targets
+-------
+
+alpaka is providing CMake targets based on the optional activated dependencies ``alpaka_DEP_*``
+
+.. _alpaka-headers:
+
+``alpaka::headers``
+^^^^^^^^^^^^^^^^^^^
+
+- Set include dependencies.
+- Activate header code based on the CMake option ``alpaka_EXEC_*`` (required for examples/tests/benchmarks).
+- Set the ``CXX`` standard.
+
+.. _alpaka-host:
+
+``alpaka::host``
+^^^^^^^^^^^^^^^^
+
+- Links :ref:`alpaka-headers`.
+- Sets compiler flags that are generic for CUDA/HIP and C++ targets.
+- Sets special compiler flags that are for C++ targets only.
+
+.. _alpaka-cuda:
+
+``alpaka::cuda``
+^^^^^^^^^^^^^^^^
+
+- Available if the CMake option ``-Dalpaka_DEP_CUDA=ON`` is set.
+- Activates support for NVIDIA GPUs.
+
+.. _alpaka-hip:
+
+``alpaka::hip``
+^^^^^^^^^^^^^^^
+
+- Available if the CMake option ``-Dalpaka_DEP_HIP=ON`` is set.
+- Activates support for AMD GPUs.
+
+.. _alpaka-oneapi:
+
+``alpaka::oneapi``
+^^^^^^^^^^^^^^^^^^
+
+- Available if the CMake option ``-Dalpaka_DEP_ONEAPI=ON`` is set.
+- Activates support for CPUs, NVIDIA GPUs, AMD GPUs, and Intel GPUs.
+
+.. _alpaka-alpaka:
+
+``alpaka``, ``alpaka::alpaka``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Links :ref:`alpaka-headers` and provides access to APIs activated by dependency switches.
+- If at least two of the dependencies ``alpaka_DEP_CUDA``, ``alpaka_DEP_HIP``, or ``alpaka_DEP_ONEAPI`` are activated:
+
+  - **None** of the APIs (except ``host``) will be added because these dependencies are mutually exclusive.
+  - You should add the required executor targets manually.
+
+.. note::
+
+   Dependencies of ``alpaka_DEP_OMP`` and ``alpaka_DEP_TBB`` are linked into the target ``alpaka::host`` because they influence only host executors and do not provide additional alpaka API support.
+   When enabling `alpaka_DEP_TBB`, make sure Intel oneTBB version 2021.10 or newer (including 2022.x releases) is available.
+
+After linking Alpaka targets to your application, you should call ``alpaka_finalize(targetName)`` for each target that uses Alpaka.
+``alpaka_finalize()`` is a CMake function that ensures all necessary compile definitions and compiler options are set for the given target.
+Depending on the enabled dependencies (``alpaka_DEP_*``), this call may copy your source files to a temporary directory and compile them with the appropriate compiler.
+Linking non-Alpaka targets after calling ``alpaka_finalize()`` is allowed.
+You should not include header files using relative paths in your source files.
+These relative paths may become invalid after ``alpaka_finalize()`` is called, because the source files can be copied to a different location.
+
+Examples
+--------
+
+- standard application enabling API's depending on the cmake dependencies selected
+
+   .. code-block:: cmake
+
+       # call: cmake -Dalpaka_DEP_CUDA=ON pathToAlpaka
+       add_executable(fooTarget src/main.cpp)
+       # provides access to host and CUDA API
+       target_link_libraries(fooTarget PUBLIC alpaka)
+       alpaka_finalize(fooTarget)
+
+- build a shared library
+
+   .. code-block:: cmake
+
+       # call: cmake -Dalpaka_DEP_CUDA=ON pathToAlpaka
+       add_library(fooShared SHARED src/foo.cpp)
+       target_link_libraries(fooShared PUBLIC alpaka)
+       alpaka_finalize(fooShared)
+
+       add_executable(fooTarget src/main.cpp)
+       target_link_libraries(fooTarget PRIVATE fooShared)
+
+- standard application which prefer manual selection of the API's
+
+   .. code-block:: cmake
+
+       # call: cmake -Dalpaka_DEP_CUDA=ON pathToAlpaka
+       add_executable(fooTarget src/main.cpp)
+       # provides access to host and CUDA API
+       target_link_libraries(fooTarget PUBLIC alpaka::headers)
+       target_link_libraries(fooTarget PUBLIC alpaka::cuda)
+       alpaka_finalize(fooTarget)
+
+- using more than one dependency
+
+   .. code-block:: cmake
+
+       # call: cmake -Dalpaka_DEP_CUDA=ON -Dalpaka_DEP_HIP=ON pathToAlpaka
+       add_executable(fooTarget src/main.cpp)
+       # provides access to host and cuda API
+       # the target alpaka::alpaka is now equal to alpaka::headers
+       target_link_libraries(fooTarget PUBLIC alpaka alpaka::cuda)
+       alpaka_finalize(fooTarget)
+
+       add_executable(barTarget src/main.cpp)
+       # provides access to host and hip API
+       target_link_libraries(barTarget PUBLIC alpaka alpaka::hip)
+       alpaka_finalize(barTarget)

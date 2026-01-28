@@ -65,6 +65,7 @@ Individual chapters are based on the information of the chapters before.
    advanced/cmake.rst
    advanced/datastorage.rst
    advanced/benchmark.rst
+   advanced/crosscompile.rst
 
 .. toctree::
    :caption: Developer

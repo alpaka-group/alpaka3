@@ -98,6 +98,8 @@ Since most vector operators work element wise, you need sometimes reduction meth
     :end-before: END-TUTORIAL-vectorReduction
     :dedent:
 
+.. _cvec:
+
 CVec
 ----
 
