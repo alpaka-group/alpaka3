@@ -696,7 +696,7 @@ namespace alpaka
          *
          * Returns always true
          */
-        constexpr bool operator==(Simd const& rhs) const
+        constexpr bool operator==(Simd const&) const
         {
             return true;
         }
@@ -706,7 +706,7 @@ namespace alpaka
          *
          * Returns always false
          */
-        constexpr bool operator!=(Simd const& rhs) const
+        constexpr bool operator!=(Simd const&) const
         {
             return false;
         }

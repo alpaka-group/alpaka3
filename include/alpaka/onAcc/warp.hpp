@@ -125,7 +125,7 @@ namespace alpaka::onAcc::warp
     }
 
     template<concepts::Acc T_Acc>
-    constexpr uint32_t getSize(T_Acc const& acc)
+    constexpr uint32_t getSize(T_Acc const&)
     {
         return T_Acc::getWarpSize();
     }

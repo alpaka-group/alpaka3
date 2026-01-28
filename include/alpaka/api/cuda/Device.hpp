@@ -32,6 +32,7 @@ namespace alpaka::onHost::internal
     {
         bool operator()(api::Cuda usedApi, T_DeviceKind deviceKind, T_Any const& view) const
         {
+            alpaka::unused(usedApi);
             using ApiInterface = ApiCudaRt;
             typename ApiInterface::PointerAttr_t ptrAttributes;
             ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(

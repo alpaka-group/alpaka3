@@ -10,10 +10,12 @@ alpaka::onHost::SharedBuffer otherSharedBuffer = alpaka::onHost::allocHost<int>(
 // BEGIN-DATASTORAGE-interface
 void func1(alpaka::concepts::IDataSource auto input)
 {
+    alpaka::unused(input);
 }
 
 void func2(alpaka::concepts::IView auto input)
 {
+    alpaka::unused(input);
 }
 
 int main()

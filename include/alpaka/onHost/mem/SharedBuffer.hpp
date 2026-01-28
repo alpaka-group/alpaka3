@@ -343,8 +343,9 @@ namespace alpaka::internal
         alpaka::concepts::Alignment T_MemAlignment>
     struct GetApi::Op<onHost::SharedBuffer<T_Api, T_Type, T_Extents, T_MemAlignment>>
     {
-        inline constexpr auto operator()(auto&& data) const
+        inline constexpr auto operator()(auto&& buffer) const
         {
+            alpaka::unused(buffer);
             return T_Api{};
         }
     };

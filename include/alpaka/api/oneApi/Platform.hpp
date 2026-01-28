@@ -86,6 +86,7 @@ namespace alpaka
         {
             decltype(auto) operator()(auto&& platform) const
             {
+                alpaka::unused(platform);
                 return api::OneApi{};
             }
         };
@@ -95,6 +96,7 @@ namespace alpaka
         {
             decltype(auto) operator()(auto&& platform) const
             {
+                alpaka::unused(platform);
                 return T_DeviceKind{};
             }
         };

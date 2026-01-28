@@ -19,6 +19,7 @@ namespace alpaka::onAcc::warp::internal
     {
         constexpr auto operator()(T_Acc const& acc, api::Host) const
         {
+            alpaka::unused(acc);
             return uint32_t{1u};
         }
     };
@@ -28,6 +29,7 @@ namespace alpaka::onAcc::warp::internal
     {
         constexpr auto operator()(T_Acc const& acc, api::Host) const
         {
+            alpaka::unused(acc);
             return uint32_t{0u};
         }
     };
@@ -37,6 +39,7 @@ namespace alpaka::onAcc::warp::internal
     {
         constexpr auto operator()(T_Acc const& acc, api::Host) const
         {
+            alpaka::unused(acc);
             return uint32_t{0u};
         }
     };
@@ -46,6 +49,7 @@ namespace alpaka::onAcc::warp::internal
     {
         constexpr bool operator()(T_Acc const& acc, api::Host, int32_t predicate) const
         {
+            alpaka::unused(acc);
             return predicate != 0;
         }
     };
@@ -55,6 +59,7 @@ namespace alpaka::onAcc::warp::internal
     {
         constexpr bool operator()(T_Acc const& acc, api::Host, int32_t predicate) const
         {
+            alpaka::unused(acc);
             return predicate != 0;
         }
     };
@@ -64,6 +69,7 @@ namespace alpaka::onAcc::warp::internal
     {
         constexpr auto operator()(T_Acc const& acc, api::Host, int32_t predicate) const
         {
+            alpaka::unused(acc);
             return predicate != 0 ? 1u : 0u;
         }
     };
@@ -73,6 +79,7 @@ namespace alpaka::onAcc::warp::internal
     {
         constexpr T operator()(T_Acc const& acc, api::Host, T const& value, uint32_t srcLane, uint32_t width) const
         {
+            alpaka::unused(acc, srcLane, width);
             return value;
         }
     };
@@ -82,6 +89,7 @@ namespace alpaka::onAcc::warp::internal
     {
         constexpr T operator()(T_Acc const& acc, api::Host, T const& value, uint32_t delta, uint32_t width) const
         {
+            alpaka::unused(acc, delta, width);
             return value;
         }
     };
@@ -91,6 +99,7 @@ namespace alpaka::onAcc::warp::internal
     {
         constexpr T operator()(T_Acc const& acc, api::Host, T const& value, uint32_t delta, uint32_t width) const
         {
+            alpaka::unused(acc, delta, width);
             return value;
         }
     };
@@ -100,6 +109,7 @@ namespace alpaka::onAcc::warp::internal
     {
         constexpr T operator()(T_Acc const& acc, api::Host, T const& value, uint32_t laneMask, uint32_t width) const
         {
+            alpaka::unused(acc, laneMask, width);
             return value;
         }
     };

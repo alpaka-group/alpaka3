@@ -78,7 +78,7 @@ struct RandomInitKernelUniform
             auto workGroup = alpaka::onAcc::WorkerGroup{seedVec, totalFrameExtens};
 
             // Iterate over the workgroup
-            for(auto [index] : alpaka::onAcc::makeIdxMap(acc, workGroup, alpaka::IdxRange{size}))
+            for([[maybe_unused]] auto [index] : alpaka::onAcc::makeIdxMap(acc, workGroup, alpaka::IdxRange{size}))
             {
                 // Generate numbers in [0,1). Philox engine already generates uniform random numbers but they are
                 // integers.
@@ -124,7 +124,7 @@ struct RandomInitKernel
 
 
             // Iterate over the workgroup
-            for(auto [index] : alpaka::onAcc::makeIdxMap(acc, workGroup, alpaka::IdxRange{size}))
+            for([[maybe_unused]] auto [index] : alpaka::onAcc::makeIdxMap(acc, workGroup, alpaka::IdxRange{size}))
             {
                 // Generate a random 32-bit unsigned integer
                 uint32_t val = engine();

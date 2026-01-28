@@ -278,6 +278,7 @@ namespace alpaka::onHost
                 T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
             {
+                alpaka::unused(device, executor, dataBlocking, kernelBundle);
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel);
                 /// @todo add shortcut to create a CVec with equal values
                 auto const allOne
@@ -291,6 +292,7 @@ namespace alpaka::onHost
                 T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const
             {
+                alpaka::unused(device, executor, dataBlocking, kernelBundle);
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel);
                 /// @todo add shortcut to create a CVec with equal values
                 auto const allOne
@@ -315,6 +317,7 @@ namespace alpaka::onHost
                 T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
             {
+                alpaka::unused(device, executor, kernelBundle);
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel);
                 auto numThreadBlocks = dataBlocking.getThreadSpec().m_numBlocks;
                 return ThreadSpec{numThreadBlocks, T_NumThreads::template fill<1u>()};
@@ -326,6 +329,7 @@ namespace alpaka::onHost
                 T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const
             {
+                alpaka::unused(device, executor, kernelBundle);
                 ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::kernel);
                 auto numThreadBlocks = dataBlocking.getThreadSpec().m_numBlocks;
                 auto const numThreads = Vec<typename T_NumThreads::type, T_NumThreads::dim()>::fill(1);

@@ -99,7 +99,7 @@ namespace alpaka::onHost
 
             friend struct onHost::internal::GetNativeHandle;
 
-            [[nodiscard]] uint32_t getNativeHandle() const noexcept
+            [[nodiscard]] int getNativeHandle() const noexcept
             {
                 return m_idx;
             }
@@ -229,7 +229,6 @@ namespace alpaka::onHost
                     ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(ApiInterface, ApiInterface::malloc3D(&pitchedPtrVal, extentVal));
 
                     ptr = reinterpret_cast<T_Type*>(pitchedPtrVal.ptr);
-                    Idx rowPitchInBytes = pitchedPtrVal.pitch;
                     pitches = alpaka::calculatePitches<T_Type>(extents, static_cast<Idx>(pitchedPtrVal.pitch));
                 }
 
@@ -382,10 +381,10 @@ namespace alpaka::onHost
             using T_NumThreads = T_FrameSpec::ThreadExtentsVecType;
 
             auto operator()(
-                unifiedCudaHip::Device<T_Platform> const& device,
-                T_Executor const& executor,
+                unifiedCudaHip::Device<T_Platform> const&,
+                T_Executor const&,
                 T_FrameSpec const& dataBlocking,
-                T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
+                T_KernelBundle const&) const requires alpaka::concepts::CVector<T_NumThreads>
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::device);
                 auto numThreads = dataBlocking.getThreadSpec().m_numThreads;
@@ -403,9 +402,9 @@ namespace alpaka::onHost
 
             auto operator()(
                 unifiedCudaHip::Device<T_Platform> const& device,
-                T_Executor const& executor,
+                T_Executor const&,
                 T_FrameSpec const& dataBlocking,
-                T_KernelBundle const& kernelBundle) const
+                T_KernelBundle const&) const
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::device);
                 auto numThreadsPerBlocks = dataBlocking.getThreadSpec().m_numThreads;

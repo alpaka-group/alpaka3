@@ -116,6 +116,7 @@ namespace alpaka
             template<uint32_t T_simdWidth>
             constexpr auto load(auto&& linearIdxGenerator, T_MdSpanAlignment alignment, T_Idx const& idx) const
             {
+                alpaka::unused(alignment);
                 static_assert(
                     std::is_same_v<LinearizedIdxGenerator<T_IndexType, T_dim>, ALPAKA_TYPEOF(linearIdxGenerator)>,
                     "Type of linearIdxGenerator must match the class template signature.");

@@ -25,7 +25,7 @@ TEST_CASE("vector 1D", "[docs]")
     // END-TUTORIAL-vectorCreation
 
     static_assert(std::is_same_v<ALPAKA_TYPEOF(vec0), ALPAKA_TYPEOF(vec1)>);
-    alpaka::unused(vec2);
+    alpaka::unused(vec0, vec1, vec2);
 
     // BEGIN-TUTORIAL-vectorCreationCast
     // explicit type conversion from double to unsigned int
@@ -38,6 +38,7 @@ TEST_CASE("vector 1D", "[docs]")
     auto vec4 = Vec<uint32_t, 1u>{42u};
     static_assert(vec4.dim() == 1u);
     // END-TUTORIAL-vectorDim
+    alpaka::unused(vec3, vec4);
 }
 
 TEST_CASE("vector 3D", "[docs]")

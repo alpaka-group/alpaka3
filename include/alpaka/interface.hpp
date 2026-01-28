@@ -8,6 +8,7 @@
 #include "alpaka/internal/interface.hpp"
 #include "alpaka/tag.hpp"
 #include "alpaka/trait.hpp"
+#include "alpaka/unused.hpp"
 
 namespace alpaka
 {
@@ -100,16 +101,6 @@ namespace alpaka
     constexpr auto getAlignment(auto&& any)
     {
         return internal::getAlignment(ALPAKA_FORWARD(any));
-    }
-
-    /** Utility to mark variables as unused to avoid compiler warnings
-     *
-     * Using '[[maybe_unused]]` in function interfaces for arguments make the interface long and sometimes it is not
-     * important that only the argument type is used within the function and not the instance itself.
-     * This can be used to keep the function interfaces clean and readable.
-     */
-    inline constexpr void unused([[maybe_unused]] auto&&... values)
-    {
     }
 
 } // namespace alpaka

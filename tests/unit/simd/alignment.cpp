@@ -22,26 +22,26 @@ struct SimdAlignment
     {
         using namespace alpaka;
 
-        constexpr auto s1 = Simd{3, 7, 4};
+        [[maybe_unused]] constexpr auto s1 = Simd{3, 7, 4};
         static_assert(alignof(ALPAKA_TYPEOF(s1)) == 4u);
 
-        constexpr auto s2 = Simd<double, 3u>{3., 7., 4.};
+        [[maybe_unused]] constexpr auto s2 = Simd<double, 3u>{3., 7., 4.};
         static_assert(alignof(ALPAKA_TYPEOF(s2)) == 8u);
 
         constexpr auto v1 = Vec{1.f, 2.f, 3.f};
-        constexpr auto s3 = Simd{v1, v1, v1, v1};
+        [[maybe_unused]] constexpr auto s3 = Simd{v1, v1, v1, v1};
         static_assert(alignof(ALPAKA_TYPEOF(v1)) == 4u);
         static_assert(alignof(ALPAKA_TYPEOF(s3)) == 4u);
 
         constexpr auto v2 = Vec{1.f, 2.f};
-        constexpr auto s4 = Simd{v2, v2, v2};
+        [[maybe_unused]] constexpr auto s4 = Simd{v2, v2, v2};
         static_assert(alignof(ALPAKA_TYPEOF(v2)) == 4u);
         static_assert(alignof(ALPAKA_TYPEOF(s4)) == 4u);
 
-        constexpr auto s5 = Simd{v2, v2, v2, v2};
+        [[maybe_unused]] constexpr auto s5 = Simd{v2, v2, v2, v2};
         static_assert(alignof(ALPAKA_TYPEOF(s5)) == 32u);
 
-        constexpr auto s6 = Simd{v2, v2, v2, v2, v2};
+        [[maybe_unused]] constexpr auto s6 = Simd{v2, v2, v2, v2, v2};
         static_assert(alignof(ALPAKA_TYPEOF(s6)) == 4u);
 
         struct Foo

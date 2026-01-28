@@ -25,6 +25,7 @@ namespace alpaka::onHost::logger
         concepts::Level auto logLvl,
         std::source_location const& location = std::source_location::current())
     {
+        alpaka::unused(logLvl, location);
 #if defined(ALPAKA_LOG_STATIC)
         if constexpr(logLvl.mask() & ALPAKA_LOG_STATIC_LVL_MASK)
             return internal::Scoped{logLvl, location};
@@ -62,6 +63,7 @@ namespace alpaka::onHost::logger
         auto const& callable,
         std::source_location const& location = std::source_location::current())
     {
+        alpaka::unused(logLvl, callable, location);
 #if defined(ALPAKA_LOG_STATIC)
         if constexpr(logLvl.mask() & ALPAKA_LOG_STATIC_LVL_MASK)
             internal::Info{logLvl, callable, location};

@@ -53,12 +53,15 @@ namespace alpaka::onHost
         {
             BlockDynSharedMemBytes(T_Kernel kernel, T_Spec spec)
             {
+                alpaka::unused(kernel, spec);
             }
 
             // requires (false) is disabling the function if you specialize these traits remove the require statement.
             // Disabling is required to enable the trait evaluation only in cases where the user is defining the trait.
-            uint32_t operator()(auto const executor, auto const&... args) const requires(false)
+            uint32_t operator()(alpaka::concepts::Executor auto const executor, auto const&... args) const
+                requires(false)
             {
+                alpaka::unused(executor, args...);
                 return 0;
             }
         };
@@ -76,6 +79,7 @@ namespace alpaka::onHost
                 T_ThreadSpec const spec,
                 [[maybe_unused]] T_KernelBundle const& kernelBundle) const
             {
+                alpaka::unused(executor, spec);
                 return 0u;
             }
         };
@@ -184,6 +188,7 @@ namespace alpaka::onHost
         T_ThreadSpec spec,
         T_KernelBundle const& kernelBundle)
     {
+        alpaka::unused(executor, spec, kernelBundle);
         return trait::HasUserDefinedDynSharedMemBytes<T_Executor, T_ThreadSpec, T_KernelBundle>::value;
     }
 

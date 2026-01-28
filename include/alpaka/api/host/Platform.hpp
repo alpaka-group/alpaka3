@@ -114,6 +114,7 @@ namespace alpaka::onHost
         {
             DeviceProperties operator()(cpu::Platform<T_DeviceKind> const& platform, uint32_t deviceIdx) const
             {
+                alpaka::unused(platform, deviceIdx);
                 ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::device);
                 auto prop = DeviceProperties{};
                 prop.name = getCpuName();
@@ -136,6 +137,7 @@ namespace alpaka::internal
     {
         inline constexpr auto operator()(auto&& platform) const
         {
+            alpaka::unused(platform);
             return api::Host{};
         }
     };

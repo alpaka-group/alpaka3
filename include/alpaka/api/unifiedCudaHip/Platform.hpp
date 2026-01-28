@@ -74,7 +74,7 @@ namespace alpaka::onHost
                     if(error != ApiInterface::success)
                         numDevices = 0;
 
-                    if(devices.size() < numDevices)
+                    if(devices.size() < static_cast<size_t>(numDevices))
                     {
                         std::lock_guard<std::mutex> lk{deviceGuard};
                         devices.resize(numDevices);
@@ -120,7 +120,7 @@ namespace alpaka::onHost
         struct GetDeviceProperties::Op<unifiedCudaHip::Platform<T_ApiInterface, T_DeviceKind>>
         {
             DeviceProperties operator()(
-                unifiedCudaHip::Platform<T_ApiInterface, T_DeviceKind> const& platform,
+                unifiedCudaHip::Platform<T_ApiInterface, T_DeviceKind> const&,
                 uint32_t deviceIdx) const
             {
                 ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::device);

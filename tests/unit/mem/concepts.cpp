@@ -95,7 +95,7 @@ TEMPLATE_TEST_CASE_SIG(
     SECTION("test alpaka::LinearizedIdxGenerator object")
     {
         using GenType = alpaka::LinearizedIdxGenerator<uint32_t, Dim>;
-        GenType gen(extents);
+        [[maybe_unused]] GenType gen(extents);
         STATIC_REQUIRE(std::same_as<typename GenType::value_type, uint32_t>);
 
         STATIC_REQUIRE(alpaka::concepts::IDataSource<GenType>);

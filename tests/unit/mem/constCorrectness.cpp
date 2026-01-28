@@ -102,8 +102,8 @@ TEST_CASE("mdspan inner const move operator", "[mem][mdspan][correctness][moveCo
     MutMdSpan copy_mut_mdspan(ptr, extents, pitches);
     ConstMdSpan copy_const_mdspan(const_ptr, extents, pitches);
 
-    MutMdSpan copy_mut_mdspan2(std::move(copy_mut_mdspan));
-    ConstMdSpan copy_const_mdspan2(std::move(copy_const_mdspan));
+    [[maybe_unused]] MutMdSpan copy_mut_mdspan2(std::move(copy_mut_mdspan));
+    [[maybe_unused]] ConstMdSpan copy_const_mdspan2(std::move(copy_const_mdspan));
     [[maybe_unused]] ConstMdSpan copy_const_mdspan3(std::move(copy_mut_mdspan2));
     // should not compile
     // MutMdSpan copy_mut_mdspan3(std::move(copy_const_mdspan3));
@@ -251,7 +251,7 @@ TEST_CASE(
     ConstMdSpanArray constr_const_md(const_static_data);
 
     MutMdSpanArray constr_mut_md2(std::move(constr_mut_md));
-    ConstMdSpanArray constr_const_md2(std::move(constr_const_md));
+    [[maybe_unused]] ConstMdSpanArray constr_const_md2(std::move(constr_const_md));
     [[maybe_unused]] ConstMdSpanArray constr_const_md3(std::move(constr_mut_md2));
     // should not compile
     // MutMdSpanArray constr_mut_md3(std::move(constr_const_md3));
@@ -338,7 +338,7 @@ TEST_CASE("View inner const move constructor and move assignment operator", "[me
     ConstView construct_const_view(api::host, const_ptr, extents, pitches);
 
     MutView construct_mut_view2(std::move(construct_mut_view));
-    ConstView construct_const_view2(std::move(construct_const_view));
+    [[maybe_unused]] ConstView construct_const_view2(std::move(construct_const_view));
     [[maybe_unused]] ConstView construct_const_view3(std::move(construct_mut_view2));
     // should not compile
     // MutView construct_mut_view3(std::move(construct_const_view3));

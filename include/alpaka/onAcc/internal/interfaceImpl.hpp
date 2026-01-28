@@ -15,7 +15,7 @@ namespace alpaka::onAcc
 {
     namespace internalCompute
     {
-        template<typename T_Acc>
+        template<concepts::Acc T_Acc>
         struct GetIdxWithin::Op<T_Acc, ALPAKA_TYPEOF(origin::warp), ALPAKA_TYPEOF(unit::threads)>
         {
             constexpr alpaka::concepts::Vector<uint32_t, 1u> auto operator()(
@@ -39,7 +39,7 @@ namespace alpaka::onAcc
             }
         };
 
-        template<typename T_Acc>
+        template<concepts::Acc T_Acc>
         struct GetIdxWithin::Op<T_Acc, ALPAKA_TYPEOF(origin::block), ALPAKA_TYPEOF(unit::warps)>
         {
             constexpr alpaka::concepts::Vector<uint32_t, 1u> auto operator()(
@@ -63,7 +63,7 @@ namespace alpaka::onAcc
             }
         };
 
-        template<typename T_Acc>
+        template<concepts::Acc T_Acc>
         struct GetIdxWithin::Op<T_Acc, ALPAKA_TYPEOF(origin::grid), ALPAKA_TYPEOF(unit::warps)>
         {
             constexpr alpaka::concepts::Vector<uint32_t, 1u> auto operator()(
@@ -78,7 +78,7 @@ namespace alpaka::onAcc
             }
         };
 
-        template<typename T_Acc>
+        template<concepts::Acc T_Acc>
         struct GetIdxWithin::Op<T_Acc, ALPAKA_TYPEOF(origin::grid), ALPAKA_TYPEOF(unit::blocks)>
         {
             constexpr alpaka::concepts::Vector auto operator()(
@@ -90,7 +90,7 @@ namespace alpaka::onAcc
             }
         };
 
-        template<typename T_Acc>
+        template<concepts::Acc T_Acc>
         struct GetExtentsOf::Op<T_Acc, ALPAKA_TYPEOF(origin::warp), ALPAKA_TYPEOF(unit::threads)>
         {
             constexpr alpaka::concepts::CVector<uint32_t> auto operator()(
@@ -98,11 +98,12 @@ namespace alpaka::onAcc
                 ALPAKA_TYPEOF(origin::warp),
                 ALPAKA_TYPEOF(unit::threads)) const
             {
+                alpaka::unused(acc);
                 return alpaka::CVec<uint32_t, T_Acc::getWarpSize()>{};
             }
         };
 
-        template<typename T_Acc>
+        template<concepts::Acc T_Acc>
         struct GetExtentsOf::Op<T_Acc, ALPAKA_TYPEOF(origin::block), ALPAKA_TYPEOF(unit::threads)>
         {
             constexpr alpaka::concepts::Vector auto operator()(
@@ -114,7 +115,7 @@ namespace alpaka::onAcc
             }
         };
 
-        template<typename T_Acc>
+        template<concepts::Acc T_Acc>
         struct GetExtentsOf::Op<T_Acc, ALPAKA_TYPEOF(origin::block), ALPAKA_TYPEOF(unit::warps)>
         {
             constexpr alpaka::concepts::Vector<alpaka::NotRequired, 1u> auto operator()(
@@ -129,7 +130,7 @@ namespace alpaka::onAcc
             }
         };
 
-        template<typename T_Acc>
+        template<concepts::Acc T_Acc>
         struct GetExtentsOf::Op<T_Acc, ALPAKA_TYPEOF(origin::grid), ALPAKA_TYPEOF(unit::blocks)>
         {
             constexpr alpaka::concepts::Vector auto operator()(
@@ -141,7 +142,7 @@ namespace alpaka::onAcc
             }
         };
 
-        template<typename T_Acc>
+        template<concepts::Acc T_Acc>
         struct GetExtentsOf::Op<T_Acc, ALPAKA_TYPEOF(origin::grid), ALPAKA_TYPEOF(unit::warps)>
         {
             constexpr alpaka::concepts::Vector<alpaka::NotRequired, 1u> auto operator()(
@@ -157,7 +158,7 @@ namespace alpaka::onAcc
             }
         };
 
-        template<typename T_Acc>
+        template<concepts::Acc T_Acc>
         struct GetExtentsOf::Op<T_Acc, ALPAKA_TYPEOF(origin::grid), ALPAKA_TYPEOF(unit::threads)>
         {
             constexpr alpaka::concepts::Vector auto operator()(

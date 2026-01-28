@@ -7,6 +7,7 @@
 #include "alpaka/core/PP.hpp"
 #include "alpaka/core/Tag.hpp"
 #include "alpaka/core/util.hpp"
+#include "alpaka/unused.hpp"
 
 #include <cassert>
 #include <string>
@@ -287,6 +288,7 @@ namespace alpaka
     template<typename T_Exec>
     consteval bool isSeqExecutor(T_Exec exec)
     {
+        alpaka::unused(exec);
         return exec::isSeqExecutor_v<T_Exec>;
     }
 } // namespace alpaka

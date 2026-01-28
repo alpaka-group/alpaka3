@@ -137,6 +137,7 @@ struct TestWithMdSpan
             extentMd,
             [&](auto idx)
             {
+                alpaka::unused(idx);
                 result = std::get<1>(setup).second(result, std::get<2>(setup).second(refIotaCounter, refIotaCounter));
                 ++refIotaCounter;
             });

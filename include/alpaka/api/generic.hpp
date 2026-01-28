@@ -50,7 +50,7 @@ namespace alpaka::internal::generic
             simdGrid.concurrent(
                 acc,
                 dest.getExtents(),
-                [value](auto const& acc, auto destSimdPtr) constexpr
+                [value](onAcc::concepts::Acc auto const&, auto destSimdPtr) constexpr
                 {
                     using SimdType = ALPAKA_TYPEOF(destSimdPtr.load());
                     destSimdPtr = SimdType::fill(value);

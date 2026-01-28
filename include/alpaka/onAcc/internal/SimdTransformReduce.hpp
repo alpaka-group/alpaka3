@@ -31,7 +31,7 @@ namespace alpaka::onAcc::internal
     protected:
         template<uint32_t T_maxConcurrencyInByte, alpaka::concepts::Alignment T_MemAlignment = AutoAligned>
         ALPAKA_FN_INLINE ALPAKA_FN_ACC constexpr auto transformReduce(
-            auto const& acc,
+            concepts::Acc auto const& acc,
             alpaka::concepts::Vector auto extents,
             auto const& neutralElement,
             auto&& reduceFunc,
@@ -93,7 +93,7 @@ namespace alpaka::onAcc::internal
     private:
         template<alpaka::concepts::Alignment T_MemAlignment, uint32_t T_width>
         ALPAKA_FN_INLINE static constexpr auto executeDoTransform(
-            auto const& acc,
+            concepts::Acc auto const& acc,
             auto const& dataIdx,
             auto&& func,
             alpaka::concepts::IDataSource auto&&... data)
@@ -110,7 +110,7 @@ namespace alpaka::onAcc::internal
          */
         template<alpaka::concepts::Alignment T_MemAlignment, uint32_t T_width, uint32_t... T_repeat>
         ALPAKA_FN_INLINE static constexpr auto executeReduce(
-            auto const& acc,
+            concepts::Acc auto const& acc,
             auto& iter,
             std::integer_sequence<uint32_t, T_repeat...>,
             auto&& reduceFunc,
@@ -164,8 +164,13 @@ namespace alpaka::onAcc::internal
             {
                 return loadAncExecuteScalarOp(
                     std::make_integer_sequence<uint32_t, ALPAKA_TYPEOF(a)::width()>{},
-                    [this](alpaka::concepts::CVector auto idx, auto const& acc, auto&& func, auto&&... data) constexpr
+                    [this](
+                        alpaka::concepts::CVector auto idx,
+                        concepts::Acc auto const& acc,
+                        auto&& func,
+                        auto&&... data) constexpr
                     {
+                        alpaka::unused(acc, func, data...);
                         // recursively call until no Simd type is the result
                         return this->operator()(data[idx.x()]...);
                     },

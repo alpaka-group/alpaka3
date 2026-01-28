@@ -6,6 +6,7 @@
 
 #include "alpaka/onHost/demangledName.hpp"
 #include "alpaka/onHost/logger/lvl.hpp"
+#include "alpaka/unused.hpp"
 
 #include <atomic>
 #include <chrono>
@@ -131,6 +132,7 @@ namespace alpaka::onHost::logger::internal
 
         Scoped(T_LogLvl logLvl) : m_writer{T_Writer::get()}, m_enableOutput{false}
         {
+            alpaka::unused(logLvl);
         }
 
         Scoped(Scoped const&) = delete;

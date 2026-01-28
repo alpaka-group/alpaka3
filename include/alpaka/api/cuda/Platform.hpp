@@ -38,6 +38,7 @@ namespace alpaka::internal
     {
         inline constexpr auto operator()(auto&& platform) const
         {
+            alpaka::unused(platform);
             return api::Cuda{};
         }
     };
@@ -47,6 +48,7 @@ namespace alpaka::internal
     {
         decltype(auto) operator()(auto&& platform) const
         {
+            alpaka::unused(platform);
             return T_DeviceKind{};
         }
     };

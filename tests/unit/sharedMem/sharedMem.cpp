@@ -171,10 +171,12 @@ namespace alpaka::onHost::trait
     {
         BlockDynSharedMemBytes(DynSharedMemTrait const& kernel, T_Spec const& spec)
         {
+            alpaka::unused(kernel, spec);
         }
 
         uint32_t operator()(auto const executor, auto const&... args) const
         {
+            alpaka::unused(executor, args...);
             return 32;
         }
     };

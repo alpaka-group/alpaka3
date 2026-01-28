@@ -24,6 +24,7 @@ namespace alpaka
         {
             inline constexpr auto operator()(auto&& stdVector) const
             {
+                alpaka::unused(stdVector);
                 return api::Host{};
             }
         };
@@ -32,8 +33,9 @@ namespace alpaka
         template<typename T_Type, size_t T_size>
         struct GetApi::Op<std::array<T_Type, T_size>>
         {
-            inline constexpr auto operator()(auto&& srdArray) const
+            inline constexpr auto operator()(auto&& stdArray) const
             {
+                alpaka::unused(stdArray);
                 return thisApi();
             }
         };
@@ -46,6 +48,7 @@ namespace alpaka
         {
             decltype(auto) operator()(auto&& stdVector) const
             {
+                alpaka::unused(stdVector);
                 return Vec{stdVector.size()};
             }
         };
@@ -53,8 +56,9 @@ namespace alpaka
         template<typename T_Type, size_t T_size>
         struct GetExtents::Op<std::array<T_Type, T_size>>
         {
-            decltype(auto) operator()(auto&& stdVector) const
+            decltype(auto) operator()(auto&& stdArray) const
             {
+                alpaka::unused(stdArray);
                 return CVec<size_t, T_size>{};
             }
         };
@@ -64,6 +68,7 @@ namespace alpaka
         {
             decltype(auto) operator()(auto&& stdVector) const
             {
+                alpaka::unused(stdVector);
                 return Vec{sizeof(T_Type)};
             }
         };
@@ -71,8 +76,9 @@ namespace alpaka
         template<typename T_Type, size_t T_size>
         struct GetPitches::Op<std::array<T_Type, T_size>>
         {
-            decltype(auto) operator()(auto&& stdVector) const
+            decltype(auto) operator()(auto&& stdArray) const
             {
+                alpaka::unused(stdArray);
                 return CVec<size_t, sizeof(T_Type)>{};
             }
         };
