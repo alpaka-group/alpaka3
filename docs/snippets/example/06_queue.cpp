@@ -15,7 +15,7 @@ TEST_CASE("non blocking queue", "[docs]")
     auto device = onHost::makeHostDevice();
 
     // BEGIN-TUTORIAL-nonBlockingQueue
-    // Getting a non-blocking queue
+    // Creating a non-blocking queue
     onHost::Queue queue = device.makeQueue(queueKind::nonBlocking);
     uint32_t value = 42u;
     queue.enqueueHostFn([&value]() { value = 23; });
@@ -29,7 +29,7 @@ TEST_CASE("blocking queue", "[docs]")
     auto device = onHost::makeHostDevice();
 
     // BEGIN-TUTORIAL-blockingQueue
-    // Getting a blocking queue
+    // Creating a blocking queue
     onHost::Queue queue = device.makeQueue(queueKind::blocking);
     uint32_t value = 42u;
     queue.enqueueHostFn([&value]() { value = 23u; });
