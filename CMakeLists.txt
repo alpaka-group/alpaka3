@@ -108,6 +108,7 @@ install(
         "${_alpaka_ROOT_DIR}/cmake/alpakaOneApi.cmake"
         "${_alpaka_ROOT_DIR}/cmake/buildDependencies.cmake"
         "${_alpaka_ROOT_DIR}/cmake/common.cmake"
+        "${_alpaka_ROOT_DIR}/cmake/alpakaCompilePedantic.cmake"
         "${PROJECT_BINARY_DIR}/alpakaConfigVersion.cmake"
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/alpaka
 )

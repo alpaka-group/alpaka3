@@ -133,6 +133,13 @@ Arguments
 
      Set flush to zero for GPU.
 
+``alpaka_COMPILE_PEDANTIC``
+  .. code-block:: markdown
+
+     If `ON` strict compile flags will be used which we apply typically only in the CI.
+     Enables `-Wall`, '-Werror`, ...
+
+
 ``alpaka_RELOCATABLE_DEVICE_CODE``
   .. code-block:: markdown
 
@@ -142,7 +149,7 @@ Arguments
      CMake scope where `alpaka_RELOCATABLE_DEVICE_CODE` is set. For the
      effects on CUDA code see NVIDIA's blog post:
 
-https://developer.nvidia.com/blog/separate-compilation-linking-cuda-device-code/
+  https://developer.nvidia.com/blog/separate-compilation-linking-cuda-device-code/
 
 CUDA
 ^^^^
