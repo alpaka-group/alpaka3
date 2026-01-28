@@ -78,6 +78,7 @@ namespace alpaka
         template<typename T_UnaryOp, typename T, T... T_values>
         [[nodiscard]] constexpr auto filterValues(T_UnaryOp const op, std::integer_sequence<T, T_values...> _)
         {
+            alpaka::unused(_);
             return concatenate(selectValue<op(T_values), T, T_values>{}...);
         }
 
@@ -151,8 +152,7 @@ namespace alpaka
     template<typename T, uint32_t T_dim, T T_val>
     [[nodiscard]] consteval auto fillCVec()
     {
-        auto concatCVec
-            = []<T... T_values>(CVec<T, T_values...> cvec) -> auto { return CVec<T, T_values..., T_val>{}; };
+        auto concatCVec = []<T... T_values>(CVec<T, T_values...>) -> auto { return CVec<T, T_values..., T_val>{}; };
 
         static_assert(T_dim > 0);
         if constexpr(T_dim == 1)

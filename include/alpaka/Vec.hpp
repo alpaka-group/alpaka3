@@ -8,6 +8,7 @@
 #include "alpaka/core/common.hpp"
 #include "alpaka/core/util.hpp"
 #include "alpaka/trait.hpp"
+#include "unused.hpp"
 
 #include <array>
 #include <concepts>
@@ -111,14 +112,6 @@ namespace alpaka
 
     namespace detail
     {
-        struct GetValue
-        {
-            constexpr auto operator()(auto idx, auto value) const
-            {
-                return value;
-            }
-        };
-
         template<typename T, T... T_values>
         struct CVec
         {
@@ -728,7 +721,7 @@ namespace alpaka
          *
          * Returns always true
          */
-        constexpr bool operator==(Vec const& rhs) const
+        constexpr bool operator==(Vec const&) const
         {
             return true;
         }
@@ -738,7 +731,7 @@ namespace alpaka
          *
          * Returns always false
          */
-        constexpr bool operator!=(Vec const& rhs) const
+        constexpr bool operator!=(Vec const&) const
         {
             return false;
         }
@@ -888,14 +881,14 @@ namespace alpaka
      */
     template<std::integral T_IntegralType, typename T_Storage, uint32_t T_dim>
     constexpr Vec<T_IntegralType, T_dim> mapToND(
-        Vec<T_IntegralType, T_dim, T_Storage> const& dim,
+        Vec<T_IntegralType, T_dim, T_Storage> const& extents,
         T_IntegralType linearIdx) requires(T_dim >= 2u)
     {
         constexpr uint32_t reducedDim = T_dim - 1u;
         Vec<T_IntegralType, reducedDim> pitchExtents;
-        pitchExtents.back() = dim.back();
+        pitchExtents.back() = extents.back();
         for(uint32_t d = 1u; d < T_dim - 1u; ++d)
-            pitchExtents[reducedDim - 1u - d] = dim[T_dim - 1u - d] * pitchExtents[reducedDim - d];
+            pitchExtents[reducedDim - 1u - d] = extents[T_dim - 1u - d] * pitchExtents[reducedDim - d];
 
         Vec<T_IntegralType, T_dim> result;
         for(uint32_t d = 0u; d < T_dim - 1u; ++d)
@@ -908,10 +901,11 @@ namespace alpaka
     }
 
     template<std::integral T_IntegralType, typename T_Storage>
-    ALPAKA_FN_HOST_ACC Vec<T_IntegralType, 1u> mapToND(
-        Vec<T_IntegralType, 1u, T_Storage> const& dim,
+    constexpr Vec<T_IntegralType, 1u> mapToND(
+        Vec<T_IntegralType, 1u, T_Storage> const& extents,
         T_IntegralType linearIdx)
     {
+        alpaka::unused(extents);
         return {linearIdx};
     }
 

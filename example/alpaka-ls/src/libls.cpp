@@ -50,6 +50,7 @@ void forEachDeviceType(auto const deviceSpec)
 
 extern "C" int alpaka_main(int argc, char* argv[])
 {
+    alpaka::unused(argc, argv);
     concepts::Api auto usedApi = api::ALPAKA_USE_API{};
 
 

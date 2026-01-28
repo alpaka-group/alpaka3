@@ -29,12 +29,5 @@ target_link_libraries(${_TARGET_NAME} PRIVATE Catch2::Catch2WithMain)
 set_target_properties(${_TARGET_NAME} PROPERTIES FOLDER benchmarks/babelstream)
 
 #Run as a ctest
-if(alpaka_CI)
-    # Only run for release builds since this is a benchmark
-    if(CMAKE_BUILD_TYPE STREQUAL "Release")
-        add_test(NAME ${_TARGET_NAME} COMMAND ${_TARGET_NAME})
-    endif()
-else()
-    # For a normal benchmark test, number of samples should be equal to the default value.
-    add_test(NAME ${_TARGET_NAME} COMMAND ${_TARGET_NAME})
-endif()
+# For a normal benchmark test, number of samples should be equal to the default value.
+add_test(NAME ${_TARGET_NAME} COMMAND ${_TARGET_NAME})

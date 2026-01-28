@@ -52,7 +52,7 @@ namespace mathtest
             typename TAcc,                                                                                            \
             typename... TArgs, /* SFINAE: Enables if called from device. */                                           \
             typename std::enable_if_t<!std::is_same_v<TAcc, std::nullptr_t>, int> = 0>                                \
-        ALPAKA_FN_ACC auto execute(TAcc const& acc, TArgs const&... args) const                                       \
+        ALPAKA_FN_ACC auto execute(TAcc const&, TArgs const&... args) const                                           \
         {                                                                                                             \
             return ALPAKA_OP(args...);                                                                                \
         }                                                                                                             \

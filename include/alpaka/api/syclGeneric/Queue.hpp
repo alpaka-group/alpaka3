@@ -288,6 +288,7 @@ namespace alpaka::onHost
             [[maybe_unused]] sycl::event ev = queue.m_queue.submit(
                 [&queue, task](sycl::handler& cgh)
                 {
+                    alpaka::unused(cgh);
                     auto f = queue.m_callBackThread.submit([t = std::move(task)] { t(); });
                     f.wait();
                 });
@@ -307,6 +308,7 @@ namespace alpaka::onHost
             [[maybe_unused]] sycl::event ev = queue.m_queue.submit(
                 [queueDependency, task](sycl::handler& cgh)
                 {
+                    alpaka::unused(cgh);
                     cgh.host_task([queueDependency, task]()
                                   { queueDependency.get()->m_callBackThread.submit([t = std::move(task)] { t(); }); });
                 });

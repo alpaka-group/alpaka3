@@ -51,6 +51,7 @@ namespace alpaka::onAcc::internalCompute
     {
         __device__ decltype(auto) operator()(auto const& acc) const
         {
+            alpaka::unused(acc);
             // Because unaligned access to variables is not allowed in device code,
             // we use the widest possible alignment supported by CUDA types to have
             // all types aligned correctly.
@@ -68,6 +69,7 @@ namespace alpaka::onAcc::internalCompute
     {
         __device__ decltype(auto) operator()(auto const& acc) const
         {
+            alpaka::unused(acc);
             __shared__ uint8_t shMem alignas(alignof(T))[sizeof(T)];
             return *(reinterpret_cast<T*>(shMem));
         }

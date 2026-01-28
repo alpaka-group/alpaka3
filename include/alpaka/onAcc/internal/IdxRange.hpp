@@ -31,6 +31,7 @@ namespace alpaka::onAcc::internal
     {
         constexpr IdxRangeLazy(T_Origin const& origin, T_Unit const& unit, T_MultiDimensional = T_MultiDimensional{})
         {
+            alpaka::unused(origin, unit);
         }
 
         constexpr auto getIdxRange(auto const& acc) const

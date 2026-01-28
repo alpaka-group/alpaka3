@@ -28,7 +28,7 @@ using TestApis = std::decay_t<decltype(allBackends(enabledApis, exec::enabledExe
 template<typename T_LoopIdxType>
 struct IotaKernelND
 {
-    ALPAKA_FN_ACC void operator()(auto const& acc, auto out, auto outSize) const
+    ALPAKA_FN_ACC void operator()(auto const& acc, auto out) const
     {
         using MemScalarType = typename alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>::type;
         for(auto i : onAcc::makeIdxMap<T_LoopIdxType>(acc, onAcc::worker::threadsInGrid, IdxRange{out.getExtents()}))
@@ -56,7 +56,7 @@ void iotaTest(auto& queue, auto exec, auto const extents, auto frameSize)
     queue.enqueue(
         exec,
         FrameSpec{pCast<KenelIdxScalarType>(extents) / frameSize, frameSize},
-        KernelBundle{IotaKernelND<T_LoopIdxType>{}, dBuff, extents});
+        KernelBundle{IotaKernelND<T_LoopIdxType>{}, dBuff});
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);
 

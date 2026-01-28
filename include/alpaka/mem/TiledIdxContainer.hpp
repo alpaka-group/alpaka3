@@ -86,7 +86,7 @@ namespace alpaka::onAcc
             : m_idxRange(idxRange)
             , m_threadSpace{threadSpace}
         {
-            //  std::cout << "iter:" << m_idxRange.toString() << " " << m_threadSpace.toString() << std::endl;
+            alpaka::unused(idxMapping);
         }
 
         constexpr TiledIdxContainer(TiledIdxContainer const&) = default;

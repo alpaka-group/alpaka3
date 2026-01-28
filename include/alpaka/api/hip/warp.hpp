@@ -19,7 +19,7 @@ namespace alpaka::onAcc::warp::internal
     template<alpaka::onAcc::concepts::Acc T_Acc>
     struct Activemask::Op<T_Acc, api::Hip>
     {
-        constexpr __device__ auto operator()(T_Acc const& acc, api::Hip) const
+        constexpr __device__ auto operator()(T_Acc const&, api::Hip) const
         {
             return __ballot(1u);
         }
@@ -28,7 +28,7 @@ namespace alpaka::onAcc::warp::internal
     template<alpaka::onAcc::concepts::Acc T_Acc>
     struct GetLaneIdx::Op<T_Acc, api::Hip>
     {
-        constexpr __device__ auto operator()(T_Acc const& acc, api::Hip) const
+        constexpr __device__ auto operator()(T_Acc const&, api::Hip) const
         {
             // for the host side deduction path, result is wrong but this is fine
             return __lane_id();
@@ -52,7 +52,7 @@ namespace alpaka::onAcc::warp::internal
     template<alpaka::onAcc::concepts::Acc T_Acc>
     struct All::Op<T_Acc, api::Hip>
     {
-        constexpr __device__ bool operator()(T_Acc const& acc, api::Hip, int32_t predicate) const
+        constexpr __device__ bool operator()(T_Acc const&, api::Hip, int32_t predicate) const
         {
             return __all(static_cast<int>(predicate)) != 0u;
         }
@@ -61,7 +61,7 @@ namespace alpaka::onAcc::warp::internal
     template<alpaka::onAcc::concepts::Acc T_Acc>
     struct Any::Op<T_Acc, api::Hip>
     {
-        constexpr __device__ bool operator()(T_Acc const& acc, api::Hip, int32_t predicate) const
+        constexpr __device__ bool operator()(T_Acc const&, api::Hip, int32_t predicate) const
         {
             return __any(static_cast<int>(predicate)) != 0;
         }
@@ -70,7 +70,7 @@ namespace alpaka::onAcc::warp::internal
     template<alpaka::onAcc::concepts::Acc T_Acc>
     struct Ballot::Op<T_Acc, api::Hip>
     {
-        constexpr __device__ auto operator()(T_Acc const& acc, api::Hip, int32_t predicate) const
+        constexpr __device__ auto operator()(T_Acc const&, api::Hip, int32_t predicate) const
         {
             return __ballot(static_cast<int>(predicate));
         }
@@ -80,7 +80,7 @@ namespace alpaka::onAcc::warp::internal
     struct Shfl::Op<T_Acc, api::Hip, T>
     {
         constexpr __device__ T
-        operator()(T_Acc const& acc, api::Hip, T const& value, uint32_t srcLane, uint32_t width) const
+        operator()(T_Acc const&, api::Hip, T const& value, uint32_t srcLane, uint32_t width) const
         {
             return __shfl(value, static_cast<int>(srcLane), static_cast<int>(width));
         }
@@ -89,8 +89,7 @@ namespace alpaka::onAcc::warp::internal
     template<alpaka::onAcc::concepts::Acc T_Acc, typename T>
     struct ShflDown::Op<T_Acc, api::Hip, T>
     {
-        constexpr __device__ T
-        operator()(T_Acc const& acc, api::Hip, T const& value, uint32_t delta, uint32_t width) const
+        constexpr __device__ T operator()(T_Acc const&, api::Hip, T const& value, uint32_t delta, uint32_t width) const
         {
             return __shfl_down(value, static_cast<int>(delta), static_cast<int>(width));
         }
@@ -99,8 +98,7 @@ namespace alpaka::onAcc::warp::internal
     template<alpaka::onAcc::concepts::Acc T_Acc, typename T>
     struct ShflUp::Op<T_Acc, api::Hip, T>
     {
-        constexpr __device__ T
-        operator()(T_Acc const& acc, api::Hip, T const& value, uint32_t delta, uint32_t width) const
+        constexpr __device__ T operator()(T_Acc const&, api::Hip, T const& value, uint32_t delta, uint32_t width) const
         {
             return __shfl_up(value, static_cast<int>(delta), static_cast<int>(width));
         }
@@ -110,7 +108,7 @@ namespace alpaka::onAcc::warp::internal
     struct ShflXor::Op<T_Acc, api::Hip, T>
     {
         constexpr __device__ T
-        operator()(T_Acc const& acc, api::Hip, T const& value, uint32_t laneMask, uint32_t width) const
+        operator()(T_Acc const&, api::Hip, T const& value, uint32_t laneMask, uint32_t width) const
         {
             return __shfl_xor(value, static_cast<int>(laneMask), static_cast<int>(width));
         }

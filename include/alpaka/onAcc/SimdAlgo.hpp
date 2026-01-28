@@ -39,6 +39,7 @@ namespace alpaka::onAcc
             T_IdxLayout idxLayout = T_IdxLayout{})
             : m_workGroup{workGroup}
         {
+            alpaka::unused(traverse, idxLayout);
         }
 
         constexpr T_WorkGroup getWorkGroup() const

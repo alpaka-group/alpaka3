@@ -261,7 +261,7 @@ namespace alpaka::onHost
                 typename T_KernelBundle,
                 typename... T_Args>
             void operator()(
-                T_Executor const executor,
+                T_Executor const,
                 unifiedCudaHip::Queue<T_Device>& queue,
                 ThreadSpec<T_NumBlocks, T_NumThreads> const& threadSpec,
                 T_KernelBundle const& kernelBundle,

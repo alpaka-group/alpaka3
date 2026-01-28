@@ -296,13 +296,13 @@ namespace alpaka::onHost::internal
         struct EnqueueKernelWithWarpSize<T_dim, T_warpSize, 0u>
         {
             static void call(
-                sycl::handler& cgh,
-                auto gridRange,
-                auto const& kernelBundle,
-                auto const& st_shared_accessor,
-                auto const& dyn_shared_accessor,
-                auto const& optimizedThreadSpec,
-                auto... args)
+                [[maybe_unused]] sycl::handler& cgh,
+                [[maybe_unused]] auto gridRange,
+                [[maybe_unused]] auto const& kernelBundle,
+                [[maybe_unused]] auto const& st_shared_accessor,
+                [[maybe_unused]] auto const& dyn_shared_accessor,
+                [[maybe_unused]] auto const& optimizedThreadSpec,
+                [[maybe_unused]] auto... args)
             {
                 printf(
                     "Dynamic evaluated warp size on host does not match the compile time warp size ( macro "

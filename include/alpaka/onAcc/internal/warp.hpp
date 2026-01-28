@@ -35,7 +35,7 @@ namespace alpaka::onAcc::warp::internal
         template<alpaka::onAcc::concepts::Acc T_Acc, alpaka::concepts::Api T_Api>
         struct Op
         {
-            constexpr auto operator()(T_Acc const&, T_Api api) const
+            constexpr auto operator()(T_Acc const&, T_Api) const
             {
                 static_assert(sizeof(T_Acc) && false, "Missing warp Activemask implementation for the accelerator.");
                 return 0u;
@@ -48,7 +48,7 @@ namespace alpaka::onAcc::warp::internal
         template<alpaka::onAcc::concepts::Acc T_Acc, alpaka::concepts::Api T_Api>
         struct Op
         {
-            constexpr auto operator()(T_Acc const&, T_Api api) const
+            constexpr auto operator()(T_Acc const&, T_Api) const
             {
                 static_assert(sizeof(T_Acc) && false, "Missing warp GetLaneIdx implementation for the accelerator.");
                 return 0u;
@@ -69,7 +69,7 @@ namespace alpaka::onAcc::warp::internal
         template<alpaka::onAcc::concepts::Acc T_Acc, alpaka::concepts::Api T_Api>
         struct Op
         {
-            constexpr auto operator()(T_Acc const&, T_Api api) const
+            constexpr auto operator()(T_Acc const&, T_Api) const
             {
                 static_assert(sizeof(T_Acc) && false, "Missing warp GetWarpIdx implementation for the accelerator.");
                 return 0u;
@@ -90,8 +90,9 @@ namespace alpaka::onAcc::warp::internal
         template<alpaka::onAcc::concepts::Acc T_Acc, alpaka::concepts::Api T_Api>
         struct Op
         {
-            constexpr bool operator()(T_Acc const&, T_Api api, int32_t predicate) const
+            constexpr bool operator()(T_Acc const&, T_Api, int32_t predicate) const
             {
+                alpaka::unused(predicate);
                 static_assert(sizeof(T_Acc) && false, "Missing warp All implementation for the accelerator.");
                 return false;
             }
@@ -103,8 +104,9 @@ namespace alpaka::onAcc::warp::internal
         template<alpaka::onAcc::concepts::Acc T_Acc, alpaka::concepts::Api T_Api>
         struct Op
         {
-            constexpr bool operator()(T_Acc const&, T_Api api, int32_t predicate) const
+            constexpr bool operator()(T_Acc const&, T_Api, int32_t predicate) const
             {
+                alpaka::unused(predicate);
                 static_assert(sizeof(T_Acc) && false, "Missing warp Any implementation for the accelerator.");
                 return false;
             }
@@ -116,8 +118,9 @@ namespace alpaka::onAcc::warp::internal
         template<alpaka::onAcc::concepts::Acc T_Acc, alpaka::concepts::Api T_Api>
         struct Op
         {
-            constexpr auto operator()(T_Acc const&, T_Api api, int32_t predicate) const
+            constexpr auto operator()(T_Acc const&, T_Api, int32_t predicate) const
             {
+                alpaka::unused(predicate);
                 static_assert(sizeof(T_Acc) && false, "Missing warp Ballot implementation for the accelerator.");
                 return 0;
             }
@@ -129,8 +132,9 @@ namespace alpaka::onAcc::warp::internal
         template<alpaka::onAcc::concepts::Acc T_Acc, alpaka::concepts::Api T_Api, typename T>
         struct Op
         {
-            constexpr T operator()(T_Acc const&, T_Api api, T const& value, uint32_t srcLane, uint32_t width) const
+            constexpr T operator()(T_Acc const&, T_Api, T const& value, uint32_t srcLane, uint32_t width) const
             {
+                alpaka::unused(value, srcLane, width);
                 static_assert(sizeof(T_Acc) && false, "Missing warp Shfl implementation for the accelerator.");
                 return T{};
             }
@@ -142,8 +146,9 @@ namespace alpaka::onAcc::warp::internal
         template<alpaka::onAcc::concepts::Acc T_Acc, alpaka::concepts::Api T_Api, typename T>
         struct Op
         {
-            constexpr T operator()(T_Acc const&, T_Api api, T const& value, uint32_t delta, uint32_t width) const
+            constexpr T operator()(T_Acc const&, T_Api, T const& value, uint32_t delta, uint32_t width) const
             {
+                alpaka::unused(value, delta, width);
                 static_assert(sizeof(T_Acc) && false, "Missing warp ShflDown implementation for the accelerator.");
                 return T{};
             }
@@ -155,8 +160,9 @@ namespace alpaka::onAcc::warp::internal
         template<alpaka::onAcc::concepts::Acc T_Acc, alpaka::concepts::Api T_Api, typename T>
         struct Op
         {
-            constexpr T operator()(T_Acc const&, T_Api api, T const& value, uint32_t delta, uint32_t width) const
+            constexpr T operator()(T_Acc const&, T_Api, T const& value, uint32_t delta, uint32_t width) const
             {
+                alpaka::unused(value, delta, width);
                 static_assert(sizeof(T_Acc) && false, "Missing warp ShflUp implementation for the accelerator.");
                 return T{};
             }
@@ -168,8 +174,9 @@ namespace alpaka::onAcc::warp::internal
         template<alpaka::onAcc::concepts::Acc T_Acc, alpaka::concepts::Api T_Api, typename T>
         struct Op
         {
-            constexpr T operator()(T_Acc const&, T_Api api, T const& value, uint32_t laneMask, uint32_t width) const
+            constexpr T operator()(T_Acc const&, T_Api, T const& value, uint32_t laneMask, uint32_t width) const
             {
+                alpaka::unused(value, laneMask, width);
                 static_assert(sizeof(T_Acc) && false, "Missing warp ShflXor implementation for the accelerator.");
                 return T{};
             }

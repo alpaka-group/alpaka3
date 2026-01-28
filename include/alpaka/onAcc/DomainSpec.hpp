@@ -22,6 +22,7 @@ namespace alpaka::onAcc
 
         constexpr auto getIdxRange(auto const& acc) const
         {
+            alpaka::unused(acc);
             return m_idxRange;
         }
 
@@ -33,6 +34,7 @@ namespace alpaka::onAcc
 
         constexpr auto getThreadSpace(auto const& acc) const
         {
+            alpaka::unused(acc);
             return m_threadGroup;
         }
 

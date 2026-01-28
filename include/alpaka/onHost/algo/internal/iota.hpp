@@ -30,7 +30,9 @@ namespace alpaka::onHost::internal
             return simdGrid.concurrent(
                 acc,
                 extents,
-                [&](auto const& acc, alpaka::concepts::SimdPtr auto&& in0, alpaka::concepts::SimdPtr auto&&... inOther)
+                [&](onAcc::concepts::Acc auto const&,
+                    alpaka::concepts::SimdPtr auto&& in0,
+                    alpaka::concepts::SimdPtr auto&&... inOther)
                 {
                     using SimdType = ALPAKA_TYPEOF(in0.load());
                     alpaka::concepts::Vector auto iotaOffsetMd = in0.getIdx();

@@ -99,6 +99,7 @@ namespace alpaka
                   typename T_UserPitches::UniVec{pitches},
                   memAlignment}
         {
+            alpaka::unused(any);
             static_assert(
                 isLosslesslyConvertible_v<typename T_UserPitches::type, typename T_UserExtents::type>,
                 "extent type and pitch type must be lossless convertible");
@@ -273,8 +274,9 @@ namespace alpaka::internal
         alpaka::concepts::Alignment T_MemAlignment>
     struct GetApi::Op<alpaka::View<T_Api, T_Type, T_Extents, T_MemAlignment>>
     {
-        inline constexpr auto operator()(auto&& data) const
+        inline constexpr auto operator()(auto&& view) const
         {
+            alpaka::unused(view);
             return T_Api{};
         }
     };

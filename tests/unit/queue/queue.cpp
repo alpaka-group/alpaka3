@@ -15,7 +15,7 @@ using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, 
 
 struct NoArgumentsKernel
 {
-    ALPAKA_FN_ACC void operator()(onAcc::concepts::Acc auto const& acc) const
+    ALPAKA_FN_ACC void operator()(onAcc::concepts::Acc auto const&) const
     {
     }
 };
@@ -52,7 +52,7 @@ TEMPLATE_LIST_TEST_CASE("kernel no arguments", "", TestApis)
 
 struct IotaKernel
 {
-    ALPAKA_FN_ACC void operator()(auto const& acc, auto out, uint32_t outSize) const
+    ALPAKA_FN_ACC void operator()(auto const& acc, auto out) const
     {
         // check that frame extent keeps compile time const-ness
         static_assert(alpaka::concepts::CVector<ALPAKA_TYPEOF(acc[frame::extent])>);
@@ -90,10 +90,7 @@ TEMPLATE_LIST_TEST_CASE("iota", "", TestApis)
     auto hBuff = onHost::allocHostLike(dBuff);
 
     constexpr auto frameSize = CVec<uint32_t, 4u>{};
-    queue.enqueue(
-        exec,
-        onHost::FrameSpec{extent / frameSize, frameSize},
-        KernelBundle{IotaKernel{}, dBuff, extent.x()});
+    queue.enqueue(exec, onHost::FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernel{}, dBuff});
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx.x() == hBuff[idx]); });
@@ -101,7 +98,7 @@ TEMPLATE_LIST_TEST_CASE("iota", "", TestApis)
 
 struct IotaKernelND
 {
-    ALPAKA_FN_ACC void operator()(auto const& acc, auto out, auto outSize) const
+    ALPAKA_FN_ACC void operator()(auto const& acc, auto out) const
     {
         for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, onAcc::range::totalFrameSpecExtent))
         {
@@ -137,7 +134,7 @@ TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
 
     onHost::wait(queue);
     constexpr auto frameSize = Vec{2u, 4u};
-    queue.enqueue(exec, onHost::FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff, extent});
+    queue.enqueue(exec, onHost::FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff});
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx == hBuff[idx]); });
@@ -170,7 +167,7 @@ TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
 
     onHost::wait(queue);
     constexpr auto frameSize = Vec{2u, 4u, 8u};
-    queue.enqueue(exec, onHost::FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff, extent});
+    queue.enqueue(exec, onHost::FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff});
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx == hBuff[idx]); });
@@ -203,7 +200,7 @@ TEMPLATE_LIST_TEST_CASE("iota4D", "", TestApis)
 
     onHost::wait(queue);
     constexpr auto frameSize = Vec{2u, 4u, 8u, 4u};
-    queue.enqueue(exec, onHost::FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff, extent});
+    queue.enqueue(exec, onHost::FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff});
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx == hBuff[idx]); });
@@ -271,7 +268,7 @@ TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
     onHost::wait(queue);
     constexpr auto frameSize = Vec{1u, 1u, 2u};
 
-    auto selection = CVec<uint32_t, 2u, 1u>{};
+    [[maybe_unused]] auto selection = CVec<uint32_t, 2u, 1u>{};
 
     queue.enqueue(
         exec,

@@ -252,11 +252,12 @@ namespace alpaka::onHost
             struct Op
             {
                 auto operator()(
-                    T_Device const&,
+                    T_Device const& device,
                     T_Executor const& executor,
                     T_FrameSpec const& frameSpec,
                     T_KernelBundle const& kernelBundle) const
                 {
+                    alpaka::unused(device, executor, kernelBundle);
                     return frameSpec.getThreadSpec();
                 }
             };
@@ -354,7 +355,7 @@ namespace alpaka::onHost
             template<typename T_DataApi, alpaka::concepts::DeviceKind T_DeviceKind, typename T_Any>
             struct SecondPath
             {
-                bool operator()(T_DataApi, T_DeviceKind, T_Any const& any) const
+                bool operator()(T_DataApi, T_DeviceKind, T_Any const&) const
                 {
                     return false;
                 }

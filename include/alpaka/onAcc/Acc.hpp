@@ -185,6 +185,7 @@ namespace alpaka::onAcc::internalCompute
     {
         constexpr auto operator()(T_Acc const& acc, alpaka::layer::Block const scope) const
         {
+            alpaka::unused(scope);
             acc[action::threadBlockSync]();
         }
     };

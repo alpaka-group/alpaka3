@@ -99,6 +99,7 @@ namespace alpaka
 
                 constexpr auto operator()(auto&& any) const
                 {
+                    alpaka::unused(any);
                     return Alignment<>{};
                 }
             };

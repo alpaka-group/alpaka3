@@ -10,7 +10,7 @@ using namespace alpaka;
 // BEGIN-CHEATSHEET-myKernel
 struct MyKernel
 {
-    ALPAKA_FN_ACC void operator()(onAcc::concepts::Acc auto const& acc, auto... kernelArgs) const
+    ALPAKA_FN_ACC void operator()(onAcc::concepts::Acc auto const&, [[maybe_unused]] auto... kernelArgs) const
     {
     }
 };
@@ -57,7 +57,7 @@ struct FooDynMemKernel
         {
             // Access within the kernel, it is a plain pointer.
             // You are responsible to guarantee in bounds accesses.
-            DataType* dynS = onAcc::getDynSharedMem<DataType>(acc);
+            [[maybe_unused]] DataType* dynS = onAcc::getDynSharedMem<DataType>(acc);
         }
     };
 
@@ -71,7 +71,7 @@ struct DynSharedMemTrait
     {
         // Access within the kernel, it is a plain pointer.
         // You are responsible to guarantee in bounds accesses.
-        int* dynS = onAcc::getDynSharedMem<int>(acc);
+        [[maybe_unused]] int* dynS = onAcc::getDynSharedMem<int>(acc);
     }
 };
 
@@ -83,11 +83,12 @@ namespace alpaka::onHost::trait
     {
         BlockDynSharedMemBytes(DynSharedMemTrait const& kernel, T_FrameSpec const& spec)
         {
+            alpaka::unused(kernel, spec);
         }
 
         // the signature is very similar to the kernel operator() signature with the difference that the first
         // parameter is the executor and not the accelerator
-        uint32_t operator()(auto const executor, [[maybe_unused]] auto const&... args) const
+        uint32_t operator()([[maybe_unused]] auto const executor, [[maybe_unused]] auto const&... args) const
         {
             return 32;
         }
@@ -120,8 +121,8 @@ struct KernelWait
         float base = 1.0;
         float exp = 1.0;
         // BEGIN-CHEATSHEET-math
-        auto sinValue = math::sin(argument);
-        auto cosValue = math::pow(base, exp);
+        [[maybe_unused]] auto sinValue = math::sin(argument);
+        [[maybe_unused]] auto cosValue = math::pow(base, exp);
         // END-CHEATSHEET-math
     }
 };

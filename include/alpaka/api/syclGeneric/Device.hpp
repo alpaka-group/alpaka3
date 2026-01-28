@@ -304,6 +304,7 @@ namespace alpaka::onHost
                 T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
             {
+                alpaka::unused(device, executor, kernelBundle);
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::device);
                 auto numThreads = dataBlocking.getThreadSpec().m_numThreads;
 
@@ -324,6 +325,7 @@ namespace alpaka::onHost
                 T_FrameSpec const& dataBlocking,
                 T_KernelBundle const& kernelBundle) const
             {
+                alpaka::unused(executor, kernelBundle);
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::device);
                 auto numThreadsPerBlocks = dataBlocking.getThreadSpec().m_numThreads;
                 auto const maxThreadsPerBlock = device.m_properties.maxThreadsPerBlock;

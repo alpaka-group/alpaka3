@@ -51,7 +51,7 @@ namespace alpaka::test::event
              * because does not see the trigger data has changed.
              */
             ALPAKA_FN_ACC void operator()(
-                onAcc::concepts::Acc auto const& acc,
+                onAcc::concepts::Acc auto const&,
                 int volatile* triggerData,
                 int* i,
                 int32_t rounds,
@@ -80,10 +80,8 @@ namespace alpaka::test::event
 
         struct UpdateValue
         {
-            ALPAKA_FN_ACC void operator()(
-                onAcc::concepts::Acc auto const& acc,
-                int volatile* triggerData,
-                int32_t value) const
+            ALPAKA_FN_ACC void operator()(onAcc::concepts::Acc auto const&, int volatile* triggerData, int32_t value)
+                const
             {
                 *triggerData = value;
             }
@@ -160,7 +158,7 @@ namespace alpaka::test::event
         struct KernelBlockUntilReady
         {
             ALPAKA_FN_ACC void operator()(
-                onAcc::concepts::Acc auto const& acc,
+                onAcc::concepts::Acc auto const&,
                 int volatile* triggerData,
                 int* i,
                 int rounds,

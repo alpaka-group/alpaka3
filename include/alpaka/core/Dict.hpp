@@ -7,6 +7,7 @@
 #include "alpaka/Tuple.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/core/util.hpp"
+#include "alpaka/unused.hpp"
 #include "alpaka/utility.hpp"
 
 #include <cstdio>
@@ -55,21 +56,21 @@ namespace alpaka
     } // namespace internal
 
     template<typename T_Key, typename T_Tuple>
-    inline consteval ssize_t getIdx(T_Tuple&& t, T_Key const& key = T_Key{})
+    inline consteval ssize_t getIdx(T_Tuple&&, T_Key const& = T_Key{})
     {
         constexpr auto idx = internal::KeyIdx<T_Key, std::decay_t<T_Tuple>>::value;
         return idx;
     }
 
     template<typename T_Key, typename T_Tuple>
-    consteval bool hasTag(T_Tuple&& t, T_Key const& key = T_Key{})
+    consteval bool hasTag(T_Tuple&&, T_Key const& = T_Key{})
     {
         constexpr auto idx = internal::KeyIdx<T_Key, std::decay_t<T_Tuple>>::value;
         return idx != -1;
     }
 
     template<typename T_Key, typename T_Tuple>
-    inline constexpr decltype(auto) getTag(T_Tuple&& t, T_Key const& key = T_Key{})
+    inline constexpr decltype(auto) getTag(T_Tuple&& t, T_Key const& = T_Key{})
     {
         constexpr auto idx = internal::KeyIdx<T_Key, std::decay_t<T_Tuple>>::value;
         static_assert(idx != -1, "Member in dict missing!");
@@ -220,6 +221,7 @@ namespace alpaka
     requires(condition == false)
     constexpr auto conditionalAppendDict(Dict<T_Entries0...> const& dict0, Dict<T_Entries1...> const& dict1)
     {
+        alpaka::unused(dict1);
         return dict0;
     }
 } // namespace alpaka
