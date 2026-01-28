@@ -1,16 +1,16 @@
 Allocate Memory
 ===============
 
-After we know how to :ref:`get a device <device-selection>` and create :ref:`a queue <queue_creation>` we can not look into memory allocations.
-To allocate memory you need a device and sometimes a queue.
-The memory allocation methods of *alpaka* returning a ``SharedBuffer`` handle which tracks the lifetime of the memory and frees memory when the last instance running out of scope, equal to ``std::shared_ptr<>`` in the STL.
+Now that we know how to :ref:`get a device <device-selection>` and create :ref:`a queue <queue_creation>`, we can move on to memory allocation.
+To allocate memory, you need a *device* and sometimes a *queue*.
+alpaka's memory allocation methods return a ``alpaka::onHost::SharedBuffer`` handle that tracks the lifetime of the memory and frees memory when the last instance goes out of scope, similar to ``std::shared_ptr<>`` in the STL.
 
-- Copying a ``SharedBuffer`` handle will be a shallow copy of the buffer handle and not a duplication of the data.
-- A deep copy of memory must be explicit triggered via ``onHost::memcpy()``.
-- A Buffer is **not** initialized with a default value.
-- The extents, number of elements per dimension, should be ``>=1`` and the extent can be of any dimensionality.
-- If the extent parameter is annotated with the concept ``concepts::VectorOrScalar`` it is supported to pass a scalar as extent to allocate a one-dimensional buffer.
-- Each buffer will use for internal index calculation the data type of the extents object.
+- Copying a ``alpaka::onHost::SharedBuffer`` handle is a shallow copy of the buffer handle and does not duplicate the data.
+- A deep copy of the memory must be explicitly triggered using ``alpaka::onHost::memcpy()``.
+- A buffer is **not** initialized with default values.
+- The *extents*, which describe the number of elements per dimension, should be ``>=1``. The *extents* can have any dimensionality.
+- If the extent requires the ``alpaka::concepts::VectorOrScalar`` concept, it is permissible to use a scalar instead of an alpaka vector type to allocate a one-dimensional buffer.
+- Each buffer uses the data type of the *extent* object as value type for internal index calculation.
 
 The following examples show how to create memory which is **only** visible on the device.
 
@@ -20,9 +20,10 @@ The following examples show how to create memory which is **only** visible on th
     :end-before: END-TUTORIAL-allocBufferDev
     :dedent:
 
-There is a type of memory available called mapped memory which is located on the CPU but is accessible on the device too, therefor no explicit memory copies are required to access the memory from the device or host.
-If you use mapped memory you need to take care that you not access memory on the host and device in parallel.
-The access to this kind of memory from the device has mostly high latency and is slow.
+There is a type of memory called mapped memory, which is located on the CPU but is also accessible on the device.
+Explicit memory copies are not required to access the memory from the device or host.
+When using mapped memory, you must be careful not to access the memory of the host and the device in parallel.
+Accessing this type of memory from the device is usually associated with high latency and is slow.
 
   .. literalinclude:: ../../snippets/example/10_memory.cpp
     :language: cpp
@@ -30,10 +31,11 @@ The access to this kind of memory from the device has mostly high latency and is
     :end-before: END-TUTORIAL-allocBufferMapped
     :dedent:
 
-Unified memory is very equal to mapped memory and does not require explicit memory copies.
-It is located on the compute device or host, depending of the uased Api, but is migrated transparently page by page to the location from where it is accessed.
-You should not access the memory from host and device in parallel.
-The first touch of a memory location has often high latencies but if the page is already migrated the access is as fast as accessing device memory directly.
+Unified memory largely equal to the mapped memory and does not require explicit memory copies.
+Depending on the API used, it is located on the host or device.
+It is transparently migrated page by page to the location from which it is accessed.
+You should not access unified memory in parallel from the host and the device.
+The first access to a memory location is often associated with high latencies, but once the page has been migrated, access is just as fast as direct access to the device memory.
 
   .. literalinclude:: ../../snippets/example/10_memory.cpp
     :language: cpp
@@ -41,9 +43,10 @@ The first touch of a memory location has often high latencies but if the page is
     :end-before: END-TUTORIAL-allocBufferUnified
     :dedent:
 
-Very often the typical pattern for memory allocations is that you create a buffer for the host device and you need a double buffer for the compute device for the same value type and extents.
-For this you can use ``onHost::allocLike(device, sourceBuffer)`` to inherit all properties expect the target device.
-The data of the source buffer will not be copied, this can only performed explicit.
+Very often, the typical pattern for memory allocation is that you create a buffer for the host and need a second buffer for the device with the same value type and dimensions.
+For this, you can use ``alpaka::onHost::allocLike(device, sourceBuffer)`` to adopt all properties except the target device.
+The data in the source buffer is not copied.
+This can only be done explicitly.
 
   .. literalinclude:: ../../snippets/example/10_memory.cpp
     :language: cpp
@@ -51,9 +54,9 @@ The data of the source buffer will not be copied, this can only performed explic
     :end-before: END-TUTORIAL-allocLike
     :dedent:
 
-Sometimes you want to allocated memory that is used only as temporary buffer and is not required after your tasks finished.
-Since memory allocations are expensive you typically avoid allocating memory e.g. in a loop.
-Depending of the Api of your device queue ``onHost::allocDeferred()`` is automatically internal using caching allocators to keep the allocation as cheap as possible.
+Sometimes you want to allocate memory that is only used as a temporary buffer and is no longer needed after your tasks are complete.
+Since memory allocations are costly, you generally avoid allocating memory, for example, in a loop.
+Depending on the device or queue API, ``alpaka::onHost::allocDeferred()`` automatically uses an internal caching allocator to keep allocation as cost-effective as possible.
 
   .. literalinclude:: ../../snippets/example/10_memory.cpp
     :language: cpp
@@ -64,10 +67,10 @@ Depending of the Api of your device queue ``onHost::allocDeferred()`` is automat
 Memory Operations
 =================
 
-One of the most memory operation used it the copy operation to copy data from one buffer to another.
-All memory operations support any dimensionality ``>=1``.
+One of the most commonly used memory operations is the copy operation, which copies data from one buffer to another.
+All memory operations support any dimension ``>=1``.
 
-- ``onHost::memcpy()`` works always on the full buffer except you provide the extents, the extents are defines in number of elements **not** byte.
+- ``alpaka::onHost::memcpy()`` always works with the entire buffer unless you specify the extent. The extent defines the number of elements, **not** the size in bytes.
 
   .. literalinclude:: ../../snippets/example/10_memory.cpp
     :language: cpp
@@ -75,7 +78,7 @@ All memory operations support any dimensionality ``>=1``.
     :end-before: END-TUTORIAL-memcpy
     :dedent:
 
-- You can also set all values of a buffer to a specific value with ``onHost::fill()``.
+- You can also set all values of a buffer to a specific value using ``alpaka::onHost::fill()``.
 
   .. literalinclude:: ../../snippets/example/10_memory.cpp
     :language: cpp
@@ -83,9 +86,9 @@ All memory operations support any dimensionality ``>=1``.
     :end-before: END-TUTORIAL-fill
     :dedent:
 
-- ``onHost::memset()`` can be used to set all bytes of a buffer to a specific byte value.
-  Typically this is used to set all bytes to zero.
-  Note that the optional extents are still defined in number of elements **not** byte.
+- With ``alpaka::onHost::memset()``, all bytes of a buffer can be set to a specific byte value.
+  This is typically used to set all bytes to zero.
+  **Attention:** The optional extent still defines the number of elements and **not** the size in bytes.
 
   .. literalinclude:: ../../snippets/example/10_memory.cpp
     :language: cpp
