@@ -13,6 +13,7 @@
 
 #include <array>
 #include <cstdint>
+#include <span>
 #include <vector>
 
 namespace alpaka
@@ -54,6 +55,15 @@ namespace alpaka
         };
 
         template<typename T_Type, size_t T_size>
+        struct GetExtents::Op<std::span<T_Type, T_size>>
+        {
+            decltype(auto) operator()(auto&& stdSpan) const
+            {
+                return Vec{stdSpan.size()};
+            }
+        };
+
+        template<typename T_Type, size_t T_size>
         struct GetExtents::Op<std::array<T_Type, T_size>>
         {
             decltype(auto) operator()(auto&& stdArray) const
@@ -69,6 +79,16 @@ namespace alpaka
             decltype(auto) operator()(auto&& stdVector) const
             {
                 alpaka::unused(stdVector);
+                return Vec{sizeof(T_Type)};
+            }
+        };
+
+        template<typename T_Type, size_t T_size>
+        struct GetPitches::Op<std::span<T_Type, T_size>>
+        {
+            decltype(auto) operator()(auto&& stdSpan) const
+            {
+                alpaka::unused(stdSpan);
                 return Vec{sizeof(T_Type)};
             }
         };
@@ -93,9 +113,21 @@ namespace alpaka
         };
 
         template<typename T_Type, size_t T_size>
+        struct GetValueType<std::span<T_Type, T_size>>
+        {
+            using type = T_Type;
+        };
+
+        template<typename T_Type, size_t T_size>
         struct GetValueType<std::array<T_Type, T_size>>
         {
             using type = T_Type;
+        };
+
+        template<typename T_Type, size_t T_size>
+        struct GetDim<std::span<T_Type, T_size>>
+        {
+            static constexpr uint32_t value = 1u;
         };
 
         template<typename T_Type, typename T_Allocator>

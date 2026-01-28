@@ -252,6 +252,14 @@ Copy multidimensional buffer/view or span data
     :end-before: END-CHEATSHEET-memcpy
     :dedent:
 
+Allocate a buffer with the same extents from a std::span, std::vector or std::array
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
+    :language: cpp
+    :start-after: BEGIN-CHEATSHEET-allocLike
+    :end-before: END-CHEATSHEET-allocLike
+    :dedent:
+
 Kernel Execution
 ----------------
 

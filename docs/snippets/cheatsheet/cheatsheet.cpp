@@ -287,7 +287,22 @@ auto main() -> int
 
             unused(hostView, deviceView);
         }
-
+        {
+            // BEGIN-CHEATSHEET-allocLike
+            // This allocLike + memcpy pattern is not specific to std::span; it also works with std::vector/std::array
+            // and with alpaka Buffers/Views.
+            DataType arr[]{0, 1, 2, 3, 4, 5, 6, 7, 8};
+            // construct a span to an existing container
+            std::span myHostSpan = std::span{arr};
+            // create a one-dimensional deviceBuffer with the same extent as 'myHostSpan'
+            auto deviceBuffer = alpaka::onHost::allocLike(device, myHostSpan);
+            // Copy host -> device directly from the span into the allocated device buffer.
+            // Note: if the queue is asynchronous, ensure the source memory container stays alive until the copy
+            // completes.
+            alpaka::onHost::memcpy(blockingQueue, deviceBuffer, myHostSpan);
+            // END-CHEATSHEET-allocLike
+            unused(myHostSpan, deviceBuffer);
+        }
         {
             concepts::IBuffer auto buffer = onHost::allocHost<DataType>(numElements);
             buffer.destructorWaitFor(queue);
