@@ -209,6 +209,13 @@ else()
     target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_DISABLE_TBB)
 endif()
 
+option(alpaka_COMPILE_PEDANTIC "Compile all code with strict compiler settings." OFF)
+
+if(alpaka_COMPILE_PEDANTIC)
+    message(STATUS "Enable strict compiler settings.")
+    include(${_alpaka_CMAKE_DIR}/alpakaCompilePedantic.cmake)
+endif()
+
 ## search for atomic ref
 
 # Check for C++20 std::atomic_ref first
