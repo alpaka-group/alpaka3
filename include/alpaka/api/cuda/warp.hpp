@@ -5,7 +5,6 @@
 #pragma once
 
 #include "alpaka/api/cuda/Api.hpp"
-#include "alpaka/core/CudaHipCommon.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/onAcc/internal/warp.hpp"

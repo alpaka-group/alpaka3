@@ -268,7 +268,7 @@ namespace alpaka::onHost::internal
                         miniBlockOffset += miniBlockSize)
                     {
                         // load block sum from shared memory
-                        T_Data blockSum;
+                        T_Data blockSum{0};
                         if(frameOffset + frameElem + miniBlockOffset < numElements)
                         {
                             blockSum
