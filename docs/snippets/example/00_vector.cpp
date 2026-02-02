@@ -187,7 +187,18 @@ TEST_CASE("vector operations", "[docs]")
     constexpr concepts::Vector auto vec1 = vec0 >= 7u;
     static_assert(vec1.z() == false && vec1.y() == false && vec1.x() == true);
     static_assert(vec1.reduce(std::logical_and{}) == false);
+
+    // vector and scalar has the same precision
+    Vec<uint64_t, 1> vec2 = Vec<uint64_t, 1>{42} * uint64_t{2};
+    // vector has a higher precession than the scalar
+    // up-cast possible
+    Vec<uint64_t, 1> vec3 = Vec<uint64_t, 1>{42} * uint32_t{2};
+    // vector has a lower precession than the scalar
+    // does not compile because of precision loss
+    // Vec<uint32_t, 1> vec4 = Vec<uint32_t, 1>{42} * uint64_t{2};
     // END-TUTORIAL-vectorReduction
+    CHECK(vec2 == Vec<uint64_t, 1>{84});
+    CHECK(vec3 == Vec<uint64_t, 1>{84});
 }
 
 TEST_CASE("simd", "[docs]")
