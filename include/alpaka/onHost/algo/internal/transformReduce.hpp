@@ -237,13 +237,13 @@ namespace alpaka::onHost::internal
 
             auto const numMultiProcessors = queue.getDevice().getDeviceProperties().multiProcessorCount;
             auto adjsutedNumFrames = alpaka::api::util::adjustToLimit(
-                frameSpec.m_numFrames,
+                frameSpec.getNumFrames(),
                 static_cast<IndexType>(numMultiProcessors * multiprocessorScaling));
-            frameSpec = FrameSpec{adjsutedNumFrames, frameSpec.m_frameExtent};
+            frameSpec = FrameSpec{adjsutedNumFrames, frameSpec.getFrameExtents()};
         }
 
-        auto kernelFn
-            = SimdTransformReduceKernel{static_cast<uint32_t>(frameSpec.m_frameExtent.product() * sizeof(T_DataType))};
+        auto kernelFn = SimdTransformReduceKernel{
+            static_cast<uint32_t>(frameSpec.getFrameExtents().product() * sizeof(T_DataType))};
 
         ALPAKA_LOG_INFO(
             onHost::logger::memory,

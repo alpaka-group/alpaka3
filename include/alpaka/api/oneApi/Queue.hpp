@@ -439,8 +439,8 @@ namespace alpaka::onHost::internal
                                 DictEntry(object::api, ApiType{}),
                                 DictEntry(object::deviceKind, DeviceKindType{}),
                                 DictEntry(object::exec, T_Executor{}),
-                                DictEntry(frame::count, frameSpec.m_numFrames),
-                                DictEntry(frame::extent, frameSpec.m_frameExtent),
+                                DictEntry(frame::count, frameSpec.getNumFrames()),
+                                DictEntry(frame::extent, frameSpec.getFrameExtents()),
                                 DictEntry(object::warpSize, warpSize));
                         });
                 });

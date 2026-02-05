@@ -368,14 +368,14 @@ namespace alpaka::example::scan
         auto numFrames = divCeil(inputVec.getExtents(), chunkExtent);
         auto const frameSpec = onHost::FrameSpec{numFrames, chunkExtent, CVec<IdxType, 256u>{}};
 
-        if(frameSpec.m_numFrames > 1_idx)
+        if(frameSpec.getNumFrames() > 1_idx)
         {
             // problem does not fit in 1 frame, recurse
             Scan_AddIncrementsKernel addIncrements;
 
             // allocate block increments, one element per frame
-            auto increments = onHost::alloc<Data>(devAcc, frameSpec.m_numFrames);
-            auto blockSums = onHost::alloc<Data>(devAcc, frameSpec.m_numFrames);
+            auto increments = onHost::alloc<Data>(devAcc, frameSpec.getNumFrames());
+            auto blockSums = onHost::alloc<Data>(devAcc, frameSpec.getNumFrames());
 
             // enqueue the kernel execution tasks
             queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec, increments});

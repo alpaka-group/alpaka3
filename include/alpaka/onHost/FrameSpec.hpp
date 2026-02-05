@@ -40,50 +40,65 @@ namespace alpaka::onHost
         alpaka::concepts::Vector<typename T_NumFrames::type, T_NumFrames::dim()> T_ThreadExtents>
     struct FrameSpec
     {
-        using type = typename T_NumFrames::type;
+        using index_type = typename T_NumFrames::type;
 
         using NumFramesVecType = T_NumFrames;
         using FrameExtentsVecType = T_FrameExtents;
         using ThreadExtentsVecType = T_ThreadExtents;
         using ThreadSpecType = ThreadSpec<T_NumFrames, T_ThreadExtents>;
 
-        static consteval uint32_t dim()
-        {
-            return T_FrameExtents::dim();
-        }
-
-        T_NumFrames m_numFrames;
-        T_FrameExtents m_frameExtent;
+    private:
+        NumFramesVecType m_numFrames;
+        FrameExtentsVecType m_frameExtents;
         ThreadSpecType m_threadSpec;
 
-        FrameSpec(T_NumFrames const& numFrames, T_FrameExtents const& frameExtent)
+    public:
+        constexpr FrameSpec(T_NumFrames const& numFrames, T_FrameExtents const& frameExtent)
             : m_numFrames(numFrames)
-            , m_frameExtent(frameExtent)
+            , m_frameExtents(frameExtent)
             , m_threadSpec(numFrames, frameExtent)
         {
         }
 
-        FrameSpec(T_NumFrames const& numFrames, T_FrameExtents const& frameExtent, T_ThreadExtents const& numThreads)
+        constexpr FrameSpec(
+            T_NumFrames const& numFrames,
+            T_FrameExtents const& frameExtent,
+            T_ThreadExtents const& numThreads)
             : m_numFrames(numFrames)
-            , m_frameExtent(frameExtent)
+            , m_frameExtents(frameExtent)
             , m_threadSpec(numFrames, numThreads)
         {
         }
 
-        FrameSpec(
+        constexpr FrameSpec(
             T_NumFrames const& numFrames,
             T_FrameExtents const& frameExtent,
             T_NumFrames numBlocks,
             T_FrameExtents const& numThreads)
             : m_numFrames(numFrames)
-            , m_frameExtent(frameExtent)
+            , m_frameExtents(frameExtent)
             , m_threadSpec(numBlocks, numThreads)
         {
         }
 
-        auto getThreadSpec() const
+        [[nodiscard]] constexpr NumFramesVecType getNumFrames() const noexcept
+        {
+            return m_numFrames;
+        }
+
+        [[nodiscard]] constexpr FrameExtentsVecType getFrameExtents() const noexcept
+        {
+            return m_frameExtents;
+        }
+
+        [[nodiscard]] constexpr ThreadSpecType getThreadSpec() const noexcept
         {
             return m_threadSpec;
+        }
+
+        [[nodiscard]] static consteval uint32_t dim()
+        {
+            return T_FrameExtents::dim();
         }
     };
 
@@ -139,7 +154,7 @@ namespace alpaka::onHost
         template<typename T, typename T_IndexType = alpaka::NotRequired, uint32_t T_dim = alpaka::notRequiredDim>
         concept FrameSpec
             = isFrameSpec_v<T>
-              && (std::same_as<T_IndexType, alpaka::NotRequired> || std::same_as<typename T::type, T_IndexType>)
+              && (std::same_as<T_IndexType, alpaka::NotRequired> || std::same_as<typename T::index_type, T_IndexType>)
               && ((T_dim == alpaka::notRequiredDim) || (T::dim() == T_dim));
 
         /** Concept to check if a type is a ThreadSpec or a FrameSpec
@@ -152,7 +167,7 @@ namespace alpaka::onHost
 
     std::ostream& operator<<(std::ostream& s, concepts::FrameSpec auto const& d)
     {
-        return s << "FrameSpec{ frames=" << d.m_numFrames << ", frameExtent=" << d.m_frameExtent << ", "
+        return s << "FrameSpec{ frames=" << d.getNumFrames() << ", frameExtent=" << d.getNumFrames() << ", "
                  << d.getThreadSpec() << " }";
     }
 

@@ -416,19 +416,19 @@ namespace alpaka::onHost::internal
                 return ss.str();
             });
 
-        if(frameSpec.m_numFrames > T_Idx{1})
+        if(frameSpec.getNumFrames() > T_Idx{1})
         {
             // problem does not fit in 1 frame, recurse
             Scan_AddIncrementsKernel<T_Idx> addIncrements;
 
-            auto bufSizeBytes = frameSpec.m_numFrames * T_Idx{sizeof(T_Data)};
+            auto bufSizeBytes = frameSpec.getNumFrames() * T_Idx{sizeof(T_Data)};
             assert(buffer.getExtents() * T_Idx{sizeof(typename ALPAKA_TYPEOF(buffer)::value_type)} >= bufSizeBytes);
 
             // get the view to the necessary elements in the buffer for increments
             auto subBuf = buffer.getSubView(bufSizeBytes);
             auto increments = MdSpan{
                 reinterpret_cast<T_Data*>(subBuf.data()),
-                frameSpec.m_numFrames,
+                frameSpec.getNumFrames(),
                 Vec<T_Idx, 1>{sizeof(T_Data)}};
 
             // the unused elements in the buffer are used for recursion to the next scan call

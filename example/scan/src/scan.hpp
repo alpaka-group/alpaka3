@@ -188,14 +188,14 @@ namespace alpaka::example::scan
         constexpr auto const adjustedFrameExtent = frameExtent * elsPerThread;
         auto const frameSpec = onHost::FrameSpec{divCeil(inputVec.getExtents(), adjustedFrameExtent), frameExtent};
 
-        if(frameSpec.m_numFrames > 1_idx)
+        if(frameSpec.getNumFrames() > 1_idx)
         {
             // problem does not fit in 1 frame, recurse
             Scan_AddIncrementsKernel addIncrements;
 
             // allocate block increments, one element per frame
-            auto increments = onHost::alloc<Data>(devAcc, frameSpec.m_numFrames);
-            auto blockSums = onHost::alloc<Data>(devAcc, frameSpec.m_numFrames);
+            auto increments = onHost::alloc<Data>(devAcc, frameSpec.getNumFrames());
+            auto blockSums = onHost::alloc<Data>(devAcc, frameSpec.getNumFrames());
 
             IdxType elementsPerWorker = getNumElemPerThread<Data>(queue);
             auto addIncrementsFrameSpec = onHost::FrameSpec{

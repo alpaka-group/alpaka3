@@ -475,8 +475,8 @@ namespace alpaka::onHost
                     queue,
                     threadBlocking,
                     kernelBundle,
-                    frameSpec.m_numFrames,
-                    frameSpec.m_frameExtent);
+                    frameSpec.getNumFrames(),
+                    frameSpec.getFrameExtents());
             }
         };
 

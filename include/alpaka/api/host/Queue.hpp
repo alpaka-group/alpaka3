@@ -172,8 +172,8 @@ namespace alpaka::onHost
                     [kernelBundle, executor, threadBlocking, deviceKind, frameSpec]()
                     {
                         auto moreLayer = Dict{
-                            DictEntry(frame::count, frameSpec.m_numFrames),
-                            DictEntry(frame::extent, frameSpec.m_frameExtent),
+                            DictEntry(frame::count, frameSpec.getNumFrames()),
+                            DictEntry(frame::extent, frameSpec.getFrameExtents()),
                             DictEntry(object::api, api::host),
                             DictEntry(object::deviceKind, deviceKind),
                             DictEntry(object::exec, executor)};
