@@ -74,6 +74,7 @@ Individual chapters are based on the information of the chapters before.
    :maxdepth: 1
 
    dev/logging.rst
+   dev/online_tools.rst
 
 .. toctree::
    :caption: Contribution
