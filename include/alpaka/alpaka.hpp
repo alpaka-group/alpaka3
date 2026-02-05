@@ -60,6 +60,7 @@
 #include "alpaka/rand/distribution/NormalReal.hpp"
 #include "alpaka/rand/distribution/UniformReal.hpp"
 #include "alpaka/rand/engine/philox/philox.hpp"
+#include "alpaka/simd/math.hpp"
 #include "alpaka/tag.hpp"
 #include "alpaka/utility.hpp"
 

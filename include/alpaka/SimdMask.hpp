@@ -14,16 +14,16 @@
 
 #pragma once
 
-#include "alpaka/SimdMask.hpp"
 #include "alpaka/Vec.hpp"
 #include "alpaka/cast.hpp"
 #include "alpaka/core/util.hpp"
 #include "alpaka/mem/Alignment.hpp"
 #include "alpaka/simd/concepts.hpp"
+#include "alpaka/simd/internal/StdSimdMask.hpp"
 #include "alpaka/simd/trait.hpp"
+#include "alpaka/simd/utility.hpp"
 #include "alpaka/trait.hpp"
-#include "simd/internal/EmuSimd.hpp"
-#include "simd/internal/StdSimd.hpp"
+#include "simd/internal/EmuSimdMask.hpp"
 
 #include <array>
 #include <bit>
@@ -38,32 +38,28 @@
 
 namespace alpaka
 {
-    /** Simd vector
+    /** Simd mask vector
      *
-     * You should not use this type to create a buffer of SIMD vectors.
+     * You should not use this type to create a buffer of SIMD masks.
      * The implementation is not ABI compatible between different API's.
-     * Using Simd data created on the host and used in the compute kernel will be undefined behaviour.
+     * Using Simd masks created on the host and used in the compute kernel will be undefined behaviour.
      *
-     * This class is designed to be used via SimdPtr via reinterpretation of contiguous scalar data.
+     * This class is designed to be used within a kernel together with the `where()` operation.
      *
-     * @tparam T_Type data value type
-     * @tparam T_width number of lanes in the SIMD vector
-     * @tparam T_Storage wrapped native representation of the SIMD vector
+     * @tparam T_Type data value type the mask should be applied to
+     * @tparam T_width number of lanes in the SIMD mask vector
+     * @tparam T_Storage wrapped native representation of the SIMD mask
      */
     template<
         typename T_Type,
         uint32_t T_width,
-        typename T_Storage =
-            /** do not use ALPAKA_TYPEOF(thisApi()) here else nvcc + gcc can trigger a compile error
-             * error: use of built-in trait '__remove_cv(alpaka::api::Host)' in function signature;
-             */
-        typename trait::GetSimdStorageType<decltype(thisApi()), T_Type, T_width>::type>
-    struct Simd;
+        typename T_Storage = typename trait::GetSimdMaskStorageType<ALPAKA_TYPEOF(thisApi()), T_Type, T_width>::type>
+    struct SimdMask;
 
     namespace trait
     {
         template<typename T_Type, uint32_t T_width, typename T_Storage>
-        struct IsSimd<Simd<T_Type, T_width, T_Storage>> : std::true_type
+        struct IsSimdMask<SimdMask<T_Type, T_width, T_Storage>> : std::true_type
         {
         };
     } // namespace trait
@@ -73,50 +69,35 @@ namespace alpaka
     struct SimdWhereExpr;
 
     template<typename T_Type, uint32_t T_width, typename T_Storage>
-    struct Simd : private T_Storage
+    struct SimdMask : private T_Storage
     {
         using Storage = T_Storage;
-        using type = typename T_Storage::value_type;
+        using type = bool;
         /** type is an implementation detail, can be a proxy type. */
-        using reference = typename T_Storage::reference;
+        using reference = typename Storage::reference;
 
         using index_type = uint32_t;
         using size_type = uint32_t;
         using rank_type = uint32_t;
 
         // universal vec used as fallback if T_Storage is holding the state in the template signature
-        using UniSimd = Simd<T_Type, T_width>;
+        using UniSimdMask = SimdMask<T_Type, T_width>;
 
         /*Simds without elements are not allowed*/
         static_assert(T_width > 0u);
 
-        constexpr Simd() = default;
-
-        using Storage::asNativeType;
-
-        constexpr auto& asStorage()
-        {
-            return static_cast<Storage&>(*this);
-        }
-
-        constexpr auto const& asStorage() const
-        {
-            return static_cast<Storage const&>(*this);
-        }
+        SimdMask() = default;
 
         /** Initialize via a generator expression
          *
          * The generator must return the value for the corresponding index of the component which is passed to the
          * generator.
-         *
-         * This constructor is not constexpr because std::simd is using a reinterpret_cast during the initialization
-         * with a generator and complains that this is not allowed in constexpr functions.
          */
         template<
             typename F,
             std::enable_if_t<std::is_invocable_v<F, std::integral_constant<uint32_t, 0u>>, uint32_t> = 0u>
-        ALPAKA_FN_HOST_ACC explicit Simd(F&& generator)
-            : Simd(std::forward<F>(generator), std::make_integer_sequence<uint32_t, T_width>{})
+        ALPAKA_FN_HOST_ACC explicit SimdMask(F&& generator)
+            : SimdMask(std::forward<F>(generator), std::make_integer_sequence<uint32_t, T_width>{})
         {
         }
 
@@ -124,37 +105,54 @@ namespace alpaka
          *
          * @attention This constructor allows implicit casts.
          *
-         * This constructor is not constexpr because std::simd is using a reinterpret_cast during the initialization
-         * with a generator and complains that this is not allowed in constexpr functions.
-         *
          * @param args value of each lane index, x,y,z,...
          *
+         * A constexpr vector should be initialized with {} instead of () because at least
+         * CUDA 11.6 has problems in cases where a compile time evaluation is required.
+         * @code{.cpp}
+         *   constexpr auto vec1 = Simd{ 1 };
+         *   constexpr auto vec2 = Simd{ 1, 2 };
+         *   //or explicit
+         *   constexpr auto vec3 = Simd<int, 3u>{ 1, 2, 3 };
+         *   constexpr auto vec4 = Simd<int, 3u>{ {1, 2, 3} };
+         * @endcode
          */
         template<typename... T_Args>
-        requires((std::is_convertible_v<T_Args, T_Type> && ...) && (sizeof...(T_Args) == T_width))
-        ALPAKA_FN_HOST_ACC Simd(T_Args const&... args) : Storage(static_cast<T_Type>(args)...)
+        requires(
+            ((std::is_convertible_v<T_Args, T_Type> && !std::same_as<bool, T_Type>) && ...)
+            && (sizeof...(T_Args) == T_width))
+        ALPAKA_FN_HOST_ACC SimdMask(T_Args const&... args) : Storage(static_cast<T_Type>(args)...)
         {
         }
 
-        constexpr Simd(Simd const& other) = default;
+        template<typename... T_Args>
+        requires((std::same_as<T_Args, bool> && ...) && (sizeof...(T_Args) == T_width))
+        ALPAKA_FN_HOST_ACC SimdMask(T_Args const&... args) : Storage(args...)
+        {
+        }
 
-        constexpr Simd(T_Storage const& other) : T_Storage{other}
+        SimdMask(SimdMask const& other) = default;
+
+        ALPAKA_FN_HOST_ACC SimdMask(T_Storage const& other) : T_Storage{other}
+        {
+        }
+
+        ALPAKA_FN_HOST_ACC SimdMask(typename T_Storage::BaseType const& base) : T_Storage{base}
         {
         }
 
         /** constructor allows changing the storage policy
          */
         template<typename T_OtherStorage>
-        constexpr Simd(Simd<T_Type, T_width, T_OtherStorage> const& other)
-            : Simd([&](uint32_t const i) constexpr { return other[i]; })
+        ALPAKA_FN_HOST_ACC SimdMask(SimdMask<T_Type, T_width, T_OtherStorage> const& other)
+            : SimdMask([&](uint32_t const i) constexpr { return other[i]; })
         {
         }
 
         /** Allow static_cast / explicit cast to member type for 1D vector */
-        template<uint32_t T_deferDim = T_width, typename = typename std::enable_if<T_deferDim == 1u>::type>
-        constexpr explicit operator type()
+        constexpr explicit operator bool() requires(T_width == 1u)
         {
-            return (*this)[0];
+            return static_cast<bool>(Storage::operator[](0));
         }
 
         /** Number of components/lanes in the SIMD pack. */
@@ -181,29 +179,33 @@ namespace alpaka
          */
         static constexpr auto fill(concepts::Convertible<T_Type> auto const& value)
         {
-            return Simd{Storage::fill(static_cast<T_Type>(value))};
+            SimdMask result([=](uint32_t const) { return static_cast<T_Type>(value); });
+            return result;
         }
 
-        constexpr Simd toRT() const
+        constexpr SimdMask toRT() const
         {
             return *this;
         }
 
-        constexpr Simd revert() const
-        {
-            Simd invertedSimd{};
-            for(uint32_t i = 0u; i < T_width; i++)
-                invertedSimd[T_width - 1 - i] = (*this)[i];
+        constexpr SimdMask& operator=(SimdMask const&) = default;
+        constexpr SimdMask& operator=(SimdMask&&) = default;
 
-            return invertedSimd;
+        constexpr SimdMask operator-() const
+        {
+            return Simd([this](uint32_t const i) constexpr { return -Storage::operator[](i); });
         }
 
-        constexpr Simd& operator=(Simd const&) = default;
-        constexpr Simd& operator=(Simd&&) = default;
+        using Storage::asNativeType;
 
-        constexpr Simd operator-() const
+        constexpr auto& asStorage()
         {
-            return Simd([this](uint32_t const i) constexpr { return -(*this)[i]; });
+            return static_cast<Storage&>(*this);
+        }
+
+        constexpr auto const& asStorage() const
+        {
+            return static_cast<Storage const&>(*this);
         }
 
         /** assign operator
@@ -211,45 +213,34 @@ namespace alpaka
          */
 #define ALPAKA_VECTOR_ASSIGN_OP(op)                                                                                   \
     template<typename T_OtherStorage>                                                                                 \
-    constexpr Simd& operator op(Simd<T_Type, T_width, T_OtherStorage> const& rhs)                                     \
+    constexpr SimdMask& operator op(SimdMask<T_Type, T_width, T_OtherStorage> const& rhs)                             \
     {                                                                                                                 \
         this->asStorage() op rhs.asStorage();                                                                         \
         return *this;                                                                                                 \
     }                                                                                                                 \
-    constexpr Simd& operator op(concepts::LosslesslyConvertible<T_Type> auto const value)                             \
+    constexpr SimdMask& operator op(concepts::LosslesslyConvertible<T_Type> auto const value)                         \
     {                                                                                                                 \
         this->asStorage() op static_cast<T_Type>(value);                                                              \
         return *this;                                                                                                 \
     }
 
-        ALPAKA_VECTOR_ASSIGN_OP(+=)
-        ALPAKA_VECTOR_ASSIGN_OP(-=)
-        ALPAKA_VECTOR_ASSIGN_OP(/=)
-        ALPAKA_VECTOR_ASSIGN_OP(*=)
+        ALPAKA_VECTOR_ASSIGN_OP(&=)
+        ALPAKA_VECTOR_ASSIGN_OP(|=)
+        ALPAKA_VECTOR_ASSIGN_OP(^=)
         ALPAKA_VECTOR_ASSIGN_OP(=)
 
 #undef ALPAKA_VECTOR_ASSIGN_OP
 
         /** @} */
 
-        /** access a lane by index
-         *
-         * @return The returned type is implementation specific, therefore it can be a proxy reference.
-         *         You can not use the returned value to deduct the type and assume that it will be the value type of
-         * Simd.
-         */
         constexpr reference operator[](std::integral auto const idx)
         {
-            return asStorage()[idx];
+            return Storage::operator[](idx);
         }
 
-        /** access a lane by index
-         *
-         * @return The value type, by copy.
-         */
         constexpr type operator[](std::integral auto const idx) const
         {
-            return asStorage()[idx];
+            return static_cast<type>(Storage::operator[](idx));
         }
 
         /** named member access
@@ -301,93 +292,6 @@ namespace alpaka
 
         /** @} */
 
-        /** Shrink the number of elements of a vector.
-         *
-         * Highest indices kept alive.
-         *
-         * @tparam T_numElements New width of the SIMD pack.
-         * @return First T_numElements elements of the origin vector
-         */
-        template<uint32_t T_numElements>
-        constexpr Simd<T_Type, T_numElements> rshrink() const
-        {
-            static_assert(T_numElements <= T_width);
-            Simd<T_Type, T_numElements> result{};
-            for(uint32_t i = 0u; i < T_numElements; i++)
-                result[T_numElements - 1u - i] = (*this)[T_width - 1u - i];
-
-            return result;
-        }
-
-        /** Shrink the SIMD pack
-         *
-         * Removes the last value.
-         */
-        constexpr Simd<T_Type, T_width - 1u> eraseBack() const requires(T_width > 1u)
-        {
-            constexpr auto reducedDim = T_width - 1u;
-            Simd<T_Type, reducedDim> result{};
-            for(uint32_t i = 0u; i < reducedDim; i++)
-                result[i] = (*this)[i];
-
-            return result;
-        }
-
-        /** Shrink the number of elements of a vector.
-         *
-         * @tparam T_numElements New width of the SIMD pack.
-         * @param startIdx Index within the origin vector which will be the last element in the result.
-         * @return T_numElements elements of the origin vector starting with the index startIdx.
-         *         Indexing will wrapp around when the begin of the origin vector is reached.
-         */
-        template<uint32_t T_numElements>
-        constexpr Simd<type, T_numElements> rshrink(std::integral auto const startIdx) const
-        {
-            static_assert(T_numElements <= T_width);
-            Simd<type, T_numElements> result;
-            for(uint32_t i = 0u; i < T_numElements; i++)
-                result[T_numElements - 1u - i] = (*this)[(T_width + startIdx - i) % T_width];
-            return result;
-        }
-
-        /** Removes a component
-         *
-         * It is not allowed to call this method on a vector with the width of one.
-         *
-         * @tparam laneIdxToRemove index which shall be removed; range: [ 0; T_width - 1 ]
-         * @return vector with `T_width - 1` elements
-         */
-        template<std::integral auto laneIdxToRemove>
-        constexpr Simd<type, T_width - 1u> remove() const requires(T_width >= 2u)
-        {
-            Simd<type, T_width - 1u> result{};
-            for(int i = 0u; i < static_cast<int>(T_width - 1u); ++i)
-            {
-                // skip component which must be deleted
-                int const sourceIdx = i >= static_cast<int>(laneIdxToRemove) ? i + 1 : i;
-                result[i] = (*this)[sourceIdx];
-            }
-            return result;
-        }
-
-        /** Returns product of all components.
-         *
-         * @return product of components
-         */
-        [[nodiscard]] constexpr type product() const
-        {
-            return reduce(std::multiplies{});
-        }
-
-        /** Returns sum of all components.
-         *
-         * @return sum of components
-         */
-        [[nodiscard]] constexpr type sum() const
-        {
-            return reduce(std::plus{});
-        }
-
         /** reduce all elements to a single value
          *
          * For better numerical stability a tree reduce algorithm is used.
@@ -396,19 +300,9 @@ namespace alpaka
          *                  The binary operation must be associative.
          * @return the type of the result depends on the binary functor
          */
-        [[nodiscard]] constexpr auto reduce(auto&& reduceFunc) const
-            -> decltype(reduceFunc(std::declval<type>(), std::declval<type>()))
+        [[nodiscard]] constexpr type reduce(auto&& reduceFunc) const
         {
             return reduce_range(ALPAKA_FORWARD(reduceFunc));
-        }
-
-        template<typename T_OtherStorage>
-        constexpr auto min(Simd<T_Type, T_width, T_OtherStorage> const& rhs) const
-        {
-            Simd result{};
-            for(uint32_t d = 0u; d < T_width; d++)
-                result[d] = std::min((*this)[d], rhs[d]);
-            return result;
         }
 
         /** create string out of the SIMD pack
@@ -438,17 +332,17 @@ namespace alpaka
             }
 
             std::stringstream stream;
-            stream << locale_enclosing_begin << (*this)[0];
+            stream << locale_enclosing_begin << Storage::operator[](0);
 
             for(uint32_t i = 1u; i < T_width; ++i)
-                stream << separator << (*this)[i];
+                stream << separator << Storage::operator[](i);
             stream << locale_enclosing_end;
             return stream.str();
         }
 
     private:
         template<typename F, uint32_t... Is>
-        constexpr explicit Simd(F&& generator, std::integer_sequence<uint32_t, Is...>)
+        ALPAKA_FN_HOST_ACC explicit SimdMask(F&& generator, std::integer_sequence<uint32_t, Is...>)
             : Storage{generator(std::integral_constant<uint32_t, Is>{})...}
         {
         }
@@ -461,8 +355,7 @@ namespace alpaka
          * @return the type of the result depends on the binary functor
          */
         template<uint32_t T_start = 0u, uint32_t T_end = width()>
-        [[nodiscard]] constexpr auto reduce_range(auto&& reduceFunc) const
-            -> decltype(reduceFunc(std::declval<type>(), std::declval<type>()))
+        [[nodiscard]] constexpr type reduce_range(auto&& reduceFunc) const
         {
             // elements in the range
             constexpr uint32_t size = T_end - T_start;
@@ -495,30 +388,30 @@ namespace alpaka
     };
 
     template<std::size_t I, typename T_Type, uint32_t T_width, typename T_Storage>
-    constexpr auto get(Simd<T_Type, T_width, T_Storage> const& v)
+    constexpr auto get(SimdMask<T_Type, T_width, T_Storage> const& v)
     {
         return v[I];
     }
 
     template<std::size_t I, typename T_Type, uint32_t T_width, typename T_Storage>
-    constexpr auto& get(Simd<T_Type, T_width, T_Storage>& v)
+    constexpr auto& get(SimdMask<T_Type, T_width, T_Storage>& v)
     {
         return v[I];
     }
 
     template<typename Type>
-    struct Simd<Type, 0>
+    struct SimdMask<Type, 0>
     {
         using type = Type;
         static constexpr uint32_t T_width = 0;
 
         template<typename OtherType>
-        constexpr operator Simd<OtherType, 0>() const
+        constexpr operator SimdMask<OtherType, 0>() const
         {
-            return Simd<OtherType, 0>();
+            return SimdMask<OtherType, 0>();
         }
 
-        static constexpr Simd fill(Type)
+        static constexpr SimdMask fill(Type)
         {
             /* this method should never be actually called,
              * it exists only for Visual Studio to handle alpaka::Size_t< 0 >
@@ -528,67 +421,33 @@ namespace alpaka
     };
 
     template<typename Type, uint32_t T_width, typename T_Storage>
-    std::ostream& operator<<(std::ostream& s, Simd<Type, T_width, T_Storage> const& vec)
+    std::ostream& operator<<(std::ostream& s, SimdMask<Type, T_width, T_Storage> const& vec)
     {
         return s << vec.toString();
     }
 
     // type deduction guide
     template<typename T_1, typename... T_Args>
-    ALPAKA_FN_HOST_ACC Simd(T_1, T_Args...) -> Simd<T_1, uint32_t(sizeof...(T_Args) + 1u)>;
+    ALPAKA_FN_HOST_ACC SimdMask(T_1, T_Args...) -> SimdMask<T_1, uint32_t(sizeof...(T_Args) + 1u)>;
 
-    /** binary operators
-     * @{
+    /** Creates a mask for the given type
+     *
+     * @tparam T value type of SIMD object which should be masked
+     * @tparam T_Args arguments forwarded to the constructor of the mask
      */
+    template<typename T, typename... T_Args>
+    constexpr auto makeSimdMask(T_Args... args)
+    {
+        using Storage =
+            typename trait::GetSimdMaskStorageType<ALPAKA_TYPEOF(thisApi()), T, uint32_t(sizeof...(T_Args))>::type;
+        return SimdMask<T, uint32_t(sizeof...(T_Args)), Storage>(Storage(ALPAKA_FORWARD(args)...));
+    }
+
 #define ALPAKA_VECTOR_BINARY_OP(typenameOrConcept, op)                                                                \
     template<typenameOrConcept T_Type, uint32_t T_width, typename T_Storage, typename T_OtherStorage>                 \
     constexpr auto operator op(                                                                                       \
-        const Simd<T_Type, T_width, T_Storage>& lhs,                                                                  \
-        const Simd<T_Type, T_width, T_OtherStorage>& rhs)                                                             \
-    {                                                                                                                 \
-        using StoreageType = ALPAKA_TYPEOF(lhs.asStorage() op rhs.asStorage());                                       \
-        return Simd<T_Type, T_width, StoreageType>(lhs.asStorage() op rhs.asStorage());                               \
-    }                                                                                                                 \
-    template<                                                                                                         \
-        typenameOrConcept T_Type,                                                                                     \
-        concepts::LosslesslyConvertible<T_Type> T_ValueType,                                                          \
-        uint32_t T_width,                                                                                             \
-        typename T_Storage>                                                                                           \
-    constexpr auto operator op(const Simd<T_Type, T_width, T_Storage>& lhs, T_ValueType rhs)                          \
-    {                                                                                                                 \
-        using StoreageType = ALPAKA_TYPEOF(lhs.asStorage() op static_cast<T_Type>(rhs));                              \
-        return Simd<T_Type, T_width, StoreageType>(lhs.asStorage() op static_cast<T_Type>(rhs));                      \
-    }                                                                                                                 \
-    template<                                                                                                         \
-        typenameOrConcept T_Type,                                                                                     \
-        concepts::LosslesslyConvertible<T_Type> T_ValueType,                                                          \
-        uint32_t T_width,                                                                                             \
-        typename T_Storage>                                                                                           \
-    constexpr auto operator op(T_ValueType lhs, const Simd<T_Type, T_width, T_Storage>& rhs)                          \
-    {                                                                                                                 \
-        using StoreageType = ALPAKA_TYPEOF(static_cast<T_Type>(lhs) op rhs.asStorage());                              \
-        return Simd<T_Type, T_width, StoreageType>(static_cast<T_Type>(lhs) op rhs.asStorage());                      \
-    }
-
-    ALPAKA_VECTOR_BINARY_OP(typename, +)
-    ALPAKA_VECTOR_BINARY_OP(typename, -)
-    ALPAKA_VECTOR_BINARY_OP(typename, *)
-    ALPAKA_VECTOR_BINARY_OP(typename, /)
-    ALPAKA_VECTOR_BINARY_OP(std::integral, %)
-    ALPAKA_VECTOR_BINARY_OP(std::integral, <<)
-    ALPAKA_VECTOR_BINARY_OP(std::integral, >>)
-    ALPAKA_VECTOR_BINARY_OP(std::integral, &)
-    ALPAKA_VECTOR_BINARY_OP(std::integral, |)
-    ALPAKA_VECTOR_BINARY_OP(std::integral, ^)
-
-#undef ALPAKA_VECTOR_BINARY_OP
-
-
-#define ALPAKA_VECTOR_BINARY_CMP_OP(typenameOrConcept, op)                                                            \
-    template<typenameOrConcept T_Type, uint32_t T_width, typename T_Storage, typename T_OtherStorage>                 \
-    constexpr auto operator op(                                                                                       \
-        const Simd<T_Type, T_width, T_Storage>& lhs,                                                                  \
-        const Simd<T_Type, T_width, T_OtherStorage>& rhs)                                                             \
+        const SimdMask<T_Type, T_width, T_Storage>& lhs,                                                              \
+        const SimdMask<T_Type, T_width, T_OtherStorage>& rhs)                                                         \
     {                                                                                                                 \
         using StoreageType = ALPAKA_TYPEOF(lhs.asStorage() op rhs.asStorage());                                       \
         return SimdMask<T_Type, T_width, StoreageType>(lhs.asStorage() op rhs.asStorage());                           \
@@ -598,7 +457,7 @@ namespace alpaka
         concepts::LosslesslyConvertible<T_Type> T_ValueType,                                                          \
         uint32_t T_width,                                                                                             \
         typename T_Storage>                                                                                           \
-    constexpr auto operator op(const Simd<T_Type, T_width, T_Storage>& lhs, T_ValueType rhs)                          \
+    constexpr auto operator op(const SimdMask<T_Type, T_width, T_Storage>& lhs, T_ValueType rhs)                      \
     {                                                                                                                 \
         using StoreageType = ALPAKA_TYPEOF(lhs.asStorage() op static_cast<T_Type>(rhs));                              \
         return SimdMask<T_Type, T_width, StoreageType>(lhs.asStorage() op static_cast<T_Type>(rhs));                  \
@@ -608,20 +467,21 @@ namespace alpaka
         concepts::LosslesslyConvertible<T_Type> T_ValueType,                                                          \
         uint32_t T_width,                                                                                             \
         typename T_Storage>                                                                                           \
-    constexpr auto operator op(T_ValueType lhs, const Simd<T_Type, T_width, T_Storage>& rhs)                          \
+    constexpr auto operator op(T_ValueType lhs, const SimdMask<T_Type, T_width, T_Storage>& rhs)                      \
     {                                                                                                                 \
         using StoreageType = ALPAKA_TYPEOF(static_cast<T_Type>(lhs) op rhs.asStorage());                              \
         return SimdMask<T_Type, T_width, StoreageType>(static_cast<T_Type>(lhs) op rhs.asStorage());                  \
     }
 
-    ALPAKA_VECTOR_BINARY_CMP_OP(typename, >=)
-    ALPAKA_VECTOR_BINARY_CMP_OP(typename, >)
-    ALPAKA_VECTOR_BINARY_CMP_OP(typename, <=)
-    ALPAKA_VECTOR_BINARY_CMP_OP(typename, <)
-    ALPAKA_VECTOR_BINARY_CMP_OP(typename, ==)
-    ALPAKA_VECTOR_BINARY_CMP_OP(typename, !=)
+    ALPAKA_VECTOR_BINARY_OP(typename, &&)
+    ALPAKA_VECTOR_BINARY_OP(typename, ||)
+    ALPAKA_VECTOR_BINARY_OP(std::integral, &)
+    ALPAKA_VECTOR_BINARY_OP(std::integral, |)
+    ALPAKA_VECTOR_BINARY_OP(std::integral, ^)
+    ALPAKA_VECTOR_BINARY_OP(typename, ==)
+    ALPAKA_VECTOR_BINARY_OP(typename, !=)
 
-#undef ALPAKA_VECTOR_BINARY_CMP_OP
+#undef ALPAKA_VECTOR_BINARY_OP
 
     /** @} */
 
@@ -629,13 +489,13 @@ namespace alpaka
     namespace trait
     {
         template<typename T_Type, uint32_t T_width, typename T_Storage>
-        struct GetDim<alpaka::Simd<T_Type, T_width, T_Storage>>
+        struct GetDim<alpaka::SimdMask<T_Type, T_width, T_Storage>>
         {
             static constexpr uint32_t value = T_width;
         };
 
         template<typename T_Type, uint32_t T_width, typename T_Storage>
-        struct GetValueType<alpaka::Simd<T_Type, T_width, T_Storage>>
+        struct GetValueType<alpaka::SimdMask<T_Type, T_width, T_Storage>>
         {
             using type = T_Type;
         };
@@ -644,12 +504,12 @@ namespace alpaka
     namespace internal
     {
         template<typename T_To, typename T_Type, uint32_t T_width, typename T_Storage>
-        struct PCast::Op<T_To, alpaka::Simd<T_Type, T_width, T_Storage>>
+        struct PCast::Op<T_To, alpaka::SimdMask<T_Type, T_width, T_Storage>>
         {
             constexpr decltype(auto) operator()(auto&& input) const
                 requires std::convertible_to<T_Type, T_To> && (!std::same_as<T_To, T_Type>)
             {
-                return typename alpaka::Simd<T_To, T_width, T_Storage>::UniSimd(
+                return typename alpaka::SimdMask<T_To, T_width, T_Storage>::UniSimdMask(
                     [&](uint32_t idx) constexpr { return static_cast<T_To>(input[idx]); });
             }
 
@@ -664,13 +524,13 @@ namespace alpaka
 namespace std
 {
     template<typename T_Type, uint32_t T_width, typename T_Storage>
-    struct tuple_size<alpaka::Simd<T_Type, T_width, T_Storage>>
+    struct tuple_size<alpaka::SimdMask<T_Type, T_width, T_Storage>>
     {
         static constexpr std::size_t value = T_width;
     };
 
     template<std::size_t I, typename T_Type, uint32_t T_width, typename T_Storage>
-    struct tuple_element<I, alpaka::Simd<T_Type, T_width, T_Storage>>
+    struct tuple_element<I, alpaka::SimdMask<T_Type, T_width, T_Storage>>
     {
         using type = T_Type;
     };

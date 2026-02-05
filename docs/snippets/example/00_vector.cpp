@@ -208,7 +208,7 @@ TEST_CASE("simd", "[docs]")
     // If vectors are required for user data, you should use Simd instead.
     // For integral and floating point types. Simd vectors are aligned and typical therefore faster to load from
     // memory.
-    constexpr concepts::Simd auto simd0 = Simd<size_t, 4u>{3llu, 5llu, 7llu, 11llu};
+    concepts::Simd auto simd0 = Simd<size_t, 4u>{3llu, 5llu, 7llu, 11llu};
 
     // compare component wise
     alpaka::apply([&](auto const&... idx) { CHECK(((vec0[idx] == simd0[idx]) && ...)); }, iotaCVec<int, 4u>());

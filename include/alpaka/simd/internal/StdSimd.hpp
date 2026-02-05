@@ -1,0 +1,170 @@
+/* Copyright 2026 René Widera
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
+/** @file This file provides a basic implementation of a SIMD vector.
+ *
+ * The implementation is based on the class Vec:
+ *   - the storge policy should become the native SIMD implementation e.g. std::simd
+ *   - load/ store and simd specifis should be implemented in the storage policy
+ *   - the name of storage policy should be changed
+ *
+ *   The current operator operations relay on compilers auto vectorization.
+ */
+
+#pragma once
+
+#include "alpaka/api/api.hpp"
+#include "alpaka/mem/Alignment.hpp"
+#include "alpaka/simd/concepts.hpp"
+#include "alpaka/simd/simdConfig.hpp"
+#include "alpaka/simd/trait.hpp"
+#include "alpaka/utility.hpp"
+
+#include <type_traits>
+
+#if ALPAKA_HAS_STD_SIMD
+
+namespace alpaka
+{
+    namespace detail
+    {
+        template<typename T_Type, uint32_t T_width>
+        struct StdSimd
+            : protected alpakaStdSimd::rebind_simd_t<T_Type, alpakaStdSimd::fixed_size_simd<T_Type, T_width>>
+        {
+            using BaseType = alpakaStdSimd::rebind_simd_t<T_Type, alpakaStdSimd::fixed_size_simd<T_Type, T_width>>;
+
+            using value_type = typename BaseType::value_type;
+            using reference = typename BaseType::reference;
+
+            using BaseType::operator[];
+
+            constexpr StdSimd() = default;
+            constexpr StdSimd(StdSimd const&) = default;
+            constexpr StdSimd(StdSimd&&) = default;
+            constexpr StdSimd& operator=(StdSimd&& rhs) = default;
+
+            // constructor is required because exposing the array constructors does not work
+            template<typename... T_Args>
+            requires(sizeof...(T_Args) == T_width && (std::same_as<T_Args, T_Type> && ...))
+            ALPAKA_FN_HOST_ACC StdSimd(T_Args&&... args)
+                : BaseType([=](int i) constexpr { return std::array<T_Type, T_width>{args...}[i]; })
+            {
+            }
+
+            constexpr StdSimd(BaseType const& nativeSimd) : BaseType{nativeSimd}
+            {
+            }
+
+            constexpr auto& asNativeType()
+            {
+                return static_cast<BaseType&>(*this);
+            }
+
+            constexpr auto const& asNativeType() const
+            {
+                return static_cast<BaseType const&>(*this);
+            }
+
+            constexpr decltype(auto) where(concepts::SimdMask auto const& mask) const
+            {
+                return alpakaStdSimd::where(mask.asNativeType(), asNativeType());
+            }
+
+            constexpr decltype(auto) where(concepts::SimdMask auto const& mask)
+            {
+                return alpakaStdSimd::where(mask.asNativeType(), asNativeType());
+            }
+
+            static constexpr auto fill(T_Type const& value)
+            {
+                BaseType ret(value);
+                return StdSimd{ret};
+            }
+
+            constexpr void copyFrom(T_Type const* data, concepts::Alignment auto alignment)
+            {
+                if constexpr((alignment.template get<T_Type>() % alignof(ALPAKA_TYPEOF(*this))) == 0u)
+                    this->asNativeType().copy_from(data, alpakaStdSimd::vector_aligned);
+                else
+                    this->asNativeType().copy_from(data, alpakaStdSimd::element_aligned);
+            }
+
+            constexpr void copyTo(auto* data, concepts::Alignment auto alignment) const
+            {
+                if constexpr((alignment.template get<T_Type>() % alignof(ALPAKA_TYPEOF(*this))) == 0u)
+                    this->asNativeType().copy_to(data, alpakaStdSimd::vector_aligned);
+                else
+                    this->asNativeType().copy_to(data, alpakaStdSimd::element_aligned);
+            }
+
+            /** assign operator
+             */
+#    define ALPAKA_VECTOR_ASSIGN_OP(op)                                                                               \
+        constexpr StdSimd& operator op(StdSimd const& rhs)                                                            \
+        {                                                                                                             \
+            this->asNativeType() op rhs.asNativeType();                                                               \
+            return *this;                                                                                             \
+        }                                                                                                             \
+        constexpr StdSimd& operator op(T_Type const value)                                                            \
+        {                                                                                                             \
+            this->asNativeType() op value;                                                                            \
+            return *this;                                                                                             \
+        }
+
+            ALPAKA_VECTOR_ASSIGN_OP(+=)
+            ALPAKA_VECTOR_ASSIGN_OP(-=)
+            ALPAKA_VECTOR_ASSIGN_OP(/=)
+            ALPAKA_VECTOR_ASSIGN_OP(*=)
+            ALPAKA_VECTOR_ASSIGN_OP(=)
+
+#    undef ALPAKA_VECTOR_ASSIGN_OP
+        };
+
+#    define ALPAKA_VECTOR_BINARY_OP(typenameOrConcept, op)                                                            \
+        template<typenameOrConcept T_Type, uint32_t T_width>                                                          \
+        constexpr auto operator op(const StdSimd<T_Type, T_width>& lhs, const StdSimd<T_Type, T_width>& rhs)          \
+        {                                                                                                             \
+            return StdSimd<T_Type, T_width>{lhs.asNativeType() op rhs.asNativeType()};                                \
+        }                                                                                                             \
+        template<typenameOrConcept T_Type, concepts::LosslesslyConvertible<T_Type> T_ValueType, uint32_t T_width>     \
+        constexpr auto operator op(const StdSimd<T_Type, T_width>& lhs, T_ValueType rhs)                              \
+        {                                                                                                             \
+            return StdSimd<T_Type, T_width>{lhs.asNativeType() op rhs};                                               \
+        }                                                                                                             \
+        template<typenameOrConcept T_Type, concepts::LosslesslyConvertible<T_Type> T_ValueType, uint32_t T_width>     \
+        constexpr auto operator op(T_ValueType lhs, const StdSimd<T_Type, T_width>& rhs)                              \
+        {                                                                                                             \
+            return StdSimd<T_Type, T_width>{lhs op rhs.asNativeType()};                                               \
+        }
+
+        ALPAKA_VECTOR_BINARY_OP(typename, +)
+        ALPAKA_VECTOR_BINARY_OP(typename, -)
+        ALPAKA_VECTOR_BINARY_OP(typename, *)
+        ALPAKA_VECTOR_BINARY_OP(typename, /)
+        ALPAKA_VECTOR_BINARY_OP(std::integral, %)
+        ALPAKA_VECTOR_BINARY_OP(std::integral, <<)
+        ALPAKA_VECTOR_BINARY_OP(std::integral, >>)
+        ALPAKA_VECTOR_BINARY_OP(std::integral, &)
+        ALPAKA_VECTOR_BINARY_OP(std::integral, |)
+        ALPAKA_VECTOR_BINARY_OP(std::integral, ^)
+
+#    undef ALPAKA_VECTOR_BINARY_OP
+
+    } // namespace detail
+
+    namespace trait
+    {
+        template<typename T_Type, uint32_t T_width>
+        requires(
+            std::has_single_bit(T_width) && std::has_single_bit(sizeof(T_Type))
+            && alpakaStdSimd::fixed_size_simd<T_Type, T_width>::size() > 0)
+        struct GetSimdStorageType<alpaka::api::Host, T_Type, T_width>
+        {
+            using type = detail::StdSimd<T_Type, T_width>;
+        };
+
+    } // namespace trait
+} // namespace alpaka
+#endif

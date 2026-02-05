@@ -139,7 +139,6 @@ Arguments
      If `ON` strict compile flags will be used which we apply typically only in the CI.
      Enables `-Wall`, '-Werror`, ...
 
-
 ``alpaka_RELOCATABLE_DEVICE_CODE``
   .. code-block:: markdown
 
@@ -150,6 +149,14 @@ Arguments
      effects on CUDA code see NVIDIA's blog post:
 
   https://developer.nvidia.com/blog/separate-compilation-linking-cuda-device-code/
+
+``alpaka_SIMD``
+  .. code-block:: markdown
+
+     Valid values `DEFAULT`,`STDSIMD` or `EMULATION`.
+     - `DEFAULT`   - checks for `std::simd` support of the CXX compiler, if supported it used `std::simd` for all supported value types, else falls back to emulated SIMD packs.
+     - `STDSIMD`   - enforce that the CXX compiler supports `std::simd`, if not CMake will fail
+     - `EMULATION` - disable the usage of `std::simd` even if supported by the CXX compiler
 
 CUDA
 ^^^^

@@ -229,7 +229,7 @@ try_compile(
     CXX_STANDARD_REQUIRED TRUE
     CXX_EXTENSIONS FALSE
 )
-if(alpaka_HAS_STD_ATOMIC_REF AND (NOT alpaka_ACC_CPU_DISABLE_ATOMIC_REF))
+if(alpaka_HAS_STD_ATOMIC_REF)
     message(STATUS "std::atomic_ref<T> found")
 else()
     message(STATUS "std::atomic_ref<T> NOT found")
@@ -244,6 +244,41 @@ if(NOT alpaka_HAS_STD_ATOMIC_REF)
         message(STATUS "boost::atomic_ref<T> NOT found")
         message(FATAL_ERROR "std::atomic_ref<T> OR boost::atomic_ref<T> is required")
     endif()
+endif()
+
+set(alpaka_SIMD
+    "DEFAULT"
+    CACHE STRING
+    "Select the SIMD implementation. DEFAULT try using std::simd, if not found fall back to SIMD emulation (aka EMULATION)."
+)
+set_property(CACHE alpaka_SIMD PROPERTY STRINGS "DEFAULT;STDSIMD;EMULATION")
+
+if(alpaka_SIMD STREQUAL "STDSIMD" OR alpaka_SIMD STREQUAL "DEFAULT")
+    # Check for C++ std::simd
+    # we only check the CXX compiler, equal to OpenMP which is checked for the CXX compiler only too.
+    try_compile(
+        alpaka_HAS_STD_SIMD # Result stored here
+        "${PROJECT_BINARY_DIR}/alpakaFeatureTests" # Binary directory for output file
+        SOURCES
+            "${_alpaka_FEATURE_TESTS_DIR}/StdSimd.cpp" # Source file
+        CXX_STANDARD 20
+        CXX_STANDARD_REQUIRED TRUE
+        CXX_EXTENSIONS FALSE
+    )
+
+    if(alpaka_HAS_STD_SIMD)
+        message(STATUS "std::simd found")
+    else()
+        if(alpaka_SIMD STREQUAL "STDSIMD")
+            message(FATAL_ERROR "std::simd not found but requested via 'alpaka_SIMD=STDSIMD'")
+        else()
+            message(STATUS "std::simd NOT found, emulated SIMD is used")
+            target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_DISABLE_STD_SIMD)
+        endif()
+    endif()
+else()
+    message(STATUS "std::simd disabled, emulated SIMD is used")
+    target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_DISABLE_STD_SIMD)
 endif()
 
 # These options are used in the alpaka_finalize call

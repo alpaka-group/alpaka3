@@ -126,6 +126,7 @@ install(DIRECTORY ${_alpaka_TESTING_DIR} DESTINATION ${CMAKE_INSTALL_DATAROOTDIR
 
 # File is required to validate the C++20 feature std::atomic_ref
 install(FILES "${_alpaka_FEATURE_TESTS_DIR}/StdAtomicRef.cpp" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/alpaka/tests)
+install(FILES "${_alpaka_FEATURE_TESTS_DIR}/StdSimd.cpp" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/alpaka/tests)
 
 # Load alpaka's languages after FetchContent_MakeAvailable()
 #

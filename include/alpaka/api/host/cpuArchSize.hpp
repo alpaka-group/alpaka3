@@ -4,16 +4,37 @@
 
 #pragma once
 
+#include "alpaka/simd/simdConfig.hpp"
 #include "alpaka/utility.hpp"
 
 #include <cstdint>
 
 namespace alpaka::onHost::internal
 {
+
+    /** SIMD  width in bytes defined by std::simd
+     *
+     * @return 0 if std::simd is not supported or the T_Type is unsupported, else the SIMD width in bytes
+     */
+    template<typename T_Type>
+    constexpr size_t stdSimdWidth()
+    {
+        return 0;
+    }
+#if (ALPAKA_HAS_STD_SIMD)
+    template<typename T_Type>
+    requires requires { alpakaStdSimd::native_simd<T_Type>::size(); }
+    constexpr size_t stdSimdWidth()
+    {
+        return alpakaStdSimd::native_simd<T_Type>::size() * sizeof(T_Type);
+    }
+#endif
+
+
     template<typename T_Type>
     constexpr uint32_t getCPUSimdWidth()
     {
-        constexpr size_t simdWidthInByte =
+        constexpr size_t possibleSimdWidthBytes =
 #if defined(__AVX512BW__) || defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512VL__)
             64u;
 #elif defined(__riscv_vector)
@@ -44,6 +65,11 @@ namespace alpaka::onHost::internal
 #else
             sizeof(T_Type);
 #endif
+
+        // we assume that the standard is maintaining the vector length better than we, therefore take it if vector
+        // types are supported
+        constexpr size_t simdWidthInByte = stdSimdWidth<T_Type>() ? stdSimdWidth<T_Type>() : possibleSimdWidthBytes;
+
         return alpaka::divExZero(simdWidthInByte, sizeof(T_Type));
     }
 

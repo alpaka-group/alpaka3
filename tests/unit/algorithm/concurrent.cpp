@@ -42,7 +42,7 @@ struct StencilAddMin
         alpaka::concepts::Simd auto aSimd = a.load();
         alpaka::concepts::Simd auto bSimd = b.load();
         for(uint32_t idx = 0u; idx < simdWidth; ++idx)
-            aSimd[idx] += math::min(aSimd[idx], bSimd[idx]);
+            aSimd[idx] += math::min(+aSimd[idx], +bSimd[idx]);
         // write result back to a
         a = aSimd;
     }
