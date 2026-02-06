@@ -58,7 +58,7 @@ if(CMAKE_HIP_COMPILER)
 
     if(alpaka_FAST_MATH STREQUAL ON)
         alpaka_set_compiler_options(DEVICE target alpaka_target_hip "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-ffast-math>")
-    elseif(alpaka_MATH STREQUAL OFF)
+    elseif(alpaka_FAST_MATH STREQUAL OFF)
         alpaka_set_compiler_options(DEVICE target alpaka_target_hip "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-fno-fast-math>")
     endif()
 

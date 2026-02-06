@@ -91,7 +91,7 @@ endif()
 
 if(alpaka_FAST_MATH STREQUAL ON)
     alpaka_set_compiler_options(DEVICE target alpaka_target_oneapi "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-ffast-math>")
-elseif(alpaka_MATH STREQUAL OFF)
+elseif(alpaka_FAST_MATH STREQUAL OFF)
     alpaka_set_compiler_options(DEVICE target alpaka_target_oneapi "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-fno-fast-math>")
 endif()
 
