@@ -387,7 +387,7 @@ namespace alpaka::onHost
                 T_KernelBundle const&) const requires alpaka::concepts::CVector<T_NumThreads>
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::device);
-                auto numThreads = dataBlocking.getThreadSpec().m_numThreads;
+                auto numThreads = dataBlocking.getThreadSpec().getNumThreads();
 
                 /** All modern NVIDIA and AMD GPUs support at least 1014 threads.
                  * @attention: Due to lmem, shared memory or register usage the limit could be lower. In this case the
@@ -397,7 +397,7 @@ namespace alpaka::onHost
                 constexpr typename ALPAKA_TYPEOF(numThreads)::type hardwareLimitThreadsPerBlock = 1024u;
 
                 constexpr auto result = api::util::adjustToLimit<hardwareLimitThreadsPerBlock, 0u, 1u>(numThreads);
-                return ThreadSpec{dataBlocking.getThreadSpec().m_numBlocks, result};
+                return ThreadSpec{dataBlocking.getThreadSpec().getNumBlocks(), result};
             }
 
             auto operator()(
@@ -407,11 +407,11 @@ namespace alpaka::onHost
                 T_KernelBundle const&) const
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::device);
-                auto numThreadsPerBlocks = dataBlocking.getThreadSpec().m_numThreads;
+                auto numThreadsPerBlocks = dataBlocking.getThreadSpec().getNumThreads();
                 auto const maxThreadsPerBlock = device.m_properties.maxThreadsPerBlock;
 
                 auto result = api::util::adjustToLimit(numThreadsPerBlocks, maxThreadsPerBlock);
-                return ThreadSpec{dataBlocking.getThreadSpec().m_numBlocks, result};
+                return ThreadSpec{dataBlocking.getThreadSpec().getNumBlocks(), result};
             }
         };
     } // namespace internal

@@ -18,22 +18,34 @@ namespace alpaka::onHost
         alpaka::concepts::Vector<typename T_NumBlocks::type, T_NumBlocks::dim()> T_NumThreads>
     struct ThreadSpec
     {
-        using type = typename T_NumBlocks::type;
+        using index_type = typename T_NumBlocks::type;
         using NumBlocksVecType = typename T_NumBlocks::UniVec;
         using NumThreadsVecType = T_NumThreads;
 
-        static consteval uint32_t dim()
-        {
-            return T_NumThreads::dim();
-        }
-
+    private:
         NumBlocksVecType m_numBlocks;
         NumThreadsVecType m_numThreads;
 
+    public:
         constexpr ThreadSpec(T_NumBlocks const& numBlocks, T_NumThreads const& numThreadsPerBlock)
             : m_numBlocks(numBlocks)
             , m_numThreads(numThreadsPerBlock)
         {
+        }
+
+        [[nodiscard]] constexpr NumThreadsVecType const& getNumThreads() const noexcept
+        {
+            return m_numThreads;
+        }
+
+        [[nodiscard]] constexpr NumBlocksVecType const& getNumBlocks() const noexcept
+        {
+            return m_numBlocks;
+        }
+
+        [[nodiscard]] static consteval uint32_t dim()
+        {
+            return T_NumThreads::dim();
         }
     };
 
@@ -70,12 +82,12 @@ namespace alpaka::onHost
         template<typename T, typename T_IndexType = alpaka::NotRequired, uint32_t T_dim = alpaka::notRequiredDim>
         concept ThreadSpec
             = isThreadSpec_v<T>
-              && (std::same_as<T_IndexType, alpaka::NotRequired> || std::same_as<typename T::type, T_IndexType>)
+              && (std::same_as<T_IndexType, alpaka::NotRequired> || std::same_as<typename T::index_type, T_IndexType>)
               && ((T_dim == alpaka::notRequiredDim) || (T::dim() == T_dim));
     } // namespace concepts
 
     std::ostream& operator<<(std::ostream& s, concepts::ThreadSpec auto const& t)
     {
-        return s << "ThreadSpec{ blocks=" << t.m_numBlocks << ", threads=" << t.m_numThreads << " }";
+        return s << "ThreadSpec{ blocks=" << t.getNumBlocks() << ", threads=" << t.getNumThreads() << " }";
     }
 } // namespace alpaka::onHost

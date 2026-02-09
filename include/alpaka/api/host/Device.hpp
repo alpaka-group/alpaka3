@@ -319,7 +319,7 @@ namespace alpaka::onHost
             {
                 alpaka::unused(device, executor, kernelBundle);
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel);
-                auto numThreadBlocks = dataBlocking.getThreadSpec().m_numBlocks;
+                auto numThreadBlocks = dataBlocking.getThreadSpec().getNumBlocks();
                 return ThreadSpec{numThreadBlocks, T_NumThreads::template fill<1u>()};
             }
 
@@ -331,7 +331,7 @@ namespace alpaka::onHost
             {
                 alpaka::unused(device, executor, kernelBundle);
                 ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::kernel);
-                auto numThreadBlocks = dataBlocking.getThreadSpec().m_numBlocks;
+                auto numThreadBlocks = dataBlocking.getThreadSpec().getNumBlocks();
                 auto const numThreads = Vec<typename T_NumThreads::type, T_NumThreads::dim()>::fill(1);
                 return ThreadSpec{numThreadBlocks, numThreads};
             }

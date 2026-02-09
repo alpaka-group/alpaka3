@@ -229,14 +229,14 @@ namespace alpaka::onHost::internal
             if constexpr(T_ThreadSpec::dim() >= 4u)
             {
                 gridRange = sycl::nd_range<syclDim>{
-                    (threadSpec.m_numBlocks * threadSpec.m_numThreads).product(),
-                    threadSpec.m_numThreads.product()};
+                    (threadSpec.getNumBlocks() * threadSpec.getNumThreads()).product(),
+                    threadSpec.getNumThreads().product()};
             }
             else
             {
                 gridRange = sycl::nd_range<T_ThreadSpec::dim()>{
-                    detail::vecToSyclRange(threadSpec.m_numBlocks * threadSpec.m_numThreads),
-                    detail::vecToSyclRange(threadSpec.m_numThreads)};
+                    detail::vecToSyclRange(threadSpec.getNumBlocks() * threadSpec.getNumThreads()),
+                    detail::vecToSyclRange(threadSpec.getNumThreads())};
             }
 
             using ThreadSpecType = std::conditional_t<
@@ -246,7 +246,7 @@ namespace alpaka::onHost::internal
                     typename ALPAKA_TYPEOF(threadSpec)::NumBlocksVecType,
                     typename ALPAKA_TYPEOF(threadSpec)::NumThreadsVecType>>;
             // thread spec which is only holding data if the dimension is larger than 3u
-            auto optimizedThreadSpec = ThreadSpecType(threadSpec.m_numBlocks, threadSpec.m_numThreads);
+            auto optimizedThreadSpec = ThreadSpecType(threadSpec.getNumBlocks(), threadSpec.getNumThreads());
             return std::make_pair(gridRange, optimizedThreadSpec);
         }
 

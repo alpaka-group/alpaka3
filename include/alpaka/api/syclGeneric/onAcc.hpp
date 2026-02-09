@@ -53,7 +53,7 @@ namespace alpaka::onAcc
                 }
                 else
                 {
-                    return mapToND(m_optimizedThreadSpec.m_numBlocks, static_cast<IdxType>(m_item.get_group(0)));
+                    return mapToND(m_optimizedThreadSpec.getNumBlocks(), static_cast<IdxType>(m_item.get_group(0)));
                 }
             }
 
@@ -76,7 +76,7 @@ namespace alpaka::onAcc
                 }
                 else
                 {
-                    return m_optimizedThreadSpec.m_numBlocks;
+                    return m_optimizedThreadSpec.getNumBlocks();
                 }
             }
         };
@@ -114,7 +114,9 @@ namespace alpaka::onAcc
                 }
                 else
                 {
-                    return mapToND(m_optimizedThreadSpec.m_numThreads, static_cast<IdxType>(m_item.get_local_id(0)));
+                    return mapToND(
+                        m_optimizedThreadSpec.getNumThreads(),
+                        static_cast<IdxType>(m_item.get_local_id(0)));
                 }
             }
 
@@ -137,7 +139,7 @@ namespace alpaka::onAcc
                 }
                 else
                 {
-                    return m_optimizedThreadSpec.m_numThreads;
+                    return m_optimizedThreadSpec.getNumThreads();
                 }
             }
 

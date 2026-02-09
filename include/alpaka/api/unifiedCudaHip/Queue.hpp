@@ -282,13 +282,13 @@ namespace alpaka::onHost
 
                 if constexpr(dim >= 4u)
                 {
-                    numBlocks = threadSpec.m_numBlocks.product();
-                    numThreadsPerBlock = threadSpec.m_numThreads.product();
+                    numBlocks = threadSpec.getNumBlocks().product();
+                    numThreadsPerBlock = threadSpec.getNumThreads().product();
                 }
                 else
                 {
-                    numBlocks = threadSpec.m_numBlocks;
-                    numThreadsPerBlock = threadSpec.m_numThreads;
+                    numBlocks = threadSpec.getNumBlocks();
+                    numThreadsPerBlock = threadSpec.getNumThreads();
                 }
 
                 using ThreadSpecType = std::conditional_t<
@@ -298,7 +298,7 @@ namespace alpaka::onHost
                         typename ALPAKA_TYPEOF(threadSpec)::NumBlocksVecType,
                         typename ALPAKA_TYPEOF(threadSpec)::NumThreadsVecType>>;
                 // thread spec which is only holding data if the dimension is larger than 3u
-                auto optimizedThreadSpec = ThreadSpecType(threadSpec.m_numBlocks, threadSpec.m_numThreads);
+                auto optimizedThreadSpec = ThreadSpecType(threadSpec.getNumBlocks(), threadSpec.getNumThreads());
 
                 auto kernelName = gpuKernel<
                     ALPAKA_TYPEOF(getApi(queue)),

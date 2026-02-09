@@ -123,14 +123,14 @@ void testVectorAddKernel(alpaka::onHost::concepts::Device auto device, auto comp
         /* Some executors allow only a single thread for the block.
          * You must write your kernel independent of the number of threads per block.
          */
-        threadSpec.m_numThreads = 1u;
+        threadSpec = alpaka::onHost::ThreadSpec{threadSpec.getNumBlocks(), 1u};
     }
 
     // fill the output buffer with zeros; the size is known from the buffer objects
     alpaka::onHost::memset(queue, out_d, 0x00);
 
-    std::cout << "Testing VectorAddKernel with vector indices with " << threadSpec.m_numBlocks << " blocks and "
-              << threadSpec.m_numThreads << "\n";
+    std::cout << "Testing VectorAddKernel with vector indices with " << threadSpec.getNumBlocks() << " blocks and "
+              << threadSpec.getNumThreads() << "\n";
     queue.enqueue(computeExec, threadSpec, VectorAddKernel1D{}, in1_d, in2_d, out_d, Vec1D{size});
 
     // copy the results from the device to the host
@@ -208,12 +208,12 @@ void testVectorAddKernel3D(alpaka::onHost::concepts::Device auto device, auto co
         /* Some executors allow only a single thread for the block.
          * We map threads to blocks in this example.
          */
-        threadSpec.m_numBlocks *= threadSpec.m_numThreads;
-        threadSpec.m_numThreads = Vec3D::fill(1u);
+        threadSpec
+            = alpaka::onHost::ThreadSpec{threadSpec.getNumBlocks() * threadSpec.getNumThreads(), Vec3D::fill(1u)};
     }
 
-    std::cout << "Testing VectorAddKernel with vector indices with " << threadSpec.m_numBlocks << " blocks and "
-              << threadSpec.m_numThreads << "\n";
+    std::cout << "Testing VectorAddKernel with vector indices with " << threadSpec.getNumBlocks() << " blocks and "
+              << threadSpec.getNumThreads() << "\n";
 
     queue.enqueue(computeExec, threadSpec, VectorAddKernel3D{}, in1_d, in2_d, out_d, ndsize);
 

@@ -37,12 +37,12 @@ namespace alpaka::onHost
             {
                 using NumThreadsVecType = typename T_ThreadSpec::NumThreadsVecType;
 
-                if(m_threadBlocking.m_numThreads.product() != 1u)
+                if(m_threadBlocking.getNumThreads().product() != 1u)
                     throw std::runtime_error("Thread block extent must be 1.");
 #    pragma omp parallel
                 {
                     // copy from num blocks to derive correct index type
-                    auto blockIdx = m_threadBlocking.m_numBlocks;
+                    auto blockIdx = m_threadBlocking.getNumBlocks();
                     constexpr uint32_t simdWidth
                         = alpaka::getArchSimdWidth<uint8_t>(api::host, ALPAKA_TYPEOF(dict[object::deviceKind]){});
                     auto blockSharedMem = onAcc::cpu::SingleThreadStaticShared<simdWidth>{};
@@ -63,7 +63,7 @@ namespace alpaka::onHost
                         dict,
                         Dict{blockDynSharedMemEntry, blockDynSharedMemBytesEntry});
 
-                    auto blockCount = m_threadBlocking.m_numBlocks;
+                    auto blockCount = m_threadBlocking.getNumBlocks();
 
                     auto const blockLayerEntry = DictEntry{
                         layer::block,

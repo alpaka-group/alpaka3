@@ -33,14 +33,14 @@ namespace alpaka::onHost
             void operator()(auto const& kernelBundle, auto const& dict) const
             {
                 // copy from num blocks to derive correct index type
-                auto blockIdx = m_threadBlocking.m_numBlocks;
+                auto blockIdx = m_threadBlocking.getNumBlocks();
                 constexpr uint32_t simdWidth
                     = alpaka::getArchSimdWidth<uint8_t>(api::host, ALPAKA_TYPEOF(dict[object::deviceKind]){});
                 auto blockSharedMem = onAcc::cpu::SingleThreadStaticShared<simdWidth>{};
 
                 auto const blockLayerEntry = DictEntry{
                     layer::block,
-                    onAcc::cpu::GenericLayer{std::cref(blockIdx), std::cref(m_threadBlocking.m_numBlocks)}};
+                    onAcc::cpu::GenericLayer{std::cref(blockIdx), std::cref(m_threadBlocking.getNumBlocks())}};
                 auto const threadLayerEntry = DictEntry{layer::thread, onAcc::cpu::OneLayer<NumThreadsVecType>{}};
                 auto const blockSharedMemEntry = DictEntry{layer::shared, std::ref(blockSharedMem)};
                 auto const blockSyncEntry = DictEntry{action::threadBlockSync, onAcc::cpu::NoOp{}};
@@ -68,7 +68,7 @@ namespace alpaka::onHost
                     additionalDict));
                 meta::ndLoopIncIdx(
                     blockIdx,
-                    m_threadBlocking.m_numBlocks,
+                    m_threadBlocking.getNumBlocks(),
                     [&](auto const&)
                     {
                         kernelBundle(acc);

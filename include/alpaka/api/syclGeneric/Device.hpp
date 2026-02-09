@@ -306,7 +306,7 @@ namespace alpaka::onHost
             {
                 alpaka::unused(device, executor, kernelBundle);
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::device);
-                auto numThreads = dataBlocking.getThreadSpec().m_numThreads;
+                auto numThreads = dataBlocking.getThreadSpec().getNumThreads();
 
                 /** This limit is not exact but for typical GPUs, Intel, NVIDIA and AMD we can at least use 1024
                  * threads per block.
@@ -316,7 +316,7 @@ namespace alpaka::onHost
                 constexpr typename ALPAKA_TYPEOF(numThreads)::type hardwareLimitThreadsPerBlock = 1024u;
 
                 constexpr auto result = api::util::adjustToLimit<hardwareLimitThreadsPerBlock, 0u, 1u>(numThreads);
-                return ThreadSpec{dataBlocking.getThreadSpec().m_numBlocks, result};
+                return ThreadSpec{dataBlocking.getThreadSpec().getNumBlocks(), result};
             }
 
             auto operator()(
@@ -327,11 +327,11 @@ namespace alpaka::onHost
             {
                 alpaka::unused(executor, kernelBundle);
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::device);
-                auto numThreadsPerBlocks = dataBlocking.getThreadSpec().m_numThreads;
+                auto numThreadsPerBlocks = dataBlocking.getThreadSpec().getNumThreads();
                 auto const maxThreadsPerBlock = device.m_properties.maxThreadsPerBlock;
 
                 auto result = api::util::adjustToLimit(numThreadsPerBlocks, maxThreadsPerBlock);
-                return ThreadSpec{dataBlocking.getThreadSpec().m_numBlocks, result};
+                return ThreadSpec{dataBlocking.getThreadSpec().getNumBlocks(), result};
             }
         };
 
