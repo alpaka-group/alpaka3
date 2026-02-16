@@ -8,6 +8,7 @@
 #include "alpaka/core/PP.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/mem/BoundaryIter.hpp"
+#include "alpaka/mem/FlatIdxContainer.hpp"
 
 #include <cstdint>
 
@@ -73,6 +74,35 @@ namespace alpaka
         constexpr auto distance() const
         {
             return m_end - m_begin;
+        }
+
+        /** Begin iterator to iterate all positions in the range. It first iterates the fastest index (the one on the
+         * far right -> x-dimension) and then moves sequentially to the slowest index (the one on the far left) until
+         * it reaches the end.
+         *
+         * If you want to iterate the index in parallel with many threads, use the function
+         * alpaka::onAcc::makeIdxMap().
+         *
+         * @return Begin iterator
+         */
+        [[nodiscard]] constexpr auto begin() const
+        {
+            return alpaka::onAcc::FlatIdxContainer{
+                *this,
+                alpaka::ThreadSpace{T_End::fill(0), T_End::fill(1)},
+                alpaka::onAcc::layout::contiguous,
+                alpaka::iotaCVec<typename ALPAKA_TYPEOF(distance())::type, ALPAKA_TYPEOF(distance())::dim()>()}
+                .begin();
+        }
+
+        [[nodiscard]] constexpr auto end() const
+        {
+            return alpaka::onAcc::FlatIdxContainer{
+                *this,
+                alpaka::ThreadSpace{T_End::fill(0), T_End::fill(1)},
+                alpaka::onAcc::layout::contiguous,
+                alpaka::iotaCVec<typename ALPAKA_TYPEOF(distance())::type, ALPAKA_TYPEOF(distance())::dim()>()}
+                .end();
         }
 
         std::string toString(std::string const separator = ",", std::string const enclosings = "{}") const
