@@ -445,7 +445,8 @@ TEST_CASE("buffer const correctness MD", "[mem][sharedBuffer][correctness]")
     auto buffer0 = onHost::allocHost<int>(Vec{10, 10});
     requiresMutableBufferMd(buffer0);
     static_assert(!std::is_const_v<std::remove_pointer_t<decltype(buffer0.data())>>);
-    // mutable views
+
+    SECTION("getSubView/getSubBuffer from mutable DataStorage object")
     {
         [[maybe_unused]] auto subBuffer0 = buffer0.getSubSharedBuffer(Vec{2, 2});
         static_assert(!std::is_const_v<std::remove_pointer_t<decltype(subBuffer0.data())>>);
@@ -471,7 +472,8 @@ TEST_CASE("buffer const correctness MD", "[mem][sharedBuffer][correctness]")
         static_assert(!std::is_const_v<std::remove_pointer_t<decltype(mdSpan.data())>>);
         static_assert(!std::is_const_v<std::remove_reference_t<decltype(mdSpan[Vec{0, 0}])>>);
     }
-    // non-mutable views
+
+    SECTION("getSubView/getSubBuffer from non-mutable DataStorage object (inner const)")
     {
         onHost::SharedBuffer innerConstBuffer0 = buffer0.getConstSharedBuffer();
 
@@ -499,7 +501,8 @@ TEST_CASE("buffer const correctness MD", "[mem][sharedBuffer][correctness]")
         static_assert(std::is_const_v<std::remove_pointer_t<decltype(mdSpan.data())>>);
         static_assert(std::is_const_v<std::remove_reference_t<decltype(mdSpan[Vec{0, 0}])>>);
     }
-    // non-mutable views (outer const)
+
+    SECTION("getSubView/getSubBuffer from non-mutable DataStorage object (outer const)")
     {
         onHost::SharedBuffer const outerConstBuffer0 = buffer0;
         requiresMutableBufferMd(outerConstBuffer0);
