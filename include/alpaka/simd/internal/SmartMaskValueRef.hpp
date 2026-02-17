@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include "alpaka/simd/utility.hpp"
+#include "alpaka/simd/internal/utility.hpp"
 
 #include <type_traits>
 
-namespace alpaka
+namespace alpaka::internal
 {
 
     /** Simd mask reference
@@ -94,7 +94,7 @@ namespace alpaka
 #define SIMD_MASK_REF_ASSIGN_OP(OP, BOOL_FALLBACK)                                                                    \
     constexpr SmartMaskValueRef& operator OP(bool b) noexcept                                                         \
     {                                                                                                                 \
-        return (*this OP detail::valueMaskCast<ValueMaskType>(b));                                                    \
+        return (*this OP internal::valueMaskCast<ValueMaskType>(b));                                                  \
     }                                                                                                                 \
                                                                                                                       \
     constexpr SmartMaskValueRef& operator OP(ValueMaskType v) noexcept                                                \
@@ -122,4 +122,4 @@ namespace alpaka
         ValueMaskType& valueRef;
     };
 
-} // namespace alpaka
+} // namespace alpaka::internal

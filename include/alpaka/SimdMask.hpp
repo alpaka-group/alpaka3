@@ -21,9 +21,9 @@
 #include "alpaka/simd/concepts.hpp"
 #include "alpaka/simd/internal/StdSimdMask.hpp"
 #include "alpaka/simd/trait.hpp"
-#include "alpaka/simd/utility.hpp"
 #include "alpaka/trait.hpp"
 #include "simd/internal/EmuSimdMask.hpp"
+#include "simd/internal/utility.hpp"
 
 #include <array>
 #include <bit>
@@ -40,7 +40,7 @@ namespace alpaka
 {
     /** Simd mask vector
      *
-     * You should not use this type to create a buffer of SIMD masks.
+     * @attention You should not use this type to create a buffer of SIMD masks.
      * The implementation is not ABI compatible between different API's.
      * Using Simd masks created on the host and used in the compute kernel will be undefined behaviour.
      *
@@ -145,7 +145,7 @@ namespace alpaka
          */
         template<typename T_OtherStorage>
         ALPAKA_FN_HOST_ACC SimdMask(SimdMask<T_Type, T_width, T_OtherStorage> const& other)
-            : SimdMask([&](uint32_t const i) constexpr { return other[i]; })
+            : T_Storage(other.asStorage())
         {
         }
 

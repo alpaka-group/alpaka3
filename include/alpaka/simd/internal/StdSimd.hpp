@@ -19,7 +19,7 @@
 #include "alpaka/simd/concepts.hpp"
 #include "alpaka/simd/simdConfig.hpp"
 #include "alpaka/simd/trait.hpp"
-#include "alpaka/utility.hpp"
+#include "alpaka/vecConcepts.hpp"
 
 #include <type_traits>
 
@@ -27,7 +27,7 @@
 
 namespace alpaka
 {
-    namespace detail
+    namespace internal
     {
         template<typename T_Type, uint32_t T_width>
         struct StdSimd
@@ -67,12 +67,12 @@ namespace alpaka
                 return static_cast<BaseType const&>(*this);
             }
 
-            constexpr decltype(auto) where(concepts::SimdMask auto const& mask) const
+            constexpr decltype(auto) where(alpaka::concepts::SimdMask auto const& mask) const
             {
                 return alpakaStdSimd::where(mask.asNativeType(), asNativeType());
             }
 
-            constexpr decltype(auto) where(concepts::SimdMask auto const& mask)
+            constexpr decltype(auto) where(alpaka::concepts::SimdMask auto const& mask)
             {
                 return alpakaStdSimd::where(mask.asNativeType(), asNativeType());
             }
@@ -83,7 +83,7 @@ namespace alpaka
                 return StdSimd{ret};
             }
 
-            constexpr void copyFrom(T_Type const* data, concepts::Alignment auto alignment)
+            constexpr void copyFrom(T_Type const* data, alpaka::concepts::Alignment auto alignment)
             {
                 if constexpr((alignment.template get<T_Type>() % alignof(ALPAKA_TYPEOF(*this))) == 0u)
                     this->asNativeType().copy_from(data, alpakaStdSimd::vector_aligned);
@@ -91,7 +91,7 @@ namespace alpaka
                     this->asNativeType().copy_from(data, alpakaStdSimd::element_aligned);
             }
 
-            constexpr void copyTo(auto* data, concepts::Alignment auto alignment) const
+            constexpr void copyTo(auto* data, alpaka::concepts::Alignment auto alignment) const
             {
                 if constexpr((alignment.template get<T_Type>() % alignof(ALPAKA_TYPEOF(*this))) == 0u)
                     this->asNativeType().copy_to(data, alpakaStdSimd::vector_aligned);
@@ -128,13 +128,13 @@ namespace alpaka
         {                                                                                                             \
             return StdSimd<T_Type, T_width>{lhs.asNativeType() op rhs.asNativeType()};                                \
         }                                                                                                             \
-        template<typenameOrConcept T_Type, concepts::LosslesslyConvertible<T_Type> T_ValueType, uint32_t T_width>     \
-        constexpr auto operator op(const StdSimd<T_Type, T_width>& lhs, T_ValueType rhs)                              \
+        template<typenameOrConcept T_Type, uint32_t T_width>                                                          \
+        constexpr auto operator op(const StdSimd<T_Type, T_width>& lhs, T_Type rhs)                                   \
         {                                                                                                             \
             return StdSimd<T_Type, T_width>{lhs.asNativeType() op rhs};                                               \
         }                                                                                                             \
-        template<typenameOrConcept T_Type, concepts::LosslesslyConvertible<T_Type> T_ValueType, uint32_t T_width>     \
-        constexpr auto operator op(T_ValueType lhs, const StdSimd<T_Type, T_width>& rhs)                              \
+        template<typenameOrConcept T_Type, uint32_t T_width>                                                          \
+        constexpr auto operator op(T_Type lhs, const StdSimd<T_Type, T_width>& rhs)                                   \
         {                                                                                                             \
             return StdSimd<T_Type, T_width>{lhs op rhs.asNativeType()};                                               \
         }
@@ -152,7 +152,7 @@ namespace alpaka
 
 #    undef ALPAKA_VECTOR_BINARY_OP
 
-    } // namespace detail
+    } // namespace internal
 
     namespace trait
     {
@@ -162,7 +162,7 @@ namespace alpaka
             && alpakaStdSimd::fixed_size_simd<T_Type, T_width>::size() > 0)
         struct GetSimdStorageType<alpaka::api::Host, T_Type, T_width>
         {
-            using type = detail::StdSimd<T_Type, T_width>;
+            using type = internal::StdSimd<T_Type, T_width>;
         };
 
     } // namespace trait

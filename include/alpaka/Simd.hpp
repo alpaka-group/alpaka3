@@ -40,7 +40,7 @@ namespace alpaka
 {
     /** Simd vector
      *
-     * You should not use this type to create a buffer of SIMD vectors.
+     * @attention You should not use this type to create a buffer of SIMD vectors.
      * The implementation is not ABI compatible between different API's.
      * Using Simd data created on the host and used in the compute kernel will be undefined behaviour.
      *

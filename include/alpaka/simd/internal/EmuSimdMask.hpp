@@ -14,29 +14,28 @@
 
 #pragma once
 
-#include "SmartMaskValueRef.hpp"
 #include "alpaka/api/api.hpp"
-#include "alpaka/simd/alignment.hpp"
-#include "alpaka/simd/concepts.hpp"
 #include "alpaka/simd/internal/EmuSimd.hpp"
+#include "alpaka/simd/internal/SmartMaskValueRef.hpp"
+#include "alpaka/simd/internal/alignment.hpp"
+#include "alpaka/simd/internal/utility.hpp"
 #include "alpaka/simd/trait.hpp"
-#include "alpaka/simd/utility.hpp"
 
 #include <concepts>
 #include <type_traits>
 
 namespace alpaka
 {
-    namespace detail
+    namespace internal
     {
         template<typename T_Type, uint32_t T_width>
-        struct alignas(alpaka::detail::optimalAlignment<
-                       ALPAKA_TYPEOF(detail::valueMaskCast<T_Type>(true)),
+        struct alignas(alpaka::internal::optimalAlignment<
+                       ALPAKA_TYPEOF(internal::valueMaskCast<T_Type>(true)),
                        T_width,
-                       Alignment<sizeof(ALPAKA_TYPEOF(detail::valueMaskCast<T_Type>(true))) * T_width>>()) EmuSimdMask
-            : protected std::array<ALPAKA_TYPEOF(detail::valueMaskCast<T_Type>(true)), T_width>
+                       Alignment<sizeof(ALPAKA_TYPEOF(internal::valueMaskCast<T_Type>(true))) * T_width>>())
+            EmuSimdMask : protected std::array<ALPAKA_TYPEOF(internal::valueMaskCast<T_Type>(true)), T_width>
         {
-            using ValueMaskType = ALPAKA_TYPEOF(detail::valueMaskCast<T_Type>(true));
+            using ValueMaskType = ALPAKA_TYPEOF(internal::valueMaskCast<T_Type>(true));
 
             using BaseType = std::array<ValueMaskType, T_width>;
 
@@ -60,14 +59,6 @@ namespace alpaka
             }
 
             constexpr EmuSimdMask(EmuSimdMask&&) = default;
-
-            constexpr EmuSimdMask& operator=(EmuSimdMask& rhs)
-            {
-                // attention:  using default operator results in bad performance
-                for(uint32_t i = 0u; i < T_width; ++i)
-                    BaseType::operator[](i) = rhs[i];
-                return *this;
-            }
 
             constexpr EmuSimdMask& operator=(EmuSimdMask&& rhs) = default;
 
@@ -107,25 +98,25 @@ namespace alpaka
                 return EmuSimdMask(ret);
             }
 
-            constexpr void copyFrom(T_Type const* data, concepts::Alignment auto alignment)
+            constexpr void copyFrom(T_Type const* data, alpaka::concepts::Alignment auto alignment)
             {
                 if constexpr((alignment.template get<T_Type>() % alignof(ALPAKA_TYPEOF(*this))) == 0u)
                     *(this) = *reinterpret_cast<ALPAKA_TYPEOF(*this) const*>(data);
                 else
                 {
                     for(uint32_t i = 0u; i < T_width; ++i)
-                        (*this)[i] = data[i];
+                        asNativeType()[i] = data[i];
                 }
             }
 
-            constexpr void copyTo(auto* data, concepts::Alignment auto alignment) const
+            constexpr void copyTo(auto* data, alpaka::concepts::Alignment auto alignment) const
             {
                 if constexpr((alignment.template get<T_Type>() % alignof(ALPAKA_TYPEOF(*this))) == 0u)
                     *reinterpret_cast<ALPAKA_TYPEOF(*this) const*>(data) = (*this);
                 else
                 {
                     for(uint32_t i = 0u; i < T_width; ++i)
-                        data[i] = (*this)[i];
+                        data[i] = asNativeType()[i];
                 }
             }
 
@@ -137,14 +128,7 @@ namespace alpaka
     {                                                                                                                 \
         for(uint32_t i = 0u; i < T_width; i++)                                                                        \
         {                                                                                                             \
-            if constexpr(requires { unWrapp((*this)[i]) op rhs[i]; })                                                 \
-            {                                                                                                         \
-                unWrapp((*this)[i]) op rhs[i];                                                                        \
-            }                                                                                                         \
-            else                                                                                                      \
-            {                                                                                                         \
-                (*this)[i] op rhs[i];                                                                                 \
-            }                                                                                                         \
+            asNativeType()[i] op rhs[i];                                                                              \
         }                                                                                                             \
         return *this;                                                                                                 \
     }                                                                                                                 \
@@ -152,14 +136,7 @@ namespace alpaka
     {                                                                                                                 \
         for(uint32_t i = 0u; i < T_width; i++)                                                                        \
         {                                                                                                             \
-            if constexpr(requires { unWrapp((*this)[i]) op value; })                                                  \
-            {                                                                                                         \
-                unWrapp((*this)[i]) op value;                                                                         \
-            }                                                                                                         \
-            else                                                                                                      \
-            {                                                                                                         \
-                (*this)[i] op value;                                                                                  \
-            }                                                                                                         \
+            asNativeType()[i] op value;                                                                               \
         }                                                                                                             \
         return *this;                                                                                                 \
     }
@@ -210,14 +187,14 @@ namespace alpaka
         ALPAKA_VECTOR_BINARY_CMP_OP(EmuSimdMask, EmuSimdMask, typename, ||)
 
 #undef ALPAKA_VECTOR_BINARY_CMP_OP
-    } // namespace detail
+    } // namespace internal
 
     namespace trait
     {
         template<concepts::Api T_Api, typename T_Type, uint32_t T_width>
         struct GetSimdMaskStorageType
         {
-            using type = detail::EmuSimdMask<T_Type, T_width>;
+            using type = internal::EmuSimdMask<T_Type, T_width>;
         };
     } // namespace trait
 } // namespace alpaka
