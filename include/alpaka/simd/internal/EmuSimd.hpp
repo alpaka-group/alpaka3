@@ -53,8 +53,18 @@ namespace alpaka
             }
 
             constexpr EmuSimd(EmuSimd&&) = default;
-
             constexpr EmuSimd& operator=(EmuSimd&& rhs) = default;
+
+            constexpr EmuSimd& operator=(EmuSimd const& rhs) = default;
+
+            constexpr EmuSimd& operator=(T_Type const value)
+            {
+                for(uint32_t i = 0u; i < T_width; i++)
+                {
+                    asNativeType()[i] = value;
+                }
+                return *this;
+            }
 
             // constructor is required because exposing the array constructors does not work
             template<typename... T_Args>
@@ -176,7 +186,6 @@ namespace alpaka
             ALPAKA_VECTOR_ASSIGN_OP(-=)
             ALPAKA_VECTOR_ASSIGN_OP(/=)
             ALPAKA_VECTOR_ASSIGN_OP(*=)
-            ALPAKA_VECTOR_ASSIGN_OP(=)
 
 #undef ALPAKA_VECTOR_ASSIGN_OP
 

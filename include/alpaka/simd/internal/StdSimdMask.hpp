@@ -46,6 +46,14 @@ namespace alpaka
             constexpr StdSimdMask(StdSimdMask&&) = default;
             constexpr StdSimdMask& operator=(StdSimdMask&& rhs) = default;
 
+            constexpr StdSimdMask& operator=(StdSimdMask const& rhs) = default;
+
+            constexpr StdSimdMask& operator=(T_Type const value)
+            {
+                this->asNativeType() = value;
+                return *this;
+            }
+
             // constructor is required because exposing the array constructors does not work
             template<typename... T_Args>
             requires(sizeof...(T_Args) == T_width && (std::same_as<T_Args, T_Type> && ...))
@@ -119,7 +127,6 @@ namespace alpaka
             ALPAKA_VECTOR_ASSIGN_OP(&=)
             ALPAKA_VECTOR_ASSIGN_OP(|=)
             ALPAKA_VECTOR_ASSIGN_OP(^=)
-            ALPAKA_VECTOR_ASSIGN_OP(=)
 
 #    undef ALPAKA_VECTOR_ASSIGN_OP
         };
