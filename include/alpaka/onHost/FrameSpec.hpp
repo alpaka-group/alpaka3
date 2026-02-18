@@ -167,7 +167,7 @@ namespace alpaka::onHost
 
     std::ostream& operator<<(std::ostream& s, concepts::FrameSpec auto const& d)
     {
-        return s << "FrameSpec{ frames=" << d.getNumFrames() << ", frameExtent=" << d.getNumFrames() << ", "
+        return s << "FrameSpec{ frames=" << d.getNumFrames() << ", frameExtent=" << d.getFrameExtents() << ", "
                  << d.getThreadSpec() << " }";
     }
 
