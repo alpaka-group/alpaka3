@@ -155,11 +155,7 @@ namespace alpaka
 
         /** @brief Creates a sub view to a part of the memory.
          *
-         * The sub view has the same dimension as the original.
-         *
-         * @param extents Number of elements for each dimension. Each number must be less than or equal to the number
-         * of elements in the original dimension.
-         * @return View which is pointing only to a part of the original view.
+         * See alpaka::concepts::impl::IView
          */
         constexpr auto getSubView(alpaka::concepts::VectorOrScalar auto const& extents) const
         {
@@ -179,32 +175,7 @@ namespace alpaka
 
         /** @brief Creates a sub view to a part of the memory.
          *
-         * The sub view has the same dimension as the original. The offset defines the first coordinate of each
-         * dimension. The offset plus the extents defines the last element for each dimension in the original view.
-         *
-         * @code
-         * alpaka::Vec sub_view_offset{1,2,1};
-         * alpaka::Vec sub_view_extents{4,5,6};
-         * auto sub_view = view.getSubView(sub_view_offset, sub_view_extents);
-         *
-         * assert(view.dim() == sub_view.dim())
-         * assert(sub_view.getExtents() == sub_view_extents);
-         *
-         * // first element
-         * assert(sub_view[alpaka::Vec{0,0,0}] == view[sub_view_offset]);
-         * assert(sub_view[alpaka::Vec{0,1,0}] == view[alpaka::Vec{1,3,1}]);
-         * // last element
-         * assert(sub_view[alpaka::Vec{3,4,5}] == view[alpaka::Vec{4,6,6}]);
-         *
-         * assert(sub_view_offset.x() + sub_view_extents.x() << view.getExtents().x());
-         * assert(sub_view_offset.y() + sub_view_extents.y() << view.getExtents().y());
-         * assert(sub_view_offset.z() + sub_view_extents.z() << view.getExtents().z());
-         * @endcode
-         *
-         * @param offset offset in elements to the original view
-         * @param extents number of elements for each dimension
-         * @return View which is pointing only to a part of the original view with a shifted origin pointer.
-         *         The alignment of the sub view is reduced to the element alignment.
+         * See alpaka::concepts::impl::IView
          */
         constexpr auto getSubView(
             alpaka::concepts::VectorOrScalar auto const& offset,
