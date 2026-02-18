@@ -6,12 +6,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#define CHECK_MESSAGE(cond, msg)                                                                                      \
-    do                                                                                                                \
-    {                                                                                                                 \
-        INFO(msg);                                                                                                    \
-        CHECK(cond);                                                                                                  \
-    } while((void) 0, 0)
 #define REQUIRE_MESSAGE(cond, msg)                                                                                    \
     do                                                                                                                \
     {                                                                                                                 \
@@ -99,6 +93,18 @@ TEST_CASE("3D alpaka::View::getSubView function tests", "[mem][view][SubDataStor
 
         STATIC_REQUIRE(sub_view0.dim() == extents_subview0.dim());
         REQUIRE(sub_view0.getExtents() == extents_subview0);
+
+        REQUIRE(sub_view0[alpaka::Vec{0, 0, 0}] == view0[offset_subview0]);
+        REQUIRE(
+            sub_view0[alpaka::Vec{0, 1, 0}]
+            == view0[alpaka::Vec{offset_subview0.z(), offset_subview0.y() + 1, offset_subview0.x()}]);
+        REQUIRE(
+            sub_view0[extents_subview0 - alpaka::Vec{1, 1, 1}]
+            == view0[offset_subview0 + extents_subview0 - alpaka::Vec{1, 1, 1}]);
+
+        REQUIRE(offset_subview0.x() + extents_subview0.x() <= view0.getExtents().x());
+        REQUIRE(offset_subview0.y() + extents_subview0.y() <= view0.getExtents().y());
+        REQUIRE(offset_subview0.z() + extents_subview0.z() <= view0.getExtents().z());
 
         auto counter = offset_subview0;
         for(auto vec : alpaka::IdxRange{sub_view0.getExtents()})
