@@ -33,6 +33,8 @@ namespace alpaka
      * @brief An n-dimensional boundary direction. Encodes a single unique boundary of an nD volume, e.g., a specific
      * corner of a 2D plane or a side of a 3D cube.
      *
+     * See also: @ref BoundaryDirectionsContainer
+     *
      * @tparam T_dim The dimensionality of the volume that this is a boundary direction for.
      * @tparam T_LowHaloVec The vector type used for the lower halo sizes.
      * @tparam T_UpHaloVec The vector type used for the upper halo sizes.
@@ -119,7 +121,7 @@ namespace alpaka
     };
 
     /**
-     * @brief The iterator type for [`BoundaryDirectionsContainer`](@ref)
+     * @brief The iterator type for @ref BoundaryDirectionsContainer.
      *
      * @tparam T_dim The dimensionality of the volume that this is a boundary direction iterator for.
      * @tparam T_LowHaloVec The vector type used for the lower halo sizes.
@@ -215,9 +217,16 @@ namespace alpaka
 
     /**
      * @brief A container for boundary directions of an n-dimensional volume.
+     *
+     * This class implements `begin()`, `end()`, and `length()`, and can be iterated over. This is useful for stencil
+     * codes, where boundary conditions exist, that need to only be applied to elements on the borders of memory. To
+     * create a BoundaryDirectionsContainer for a memory object, see @ref makeBoundaryDirIterator.
+     *
+     * A 0D boundary direction is a single value, a 1D boundary direction is a "line", for example edges of a cube, a
+     * 2D boundary direction is a "plane", for example the sides of a cube.
+     *
      * For example, a 1-dimensional (1D) volume has two 0D ends and a 1D center. A 2D volume has 4 0D corners, 4 1D
-     * edges, and one 2D center. In general, there are 3^n boundaries for an nD volume. This class implements begin(),
-     * end(), and length(), and can be iterated over.
+     * edges, and one 2D center. In general, there are 3^n boundaries for an nD volume.
      *
      * @tparam T_dim The dimensionality of the volume that this contains boundaries for.
      * @tparam T_LowHaloVec The vector type used for the lower halo sizes.
@@ -269,7 +278,7 @@ namespace alpaka
     BoundaryDirectionsContainer(LowHaloVecType const& lowerHalos, UpHaloVecType const& upperHalos)
         -> BoundaryDirectionsContainer<LowHaloVecType::dim(), LowHaloVecType, UpHaloVecType>;
 
-    /** @brief Construct and return a single boundary direction specifying the middle of a volume.
+    /** @brief Construct and return a single @ref BoundaryDirection specifying the middle of a volume.
      */
     template<uint32_t T_dim>
     [[nodiscard]] constexpr auto makeCoreBoundaryDirection(
@@ -282,7 +291,8 @@ namespace alpaka
             upperHalos};
     }
 
-    /** @brief Construct and return a single boundary direction specifying the middle of a volume with symmetric halos.
+    /** @brief Construct and return a single @ref BoundaryDirection specifying the middle of a volume with symmetric
+     * halos.
      */
     template<uint32_t T_dim>
     [[nodiscard]] constexpr auto makeCoreBoundaryDirection(concepts::Vector auto const& halos)
@@ -294,8 +304,8 @@ namespace alpaka
     }
 
     /**
-     * @brief Construct and return a single boundary direction specifying the middle of a volume with all halo sizes
-     * set to 1.
+     * @brief Construct and return a single @ref BoundaryDirection specifying the middle of a volume with all halo
+     * sizes set to 1.
      */
     template<uint32_t T_dim>
     consteval auto makeCoreBoundaryDirection()
@@ -303,8 +313,8 @@ namespace alpaka
         return makeCoreBoundaryDirection<T_dim>(fillCVec<uint32_t, T_dim, 1u>());
     }
 
-    /** @brief Construct and return a boundary direction container. This container can be iterated over. See
-     * BoundaryDirectionsContainer.
+    /** @brief Construct and return a @ref BoundaryDirectionsContainer. This container can be iterated over.
+     *
      * This constructor uses a default halo size of 1 everywhere.
      *
      * @tparam T_dim The dimensionality of the container.
@@ -329,8 +339,8 @@ namespace alpaka
         return BoundaryDirectionsContainer{haloSizes, haloSizes};
     }
 
-    /** @brief Construct and return a boundary direction container with the given halo sizes.
-     * This container can be iterated over. See BoundaryDirectionsContainer.
+    /** @brief Construct and return a @ref BoundaryDirectionsContainer with the given halo sizes.
+     * This container can be iterated over.
      * The dimensionality is inferred from the given halo sizes, which are asserted to be identical.
      *
      * @param lowerHaloSizes The lower end halo sizes per dimension. These are the halos from 0 in each dimension.
@@ -346,8 +356,8 @@ namespace alpaka
         return BoundaryDirectionsContainer{lowerHaloSizes, upperHaloSizes};
     }
 
-    /** @brief Construct and return a boundary direction container for the given view with default (size 1) halo
-     * sizes. This container can be iterated over. See BoundaryDirectionsContainer.
+    /** @brief Construct and return a @ref BoundaryDirectionsContainer for the given view with default (size 1) halo
+     * sizes. This container can be iterated over.
      * For custom halo sizes, use one of the other overloads.
      *
      * @param view The given view; only the dimension of the view matters.
