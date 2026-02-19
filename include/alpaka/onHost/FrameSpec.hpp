@@ -86,12 +86,27 @@ namespace alpaka::onHost
             return m_numFrames;
         }
 
+        [[nodiscard]] constexpr NumFramesVecType& getNumFrames() noexcept
+        {
+            return m_numFrames;
+        }
+
         [[nodiscard]] constexpr FrameExtentsVecType const& getFrameExtents() const noexcept
         {
             return m_frameExtents;
         }
 
+        [[nodiscard]] constexpr FrameExtentsVecType& getFrameExtents() noexcept
+        {
+            return m_frameExtents;
+        }
+
         [[nodiscard]] constexpr ThreadSpecType const& getThreadSpec() const noexcept
+        {
+            return m_threadSpec;
+        }
+
+        [[nodiscard]] constexpr ThreadSpecType& getThreadSpec() noexcept
         {
             return m_threadSpec;
         }

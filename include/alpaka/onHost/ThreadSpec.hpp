@@ -38,7 +38,17 @@ namespace alpaka::onHost
             return m_numThreads;
         }
 
+        [[nodiscard]] constexpr NumThreadsVecType& getNumThreads() noexcept
+        {
+            return m_numThreads;
+        }
+
         [[nodiscard]] constexpr NumBlocksVecType const& getNumBlocks() const noexcept
+        {
+            return m_numBlocks;
+        }
+
+        [[nodiscard]] constexpr NumBlocksVecType& getNumBlocks() noexcept
         {
             return m_numBlocks;
         }
