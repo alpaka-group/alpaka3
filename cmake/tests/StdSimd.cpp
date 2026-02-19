@@ -1,4 +1,4 @@
-/* Copyright 2022 Jan Stephan
+/* Copyright 2026 René Widera
  * SPDX-License-Identifier: MPL-2.0
  */
 
@@ -17,6 +17,7 @@ namespace alpakaStdSimd = std::experimental;
 #    endif
 #endif
 
+#include <cstdlib>
 
 auto main() -> int
 {

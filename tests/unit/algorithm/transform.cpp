@@ -58,6 +58,8 @@ struct ScalarOpWithAcc
     constexpr auto operator()(onAcc::concepts::Acc auto const&, auto const& a, auto const& b) const
     {
         using ValueType = trait::GetValueType_t<ALPAKA_TYPEOF(a)>;
+        // The algorithm is using SIMD internally, forwarding single lanes to this functor can result in forwarding
+        // reference wrappers instead of values. By calling operator + we enforce casting to the value type.
         return math::min(a + ValueType{1}, +b);
     }
 };

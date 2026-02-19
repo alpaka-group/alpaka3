@@ -93,9 +93,8 @@ namespace alpaka
          * The generator must return the value for the corresponding index of the component which is passed to the
          * generator.
          */
-        template<
-            typename F,
-            std::enable_if_t<std::is_invocable_v<F, std::integral_constant<uint32_t, 0u>>, uint32_t> = 0u>
+        template<typename F>
+        requires(std::is_invocable_v<F, std::integral_constant<uint32_t, 0u>>)
         ALPAKA_FN_HOST_ACC explicit SimdMask(F&& generator)
             : SimdMask(std::forward<F>(generator), std::make_integer_sequence<uint32_t, T_width>{})
         {
@@ -198,6 +197,13 @@ namespace alpaka
 
         using Storage::asNativeType;
 
+        /** static cast the instance to the storage type
+         *
+         * @attention: Do not use this method in user code, it is an implementation detail and can cause undefined
+         * behaviour if used wrong.
+         *
+         * @{
+         */
         constexpr auto& asStorage()
         {
             return static_cast<Storage&>(*this);
@@ -207,6 +213,8 @@ namespace alpaka
         {
             return static_cast<Storage const&>(*this);
         }
+
+        /** @} */
 
         /** assign operator
          * @{

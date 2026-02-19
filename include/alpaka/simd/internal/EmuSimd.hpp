@@ -77,6 +77,11 @@ namespace alpaka
             {
             }
 
+            /** static cast the instance to the parent class
+             *
+             * This method is mostly used to get access to native arithmetic and comparison operators.
+             * @{
+             */
             constexpr auto& asNativeType()
             {
                 return static_cast<EmuSimd&>(*this);
@@ -87,15 +92,16 @@ namespace alpaka
                 return static_cast<EmuSimd const&>(*this);
             }
 
+            /** @} */
+
             static constexpr auto fill(T_Type const& value)
             {
                 EmuSimd result([&value](uint32_t const) { return static_cast<T_Type>(value); });
                 return result;
             }
 
-            template<
-                typename F,
-                std::enable_if_t<std::is_invocable_v<F, std::integral_constant<uint32_t, 0u>>, uint32_t> = 0u>
+            template<typename F>
+            requires(std::is_invocable_v<F, std::integral_constant<uint32_t, 0u>>)
             constexpr explicit EmuSimd(F&& generator)
                 : EmuSimd(std::forward<F>(generator), std::make_integer_sequence<uint32_t, T_width>{})
             {

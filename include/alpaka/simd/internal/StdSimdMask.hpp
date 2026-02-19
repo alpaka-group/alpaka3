@@ -77,6 +77,12 @@ namespace alpaka
             {
             }
 
+            /** static cast the instance to the parent std::simd_mask class
+             *
+             * This method is mostly used to get access to native comparison operators.
+             *
+             * @{
+             */
             constexpr auto& asNativeType()
             {
                 return static_cast<BaseType&>(*this);
@@ -87,6 +93,8 @@ namespace alpaka
                 return static_cast<BaseType const&>(*this);
             }
 
+            /** @} */
+
             static constexpr auto fill(T_Type const& value)
             {
                 BaseType ret(value);
@@ -95,7 +103,7 @@ namespace alpaka
 
             constexpr void copyFrom(T_Type const* data, alpaka::concepts::Alignment auto alignment)
             {
-                if constexpr((alignment.template get<T_Type>() % alignof(ALPAKA_TYPEOF(*this))) == 0u)
+                if constexpr((alignment.template get<T_Type>() % alpakaStdSimd::memory_alignment_v<BaseType>) == 0u)
                     this->asNativeType().copy_from(data, alpakaStdSimd::vector_aligned);
                 else
                     this->asNativeType().copy_from(data, alpakaStdSimd::element_aligned);
@@ -103,7 +111,7 @@ namespace alpaka
 
             constexpr void copyTo(auto* data, alpaka::concepts::Alignment auto alignment) const
             {
-                if constexpr((alignment.template get<T_Type>() % alignof(ALPAKA_TYPEOF(*this))) == 0u)
+                if constexpr((alignment.template get<T_Type>() % alpakaStdSimd::memory_alignment_v<BaseType>) == 0u)
                     this->asNativeType().copy_to(data, alpakaStdSimd::vector_aligned);
                 else
                     this->asNativeType().copy_to(data, alpakaStdSimd::element_aligned);

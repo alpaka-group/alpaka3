@@ -225,7 +225,7 @@ try_compile(
     "${PROJECT_BINARY_DIR}/alpakaFeatureTests" # Binary directory for output file
     SOURCES
         "${_alpaka_FEATURE_TESTS_DIR}/StdAtomicRef.cpp" # Source file
-    CXX_STANDARD 20
+    CXX_STANDARD ${alpaka_CXX_STANDARD}
     CXX_STANDARD_REQUIRED TRUE
     CXX_EXTENSIONS FALSE
 )
@@ -261,7 +261,7 @@ if(alpaka_SIMD STREQUAL "STDSIMD" OR alpaka_SIMD STREQUAL "DEFAULT")
         "${PROJECT_BINARY_DIR}/alpakaFeatureTests" # Binary directory for output file
         SOURCES
             "${_alpaka_FEATURE_TESTS_DIR}/StdSimd.cpp" # Source file
-        CXX_STANDARD 20
+        CXX_STANDARD ${alpaka_CXX_STANDARD}
         CXX_STANDARD_REQUIRED TRUE
         CXX_EXTENSIONS FALSE
     )

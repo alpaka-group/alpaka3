@@ -94,6 +94,13 @@ namespace alpaka
 
         using Storage::asNativeType;
 
+        /** static cast the instance to the storage type
+         *
+         * @attention: Do not use this method in user code, it is an implementation detail and can cause undefined
+         * behaviour if used wrong.
+         *
+         * @{
+         */
         constexpr auto& asStorage()
         {
             return static_cast<Storage&>(*this);
@@ -104,6 +111,8 @@ namespace alpaka
             return static_cast<Storage const&>(*this);
         }
 
+        /** @} */
+
         /** Initialize via a generator expression
          *
          * The generator must return the value for the corresponding index of the component which is passed to the
@@ -112,9 +121,8 @@ namespace alpaka
          * This constructor is not constexpr because std::simd is using a reinterpret_cast during the initialization
          * with a generator and complains that this is not allowed in constexpr functions.
          */
-        template<
-            typename F,
-            std::enable_if_t<std::is_invocable_v<F, std::integral_constant<uint32_t, 0u>>, uint32_t> = 0u>
+        template<typename F>
+        requires(std::is_invocable_v<F, std::integral_constant<uint32_t, 0u>>)
         ALPAKA_FN_HOST_ACC explicit Simd(F&& generator)
             : Simd(std::forward<F>(generator), std::make_integer_sequence<uint32_t, T_width>{})
         {
@@ -150,9 +158,11 @@ namespace alpaka
         {
         }
 
-        /** Allow static_cast / explicit cast to member type for 1D vector */
-        template<uint32_t T_deferDim = T_width, typename = typename std::enable_if<T_deferDim == 1u>::type>
-        constexpr explicit operator type()
+        /** Allow static_cast / explicit cast to member type
+         *
+         * @attention only available for SIMD with a single lane.
+         */
+        constexpr explicit operator type() requires(T_width == 1u)
         {
             return (*this)[0];
         }
@@ -252,16 +262,6 @@ namespace alpaka
             return asStorage()[idx];
         }
 
-        /** named member access
-         *
-         * @attention The mapping from names x,y,z,w to memory indicies differ from the mapping of an alpaka vector @c
-         * Vec
-         *
-         * index -> name [0->x,1->y,2->z,3->w]
-         *               [0->r,1->g,2->b,3->a]
-         *               [0->s0,1->s1,2->s2,...,10->sA,...,15->sF]
-         * @{
-         */
 #define ALPAKA_NAMED_ARRAY_ACCESS(functionName, laneIdx)                                                              \
     constexpr reference functionName() requires(T_width >= laneIdx + 1)                                               \
     {                                                                                                                 \
@@ -272,14 +272,32 @@ namespace alpaka
         return (*this)[T_width - 1u - laneIdx];                                                                       \
     }
 
+        /** @brief named lane access
+         *
+         * @attention The mapping from names x,y,z,w to memory indices differ from the mapping of an alpaka vector @c
+         * Vec. The availability of the naming methods depends on the SIMD width.
+         *
+         * You can have access to the same lane index via different nonspecific naming.
+         *
+         * @code
+         * lane index   :  0,  1,  2,  3, ...,  9, 10, ... , 15
+         * hexadecimal  : s0, s1, s2, s3, ..., s9, SA, ... , SF
+         * coordinate   :  x,  y,  z,  w
+         * color channel:  r,  g,  b,  a
+         * @endcode
+         *
+         * @{
+         */
         ALPAKA_NAMED_ARRAY_ACCESS(x, 0u)
         ALPAKA_NAMED_ARRAY_ACCESS(y, 1u)
         ALPAKA_NAMED_ARRAY_ACCESS(z, 2u)
         ALPAKA_NAMED_ARRAY_ACCESS(w, 3u)
+
         ALPAKA_NAMED_ARRAY_ACCESS(r, 0u)
         ALPAKA_NAMED_ARRAY_ACCESS(g, 1u)
         ALPAKA_NAMED_ARRAY_ACCESS(b, 2u)
         ALPAKA_NAMED_ARRAY_ACCESS(a, 3u)
+
         ALPAKA_NAMED_ARRAY_ACCESS(s0, 0u)
         ALPAKA_NAMED_ARRAY_ACCESS(s1, 1u)
         ALPAKA_NAMED_ARRAY_ACCESS(s2, 2u)
@@ -296,10 +314,9 @@ namespace alpaka
         ALPAKA_NAMED_ARRAY_ACCESS(sD, 13u)
         ALPAKA_NAMED_ARRAY_ACCESS(sE, 14u)
         ALPAKA_NAMED_ARRAY_ACCESS(sF, 15u)
+        /** @} */
 
 #undef ALPAKA_NAMED_ARRAY_ACCESS
-
-        /** @} */
 
         /** Shrink the number of elements of a vector.
          *

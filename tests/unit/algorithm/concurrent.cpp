@@ -42,7 +42,11 @@ struct StencilAddMin
         alpaka::concepts::Simd auto aSimd = a.load();
         alpaka::concepts::Simd auto bSimd = b.load();
         for(uint32_t idx = 0u; idx < simdWidth; ++idx)
+        {
+            // SIMD comparisons results in a SimdMask, accessing single lanes of a mask are allowed to return a value
+            // wrapper, there we need to use the unary + operator to cast the wrapper to a value
             aSimd[idx] += math::min(+aSimd[idx], +bSimd[idx]);
+        }
         // write result back to a
         a = aSimd;
     }

@@ -90,6 +90,11 @@ namespace alpaka
             {
             }
 
+            /** static cast the instance to the parent class
+             *
+             * This method is mostly used to get access to native comparison operators.
+             * @{
+             */
             constexpr auto& asNativeType()
             {
                 return static_cast<EmuSimdMask&>(*this);
@@ -99,6 +104,8 @@ namespace alpaka
             {
                 return static_cast<EmuSimdMask const&>(*this);
             }
+
+            /** @} */
 
             static constexpr auto fill(T_Type const& value)
             {

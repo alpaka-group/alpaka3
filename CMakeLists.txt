@@ -124,7 +124,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/alpakaConfig.cmake DESTINATION ${CMAKE
 # copy tests to the installation
 install(DIRECTORY ${_alpaka_TESTING_DIR} DESTINATION ${CMAKE_INSTALL_DATAROOTDIR} USE_SOURCE_PERMISSIONS)
 
-# File is required to validate the C++20 feature std::atomic_ref
+# Files required to validate optional features std::atomic_ref and std::simd
 install(FILES "${_alpaka_FEATURE_TESTS_DIR}/StdAtomicRef.cpp" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/alpaka/tests)
 install(FILES "${_alpaka_FEATURE_TESTS_DIR}/StdSimd.cpp" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/alpaka/tests)
 
