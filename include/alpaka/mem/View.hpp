@@ -155,7 +155,13 @@ namespace alpaka
 
         /** @brief Creates a sub view to a part of the memory.
          *
-         * See alpaka::concepts::impl::IView
+         * The sub view has the same dimension as the original.
+         *
+         * @param extents Number of elements for each dimension. Each number must be less than or equal to
+         * the number of elements in the original dimension.
+         * @return View which is pointing only to a part of the original view.
+         *
+         * @{
          */
         constexpr auto getSubView(alpaka::concepts::VectorOrScalar auto const& extents) const
         {
@@ -173,9 +179,20 @@ namespace alpaka
             return makeView(T_Api{}, this->data(), extentMd, this->getPitches(), T_MemAlignment{});
         }
 
+        /** @} */
+
         /** @brief Creates a sub view to a part of the memory.
          *
-         * See alpaka::concepts::impl::IView
+         * The sub view has the same dimension as the original. The offset defines the first coordinate of
+         * each dimension. The `offset + extents - 1` defines the last element for each dimension in the
+         * original view. Offset plus extents should not exceed the extents of the original view.
+         *
+         * @param offset offset in elements to the original view
+         * @param extents number of elements for each dimension
+         * @return View which is pointing only to a part of the original view with a shifted origin pointer.
+         *         The alignment of the sub view is reduced to the element alignment.
+         *
+         * @{
          */
         constexpr auto getSubView(
             alpaka::concepts::VectorOrScalar auto const& offset,
@@ -204,6 +221,8 @@ namespace alpaka
             auto shiftedPtr = &(*this)[offsetMd];
             return makeView(T_Api{}, shiftedPtr, extentMd, this->getPitches(), Alignment<>{});
         }
+
+        /** @} */
 
         template<alpaka::concepts::Vector LowHaloVecType, alpaka::concepts::Vector UpHaloVecType>
         constexpr auto getSubView(
