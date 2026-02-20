@@ -244,6 +244,9 @@ namespace alpaka::onHost
          * This differs from `destructorWaitFor`, because that function waits, while `keepAlive` does not block
          * anything, it just extends lifetime.
          *
+         * @attention Do not apply this function to a buffer allocated with alpaka::onHost::allocDeferred, see
+         * https://github.com/alpaka-group/alpaka3/issues/394
+         *
          * @param queue The queue to enqueue to.
          */
         void keepAlive(auto& queue)
