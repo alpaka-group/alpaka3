@@ -17,6 +17,11 @@
 
 namespace alpaka::core
 {
+    /** A thread queue executing tasks asynchronously.
+     *
+     * This object should be used as members of objects which are secured by smart pointers to avoid that a task is
+     * taking over the ownership of the callback thread and therefore can destroy itself before all tasks are executed.
+     */
     class CallbackThread
     {
 #if ALPAKA_COMP_CLANG
@@ -67,10 +72,21 @@ namespace alpaka::core
             {
                 if(std::this_thread::get_id() == m_thread.get_id())
                 {
-                    std::cerr << "ERROR in ~CallbackThread: thread joins itself" << std::endl;
-                    std::abort();
+                    // at this point there should be no tasks in the queue
+                    if(!m_tasks.empty())
+                    {
+                        std::cerr << "ERROR in ~CallbackThread: internal queue is not empty but object is destructed."
+                                  << std::endl;
+                        std::abort();
+                    }
+                    /* We can not joint our self.
+                     * We can only end here if a tasks the callback thread is executing is capturing the object which
+                     * is holding the callback thread.
+                     */
+                    m_thread.detach();
                 }
-                m_thread.join();
+                else
+                    m_thread.join();
             }
         }
 

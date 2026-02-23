@@ -421,13 +421,21 @@ namespace alpaka::onHost
             auto deleter = [queueDep = std::move(queueDependency), ptr]()
             {
                 sycl::queue sycl_queue = queueDep->getNativeHandle();
-                /* Always enqueue into a queue, even if the queue is blocking, to track possible in queue
-                 * dependencies. sycl::free() is safe to be called within a hast_task
+                /* in cases where the deleter lifetime is extended e.g. by using keepAlive() on a buffer it can be that
+                 * the queue callback thread is holding the last instance of the deleter. keepAlive() is executed
+                 * within a sycl host tasks, it is forbidden to create another host task in a host task, result will be
+                 * a deadlock. Therefore, we submit the host task to free the memory first to the callback thread which
+                 * is than enqueuing the host task. This means that we can guarantee that the memory is freed after all
+                 * work, enqueued at the moment where the deleter is executed, in the sycl queue is finished. The
+                 * memory will be freed a little bit later than it could in cases other threads enqueue now kernel,
+                 * tasks into the sycl queue while the callback thread is creating the host tasks.
                  */
-                [[maybe_unused]] sycl::event ev = sycl_queue.submit(
-                    [&](sycl::handler& cgh) { cgh.host_task([=]() { sycl::free(toVoidPtr(ptr), sycl_queue); }); });
-                if(queueDep->isBlocking())
-                    ev.wait_and_throw();
+                queueDep->m_callBackThread.submit(
+                    [sycl_queue, ptr]() mutable
+                    {
+                        sycl_queue.submit([&](sycl::handler& cgh)
+                                          { cgh.host_task([=]() { sycl::free(toVoidPtr(ptr), sycl_queue); }); });
+                    });
             };
 
             auto sharedBuffer = onHost::SharedBuffer{
