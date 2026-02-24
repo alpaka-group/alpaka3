@@ -458,6 +458,9 @@ namespace alpaka::onHost::internal
     {
         using T_Data = ALPAKA_TYPEOF(inputVec)::value_type;
 
+        /* We do not use allocDeferred here since we measured up to a factor 40 higher latency compared to alloc for
+         * CUDA 12.8 on an A30 for the first call. The reason is the cuda per stream caching pool setup time.
+         */
         auto buf = onHost::alloc<char>(devAcc, scanBufferSize<T_Data>(inputVec.getExtents()));
 
         scan<SCAN_TYPE>(queue, devAcc, exec, buf, outputVec, inputVec);
