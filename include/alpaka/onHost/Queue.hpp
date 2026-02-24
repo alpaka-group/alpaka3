@@ -368,6 +368,8 @@ namespace alpaka::onHost
      * memory is allowed to be used in other queues too. To avoid that a view to the memory is still in use during the
      * deallocation you can use @see addDestructorAction() and wait for a queue if it **differs** to the queue used for
      * the allocation.
+     * The first access could have higher latency compared to alpaka::onHost::alloc() due to the initial setup of the
+     * caching allocator used by some APIs. But subsequent accesses should have lower latency.
      *
      * @attention It is allowed that the function is blocking the caller until the memory is created.
      *
@@ -397,6 +399,8 @@ namespace alpaka::onHost
      * memory is allowed to be used in other queues too. To avoid that a view to the memory is still in use during the
      * deallocation you can use @see addDestructorAction() and wait for a queue if it **differs** to the queue used for
      * the allocation.
+     * The first access could have higher latency compared to alpaka::onHost::alloc() due to the initial setup of the
+     * caching allocator used by some APIs. But subsequent accesses should have lower latency.
      *
      * @attention It is allowed that the function is blocking the caller until the memory is created.
      *

@@ -19,7 +19,7 @@ namespace alpaka::core
 {
     /** A thread queue executing tasks asynchronously.
      *
-     * This object should be used as members of objects which are secured by smart pointers to avoid that a task is
+     * This object should be used as a member of objects which are secured by smart pointers to avoid that a task is
      * taking over the ownership of the callback thread and therefore can destroy itself before all tasks are executed.
      */
     class CallbackThread
@@ -79,9 +79,9 @@ namespace alpaka::core
                                   << std::endl;
                         std::abort();
                     }
-                    /* We can not joint our self.
-                     * We can only end here if a tasks the callback thread is executing is capturing the object which
-                     * is holding the callback thread.
+                    /* We can not join ourselves.
+                     * We can only end here if a task that the callback thread is executing is capturing the object
+                     * which is holding the callback thread.
                      */
                     m_thread.detach();
                 }
