@@ -14,6 +14,7 @@
 #include "alpaka/mem/trait.hpp"
 #include "alpaka/onHost/interface.hpp"
 #include "alpaka/trait.hpp"
+#include "concepts/IndexVec.hpp"
 
 #include <type_traits>
 
@@ -177,12 +178,12 @@ namespace alpaka
          * @param idx n-dimensional offset, relative to the origin pointer
          * @return reference to the value
          */
-        constexpr const_reference operator[](concepts::Vector auto const& idx) const
+        constexpr const_reference operator[](concepts::IndexVec<index_type, dim()> auto const& idx) const
         {
             return *ptr(idx);
         }
 
-        constexpr reference operator[](concepts::Vector auto const& idx)
+        constexpr reference operator[](concepts::IndexVec<index_type, dim()> auto const& idx)
         {
             return *ptr(idx);
         }

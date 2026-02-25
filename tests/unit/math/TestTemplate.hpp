@@ -20,7 +20,7 @@ using namespace alpaka;
 
 namespace mathtest
 {
-    template<std::size_t TCapacity>
+    template<uint32_t TCapacity>
     struct TestKernel
     {
         //! @tparam TAcc Accelerator.

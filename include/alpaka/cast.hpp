@@ -33,7 +33,12 @@ namespace alpaka
         };
     } // namespace internal
 
-    /** Performs a precision of the value type to another.
+    /** Performs a static_cast on the storage type of combined data type.
+     *
+     * @code
+     * alpaka::Vec<float, 4> foo{0.f, 0.f, 0.f, 0.f};
+     * alpaka::Vec<int32_t, 4> bar = pCast<int32_t>(foo);
+     * @endcode
      *
      * @tparam T_To The target type to which the input is cast.
      * @param input The input value to be cast. value_type must be cast able to `T_To`.
@@ -45,10 +50,17 @@ namespace alpaka
         return internal::PCast::Op<T_To, ALPAKA_TYPEOF(input)>{}(input);
     }
 
-    /** Performs a precision of the value type to another.
+    /** Performs a static_cast on the storage type of combined data type.
      *
      * It ensures that the conversion is lossless by requiring that the value_type of the input is lossless convertible
      * to the target type `T_To`.
+     *
+     * @code
+     * alpaka::Vec<float, 4> foo{0.f, 0.f, 0.f, 0.f};
+     * // Invalid, loss of precision due to conversion from float to int
+     * // alpaka::Vec<int32_t, 4> bar = lpCast<int32_t>(foo);
+     * alpaka::Vec<double, 4> bar = lpCast<double>(foo);
+     * @endcode
      *
      * @tparam T_To The target type to which the input is cast.
      * @param input The input value to be cast. value_type must be cast able to `T_To`.

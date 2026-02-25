@@ -232,3 +232,95 @@ TEST_CASE(
     STATIC_REQUIRE(alpaka::concepts::IDataSource<MdSpanNonCopyStruct>);
     STATIC_REQUIRE(alpaka::concepts::IMdSpan<MdSpanNonCopyStruct>);
 }
+
+template<typename TMdSpan, typename TIdx>
+concept CanCallAccessOperator = requires(TMdSpan mdspan, TIdx idx) { mdspan[idx]; };
+
+TEST_CASE("test alpaka::MdSpan argument concept access operator - correct dimension", "[mem][concepts][mdspan]")
+{
+    int data = 4;
+
+    using Vec1D = alpaka::Vec<int, 1>;
+    using Vec2D = alpaka::Vec<int, 2>;
+    using Vec3D = alpaka::Vec<int, 3>;
+
+    Vec1D extents_1d{1};
+    Vec2D extents_2d{1, 1};
+    Vec3D extents_3d{1, 1, 1};
+
+    Vec1D pitch_1d = alpaka::calculatePitchesFromExtents<int>(extents_1d);
+    Vec2D pitch_2d = alpaka::calculatePitchesFromExtents<int>(extents_2d);
+    Vec3D pitch_3d = alpaka::calculatePitchesFromExtents<int>(extents_3d);
+
+    using MdSpan1D = alpaka::MdSpan<int, Vec1D, Vec1D>;
+    using MdSpan2D = alpaka::MdSpan<int, Vec2D, Vec2D>;
+    using MdSpan3D = alpaka::MdSpan<int, Vec3D, Vec3D>;
+
+
+    MdSpan1D mdspan_1d{&data, extents_1d, pitch_1d};
+    MdSpan2D mdspan_2d{&data, extents_2d, pitch_2d};
+    MdSpan3D mdspan_3d{&data, extents_3d, pitch_3d};
+
+    Vec1D idx_1D{0};
+    Vec2D idx_2D{0, 0};
+    Vec3D idx_3D{0, 0, 0};
+
+    STATIC_REQUIRE(std::is_same_v<Vec1D::type, int>);
+
+    SECTION("1D mdspan")
+    {
+        REQUIRE(mdspan_1d[idx_1D] == 4);
+        STATIC_REQUIRE(CanCallAccessOperator<MdSpan1D, Vec1D>);
+        STATIC_REQUIRE_FALSE(CanCallAccessOperator<MdSpan1D, Vec2D>);
+        STATIC_REQUIRE_FALSE(CanCallAccessOperator<MdSpan1D, Vec3D>);
+    }
+
+    SECTION("2D mdspan")
+    {
+        REQUIRE(mdspan_2d[idx_2D] == 4);
+        STATIC_REQUIRE_FALSE(CanCallAccessOperator<MdSpan2D, Vec1D>);
+        STATIC_REQUIRE(CanCallAccessOperator<MdSpan2D, Vec2D>);
+        STATIC_REQUIRE_FALSE(CanCallAccessOperator<MdSpan2D, Vec3D>);
+    }
+
+    SECTION("3D mdspan")
+    {
+        REQUIRE(mdspan_3d[idx_3D] == 4);
+        STATIC_REQUIRE_FALSE(CanCallAccessOperator<MdSpan3D, Vec1D>);
+        STATIC_REQUIRE_FALSE(CanCallAccessOperator<MdSpan3D, Vec2D>);
+        STATIC_REQUIRE(CanCallAccessOperator<MdSpan3D, Vec3D>);
+    }
+}
+
+template<typename T_IndexType>
+using Vec1DIdx = alpaka::Vec<T_IndexType, 1>;
+
+template<typename T_IndexType>
+using MdSpan1DIdx = alpaka::MdSpan<int, Vec1DIdx<T_IndexType>, Vec1DIdx<T_IndexType>>;
+
+TEST_CASE("test alpaka::MdSpan argument concept access operator - correct type", "[mem][concepts][mdspan]")
+{
+    SECTION("same sign")
+    {
+        STATIC_REQUIRE(alpaka::concepts::IndexVec<Vec1DIdx<int32_t>, int32_t, 1>);
+        STATIC_REQUIRE(CanCallAccessOperator<MdSpan1DIdx<int32_t>, Vec1DIdx<int32_t>>);
+
+        STATIC_REQUIRE(alpaka::concepts::IndexVec<Vec1DIdx<int16_t>, int32_t, 1>);
+        STATIC_REQUIRE(CanCallAccessOperator<MdSpan1DIdx<int32_t>, Vec1DIdx<int16_t>>);
+
+        STATIC_REQUIRE_FALSE(alpaka::concepts::IndexVec<Vec1DIdx<int32_t>, int16_t, 1>);
+        STATIC_REQUIRE_FALSE(CanCallAccessOperator<MdSpan1DIdx<int16_t>, Vec1DIdx<int32_t>>);
+    }
+
+    SECTION("different sign")
+    {
+        STATIC_REQUIRE_FALSE(alpaka::concepts::IndexVec<Vec1DIdx<uint32_t>, int32_t, 1>);
+        STATIC_REQUIRE_FALSE(CanCallAccessOperator<MdSpan1DIdx<int32_t>, Vec1DIdx<uint32_t>>);
+
+        STATIC_REQUIRE_FALSE(alpaka::concepts::IndexVec<Vec1DIdx<int32_t>, uint32_t, 1>);
+        STATIC_REQUIRE_FALSE(CanCallAccessOperator<MdSpan1DIdx<uint32_t>, Vec1DIdx<int32_t>>);
+
+        STATIC_REQUIRE(alpaka::concepts::IndexVec<Vec1DIdx<uint16_t>, int32_t, 1>);
+        STATIC_REQUIRE(CanCallAccessOperator<MdSpan1DIdx<int32_t>, Vec1DIdx<uint16_t>>);
+    }
+}
