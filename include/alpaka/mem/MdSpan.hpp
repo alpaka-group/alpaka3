@@ -178,12 +178,16 @@ namespace alpaka
          * @param idx n-dimensional offset, relative to the origin pointer
          * @return reference to the value
          */
-        constexpr const_reference operator[](concepts::IndexVec<index_type, dim()> auto const& idx) const
+        constexpr const_reference operator[](
+            // cannot use dim() or alpaka::trait::GetDim_v<T_Extents> because the cause an segmentation fault in nvcc
+            concepts::IndexVec<index_type, alpaka::trait::GetDim<T_Extents>::value> auto const& idx) const
         {
             return *ptr(idx);
         }
 
-        constexpr reference operator[](concepts::IndexVec<index_type, dim()> auto const& idx)
+        constexpr reference operator[](
+            // cannot use dim() or alpaka::trait::GetDim_v<T_Extents> because the cause an segmentation fault in nvcc
+            concepts::IndexVec<index_type, alpaka::trait::GetDim<T_Extents>::value> auto const& idx)
         {
             return *ptr(idx);
         }
