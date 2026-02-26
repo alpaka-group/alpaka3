@@ -63,6 +63,7 @@
 #include "alpaka/simd/math.hpp"
 #include "alpaka/tag.hpp"
 #include "alpaka/utility.hpp"
+#include "alpaka/vendor.hpp"
 
 /** main alpaka namespace.
  *

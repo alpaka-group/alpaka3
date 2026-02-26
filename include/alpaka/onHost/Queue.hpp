@@ -49,14 +49,19 @@ namespace alpaka::onHost
             return m_queue.get();
         }
 
-        constexpr auto getApi() const
+        constexpr alpaka::concepts::Api auto getApi() const
         {
             return alpaka::internal::getApi(*m_queue.get());
         }
 
-        constexpr auto getQueueKind() const
+        constexpr alpaka::concepts::QueueKind auto getQueueKind() const
         {
             return T_DeviceKind{};
+        }
+
+        constexpr alpaka::concepts::DeviceKind auto getDeviceKind() const
+        {
+            return alpaka::internal::getDeviceKind(this->getDevice());
         }
 
         void _()

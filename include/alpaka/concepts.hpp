@@ -50,6 +50,13 @@ namespace alpaka
          */
         template<typename T>
         concept Pointer = std::is_pointer_v<T>;
+
+        /** @brief Concept to check that a device specification with an API and device kind can be extracted. */
+        template<typename T>
+        concept DeviceSpec = requires(T t) {
+            { internal::getApi(t) } -> alpaka::concepts::Api;
+            { internal::getDeviceKind(t) } -> alpaka::concepts::DeviceKind;
+        };
     } // namespace concepts
 
     namespace internal
