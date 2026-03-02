@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <alpaka/core/config.hpp>
+#include "alpaka/core/config.hpp"
 
 /* We can not include 'experimental/simd' with NVCC else we will trigger the compiler error:
  * experimental/bits/simd.h(1537): error: invalid type conversion
