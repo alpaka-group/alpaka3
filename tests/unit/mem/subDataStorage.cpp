@@ -4,14 +4,8 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/testMacros.hpp>
 #include <catch2/catch_test_macros.hpp>
-
-#define REQUIRE_MESSAGE(cond, msg)                                                                                    \
-    do                                                                                                                \
-    {                                                                                                                 \
-        INFO(msg);                                                                                                    \
-        REQUIRE(cond);                                                                                                \
-    } while((void) 0, 0)
 
 TEST_CASE("1D alpaka::View::getSubView function tests", "[mem][view][SubDataStorage]")
 {

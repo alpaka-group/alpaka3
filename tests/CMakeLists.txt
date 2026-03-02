@@ -9,6 +9,15 @@
 cmake_minimum_required(VERSION 3.25)
 
 ################################################################################
+# Test target.
+################################################################################
+
+set(_TEST_TARGET_NAME alpakaTest)
+add_library(${_TEST_TARGET_NAME} INTERFACE)
+target_include_directories(${_TEST_TARGET_NAME} INTERFACE include)
+add_library(alpaka::test ALIAS ${_TEST_TARGET_NAME})
+
+################################################################################
 # Add subdirectories.
 ################################################################################
 
@@ -61,7 +70,10 @@ function(alpaka_add_test_target target_prefix folder)
                         target_include_directories(${_test_target_name} PRIVATE ${test_folder}/include)
                     endif()
 
-                    target_link_libraries(${_test_target_name} PRIVATE Catch2::Catch2WithMain alpaka::alpaka)
+                    target_link_libraries(
+                        ${_test_target_name}
+                        PRIVATE Catch2::Catch2WithMain alpaka::alpaka alpaka::test
+                    )
                     alpaka_finalize(${_test_target_name})
                     catch_discover_tests(${_test_target_name})
                 endif()
