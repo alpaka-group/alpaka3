@@ -180,7 +180,7 @@ namespace alpaka::example::scan
                     }
                     else
                     {
-                        MdSpanArray<LocalArray, alpaka::Alignment<16>> regMemMd{regMem};
+                        MdSpanArray<LocalArray, IdxType, alpaka::Alignment<16>> regMemMd{regMem};
 
                         for(auto i = 0_idx; i < elsPerThread; i += 4_idx)
                         {
@@ -297,7 +297,7 @@ namespace alpaka::example::scan
                     }
                     else
                     {
-                        MdSpanArray<LocalArray, alpaka::Alignment<16>> regMemMd{regMem};
+                        MdSpanArray<LocalArray, IdxType, alpaka::Alignment<16>> regMemMd{regMem};
 
                         for(auto i = 0_idx; i < elsPerThread; i += 4_idx)
                         {

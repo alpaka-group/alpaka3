@@ -127,13 +127,14 @@ namespace alpaka::onHost::internal
 
             alpaka::concepts::CVector auto numThreadsPerBlock = acc[layer::thread].count();
             alpaka::concepts::CVector auto frameExtent = acc[frame::extent];
-            constexpr auto elsPerThread = frameExtent.x() / numThreadsPerBlock.x();
+            constexpr std::integral auto elsPerThread = frameExtent.x() / numThreadsPerBlock.x();
             alpaka::concepts::CVector auto chunkExtent = CVec<T_Idx, elsPerThread * numThreadsPerBlock.x()>{};
             alpaka::concepts::Vector auto numElements = inputVec.getExtents();
 
-            constexpr auto miniBlockSize = std::min(maximumMiniBlockSize<DeviceType, T_Idx, T_Data>(), elsPerThread);
-            constexpr auto miniBlocksPerThread = elsPerThread / miniBlockSize;
-            constexpr auto miniBlocksPerChunk = chunkExtent.x() / miniBlockSize;
+            constexpr std::integral auto miniBlockSize
+                = std::min(maximumMiniBlockSize<DeviceType, T_Idx, T_Data>(), elsPerThread);
+            constexpr std::integral auto miniBlocksPerThread = elsPerThread / miniBlockSize;
+            constexpr std::integral auto miniBlocksPerChunk = chunkExtent.x() / miniBlockSize;
 
             constexpr auto LocalArrayLength = miniBlocksPerThread * miniBlockSize;
             using LocalArray = T_Data[LocalArrayLength];
@@ -177,7 +178,7 @@ namespace alpaka::onHost::internal
                     }
                     else
                     {
-                        MdSpanArray<LocalArray, alpaka::Alignment<16>> regMemMd{regMem};
+                        MdSpanArray<LocalArray, T_Idx, alpaka::Alignment<16>> regMemMd{regMem};
 
                         for(auto i = T_Idx{0}; i < elsPerThread; i += T_Idx{4})
                         {
@@ -296,7 +297,7 @@ namespace alpaka::onHost::internal
                     }
                     else
                     {
-                        MdSpanArray<LocalArray, alpaka::Alignment<16>> regMemMd{regMem};
+                        MdSpanArray<LocalArray, T_Idx, alpaka::Alignment<16>> regMemMd{regMem};
 
                         for(auto i = T_Idx{0}; i < elsPerThread; i += T_Idx{4})
                         {
@@ -396,7 +397,7 @@ namespace alpaka::onHost::internal
 
         // Define chunkExtent
         constexpr auto chunkExtent = CVec<T_Idx, chunkSize>{};
-        auto numFrames = divCeil(inputVec.getExtents(), chunkExtent);
+        alpaka::Vec numFrames = divCeil(inputVec.getExtents(), chunkExtent);
         auto const frameSpec = onHost::FrameSpec{numFrames, chunkExtent, CVec<T_Idx, 256u>{}};
 
         ALPAKA_LOG_INFO(

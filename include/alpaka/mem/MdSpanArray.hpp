@@ -14,6 +14,7 @@
 #include "alpaka/mem/concepts/detail/InnerTypeAllowedCast.hpp"
 #include "alpaka/mem/trait.hpp"
 #include "alpaka/trait.hpp"
+#include "concepts/IndexVec.hpp"
 
 #include <concepts>
 #include <type_traits>
@@ -53,7 +54,7 @@ namespace alpaka
         using type = T[T_Extents{}[0u]];
     };
 
-    template<typename T_ArrayType, concepts::Alignment T_MemAlignment = Alignment<>>
+    template<typename T_ArrayType, std::integral T_IndexType, concepts::Alignment T_MemAlignment = Alignment<>>
     struct MdSpanArray
     {
         static_assert(
@@ -61,21 +62,20 @@ namespace alpaka
             "MdSpanArray can only be used if std::is_array_v<T> is true for the given type.");
     };
 
-    template<alpaka::concepts::CStaticArray T_ArrayType, concepts::Alignment T_MemAlignment>
-    struct MdSpanArray<T_ArrayType, T_MemAlignment>
+    template<alpaka::concepts::CStaticArray T_ArrayType, std::integral T_IndexType, concepts::Alignment T_MemAlignment>
+    struct MdSpanArray<T_ArrayType, T_IndexType, T_MemAlignment>
     {
     private:
         using MutArrayType = std::remove_cv_t<T_ArrayType>;
         using ConstArrayType = std::add_const_t<MutArrayType>;
 
     public:
-        using extentType = std::extent<T_ArrayType, std::rank_v<T_ArrayType>>;
         using value_type = std::remove_all_extents_t<T_ArrayType>;
         using reference = value_type&;
         using const_reference = value_type const&;
         using pointer = value_type*;
         using const_pointer = value_type const*;
-        using index_type = typename extentType::value_type;
+        using index_type = T_IndexType;
 
         static consteval uint32_t dim()
         {
@@ -119,7 +119,7 @@ namespace alpaka
 
         constexpr auto getConstMdSpan() const
         {
-            return MdSpanArray<ConstArrayType, T_MemAlignment>(*m_ptr);
+            return MdSpanArray<ConstArrayType, T_IndexType, T_MemAlignment>(*m_ptr);
         }
 
         constexpr auto cbegin() const
@@ -145,7 +145,8 @@ namespace alpaka
 
         template<alpaka::concepts::CStaticArray T_OtherArrayType>
         requires internal::concepts::InnerTypeAllowedCast<T_ArrayType, T_OtherArrayType>
-        constexpr MdSpanArray(MdSpanArray<T_OtherArrayType, T_MemAlignment> const& other) : m_ptr(other.m_ptr)
+        constexpr MdSpanArray(MdSpanArray<T_OtherArrayType, T_IndexType, T_MemAlignment> const& other)
+            : m_ptr(other.m_ptr)
         {
         }
 
@@ -155,7 +156,7 @@ namespace alpaka
 
         template<alpaka::concepts::CStaticArray T_OtherArrayType>
         requires internal::concepts::InnerTypeAllowedCast<T_ArrayType, T_OtherArrayType>
-        constexpr MdSpanArray(MdSpanArray<T_OtherArrayType, T_MemAlignment>&& other) : m_ptr(other.m_ptr)
+        constexpr MdSpanArray(MdSpanArray<T_OtherArrayType, T_IndexType, T_MemAlignment>&& other) : m_ptr(other.m_ptr)
         {
         }
 
@@ -172,12 +173,16 @@ namespace alpaka
          * @return reference to the value
          * @{
          */
-        constexpr const_reference operator[](concepts::Vector auto const& idx) const
+        constexpr const_reference operator[](
+            // cannot use dim() or std::rank_v<T_ArrayType> because the cause a segmentation fault in nvcc
+            concepts::IndexVec<index_type, std::rank<T_ArrayType>::value> auto const& idx) const
         {
             return ResolveArrayAccess<dim()>{}(*m_ptr, idx);
         }
 
-        constexpr reference operator[](concepts::Vector auto const& idx)
+        constexpr reference operator[](
+            // cannot use dim() or std::rank_v<T_ArrayType> because the cause a segmentation fault in nvcc
+            concepts::IndexVec<index_type, std::rank<T_ArrayType>::value> auto const& idx)
         {
             return ResolveArrayAccess<dim()>{}(*m_ptr, idx);
         }
@@ -201,9 +206,10 @@ namespace alpaka
 
         constexpr auto getExtents() const
         {
-            auto const createExtents = []<auto... T_extent>(std::index_sequence<T_extent...>)
+            // uint32_t is the data type of dim()
+            auto const createExtents = []<uint32_t... T_extent>(std::integer_sequence<uint32_t, T_extent...>)
             { return CVec<index_type, std::extent_v<T_ArrayType, T_extent>...>{}; };
-            return createExtents(std::make_integer_sequence<index_type, dim()>{});
+            return createExtents(std::make_integer_sequence<uint32_t, dim()>{});
         }
 
         constexpr auto getPitches() const
@@ -224,8 +230,8 @@ namespace alpaka
 
         // Needs to be friend of itself with that the copy and move constructor can access the m_ptr of other, if the
         // const modifier of the C static array type of the other type is different.
-        friend MdSpanArray<MutArrayType, T_MemAlignment>;
-        friend MdSpanArray<ConstArrayType, T_MemAlignment>;
+        friend MdSpanArray<MutArrayType, T_IndexType, T_MemAlignment>;
+        friend MdSpanArray<ConstArrayType, T_IndexType, T_MemAlignment>;
 
     protected:
         // we store the C static array as mutable type that we can assign it another MdSpanArray with const or
@@ -234,10 +240,14 @@ namespace alpaka
         MutArrayType* m_ptr;
     };
 
-    template<alpaka::concepts::CStaticArray T_ArrayType, alpaka::concepts::Alignment T_MemAlignment>
-    struct internal::CopyConstructableDataSource<MdSpanArray<T_ArrayType, T_MemAlignment>> : std::true_type
+    template<
+        alpaka::concepts::CStaticArray T_ArrayType,
+        std::integral T_IndexType,
+        alpaka::concepts::Alignment T_MemAlignment>
+    struct internal::CopyConstructableDataSource<MdSpanArray<T_ArrayType, T_IndexType, T_MemAlignment>>
+        : std::true_type
     {
-        using InnerMutable = MdSpanArray<std::remove_const_t<T_ArrayType>, T_MemAlignment>;
-        using InnerConst = MdSpanArray<std::add_const_t<T_ArrayType>, T_MemAlignment>;
+        using InnerMutable = MdSpanArray<std::remove_const_t<T_ArrayType>, T_IndexType, T_MemAlignment>;
+        using InnerConst = MdSpanArray<std::add_const_t<T_ArrayType>, T_IndexType, T_MemAlignment>;
     };
 } // namespace alpaka

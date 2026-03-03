@@ -68,7 +68,7 @@ struct DeviceGlobalMemKernelCArray2D
     {
         for(auto globalTheradIdx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{numThreads}))
         {
-            out[globalTheradIdx] = fixed_sized_array2D.get()[Vec{1, 2}];
+            out[globalTheradIdx] = fixed_sized_array2D.get()[Vec<size_t, 2>{1, 2}];
         }
     }
 };

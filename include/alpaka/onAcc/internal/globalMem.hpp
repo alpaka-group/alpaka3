@@ -213,7 +213,8 @@ namespace alpaka::onAcc::internal
 
         constexpr decltype(auto) get() const requires(std::is_array_v<type>)
         {
-            return alpaka::MdSpanArray<type>{T_Storage::get(thisApi())};
+            // a static array of type C also uses size_t to define its length
+            return alpaka::MdSpanArray<type, size_t>{T_Storage::get(thisApi())};
         }
 
         constexpr operator type&()

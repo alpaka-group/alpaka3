@@ -135,7 +135,7 @@ TEMPLATE_TEST_CASE_SIG(
     {
         auto zero = static_cast<TElem>(0);
         TElem static_data[2][2] = {{zero, zero}, {zero, zero}};
-        using MdSpanArrayType = MdSpanArray<decltype(static_data), alpaka::Alignment<16>>;
+        using MdSpanArrayType = MdSpanArray<decltype(static_data), size_t, alpaka::Alignment<16>>;
         MdSpanArrayType mdSpanArray(static_data);
         STATIC_REQUIRE(std::same_as<typename MdSpanArrayType::value_type, TElem>);
 

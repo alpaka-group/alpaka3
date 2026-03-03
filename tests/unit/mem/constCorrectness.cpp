@@ -192,8 +192,8 @@ TEST_CASE("MdSpanArray inner const copy constructor", "[mem][mdspanarray][correc
 {
     int static_data[2][2] = {{0, 0}, {0, 0}};
     int const const_static_data[2][2] = {{0, 0}, {0, 0}};
-    using MutMdSpanArray = MdSpanArray<decltype(static_data), alpaka::Alignment<16>>;
-    using ConstMdSpanArray = MdSpanArray<decltype(const_static_data), alpaka::Alignment<16>>;
+    using MutMdSpanArray = MdSpanArray<decltype(static_data), size_t, alpaka::Alignment<16>>;
+    using ConstMdSpanArray = MdSpanArray<decltype(const_static_data), size_t, alpaka::Alignment<16>>;
 
     STATIC_REQUIRE(internal::CopyConstructableDataSource<MutMdSpanArray>::value);
 
@@ -222,8 +222,8 @@ TEST_CASE("MdSpanArray inner const assignment operator", "[mem][mdspanarray][cor
 {
     int static_data[2][2] = {{0, 0}, {0, 0}};
     int const const_static_data[2][2] = {{0, 0}, {0, 0}};
-    using MutMdSpanArray = MdSpanArray<decltype(static_data), alpaka::Alignment<16>>;
-    using ConstMdSpanArray = MdSpanArray<decltype(const_static_data), alpaka::Alignment<16>>;
+    using MutMdSpanArray = MdSpanArray<decltype(static_data), size_t, alpaka::Alignment<16>>;
+    using ConstMdSpanArray = MdSpanArray<decltype(const_static_data), size_t, alpaka::Alignment<16>>;
 
     MutMdSpanArray mut_md_span_array(static_data);
     ConstMdSpanArray const_md_span_array(const_static_data);
@@ -244,8 +244,8 @@ TEST_CASE(
 {
     int static_data[2][2] = {{0, 0}, {0, 0}};
     int const const_static_data[2][2] = {{0, 0}, {0, 0}};
-    using MutMdSpanArray = MdSpanArray<decltype(static_data), alpaka::Alignment<16>>;
-    using ConstMdSpanArray = MdSpanArray<decltype(const_static_data), alpaka::Alignment<16>>;
+    using MutMdSpanArray = MdSpanArray<decltype(static_data), size_t, alpaka::Alignment<16>>;
+    using ConstMdSpanArray = MdSpanArray<decltype(const_static_data), size_t, alpaka::Alignment<16>>;
 
     MutMdSpanArray constr_mut_md(static_data);
     ConstMdSpanArray constr_const_md(const_static_data);
