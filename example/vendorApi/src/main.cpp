@@ -5,7 +5,13 @@
 /** @file This example demonstrates how to use vendor function overloads in alpaka.
  *
  * Vendor functions are a mechanism to register and map functions from third party libraries for specific APIs and
- * device kinds. This allows you to call the registered functions with alpaka queues or devices without having to care
+ * device kinds.
+ *
+ * The alpaka vendor API provides you with a clean unified way to map you prepared interface signature to functions of
+ * different vendors. There is no need to deal with preprocessor macros on the caller side within user functions, which
+ * keeps the code readable.
+ *
+ * This allows you to call the registered functions with alpaka queues or devices without having to care
  * about the underlying API and device kind. The example shows how to register and map a vendor function for the api
  * Host and device kind Cpu, which is implemented with std::transform. If available, a vendor function overload for the
  * api Cuda and device kind NvidiaGpu is registered as well, which is implemented with thrust::transform. If no vendor
@@ -22,7 +28,6 @@
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
-#include <random>
 #include <typeinfo>
 
 using namespace alpaka;
@@ -83,11 +88,6 @@ auto example(auto const deviceSpec, auto const exec, size_t numElements) -> int
     // Allocate 3 host memory buffers
     auto iotaBuffer_h = onHost::allocHost<Data>(extent);
     auto output_h = onHost::allocHostLike(iotaBuffer_h);
-
-    // C++14 random generator for uniformly distributed numbers in {1,..,42}
-    std::random_device rd{};
-    std::default_random_engine eng{rd()};
-    std::uniform_int_distribution<Data> dist(1, 42);
 
     for(auto i(0u); i < iotaBuffer_h.getExtents().x(); ++i)
         iotaBuffer_h[i] = i;
