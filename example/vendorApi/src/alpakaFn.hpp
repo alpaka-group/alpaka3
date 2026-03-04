@@ -12,19 +12,19 @@ namespace vendorExample
 {
     /** Generic fallback to alpaka implementation.
      *
-     * If Transform is defined with alpaka::vendor::FnFallback::toAlpaka the generic alpaka implementation is called in
+     * If Transform is defined with alpaka::fn::Fallback::toAlpaka the generic alpaka implementation is called in
      * case no other overload is fitting.
      *
      * @{
      */
     template<alpaka::concepts::DeviceKind T_DeviceKind>
-    constexpr void registerVendorFn(Transform::Spec<alpaka::vendor::Alpaka, T_DeviceKind>)
+    constexpr void fnRegister(Transform::Spec<alpaka::fn::api::Alpaka, T_DeviceKind>)
     {
     }
 
     template<alpaka::concepts::DeviceKind T_DeviceKind>
-    constexpr void mapVendorFn(
-        Transform::Spec<alpaka::vendor::Alpaka, T_DeviceKind>,
+    constexpr void fnDispatch(
+        Transform::Spec<alpaka::fn::api::Alpaka, T_DeviceKind>,
         auto&& queue,
         alpaka::concepts::IMdSpan auto&& output,
         auto&& binaryOp,

@@ -12,13 +12,12 @@ namespace vendorExample
 {
     /** Function class definition.
      *
-     * The class is used to register, map and call vendor function overloads. The class should be trivially
-     * constructable.
-     * alpaka::vendor::FnFallback and alpaka::vendor::FnRegistration are optional arguments.
+     * The class is used to register, dispatch and call vendor function overloads.
+     * alpaka::fn::Fallback and alpaka::fn::Registration are optional arguments.
      */
-    ALPAKA_VENDOR_FN(Transform, alpaka::vendor::FnFallback::toAlpaka, alpaka::vendor::FnRegistration::enforced);
+    ALPAKA_FN_SYMBOL(Transform, alpaka::fn::Fallback::toAlpaka, alpaka::fn::Registration::enforced);
 
-    /** Notify alpaka that the vendor function Transform for the device specification ,api Host and the device kind
+    /** Notify alpaka that the function symbol Transform for the device specification, api Host and the device kind
      * Cpu, is available.
      *
      * This allows to call isRegistered() with a device or queue specification of api Host and device kind Cpu and get
@@ -33,7 +32,7 @@ namespace vendorExample
      * }
      * @endcode
      */
-    constexpr void registerVendorFn(Transform::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>)
+    constexpr void fnRegister(Transform::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>)
     {
     }
 
@@ -42,7 +41,7 @@ namespace vendorExample
      * This function will be called if Transform::call() is called with a queue or device specification of api Host and
      * device kind Cpu.
      */
-    constexpr void mapVendorFn(
+    constexpr void fnDispatch(
         Transform::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>,
         auto&& queue,
         alpaka::concepts::IMdSpan auto&& output,
@@ -64,4 +63,5 @@ namespace vendorExample
                     binaryOp);
             });
     }
+
 } // namespace vendorExample

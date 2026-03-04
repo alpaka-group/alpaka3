@@ -2,21 +2,21 @@
  * SPDX-License-Identifier: ISC
  */
 
-/** @file This example demonstrates how to use vendor function overloads in alpaka.
+/** @file This example demonstrates how to use alpaka's function interface.
  *
- * Vendor functions are a mechanism to register and map functions from third party libraries for specific APIs and
- * device kinds.
+ * The function interface is a mechanism to register and dispatch a function interface from alpaka to third party
+ * libraries for specific APIs and device kinds.
  *
- * The alpaka vendor API provides you with a clean unified way to map you prepared interface signature to functions of
- * different vendors. There is no need to deal with preprocessor macros on the caller side within user functions, which
- * keeps the code readable.
+ * The alpaka function symbols provides you with a clean unified way to dispatch a user chosen function interface
+ * signature to functions of different vendors. There is no need to deal with preprocessor macros on the caller side
+ * within user functions, which keeps the code readable. You could create quite similar results with C++ functor trait
+ * specializations but with the drawback that you must deal with type signature on the caller side instead of having a
+ * well-defined way how the function call is dispatched to the best fitting overload.
  *
- * This allows you to call the registered functions with alpaka queues or devices without having to care
- * about the underlying API and device kind. The example shows how to register and map a vendor function for the api
- * Host and device kind Cpu, which is implemented with std::transform. If available, a vendor function overload for the
- * api Cuda and device kind NvidiaGpu is registered as well, which is implemented with thrust::transform. If no vendor
- * function overload is registered for the given queue or device specification, a generic fallback implementation using
- * alpaka kernels is called.
+ * The example shows how to register and dispatch a vendor function for the api Host and device kind Cpu, which is
+ * implemented with std::transform. If available, a vendor function overload for the api Cuda and device kind NvidiaGpu
+ * is registered as well, which is implemented with thrust::transform. If no vendor function overload is registered for
+ * the given queue or device specification, a generic fallback implementation using alpaka kernels is called.
  */
 
 #include "alpakaFn.hpp"
