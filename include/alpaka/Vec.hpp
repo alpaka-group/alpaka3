@@ -489,7 +489,7 @@ namespace alpaka
         template<uint32_t T_elementIdx = T_dim - 1u>
         constexpr Vec<T_Type, T_dim> rAssign(T_Type const& value) const requires(T_elementIdx < T_dim)
         {
-            auto result = *this;
+            Vec<T_Type, T_dim> result = *this;
             result[T_elementIdx] = value;
             return result;
         }
