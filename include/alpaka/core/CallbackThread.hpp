@@ -64,7 +64,8 @@ namespace alpaka::core
         {
             {
                 std::unique_lock<std::mutex> lock{m_mutex};
-                m_stop = true;
+                m_thread.request_stop();
+                // wakeup the thread in case it is waiting
                 m_cond.notify_one();
             }
 
@@ -129,16 +130,15 @@ namespace alpaka::core
         }
 
     private:
-        std::thread m_thread;
+        std::jthread m_thread;
         std::condition_variable m_cond;
         std::mutex m_mutex;
-        bool m_stop{false};
         std::queue<TaskPackage> m_tasks;
 
         auto startWorkerThread() -> void
         {
-            m_thread = std::thread(
-                [this]
+            m_thread = std::jthread(
+                [this](std::stop_token st)
                 {
                     while(true)
                     {
@@ -149,9 +149,9 @@ namespace alpaka::core
                             std::unique_ptr<Task> task = nullptr;
                             {
                                 std::unique_lock<std::mutex> lock{m_mutex};
-                                m_cond.wait(lock, [this] { return m_stop || !m_tasks.empty(); });
+                                m_cond.wait(lock, [this, &st] { return st.stop_requested() || !m_tasks.empty(); });
 
-                                if(m_stop && m_tasks.empty())
+                                if(st.stop_requested() && m_tasks.empty())
                                     break;
 
                                 task = std::move(m_tasks.front().first);
