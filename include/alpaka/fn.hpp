@@ -153,16 +153,25 @@ namespace alpaka::fn
         Registration T_registrationPolicy = Registration::none>
     struct Fn
     {
-        /** Get the function specification for the given device specification.
+        /** Get the function specification.
          *
-         * @return the function specification for the given device specification.
+         * @return the function specification for the given entity.
+         *
+         * @{
          */
+        static constexpr auto spec(alpaka::concepts::DeviceSpec auto const& any)
+        {
+            return spec(getApi(any), getDeviceKind(any));
+        }
+
         template<alpaka::concepts::Api T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
         static constexpr auto spec(T_Api api, T_DeviceKind deviceKind)
         {
             alpaka::unused(api, deviceKind);
             return typename T_FnClass::template Spec<T_Api, T_DeviceKind>{};
         }
+
+        /** @} */
 
         /** Checks if a function overload is registered for the given device specification.
          *
@@ -189,29 +198,19 @@ namespace alpaka::fn
         static constexpr bool isRegistered(alpaka::concepts::DeviceSpec auto const& any)
             requires(T_registrationPolicy != Registration::none)
         {
-            return T_registrationPolicy == Registration::alwaysTrue
-                   || concepts::FnRegistered<ALPAKA_TYPEOF(spec(getApi(any), getDeviceKind(any)))>
-                   || ((T_fallbackPolicy != Fallback::none)
-                       && concepts::FnRegistered<ALPAKA_TYPEOF(spec(api::Alpaka{}, getDeviceKind(any)))>);
+            return T_registrationPolicy == Registration::alwaysTrue || concepts::FnRegistered<ALPAKA_TYPEOF(spec(any))>
+                   || ((T_fallbackPolicy != Fallback::none) && concepts::FnRegistered<ALPAKA_TYPEOF(spec(any))>);
         }
 
         /** Call function overload if defined for the given device specification. */
         template<alpaka::concepts::DeviceSpec T_Any, typename... Args>
-        requires concepts::DispatchedFnInvocable<
-            ALPAKA_TYPEOF(spec(getApi(std::declval<T_Any>()), getDeviceKind(std::declval<T_Any>()))),
-            T_Any,
-            Args...>
+        requires concepts::DispatchedFnInvocable<ALPAKA_TYPEOF(spec(std::declval<T_Any>())), T_Any, Args...>
         constexpr decltype(auto) operator()(T_Any&& any, Args&&... args) const
         {
             static_assert(
-                T_registrationPolicy != Registration::enforced
-                    || concepts::FnRegistered<ALPAKA_TYPEOF(
-                        spec(getApi(std::declval<T_Any>()), getDeviceKind(std::declval<T_Any>())))>,
+                T_registrationPolicy != Registration::enforced || concepts::FnRegistered<ALPAKA_TYPEOF(spec(any))>,
                 "Function dispatch for the given function symbol, API and device kind is not registered.");
-            return fnDispatch(
-                spec(getApi(any), getDeviceKind(any)),
-                std::forward<T_Any>(any),
-                std::forward<Args>(args)...);
+            return fnDispatch(spec(any), std::forward<T_Any>(any), std::forward<Args>(args)...);
         }
 
         /** Fallback operator() to alpaka implementation if the function is not dispatchable for the given device
@@ -222,17 +221,13 @@ namespace alpaka::fn
          */
         template<alpaka::concepts::DeviceSpec T_Any, typename... Args>
         requires(
-            !concepts::DispatchedFnInvocable<
-                ALPAKA_TYPEOF(spec(getApi(std::declval<T_Any>()), getDeviceKind(std::declval<T_Any>()))),
-                T_Any,
-                Args...>
+            !concepts::DispatchedFnInvocable<ALPAKA_TYPEOF(spec(std::declval<T_Any>())), T_Any, Args...>
             && (T_fallbackPolicy == Fallback::toAlpaka))
         constexpr decltype(auto) operator()(T_Any&& any, Args&&... args) const
         {
             static_assert(
                 T_registrationPolicy != Registration::enforced
-                    || concepts::FnRegistered<ALPAKA_TYPEOF(
-                        spec(api::Alpaka{}, getDeviceKind(std::declval<T_Any>())))>,
+                    || concepts::FnRegistered<ALPAKA_TYPEOF(spec(api::Alpaka{}, getDeviceKind(any)))>,
                 "Function for the given function group, device kind the api fn::api::alpaka is not registered.");
             return fnDispatch(
                 spec(api::Alpaka{}, getDeviceKind(any)),
@@ -249,11 +244,7 @@ namespace alpaka::fn
         template<alpaka::concepts::DeviceSpec T_Any, typename... Args>
         requires(
             // no dispatch with device specification
-            !concepts::DispatchedFnInvocable<
-                ALPAKA_TYPEOF(spec(getApi(std::declval<T_Any>()), getDeviceKind(std::declval<T_Any>()))),
-                T_Any,
-                Args...>
-            &&
+            !concepts::DispatchedFnInvocable<ALPAKA_TYPEOF(spec(std::declval<T_Any>())), T_Any, Args...> &&
             // generic function dispatchable
             concepts::DispatchedFnInvocable<T_FnClass, T_Any, Args...> && (T_fallbackPolicy == Fallback::toGeneric))
         constexpr decltype(auto) operator()(T_Any&& any, Args&&... args) const
@@ -274,7 +265,7 @@ namespace alpaka::fn
             static_assert(
                 std::is_trivially_constructible_v<T_FnClass>,
                 "Function class must be trivially constructible to use call().");
-            T_FnClass{}(ALPAKA_FORWARD(any), ALPAKA_FORWARD(args)...);
+            return T_FnClass{}(ALPAKA_FORWARD(any), ALPAKA_FORWARD(args)...);
         }
     };
 } // namespace alpaka::fn

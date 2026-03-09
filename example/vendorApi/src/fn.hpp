@@ -63,5 +63,4 @@ namespace vendorExample
                     binaryOp);
             });
     }
-
 } // namespace vendorExample

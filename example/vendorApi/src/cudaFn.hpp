@@ -11,14 +11,9 @@
 #if __has_include(<thrust/transform.h>)
 #    include <thrust/device_vector.h>
 #    include <thrust/transform.h>
-#    ifndef ALPAKA_EXAMPLE_HAS_THRUST
-#        define ALPAKA_EXAMPLE_HAS_THRUST 1
-#    endif
-#endif
+
 namespace vendorExample
 {
-#if ALPAKA_EXAMPLE_HAS_THRUST
-
     /** Cuda function overload for Transform.
      *
      * @{
@@ -46,5 +41,5 @@ namespace vendorExample
     }
 
     /** @} */
-#endif
 } // namespace vendorExample
+#endif
