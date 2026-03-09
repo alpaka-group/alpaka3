@@ -105,7 +105,7 @@ Arguments
      Set the C++ standard version.
 
 
-``alpaka_TESTING``
+``alpaka_TESTS``
   .. code-block:: markdown
 
      Build the testing tree with the current environment.
@@ -121,7 +121,7 @@ Arguments
   .. code-block:: markdown
 
      If `ON` use Catch2 to pre-installed on system else fetch Catch2 via CMake's fetch content.
-     This option is only available of `alpaka_TESTING` or `alpaka_BENCHMARKS` is `ON`.
+     This option is only available of `alpaka_TESTS` or `alpaka_BENCHMARKS` is `ON`.
 
 ``alpaka_FAST_MATH``
   .. code-block:: markdown
@@ -372,7 +372,7 @@ alpaka is providing CMake targets based on the optional activated dependencies `
 ^^^^^^^^^^^^^^^^^^^
 
 - Set include dependencies.
-- Activate header code based on the CMake option ``alpaka_EXEC_*`` (required for examples/tests/benchmarks).
+- Activate header code based on the CMake option ``alpaka_EXEC_*`` (required for examples/test/benchmarks).
 - Set the ``CXX`` standard.
 
 .. _alpaka-host:

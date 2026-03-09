@@ -10,9 +10,9 @@
 set(_alpaka_ROOT_DIR "${alpaka_SOURCE_DIR}")
 
 # Compiler feature tests.
-set(_alpaka_FEATURE_TESTS_DIR "${_alpaka_ROOT_DIR}/cmake/tests")
+set(_alpaka_FEATURE_TESTS_DIR "${_alpaka_ROOT_DIR}/cmake/test")
 set(_alpaka_CMAKE_DIR "${_alpaka_ROOT_DIR}/cmake")
-set(_alpaka_TESTING_DIR "${_alpaka_ROOT_DIR}/tests")
+set(_alpaka_TESTS_DIR "${_alpaka_ROOT_DIR}/test")
 # Set include directories
 set(_alpaka_INCLUDE_DIRECTORY "${_alpaka_ROOT_DIR}/include")
 

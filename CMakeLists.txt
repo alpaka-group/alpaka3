@@ -43,14 +43,14 @@ project(
 set(_alpaka_ROOT_DIR ${alpaka_SOURCE_DIR})
 
 # Compiler feature tests.
-set(_alpaka_FEATURE_TESTS_DIR "${_alpaka_ROOT_DIR}/cmake/tests")
+set(_alpaka_FEATURE_TESTS_DIR "${_alpaka_ROOT_DIR}/cmake/test")
 set(_alpaka_CMAKE_DIR "${_alpaka_ROOT_DIR}/cmake")
-set(_alpaka_TESTING_DIR "${_alpaka_ROOT_DIR}/tests")
+set(_alpaka_TESTS_DIR "${_alpaka_ROOT_DIR}/test")
 # Set include directories
 set(_alpaka_INCLUDE_DIRECTORY "${_alpaka_ROOT_DIR}/include")
 
 # CMake Options
-option(alpaka_TESTING "Enable/Disable testing" OFF)
+option(alpaka_TESTS "Enable/Disable testing" OFF)
 option(alpaka_DOCS "Enable/Disable documentation code snippet testing" OFF)
 option(alpaka_BENCHMARKS "Enable/Disable benchmarks" OFF)
 option(alpaka_EXAMPLES "Enable/Disable examples" OFF)
@@ -59,15 +59,15 @@ option(alpaka_HEADERCHECKS "Enable/Disable header check tests" OFF)
 # only check for compiler support if this cmake is called with add_subdirectory or examples, benchmarks, ... should be compiled too
 if(
     NOT PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME
-    OR (alpaka_TESTING OR alpaka_DOCS OR alpaka_BENCHMARKS OR alpaka_EXAMPLES OR alpaka_HEADERCHECKS)
+    OR (alpaka_TESTS OR alpaka_DOCS OR alpaka_BENCHMARKS OR alpaka_EXAMPLES OR alpaka_HEADERCHECKS)
 )
     include(${_alpaka_CMAKE_DIR}/alpakaCommon.cmake)
 endif()
 
-if(alpaka_TESTING)
+if(alpaka_TESTS)
     include(CTest)
     enable_testing()
-    add_subdirectory("${_alpaka_TESTING_DIR}")
+    add_subdirectory("${_alpaka_TESTS_DIR}")
 endif()
 
 if(alpaka_DOCS)
@@ -122,7 +122,7 @@ configure_package_config_file(
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/alpakaConfig.cmake DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/alpaka)
 
 # copy tests to the installation
-install(DIRECTORY ${_alpaka_TESTING_DIR} DESTINATION ${CMAKE_INSTALL_DATAROOTDIR} USE_SOURCE_PERMISSIONS)
+install(DIRECTORY ${_alpaka_TESTS_DIR} DESTINATION ${CMAKE_INSTALL_DATAROOTDIR} USE_SOURCE_PERMISSIONS)
 
 # Files required to validate optional features std::atomic_ref and std::simd
 install(FILES "${_alpaka_FEATURE_TESTS_DIR}/StdAtomicRef.cpp" DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/alpaka/tests)
