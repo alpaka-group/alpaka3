@@ -96,19 +96,40 @@ namespace alpaka::onHost
         /** Enqueue a kernel functor to a queue
          *
          * @param executor description how native worker threads will be mapped and grouped to compute grid layers
+         * @param domainSpec thread or frame specification which provides a chunked description
          * @param f the compute kernel functor
          * @param args arguments to forwarded to the kernel functor
          */
         void enqueue(
             auto const executor,
-            onHost::concepts::ThreadOrFrameSpec auto const& blockCfg,
+            onHost::concepts::ThreadOrFrameSpec auto const& domainSpec,
             auto const& f,
             auto&&... args) const
         {
             return internal::enqueue(
                 *m_queue.get(),
                 std::move(executor),
-                blockCfg,
+                domainSpec,
+                KernelBundle{f, onHost::makeAccessibleOnAcc(ALPAKA_FORWARD(args))...});
+        }
+
+        /** Enqueue a kernel functor to a queue
+         *
+         * An available default executor will be selected automatically. The default executor is a executor with most
+         * parallelism/performance.
+         *
+         * @param specification thread or frame specification which provides a chunked description
+         * @param f the compute kernel functor
+         * @param args arguments to forwarded to the kernel functor
+         */
+        void enqueue(onHost::concepts::ThreadOrFrameSpec auto const& specification, auto const& f, auto&&... args)
+            const
+        {
+            auto executor = supportedExecutors(internal::getDevice(*m_queue.get()), exec::allExecutors);
+            return internal::enqueue(
+                *m_queue.get(),
+                std::get<0>(executor),
+                specification,
                 KernelBundle{f, onHost::makeAccessibleOnAcc(ALPAKA_FORWARD(args))...});
         }
 
@@ -117,10 +138,7 @@ namespace alpaka::onHost
          * @param specification thread or frame specification which provides a chunked description of the thread or
          * frame index domain
          * @param kernelBundle the compute kernel and there arguments
-         */
-
-        /**
-         * A available default executor will be selected automaticlally. The default executor is a executor with most
+         * An available default executor will be selected automatically. The default executor is a executor with most
          * parallelism/performance.
          */
         template<typename TKernelFn, typename... TArgs>
@@ -132,9 +150,13 @@ namespace alpaka::onHost
             internal::enqueue(*m_queue.get(), std::get<0>(executor), specification, kernelBundle);
         }
 
-        /**
+        /** Enqueue a kernel to a queue
+         *
          * @param executor description how native worker threads will be mapped and grouped to compute grid layers
          * (blocks, threads).
+         * @param specification thread or frame specification which provides a chunked description of the thread or
+         * frame index domain
+         * @param kernelBundle the compute kernel and there arguments
          */
         void enqueue(
             alpaka::concepts::Executor auto const executor,
@@ -174,6 +196,12 @@ namespace alpaka::onHost
                 task);
         }
 
+        /** Enqueue an event
+         *
+         * The event will be signaled after all preceding operations in the queue are finished.
+         *
+         * @param event event to enqueue into the queue of operations.
+         */
         void enqueue(Event<Device<T_Api, T_DeviceKind>> const& event) const
         {
             return internal::Enqueue::Event<ALPAKA_TYPEOF(*m_queue.get()), ALPAKA_TYPEOF(*event.get())>{}(
@@ -181,6 +209,10 @@ namespace alpaka::onHost
                 *event.get());
         }
 
+        /** Wait until all operations in this queue are finished
+         *
+         * The caller is blocked until all preceding operations enqueued into this queue are finished.
+         */
         void waitFor(Event<Device<T_Api, T_DeviceKind>> const& event) const
         {
             return internal::waitFor(*m_queue.get(), *event.get());
