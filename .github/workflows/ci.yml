@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  alpaka_cmake_flags: "-Dalpaka_COMPILE_PEDANTIC=ON -Dalpaka_DOCS=ON -Dalpaka_TESTING=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -DBUILD_TESTING=ON -Dalpaka_HEADERCHECKS=ON -Dalpaka_LOG=dynamic -Dalpaka_FAST_MATH=OFF"
+  alpaka_cmake_flags: "-Dalpaka_COMPILE_PEDANTIC=ON -Dalpaka_DOCS=ON -Dalpaka_TESTS=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -DBUILD_TESTING=ON -Dalpaka_HEADERCHECKS=ON -Dalpaka_LOG=dynamic -Dalpaka_FAST_MATH=OFF"
 
 jobs:
   pre-commit:
@@ -103,7 +103,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y cmake build-essential ninja-build git
-          export "SANITIZERS_DIR=$(pwd)/sanitizers"
+          export "SANITIZERS_DIR=$(pwd)/sanitizer"
           echo "ASAN_OPTIONS=suppressions=${SANITIZERS_DIR}/asan_suppressions.txt" >> $GITHUB_ENV
           echo "TSAN_OPTIONS=suppressions=${SANITIZERS_DIR}/tsan_suppressions.txt,ignore_noninstrumented_modules=1" >> $GITHUB_ENV
           echo "LSAN_OPTIONS=suppressions=${SANITIZERS_DIR}/lsan_suppressions.txt" >> $GITHUB_ENV

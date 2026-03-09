@@ -225,7 +225,7 @@ function(alpaka_internal_finalize target)
         target_compile_definitions(${target} PRIVATE ALPAKA_CMAKE_TARGET_ALPAKA_FINALIZE_CALLED)
     endif()
 
-    # conditionally add sanitizers if not compiling with cuda/hip/oneapi
+    # conditionally add sanitizer if not compiling with cuda/hip/oneapi
     if(index_cuda EQUAL -1 AND index_hip EQUAL -1 AND index_oneapi EQUAL -1)
         if(alpaka_ASAN)
             message(STATUS "Linking ASAN to ${target}")

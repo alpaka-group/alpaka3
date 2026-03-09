@@ -11,7 +11,7 @@ def generate_single_header(app, exception):
     os.makedirs(single_header_path, exist_ok=True)
 
     # Path to your script
-    script_path = os.path.abspath(os.path.join(app.srcdir, '..', '..', 'scripts', 'create-single-header.sh'))
+    script_path = os.path.abspath(os.path.join(app.srcdir, '..', '..', 'script', 'create-single-header.sh'))
 
     # Call the script with the destination folder as argument
     subprocess.run([script_path, single_header_path], check=True)
