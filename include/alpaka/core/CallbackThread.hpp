@@ -59,27 +59,31 @@ namespace alpaka::core
 
         using TaskPackage = std::pair<std::unique_ptr<Task>, std::promise<void>>;
 
+        struct State
+        {
+            std::queue<TaskPackage> m_tasks;
+            std::mutex m_mutex;
+            std::condition_variable m_cond;
+        };
+
     public:
+        CallbackThread() : m_state(std::make_shared<State>())
+        {
+        }
+
         ~CallbackThread()
         {
             {
-                std::unique_lock<std::mutex> lock{m_mutex};
+                std::unique_lock<std::mutex> lock{m_state->m_mutex};
                 m_thread.request_stop();
                 // wakeup the thread in case it is waiting
-                m_cond.notify_one();
+                m_state->m_cond.notify_one();
             }
 
             if(m_thread.joinable())
             {
                 if(std::this_thread::get_id() == m_thread.get_id())
                 {
-                    // at this point there should be no tasks in the queue
-                    if(!m_tasks.empty())
-                    {
-                        std::cerr << "ERROR in ~CallbackThread: internal queue is not empty but object is destructed."
-                                  << std::endl;
-                        std::abort();
-                    }
                     /* We can not join ourselves.
                      * We can only end here if a task that the callback thread is executing is capturing the object
                      * which is holding the callback thread.
@@ -92,7 +96,6 @@ namespace alpaka::core
         }
 
         //! It is guaranteed that the task is fully destroyed before the future's result is set.
-        //! @{
         template<typename NullaryFunction>
         auto submit(NullaryFunction&& nf) -> std::future<void>
         {
@@ -104,41 +107,29 @@ namespace alpaka::core
             // FunctionHolder stores a copy of the user's task, but may be constructed from an expiring value to avoid
             // the copy. We do NOT store a reference to the users task, which could dangle if the user isn't careful.
             auto tp = std::pair(
-                std::unique_ptr<Task>(new FunctionHolder<DecayedFunction>{std::forward<NullaryFunction>(nf)}),
+                std::make_unique<FunctionHolder<DecayedFunction>>(std::forward<NullaryFunction>(nf)),
                 std::promise<void>{});
             auto f = tp.second.get_future();
             {
-                std::unique_lock<std::mutex> lock{m_mutex};
-                m_tasks.emplace(std::move(tp));
+                std::unique_lock<std::mutex> lock{m_state->m_mutex};
+                m_state->m_tasks.emplace(std::move(tp));
                 if(!m_thread.joinable())
                     startWorkerThread();
-                m_cond.notify_one();
+                m_state->m_cond.notify_one();
             }
 
             return f;
         }
 
-        //! @}
-
-        //! @return True if queue is empty and no task is executed else false.
-        //! If only one tasks is enqueued and the task is executed the task will see the queue as not empty.
-        //! During the destruction of this single enqueued task the queue will already be accounted as empty.
-        [[nodiscard]] auto empty()
-        {
-            std::unique_lock<std::mutex> lock{m_mutex};
-            return m_tasks.empty();
-        }
-
     private:
         std::jthread m_thread;
-        std::condition_variable m_cond;
-        std::mutex m_mutex;
-        std::queue<TaskPackage> m_tasks;
+        /** Hold data shared between this call and the thread processing the tasts. */
+        std::shared_ptr<State> m_state;
 
         auto startWorkerThread() -> void
         {
             m_thread = std::jthread(
-                [this](std::stop_token st)
+                [state = m_state](std::stop_token st)
                 {
                     while(true)
                     {
@@ -148,14 +139,16 @@ namespace alpaka::core
                             // Task is destroyed before promise is updated but after the queue state is up to date.
                             std::unique_ptr<Task> task = nullptr;
                             {
-                                std::unique_lock<std::mutex> lock{m_mutex};
-                                m_cond.wait(lock, [this, &st] { return st.stop_requested() || !m_tasks.empty(); });
+                                std::unique_lock<std::mutex> lock{state->m_mutex};
+                                state->m_cond.wait(
+                                    lock,
+                                    [&state, &st] { return st.stop_requested() || !state->m_tasks.empty(); });
 
-                                if(st.stop_requested() && m_tasks.empty())
+                                if(st.stop_requested() && state->m_tasks.empty())
                                     break;
 
-                                task = std::move(m_tasks.front().first);
-                                taskPromise = std::move(m_tasks.front().second);
+                                task = std::move(state->m_tasks.front().first);
+                                taskPromise = std::move(state->m_tasks.front().second);
                             }
                             assert(task);
                             try
@@ -167,10 +160,10 @@ namespace alpaka::core
                                 eptr = std::current_exception();
                             }
                             {
-                                std::unique_lock<std::mutex> lock{m_mutex};
+                                std::unique_lock<std::mutex> lock{state->m_mutex};
                                 // Pop empty data from the queue, task and promise will be destroyed later in a
                                 // well-defined order.
-                                m_tasks.pop();
+                                state->m_tasks.pop();
                             }
                             // Task will be destroyed here, the queue status is already updated.
                         }
