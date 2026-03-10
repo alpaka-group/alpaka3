@@ -84,21 +84,23 @@ namespace alpaka::onHost
             return this->get() != other.get();
         }
 
-        /** Get the device of this queue
+        /** Get the device of this queue.
          *
-         * @return the device of this queue
+         * @return The device of this queue.
          */
         auto getDevice() const
         {
             return Device<T_Api, T_DeviceKind>{internal::getDevice(*m_queue.get())};
         }
 
-        /** Enqueue a kernel functor to a queue
+        /** Enqueue a kernel functor to a queue.
          *
-         * @param executor description how native worker threads will be mapped and grouped to compute grid layers
-         * @param domainSpec thread or frame specification which provides a chunked description
-         * @param f the compute kernel functor
-         * @param args arguments to forwarded to the kernel functor
+         * @param executor Description how native worker threads will be mapped and grouped to compute grid layers
+         * (blocks, threads).
+         * @param domainSpec Thread or frame specification which provides a chunked description of the thread or frame
+         * index domain.
+         * @param f The compute kernel functor.
+         * @param args Arguments passed to the kernel functor.
          */
         void enqueue(
             auto const executor,
@@ -113,66 +115,67 @@ namespace alpaka::onHost
                 KernelBundle{f, onHost::makeAccessibleOnAcc(ALPAKA_FORWARD(args))...});
         }
 
-        /** Enqueue a kernel functor to a queue
+        /** Enqueue a kernel functor to a queue.
          *
-         * An available default executor will be selected automatically. The default executor is a executor with most
-         * parallelism/performance.
+         * An available default executor is selected automatically. The default executor is the executor with the
+         * highest parallelism/performance.
          *
-         * @param specification thread or frame specification which provides a chunked description
-         * @param f the compute kernel functor
-         * @param args arguments to forwarded to the kernel functor
+         * @param domainSpec Thread or frame specification which provides a chunked description of the thread or frame
+         * index domain.
+         * @param f The compute kernel functor.
+         * @param args Arguments passed to the kernel functor.
          */
-        void enqueue(onHost::concepts::ThreadOrFrameSpec auto const& specification, auto const& f, auto&&... args)
-            const
+        void enqueue(onHost::concepts::ThreadOrFrameSpec auto const& domainSpec, auto const& f, auto&&... args) const
         {
             auto executor = supportedExecutors(internal::getDevice(*m_queue.get()), exec::allExecutors);
             return internal::enqueue(
                 *m_queue.get(),
                 std::get<0>(executor),
-                specification,
+                domainSpec,
                 KernelBundle{f, onHost::makeAccessibleOnAcc(ALPAKA_FORWARD(args))...});
         }
 
-        /** Enqueue a kernel to a queue
+        /** Enqueue a kernel functor to a queue.
          *
-         * @param specification thread or frame specification which provides a chunked description of the thread or
-         * frame index domain
-         * @param kernelBundle the compute kernel and there arguments
-         * An available default executor will be selected automatically. The default executor is a executor with most
-         * parallelism/performance.
+         * An available default executor is selected automatically. The default executor is the executor with the
+         * highest parallelism/performance.
+         *
+         * @param domainSpec Thread or frame specification which provides a chunked description of the thread or frame
+         * index domain.
+         * @param kernelBundle The compute kernel and its arguments.
          */
         template<typename TKernelFn, typename... TArgs>
         void enqueue(
-            onHost::concepts::ThreadOrFrameSpec auto const& specification,
+            onHost::concepts::ThreadOrFrameSpec auto const& domainSpec,
             KernelBundle<TKernelFn, TArgs...> const& kernelBundle) const
         {
             auto executor = supportedExecutors(internal::getDevice(*m_queue.get()), exec::allExecutors);
-            internal::enqueue(*m_queue.get(), std::get<0>(executor), specification, kernelBundle);
+            internal::enqueue(*m_queue.get(), std::get<0>(executor), domainSpec, kernelBundle);
         }
 
-        /** Enqueue a kernel to a queue
+        /** Enqueue a kernel functor to a queue.
          *
-         * @param executor description how native worker threads will be mapped and grouped to compute grid layers
+         * @param executor Description how native worker threads will be mapped and grouped to compute grid layers
          * (blocks, threads).
-         * @param specification thread or frame specification which provides a chunked description of the thread or
-         * frame index domain
-         * @param kernelBundle the compute kernel and there arguments
+         * @param domainSpec Thread or frame specification which provides a chunked description of the thread or frame
+         * index domain.
+         * @param kernelBundle The compute kernel and its arguments.
          */
         void enqueue(
             alpaka::concepts::Executor auto const executor,
-            onHost::concepts::ThreadOrFrameSpec auto const& specification,
+            onHost::concepts::ThreadOrFrameSpec auto const& domainSpec,
             alpaka::concepts::KernelBundle auto const& kernelBundle) const
         {
-            internal::enqueue(*m_queue.get(), executor, specification, kernelBundle);
+            internal::enqueue(*m_queue.get(), executor, domainSpec, kernelBundle);
         }
 
-        /** Enqueue an operation which is executed on the host side
+        /** Enqueue an operation which is executed on the host side.
          *
          * @attention Do NOT enqueue a task which captures the queue internally to keep the queue alive, this could
          * lead into deadlocks. Do NOT capture @see MangedView because view actions could perform blocking operations
          * e.g. onHost::wait() in the destructor which could lead to deadlocks too.
          *
-         * @param task task to be executed on the host side
+         * @param task Task to be executed on the host side.
          */
         void enqueueHostFn(auto const& task) const
         {
@@ -187,7 +190,7 @@ namespace alpaka::onHost
          * subsequent tasks in the queue. Because this task is asynchronous, it may contain vendor library functions,
          * which may not be valid in an `enqueueHostFn` task.
          *
-         * @param task task to be executed asynchronously on the host side
+         * @param task Task to be executed asynchronously on the host side.
          */
         void enqueueHostFnDeferred(auto const& task) const
         {
@@ -200,7 +203,7 @@ namespace alpaka::onHost
          *
          * The event will be signaled after all preceding operations in the queue are finished.
          *
-         * @param event event to enqueue into the queue of operations.
+         * @param event Event that is to be enqueue in the queue of operations.
          */
         void enqueue(Event<Device<T_Api, T_DeviceKind>> const& event) const
         {
@@ -209,9 +212,9 @@ namespace alpaka::onHost
                 *event.get());
         }
 
-        /** Wait until all operations in this queue are finished
+        /** Wait until all operations in this queue are finished.
          *
-         * The caller is blocked until all preceding operations enqueued into this queue are finished.
+         * The caller will be blocked until all previously queued operations have been completed.
          */
         void waitFor(Event<Device<T_Api, T_DeviceKind>> const& event) const
         {
