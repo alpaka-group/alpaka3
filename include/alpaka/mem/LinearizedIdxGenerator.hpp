@@ -7,6 +7,7 @@
 #include "alpaka/Simd.hpp"
 #include "alpaka/internal/interface.hpp"
 #include "alpaka/mem/DataPitches.hpp"
+#include "alpaka/mem/concepts/IndexVec.hpp"
 
 namespace alpaka
 {
@@ -41,7 +42,7 @@ namespace alpaka
          * @param idx n-dimensional offset, range [0, extents)
          * @return linearized index
          */
-        constexpr value_type operator[](alpaka::concepts::Vector auto const& idx) const
+        constexpr value_type operator[](alpaka::concepts::IndexVec<T_IndexType, T_dim> auto const& idx) const
         {
             return linearize(m_extents, idx);
         }
@@ -51,7 +52,7 @@ namespace alpaka
          * @param idx n-dimensional offset, range [0, extents)
          * @return linearized index
          */
-        constexpr value_type operator[](alpaka::concepts::Vector auto const& idx)
+        constexpr value_type operator[](alpaka::concepts::IndexVec<T_IndexType, T_dim> auto const& idx)
         {
             return linearize(m_extents, idx);
         }
