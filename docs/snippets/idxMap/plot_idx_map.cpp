@@ -8,6 +8,10 @@
 
 #include <iostream>
 
+#ifdef ALPAKA_DOC_PLOT_DATA
+#    include "plot_data.hpp"
+#endif
+
 struct Kernel
 {
     ALPAKA_FN_ACC void operator()(alpaka::onAcc::concepts::Acc auto const& acc, alpaka::concepts::IMdSpan auto out)
@@ -77,11 +81,15 @@ int example(auto const deviceSpec, auto const exec)
     alpaka::onHost::memcpy(acc_queue, host_out, acc_out);
     alpaka::onHost::wait(acc_queue);
 
+#ifdef ALPAKA_DOC_PLOT_DATA
+    drawGraphPNG(host_out, alpaka::onHost::getName(exec));
+#endif
+
     std::cout << "\n";
     return 0;
 }
 
-int main(int argc, char** argv)
+int main()
 {
     return alpaka::onHost::executeForEachIfHasDevice(
         [=](auto const& backend)
