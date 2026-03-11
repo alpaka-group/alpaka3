@@ -8,11 +8,10 @@
 #include "alpaka/Vec.hpp"
 #include "alpaka/internal/interface.hpp"
 #include "alpaka/mem/Alignment.hpp"
-#include "alpaka/mem/concepts/IDataStorage.hpp"
 #include "alpaka/mem/concepts/IMdSpan.hpp"
+#include "alpaka/mem/concepts/IndexVec.hpp"
 #include "alpaka/trait.hpp"
 
-#include <array>
 #include <concepts>
 #include <cstdint>
 #include <type_traits>
@@ -82,7 +81,7 @@ namespace alpaka
          *
          * @{
          */
-        constexpr auto operator[](alpaka::concepts::Vector auto const& idx) const
+        constexpr auto operator[](alpaka::concepts::IndexVec<IdxType, T_MdSpan::dim()> auto const& idx) const
         {
             constexpr uint32_t valueAlignment = static_cast<uint32_t>(alignof(value_type));
             constexpr auto align = Alignment<valueAlignment>{};
@@ -93,7 +92,7 @@ namespace alpaka
                 T_SimdWidth{}};
         }
 
-        constexpr auto operator[](alpaka::concepts::Vector auto const& idx)
+        constexpr auto operator[](alpaka::concepts::IndexVec<IdxType, T_MdSpan::dim()> auto const& idx)
         {
             constexpr uint32_t valueAlignment = static_cast<uint32_t>(alignof(value_type));
             constexpr auto align = Alignment<valueAlignment>{};
