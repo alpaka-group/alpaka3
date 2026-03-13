@@ -59,7 +59,7 @@ namespace alpaka
     inline constexpr auto makeView(auto&& any)
     {
         return View{
-            getApi(ALPAKA_FORWARD(any)),
+            internal::getApi(ALPAKA_FORWARD(any)),
             onHost::data(ALPAKA_FORWARD(any)),
             onHost::getExtents(ALPAKA_FORWARD(any)),
             onHost::getPitches(ALPAKA_FORWARD(any)),
