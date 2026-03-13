@@ -3,7 +3,7 @@
  */
 
 #pragma once
-#include <alpaka/Vec.hpp>
+#include "alpaka/Vec.hpp"
 
 namespace alpaka::concepts
 {
