@@ -190,61 +190,14 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
     alpaka_set_compiler_options(HOST target alpaka_target_host "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-fconcepts-diagnostics-depth=${alpaka_GCC_CONCEPT_DEPTH}>")
 endif()
 
-## OpenMP
-# There is no way to get the correct flags for the language CUDA or HIP
-if(alpaka_DEP_OMP)
-    find_package(OpenMP REQUIRED COMPONENTS CXX)
-    target_link_libraries(alpaka_target_host INTERFACE OpenMP::OpenMP_CXX)
-    message(STATUS "OpenMP found: ${OpenMP_CXX_VERSION}")
-endif()
-
-# Check for optional TBB
-if(alpaka_DEP_TBB)
-    find_package(TBB 2021.10 REQUIRED COMPONENTS tbb)
-    target_link_libraries(alpaka_target_host INTERFACE TBB::tbb)
-    message(STATUS "oneTBB found: ${TBB_VERSION}")
+# If we are in the top scope we can not export variables to the parent
+if(PROJECT_IS_TOP_LEVEL)
+    set(_alpaka_EXPORT_SCOPE)
 else()
-    # This will enforce config.hpp to not activate TBB even if thee headers are available.
-    # If the headers are available but the linker flags are not set there will be an error during linking.
-    target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_DISABLE_TBB)
+    set(_alpaka_EXPORT_SCOPE PARENT_SCOPE)
 endif()
 
 option(alpaka_COMPILE_PEDANTIC "Compile all code with strict compiler settings." OFF)
-
-if(alpaka_COMPILE_PEDANTIC)
-    message(STATUS "Enable strict compiler settings.")
-    include(${_alpaka_CMAKE_DIR}/alpakaCompilePedantic.cmake)
-endif()
-
-## search for atomic ref
-
-# Check for C++20 std::atomic_ref first
-# we only check the CXX compiler, equal to OpenMP which is checked for the CXX compiler only too.
-try_compile(
-    alpaka_HAS_STD_ATOMIC_REF # Result stored here
-    "${PROJECT_BINARY_DIR}/alpakaFeatureTests" # Binary directory for output file
-    SOURCES
-        "${_alpaka_FEATURE_TESTS_DIR}/StdAtomicRef.cpp" # Source file
-    CXX_STANDARD ${alpaka_CXX_STANDARD}
-    CXX_STANDARD_REQUIRED TRUE
-    CXX_EXTENSIONS FALSE
-)
-if(alpaka_HAS_STD_ATOMIC_REF)
-    message(STATUS "std::atomic_ref<T> found")
-else()
-    message(STATUS "std::atomic_ref<T> NOT found")
-    target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_DISABLE_STD_ATOMIC_REF)
-endif()
-
-if(NOT alpaka_HAS_STD_ATOMIC_REF)
-    if(Boost_ATOMIC_FOUND)
-        message(STATUS "boost::atomic_ref<T> found")
-        target_link_libraries(alpaka_target_host INTERFACE Boost::atomic)
-    else()
-        message(STATUS "boost::atomic_ref<T> NOT found")
-        message(FATAL_ERROR "std::atomic_ref<T> OR boost::atomic_ref<T> is required")
-    endif()
-endif()
 
 set(alpaka_SIMD
     "DEFAULT"
@@ -253,32 +206,89 @@ set(alpaka_SIMD
 )
 set_property(CACHE alpaka_SIMD PROPERTY STRINGS "DEFAULT;STDSIMD;EMULATION")
 
-if(alpaka_SIMD STREQUAL "STDSIMD" OR alpaka_SIMD STREQUAL "DEFAULT")
-    # Check for C++ std::simd
+# avoid that global alpaka targets get added the dependencies more than once e.g. if used in other projects
+if(NOT _alpaka_TARGETS_EXTENDED)
+    set(_alpaka_TARGETS_EXTENDED ON ${_alpaka_EXPORT_SCOPE})
+    ## OpenMP
+    # There is no way to get the correct flags for the language CUDA or HIP
+    if(alpaka_DEP_OMP)
+        find_package(OpenMP REQUIRED COMPONENTS CXX)
+        target_link_libraries(alpaka_target_host INTERFACE OpenMP::OpenMP_CXX)
+        message(STATUS "OpenMP found: ${OpenMP_CXX_VERSION}")
+    endif()
+
+    # Check for optional TBB
+    if(alpaka_DEP_TBB)
+        find_package(TBB 2021.10 REQUIRED COMPONENTS tbb)
+        target_link_libraries(alpaka_target_host INTERFACE TBB::tbb)
+        message(STATUS "oneTBB found: ${TBB_VERSION}")
+    else()
+        # This will enforce config.hpp to not activate TBB even if thee headers are available.
+        # If the headers are available but the linker flags are not set there will be an error during linking.
+        target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_DISABLE_TBB)
+    endif()
+
+    if(alpaka_COMPILE_PEDANTIC)
+        message(STATUS "Enable strict compiler settings.")
+        include(${_alpaka_CMAKE_DIR}/alpakaCompilePedantic.cmake)
+    endif()
+
+    ## search for atomic ref
+    # Check for C++20 std::atomic_ref first
     # we only check the CXX compiler, equal to OpenMP which is checked for the CXX compiler only too.
     try_compile(
-        alpaka_HAS_STD_SIMD # Result stored here
+        alpaka_HAS_STD_ATOMIC_REF # Result stored here
         "${PROJECT_BINARY_DIR}/alpakaFeatureTests" # Binary directory for output file
         SOURCES
-            "${_alpaka_FEATURE_TESTS_DIR}/StdSimd.cpp" # Source file
+            "${_alpaka_FEATURE_TESTS_DIR}/StdAtomicRef.cpp" # Source file
         CXX_STANDARD ${alpaka_CXX_STANDARD}
         CXX_STANDARD_REQUIRED TRUE
         CXX_EXTENSIONS FALSE
     )
-
-    if(alpaka_HAS_STD_SIMD)
-        message(STATUS "std::simd found")
+    if(alpaka_HAS_STD_ATOMIC_REF)
+        message(STATUS "std::atomic_ref<T> found")
     else()
-        if(alpaka_SIMD STREQUAL "STDSIMD")
-            message(FATAL_ERROR "std::simd not found but requested via 'alpaka_SIMD=STDSIMD'")
+        message(STATUS "std::atomic_ref<T> NOT found")
+        target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_DISABLE_STD_ATOMIC_REF)
+    endif()
+
+    if(NOT alpaka_HAS_STD_ATOMIC_REF)
+        if(Boost_ATOMIC_FOUND)
+            message(STATUS "boost::atomic_ref<T> found")
+            target_link_libraries(alpaka_target_host INTERFACE Boost::atomic)
         else()
-            message(STATUS "std::simd NOT found, emulated SIMD is used")
-            target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_DISABLE_STD_SIMD)
+            message(STATUS "boost::atomic_ref<T> NOT found")
+            message(FATAL_ERROR "std::atomic_ref<T> OR boost::atomic_ref<T> is required")
         endif()
     endif()
-else()
-    message(STATUS "std::simd disabled, emulated SIMD is used")
-    target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_DISABLE_STD_SIMD)
+
+    if(alpaka_SIMD STREQUAL "STDSIMD" OR alpaka_SIMD STREQUAL "DEFAULT")
+        # Check for C++ std::simd
+        # we only check the CXX compiler, equal to OpenMP which is checked for the CXX compiler only too.
+        try_compile(
+            alpaka_HAS_STD_SIMD # Result stored here
+            "${PROJECT_BINARY_DIR}/alpakaFeatureTests" # Binary directory for output file
+            SOURCES
+                "${_alpaka_FEATURE_TESTS_DIR}/StdSimd.cpp" # Source file
+            CXX_STANDARD ${alpaka_CXX_STANDARD}
+            CXX_STANDARD_REQUIRED TRUE
+            CXX_EXTENSIONS FALSE
+        )
+
+        if(alpaka_HAS_STD_SIMD)
+            message(STATUS "std::simd found")
+        else()
+            if(alpaka_SIMD STREQUAL "STDSIMD")
+                message(FATAL_ERROR "std::simd not found but requested via 'alpaka_SIMD=STDSIMD'")
+            else()
+                message(STATUS "std::simd NOT found, emulated SIMD is used")
+                target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_DISABLE_STD_SIMD)
+            endif()
+        endif()
+    else()
+        message(STATUS "std::simd disabled, emulated SIMD is used")
+        target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_DISABLE_STD_SIMD)
+    endif()
 endif()
 
 # These options are used in the alpaka_finalize call
