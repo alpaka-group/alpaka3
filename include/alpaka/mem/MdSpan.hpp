@@ -157,7 +157,10 @@ namespace alpaka
         constexpr MdSpan(MdSpan<T_Type_Other, T_Extents, T_Pitches, T_MemAlignment> const& other)
             : m_ptr(other.data())
             , m_extent(other.getExtents())
-            , m_pitch(other.getPitches()){};
+            , m_pitch(other.getPitches())
+        {
+        }
+
         constexpr MdSpan(MdSpan const&) = default;
 
         // causes a compiler error with nvcc
