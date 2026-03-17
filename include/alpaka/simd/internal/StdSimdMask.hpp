@@ -14,9 +14,9 @@
 
 #pragma once
 
-#include "StdSimd.hpp"
 #include "alpaka/api/api.hpp"
 #include "alpaka/mem/Alignment.hpp"
+#include "alpaka/simd/internal/StdSimd.hpp"
 #include "alpaka/simd/simdConfig.hpp"
 #include "alpaka/simd/trait.hpp"
 

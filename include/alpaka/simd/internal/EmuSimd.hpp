@@ -14,9 +14,9 @@
 
 #pragma once
 
-#include "SmartMaskValueRef.hpp"
 #include "alpaka/api/api.hpp"
 #include "alpaka/simd/concepts.hpp"
+#include "alpaka/simd/internal/SmartMaskValueRef.hpp"
 #include "alpaka/simd/internal/alignment.hpp"
 #include "alpaka/simd/internal/utility.hpp"
 #include "alpaka/simd/trait.hpp"

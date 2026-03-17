@@ -29,3 +29,9 @@ namespace alpakaStdSimd = std::experimental;
 #    endif
 
 #endif
+
+// In case it is not already set, set it to disabled, to ensure that his header is includes whereever the macro is
+// used. If this header is not included compiler flag `-Wundef` will show an error.
+#if !defined(ALPAKA_HAS_STD_SIMD)
+#    define ALPAKA_HAS_STD_SIMD 0
+#endif

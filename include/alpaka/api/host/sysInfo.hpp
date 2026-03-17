@@ -15,13 +15,13 @@
 #    endif
 // We could use some more macros to reduce the number of sub-headers included, but this would restrict user code.
 #    include <windows.h>
-#elif ALPAKA_OS_LINUX || ALPAKA_OS_MACOS
+#elif ALPAKA_OS_LINUX || ALPAKA_OS_IOS
 #    include <sys/param.h>
 #    include <sys/types.h>
 #    include <unistd.h>
 
 #    include <cstdint>
-#    if ALPAKA_OS_BSD || ALPAKA_OS_MACOS
+#    if ALPAKA_OS_IOS
 #        include <sys/sysctl.h>
 #    endif
 #endif
@@ -128,7 +128,7 @@ namespace alpaka::onHost
         SYSTEM_INFO si;
         GetSystemInfo(&si);
         return si.dwPageSize;
-#elif ALPAKA_OS_LINUX || ALPAKA_OS_MACOS
+#elif ALPAKA_OS_LINUX || ALPAKA_OS_IOS
 #    if defined(_SC_PAGESIZE)
         return static_cast<std::size_t>(sysconf(_SC_PAGESIZE));
 #    else
@@ -159,7 +159,7 @@ namespace alpaka::onHost
         GlobalMemoryStatus(&status);
         return static_cast<std::size_t>(status.dwTotalPhys);
 
-#elif ALPAKA_OS_LINUX || ALPAKA_OS_MACOS
+#elif ALPAKA_OS_LINUX || ALPAKA_OS_IOS
         // Unix : Prefer sysctl() over sysconf() except sysctl() with HW_REALMEM and HW_PHYSMEM which are not
         // always reliable
 #    if defined(CTL_HW) && (defined(HW_MEMSIZE) || defined(HW_PHYSMEM64))
@@ -221,7 +221,7 @@ namespace alpaka::onHost
         // this is legacy and only used as fallback
         return static_cast<std::size_t>(get_avphys_pages()) * getPageSize();
 #    endif
-#elif ALPAKA_OS_MACOS
+#elif ALPAKA_OS_IOS
         int free_pages = 0;
         std::size_t len = sizeof(free_pages);
         if(sysctlbyname("vm.page_free_count", &free_pages, &len, nullptr, 0) < 0)

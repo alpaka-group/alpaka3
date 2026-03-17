@@ -25,7 +25,7 @@ namespace alpaka
      */
     constexpr auto thisApi()
     {
-#if ALPAKA_LANG_SYCL && ALPAKA_LANG_ONEAPI && __SYCL_DEVICE_ONLY__
+#if ALPAKA_LANG_SYCL && ALPAKA_LANG_ONEAPI && defined(__SYCL_DEVICE_ONLY__)
         return api::oneApi;
 #elif ALPAKA_LANG_CUDA && (ALPAKA_COMP_CLANG_CUDA || ALPAKA_COMP_NVCC) && __CUDA_ARCH__
         return api::cuda;

@@ -197,7 +197,7 @@ namespace alpaka::example::scan
     }
 } // namespace alpaka::example::scan
 
-#if ALPAKA_HAS_CUB
+#ifdef ALPAKA_HAS_CUB
 // only do this when CUB is found
 
 #    include <cub/device/device_scan.cuh>
@@ -340,7 +340,7 @@ namespace alpaka::example::scan
 
 #endif
 
-#if ALPAKA_HAS_HIPCUB
+#ifdef ALPAKA_HAS_HIPCUB
 
 #    include <hipcub/device/device_scan.hpp>
 #    include <hipcub/util_allocator.hpp>

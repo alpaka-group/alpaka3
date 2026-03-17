@@ -6,15 +6,9 @@
 #if __has_include(<simd>)
 #    include <simd>
 namespace alpakaStdSimd = std;
-#    if !defined(ALPAKA_HAS_STD_SIMD)
-#        define ALPAKA_HAS_STD_SIMD 1
-#    endif
 #elif __has_include(<experimental/simd>)
 #    include <experimental/simd>
 namespace alpakaStdSimd = std::experimental;
-#    if !defined(ALPAKA_HAS_STD_SIMD)
-#        define ALPAKA_HAS_STD_SIMD 1
-#    endif
 #endif
 
 #include <cstdlib>

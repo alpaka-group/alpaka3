@@ -26,30 +26,32 @@ namespace alpaka::exec
      * - the second way to disable an executor is to define the preprocessor define ALPAKA_DISABLE_EXEC_<ExecutorName>,
      * if not the executor is enabled
      */
-    constexpr auto enabledExecutors = std::make_tuple(ALPAKA_PP_REMOVE_FIRST_COMMA(
+    constexpr auto enabledExecutors = std::tuple_cat(
+        // empty tuple to avoid issues with the first comma
+        std::tuple<>{}
 #ifndef ALPAKA_DISABLE_EXEC_CpuOmpBlocks
         ,
-        exec::cpuOmpBlocks
+        std::tuple{exec::cpuOmpBlocks}
 #endif
 #ifndef ALPAKA_DISABLE_EXEC_CpuTbbBlocks
         ,
-        exec::cpuTbbBlocks
+        std::tuple{exec::cpuTbbBlocks}
 #endif
 #ifndef ALPAKA_DISABLE_EXEC_CpuSerial
         ,
-        exec::cpuSerial
+        std::tuple{exec::cpuSerial}
 #endif
 #ifndef ALPAKA_DISABLE_EXEC_GpuCuda
         ,
-        exec::gpuCuda
+        std::tuple{exec::gpuCuda}
 #endif
 #ifndef ALPAKA_DISABLE_EXEC_GpuHip
         ,
-        exec::gpuHip
+        std::tuple{exec::gpuHip}
 #endif
 #ifndef ALPAKA_DISABLE_EXEC_OneApi
         ,
-        exec::oneApi
+        std::tuple{exec::oneApi}
 #endif
-        ));
+    );
 } // namespace alpaka::exec

@@ -33,6 +33,7 @@ if(TARGET alpaka_target_host)
     alpaka_set_compiler_options(HOST target alpaka_target_host "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-Wall>")
     alpaka_set_compiler_options(HOST target alpaka_target_host "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-Wextra>")
     alpaka_set_compiler_options(HOST target alpaka_target_host "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-Werror>")
+    alpaka_set_compiler_options(HOST target alpaka_target_host "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-Wundef>")
     if((alpaka_TSAN OR alpaka_ASAN) AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
         # Avoid GNU issue when using ASAN or TSAN
         # error: '*(std::function<bool(char)>*)((char*)&__tmp + offsetof(std::__detail::_StateT, std::__detail::_State<char>::<unnamed>.std::__detail::_State_base::<unnamed>)).std::function<bool(char)>::_M_invoker' may be used uninitialized [-Werror=maybe-uninitialized]

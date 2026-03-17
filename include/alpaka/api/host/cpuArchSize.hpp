@@ -21,7 +21,7 @@ namespace alpaka::onHost::internal
     {
         return 0;
     }
-#if (ALPAKA_HAS_STD_SIMD)
+#if ALPAKA_HAS_STD_SIMD
     template<typename T_Type>
     requires requires { alpakaStdSimd::native_simd<T_Type>::size(); }
     constexpr size_t stdSimdWidth()

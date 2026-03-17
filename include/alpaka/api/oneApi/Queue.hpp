@@ -306,8 +306,8 @@ namespace alpaka::onHost::internal
             {
                 printf(
                     "Dynamic evaluated warp size on host does not match the compile time warp size ( macro "
-                    "SYCL_SUBGROUP_SIZE) evaluated in the "
-                    "kernel. Update the definition of SYCL_SUBGROUP_SIZE section and check the trait "
+                    "ALPAKA_SYCL_SUBGROUP_SIZE) evaluated in the "
+                    "kernel. Update the definition of ALPAKA_SYCL_SUBGROUP_SIZE section and check the trait "
                     "Warpsize::Dispatch<>.");
                 abort();
             }
@@ -360,7 +360,7 @@ namespace alpaka::onHost::internal
                             constexpr uint32_t syclDim = workerDesc.first.dimensions;
 
                             constexpr uint32_t w = ALPAKA_TYPEOF(warpSize)::value;
-                            detail::EnqueueKernelWithWarpSize<syclDim, w, SYCL_SUBGROUP_SIZE & w>::call(
+                            detail::EnqueueKernelWithWarpSize<syclDim, w, ALPAKA_SYCL_SUBGROUP_SIZE & w>::call(
                                 cgh,
                                 workerDesc.first,
                                 kernelBundle,
@@ -429,7 +429,7 @@ namespace alpaka::onHost::internal
 
                             constexpr uint32_t w = ALPAKA_TYPEOF(warpSize)::value;
 
-                            detail::EnqueueKernelWithWarpSize<syclDim, w, SYCL_SUBGROUP_SIZE & w>::call(
+                            detail::EnqueueKernelWithWarpSize<syclDim, w, ALPAKA_SYCL_SUBGROUP_SIZE & w>::call(
                                 cgh,
                                 workerDesc.first,
                                 kernelBundle,
