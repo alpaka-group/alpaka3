@@ -152,6 +152,16 @@ namespace alpaka
 
         constexpr MdSpanArray(MdSpanArray const&) = default;
 
+        /** Assignment operator keeping const-ness
+         *
+         * alpaka keeps track that const references to a span can not be cast to non const.
+         * If the inner value type is not const the second assignment operator with non const will be used.
+         */
+        constexpr MdSpanArray& operator=(MdSpanArray const& other)
+            requires(std::is_const_v<typename ALPAKA_TYPEOF(other)::value_type>)
+            = default;
+        constexpr MdSpanArray& operator=(MdSpanArray&) = default;
+
         constexpr MdSpanArray(MdSpanArray&&) = default;
 
         template<alpaka::concepts::CStaticArray T_OtherArrayType>

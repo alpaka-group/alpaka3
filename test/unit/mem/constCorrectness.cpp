@@ -78,14 +78,19 @@ TEST_CASE("mdspan inner const assignment operator", "[mem][mdspan][correctness][
     MutMdSpan mut_mdspan(ptr, extents, pitches);
     ConstMdSpan const_mdspan(const_ptr, extents, pitches);
 
-    STATIC_REQUIRE(std::assignable_from<MutMdSpan&, MutMdSpan>);
+    STATIC_REQUIRE(concepts::AssignableFrom<MutMdSpan&, MutMdSpan>);
     [[maybe_unused]] MutMdSpan mut_mdspan2 = mut_mdspan;
-    STATIC_REQUIRE(std::assignable_from<ConstMdSpan&, ConstMdSpan>);
+    mut_mdspan2 = mut_mdspan;
+    STATIC_REQUIRE(concepts::AssignableFrom<ConstMdSpan&, ConstMdSpan>);
     [[maybe_unused]] ConstMdSpan const_mdspan2 = const_mdspan;
-    STATIC_REQUIRE(std::assignable_from<ConstMdSpan&, MutMdSpan>);
+    const_mdspan2 = const_mdspan;
+    STATIC_REQUIRE(concepts::AssignableFrom<ConstMdSpan&, MutMdSpan>);
     [[maybe_unused]] ConstMdSpan const_mdspan3 = mut_mdspan;
-    STATIC_REQUIRE_FALSE(std::assignable_from<MutMdSpan&, ConstMdSpan>);
+    const_mdspan3 = mut_mdspan;
+    STATIC_REQUIRE_FALSE(concepts::AssignableFrom<MutMdSpan&, ConstMdSpan>);
+    // Not allowed cases, remove inner const via copy construction or assignment
     // MutMdSpan mut_mdspan3 = const_mdspan;
+    // mut_mdspan3 = const_mdspan;
 }
 
 TEST_CASE("mdspan inner const move operator", "[mem][mdspan][correctness][moveConstruct]")
@@ -228,14 +233,19 @@ TEST_CASE("MdSpanArray inner const assignment operator", "[mem][mdspanarray][cor
     MutMdSpanArray mut_md_span_array(static_data);
     ConstMdSpanArray const_md_span_array(const_static_data);
 
-    STATIC_REQUIRE(std::assignable_from<MutMdSpanArray&, MutMdSpanArray>);
+    STATIC_REQUIRE(concepts::AssignableFrom<MutMdSpanArray&, MutMdSpanArray>);
     [[maybe_unused]] MutMdSpanArray mut_md_span_arra2 = mut_md_span_array;
-    STATIC_REQUIRE(std::assignable_from<ConstMdSpanArray&, ConstMdSpanArray>);
+    mut_md_span_arra2 = mut_md_span_array;
+    STATIC_REQUIRE(concepts::AssignableFrom<ConstMdSpanArray&, ConstMdSpanArray>);
     [[maybe_unused]] ConstMdSpanArray const_md_span_array2 = const_md_span_array;
-    STATIC_REQUIRE(std::assignable_from<ConstMdSpanArray&, MutMdSpanArray>);
+    const_md_span_array2 = const_md_span_array;
+    STATIC_REQUIRE(concepts::AssignableFrom<ConstMdSpanArray&, MutMdSpanArray>);
     [[maybe_unused]] ConstMdSpanArray const_md_span_array3 = mut_md_span_array;
-    STATIC_REQUIRE_FALSE(std::assignable_from<MutMdSpanArray&, ConstMdSpanArray>);
+    const_md_span_array3 = mut_md_span_array;
+    STATIC_REQUIRE_FALSE(concepts::AssignableFrom<MutMdSpanArray&, ConstMdSpanArray>);
+    // Not allowed cases, remove inner const via copy construction or assignment
     // MutMdSpanArray mut_view3 = const_md_span_array;
+    // mut_view3 = const_md_span_array;
 }
 
 TEST_CASE(
@@ -313,14 +323,19 @@ TEST_CASE("View inner const assignment operator", "[mem][view][correctness][copy
     MutView mut_view(api::host, ptr, extents, pitches);
     ConstView const_view(api::host, const_ptr, extents, pitches);
 
-    STATIC_REQUIRE(std::assignable_from<MutView&, MutView>);
+    STATIC_REQUIRE(concepts::AssignableFrom<MutView&, MutView>);
     [[maybe_unused]] MutView mut_view2 = mut_view;
-    STATIC_REQUIRE(std::assignable_from<ConstView&, ConstView>);
+    mut_view2 = mut_view;
+    STATIC_REQUIRE(concepts::AssignableFrom<ConstView&, ConstView>);
     [[maybe_unused]] ConstView const_view2 = const_view;
-    STATIC_REQUIRE(std::assignable_from<ConstView&, MutView>);
+    const_view2 = const_view;
+    STATIC_REQUIRE(concepts::AssignableFrom<ConstView&, MutView>);
     [[maybe_unused]] ConstView const_view3 = mut_view;
-    STATIC_REQUIRE_FALSE(std::assignable_from<MutView&, ConstView>);
+    const_view3 = mut_view;
+    STATIC_REQUIRE_FALSE(concepts::AssignableFrom<MutView&, ConstView>);
+    // Not allowed cases, remove inner const via copy construction or assignment
     // MutView mut_view3 = const_view;
+    // mut_view3 = const_view;
 }
 
 TEST_CASE("View inner const move constructor and move assignment operator", "[mem][view][correctness][moveConstruct]")
@@ -400,14 +415,19 @@ TEST_CASE("sharedBuffer inner const assignment operator", "[mem][sharedBuffer][c
     MutSharedBuffer mut_shared_buffer(api::host, ptr, extents, pitches, [] {});
     ConstSharedBuffer const_shared_buffer(api::host, const_ptr, extents, pitches, [] {});
 
-    STATIC_REQUIRE(std::assignable_from<MutSharedBuffer&, MutSharedBuffer>);
+    STATIC_REQUIRE(concepts::AssignableFrom<MutSharedBuffer&, MutSharedBuffer>);
     [[maybe_unused]] MutSharedBuffer mut_shared_buffer2 = mut_shared_buffer;
-    STATIC_REQUIRE(std::assignable_from<ConstSharedBuffer&, ConstSharedBuffer>);
+    mut_shared_buffer2 = mut_shared_buffer;
+    STATIC_REQUIRE(concepts::AssignableFrom<ConstSharedBuffer&, ConstSharedBuffer>);
     [[maybe_unused]] ConstSharedBuffer const_shared_buffer2 = const_shared_buffer;
-    STATIC_REQUIRE(std::assignable_from<ConstSharedBuffer&, MutSharedBuffer>);
+    const_shared_buffer2 = const_shared_buffer;
+    STATIC_REQUIRE(concepts::AssignableFrom<ConstSharedBuffer&, MutSharedBuffer>);
     [[maybe_unused]] ConstSharedBuffer const_shared_buffer3 = mut_shared_buffer;
-    STATIC_REQUIRE_FALSE(std::assignable_from<MutSharedBuffer&, ConstSharedBuffer>);
+    const_shared_buffer3 = mut_shared_buffer;
+    STATIC_REQUIRE_FALSE(concepts::AssignableFrom<MutSharedBuffer&, ConstSharedBuffer>);
+    // Not allowed cases, remove inner const via copy construction or assignment
     // MutSharedBuffer mut_shared_buffer3 = const_shared_buffer;
+    // mut_shared_buffer3 = const_shared_buffer;
 }
 
 TEST_CASE("sharedBuffer inner const move operator", "[mem][sharedBuffer][correctness][moveConstruct]")

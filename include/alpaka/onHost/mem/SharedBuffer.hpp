@@ -101,11 +101,11 @@ namespace alpaka::onHost
 
         SharedBuffer(SharedBuffer const&) = default;
 
-        SharedBuffer& operator=(SharedBuffer const& otherSharedBuffer)
-        {
-            *this = otherSharedBuffer.getConstSharedBuffer();
-            return *this;
-        }
+        /** Assignment operator keeping const-ness
+         *
+         * @attention the assign operator is not removing inner const-ness because the type signature is not changed.
+         */
+        SharedBuffer& operator=(SharedBuffer const& otherSharedBuffer) = default;
 
         template<typename T_Type_Other>
         requires alpaka::internal::concepts::InnerTypeAllowedCast<T_Type, T_Type_Other>

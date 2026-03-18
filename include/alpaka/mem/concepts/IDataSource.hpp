@@ -6,6 +6,7 @@
 
 #include "alpaka/Vec.hpp"
 #include "alpaka/mem/Alignment.hpp"
+#include "alpaka/mem/concepts/AssignableFrom.hpp"
 #include "alpaka/mem/concepts/ExpectedValueType.hpp"
 #include "alpaka/trait.hpp"
 
@@ -42,6 +43,11 @@ namespace alpaka::concepts
         concept IDataSource = requires(T t, alpaka::Vec<typename T::index_type, T::dim()> vec) {
             typename T::value_type;
             typename T::index_type;
+
+            /* Non const data sources must be assignable.
+             * You can NOT assign const data sources to non const dta sources because this will remove the const-ness.
+             */
+            requires concepts::AssignableFrom<std::decay_t<T>, std::decay_t<T>>;
 
             // only the non-const type is moveable
             requires std::movable<std::remove_const_t<T>>;
