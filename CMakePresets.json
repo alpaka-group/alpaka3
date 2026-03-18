@@ -142,13 +142,28 @@
       }
     },
     {
-      "name": "rel-oneapi",
+      "name": "rel-oneapi-cpu",
       "inherits": [
         "release-base"
       ],
       "cacheVariables": {
         "CMAKE_CXX_COMPILER": "icpx",
         "alpaka_DEP_ONEAPI": "ON",
+        "alpaka_ONEAPI_Cpu": "ON",
+        "alpaka_ONEAPI_IntelGpu": "OFF",
+        "alpaka_DEP_OMP": "OFF"
+      }
+    },
+    {
+      "name": "rel-oneapi-gpu",
+      "inherits": [
+        "release-base"
+      ],
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "icpx",
+        "alpaka_DEP_ONEAPI": "ON",
+        "alpaka_ONEAPI_Cpu": "OFF",
+        "alpaka_ONEAPI_IntelGpu": "ON",
         "alpaka_DEP_OMP": "OFF"
       }
     },
@@ -222,13 +237,28 @@
       }
     },
     {
-      "name": "dbg-oneapi",
+      "name": "dbg-oneapi-cpu",
       "inherits": [
         "debug-base"
       ],
       "cacheVariables": {
         "CMAKE_CXX_COMPILER": "icpx",
         "alpaka_DEP_ONEAPI": "ON",
+        "alpaka_ONEAPI_Cpu": "ON",
+        "alpaka_ONEAPI_IntelGpu": "OFF",
+        "alpaka_DEP_OMP": "OFF"
+      }
+    },
+    {
+      "name": "dbg-oneapi-gpu",
+      "inherits": [
+        "debug-base"
+      ],
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "icpx",
+        "alpaka_DEP_ONEAPI": "ON",
+        "alpaka_ONEAPI_Cpu": "OFF",
+        "alpaka_ONEAPI_IntelGpu": "ON",
         "alpaka_DEP_OMP": "OFF"
       }
     },
@@ -357,8 +387,12 @@
       "configurePreset": "rel-hip"
     },
     {
-      "name": "rel-oneapi",
-      "configurePreset": "rel-oneapi"
+      "name": "rel-oneapi-cpu",
+      "configurePreset": "rel-oneapi-cpu"
+    },
+    {
+      "name": "rel-oneapi-gpu",
+      "configurePreset": "rel-oneapi-gpu"
     },
     {
       "name": "dbg-host-gcc",
@@ -385,8 +419,12 @@
       "configurePreset": "dbg-hip"
     },
     {
-      "name": "dbg-oneapi",
-      "configurePreset": "dbg-oneapi"
+      "name": "dbg-oneapi-cpu",
+      "configurePreset": "dbg-oneapi-cpu"
+    },
+    {
+      "name": "dbg-oneapi-gpu",
+      "configurePreset": "dbg-oneapi-gpu"
     },
     {
       "name": "rel-host-headercheck",
@@ -451,8 +489,12 @@
       "configurePreset": "rel-hip"
     },
     {
-      "name": "rel-oneapi",
-      "configurePreset": "rel-oneapi"
+      "name": "rel-oneapi-cpu",
+      "configurePreset": "rel-oneapi-cpu"
+    },
+    {
+      "name": "rel-oneapi-gpu",
+      "configurePreset": "rel-oneapi-gpu"
     },
     {
       "name": "dbg-host-gcc",
@@ -479,8 +521,12 @@
       "configurePreset": "dbg-hip"
     },
     {
-      "name": "dbg-oneapi",
-      "configurePreset": "dbg-oneapi"
+      "name": "dbg-oneapi-cpu",
+      "configurePreset": "dbg-oneapi-cpu"
+    },
+    {
+      "name": "dbg-oneapi-gpu",
+      "configurePreset": "dbg-oneapi-gpu"
     },
     {
       "name": "rel-host-headercheck",
