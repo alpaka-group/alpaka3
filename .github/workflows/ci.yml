@@ -52,6 +52,8 @@ jobs:
           - { compiler: nvcc, version: "", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04" }
           - { compiler: nvcc, version: "", cuda: "12.9", hip: "no", container: "nvidia/cuda:12.9.1-devel-ubuntu24.04" }
           - { compiler: nvcc, version: "", cuda: "13.0", hip: "no", container: "nvidia/cuda:13.0.0-devel-ubuntu24.04" }
+          - { compiler: nvcc, version: "", cuda: "13.1", hip: "no", container: "nvidia/cuda:13.1.0-devel-ubuntu24.04" }
+          - { compiler: nvcc, version: "", cuda: "13.2", hip: "no", container: "nvidia/cuda:13.2.0-devel-ubuntu24.04" }
           # clang-cuda (device compile with clang)
           - { compiler: clang, version: "20", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04" }
           - { compiler: clang, version: "21", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04" }

@@ -39,17 +39,20 @@ struct StencilKernel
     {
         using namespace alpaka;
 
-        for(concepts::Dim<2u> auto blockStartIdx :
+        for(auto blockStartIdx :
             onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec{0u, 0u}, numNodes, chunkSize}))
         {
+            // CUDA 13.1/13.2 bug workaround: concepts can not be used in a range based for loop
+            static_assert(concepts::Dim<ALPAKA_TYPEOF(blockStartIdx), 2u>);
             auto sdata = onAcc::declareSharedMdArray<double, uniqueId()>(acc, sharedMemExtents);
 
             // avoid data race with the stencil calculation at the end
             onAcc::syncBlockThreads(acc);
 
-            for(concepts::Dim<2u> auto idx2d :
-                onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{sharedMemExtents}))
+            for(auto idx2d : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{sharedMemExtents}))
             {
+                // CUDA 13.1/13.2 bug workaround: concepts can not be used in a range based for loop
+                static_assert(concepts::Dim<ALPAKA_TYPEOF(idx2d), 2u>);
                 auto bufIdx = idx2d + blockStartIdx;
                 sdata[idx2d] = uCurrBuf[bufIdx];
             }
@@ -65,12 +68,14 @@ struct StencilKernel
 
             // go over only core cells
             // Vec{1, 1}; offset for halo above and to the left
-            for(concepts::Dim<2u> auto idx2D : onAcc::makeIdxMap(
+            for(auto idx2D : onAcc::makeIdxMap(
                     acc,
                     onAcc::worker::threadsInBlock,
                     IdxRange{chunkSize} >> 1u,
                     onAcc::traverse::tiled))
             {
+                // CUDA 13.1/13.2 bug workaround: concepts can not be used in a range based for loop
+                static_assert(concepts::Dim<ALPAKA_TYPEOF(idx2D), 2u>);
                 auto bufIdx = idx2D + blockStartIdx;
 
                 uNextBuf[bufIdx] = sdata[idx2D] * (1.0 - 2.0 * rX - 2.0 * rY) + sdata[idx2D - xDir] * rX

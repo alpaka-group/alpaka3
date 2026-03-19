@@ -35,11 +35,13 @@ namespace alpaka::example::nBody
             auto const extents = particleData.getExtents();
 
             // loop through blocks in the grid
-            for(concepts::Dim<1_idx> auto blockStartIdx : onAcc::makeIdxMap(
+            for(auto blockStartIdx : onAcc::makeIdxMap(
                     acc,
                     onAcc::worker::blocksInGrid,
                     IdxRange{CVec<IdxType, 0_idx>{}, extents, chunkSize}))
             {
+                // CUDA 13.1/13.2 bug workaround: concepts can not be used in a range based for loop
+                static_assert(concepts::Dim<ALPAKA_TYPEOF(blockStartIdx), 1u>);
                 // each block updates its particles with all other particles (3-dimensional positions)
                 auto particlePositions = onAcc::declareSharedMdArray<Simd<BaseType, 3u>, uniqueId()>(acc, chunkSize);
 
@@ -53,9 +55,10 @@ namespace alpaka::example::nBody
                 auto masses = onAcc::declareSharedMdArray<BaseType, uniqueId()>(acc, chunkSize);
 
                 // == load the particles for this block into shared memory and initialize accelerations ==
-                for(concepts::Dim<1_idx> auto particleIdx :
-                    onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{chunkSize}))
+                for(auto particleIdx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{chunkSize}))
                 {
+                    // CUDA 13.1/13.2 bug workaround: concepts can not be used in a range based for loop
+                    static_assert(concepts::Dim<ALPAKA_TYPEOF(particleIdx), 1u>);
                     auto const globalIdx = blockStartIdx + particleIdx;
                     particlePositions[particleIdx] = Simd{
                         particleData.xPositions[globalIdx],
@@ -69,9 +72,10 @@ namespace alpaka::example::nBody
                     otherBlockStartIdx += chunkSize.x())
                 {
                     // == load the particles for this block into shared memory and initialize accelerations ==
-                    for(concepts::Dim<1_idx> auto particleIdx :
-                        onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{chunkSize}))
+                    for(auto particleIdx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{chunkSize}))
                     {
+                        // CUDA 13.1/13.2 bug workaround: concepts can not be used in a range based for loop
+                        static_assert(concepts::Dim<ALPAKA_TYPEOF(particleIdx), 1u>);
                         auto const otherGlobalIdx = otherBlockStartIdx + particleIdx;
                         otherParticlePositions[particleIdx] = Simd{
                             particleData.xPositions[otherGlobalIdx],
@@ -83,9 +87,10 @@ namespace alpaka::example::nBody
                     onAcc::syncBlockThreads(acc);
 
                     // == iterate through every x,y pair of particles in this tile ==
-                    for(concepts::Dim<1_idx> auto particleIdx :
-                        onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{chunkSize}))
+                    for(auto particleIdx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{chunkSize}))
                     {
+                        // CUDA 13.1/13.2 bug workaround: concepts can not be used in a range based for loop
+                        static_assert(concepts::Dim<ALPAKA_TYPEOF(particleIdx), 1u>);
                         for(IdxType i = 0_idx; i < chunkSize; ++i)
                         {
                             auto const distanceVector = otherParticlePositions[i] - particlePositions[particleIdx];
@@ -105,9 +110,10 @@ namespace alpaka::example::nBody
                 onAcc::syncBlockThreads(acc);
 
                 // == calculate and save the particles' new velocities back into global memory ==
-                for(concepts::Dim<1_idx> auto particleIdx :
-                    onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{chunkSize}))
+                for(auto particleIdx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{chunkSize}))
                 {
+                    // CUDA 13.1/13.2 bug workaround: concepts can not be used in a range based for loop
+                    static_assert(concepts::Dim<ALPAKA_TYPEOF(particleIdx), 1u>);
                     auto const acceleration = accelerations[particleIdx] * dt;
                     particleData.xVelocities[blockStartIdx + particleIdx] += acceleration.x();
                     particleData.yVelocities[blockStartIdx + particleIdx] += acceleration.y();
