@@ -6,6 +6,7 @@
 
 #include "alpaka/api/concepts/api.hpp"
 #include "alpaka/concepts/hasName.hpp"
+#include "alpaka/mem/concepts/AssignableFrom.hpp"
 #include "alpaka/mem/concepts/ExpectedValueType.hpp"
 #include "alpaka/mem/concepts/IBuffer.hpp"
 #include "alpaka/mem/concepts/IMdSpan.hpp"

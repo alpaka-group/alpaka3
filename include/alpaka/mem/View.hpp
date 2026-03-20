@@ -123,7 +123,12 @@ namespace alpaka
 
         constexpr View(View&&) = default;
 
+        /** Assignment operator keeping const-ness
+         *
+         * @attention the assign operator is not removing inner const-ness because the type signature is not changed.
+         */
         constexpr View& operator=(View const&) = default;
+
         constexpr View& operator=(View&&) = default;
 
         static consteval T_Api getApi()

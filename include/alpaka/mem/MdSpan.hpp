@@ -161,13 +161,23 @@ namespace alpaka
         {
         }
 
+        template<typename T_Type_Other>
+        requires alpaka::internal::concepts::InnerTypeAllowedCast<T_Type, T_Type_Other>
+        constexpr MdSpan(MdSpan<T_Type_Other, T_Extents, T_Pitches, T_MemAlignment>&& other)
+            : m_ptr(std::move(other.data()))
+            , m_extent(std::move(other.getExtents()))
+            , m_pitch(std::move(other.getPitches()))
+        {
+        }
+
         constexpr MdSpan(MdSpan const&) = default;
+        constexpr MdSpan(MdSpan&&) = default;
 
-        // causes a compiler error with nvcc
-        // error: static assertion failed with "All kernel arguments must be trivially copyable or specialize
-        // trait::IsKernelArgumentTriviallyCopyable<>!"
-        // constexpr MdSpan& operator=(MdSpan&) = default;
-
+        /** Assignment operator keeping const-ness
+         *
+         * @attention the assign operator is not removing inner const-ness because the type signature is not changed.
+         */
+        constexpr MdSpan& operator=(MdSpan const&) = default;
 
         constexpr MdSpan& operator=(MdSpan&&) = default;
 
