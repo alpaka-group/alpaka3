@@ -1,4 +1,4 @@
-/* Copyright 2025 Simeon Ehrig
+/* Copyright 2026 René Widera
  * SPDX-License-Identifier: MPL-2.0
  */
 
