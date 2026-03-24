@@ -14,7 +14,8 @@
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "alpaka_TESTS": "ON",
         "alpaka_EXAMPLES": "ON",
-        "alpaka_BENCHMARKS": "ON"
+        "alpaka_BENCHMARKS": "ON",
+        "alpaka_FAST_MATH": "OFF"
       }
     },
     {
