@@ -283,14 +283,21 @@ namespace alpaka::onHost
         void operator()(syclGeneric::Queue<T_Device>& queue, T_Task const& task) const
         {
             ALPAKA_LOG_FUNCTION(onHost::logger::queue);
-            // using the queue by reference is fine here, because the queue is not destroyed while the task is
-            // executed.
+            /* Using the queue by reference is fine here, because if the queue is destroyed during the native sycl host
+             * task is executed the sycl queue is still valid, in the destructure of the alpaka queue we wait until all
+             * native sycl queue tasks are processed. Accessing the callback thread is still allowed att his point in
+             * time. Capturing the queue as handle (shared pointer) will result into a deadlock because the native sycl
+             * host task is not allowed to destruct the alpaka3, we call in the destructor of the queue 'wait for the
+             * native sycl queue' which is than producing the deadlock.*/
             [[maybe_unused]] sycl::event ev = queue.m_queue.submit(
                 [&queue, task](sycl::handler& cgh)
                 {
-                    alpaka::unused(cgh);
-                    auto f = queue.m_callBackThread.submit([t = std::move(task)] { t(); });
-                    f.wait();
+                    cgh.host_task(
+                        [&queue, task]
+                        {
+                            auto f = queue.m_callBackThread.submit([t = std::move(task)] { t(); });
+                            f.wait();
+                        });
                 });
             if(queue.isBlocking())
                 ev.wait_and_throw();
@@ -304,13 +311,16 @@ namespace alpaka::onHost
         void operator()(syclGeneric::Queue<T_Device>& queue, T_Task const& task) const
         {
             ALPAKA_LOG_FUNCTION(onHost::logger::queue);
-            auto queueDependency = queue.getSharedPtr();
+            /* Using the queue by reference is fine here, because if the queue is destroyed during the native sycl host
+             * task is executed the sycl queue is still valid, in the destructure of the alpaka queue we wait until all
+             * native sycl queue tasks are processed. Accessing the callback thread is still allowed att his point in
+             * time. Capturing the queue as handle (shared pointer) will result into a deadlock because the native sycl
+             * host task is not allowed to destruct the alpaka3, we call in the destructor of the queue 'wait for the
+             * native sycl queue' which is than producing the deadlock.*/
             [[maybe_unused]] sycl::event ev = queue.m_queue.submit(
-                [queueDependency, task](sycl::handler& cgh)
+                [&queue, task](sycl::handler& cgh)
                 {
-                    alpaka::unused(cgh);
-                    cgh.host_task([queueDependency, task]()
-                                  { queueDependency.get()->m_callBackThread.submit([t = std::move(task)] { t(); }); });
+                    cgh.host_task([&queue, task]() { queue.m_callBackThread.submit([t = std::move(task)] { t(); }); });
                 });
             if(queue.isBlocking())
                 ev.wait_and_throw();
