@@ -9,3 +9,4 @@
 #include "alpaka/api/cuda/IdxLayer.hpp"
 #include "alpaka/api/cuda/Platform.hpp"
 #include "alpaka/api/cuda/executor.hpp"
+#include "alpaka/api/cuda/memFence.hpp"

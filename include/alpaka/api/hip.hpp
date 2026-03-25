@@ -9,3 +9,4 @@
 #include "alpaka/api/hip/IdxLayer.hpp"
 #include "alpaka/api/hip/Platform.hpp"
 #include "alpaka/api/hip/executor.hpp"
+#include "alpaka/api/hip/memFence.hpp"

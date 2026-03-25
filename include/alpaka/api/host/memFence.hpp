@@ -6,9 +6,11 @@
 
 #include "alpaka/api/host/Api.hpp"
 #include "alpaka/api/host/executor.hpp"
+#include "alpaka/api/host/memoryOrder.hpp"
 #include "alpaka/api/host/tag.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/onAcc/Acc.hpp"
+#include "alpaka/onAcc/memoryOrder.hpp"
 #include "alpaka/onAcc/scope.hpp"
 #include "alpaka/tag.hpp"
 
@@ -25,66 +27,29 @@ namespace alpaka::onAcc::internalCompute
 #    pragma GCC diagnostic ignored "-Wtsan"
 #endif
 
-        // Serial executor fence implementation
-        // Block scope: nothing to do for serial
-        inline void hostMemoryFenceImpl(exec::CpuSerial const&, scope::Block const)
+        constexpr void hostMemoryFenceImpl(auto const&, auto const scope, concepts::MemoryOrder auto const order)
         {
-            // Block scope: NO-OP since threads within a block
-        }
+            using ScopeT = std::remove_cvref_t<decltype(scope)>;
 
-        inline void hostMemoryFenceImpl(exec::CpuSerial const&, scope::Device const)
-        {
-            std::atomic_thread_fence(std::memory_order_acq_rel);
+            // Block scope requires no fence since threads within a block are simulated/single-threaded
+            if constexpr(!std::same_as<ScopeT, scope::Block>)
+            {
+                std::atomic_thread_fence(MemOrderHost::get(order));
+            }
         }
-
-        inline void hostMemoryFenceImpl(exec::CpuSerial const&, scope::System const)
-        {
-            std::atomic_thread_fence(std::memory_order_acq_rel);
-        }
-
-        inline void hostMemoryFenceImpl(exec::CpuOmpBlocks const&, scope::Block const)
-        {
-            // Block scope: NO-OP for OMP since single-threaded within a block
-        }
-
-        // TBB doesn’t have a separate “thread fence”.
-        inline void hostMemoryFenceImpl(exec::CpuOmpBlocks const&, scope::Device const)
-        {
-            std::atomic_thread_fence(std::memory_order_acq_rel);
-        }
-
-        inline void hostMemoryFenceImpl(exec::CpuOmpBlocks const&, scope::System const)
-        {
-            std::atomic_thread_fence(std::memory_order_acq_rel);
-        }
-
-        inline void hostMemoryFenceImpl(exec::CpuTbbBlocks const&, scope::Block const)
-        {
-            // Block scope: NO-OP for TBB since simulated single-thread blocks
-        }
-
-        inline void hostMemoryFenceImpl(exec::CpuTbbBlocks const&, scope::Device const)
-        {
-            std::atomic_thread_fence(std::memory_order_acq_rel);
-        }
-
-        inline void hostMemoryFenceImpl(exec::CpuTbbBlocks const&, scope::System const)
-        {
-            std::atomic_thread_fence(std::memory_order_acq_rel);
-        }
-
 #if defined(__GNUC__) && !defined(__clang__)
 #    pragma GCC diagnostic pop
 #endif
     } // namespace detail
 
     // Host API: dispatch to executor-specific implementation
-    template<typename T_Scope>
-    struct MemoryFence::Op<api::Host, T_Scope>
+    template<typename T_Scope, concepts::MemoryOrder T_Order>
+    struct MemoryFence::Op<api::Host, T_Scope, T_Order>
     {
-        void operator()(onAcc::concepts::Acc<api::Host> auto const& acc, T_Scope const scope) const
+        void operator()(onAcc::concepts::Acc<api::Host> auto const& acc, T_Scope const scope, T_Order const order)
+            const
         {
-            detail::hostMemoryFenceImpl(acc[object::exec], scope);
+            detail::hostMemoryFenceImpl(acc[object::exec], scope, order);
         }
     };
 } // namespace alpaka::onAcc::internalCompute

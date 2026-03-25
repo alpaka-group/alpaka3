@@ -28,12 +28,12 @@ struct MemoryFenceTestKernel
         {
             // Initial write; any subsequent fence must not block, just enforce visibility / ordering.
             out[idx.x()] = static_cast<uint32_t>(idx.x());
-            // Explicit scope form.
-            memFence(acc, scope::block);
-            memFence(acc, scope::device);
+            // Explicit scope and memory order forms.
+            memFence(acc, scope::block, order::acquire);
+            memFence(acc, scope::device, order::release);
             // Convenience helper forms (should map to identical implementations).
-            onAcc::memFence(acc, onAcc::scope::Block{});
-            onAcc::memFence(acc, onAcc::scope::Device{});
+            onAcc::memFence(acc, onAcc::scope::Block{}, order::AcqRel{});
+            onAcc::memFence(acc, onAcc::scope::Device{}, order::SeqCst{});
             // Post‑fence update. If fences caused unintended reordering, test value would mismatch.
             out[idx.x()] += 1u;
         }

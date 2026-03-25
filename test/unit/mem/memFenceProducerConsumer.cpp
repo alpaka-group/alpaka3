@@ -8,6 +8,8 @@
  *  - BlockSharedMemOrderKernel: shared-memory ordering using block-scope fences.
  */
 
+#include "alpaka/onAcc/memoryOrder.hpp"
+
 #include <alpaka/alpaka.hpp>
 
 #include <catch2/catch_template_test_macros.hpp>
@@ -56,7 +58,7 @@ struct ProducerConsumerKernel
                 // Publish payload value first.
                 atomicExch(acc, &payload[i], i);
                 // Ensure payload write is visible before flag store.
-                memFence(acc, scope::device);
+                memFence(acc, scope::device, order::release);
                 atomicExch(acc, &readyFlags[i], 1u);
             }
             // consumer, only for tid == 1, second thread is consumer
@@ -74,7 +76,7 @@ struct ProducerConsumerKernel
                 // above the while-loop unless the flag read is treated as a dependency (atomic/volatile) and
                 // an acquire fence follows.
 
-                memFence(acc, scope::device);
+                memFence(acc, scope::device, order::acquire);
                 auto v = payload[i];
                 if(v != i)
                 {
@@ -151,7 +153,7 @@ struct DeviceFenceTestKernelWriter
         if(idx == 0)
         {
             vars[0] = 10;
-            onAcc::memFence(acc, onAcc::scope::Device{});
+            onAcc::memFence(acc, onAcc::scope::Device{}, onAcc::order::release);
             vars[1] = 20;
         }
     }
@@ -168,7 +170,7 @@ struct DeviceFenceTestKernelReader
         if(idx == 0)
         {
             auto const b = vars[1];
-            onAcc::memFence(acc, onAcc::scope::Device{});
+            onAcc::memFence(acc, onAcc::scope::Device{}, onAcc::order::acquire);
             auto const a = vars[0];
 
             // If the fence is working correctly, the following case can never happen
@@ -192,12 +194,12 @@ struct DeviceFenceTestKernel
         if(idx == 0)
         {
             vars[0] = 10;
-            onAcc::memFence(acc, onAcc::scope::Device{});
+            onAcc::memFence(acc, onAcc::scope::Device{}, onAcc::order::release);
             vars[1] = 20;
         }
 
         auto const b = vars[1];
-        onAcc::memFence(acc, onAcc::scope::Device{});
+        onAcc::memFence(acc, onAcc::scope::Device{}, onAcc::order::acquire);
         auto const a = vars[0];
 
         // If the fence is working correctly, the following case can never happen
@@ -243,7 +245,7 @@ struct BlockSharedMemOrderKernel
                 // publish new A
                 shared[0] = 10;
                 // ensure visibility of A before B write
-                memFence(acc, scope::block);
+                memFence(acc, scope::block, onAcc::order::release);
                 // publish B
                 shared[1] = 20;
             }
@@ -254,7 +256,7 @@ struct BlockSharedMemOrderKernel
             // All threads perform the read/validation (any non-producer could be consumer)
             auto b = shared[1];
             // acquire side
-            memFence(acc, scope::block);
+            memFence(acc, scope::block, onAcc::order::acquire);
             auto a = shared[0];
 
             // Forbidden outcome: observe updated B (20) but stale A (1)
