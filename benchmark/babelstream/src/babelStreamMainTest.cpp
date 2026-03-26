@@ -178,7 +178,8 @@ void testKernels(auto const deviceSpec, auto const exec)
 
     std::cout << devAcc.getDeviceProperties() << std::endl;
 
-    std::cout << "used exec " << onHost::demangledName(exec) << std::endl;
+    std::cout << "executor: " << onHost::demangledName(exec) << std::endl;
+    std::cout << "deviceKind: " << devAcc.getDeviceKind().getName() << std::endl;
 
     // A MetaData class instance to keep the benchmark info and results to print later. Does not include intermediate
     // runtime data.

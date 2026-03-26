@@ -92,6 +92,13 @@ option(alpaka_DEP_OMP "Enable the OpenMP as dependency, allows the usage of exec
 option(alpaka_DEP_TBB "Enable the Intel oneTBB dependency, allows the usage of exec::cpuTbbBlocks" OFF)
 option(alpaka_DEP_ONEAPI "Enable the Intel oneAPI SYCL dependency, allows using exec::oneApi" OFF)
 
+set(alpaka_DEP_HWLOC
+    "AUTO"
+    CACHE STRING
+    "Enable the OpenMP as dependency, allows the usage of deviceKind::numaCpu (OFF, ON, AUTO)"
+)
+set_property(CACHE alpaka_DEP_HWLOC PROPERTY STRINGS OFF ON AUTO)
+
 # Unified compiler options
 alpaka_compiler_option(FAST_MATH "Enable fast-math" DEFAULT)
 alpaka_compiler_option(FTZ "Set flush to zero" DEFAULT)
@@ -209,6 +216,12 @@ set_property(CACHE alpaka_SIMD PROPERTY STRINGS "DEFAULT;STDSIMD;EMULATION")
 # avoid that global alpaka targets get added the dependencies more than once e.g. if used in other projects
 if(NOT _alpaka_TARGETS_EXTENDED)
     set(_alpaka_TARGETS_EXTENDED ON ${_alpaka_EXPORT_SCOPE})
+
+    ## HWLOC
+    if(alpaka_DEP_HWLOC)
+        include(${_alpaka_CMAKE_DIR}/alpakaHwloc.cmake)
+    endif()
+
     ## OpenMP
     # There is no way to get the correct flags for the language CUDA or HIP
     if(alpaka_DEP_OMP)

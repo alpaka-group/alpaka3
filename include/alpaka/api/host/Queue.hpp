@@ -36,9 +36,11 @@ namespace alpaka::onHost
         struct Queue : std::enable_shared_from_this<Queue<T_Device>>
         {
         public:
-            Queue(internal::concepts::DeviceHandle auto device, uint32_t const idx, bool isBlocking)
+            Queue(internal::concepts::DeviceHandle auto device, uint32_t const idx, uint32_t numIdx, bool isBlocking)
                 : m_device(std::move(device))
                 , m_idx(idx)
+                , m_numaIdx(numIdx)
+                , m_workerThread(numIdx)
                 , m_isBlocking(isBlocking)
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
@@ -74,6 +76,7 @@ namespace alpaka::onHost
 
             Handle<T_Device> m_device;
             uint32_t m_idx = 0u;
+            uint32_t m_numaIdx = 0u;
             core::CallbackThread m_workerThread;
             bool m_isBlocking{false};
             /** Mutex to ensure sequential execution of tasks and operation if the queue is blocking.
@@ -142,14 +145,19 @@ namespace alpaka::onHost
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::queue);
                 auto deviceKind = alpaka::getDeviceKind(m_device);
+
+                /* Only set the thread affinity if we use a blocking queue, else the affinity is already set in the
+                 * callback thread. The callback thread affinity will be given to all threads created bya task executed
+                 * by the callback thread. */
+                bool setThreadAffinity = m_isBlocking;
                 submit(
-                    [kernelBundle, executor, threadBlocking, deviceKind]()
+                    [kernelBundle, executor, threadBlocking, deviceKind, numIdx = m_numaIdx, setThreadAffinity]()
                     {
                         auto moreLayer = Dict{
                             DictEntry(object::api, api::host),
                             DictEntry(object::deviceKind, deviceKind),
                             DictEntry(object::exec, executor)};
-                        onAcc::Acc acc = makeAcc(executor, threadBlocking);
+                        onAcc::Acc acc = makeAcc(executor, threadBlocking, numIdx, setThreadAffinity);
                         acc(kernelBundle, moreLayer);
                     });
             }
@@ -168,8 +176,18 @@ namespace alpaka::onHost
                 auto threadBlocking = internal::adjustThreadSpec(*m_device.get(), executor, frameSpec, kernelBundle);
                 auto deviceKind = alpaka::getDeviceKind(m_device);
 
+                /* Only set the thread affinity if we use a blocking queue, else the affinity is already set in the
+                 * callback thread. The callback thread affinity will be given to all threads created bya task executed
+                 * by the callback thread. */
+                bool setThreadAffinity = m_isBlocking;
                 submit(
-                    [kernelBundle, executor, threadBlocking, deviceKind, frameSpec]()
+                    [kernelBundle,
+                     executor,
+                     threadBlocking,
+                     deviceKind,
+                     frameSpec,
+                     numIdx = m_numaIdx,
+                     setThreadAffinity]()
                     {
                         auto moreLayer = Dict{
                             DictEntry(frame::count, frameSpec.getNumFrames()),
@@ -177,7 +195,7 @@ namespace alpaka::onHost
                             DictEntry(object::api, api::host),
                             DictEntry(object::deviceKind, deviceKind),
                             DictEntry(object::exec, executor)};
-                        onAcc::Acc acc = makeAcc(executor, threadBlocking);
+                        onAcc::Acc acc = makeAcc(executor, threadBlocking, numIdx, setThreadAffinity);
                         acc(kernelBundle, moreLayer);
                     });
             }
@@ -525,6 +543,8 @@ namespace alpaka::onHost
                 auto queueDependency = queue.getSharedPtr();
 
                 T_Type* ptr = reinterpret_cast<T_Type*>(alpaka::core::alignedAlloc(alignment, memSizeInByte));
+                device->pinPointer(ptr, memSizeInByte);
+
                 // queueDependency is captured to keep the device alive until the memory is deleted
                 auto deleter = [ptr, queueDep = std::move(queueDependency)]()
                 { queueDep.get()->submit([ptr]() { alpaka::core::alignedFree(alignment, ptr); }); };

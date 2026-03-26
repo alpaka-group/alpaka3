@@ -8,6 +8,7 @@
 #include "alpaka/api/host/IdxLayer.hpp"
 #include "alpaka/api/host/block/mem/SingleThreadStaticShared.hpp"
 #include "alpaka/api/host/block/sync/NoOp.hpp"
+#include "alpaka/api/host/hwloc/utility.hpp"
 #include "alpaka/core/Dict.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/meta/NdLoop.hpp"
@@ -29,7 +30,10 @@ namespace alpaka::onHost
         template<onHost::concepts::ThreadSpec T_ThreadSpec>
         struct OmpBlocks
         {
-            constexpr OmpBlocks(T_ThreadSpec threadBlocking) : m_threadBlocking{std::move(threadBlocking)}
+            constexpr OmpBlocks(T_ThreadSpec threadBlocking, uint32_t numaIdx, bool setThreadAffinity)
+                : m_threadBlocking{std::move(threadBlocking)}
+                , m_numaIdx{numaIdx}
+                , m_setThreadAffinity{setThreadAffinity}
             {
             }
 
@@ -41,6 +45,9 @@ namespace alpaka::onHost
                     throw std::runtime_error("Thread block extent must be 1.");
 #    pragma omp parallel
                 {
+                    if(m_setThreadAffinity)
+                        internal::hwloc::setThreadAffinity(m_numaIdx);
+
                     // copy from num blocks to derive correct index type
                     auto blockIdx = m_threadBlocking.getNumBlocks();
                     constexpr uint32_t simdWidth
@@ -89,12 +96,14 @@ namespace alpaka::onHost
             }
 
             T_ThreadSpec m_threadBlocking;
+            uint32_t m_numaIdx;
+            bool m_setThreadAffinity;
         };
     } // namespace cpu
 
-    inline auto makeAcc(exec::CpuOmpBlocks, auto const& threadBlocking)
+    inline auto makeAcc(exec::CpuOmpBlocks, auto const& threadBlocking, uint32_t numaIdx, bool setThreadAffinity)
     {
-        return cpu::OmpBlocks(threadBlocking);
+        return cpu::OmpBlocks(threadBlocking, numaIdx, setThreadAffinity);
     }
 } // namespace alpaka::onHost
 

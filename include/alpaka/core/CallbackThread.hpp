@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "alpaka/api/host/hwloc/utility.hpp"
 #include "alpaka/core/config.hpp"
 
 #include <cassert>
@@ -67,6 +68,10 @@ namespace alpaka::core
         };
 
     public:
+        CallbackThread(uint32_t numaIdx) : m_state(std::make_shared<State>()), m_numaIdx{numaIdx}
+        {
+        }
+
         CallbackThread() : m_state(std::make_shared<State>())
         {
         }
@@ -125,12 +130,16 @@ namespace alpaka::core
         std::jthread m_thread;
         /** Hold data shared between this call and the thread processing the tasts. */
         std::shared_ptr<State> m_state;
+        uint32_t m_numaIdx = onHost::internal::hwloc::allNumaDomains;
 
         auto startWorkerThread() -> void
         {
             m_thread = std::jthread(
-                [state = m_state](std::stop_token st)
+                [state = m_state, numaIdx = m_numaIdx](std::stop_token st)
                 {
+                    if(numaIdx != onHost::internal::hwloc::allNumaDomains)
+                        onHost::internal::hwloc::setThreadAffinity(numaIdx);
+
                     while(true)
                     {
                         std::promise<void> taskPromise;

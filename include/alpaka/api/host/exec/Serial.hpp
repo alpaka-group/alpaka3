@@ -7,6 +7,7 @@
 #include "alpaka/api/host/IdxLayer.hpp"
 #include "alpaka/api/host/block/mem/SingleThreadStaticShared.hpp"
 #include "alpaka/api/host/block/sync/NoOp.hpp"
+#include "alpaka/api/host/hwloc/utility.hpp"
 #include "alpaka/core/Dict.hpp"
 #include "alpaka/meta/NdLoop.hpp"
 #include "alpaka/onAcc/Acc.hpp"
@@ -26,12 +27,17 @@ namespace alpaka::onHost
         {
             using NumThreadsVecType = typename T_ThreadSpec::NumThreadsVecType;
 
-            constexpr Serial(T_ThreadSpec threadBlocking) : m_threadBlocking{std::move(threadBlocking)}
+            constexpr Serial(T_ThreadSpec threadBlocking, uint32_t numaIdx, bool setThreadAffinity)
+                : m_threadBlocking{std::move(threadBlocking)}
+                , m_numaIdx{numaIdx}
+                , m_setThreadAffinity{setThreadAffinity}
             {
             }
 
             void operator()(auto const& kernelBundle, auto const& dict) const
             {
+                if(m_setThreadAffinity)
+                    internal::hwloc::setThreadAffinity(m_numaIdx);
                 // copy from num blocks to derive correct index type
                 auto blockIdx = m_threadBlocking.getNumBlocks();
                 constexpr uint32_t simdWidth
@@ -77,11 +83,13 @@ namespace alpaka::onHost
             }
 
             T_ThreadSpec m_threadBlocking;
+            uint32_t m_numaIdx;
+            bool m_setThreadAffinity;
         };
     } // namespace cpu
 
-    inline auto makeAcc(exec::CpuSerial, auto const& threadBlocking)
+    inline auto makeAcc(exec::CpuSerial, auto const& threadBlocking, uint32_t numaIdx, bool setThreadAffinity)
     {
-        return cpu::Serial(threadBlocking);
+        return cpu::Serial(threadBlocking, numaIdx, setThreadAffinity);
     }
 } // namespace alpaka::onHost

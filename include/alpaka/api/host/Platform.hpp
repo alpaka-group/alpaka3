@@ -7,11 +7,13 @@
 #include "alpaka/api/host/Api.hpp"
 #include "alpaka/api/host/Device.hpp"
 #include "alpaka/api/host/block/mem/SharedStorage.hpp"
+#include "alpaka/api/host/hwloc/utility.hpp"
 #include "alpaka/api/host/sysInfo.hpp"
 #include "alpaka/internal/interface.hpp"
 #include "alpaka/onHost/Handle.hpp"
 #include "alpaka/onHost/interface.hpp"
 #include "alpaka/onHost/trait.hpp"
+#include "alpaka/tag.hpp"
 
 #include <memory>
 #include <sstream>
@@ -38,7 +40,8 @@ namespace alpaka::onHost
                 static_assert(internal::concepts::Platform<Platform>);
             }
 
-            std::weak_ptr<cpu::Device<Platform>> device;
+            std::vector<std::weak_ptr<cpu::Device<Platform>>> devices;
+            std::mutex deviceGuard;
 
             std::shared_ptr<Platform> getSharedPtr()
             {
@@ -54,13 +57,27 @@ namespace alpaka::onHost
 
             friend struct internal::GetDeviceCount;
 
-            uint32_t getDeviceCount() const
+            uint32_t getDeviceCount()
             {
+                uint32_t devCount = 0u;
+
                 constexpr bool isSupportedDev = trait::IsDeviceSupportedBy::Op<T_DeviceKind, api::Host>::value;
                 if constexpr(isSupportedDev)
-                    return 1;
+                {
+                    if constexpr(T_DeviceKind{} == deviceKind::numaCpu)
+                    {
+                        devCount = alpaka::onHost::internal::hwloc::getNumNumaDomains();
+                    }
+                    else
+                        devCount = 1;
 
-                return 0;
+                    if(devices.size() < static_cast<size_t>(devCount))
+                    {
+                        std::lock_guard<std::mutex> lk{deviceGuard};
+                        devices.resize(devCount);
+                    }
+                }
+                return devCount;
             }
 
             friend struct internal::MakeDevice;
@@ -77,13 +94,20 @@ namespace alpaka::onHost
                           << "' !";
                     throw std::runtime_error(ssErr.str());
                 }
-                if(auto sharedPtr = device.lock())
+                std::lock_guard<std::mutex> lk{deviceGuard};
+
+                if(auto sharedPtr = devices[idx].lock())
                 {
                     return sharedPtr;
                 }
                 auto thisHandle = getSharedPtr();
-                auto newDevice = std::make_shared<cpu::Device<Platform>>(std::move(thisHandle), idx);
-                device = newDevice;
+                uint32_t numaIdx = internal::hwloc::allNumaDomains;
+                if constexpr(T_DeviceKind{} == deviceKind::numaCpu)
+                {
+                    numaIdx = idx;
+                }
+                auto newDevice = std::make_shared<cpu::Device<Platform>>(std::move(thisHandle), idx, numaIdx);
+                devices[idx] = newDevice;
                 return newDevice;
             }
 
@@ -114,15 +138,24 @@ namespace alpaka::onHost
         {
             DeviceProperties operator()(cpu::Platform<T_DeviceKind> const& platform, uint32_t deviceIdx) const
             {
-                alpaka::unused(platform, deviceIdx);
+                alpaka::unused(platform);
                 ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::device);
                 auto prop = DeviceProperties{};
                 prop.name = getCpuName();
                 prop.maxThreadsPerBlock = std::numeric_limits<uint32_t>::max();
                 prop.warpSize = 1u;
-                prop.multiProcessorCount = std::thread::hardware_concurrency();
-                prop.globalMemCapacityBytes = getGlobalMemCapacityBytes();
+                prop.multiProcessorCount = hwloc::getNumCores(hwloc::allNumaDomains);
+                prop.globalMemCapacityBytes = hwloc::getMemCapacityBytes(hwloc::allNumaDomains);
                 prop.sharedMemPerBlockBytes = ALPAKA_BLOCK_SHARED_DYN_MEMBER_ALLOC_KIB * 1024u;
+
+                if constexpr(T_DeviceKind{} == deviceKind::numaCpu)
+                {
+                    // the deviceIdx is equal to the numa domain index
+                    prop.multiProcessorCount = hwloc::getNumCores(deviceIdx);
+                    prop.globalMemCapacityBytes = hwloc::getMemCapacityBytes(deviceIdx);
+                }
+                else
+                    alpaka::unused(deviceIdx);
 
                 return prop;
             }

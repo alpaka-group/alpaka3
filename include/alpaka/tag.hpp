@@ -167,6 +167,16 @@ namespace alpaka
 
         constexpr auto cpu = Cpu{};
 
+        struct NumaCpu : detail::DeviceKindBase
+        {
+            static std::string getName()
+            {
+                return "NumaCpu";
+            }
+        };
+
+        constexpr auto numaCpu = NumaCpu{};
+
         struct AmdGpu : detail::DeviceKindBase
         {
             static std::string getName()
@@ -197,7 +207,7 @@ namespace alpaka
 
         constexpr auto intelGpu = IntelGpu{};
 
-        constexpr auto allDevices = std::make_tuple(cpu, amdGpu, nvidiaGpu, intelGpu);
+        constexpr auto allDevices = std::make_tuple(cpu, numaCpu, amdGpu, nvidiaGpu, intelGpu);
 
     } // namespace deviceKind
 

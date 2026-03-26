@@ -268,6 +268,39 @@ OpenMP
      Enable OpenMP CPU acceleration and the usage of the executor `exec::cpuOmpBlocks`.
      Note: OpenMP offloading is currently not supported.
 
+Numa Awareness
+^^^^^^^^^^^^^^
+
+``alpaka_DEP_HWLOC``
+  .. code-block:: markdown
+
+     Enable/Disable the possibility to use the `host` device kind `numaCpu`.
+     `AUTO` is the default and will check if `hwloc` is installed and if found handle `alpaka_DEP_HWLOC` as if it is set to `ON`, else `OFF`.
+     If you installed `hwloc` by hand you should extent the environment variable `PKG_CONFIG_PATH` to the directory of `hwloc.pc` that CMake can find the dependency.
+
+     This device is seeing each NUMA domain with all directly connected CPU cores as a single device.
+     This can avoid false data sharing and can speedup your code.
+     You should utilize all NUMA devices to get the full performance of your CPU, this requires manual a domain decomposition of your problem to be able to run it on all NUMA devices.
+     If you use a blocking host queue together with the serial executor the executing thread will only be pinned if it is not the thread of the process.
+
+    **attention** If `CMake` is not **NOT** and the header `hwloc.h` is found you need to link `-lhwloc` or disable `hwloc` support by defining the preprocessor define `ALPAKA_DISABLE_HWLOC`.
+
+``alpaka_HOST_NumaCpu``
+  .. code-block:: markdown
+
+     Enable/Disable the `host` device `numaCpu`.
+     Requires the dependency `hwloc`.
+     This option is currently affecting full alpaka and is disabling the support for the device kind `numaCPU` for the api `host`, the behaviour will be changed soon to effect examples, benchmarks and tests only.
+
+``alpaka_HOST_MemPinningCanFail``
+  .. code-block:: markdown
+
+     Enable/Disable that the memory pinning via `hwloc` can fail.
+     Requires the dependency `hwloc`.
+
+    **attention** If `CMake` is not **NOT** defining the preprocessor define `ALPAKA_HOST_MEM_PINNING_CAN_FAIL` will allow that pinning can fail without an exception.
+
+
 Intel oneAPI Threading Building Blocks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

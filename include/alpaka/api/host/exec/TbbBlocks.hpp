@@ -8,6 +8,7 @@
 #include "alpaka/api/host/block/mem/SingleThreadStaticShared.hpp"
 #include "alpaka/api/host/block/sync/NoOp.hpp"
 #include "alpaka/api/host/executor.hpp"
+#include "alpaka/api/host/hwloc/utility.hpp"
 #include "alpaka/core/Dict.hpp"
 #include "alpaka/onAcc/Acc.hpp"
 #include "alpaka/onHost/ThreadSpec.hpp"
@@ -32,7 +33,10 @@ namespace alpaka::onHost
             using NumThreadsVecType = typename T_ThreadSpec::NumThreadsVecType;
 
             // Construct the executor with the thread blocking configuration chosen by the queue.
-            constexpr TbbBlocks(T_ThreadSpec threadBlocking) : m_threadBlocking(std::move(threadBlocking))
+            constexpr TbbBlocks(T_ThreadSpec threadBlocking, uint32_t numaIdx, bool setThreadAffinity)
+                : m_threadBlocking(std::move(threadBlocking))
+                , m_numaIdx{numaIdx}
+                , m_setThreadAffinity{setThreadAffinity}
             {
             }
 
@@ -46,70 +50,91 @@ namespace alpaka::onHost
                 constexpr uint32_t simdWidth
                     = alpaka::getArchSimdWidth<uint8_t>(api::host, ALPAKA_TYPEOF(dict[object::deviceKind]){});
 
-                oneapi::tbb::this_task_arena::isolate(
-                    [&]
-                    {
-                        using ThreadIdxType = typename NumThreadsVecType::type;
-                        ThreadIdxType const linearNumBlocks = blockCount.product();
+                oneapi::tbb::task_arena tbbArena;
 
-                        oneapi::tbb::parallel_for(
-                            static_cast<ThreadIdxType>(0),
-                            linearNumBlocks,
-                            [&](ThreadIdxType i)
-                            {
-                                auto const blockIdx = mapToND(blockCount, i);
+                auto kernel = [&]
+                {
+                    using ThreadIdxType = typename NumThreadsVecType::type;
+                    ThreadIdxType const linearNumBlocks = blockCount.product();
 
-                                auto blockSharedMem = onAcc::cpu::SingleThreadStaticShared<simdWidth>{};
-                                // Compose the accelerator dictionary entries consumed by the kernel.
-                                auto const blockLayerEntry = DictEntry{
-                                    layer::block,
-                                    onAcc::cpu::GenericLayer{std::cref(blockIdx), blockCount}};
-                                auto const threadLayerEntry
-                                    = DictEntry{layer::thread, onAcc::cpu::OneLayer<NumThreadsVecType>{}};
-                                auto const blockSharedMemEntry = DictEntry{layer::shared, std::ref(blockSharedMem)};
-                                auto const blockSyncEntry = DictEntry{action::threadBlockSync, onAcc::cpu::NoOp{}};
+                    oneapi::tbb::parallel_for(
+                        static_cast<ThreadIdxType>(0),
+                        linearNumBlocks,
+                        [&](ThreadIdxType i)
+                        {
+                            auto const blockIdx = mapToND(blockCount, i);
 
-                                // dynamic shared mem
-                                uint32_t blockDynSharedMemBytes = onHost::getDynSharedMemBytes(
-                                    alpaka::exec::CpuTbbBlocks{},
-                                    m_threadBlocking,
-                                    kernelBundle);
-                                auto const blockDynSharedMemEntry
-                                    = DictEntry{layer::dynShared, std::ref(blockSharedMem)};
-                                auto const blockDynSharedMemBytesEntry
-                                    = DictEntry{object::dynSharedMemBytes, std::ref(blockDynSharedMemBytes)};
+                            auto blockSharedMem = onAcc::cpu::SingleThreadStaticShared<simdWidth>{};
+                            // Compose the accelerator dictionary entries consumed by the kernel.
+                            auto const blockLayerEntry
+                                = DictEntry{layer::block, onAcc::cpu::GenericLayer{std::cref(blockIdx), blockCount}};
+                            auto const threadLayerEntry
+                                = DictEntry{layer::thread, onAcc::cpu::OneLayer<NumThreadsVecType>{}};
+                            auto const blockSharedMemEntry = DictEntry{layer::shared, std::ref(blockSharedMem)};
+                            auto const blockSyncEntry = DictEntry{action::threadBlockSync, onAcc::cpu::NoOp{}};
 
-                                auto additionalDict = conditionalAppendDict<trait::HasUserDefinedDynSharedMemBytes<
-                                    alpaka::exec::CpuTbbBlocks,
-                                    T_ThreadSpec,
-                                    ALPAKA_TYPEOF(kernelBundle)>::value>(
-                                    dict,
-                                    Dict{blockDynSharedMemEntry, blockDynSharedMemBytesEntry});
+                            // dynamic shared mem
+                            uint32_t blockDynSharedMemBytes = onHost::getDynSharedMemBytes(
+                                alpaka::exec::CpuTbbBlocks{},
+                                m_threadBlocking,
+                                kernelBundle);
+                            auto const blockDynSharedMemEntry = DictEntry{layer::dynShared, std::ref(blockSharedMem)};
+                            auto const blockDynSharedMemBytesEntry
+                                = DictEntry{object::dynSharedMemBytes, std::ref(blockDynSharedMemBytes)};
 
-                                auto const warpSizeEntry
-                                    = DictEntry{object::warpSize, std::integral_constant<uint32_t, 1u>{}};
+                            auto additionalDict = conditionalAppendDict<trait::HasUserDefinedDynSharedMemBytes<
+                                alpaka::exec::CpuTbbBlocks,
+                                T_ThreadSpec,
+                                ALPAKA_TYPEOF(kernelBundle)>::value>(
+                                dict,
+                                Dict{blockDynSharedMemEntry, blockDynSharedMemBytesEntry});
 
-                                auto acc = onAcc::Acc(joinDict(
-                                    Dict{
-                                        blockLayerEntry,
-                                        threadLayerEntry,
-                                        blockSharedMemEntry,
-                                        blockSyncEntry,
-                                        warpSizeEntry},
-                                    additionalDict));
+                            auto const warpSizeEntry
+                                = DictEntry{object::warpSize, std::integral_constant<uint32_t, 1u>{}};
 
-                                kernelBundle(acc);
-                            });
-                    });
+                            auto acc = onAcc::Acc(joinDict(
+                                Dict{
+                                    blockLayerEntry,
+                                    threadLayerEntry,
+                                    blockSharedMemEntry,
+                                    blockSyncEntry,
+                                    warpSizeEntry},
+                                additionalDict));
+
+                            kernelBundle(acc);
+                        });
+                };
+
+                if(m_numaIdx != internal::hwloc::allNumaDomains && m_setThreadAffinity)
+                {
+                    oneapi::tbb::task_arena tbbArena;
+
+                    auto const& tbbNumaNodes = oneapi::tbb::info::numa_nodes();
+                    if(m_numaIdx >= tbbNumaNodes.size())
+                        throw std::out_of_range("Invalid NUMA index");
+                    auto tbbNumaIdx = tbbNumaNodes[m_numaIdx];
+                    tbbArena.initialize(oneapi::tbb::task_arena::constraints{}.set_numa_id(tbbNumaIdx));
+                    tbbArena.execute([&] { oneapi::tbb::this_task_arena::isolate(kernel); });
+                }
+                else
+                {
+                    oneapi::tbb::this_task_arena::isolate(kernel);
+                }
             }
 
             T_ThreadSpec m_threadBlocking;
+            uint32_t m_numaIdx;
+            bool m_setThreadAffinity;
         };
     } // namespace cpu
 
-    inline auto makeAcc(alpaka::exec::CpuTbbBlocks, auto const& threadBlocking)
+    inline auto makeAcc(
+        alpaka::exec::CpuTbbBlocks,
+        auto const& threadBlocking,
+        uint32_t numaIdx,
+        bool setThreadAffinity)
     {
-        return cpu::TbbBlocks(threadBlocking);
+        return cpu::TbbBlocks(threadBlocking, numaIdx, setThreadAffinity);
     }
 } // namespace alpaka::onHost
 #endif

@@ -76,7 +76,7 @@ void allocDeferredImplicitWait(auto device, alpaka::concepts::Executor auto exec
     onHost::memcpy(deviceQueue, deviceView, unifiedView);
     onHost::wait(deviceQueue);
 
-    if(getDeviceKind(device) == deviceKind::cpu)
+    if(getDeviceKind(device) == deviceKind::cpu || getDeviceKind(device) == deviceKind::numaCpu)
     {
         REQUIRE(onHost::isDataAccessible(device, hostBuffer) == true);
         validateAccess(device, exec, hostBuffer);

@@ -5,6 +5,7 @@
 #pragma once
 
 #include "alpaka/api/host/cpuArchSize.hpp"
+#include "alpaka/api/host/hwloc/hwlocConfig.hpp"
 #include "alpaka/api/trait.hpp"
 #include "alpaka/concepts.hpp"
 #include "alpaka/mem/trait.hpp"
@@ -51,6 +52,14 @@ namespace alpaka
         {
         };
 
+        /// @todo ALPAKA_DISABLE_OneApi_AmdGpu should not be used here, we should provide equal to executors a list of
+        /// enabled device kinds
+#if ALPAKA_HAS_HWLOC && !defined(ALPAKA_DISABLE_Host_NumaCpu)
+        template<>
+        struct IsDeviceSupportedBy::Op<deviceKind::NumaCpu, api::Host> : std::true_type
+        {
+        };
+#endif
     } // namespace onHost::trait
 
     namespace trait
@@ -83,6 +92,33 @@ namespace alpaka
             }
         };
 
+        template<typename T_Type>
+        struct GetArchSimdWidth::Op<T_Type, api::Host, deviceKind::NumaCpu>
+        {
+            constexpr uint32_t operator()(api::Host const, deviceKind::NumaCpu const) const
+            {
+                return alpaka::onHost::internal::getCPUSimdWidth<T_Type>();
+            }
+        };
+
+        template<>
+        struct GetNumPipelines::Op<api::Host, deviceKind::NumaCpu>
+        {
+            constexpr uint32_t operator()(api::Host const, deviceKind::NumaCpu const) const
+            {
+                return alpaka::onHost::internal::getCPUNumPipelines();
+            }
+        };
+
+        template<>
+        struct GetCachelineSize::Op<api::Host, deviceKind::NumaCpu>
+        {
+            constexpr uint32_t operator()(api::Host const, deviceKind::NumaCpu const) const
+            {
+                return alpaka::onHost::internal::getCPUCachelineSize();
+            }
+        };
+
     } // namespace trait
 
     namespace onAcc::internal::trait
@@ -91,6 +127,15 @@ namespace alpaka
         struct AutoIndexMapping::Op<T_Acc, api::Host, deviceKind::Cpu>
         {
             constexpr auto operator()(T_Acc const&, api::Host, deviceKind::Cpu) const
+            {
+                return layout::Contiguous{};
+            }
+        };
+
+        template<typename T_Acc>
+        struct AutoIndexMapping::Op<T_Acc, api::Host, deviceKind::NumaCpu>
+        {
+            constexpr auto operator()(T_Acc const&, api::Host, deviceKind::NumaCpu) const
             {
                 return layout::Contiguous{};
             }

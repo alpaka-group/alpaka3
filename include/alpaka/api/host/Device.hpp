@@ -7,6 +7,7 @@
 #include "alpaka/api/host/Api.hpp"
 #include "alpaka/api/host/Event.hpp"
 #include "alpaka/api/host/Queue.hpp"
+#include "alpaka/api/host/hwloc/utility.hpp"
 #include "alpaka/api/host/sysInfo.hpp"
 #include "alpaka/api/util.hpp"
 #include "alpaka/core/alignedAlloc.hpp"
@@ -31,9 +32,10 @@ namespace alpaka::onHost
         struct Device : std::enable_shared_from_this<Device<T_Platform>>
         {
         public:
-            Device(internal::concepts::PlatformHandle auto platform, uint32_t const idx)
+            Device(internal::concepts::PlatformHandle auto platform, uint32_t const idx, uint32_t numaIdx)
                 : m_platform(std::move(platform))
                 , m_idx(idx)
+                , m_numaIdx(numaIdx)
                 , m_properties{internal::getDeviceProperties(*m_platform.get(), m_idx)}
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::device);
@@ -87,6 +89,7 @@ namespace alpaka::onHost
 
             Handle<T_Platform> m_platform;
             uint32_t m_idx = 0u;
+            uint32_t m_numaIdx = internal::hwloc::allNumaDomains;
             DeviceProperties m_properties;
             std::vector<std::weak_ptr<cpu::Queue<Device>>> queues;
             std::vector<std::weak_ptr<cpu::Event<Device>>> events;
@@ -95,6 +98,25 @@ namespace alpaka::onHost
             std::shared_ptr<Device> getSharedPtr()
             {
                 return this->shared_from_this();
+            }
+
+            template<typename T_Device>
+            friend struct Queue;
+
+            void setThreadAffinity() const
+            {
+                internal::hwloc::setThreadAffinity(m_numaIdx);
+            }
+
+            template<typename T>
+            void pinPointer(T* const ptr, size_t bytes)
+            {
+                internal::hwloc::pinPointer(ptr, bytes, m_numaIdx);
+            }
+
+            bool isNumaAware() const
+            {
+                return m_numaIdx != internal::hwloc::allNumaDomains;
             }
 
             friend struct alpaka::internal::GetName;
@@ -123,7 +145,11 @@ namespace alpaka::onHost
                 std::lock_guard<std::mutex> lk{queuesGuard};
 
                 constexpr bool isBlocking = kind == queueKind::blocking;
-                auto newQueue = std::make_shared<cpu::Queue<Device>>(std::move(thisHandle), queues.size(), isBlocking);
+                auto newQueue = std::make_shared<cpu::Queue<Device>>(
+                    std::move(thisHandle),
+                    queues.size(),
+                    m_numaIdx,
+                    isBlocking);
 
                 queues.emplace_back(newQueue);
                 return newQueue;
@@ -151,6 +177,10 @@ namespace alpaka::onHost
 
             auto getFreeGlobalMemBytes() const
             {
+#if ALPAKA_HAS_HWLOC
+                if(isNumaAware())
+                    return internal::hwloc::getFreeGlobalMemBytes(m_numaIdx);
+#endif
                 return onHost::getFreeGlobalMemBytes();
             }
 
@@ -202,6 +232,7 @@ namespace alpaka::onHost
                 auto deviceDependency = onHost::Device{device.getSharedPtr()};
 
                 T_Type* ptr = reinterpret_cast<T_Type*>(alpaka::core::alignedAlloc(alignment, memSizeInByte));
+                device.pinPointer(ptr, memSizeInByte);
                 // deviceDependency is captured to keep the device alive until the memory is deleted
                 auto deleter = [ptr, deviceDependency]() { alpaka::core::alignedFree(alignment, ptr); };
 
@@ -253,7 +284,8 @@ namespace alpaka::onHost
                 ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::device);
                 if constexpr(
                     ALPAKA_TYPEOF(getApi(view)){} == api::host
-                    && ALPAKA_TYPEOF(getDeviceKind(device)){} == deviceKind::cpu)
+                    && (ALPAKA_TYPEOF(getDeviceKind(device)){} == deviceKind::cpu
+                        || ALPAKA_TYPEOF(getDeviceKind(device)){} == deviceKind::numaCpu))
                     return true;
                 else
                     return false;
