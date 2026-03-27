@@ -269,7 +269,7 @@ namespace alpaka::example::scan
                     for(auto miniBlockOffset = 0_idx; miniBlockOffset < elsPerThread; miniBlockOffset += miniBlockSize)
                     {
                         // load block sum from shared memory
-                        Data blockSum;
+                        Data blockSum{0};
                         if(frameOffset + frameElem + miniBlockOffset < numElements)
                         {
                             blockSum = tmp[conflictFreeAccess<DeviceType>(
