@@ -96,8 +96,7 @@ namespace alpaka
 
             static constexpr auto fill(T_Type const& value)
             {
-                EmuSimd result([&value](uint32_t const) { return static_cast<T_Type>(value); });
-                return result;
+                return EmuSimd([&value](uint32_t const) { return value; });
             }
 
             template<typename F>

@@ -94,8 +94,7 @@ namespace alpaka
 
             static constexpr auto fill(T_Type const& value)
             {
-                BaseType ret(value);
-                return StdSimd{ret};
+                return StdSimd{BaseType(value)};
             }
 
             constexpr void copyFrom(T_Type const* data, alpaka::concepts::Alignment auto alignment)

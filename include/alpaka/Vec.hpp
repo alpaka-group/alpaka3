@@ -270,13 +270,11 @@ namespace alpaka
         {
             if constexpr(requires { detail::TemplateSignatureStorage_v<T_Storage>; })
             {
-                UniVec result([=](uint32_t const) { return static_cast<T_Type>(value); });
-                return result;
+                return UniVec([=](uint32_t const) { return static_cast<T_Type>(value); });
             }
             else
             {
-                Vec result([=](uint32_t const) { return static_cast<T_Type>(value); });
-                return result;
+                return Vec([=](uint32_t const) { return static_cast<T_Type>(value); });
             }
         }
 
