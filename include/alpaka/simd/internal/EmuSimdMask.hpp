@@ -76,13 +76,13 @@ namespace alpaka
             // constructor is required because exposing the array constructors does not work
             template<typename... T_Args>
             requires(sizeof...(T_Args) == T_width && (std::same_as<T_Args, T_Type> && ...))
-            constexpr EmuSimdMask(T_Args&&... args) : BaseType{std::forward<T_Args>(args)...}
+            constexpr EmuSimdMask(T_Args const&... args) : BaseType{args...}
             {
             }
 
             template<typename... T_Args>
             requires(sizeof...(T_Args) == T_width && (std::same_as<T_Args, bool> && ...))
-            constexpr EmuSimdMask(T_Args&&... args) : BaseType{valueMaskCast<T_Type>(args)...}
+            constexpr EmuSimdMask(T_Args... args) : BaseType{valueMaskCast<T_Type>(args)...}
             {
             }
 
@@ -107,11 +107,12 @@ namespace alpaka
 
             /** @} */
 
-            static constexpr auto fill(T_Type const& value)
+            static constexpr auto fill(bool value)
             {
+                auto maskValue = valueMaskCast<T_Type>(value);
                 BaseType ret{};
                 for(uint32_t i = 0u; i < T_width; ++i)
-                    ret[i] = value;
+                    ret[i] = maskValue;
 
                 return EmuSimdMask(ret);
             }

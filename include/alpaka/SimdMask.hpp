@@ -118,7 +118,7 @@ namespace alpaka
          */
         template<typename... T_Args>
         requires(
-            ((std::is_convertible_v<T_Args, T_Type> && !std::same_as<bool, T_Type>) && ...)
+            ((std::is_convertible_v<T_Args, T_Type> && !std::same_as<bool, T_Args>) && ...)
             && (sizeof...(T_Args) == T_width))
         ALPAKA_FN_HOST_ACC SimdMask(T_Args const&... args) : Storage(static_cast<T_Type>(args)...)
         {
@@ -176,10 +176,9 @@ namespace alpaka
          * @param value Value which is set for all lanes
          * @return new Simd<...>
          */
-        static constexpr auto fill(concepts::Convertible<T_Type> auto const& value)
+        static constexpr auto fill(bool value)
         {
-            SimdMask result([=](uint32_t const) { return static_cast<T_Type>(value); });
-            return result;
+            return SimdMask{Storage::fill(value)};
         }
 
         constexpr SimdMask toRT() const
@@ -251,34 +250,42 @@ namespace alpaka
             return static_cast<type>(Storage::operator[](idx));
         }
 
-        /** named member access
+        /** @brief named lane access
          *
-         * @attention The mapping from names x,y,z,w to memory indicies differ from the mapping of an alpaka vector @c
-         * Vec
+         * @attention The mapping from names x,y,z,w to memory indices differ from the mapping of an alpaka vector @c
+         * Vec. The availability of the naming methods depends on the SIMD width.
          *
-         * index -> name [0->x,1->y,2->z,3->w]
-         *               [0->r,1->g,2->b,3->a]
-         *               [0->s0,1->s1,2->s2,...,10->sA,...,15->sF]
+         * You can have access to the same lane index via different nonspecific naming.
+         *
+         * @code
+         * lane index   :  0,  1,  2,  3, ...,  9, 10, ... , 15
+         * hexadecimal  : s0, s1, s2, s3, ..., s9, SA, ... , SF
+         * coordinate   :  x,  y,  z,  w
+         * color channel:  r,  g,  b,  a
+         * @endcode
+         *
          * @{
          */
 #define ALPAKA_NAMED_ARRAY_ACCESS(functionName, laneIdx)                                                              \
     constexpr reference functionName() requires(T_width >= laneIdx + 1)                                               \
     {                                                                                                                 \
-        return (*this)[T_width - 1u - laneIdx];                                                                       \
+        return (*this)[laneIdx];                                                                                      \
     }                                                                                                                 \
     constexpr type functionName() const requires(T_width >= laneIdx + 1)                                              \
     {                                                                                                                 \
-        return (*this)[T_width - 1u - laneIdx];                                                                       \
+        return (*this)[laneIdx];                                                                                      \
     }
 
         ALPAKA_NAMED_ARRAY_ACCESS(x, 0u)
         ALPAKA_NAMED_ARRAY_ACCESS(y, 1u)
         ALPAKA_NAMED_ARRAY_ACCESS(z, 2u)
         ALPAKA_NAMED_ARRAY_ACCESS(w, 3u)
+
         ALPAKA_NAMED_ARRAY_ACCESS(r, 0u)
         ALPAKA_NAMED_ARRAY_ACCESS(g, 1u)
         ALPAKA_NAMED_ARRAY_ACCESS(b, 2u)
         ALPAKA_NAMED_ARRAY_ACCESS(a, 3u)
+
         ALPAKA_NAMED_ARRAY_ACCESS(s0, 0u)
         ALPAKA_NAMED_ARRAY_ACCESS(s1, 1u)
         ALPAKA_NAMED_ARRAY_ACCESS(s2, 2u)
@@ -407,27 +414,6 @@ namespace alpaka
         return v[I];
     }
 
-    template<typename Type>
-    struct SimdMask<Type, 0>
-    {
-        using type = Type;
-        static constexpr uint32_t T_width = 0;
-
-        template<typename OtherType>
-        constexpr operator SimdMask<OtherType, 0>() const
-        {
-            return SimdMask<OtherType, 0>();
-        }
-
-        static constexpr SimdMask fill(Type)
-        {
-            /* this method should never be actually called,
-             * it exists only for Visual Studio to handle alpaka::Size_t< 0 >
-             */
-            static_assert(sizeof(Type) != 0 && false);
-        }
-    };
-
     template<typename Type, uint32_t T_width, typename T_Storage>
     std::ostream& operator<<(std::ostream& s, SimdMask<Type, T_width, T_Storage> const& vec)
     {
@@ -444,6 +430,7 @@ namespace alpaka
      * @tparam T_Args arguments forwarded to the constructor of the mask
      */
     template<typename T, typename... T_Args>
+    requires((std::same_as<std::remove_cvref_t<T_Args>, bool>) && ...)
     constexpr auto makeSimdMask(T_Args... args)
     {
         using Storage =

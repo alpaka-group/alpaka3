@@ -265,11 +265,11 @@ namespace alpaka
 #define ALPAKA_NAMED_ARRAY_ACCESS(functionName, laneIdx)                                                              \
     constexpr reference functionName() requires(T_width >= laneIdx + 1)                                               \
     {                                                                                                                 \
-        return (*this)[T_width - 1u - laneIdx];                                                                       \
+        return (*this)[laneIdx];                                                                                      \
     }                                                                                                                 \
     constexpr type functionName() const requires(T_width >= laneIdx + 1)                                              \
     {                                                                                                                 \
-        return (*this)[T_width - 1u - laneIdx];                                                                       \
+        return (*this)[laneIdx];                                                                                      \
     }
 
         /** @brief named lane access
@@ -522,27 +522,6 @@ namespace alpaka
     {
         return v[I];
     }
-
-    template<typename Type>
-    struct Simd<Type, 0>
-    {
-        using type = Type;
-        static constexpr uint32_t T_width = 0;
-
-        template<typename OtherType>
-        constexpr operator Simd<OtherType, 0>() const
-        {
-            return Simd<OtherType, 0>();
-        }
-
-        static constexpr Simd fill(Type)
-        {
-            /* this method should never be actually called,
-             * it exists only for Visual Studio to handle alpaka::Size_t< 0 >
-             */
-            static_assert(sizeof(Type) != 0 && false);
-        }
-    };
 
     template<typename Type, uint32_t T_width, typename T_Storage>
     std::ostream& operator<<(std::ostream& s, Simd<Type, T_width, T_Storage> const& vec)
