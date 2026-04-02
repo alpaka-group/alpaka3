@@ -9,6 +9,7 @@
 #include "Defines.hpp"
 #include "Functor.hpp"
 #include "alpaka/onHost/demangledName.hpp"
+#include "alpakaTest/mathHelper.hpp"
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_message.hpp>
@@ -223,50 +224,14 @@ namespace mathtest
                     stdExpectedResult = functor(args(i));
                 }
 
-                if(!isApproxEqual(results(i), stdExpectedResult))
+                if(!test::isApproxEqual(results(i), stdExpectedResult))
                 {
                     std::cerr << "Idx i: " << i << " computed : " << results(i)
                               << " vs expected: " << stdExpectedResult << " arguments:" << args(i) << std::endl;
                 }
                 // Validate
-                REQUIRE(isApproxEqual(results(i), stdExpectedResult));
+                REQUIRE(test::isApproxEqual(results(i), stdExpectedResult));
             }
-        }
-
-        //! Approximate comparison of real numbers
-        template<typename T>
-        static bool isApproxEqual(T const& a, T const& b)
-        {
-            return a == Catch::Approx(b).margin(std::numeric_limits<T>::epsilon());
-        }
-
-        //! Is complex number considered finite for math testing.
-        //! Complex numbers with absolute value close to max() of underlying type are considered infinite.
-        //! The reason is, CUDA/HIP implementation cannot guarantee correct treatment of such values due to
-        //! implementing some math functions via calls to others. For extreme values of arguments, it could cause
-        //! intermediate results to become infinite or NaN. So in this function we consider all large enough values to
-        //! be effectively infinite and equivalent to one another. Thus, the tests do not concern accuracy for extreme
-        //! values. However, they still check the implementation for "reasonable" values.
-        template<typename T>
-        static bool isFinite(alpaka::math::Complex<T> const& z)
-        {
-            auto const absValue = abs(z);
-            auto const maxAbs = static_cast<T>(0.1) * std::numeric_limits<T>::max();
-            return std::isfinite(absValue) && (absValue < maxAbs);
-        }
-
-        //! Approximate comparison of complex numbers
-        template<typename T>
-        static bool isApproxEqual(alpaka::math::Complex<T> const& a, alpaka::math::Complex<T> const& b)
-        {
-            // Consider all infinite values equal, @see comment at isFinite()
-            if(!isFinite(a) && !isFinite(b))
-                return true;
-            // For the same reason use relative difference comparison with a large margin
-            auto const scalingFactor = static_cast<T>(std::is_same_v<T, float> ? 1.5e4 : 1.1e6);
-            auto const marginValue = scalingFactor * std::numeric_limits<T>::epsilon();
-            return (a.real() == Catch::Approx(b.real()).margin(marginValue).epsilon(marginValue))
-                   && (a.imag() == Catch::Approx(b.imag()).margin(marginValue).epsilon(marginValue));
         }
     };
 } // namespace mathtest

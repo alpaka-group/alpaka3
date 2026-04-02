@@ -53,7 +53,10 @@ namespace alpaka
     template<
         typename T_Type,
         uint32_t T_width,
-        typename T_Storage = typename trait::GetSimdMaskStorageType<ALPAKA_TYPEOF(thisApi()), T_Type, T_width>::type>
+        /** do not use ALPAKA_TYPEOF(thisApi()) here else nvcc + gcc can trigger a compile error
+         * error: use of built-in trait '__decay(alpaka::api::Host)' in function signature;
+         */
+        typename T_Storage = typename trait::GetSimdMaskStorageType<decltype(thisApi()), T_Type, T_width>::type>
     struct SimdMask;
 
     namespace trait
@@ -92,6 +95,8 @@ namespace alpaka
          *
          * The generator must return the value for the corresponding index of the component which is passed to the
          * generator.
+         *
+         * @note The generator needs to have the function interface `bool generator(uint32_t id)`.
          */
         template<typename F>
         requires(std::is_invocable_v<F, std::integral_constant<uint32_t, 0u>>)

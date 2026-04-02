@@ -4,6 +4,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/mathHelper.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <cstdint>
@@ -52,7 +53,9 @@ TEST_CASE("simd 1D", "[simd vector]")
             [&](auto... args)
             {
                 return (
-                    (std::get<0>(args)(std::get<1>(args), std::get<2>(args)) == std::get<3>(args))
+                    // arg0 -> functor, arg1 and arg2 -> input values, arg3 -> expected result
+                    // e.g. arg1 + arg2 ~= arg3
+                    (test::isApproxEqual(std::get<0>(args)(std::get<1>(args), std::get<2>(args)), std::get<3>(args)))
                         .reduce(std::logical_and{})
                     && ...);
             },
@@ -119,7 +122,9 @@ TEST_CASE("simd 2D", "[simd vector]")
             [&](auto... args)
             {
                 return (
-                    (std::get<0>(args)(std::get<1>(args), std::get<2>(args)) == std::get<3>(args))
+                    // arg0 -> functor, arg1 and arg2 -> input values, arg3 -> expected result
+                    // e.g. arg1 + arg2 ~= arg3
+                    (test::isApproxEqual(std::get<0>(args)(std::get<1>(args), std::get<2>(args)), std::get<3>(args)))
                         .reduce(std::logical_and{})
                     && ...);
             },
