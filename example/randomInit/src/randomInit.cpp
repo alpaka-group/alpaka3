@@ -399,5 +399,5 @@ auto main(int argc, char* argv[]) -> int
             auto retVal = exampleUniformDist(tag, numElements) || exampleNormalDist(tag, numElementsNormal);
             return retVal;
         },
-        onHost::allBackends(onHost::enabledApis, exec::enabledExecutors));
+        onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors));
 }

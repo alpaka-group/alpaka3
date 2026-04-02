@@ -213,14 +213,25 @@ namespace alpaka::onHost
      * @param deviceSpec      device specification to be used
      * @param listOfExecutors tuple of executor types to be filtered
      * @return a tuple containing the supported executor types
+     *
+     * @{
      */
     constexpr auto getExecutorsList(auto const deviceSpec, auto const listOfExecutors)
+        requires(ALPAKA_TYPEOF(deviceSpec)::isValid())
     {
         using DevSelectorType = decltype(makeDeviceSelector(deviceSpec));
         using DeviceType = decltype(std::declval<DevSelectorType>().makeDevice(0));
         using ExecutorListType = decltype(supportedExecutors(std::declval<DeviceType>(), listOfExecutors));
         return ExecutorListType{};
     }
+
+    constexpr auto getExecutorsList(auto const deviceSpec, auto const listOfExecutors)
+    {
+        alpaka::unused(deviceSpec, listOfExecutors);
+        return std::tuple<>{};
+    }
+
+    /**@} */
 
     /** Create a tuple of device specifications for a single API.
      *
@@ -292,7 +303,8 @@ namespace alpaka::onHost
      * @param listOfExecutors tuple of executor types
      * @return a tuple of backend dictionaries covering all APIs and executors
      */
-    consteval auto allBackends(auto const usedApis, auto const listOfExecutors)
+    template<alpaka::concepts::Api... T_Apis>
+    consteval auto allBackends(std::tuple<T_Apis...> const& usedApis, auto const listOfExecutors)
     {
         return std::apply(
             [listOfExecutors](auto... api) constexpr
@@ -300,5 +312,18 @@ namespace alpaka::onHost
             usedApis);
     }
 
-    /** @} */
+    /** Generate the full set of backend dictionaries for a set of device kinds.
+     *
+     * The result contains a backend entry for each combination of supported device
+     * specification and executors.
+     *
+     * @param usedDeviceSpecs tuple of alpaka device kinds
+     * @param listOfExecutors tuple of executor types
+     * @return a tuple of backend dictionaries covering all device kinds and executors
+     */
+    template<concepts::DeviceSpec... T_DevicesSpecs>
+    consteval auto allBackends(std::tuple<T_DevicesSpecs...> const& usedDeviceSpecs, auto const& listOfExecutors)
+    {
+        return std::tuple_cat(createBackendList(usedDeviceSpecs, listOfExecutors));
+    }
 } // namespace alpaka::onHost

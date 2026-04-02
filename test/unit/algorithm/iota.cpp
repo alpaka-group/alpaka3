@@ -15,7 +15,7 @@
 
 using namespace alpaka;
 
-using TestBackends = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, exec::enabledExecutors))>;
+using TestBackends = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
 
 template<typename T_DataType>
 void executeTest(concepts::Executor auto exec, auto const& computeQueue, concepts::Vector auto extentMd)

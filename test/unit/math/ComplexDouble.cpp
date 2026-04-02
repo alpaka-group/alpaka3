@@ -16,7 +16,7 @@
 #include <tuple>
 #include <type_traits>
 
-using TestBackends = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, exec::enabledExecutors))>;
+using TestBackends = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
 
 // This file only has unit tests for complex numbers in order to split the tests between object files and save compiler
 // memory. For the same reason single- and double-precision are done separately and not wrapped into a common template.

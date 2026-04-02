@@ -22,7 +22,7 @@
 
 using namespace alpaka;
 
-using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, exec::enabledExecutors))>;
+using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
 
 // Any value for testing
 constexpr uint32_t kTestFillValue = 49u;

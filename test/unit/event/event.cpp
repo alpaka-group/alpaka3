@@ -33,7 +33,7 @@
 using namespace alpaka;
 using namespace alpaka::test::event;
 
-using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, exec::enabledExecutors))>;
+using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
 
 /** This test takes care that kernel in different queues can run concurrent and if we can communicate between host and
  * the device via mapped memory. Even if the concurrent queue test says true it could be that kernels can run under the

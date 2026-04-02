@@ -181,5 +181,5 @@ auto main(int argc, char* argv[]) -> int
     return onHost::executeForEachIfHasDevice(
         [=](auto const& backend)
         { return example(backend[alpaka::object::deviceSpec], backend[alpaka::object::exec], numElements); },
-        onHost::allBackends(onHost::enabledApis, exec::enabledExecutors));
+        onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors));
 }

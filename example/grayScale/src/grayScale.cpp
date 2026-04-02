@@ -352,5 +352,5 @@ auto main(int argc, char* argv[]) -> int
      */
     return onHost::executeForEachIfHasDevice(
         [=](auto const& tag) { return example(tag, numElements, numberOfRuns, enableStdForEach); },
-        onHost::allBackends(onHost::enabledApis, exec::enabledExecutors));
+        onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors));
 }

@@ -117,6 +117,15 @@ if(CMAKE_CUDA_COMPILER)
 
     target_compile_definitions(alpaka_target_cuda INTERFACE ALPAKA_CMAKE_TARGET_CUDA)
 
+    option(
+        alpaka_CUDA_NvidiaGpu
+        "Enable support for api::cuda and deviceKind::nvidiaGpu in examples/benchmarks and tests"
+        ON
+    )
+    if(NOT alpaka_CUDA_NvidiaGpu)
+        target_compile_definitions(alpaka_target_cuda INTERFACE ALPAKA_DISABLE_Cuda_NvidiaGpu)
+    endif()
+
     if(alpaka_COUNT_API_DEPS EQUAL 1)
         target_link_libraries(alpaka INTERFACE alpaka_target_cuda)
     endif()

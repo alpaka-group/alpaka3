@@ -384,7 +384,7 @@ auto main(int argc, char* argv[]) -> int
         return onHost::executeForEachIfHasDevice(
             [=](auto const& backend)
             { return alpaka::example::nBody::benchmark(backend[object::deviceSpec], backend[object::exec], dt); },
-            onHost::allBackends(onHost::enabledApis, exec::enabledExecutors));
+            onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors));
     }
     else
     {
@@ -400,6 +400,6 @@ auto main(int argc, char* argv[]) -> int
                     numTimeSteps,
                     dt);
             },
-            onHost::allBackends(onHost::enabledApis, exec::enabledExecutors));
+            onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors));
     }
 }

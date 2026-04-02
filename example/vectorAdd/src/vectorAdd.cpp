@@ -277,5 +277,5 @@ auto main(int argc, char* argv[]) -> int
                 numElements,
                 numberOfRuns);
         },
-        onHost::allBackends(onHost::enabledApis, exec::enabledExecutors));
+        onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors));
 }

@@ -15,7 +15,7 @@
 
 using namespace alpaka;
 
-using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, exec::enabledExecutors))>;
+using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
 
 // Compilation and stability test kernel. Does not validate correctness of the fence implementations.
 struct MemoryFenceTestKernel

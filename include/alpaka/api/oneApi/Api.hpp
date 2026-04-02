@@ -37,30 +37,26 @@ namespace alpaka
         struct IsPlatformAvailable::Op<api::OneApi> : std::true_type
         {
         };
-#    ifndef ALPAKA_DISABLE_OneApi_IntelGpu
+
         template<>
         struct IsDeviceSupportedBy::Op<deviceKind::IntelGpu, api::OneApi> : std::true_type
         {
         };
-#    endif
-#    ifndef ALPAKA_DISABLE_OneApi_NvidiaGpu
+
         template<>
         struct IsDeviceSupportedBy::Op<deviceKind::NvidiaGpu, api::OneApi> : std::true_type
         {
         };
-#    endif
-#    ifndef ALPAKA_DISABLE_OneApi_AmdGpu
+
         template<>
         struct IsDeviceSupportedBy::Op<deviceKind::AmdGpu, api::OneApi> : std::true_type
         {
         };
-#    endif
-#    ifndef ALPAKA_DISABLE_OneApi_Cpu
+
         template<>
         struct IsDeviceSupportedBy::Op<deviceKind::Cpu, api::OneApi> : std::true_type
         {
         };
-#    endif
     } // namespace onHost::trait
 
 #endif

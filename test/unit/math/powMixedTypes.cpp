@@ -66,7 +66,7 @@ struct PowMixedTypesTestKernel
     }
 };
 
-using TestBackends = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, exec::enabledExecutors))>;
+using TestBackends = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
 
 TEMPLATE_LIST_TEST_CASE("powMixedTypes", "[powMixedTypes]", TestBackends)
 {

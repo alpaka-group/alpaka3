@@ -12,7 +12,7 @@
 using namespace alpaka;
 using namespace alpaka::onHost;
 
-using TestApis = std::decay_t<decltype(allBackends(enabledApis, exec::enabledExecutors))>;
+using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
 
 /* We can not check passing the attributes 'const', 'static' or 'constexpr' because this is not supported by OneApi
  * 2025.2 with AMD gpus.

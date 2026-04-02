@@ -47,7 +47,12 @@ endif()
 
 if(_alpaka_HAS_HWLOC)
     target_link_libraries(alpaka_target_host INTERFACE PkgConfig::HWLOC)
-    option(alpaka_HOST_NumaCpu "Enable host api numa cpu support for alpaka" ON)
+    option(
+        alpaka_HOST_NumaCpu
+        "Enable support for api::host and deviceKind::numaCpu in examples/benchmarks and tests"
+        ON
+    )
+
     option(
         alpaka_HOST_MemPinningCanFail
         "Allow that memory pinning with hwloc can fail, e.g. if not supported, no rights to pin memory."

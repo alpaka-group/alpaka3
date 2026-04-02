@@ -52,14 +52,10 @@ namespace alpaka
         {
         };
 
-        /// @todo ALPAKA_DISABLE_OneApi_AmdGpu should not be used here, we should provide equal to executors a list of
-        /// enabled device kinds
-#if ALPAKA_HAS_HWLOC && !defined(ALPAKA_DISABLE_Host_NumaCpu)
         template<>
         struct IsDeviceSupportedBy::Op<deviceKind::NumaCpu, api::Host> : std::true_type
         {
         };
-#endif
     } // namespace onHost::trait
 
     namespace trait

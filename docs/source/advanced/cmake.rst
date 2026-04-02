@@ -17,17 +17,17 @@ The `CMake Presets <https://cmake.org/cmake/help/latest/manual/cmake-presets.7.h
    cd <alpaka_project_root>
    cmake --list-presets
 
-To configure, build and run the tests of a specific preset, run the following commands (for the example, we use the ``rel-host-gcc`` preset):
+To configure, build and run the tests of a specific preset, run the following commands (for the example, we use the ``rel-host-cpu-gcc`` preset):
 
 .. code-block:: bash
 
    cd <alpaka_project_root>
    # configure a specific preset
-   cmake --preset rel-host-gcc
+   cmake --preset rel-host-cpu-gcc
    # build the preset
-   cmake --build --preset rel-host-gcc
+   cmake --build --preset rel-host-cpu-gcc
    # run test of the preset
-   ctest --preset rel-host-gcc
+   ctest --preset rel-host-cpu-gcc
 
 All presets are configure and build in a subfolder of the ``<alpaka_project_root>/build`` folder.
 
@@ -39,29 +39,29 @@ The easiest way to change a preset is to set CMake arguments during configuratio
 .. code-block:: bash
 
    cd <alpaka_project_root>
-   # configure the rel-host-gcc preset with clang++ as C++ compiler
-   cmake --preset rel-host-gcc -DCMAKE_CXX_COMPILER=clang++
+   # configure the rel-host-cpu-gcc preset with clang++ as C++ compiler
+   cmake --preset rel-host-cpu-gcc -DCMAKE_CXX_COMPILER=clang++
    # build the preset
-   cmake --build --preset rel-host-gcc
+   cmake --build --preset rel-host-cpu-gcc
    # run test of the preset
-   ctest --preset rel-host-gcc
+   ctest --preset rel-host-cpu-gcc
 
 It is also possible to configure the default setting first and then change the arguments with ``ccmake``:
 
 .. code-block:: bash
 
    cd <alpaka_project_root>
-   # configure the rel-host-gcc preset with clang++ as C++ compiler
-   cmake --preset rel-host-gcc
-   cd build/rel-host-gcc
+   # configure the rel-host-cpu-gcc preset with clang++ as C++ compiler
+   cmake --preset rel-host-cpu-gcc
+   cd build/rel-host-cpu-gcc
    ccmake .
    cd ../..
    # build the preset
-   cmake --build --preset rel-host-gcc
+   cmake --build --preset rel-host-cpu-gcc
    # run test of the preset
-   ctest --preset rel-host-gcc
+   ctest --preset rel-host-cpu-gcc
 
-CMake presets also offer the option of creating personal, user-specific configurations based on the predefined CMake presets. To do this, you can create the file ``CMakeUserPresets.json`` in the root directory of your project (the file is located directly next to ``CMakePresets.json``). You can then create your own configurations from the existing CMake presets. The following example takes the rel-host-gcc configuration, uses ``ninja`` as the generator instead of the standard generator and uses the build type ``RELEASE``.
+CMake presets also offer the option of creating personal, user-specific configurations based on the predefined CMake presets. To do this, you can create the file ``CMakeUserPresets.json`` in the root directory of your project (the file is located directly next to ``CMakePresets.json``). You can then create your own configurations from the existing CMake presets. The following example takes the rel-host-cpu-gcc configuration, uses ``ninja`` as the generator instead of the standard generator and uses the build type ``RELEASE``.
 
 .. code-block:: json
 
@@ -74,8 +74,8 @@ CMake presets also offer the option of creating personal, user-specific configur
       },
       "configurePresets": [
         {
-            "name": "rel-host-gcc-ninja-release",
-            "inherits": "rel-host-gcc",
+            "name": "rel-host-cpu-gcc-ninja-release",
+            "inherits": "rel-host-cpu-gcc",
             "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": {
@@ -158,6 +158,26 @@ Arguments
      - `STDSIMD`   - enforce that the CXX compiler supports `std::simd`, if not CMake will fail
      - `EMULATION` - disable the usage of `std::simd` even if supported by the CXX compiler
 
+Host
+^^^^
+
+``alpaka_HOST_Cpu``
+  .. code-block:: markdown
+
+     Enable/Disable the `api::host` device `deviceKind::cpu`.
+     This option effects the entries of the list `onHost::enabledDeviceSpecs` typically used in alpaka examples/benchmarks and tests.
+
+     **without CMake:** Define the preprocessor define `ALPAKA_DISABLE_Host_Cpu` to disable host CPU device support.
+
+``alpaka_HOST_NumaCpu``
+  .. code-block:: markdown
+
+     Enable/Disable the `api::host` device `deviceKind::numaCpu`.
+     Requires the dependency `hwloc`, can be enabled with the CMake option `-Dalpaka_DEP_HWLOC=ON`.
+     This option effects the entries of the list `onHost::enabledDeviceSpecs` typically used in alpaka examples/benchmarks and tests.
+
+     **without CMake:** Define the preprocessor define `ALPAKA_DISABLE_Host_NumaCpu` to disable host NUMA CPU device support.
+
 CUDA
 ^^^^
 
@@ -167,6 +187,15 @@ To enable the CUDA back-end please extend ``CMAKE_PREFIX_PATH`` with the path to
   .. code-block:: markdown
 
      Enable the CUDA API and the usage of the executor `exec::gpuCuda`.
+
+``alpaka_CUDA_NvidiaGpu``
+  .. code-block:: markdown
+
+     Enable/Disable the `api::cuda` device `deviceKind::nvidiaGpu`.
+     Requires the dependency `hwloc`.
+     This option effects the entries of the list `onHost::enabledDeviceSpecs` typically used in alpaka examples/benchmarks and tests.
+
+     **without CMake:** Define the preprocessor define `ALPAKA_DISABLE_Cuda_NvidiaGpu` to disable CUDA NVIDIA GPU device support.
 
 ``CMAKE_CUDA_ARCHITECTURES``
   .. code-block:: markdown
@@ -215,6 +244,15 @@ HIP
 
      Enable the HIP API and the usage of the executor `exec::gpuHip`.
 
+``alpaka_HIP_AmdGpu``
+  .. code-block:: markdown
+
+     Enable/Disable the `api::hip` device `deviceKind::amdGpu`.
+     Requires the dependency `hwloc`.
+     This option effects the entries of the list `onHost::enabledDeviceSpecs` typically used in alpaka examples/benchmarks and tests.
+
+     **without CMake:** Define the preprocessor define `ALPAKA_DISABLE_Hip_AmdGpu` to disable HIP AMD GPU device support.
+
 ``CMAKE_HIP_ARCHITECTURES``
   .. code-block:: markdown
 
@@ -241,23 +279,35 @@ oneAPI SYCL
   .. code-block:: markdown
 
      Enable SYCL oneAPI CPU device support.
+     This option effects the entries of the list `onHost::enabledDeviceSpecs` typically used in alpaka examples/benchmarks and tests.
+
+     **without CMake:** Define the preprocessor define `ALPAKA_DISABLE_OneApi_Cpu` to disable SYCL oneAPI CPU device support.
 
 ``alpaka_ONEAPI_IntelGpu``
   .. code-block:: markdown
 
      Enable SYCL oneAPI Intel GPU device support.
+     This option effects the entries of the list `onHost::enabledDeviceSpecs` typically used in alpaka examples/benchmarks and tests.
+
+     **without CMake:** Define the preprocessor define `ALPAKA_DISABLE_OneApi_IntelGpu` to disable SYCL oneAPI Intel GPU device support.
 
 ``alpaka_ONEAPI_NvidiaGpu``
   .. code-block:: markdown
 
      Enable SYCL oneAPI Nvidia GPU device support.
      Requires the oneAPI compiler extension for CUDA support.
+     This option effects the entries of the list `onHost::enabledDeviceSpecs` typically used in alpaka examples/benchmarks and tests.
+
+     **without CMake:** Define the preprocessor define `ALPAKA_DISABLE_OneApi_NvidiaGpu` to disable SYCL oneAPI NVIDIA GPU device support.
 
 ``alpaka_ONEAPI_AmdGpu``
   .. code-block:: markdown
 
      Enable SYCL oneAPI AMD GPU device support.
      Requires the oneAPI compiler extension for AMD ROCM support.
+     This option effects the entries of the list `onHost::enabledDeviceSpecs` typically used in alpaka examples/benchmarks and tests.
+
+     **without CMake:** Define the preprocessor define `ALPAKA_DISABLE_OneApi_AmdGpu` to disable SYCL oneAPI AMD GPU device support.
 
 OpenMP
 ^^^^^^
@@ -283,23 +333,16 @@ Numa Awareness
      You should utilize all NUMA devices to get the full performance of your CPU, this requires manual a domain decomposition of your problem to be able to run it on all NUMA devices.
      If you use a blocking host queue together with the serial executor the executing thread will only be pinned if it is not the thread of the process.
 
-    **attention** If `CMake` is not **NOT** and the header `hwloc.h` is found you need to link `-lhwloc` or disable `hwloc` support by defining the preprocessor define `ALPAKA_DISABLE_HWLOC`.
-
-``alpaka_HOST_NumaCpu``
-  .. code-block:: markdown
-
-     Enable/Disable the `host` device `numaCpu`.
-     Requires the dependency `hwloc`.
-     This option is currently affecting full alpaka and is disabling the support for the device kind `numaCPU` for the api `host`, the behaviour will be changed soon to effect examples, benchmarks and tests only.
+    **without CMake:** If the header `hwloc.h` is in the include path you should link `-lhwloc` or disable `hwloc` support by defining the preprocessor define `ALPAKA_DISABLE_HWLOC`.
 
 ``alpaka_HOST_MemPinningCanFail``
   .. code-block:: markdown
 
      Enable/Disable that the memory pinning via `hwloc` can fail.
+     On a system e.g. in container environments where it is not allowed to pin memory, this option can be enabled to allow that pinning can fail without an exception.
      Requires the dependency `hwloc`.
 
-    **attention** If `CMake` is not **NOT** defining the preprocessor define `ALPAKA_HOST_MEM_PINNING_CAN_FAIL` will allow that pinning can fail without an exception.
-
+    **without CMake:**  Defining the preprocessor define `ALPAKA_HOST_MEM_PINNING_CAN_FAIL` to allow that memory pinning can fail without an exception.
 
 Intel oneAPI Threading Building Blocks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -340,7 +383,7 @@ Executors
 
      Enable the HIP GPU executor `exec::gpuHip`.
 
-``alpaka_EXEC_OneApu``
+``alpaka_EXEC_OneApi``
   .. code-block:: markdown
 
      Enable the oneAPI SYCL executor `exec::oneApi`.

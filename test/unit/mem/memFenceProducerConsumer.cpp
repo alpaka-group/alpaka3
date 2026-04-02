@@ -17,7 +17,7 @@
 
 using namespace alpaka;
 
-using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, exec::enabledExecutors))>;
+using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
 
 // Producer-Consumer kernel documentation:
 //  - Producer (thread 0) publishes a payload (value = iteration index) to global memory,

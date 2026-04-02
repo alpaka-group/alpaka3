@@ -355,5 +355,5 @@ auto main(int argc, char* argv[]) -> int
                 tMax,
                 enableCheck);
         },
-        onHost::allBackends(onHost::enabledApis, exec::enabledExecutors));
+        onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors));
 }

@@ -12,7 +12,7 @@ using namespace alpaka;
 // any value for testing
 int const testValue = 49;
 
-using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, exec::enabledExecutors))>;
+using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
 
 // Simple write kernel used to create actual device work for testing wait(device).
 struct WaitTestWriteKernel

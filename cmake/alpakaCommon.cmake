@@ -157,6 +157,11 @@ if(NOT TARGET alpaka)
     target_compile_features(alpaka_target_headers INTERFACE cxx_std_${alpaka_CXX_STANDARD})
 
     target_link_libraries(alpaka INTERFACE alpaka_target_host)
+
+    option(alpaka_HOST_Cpu "Enable support for api::host and deviceKind::cpu in examples/benchmarks and tests" ON)
+    if(NOT alpaka_HOST_Cpu)
+        target_compile_definitions(alpaka_target_host INTERFACE ALPAKA_DISABLE_Host_Cpu)
+    endif()
 endif()
 
 set(alpaka_COUNT_API_DEPS 0)
@@ -218,9 +223,7 @@ if(NOT _alpaka_TARGETS_EXTENDED)
     set(_alpaka_TARGETS_EXTENDED ON ${_alpaka_EXPORT_SCOPE})
 
     ## HWLOC
-    if(alpaka_DEP_HWLOC)
-        include(${_alpaka_CMAKE_DIR}/alpakaHwloc.cmake)
-    endif()
+    include(${_alpaka_CMAKE_DIR}/alpakaHwloc.cmake)
 
     ## OpenMP
     # There is no way to get the correct flags for the language CUDA or HIP

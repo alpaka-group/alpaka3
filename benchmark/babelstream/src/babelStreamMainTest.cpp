@@ -512,7 +512,7 @@ void testKernels(auto const deviceSpec, auto const exec)
     std::cout << metaData.serializeAsTable() << std::endl;
 }
 
-using Backends = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, exec::enabledExecutors))>;
+using Backends = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
 
 // Run for all Accs given by the argument
 TEMPLATE_LIST_TEST_CASE("TEST: Babelstream Kernels<Float>", "[benchmark-test]", Backends)

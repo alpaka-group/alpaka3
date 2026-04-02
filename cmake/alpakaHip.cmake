@@ -81,6 +81,11 @@ endif()
 target_compile_definitions(alpaka_target_hip INTERFACE ALPAKA_CMAKE_TARGET_HIP)
 target_link_libraries(alpaka_target_hip INTERFACE alpaka::headers)
 
+option(alpaka_HIP_AmdGpu "Enable support for api::hip and deviceKind::amdGpu in examples/benchmarks and tests" ON)
+if(NOT alpaka_HIP_AmdGpu)
+    target_compile_definitions(alpaka_target_hip INTERFACE ALPAKA_DISABLE_Hip_AmdGpu)
+endif()
+
 if(alpaka_COUNT_API_DEPS EQUAL 1)
     target_link_libraries(alpaka INTERFACE alpaka_target_hip)
 endif()

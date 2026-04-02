@@ -173,5 +173,5 @@ auto main() -> int
      */
     return onHost::executeForEachIfHasDevice(
         [=](auto const& backend) { return example(backend[object::deviceSpec], backend[object::exec]); },
-        onHost::allBackends(onHost::enabledApis, exec::enabledExecutors));
+        onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors));
 }

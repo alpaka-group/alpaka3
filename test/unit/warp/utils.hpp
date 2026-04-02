@@ -12,7 +12,8 @@
 
 namespace alpaka::test::warp
 {
-    using WarpTestBackends = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, exec::enabledExecutors))>;
+    using WarpTestBackends
+        = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
 
     template<typename SuccessView>
     // Marks the shared success flag false when a lane detects a failure without aborting execution.

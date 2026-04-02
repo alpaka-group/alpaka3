@@ -14,7 +14,7 @@
 
 using namespace alpaka;
 
-using TestBackends = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, exec::enabledExecutors))>;
+using TestBackends = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
 
 // This file only has unit tests for real numbers in order to split the tests between object files
 using FunctorsReal = alpaka::meta::
