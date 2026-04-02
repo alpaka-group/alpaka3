@@ -57,7 +57,7 @@ namespace alpaka
             // constructor is required because exposing the array constructors does not work
             template<typename... T_Args>
             requires(sizeof...(T_Args) == T_width && (std::same_as<T_Args, T_Type> && ...))
-            constexpr StdSimdMask(T_Args&&... args) : BaseType{}
+            constexpr StdSimdMask(T_Args const&... args) : BaseType{}
             {
                 std::array<T_Type, T_width> const initArgs{ALPAKA_FORWARD(args)...};
                 for(uint32_t i = 0u; i < T_width; ++i)
@@ -66,9 +66,9 @@ namespace alpaka
 
             template<typename... T_Args>
             requires(sizeof...(T_Args) == T_width && (std::same_as<T_Args, bool> && ...))
-            constexpr StdSimdMask(T_Args&&... args) : BaseType{}
+            constexpr StdSimdMask(T_Args... args) : BaseType{}
             {
-                std::array<bool, T_width> const initArgs{ALPAKA_FORWARD(args)...};
+                std::array<bool, T_width> const initArgs{args...};
                 for(uint32_t i = 0u; i < T_width; ++i)
                     this->asNativeType()[i] = initArgs[i];
             }
@@ -95,7 +95,7 @@ namespace alpaka
 
             /** @} */
 
-            static constexpr auto fill(T_Type const& value)
+            static constexpr auto fill(bool value)
             {
                 return StdSimdMask{BaseType(value)};
             }

@@ -72,7 +72,10 @@ TEST_CASE("simd 2D", "[simd vector]")
 
     auto simd = Simd{3, 7};
     CHECK(simd.width() == 2);
-    CHECK((simd.y() == 3 && simd.x() == 7));
+    CHECK((simd.x() == 3 && simd.y() == 7));
+    CHECK((simd.r() == 3 && simd.g() == 7));
+    CHECK((simd.s0() == 3 && simd.s1() == 7));
+    CHECK((simd[0] == 3 && simd[1] == 7));
     CHECK((simd == Simd{3, 7}).reduce(std::logical_and{}));
     CHECK((simd != Simd{7, 3}).reduce(std::logical_and{}));
     CHECK((Simd{7} == Simd{7, 3}.eraseBack()).reduce(std::logical_and{}));
