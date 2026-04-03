@@ -142,6 +142,11 @@ namespace alpaka::onHost
         {
             return T_DeviceKind{};
         }
+
+        constexpr alpaka::concepts::Api auto getApi() const
+        {
+            return T_Api{};
+        }
     };
 
     namespace concepts
