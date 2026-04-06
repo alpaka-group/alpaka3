@@ -109,10 +109,20 @@ namespace alpaka
 
         constexpr auto begin() const
         {
+            return MdForwardIter{this->getConstMdSpan()};
+        }
+
+        constexpr auto begin()
+        {
             return MdForwardIter{*this};
         }
 
         constexpr auto end() const
+        {
+            return MdForwardIterEnd{this->getConstMdSpan()};
+        }
+
+        constexpr auto end()
         {
             return MdForwardIterEnd{*this};
         }
