@@ -7,6 +7,9 @@
 #include <alpakaTest/testMacros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <array>
+#include <type_traits>
+
 TEST_CASE("1D alpaka::View::getSubView function tests", "[mem][view][SubDataStorage]")
 {
     constexpr int x = 10;
@@ -40,6 +43,22 @@ TEST_CASE("1D alpaka::View::getSubView function tests", "[mem][view][SubDataStor
         {
             REQUIRE_MESSAGE(sub_view0[i] == i + offset, "i=" << i);
         }
+    }
+
+    SECTION("getSubView, zero extent in 1D stays empty and does not iterate")
+    {
+        // Zero-sized 1D subviews should preserve the requested extent and produce an empty host iteration range.
+        auto sub_view0 = view0.getSubView(0);
+
+        REQUIRE(sub_view0.getExtents() == alpaka::Vec{0});
+
+        auto count = 0;
+        for([[maybe_unused]] auto&& value : sub_view0)
+        {
+            alpaka::unused(value);
+            ++count;
+        }
+        REQUIRE(count == 0);
     }
 }
 
@@ -116,5 +135,92 @@ TEST_CASE("3D alpaka::View::getSubView function tests", "[mem][view][SubDataStor
                 }
             }
         }
+    }
+
+    SECTION("getSubView, zero extent in 3D stays empty and does not iterate")
+    {
+        // Zero in any dimension should still create a valid empty subview for host iteration.
+        alpaka::Vec extents_subview0{z, 0, x};
+        auto sub_view0 = view0.getSubView(extents_subview0);
+
+        REQUIRE(sub_view0.getExtents() == extents_subview0);
+
+        auto count = 0;
+        for([[maybe_unused]] auto&& value : sub_view0)
+        {
+            alpaka::unused(value);
+            ++count;
+        }
+        REQUIRE(count == 0);
+    }
+
+    SECTION("getSubView with offset writes through to the parent storage")
+    {
+        // Offset subviews must alias the parent data so writes land at shifted coordinates in the original view.
+        alpaka::Vec offset_subview0{1, 2, 1};
+        alpaka::Vec extents_subview0{1, 2, 2};
+        auto sub_view0 = view0.getSubView(offset_subview0, extents_subview0);
+
+        for(auto vec : alpaka::IdxRange{extents_subview0})
+        {
+            sub_view0[vec] = 900 + static_cast<int>(alpaka::linearize(extents_subview0, vec));
+        }
+
+        for(auto vec : alpaka::IdxRange{extents_subview0})
+        {
+            auto const parent_idx = offset_subview0 + vec;
+            REQUIRE(view0[parent_idx] == 900 + static_cast<int>(alpaka::linearize(extents_subview0, vec)));
+        }
+    }
+
+    SECTION("const getSubView with offset stays read-only and reads shifted values")
+    {
+        // `getSubView() const` should propagate constness to the returned view while still reading the shifted region.
+        auto const& const_view0 = view0;
+        alpaka::Vec offset_subview0{1, 2, 1};
+        alpaka::Vec extents_subview0{2, 2, 3};
+        auto sub_view0 = const_view0.getSubView(offset_subview0, extents_subview0);
+
+        static_assert(std::is_const_v<std::remove_pointer_t<decltype(sub_view0.data())>>);
+        static_assert(std::is_const_v<std::remove_reference_t<decltype(sub_view0[alpaka::Vec{0, 0, 0}])>>);
+
+        for(auto vec : alpaka::IdxRange{extents_subview0})
+        {
+            auto const parent_idx = offset_subview0 + vec;
+            REQUIRE(sub_view0[vec] == view0[parent_idx]);
+        }
+    }
+}
+
+TEST_CASE("alpaka::View::getSubView keeps pitches, pointer, and alignment contracts", "[mem][view][SubDataStorage]")
+{
+    alignas(32) std::array<int, 2 * 3 * 4> storage{};
+    for(std::size_t i = 0; i < storage.size(); ++i)
+    {
+        storage[i] = static_cast<int>(i);
+    }
+
+    auto view0 = alpaka::makeView(alpaka::api::host, storage.data(), alpaka::Vec{2, 3, 4}, alpaka::Alignment<32>{});
+
+    SECTION("offset subviews preserve pitches and drop to plain alignment")
+    {
+        // A shifted origin can break stronger alignment guarantees, but the pitch layout must still match the parent.
+        auto const offset_subview0 = view0.getSubView(alpaka::Vec{1, 1, 1}, alpaka::Vec{1, 2, 3});
+
+        REQUIRE(offset_subview0.getPitches() == view0.getPitches());
+        REQUIRE(offset_subview0.data() == &view0[alpaka::Vec{1, 1, 1}]);
+
+        static_assert(std::is_same_v<decltype(offset_subview0.getAlignment()), alpaka::Alignment<>>);
+    }
+
+    SECTION("extent-only subviews keep the original pointer and alignment")
+    {
+        // Cropping only by extent must not move the pointer or weaken the parent alignment contract.
+        auto const sub_view0 = view0.getSubView(alpaka::Vec{2, 2, 3});
+
+        REQUIRE(sub_view0.data() == view0.data());
+        REQUIRE(sub_view0.getPitches() == view0.getPitches());
+
+        static_assert(std::is_same_v<decltype(sub_view0.getAlignment()), alpaka::Alignment<32>>);
     }
 }
