@@ -216,14 +216,16 @@ TEST_CASE(
     "test return value type of the access operator for alpaka::concepts::IDataSource and IMdSpan",
     "[mem][concept]")
 {
-    // the test is motivate by creating a MdSpan<std::atomic<int>>
+    // This regression test models element types such as std::atomic<int>:
+    // access must still work by reference even when the element type is not copyable.
+    // The pitch vector has to be computed from the same element type used by MdSpan.
     NonCopyStruct mcs;
 
     STATIC_REQUIRE_FALSE(std::convertible_to<NonCopyStruct, NonCopyStruct>);
     STATIC_REQUIRE(std::convertible_to<NonCopyStruct&, NonCopyStruct&>);
 
     concepts::Vector auto const extents = Vec{1u};
-    concepts::Vector auto const pitches = alpaka::calculatePitchesFromExtents<int>(extents);
+    concepts::Vector auto const pitches = alpaka::calculatePitchesFromExtents<NonCopyStruct>(extents);
 
     alpaka::MdSpan mdspan(&mcs, extents, pitches);
 
