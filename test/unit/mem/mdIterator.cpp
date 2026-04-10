@@ -82,11 +82,14 @@ TEST_CASE("mdIterator host coverage", "[mem][mdIterator][iterator]")
             nextValue += 5;
         }
 
-        REQUIRE(view[alpaka::Vec{0u, 0u}] == 10);
-        REQUIRE(view[alpaka::Vec{0u, 2u}] == 20);
-        REQUIRE(view[alpaka::Vec{1u, 0u}] == 25);
-        REQUIRE(view[alpaka::Vec{1u, 2u}] == 35);
-        CHECK(buffer[alpaka::Vec{1u, 1u}] == 30);
+        int checkNextValue = 10;
+        meta::ndLoopIncIdx(
+            extents,
+            [&](alpaka::concepts::Vector<uint32_t> auto idx)
+            {
+                REQUIRE(buffer[idx] == checkNextValue);
+                checkNextValue += 5;
+            });
     }
 
     SECTION("const View iteration is read-only and preserves order")
