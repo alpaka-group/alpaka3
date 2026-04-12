@@ -82,6 +82,12 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
     std::cout << deviceSpec.getApi().getName() << std::endl;
 
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+
     onHost::Device device = devSelector.makeDevice(0);
 
     std::cout << "device name: " << device.getName() << "\n";
@@ -197,6 +203,12 @@ TEMPLATE_LIST_TEST_CASE("device global mem copy", "", TestApis)
     std::cout << deviceSpec.getApi().getName() << std::endl;
 
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        return;
+    }
+
     onHost::Device device = devSelector.makeDevice(0);
 
     std::cout << device.getName() << std::endl;
