@@ -108,13 +108,23 @@ namespace alpaka::onHost::internal
     template<alpaka::concepts::DeviceKind T_DeviceKind, typename T_Any>
     struct IsDataAccessible::SecondPath<api::OneApi, T_DeviceKind, T_Any>
     {
-        static void getPtrType(auto const& platform, auto& sycl_data_alloc_type, auto const& view)
+        static void getPtrType(auto deviceKind, auto& sycl_data_alloc_type, auto const& view)
         {
-            auto sycl_context = platform->getContext();
-            auto sycl_alloc_type = get_pointer_type(Data::data(view), sycl_context);
+            try
+            {
+                auto platform
+                    = onHost::make_sharedSingleton<syclGeneric::Platform<api::OneApi, ALPAKA_TYPEOF(deviceKind)>>();
+                auto sycl_context = platform->getContext();
+                auto sycl_alloc_type = get_pointer_type(Data::data(view), sycl_context);
 
-            if(sycl_alloc_type != sycl::usm::alloc::unknown)
-                sycl_data_alloc_type = sycl_alloc_type;
+                if(sycl_alloc_type != sycl::usm::alloc::unknown)
+                    sycl_data_alloc_type = sycl_alloc_type;
+            }
+            catch(...)
+            {
+                // do to mising drivers or other issues we can not query the pointer type, in this case we assume that
+                // the memory is not accessible for the device
+            }
         }
 
         bool operator()(api::OneApi usedApi, T_DeviceKind deviceKind, T_Any const& view) const
@@ -123,13 +133,7 @@ namespace alpaka::onHost::internal
             auto sycl_data_alloc_type = sycl::usm::alloc::unknown;
             alpaka::apply(
                 [&sycl_data_alloc_type, &view](auto... devKind)
-                {
-                    (getPtrType(
-                         onHost::make_sharedSingleton<syclGeneric::Platform<api::OneApi, ALPAKA_TYPEOF(devKind)>>(),
-                         sycl_data_alloc_type,
-                         view),
-                     ...);
-                },
+                { (getPtrType(devKind, sycl_data_alloc_type, view), ...); },
                 deviceKindList);
 
             if(deviceKind == deviceKind::cpu || deviceKind == deviceKind::numaCpu)
