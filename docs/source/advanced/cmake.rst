@@ -1,7 +1,7 @@
 CMake
 =====
 
-Alpaka configures a large part of its functionality at compile time. Therefore, a lot of compiler and link flags are needed, which are set by CMake arguments. First, we show a simple way to build alpaka for different back-ends using `CMake Presets <https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html>`_. The second part of the documentation shows the general and back-end specific alpaka CMake flags.
+alpaka configures a large part of its functionality at compile time. Therefore, a lot of compiler and link flags are needed, which are set by CMake arguments. First, we show a simple way to build alpaka for different back-ends using `CMake Presets <https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html>`_. The second part of the documentation shows the general and back-end specific alpaka CMake flags.
 
 .. hint::
 
@@ -98,12 +98,10 @@ Arguments
 
     The executor ``exec::cpuSerial`` is always available and does not require any special CMake flags beside linking the taget ``alpaka::alpaka`` or ``alpaka::host``.
 
-
 ``alpaka_CXX_STANDARD``
   .. code-block:: markdown
 
      Set the C++ standard version.
-
 
 ``alpaka_TESTS``
   .. code-block:: markdown
@@ -343,7 +341,6 @@ Numa Awareness
      Requires the dependency `hwloc`.
 
     **without CMake:**  Defining the preprocessor define `ALPAKA_HOST_MEM_PINNING_CAN_FAIL` to allow that memory pinning can fail without an exception.
-
 Intel oneAPI Threading Building Blocks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -387,7 +384,6 @@ Executors
   .. code-block:: markdown
 
      Enable the oneAPI SYCL executor `exec::oneApi`.
-
 
 Available during the Installation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -500,10 +496,10 @@ alpaka is providing CMake targets based on the optional activated dependencies `
    Dependencies of ``alpaka_DEP_OMP`` and ``alpaka_DEP_TBB`` are linked into the target ``alpaka::host`` because they influence only host executors and do not provide additional alpaka API support.
    When enabling `alpaka_DEP_TBB`, make sure Intel oneTBB version 2021.10 or newer (including 2022.x releases) is available.
 
-After linking Alpaka targets to your application, you should call ``alpaka_finalize(targetName)`` for each target that uses Alpaka.
+After linking alpaka targets to your application, you should call ``alpaka_finalize(targetName)`` for each target that uses alpaka.
 ``alpaka_finalize()`` is a CMake function that ensures all necessary compile definitions and compiler options are set for the given target.
 Depending on the enabled dependencies (``alpaka_DEP_*``), this call may copy your source files to a temporary directory and compile them with the appropriate compiler.
-Linking non-Alpaka targets after calling ``alpaka_finalize()`` is allowed.
+Linking non-alpaka targets after calling ``alpaka_finalize()`` is allowed.
 You should not include header files using relative paths in your source files.
 These relative paths may become invalid after ``alpaka_finalize()`` is called, because the source files can be copied to a different location.
 

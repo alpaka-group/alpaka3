@@ -126,3 +126,19 @@ In this example it can only be validated with ``static_assert()`` because the op
     :start-after: BEGIN-TUTORIAL-CVecOp
     :end-before: END-TUTORIAL-CVecOp
     :dedent:
+
+Complete Source File
+--------------------
+
+.. raw:: html
+
+   <details class="full-source">
+   <summary>00_vector.cpp</summary>
+
+.. filteredliteralinclude:: ../../snippets/example/00_vector.cpp
+   :language: cpp
+   :linenos:
+
+.. raw:: html
+
+   </details>

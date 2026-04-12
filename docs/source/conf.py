@@ -4,6 +4,9 @@
 import os
 import subprocess
 import shutil
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "_ext")))
 
 def generate_single_header(app, exception):
     # Destination folder relative to conf.py
@@ -82,6 +85,7 @@ extensions = [
     "sphinx.ext.mathjax",
     #    'sphinx.ext.napoleon',
     "breathe",
+    "filtered_literalinclude",
     "sphinx_rtd_theme",
     "sphinxcontrib.programoutput",
     #    'matplotlib.sphinxext.plot_directive'
@@ -125,7 +129,11 @@ html_static_path = ["_static"]
 html_css_files = ["custom.css"]
 
 html_logo = "../logo/alpaka.svg"
-html_theme_options = {"logo_only": True}
+html_theme_options = {
+    "logo_only": True,
+    "collapse_navigation": False,
+    "navigation_depth": 2,
+}
 
 # -- Options for HTMLHelp output ---------------------------------------------
 

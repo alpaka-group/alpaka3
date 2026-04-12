@@ -64,3 +64,19 @@ In the CMake configuration phase of the project, you must activate the accelerat
 .. A complete list of CMake flags for the  accelerator can be found :doc:`here </advanced/cmake>`.
 
 If the configuration was successful and CMake found the CUDA SDK, the C++ api `cuda` and the executor `gpuCuda` is available.
+
+Complete Source File
+--------------------
+
+.. raw:: html
+
+   <details class="full-source">
+   <summary>30_elementWiseMultiplication.cpp</summary>
+
+.. filteredliteralinclude:: ../../snippets/example/30_elementWiseMultiplication.cpp
+   :language: cpp
+   :linenos:
+
+.. raw:: html
+
+   </details>
