@@ -176,7 +176,7 @@ namespace alpaka::fn
         /** Checks if a function overload is registered for the given device specification.
          *
          * You can use the result to optionally call the function overload and disable at compile time code sections
-         * similar to C** preprocessor guards.
+         * similar to C++ preprocessor guards.
          * @code
          * ALPAKA_FN_SYMBOL(Foo,alpaka::fn::Fallback::none, alpaka::fn::Registration::enforced);
          *
@@ -193,13 +193,36 @@ namespace alpaka::fn
          * @endcode
          *
          * @param any any type which is usable with alpaka::getApi() and alpaka::getDeviceKind()
-         * @return true if the function type T_FnClass is registered else false.
+         * @return true if the function overload T_FnClass is registered else false.
+         * It does not try to check if a fallback overload is dispatchable, to check fallback registrations use
+         * hasRegisteredFallback(alpaka::concepts::DeviceSpec auto const& any).
          */
         static constexpr bool isRegistered(alpaka::concepts::DeviceSpec auto const& any)
             requires(T_registrationPolicy != Registration::none)
         {
-            return T_registrationPolicy == Registration::alwaysTrue || concepts::FnRegistered<ALPAKA_TYPEOF(spec(any))>
-                   || ((T_fallbackPolicy != Fallback::none) && concepts::FnRegistered<ALPAKA_TYPEOF(spec(any))>);
+            return T_registrationPolicy == Registration::alwaysTrue
+                   || concepts::FnRegistered<ALPAKA_TYPEOF(spec(any))>;
+        }
+
+        /** Checks if the function overload fallback is registered.
+         *
+         * Similar to isRegistered(alpaka::concepts::DeviceSpec auto const& any) but it checks for the fallback
+         * overload only.
+         *
+         * @param any any type which is usable with alpaka::getApi() and alpaka::getDeviceKind()
+         * @return true if the function overload fallback for T_FnClass is registered else false.
+         */
+        static constexpr bool hasRegisteredFallback(alpaka::concepts::DeviceSpec auto const& any)
+            requires(T_registrationPolicy != Registration::none)
+        {
+            constexpr bool isFallbackAllowed = T_fallbackPolicy != Fallback::none;
+            constexpr bool hasAlpakaFallback
+                = ((T_fallbackPolicy == Fallback::toAlpaka)
+                   && concepts::FnRegistered<ALPAKA_TYPEOF(spec(api::Alpaka{}, getDeviceKind(any)))>);
+            constexpr bool hasGenericFallback
+                = ((T_fallbackPolicy == Fallback::toGeneric) && concepts::FnRegistered<T_FnClass>);
+            return T_registrationPolicy == Registration::alwaysTrue
+                   || (isFallbackAllowed && (hasAlpakaFallback || hasGenericFallback));
         }
 
         /** Call function overload if defined for the given device specification. */
