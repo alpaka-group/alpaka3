@@ -2,8 +2,11 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
+#include "docsTest.hpp"
+
 #include <alpaka/alpaka.hpp>
 
+#include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <chrono>
@@ -15,7 +18,7 @@ using namespace alpaka;
 
 struct AddOne
 {
-    ALPAKA_FN_ACC void operator()(auto const& acc, concepts::IMdSpan auto out) const
+    ALPAKA_FN_ACC void operator()(onAcc::concepts::Acc auto const& acc, concepts::IMdSpan auto out) const
     {
         for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{out.getExtents()}))
         {
@@ -24,20 +27,12 @@ struct AddOne
     }
 };
 
-TEST_CASE("first kernel", "[docs]")
+TEMPLATE_LIST_TEST_CASE("first kernel", "[docs]", docs::test::TestBackends)
 {
-    // Nvidia GPU: onHost::DeviceSpec{api::cuda, deviceKind::nvidiaGpu};
-    // Amd GPU: onHost::DeviceSpec{api::hip, deviceKind::amdGpu};
-    // Intel GPU: onHost::DeviceSpec{api::oneApi, deviceKind::intelGpu};
-    // this call selects the host Cpu
-    auto computeDevSpec = onHost::DeviceSpec{api::host, deviceKind::cpu};
+    auto computeDevSpec = TestType::makeDict()[object::deviceSpec];
     auto computeDevSelector = alpaka::onHost::makeDeviceSelector(computeDevSpec);
-    auto numComputeDevs = computeDevSelector.getDeviceCount();
-
-    if(numComputeDevs == 0)
-    {
-        std::cout << "No device for " << onHost::getName(computeDevSpec) << " found." << std::endl;
-    }
+    if(!computeDevSelector.isAvailable())
+        return;
 
     onHost::Device computeDev = computeDevSelector.makeDevice(0);
     onHost::Queue computeQueue = computeDev.makeQueue();
@@ -53,7 +48,8 @@ TEST_CASE("first kernel", "[docs]")
 
     // The frame extent is randomly chosen
     constexpr auto frameExtents = Vec{256};
-    auto frameSpec = onHost::FrameSpec{divExZero(computeBuffer.getExtents(), frameExtents), frameExtents};
+    onHost::concepts::FrameSpec auto frameSpec
+        = onHost::FrameSpec{divExZero(computeBuffer.getExtents(), frameExtents), frameExtents};
     // If no executor is given as first argument to enqueue than the default executor is used.
     // The default is the fastest for the corresponding device.
     // For deviceKind::cpu the default is exec::cpuOmpBlocks if omp is enabled, else exec::cpuTbbBlocks if available
@@ -70,7 +66,7 @@ TEST_CASE("first kernel", "[docs]")
 struct MDVectorAdd
 {
     ALPAKA_FN_ACC void operator()(
-        auto const& acc,
+        onAcc::concepts::Acc auto const& acc,
         concepts::IMdSpan auto out,
         concepts::IDataSource auto const& in0,
         concepts::IDataSource auto const& in1) const
@@ -84,20 +80,13 @@ struct MDVectorAdd
     }
 };
 
-TEST_CASE("MD vector add kernel", "[docs]")
+TEMPLATE_LIST_TEST_CASE("MD vector add kernel", "[docs]", docs::test::TestBackends)
 {
-    // Nvidia GPU: onHost::DeviceSpec{api::cuda, deviceKind::nvidiaGpu};
-    // Amd GPU: onHost::DeviceSpec{api::hip, deviceKind::amdGpu};
-    // Intel GPU: onHost::DeviceSpec{api::oneApi, deviceKind::intelGpu};
-    // this call selects the host Cpu
-    auto computeDevSpec = onHost::DeviceSpec{api::host, deviceKind::cpu};
+    auto cfg = TestType::makeDict();
+    auto computeDevSpec = cfg[object::deviceSpec];
     auto computeDevSelector = alpaka::onHost::makeDeviceSelector(computeDevSpec);
-    auto numComputeDevs = computeDevSelector.getDeviceCount();
-
-    if(numComputeDevs == 0)
-    {
-        std::cout << "No device for " << onHost::getName(computeDevSpec) << " found." << std::endl;
-    }
+    if(!computeDevSelector.isAvailable())
+        return;
 
     onHost::Device computeDev = computeDevSelector.makeDevice(0);
     onHost::Queue computeQueue = computeDev.makeQueue();
@@ -124,13 +113,12 @@ TEST_CASE("MD vector add kernel", "[docs]")
     // The frame extent is randomly chosen, the dimensionality of the kernel is defined by the FrameSpec dimsions.
     constexpr auto frameExtents = Vec{8, 8, 8};
     concepts::Vector auto numFrames = divExZero(computeBufferOut.getExtents(), frameExtents);
-    auto frameSpec = onHost::FrameSpec{numFrames, frameExtents};
+    onHost::concepts::FrameSpec auto frameSpec = onHost::FrameSpec{numFrames, frameExtents};
 
     onHost::wait(computeQueue);
     auto const beginT = std::chrono::high_resolution_clock::now();
-    // we enforce serial execution because this executor is always available deviceKind::cpu and api::host
     computeQueue.enqueue(
-        exec::cpuSerial,
+        cfg[object::exec],
         frameSpec,
         KernelBundle{MDVectorAdd{}, computeBufferOut, computeBufferIn0, computeBufferIn1});
     onHost::wait(computeQueue);

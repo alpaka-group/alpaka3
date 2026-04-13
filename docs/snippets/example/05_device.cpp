@@ -26,7 +26,7 @@ TEST_CASE("show host devices", "[docs]")
     // END-TUTORIAL-devCount
 
     // BEGIN-TUTORIAL-devHandleCount
-    // Always check the number of available compute devices! Alpaka always creates a valid DeviceSelector even for
+    // Always check the number of available compute devices! alpaka always creates a valid DeviceSelector even for
     // unsupported combinations of an api and deviceKind.
     if(numComputeDevs > 0)
     {
@@ -53,7 +53,7 @@ TEST_CASE("host device", "[docs]")
     // BEGIN-TUTORIAL-devHostDev
     // Get a device to perform work on the host.
     // It is a shortcut compared to using the makeDeviceSelector(...) to get a host device.
-    auto hostDevice = onHost::makeHostDevice();
+    onHost::concepts::Device auto hostDevice = onHost::makeHostDevice();
     // END-TUTORIAL-devHostDev
 
     // Getting a queue to enqueue asynchronous work

@@ -38,7 +38,6 @@ The interaction of the main user facing concepts can be seen in the following fi
 .. image:: /images/structure_assoc.png
    :alt: user / alpaka code interaction
 
-
 For each type of ``Device`` there is a ``DeviceSelector`` for enumerating the available ``Device``s.
 A ``Device`` is the requirement for creating ``Queues`` and ``Events`` as it is for allocating ``SharedBuffers`` on the respective ``Device``.
 ``SharedBuffers`` can be copied, their memory be byte-wise set or filled with element-wise.
@@ -49,7 +48,6 @@ It is possible to wait for (synchronize with) a single ``Event``, a ``Queue`` or
 An ``Executor`` can be enqueued into a ``Queue`` and will execute the ``Kernel`` (after all previous tasks in the queue have been completed).
 The ``Kernel`` in turn has access to the ``Accelerator`` it is running on.
 The ``Accelerator`` provides the ``Kernel`` with its current index in the block or grid, their extents or other data as well as it allows to allocate shared memory, execute atomic operations and many more.
-
 
 Interface Usage
 ---------------
@@ -70,7 +68,6 @@ Therefore the accelerator has to be passed in as a templated constant reference 
    {
        //...
    }
-
 
 Kernel Definition
 `````````````````

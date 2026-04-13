@@ -70,7 +70,6 @@ Build documentation:
     # chromium and other browser also works
     firefox ./build/html/index.html
 
-
 Useful Links
 ------------
 

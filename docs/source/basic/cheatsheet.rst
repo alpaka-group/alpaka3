@@ -377,3 +377,19 @@ Math functions
     :dedent:
 
 Similar for other math functions.
+
+Complete Source File
+--------------------
+
+.. raw:: html
+
+   <details class="full-source">
+   <summary>cheatsheet.cpp</summary>
+
+.. filteredliteralinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
+   :language: cpp
+   :linenos:
+
+.. raw:: html
+
+   </details>

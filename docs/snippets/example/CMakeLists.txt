@@ -46,7 +46,6 @@ function(alpaka_add_docs_target target_prefix folder)
 
                     add_executable(${_test_target_name} ${source_file})
                     if(EXISTS "${test_folder}/include")
-                        message(STATUS "  add include folder: ${test_folder}/include")
                         target_include_directories(${_test_target_name} PRIVATE ${test_folder}/include)
                     endif()
 

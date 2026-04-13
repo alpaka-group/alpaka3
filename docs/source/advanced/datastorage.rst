@@ -46,7 +46,7 @@ Memory Layout of multidimensional Data Storage
 ----------------------------------------------
 
 There are several functions and parameters for improving the memory layout of multidimensional ``Data Storage`` to enhance application performance.
-Alpaka supports ``Pitches``, which optimize memory loads, and ``Alignment``, which is required for vector operations such as AVX on CPUs.
+alpaka supports ``Pitches``, which optimize memory loads, and ``Alignment``, which is required for vector operations such as AVX on CPUs.
 All alpaka functions automatically handle ``Pitches`` and ``Alignment`` during memory access.
 However, it is sometimes necessary to process raw memory, for example, when a memory pointer is passed from alpaka to non-alpaka code.
 The following section explains how alpaka implements ``Pitches`` and ``Alignment``.
@@ -83,7 +83,6 @@ Therefore, the size of a row is ``5 elements * 4 Byte/element + 2 Byte = 22 Byte
 
     Matrix with [3, 5] elements, each element has a size of 4 bytes and 2 bytes of padding per row.
 
-
 .. literalinclude:: ../../snippets/dataStorage/datastorage_pitch.cpp
   :language: cpp
   :start-after: BEGIN-DATASTORAGE-pitch2D-example
@@ -117,3 +116,45 @@ The following example shows 3D memory and the corresponding values for the ``Ext
 
 Alignment
 `````````
+
+Complete Source Files
+---------------------
+
+.. raw:: html
+
+   <details class="full-source">
+   <summary>datastorage_interface.cpp</summary>
+
+.. filteredliteralinclude:: ../../snippets/dataStorage/datastorage_interface.cpp
+   :language: cpp
+   :linenos:
+
+.. raw:: html
+
+   </details>
+
+.. raw:: html
+
+   <details class="full-source">
+   <summary>datastorage_writeable_datasource.cpp</summary>
+
+.. filteredliteralinclude:: ../../snippets/dataStorage/datastorage_writeable_datasource.cpp
+   :language: cpp
+   :linenos:
+
+.. raw:: html
+
+   </details>
+
+.. raw:: html
+
+   <details class="full-source">
+   <summary>datastorage_pitch.cpp</summary>
+
+.. filteredliteralinclude:: ../../snippets/dataStorage/datastorage_pitch.cpp
+   :language: cpp
+   :linenos:
+
+.. raw:: html
+
+   </details>
