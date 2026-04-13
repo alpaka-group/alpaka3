@@ -76,6 +76,15 @@ namespace alpaka
     public:
         constexpr MdForwardIter(T_MdSpan const& mdSpan) : m_mdSpan(mdSpan), m_current{IterIdxVecType::fill(0u)}
         {
+            // Any zero extent makes the span empty, so start directly at end().
+            for(uint32_t idx = 0; idx < iterDim; ++idx)
+            {
+                if(m_mdSpan.getExtents()[idx] == index_type{0u})
+                {
+                    m_current[0] = m_mdSpan.getExtents()[0];
+                    break;
+                }
+            }
         }
 
         ALPAKA_FN_ACC constexpr index_type slowCurrent() const
