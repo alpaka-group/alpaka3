@@ -18,7 +18,7 @@ This chapter is easiest to picture with two recurring examples from the rest of 
 - If the extent requires the ``alpaka::concepts::VectorOrScalar`` concept, it is permissible to use a scalar instead of an alpaka vector type to allocate a one-dimensional buffer.
 - The extent object also determines the internal index type used for addressing the buffer.
 
-The following examples show how to create memory which is **only** visible on the device.
+The following examples show how to create memory which is **only** accessible on the device.
 
   .. literalinclude:: ../../snippets/example/10_memory.cpp
     :language: cpp

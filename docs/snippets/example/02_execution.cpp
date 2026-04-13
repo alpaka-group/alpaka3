@@ -6,6 +6,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <iostream>
+
 using namespace alpaka;
 
 TEST_CASE("tutorial enumerate backends and executors", "[docs]")
@@ -37,13 +39,18 @@ TEST_CASE("tutorial enumerate backends and executors", "[docs]")
             onHost::concepts::Device auto backendDevice = backendSelector.makeDevice(0u);
             onHost::Queue backendQueue = backendDevice.makeQueue();
 
-            backendQueue.enqueueHostFn([]() noexcept {});
+            backendQueue.enqueueHostFn(
+                [=]() noexcept
+                {
+                    std::cout << "Run with device " << backendDevice.getName() << " and executor "
+                              << backendExec.getName() << std::endl;
+                });
             onHost::wait(backendQueue);
 
             alpaka::unused(backendExec);
             return EXIT_SUCCESS;
         },
-        onHost::allBackends(onHost::enabledApis, exec::enabledExecutors));
+        onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors));
     // END-TUTORIAL-enumerateBackends
 
     CHECK(numVisitedBackends >= 1u);

@@ -18,7 +18,7 @@ What a Beginner Kernel Looks Like
 
 Most first kernels in alpaka end up looking almost the same:
 
-- The kernel is a function object with ``operator()``.
+- The kernel is a function object with ``void operator() const``.
 - The first argument is the accelerator handle ``acc``.
 - Output buffers use ``IMdSpan`` and input buffers use ``IDataSource``.
 - Work distribution is expressed with ``onAcc::makeIdxMap(...)``.
@@ -102,7 +102,7 @@ The host chooses how much work is grouped into one frame, and the kernel then it
 Rules of thumb:
 
 - Use one-dimensional frames for one-dimensional data such as vectors or linear buffers.
-- Use the same dimensionality as the problem when the data is naturally 2D or 3D.
+- Use the same dimensionality as the problem when the data is naturally 2D, 3D or ND.
 - ``onHost::getFrameSpec<T>(device, extents)`` is the easiest way to get a reasonable first frame specification.
 - Start with simple sizes. For 1D kernels, something around ``128`` to ``256`` elements per frame is usually a reasonable first try.
 - When you have multiple dimensions, prefer more work in the fastest varying dimension, which is usually ``x``.

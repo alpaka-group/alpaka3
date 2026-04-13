@@ -21,7 +21,7 @@ That choice controls the logical parallelism exposed to the kernel, not an exact
 
 Good first questions are:
 
-- is the data naturally 1D, 2D, or 3D?
+- is the data naturally 1D, 2D, 3D or ND?
 - should one block own a tile, a row stripe, or a chunk?
 - is there a naturally one-dimensional inner direction for warp-local work?
 
@@ -40,7 +40,6 @@ These are useful optimization tools, but they are usually not the first step:
 - dynamic shared memory
 - warp shuffle operations
 - block-local atomics
-- more specialized executor control with ``ThreadSpec``
 
 Common Migration Mistakes
 -------------------------

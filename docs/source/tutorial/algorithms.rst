@@ -5,7 +5,7 @@ onHost Algorithms
 It is tempting to think of them as STL algorithms with a different namespace, but that is not quite right.
 They operate on *alpaka* buffers and views, and some overloads need explicit temporary storage.
 
-For a human learner, it helps to see these algorithms as a small data-processing toolbox.
+It helps to see these algorithms as a small data-processing toolbox.
 Imagine a simple workflow:
 
 - create or initialize some data,

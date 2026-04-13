@@ -2,7 +2,7 @@ Chunked and Tiled Kernels
 =========================
 
 After writing a simple element-wise kernel, the next natural alpaka pattern is a chunked kernel.
-Instead of thinking in raw thread IDs, you start thinking in frames, tiles, and local chunks of the problem.
+Instead of thinking in raw thread IDs, you start thinking in frames and local data chunks of the problem.
 
 This is the style used in alpaka's chunked-data tutorial example and in larger examples such as tiled stencil codes.
 

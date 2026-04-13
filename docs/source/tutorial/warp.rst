@@ -2,6 +2,10 @@ Warp and Subgroup Functions
 ===========================
 
 Some algorithms need communication inside a warp or subgroup.
+A warp is a group of threads that execute in lock-step and can exchange values via warp shuffle functions without going through shared memory.
+A thread block may contain multiple warps.
+Threads in different warps cannot use warp shuffle functions to exchange values.
+A warp is always a one-dimensional group of threads, even within a n-dimensional kernels.
 This is a lower-level tool than the earlier tutorial chapters, but it is still important for reductions, scans, voting, and specialized GPU kernels.
 
 If you know CUDA, these functions are analogous to warp intrinsics.

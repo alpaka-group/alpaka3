@@ -1,7 +1,7 @@
 Math Functions in Kernels
 =========================
 
-Inside kernels, prefer ``alpaka::math`` over calling backend-specific math APIs directly.
+Inside kernels, prefer ``alpaka::math`` over calling backend-specific math APIs or C++ `std` math functions directly.
 That keeps the code portable across host, CUDA, HIP, and SYCL backends.
 
 For teaching, math functions become much easier to understand when they are attached to tiny numerical stories instead of listed as names.

@@ -43,7 +43,7 @@ This pattern is especially useful when:
 The important part is that a backend entry bundles both the ``deviceSpec`` and the ``exec`` object.
 That is how many alpaka examples stay generic without branching into separate CUDA, HIP, SYCL, and host code paths by hand.
 
-For a human learner, the easiest way to think about this is:
+The easiest way to think about this is:
 "I have one calculation, and I want to ask alpaka where that calculation can run on this machine."
 That is a better starting point than hard-coding CUDA or HIP first and only later trying to recover portability.
 
