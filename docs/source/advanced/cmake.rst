@@ -331,7 +331,7 @@ Numa Awareness
      You should utilize all NUMA devices to get the full performance of your CPU, this requires manual a domain decomposition of your problem to be able to run it on all NUMA devices.
      If you use a blocking host queue together with the serial executor the executing thread will only be pinned if it is not the thread of the process.
 
-    **without CMake:** If the header `hwloc.h` is in the include path you should link `-lhwloc` or disable `hwloc` support by defining the preprocessor define `ALPAKA_DISABLE_HWLOC`.
+     **without CMake:** If the header `hwloc.h` is in the include path you should link `-lhwloc` or disable `hwloc` support by defining the preprocessor define `ALPAKA_DISABLE_HWLOC`.
 
 ``alpaka_HOST_MemPinningCanFail``
   .. code-block:: markdown
@@ -340,7 +340,7 @@ Numa Awareness
      On a system e.g. in container environments where it is not allowed to pin memory, this option can be enabled to allow that pinning can fail without an exception.
      Requires the dependency `hwloc`.
 
-    **without CMake:**  Defining the preprocessor define `ALPAKA_HOST_MEM_PINNING_CAN_FAIL` to allow that memory pinning can fail without an exception.
+     **without CMake:**  Defining the preprocessor define `ALPAKA_HOST_MEM_PINNING_CAN_FAIL` to allow that memory pinning can fail without an exception.
 Intel oneAPI Threading Building Blocks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

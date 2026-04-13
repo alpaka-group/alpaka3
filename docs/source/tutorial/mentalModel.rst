@@ -58,7 +58,7 @@ One Short Example
 If you have a ``1024 x 1024`` grayscale image:
 
 - ``IdxRange`` is the full ``1024 x 1024`` image domain,
-- ``FrameSpec`` might choose a smaller 2D tile/frame shape such as ``16 x 16`` and 2 frames only,
+- for ``FrameSpec`` a smaller 2D tile/frame shape such as ``16 x 16`` and ``2`` frames can be chosen,
 - and ``makeIdxMap`` lets the running workers cover the full image one valid pixel index at a time.
 
 So the important distinction is:

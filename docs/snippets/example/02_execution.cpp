@@ -13,6 +13,11 @@ using namespace alpaka;
 TEST_CASE("tutorial enumerate backends and executors", "[docs]")
 {
     // BEGIN-TUTORIAL-enumerateDeviceSpec
+    // Numa aware CPU: onHost::DeviceSpec{api::host, deviceKind::numaCpu};
+    // Nvidia GPU: onHost::DeviceSpec{api::cuda, deviceKind::nvidiaGpu};
+    // Amd GPU: onHost::DeviceSpec{api::hip, deviceKind::amdGpu};
+    // Intel GPU: onHost::DeviceSpec{api::oneApi, deviceKind::intelGpu};
+    // this call selects the host Cpu
     auto deviceSpec = onHost::DeviceSpec{api::host, deviceKind::cpu};
     auto selector = onHost::makeDeviceSelector(deviceSpec);
 
