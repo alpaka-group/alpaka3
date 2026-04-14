@@ -71,7 +71,7 @@ namespace alpaka
 
         ALPAKA_SIMD_EXPR_ASSIGN_OP(+=, +)
         ALPAKA_SIMD_EXPR_ASSIGN_OP(-=, -)
-        ALPAKA_SIMD_EXPR_ASSIGN_OP(/=, -)
+        ALPAKA_SIMD_EXPR_ASSIGN_OP(/=, /)
         ALPAKA_SIMD_EXPR_ASSIGN_OP(*=, *)
 
 
