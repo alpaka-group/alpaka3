@@ -143,6 +143,14 @@ Wait for all operations in the queue
     :end-before: END-CHEATSHEET-waitQueue
     :dedent:
 
+Check if a queue is empty
+~~~~~~~~~~~~~~~~~~~~~~~~~
+  .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp
+    :language: cpp
+    :start-after: BEGIN-CHEATSHEET-isQueueEmpty
+    :end-before: END-CHEATSHEET-isQueueEmpty
+    :dedent:
+
 Create an event
 ~~~~~~~~~~~~~~~
   .. literalinclude:: ../../snippets/cheatsheet/cheatsheet.cpp

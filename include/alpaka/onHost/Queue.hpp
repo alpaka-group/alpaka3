@@ -56,7 +56,7 @@ namespace alpaka::onHost
 
         constexpr alpaka::concepts::QueueKind auto getQueueKind() const
         {
-            return T_DeviceKind{};
+            return T_QueueKind{};
         }
 
         constexpr alpaka::concepts::DeviceKind auto getDeviceKind() const
@@ -222,6 +222,20 @@ namespace alpaka::onHost
         void waitFor(Event<Device<T_Api, T_DeviceKind>> const& event) const
         {
             internal::waitFor(*m_queue.get(), *event.get());
+        }
+
+        /** Checks if the queue does not have any enqueued work to process.
+         *
+         * @attention: If you enqueue work outside alpaka by using the native handle of the queue, this function is
+         * maybe not seeing this tasks and can return true even if there are unfinished tasks.
+         * If you need the guarantee that all tasks, even enqueued tasks outside alpaka are finished you should use
+         * onHost::wait(alpaka::concepts::HasGet auto&).
+         *
+         * @return true if there are no unfinished tasks in the queue, else false.
+         */
+        bool isEmpty() const
+        {
+            return internal::isQueueEmpty(*m_queue.get());
         }
     };
 

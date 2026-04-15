@@ -41,7 +41,7 @@ namespace alpaka::onHost::internal
 
             constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
 
-            [[maybe_unused]] sycl::event ev;
+            sycl::event ev;
 
             if constexpr(dim == 2u)
             {
@@ -63,6 +63,7 @@ namespace alpaka::onHost::internal
                     dstExtentWithoutColumn.product());
             }
 
+            queue.setLastEvent(ev);
             if(queue.isBlocking())
                 ev.wait_and_throw();
         }
@@ -88,7 +89,7 @@ namespace alpaka::onHost::internal
 
             constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
 
-            [[maybe_unused]] sycl::event ev;
+            sycl::event ev;
 
             if constexpr(dim == 2u)
             {
@@ -112,6 +113,7 @@ namespace alpaka::onHost::internal
                     dstExtentWithoutColumn.product());
             }
 
+            queue.setLastEvent(ev);
             if(queue.isBlocking())
                 ev.wait_and_throw();
         }
@@ -134,8 +136,8 @@ namespace alpaka::onHost::internal
                 srcPtr = source;
             else
                 srcPtr = toVoidPtr(alpaka::onHost::data(source));
-            [[maybe_unused]] sycl::event ev = sycl_queue.memcpy(dest.getHandle(alpaka::api::oneApi), srcPtr);
-
+            sycl::event ev = sycl_queue.memcpy(dest.getHandle(alpaka::api::oneApi), srcPtr);
+            queue.setLastEvent(ev);
             if(queue.isBlocking())
                 ev.wait_and_throw();
         }
@@ -158,8 +160,8 @@ namespace alpaka::onHost::internal
                 destPtr = dest;
             else
                 destPtr = toVoidPtr(alpaka::onHost::data(dest));
-            [[maybe_unused]] sycl::event ev = sycl_queue.memcpy(destPtr, source.getHandle(alpaka::api::oneApi));
-
+            sycl::event ev = sycl_queue.memcpy(destPtr, source.getHandle(alpaka::api::oneApi));
+            queue.setLastEvent(ev);
             if(queue.isBlocking())
                 ev.wait_and_throw();
         }
@@ -336,7 +338,7 @@ namespace alpaka::onHost::internal
                 st_shared_mem_bytes + blockDynSharedMemBytes
                 <= queue.m_device->getNativeHandle().first.template get_info<sycl::info::device::local_mem_size>());
 
-            [[maybe_unused]] sycl::event ev = queue.dispatchWarpSize(
+            sycl::event ev = queue.dispatchWarpSize(
                 [&](auto warpSize) requires std::same_as<
                     std::integral_constant<
                         typename ALPAKA_TYPEOF(warpSize)::value_type,
@@ -374,6 +376,7 @@ namespace alpaka::onHost::internal
                         });
                 });
 
+            queue.setLastEvent(ev);
             if(queue.isBlocking())
                 ev.wait_and_throw();
         }

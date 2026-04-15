@@ -224,6 +224,11 @@ auto main() -> int
         queue.enqueueHostFnDeferred(task);
         // END-CHEATSHEET-enqueueHostTask
 
+        // BEGIN-CHEATSHEET-isQueueEmpty
+        bool isQueueEmpty = queue.isEmpty();
+        // END-CHEATSHEET-isQueueEmpty
+        alpaka::unused(isQueueEmpty);
+
         // BEGIN-CHEATSHEET-waitQueue
         onHost::wait(queue);
         // END-CHEATSHEET-waitQueue

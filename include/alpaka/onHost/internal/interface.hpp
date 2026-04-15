@@ -171,6 +171,23 @@ namespace alpaka::onHost
             return IsEventComplete::Op<ALPAKA_TYPEOF(any)>{}(any);
         }
 
+        struct IsQueueEmpty
+        {
+            template<typename T_Queue>
+            struct Op
+            {
+                bool operator()(T_Queue& queue)
+                {
+                    return queue.isQueueEmpty();
+                }
+            };
+        };
+
+        inline bool isQueueEmpty(auto& queue)
+        {
+            return IsQueueEmpty::Op<ALPAKA_TYPEOF(queue)>{}(queue);
+        }
+
         struct Enqueue
         {
             template<

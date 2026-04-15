@@ -79,6 +79,14 @@ namespace alpaka::onHost
             uint32_t m_numaIdx = 0u;
             core::CallbackThread m_workerThread;
             bool m_isBlocking{false};
+            /** Flag to show if a blocking tasks is executed
+             *
+             * This variable is only used if m_isBlocking == true.
+             *
+             * state: If true a thread is executing a blocking tasks, else false.
+             */
+            std::atomic<bool> m_isBlockingTaskExecuted{false};
+
             /** Mutex to ensure sequential execution of tasks and operation if the queue is blocking.
              *
              * For non-blocking queue @c m_workerThread is taking care of the execution order
@@ -99,6 +107,7 @@ namespace alpaka::onHost
                 if(m_isBlocking)
                 {
                     std::lock_guard<std::mutex> lk(m_mutex);
+                    m_isBlockingTaskExecuted = true;
                     fn();
                     // silent tsan warnings: The promise is fulfilled directly and only a future which is true is
                     // returned, there can not be a data race in between.
@@ -113,6 +122,7 @@ namespace alpaka::onHost
 #if defined(__GNUC__) && !defined(__clang__)
 #    pragma GCC diagnostic pop
 #endif
+                    m_isBlockingTaskExecuted = false;
                     // to keep the uniform interface with the non-blocking case,
                     // return by moving the f since it is move-only
                     return f;
@@ -234,6 +244,30 @@ namespace alpaka::onHost
                 return this->shared_from_this();
             }
 
+            friend struct internal::IsQueueEmpty;
+
+            /** Checks if the queue is empty
+             *
+             * If m_isBlocking is true, only tasks will be taken into account, events will be ignored they could not
+             * influence the usage of isQueueEmpty. if m_isBlocking is false, events will be taken into account because
+             * they are handled as normal tasks.
+             *
+             * @return true if no tasks is executed else false
+             */
+            bool isQueueEmpty() const
+            {
+                ALPAKA_LOG_FUNCTION(onHost::logger::queue);
+                if(m_isBlocking)
+                {
+                    // check if the queue is currently executing a blocking task
+                    return !m_isBlockingTaskExecuted;
+                }
+                else
+                {
+                    return m_workerThread.isEmpty();
+                }
+            }
+
             friend struct onHost::internal::GetDevice;
 
             friend struct internal::Wait;
@@ -254,8 +288,13 @@ namespace alpaka::onHost
             void operator()(cpu::Queue<T_Device>& queue) const
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
-                // enqueue an empty task as marker and wait for the future
-                queue.submit([]() {}).wait();
+                /* If empty -> Enqueue an empty task as marker and wait for the future
+                 * else there is no need to wait
+                 */
+                if(queue.isQueueEmpty() == false)
+                {
+                    queue.submit([]() {}).wait();
+                }
             }
         };
 

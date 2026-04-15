@@ -159,6 +159,20 @@ namespace alpaka::onHost
                 conditionalWait();
             }
 
+            friend struct internal::IsQueueEmpty;
+
+            bool isQueueEmpty() const
+            {
+                ALPAKA_LOG_FUNCTION(onHost::logger::queue);
+
+                typename ApiInterface::Error_t ret = ApiInterface::success;
+                ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK_IGNORE(
+                    ApiInterface,
+                    ret = ApiInterface::streamQuery(getNativeHandle()),
+                    ApiInterface::errorNotReady);
+                return (ret == ApiInterface::success);
+            }
+
             friend struct onHost::internal::GetDevice;
 
             friend struct alpaka::internal::GetApi;

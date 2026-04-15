@@ -126,6 +126,12 @@ namespace alpaka::core
             return f;
         }
 
+        bool isEmpty() const
+        {
+            std::unique_lock<std::mutex> lock{m_state->m_mutex};
+            return m_state->m_tasks.empty();
+        }
+
     private:
         std::jthread m_thread;
         /** Hold data shared between this call and the thread processing the tasts. */

@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <future>
+#include <shared_mutex>
 #include <sstream>
 #include <type_traits>
 
@@ -262,15 +263,65 @@ namespace alpaka::onHost
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::event + onHost::logger::queue);
                 sycl::event sycl_event = event.getNativeHandle();
-                [[maybe_unused]] sycl::event ev
-                    = m_queue.submit([sycl_event](sycl::handler& cgh) { cgh.depends_on(sycl_event); });
+                sycl::event ev = m_queue.submit([sycl_event](sycl::handler& cgh) { cgh.depends_on(sycl_event); });
+                setLastEvent(ev);
                 if(isBlocking())
                     ev.wait_and_throw();
             }
 
+            friend struct internal::IsQueueEmpty;
+
+            /** Test of all tasks in the queue are finished
+             *
+             * @attention We are testing for the last event of last enqueued alpaka event or action. The function
+             * cannot check events that were queued directly into the native queue, bypassing alpaka.
+             */
+            bool isQueueEmpty() const
+            {
+                ALPAKA_LOG_FUNCTION(onHost::logger::queue);
+
+                auto const status = getLastEvent().template get_info<sycl::info::event::command_execution_status>();
+                return status == sycl::info::event_command_status::complete;
+            }
+
+            //! Thread safe getter for the last sycl event.
+            sycl::event getLastEvent() const
+            {
+                std::shared_lock<std::shared_mutex> lock{m_eventGuard};
+                return m_lastEvent;
+            }
+
+            /** Thread safe setter for the last sycl event
+             *
+             * To track dependencies this method must be called with any event returned by native sycl calls.
+             */
+            void setLastEvent(sycl::event const& ev) const
+            {
+                std::unique_lock<std::shared_mutex> lock{m_eventGuard};
+                m_lastEvent = ev;
+            }
+
+            friend struct alpaka::onHost::internal::Memset;
+            friend struct alpaka::onHost::internal::Memcpy;
+            friend struct alpaka::onHost::internal::MemcpyDeviceGlobal;
+            friend struct alpaka::onHost::internal::Alloc;
+            friend struct alpaka::onHost::internal::AllocDeferred;
+            friend struct alpaka::onHost::internal::AllocMapped;
+            friend struct alpaka::onHost::internal::Fill;
+
             Handle<T_Device> m_device;
             uint32_t m_idx = 0u;
             sycl::queue m_queue;
+            // secure that two threads can change the event at the same time
+            mutable std::shared_mutex m_eventGuard;
+            /** Event which is representing the last enqueued task/action by alpaka
+             *
+             * @attention You should not use the event directly, use always getLastEvent() or setLastEvent().
+             * Tasks enqueued via the native handle outside of alpaka, will not be tracked by this event, therefore it
+             * can be possible that the queue is not empty but the event is already marked as complete. If you need to
+             * track also tasks enqueued outside of alpaka you should use onHost::wait(auto&&).
+             */
+            mutable sycl::event m_lastEvent;
             core::CallbackThread m_callBackThread;
             bool m_isBlocking{false};
         };
@@ -289,7 +340,7 @@ namespace alpaka::onHost
              * time. Capturing the queue as handle (shared pointer) will result into a deadlock because the native sycl
              * host task is not allowed to destruct the alpaka3, we call in the destructor of the queue 'wait for the
              * native sycl queue' which is than producing the deadlock.*/
-            [[maybe_unused]] sycl::event ev = queue.m_queue.submit(
+            sycl::event ev = queue.m_queue.submit(
                 [&queue, task](sycl::handler& cgh)
                 {
                     cgh.host_task(
@@ -299,6 +350,7 @@ namespace alpaka::onHost
                             f.wait();
                         });
                 });
+            queue.setLastEvent(ev);
             if(queue.isBlocking())
                 ev.wait_and_throw();
         }
@@ -317,11 +369,12 @@ namespace alpaka::onHost
              * time. Capturing the queue as handle (shared pointer) will result into a deadlock because the native sycl
              * host task is not allowed to destruct the alpaka3, we call in the destructor of the queue 'wait for the
              * native sycl queue' which is than producing the deadlock.*/
-            [[maybe_unused]] sycl::event ev = queue.m_queue.submit(
+            sycl::event ev = queue.m_queue.submit(
                 [&queue, task](sycl::handler& cgh)
                 {
                     cgh.host_task([&queue, task]() { queue.m_callBackThread.submit([t = std::move(task)] { t(); }); });
                 });
+            queue.setLastEvent(ev);
             if(queue.isBlocking())
                 ev.wait_and_throw();
         }
@@ -333,9 +386,11 @@ namespace alpaka::onHost
         void operator()(syclGeneric::Queue<T_Device>& queue, T_Event& event) const
         {
             ALPAKA_LOG_FUNCTION(onHost::logger::event + onHost::logger::queue);
+
+            /* We do not use the last event of the queue itself because creating an emulated event allows to see newly
+             * submitted tasks add to the native sycl queue outside alpaka. */
             sycl::event emulatedEvent = queue.m_queue.submit([](sycl::handler& cgh) { cgh.single_task([]() {}); });
             event.setEvent(emulatedEvent);
-
             if(queue.isBlocking())
                 emulatedEvent.wait_and_throw();
         }
@@ -351,10 +406,11 @@ namespace alpaka::onHost
             ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
             // TODO: implement generic version for multidimensional memory
             sycl::queue sycl_queue = queue.getNativeHandle();
-            [[maybe_unused]] sycl::event ev = sycl_queue.memset(
+            sycl::event ev = sycl_queue.memset(
                 internal::Data::data(dest),
                 byteValue,
                 extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
+            queue.setLastEvent(ev);
             if(queue.isBlocking())
                 ev.wait_and_throw();
         }
@@ -373,10 +429,11 @@ namespace alpaka::onHost
             ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
             // TODO: implement generic version for multidimensional memory
             sycl::queue sycl_queue = queue.getNativeHandle();
-            [[maybe_unused]] sycl::event ev = sycl_queue.memcpy(
+            sycl::event ev = sycl_queue.memcpy(
                 toVoidPtr(internal::Data::data(dest)),
                 toVoidPtr(internal::Data::data(source)),
                 extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
+            queue.setLastEvent(ev);
             if(queue.isBlocking())
                 ev.wait_and_throw();
         }
@@ -396,7 +453,8 @@ namespace alpaka::onHost
         {
             ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
             sycl::queue sycl_queue = queue.getNativeHandle();
-            [[maybe_unused]] sycl::event ev = sycl_queue.fill(internal::Data::data(dest), elementValue, extents.x());
+            sycl::event ev = sycl_queue.fill(internal::Data::data(dest), elementValue, extents.x());
+            queue.setLastEvent(ev);
             if(queue.isBlocking())
                 ev.wait_and_throw();
         }
