@@ -174,7 +174,8 @@ namespace alpaka::example::nBody
 
         auto const numChunks = divCeil(Vec{extents.x()}, chunkSize);
 
-        // The frame spec describes the logical parallelism exposed to the kernel, not the exact backend block/grid.
+        // The frame spec describes the logical parallelism exposed to the kernel, not the exact mapping on the threads
+        // and the blocks of the backend.
         auto const frameSpec = FrameSpec{numChunks, chunkSize};
 
         // Make an instance of the kernel object to use later
