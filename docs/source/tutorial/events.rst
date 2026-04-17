@@ -16,7 +16,7 @@ Basic Rules
 Creating an Event
 -----------------
 
-  .. literalinclude:: ../../snippets/example/08_events.cpp
+  .. literalinclude:: ../../snippets/example/160_events.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-eventCreation
     :end-before: END-TUTORIAL-eventCreation
@@ -27,7 +27,7 @@ This records a point in ``queue0`` after the earlier tasks in that queue.
 Waiting From Another Queue
 --------------------------
 
-  .. literalinclude:: ../../snippets/example/08_events.cpp
+  .. literalinclude:: ../../snippets/example/160_events.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-eventWait
     :end-before: END-TUTORIAL-eventWait
@@ -40,7 +40,6 @@ When to Use Which Primitive
 
 - Use ``onHost::wait(queue)`` when the host must read or modify results after queued work.
 - Use an event plus ``waitFor`` when one queue depends on another queue.
-- Use block-level synchronization such as ``onAcc::syncBlockThreads`` only inside kernels, never as a host-side substitute.
 
 For beginners, the most important habit is to be explicit about synchronization.
 Most bugs in parallel programs are not arithmetic mistakes but ordering mistakes.
@@ -51,9 +50,9 @@ Complete Source File
 .. raw:: html
 
    <details class="full-source">
-   <summary>08_events.cpp</summary>
+   <summary>160_events.cpp</summary>
 
-.. filteredliteralinclude:: ../../snippets/example/08_events.cpp
+.. filteredliteralinclude:: ../../snippets/example/160_events.cpp
    :language: cpp
    :linenos:
 

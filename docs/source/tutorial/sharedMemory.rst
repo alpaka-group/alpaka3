@@ -25,7 +25,7 @@ A Single Shared Value
 Not every shared-memory kernel needs a tile. Sometimes one shared scalar is enough.
 The next example computes one block-local sum in a shared variable.
 
-  .. literalinclude:: ../../snippets/example/16_sharedMemory.cpp
+  .. literalinclude:: ../../snippets/example/120_sharedMemory.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-sharedScalarKernel
     :end-before: END-TUTORIAL-sharedScalarKernel
@@ -42,7 +42,7 @@ A Small Tiled Example
 The following kernel loads one frame-shaped tile into shared memory, synchronizes the block, and then writes that tile in
 reverse order.
 
-  .. literalinclude:: ../../snippets/example/16_sharedMemory.cpp
+  .. literalinclude:: ../../snippets/example/120_sharedMemory.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-sharedKernel
     :end-before: END-TUTORIAL-sharedKernel
@@ -65,7 +65,7 @@ The same structure is what you would use in more realistic kernels:
 Launching a Shared-Memory Kernel
 --------------------------------
 
-  .. literalinclude:: ../../snippets/example/16_sharedMemory.cpp
+  .. literalinclude:: ../../snippets/example/120_sharedMemory.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-sharedLaunch
     :end-before: END-TUTORIAL-sharedLaunch
@@ -87,7 +87,7 @@ Dynamic Size Through a Kernel Member
 The most direct option is to give the kernel object a public ``uint32_t dynSharedMemBytes`` member.
 This works well when the required size is already known when the kernel object is created.
 
-  .. literalinclude:: ../../snippets/example/16_sharedMemory.cpp
+  .. literalinclude:: ../../snippets/example/120_sharedMemory.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-dynSharedMemberKernel
     :end-before: END-TUTORIAL-dynSharedMemberKernel
@@ -95,15 +95,11 @@ This works well when the required size is already known when the kernel object i
 
 When you launch that kernel, set the byte count in the kernel object itself.
 
-  .. code-block:: cpp
-
-    auto frameSpec = onHost::FrameSpec{1u, CVec<uint32_t, 8u>{}};
-    queue.enqueue(
-        frameSpec,
-        KernelBundle{
-            DynamicReverseKernel{static_cast<uint32_t>(hostInput.size() * sizeof(int))},
-            outputBuffer,
-            inputBuffer});
+  .. literalinclude:: ../../snippets/example/120_sharedMemory.cpp
+    :language: cpp
+    :start-after: BEGIN-TUTORIAL-dynSharedMemberLaunch
+    :end-before: END-TUTORIAL-dynSharedMemberLaunch
+    :dedent:
 
 This form is simple and readable, but it is intentionally limited: the size can only depend on data you put into the kernel object.
 
@@ -113,7 +109,7 @@ Dynamic Size Through ``BlockDynSharedMemBytes``
 When the size should depend on the executor, the thread specification, or the kernel arguments, alpaka uses a trait specialization.
 That is what the unit tests exercise as the second dynamic-shared-memory path.
 
-  .. literalinclude:: ../../snippets/example/16_sharedMemory.cpp
+  .. literalinclude:: ../../snippets/example/120_sharedMemory.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-dynSharedTraitSpec
     :end-before: END-TUTORIAL-dynSharedTraitSpec
@@ -121,7 +117,7 @@ That is what the unit tests exercise as the second dynamic-shared-memory path.
 
 The kernel itself still uses ``getDynSharedMem`` in the normal way.
 
-  .. literalinclude:: ../../snippets/example/16_sharedMemory.cpp
+  .. literalinclude:: ../../snippets/example/120_sharedMemory.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-dynSharedTraitKernel
     :end-before: END-TUTORIAL-dynSharedTraitKernel
@@ -179,9 +175,9 @@ Complete Source File
 .. raw:: html
 
    <details class="full-source">
-   <summary>16_sharedMemory.cpp</summary>
+   <summary>120_sharedMemory.cpp</summary>
 
-.. filteredliteralinclude:: ../../snippets/example/16_sharedMemory.cpp
+.. filteredliteralinclude:: ../../snippets/example/120_sharedMemory.cpp
    :language: cpp
    :linenos:
 

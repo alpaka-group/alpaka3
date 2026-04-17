@@ -1,5 +1,5 @@
-Start Your First Kernel
-=======================
+Kernel
+======
 
 After selecting a device, creating a queue, and allocating memory, the next step is to launch work on the device.
 In *alpaka*, the simplest useful kernel is usually just a small function object plus a host-side launch with a ``FrameSpec``.
@@ -24,7 +24,7 @@ Most first kernels in alpaka end up looking almost the same:
 - Work distribution is expressed with ``onAcc::makeIdxMap(...)``.
 - The kernel body only talks about data indices, not about raw block and thread ids.
 
-  .. literalinclude:: ../../snippets/example/12_kernelIntro.cpp
+  .. literalinclude:: ../../snippets/example/050_kernel.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-kernelStructure
     :end-before: END-TUTORIAL-kernelStructure
@@ -40,22 +40,45 @@ Launching the Kernel
 On the host side, the pattern is straightforward:
 
 1. Allocate buffers on the compute device.
-2. Copy input data to the device.
-3. Choose a frame specification.
-4. Enqueue the kernel.
-5. Copy the result back and wait for completion before reading it.
 
-  .. literalinclude:: ../../snippets/example/12_kernelIntro.cpp
+  .. literalinclude:: ../../snippets/example/050_kernel.cpp
+    :language: cpp
+    :start-after: BEGIN-TUTORIAL-allocateBuffers
+    :end-before: END-TUTORIAL-allocateBuffers
+    :dedent:
+
+2. Copy input data to the device.
+
+  .. literalinclude:: ../../snippets/example/050_kernel.cpp
+    :language: cpp
+    :start-after: BEGIN-TUTORIAL-copyToDevice
+    :end-before: END-TUTORIAL-copyToDevice
+    :dedent:
+
+3. Choose a frame specification.
+
+  .. literalinclude:: ../../snippets/example/050_kernel.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-kernelFrameSpec
     :end-before: END-TUTORIAL-kernelFrameSpec
     :dedent:
 
-  .. literalinclude:: ../../snippets/example/12_kernelIntro.cpp
+4. Enqueue the kernel.
+
+  .. literalinclude:: ../../snippets/example/050_kernel.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-kernelLaunch
     :end-before: END-TUTORIAL-kernelLaunch
     :dedent:
+
+5. Copy the result back and wait for completion before reading it.
+
+  .. literalinclude:: ../../snippets/example/050_kernel.cpp
+    :language: cpp
+    :start-after: BEGIN-TUTORIAL-copyFromDevice
+    :end-before: END-TUTORIAL-copyFromDevice
+    :dedent:
+
 
 The queue can be non-blocking, so ``alpaka::onHost::wait(queue)`` is the point where the host knows the device work is finished.
 Without that synchronization, reading the result on the host can race with the running kernel.
@@ -73,7 +96,7 @@ Together, frame count and frame extent form the ``FrameSpec``.
 That is the maximum parallel structure exposed to the kernel.
 It is not a promise that the total problem size is exactly equal to ``frameCount * frameExtent``.
 It is also not a promise that the launch will use exactly ``frameCount`` thread blocks of size ``frameExtent``.
-If the frame extent is given as a compile-time ``CVec``, that extent is also available as compile-time information
+If the frame extent is given as a compile-time :doc:`CVec <vector>`, that extent is also available as compile-time information
 inside the kernel.
 
 This is the important beginner picture:
@@ -93,7 +116,7 @@ Choosing the Correct Frame Specification
 For a first implementation, frame selection should be boring.
 The host chooses how much work is grouped into one frame, and the kernel then iterates over the valid data indices assigned to it.
 
-  .. literalinclude:: ../../snippets/example/12_kernelIntro.cpp
+  .. literalinclude:: ../../snippets/example/050_kernel.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-kernelFrameSpec
     :end-before: END-TUTORIAL-kernelFrameSpec
@@ -115,6 +138,8 @@ You do not start by hand-writing a global-index formula and hoping the launch ex
 Instead, you choose a sensible frame shape and let ``makeIdxMap`` carry that parallelism across the full problem range.
 
 In practice, choose the frame from the data layout first and only tune it later if profiling gives you a reason.
+The same ``FrameSpec`` can run on different backends, but it may not be equally good everywhere.
+A shape that feels natural for CUDA or HIP is running correctly on CPU backends, just with different performance characteristics.
 
 Once you are comfortable with this basic launch style, the next important alpaka step is :doc:`chunked`, where frames are treated as reusable tiles of work.
 
@@ -167,9 +192,9 @@ Complete Source File
 .. raw:: html
 
    <details class="full-source">
-   <summary>12_kernelIntro.cpp</summary>
+   <summary>050_kernel.cpp</summary>
 
-.. filteredliteralinclude:: ../../snippets/example/12_kernelIntro.cpp
+.. filteredliteralinclude:: ../../snippets/example/050_kernel.cpp
    :language: cpp
    :linenos:
 

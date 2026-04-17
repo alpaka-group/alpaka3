@@ -24,7 +24,7 @@ The first example follows the shared-memory ordering pattern from alpaka's unit 
 One thread publishes two values into block-local shared memory.
 The fence guarantees that the write to ``shared[0]`` becomes visible before the later write to ``shared[1]`` is observed as published.
 
-  .. literalinclude:: ../../snippets/example/34_memFence.cpp
+  .. literalinclude:: ../../snippets/example/180_memFence.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-memFenceBlockKernel
     :end-before: END-TUTORIAL-memFenceBlockKernel
@@ -33,7 +33,7 @@ The fence guarantees that the write to ``shared[0]`` becomes visible before the 
 Launching that kernel looks ordinary.
 The important part is the fence inside the kernel, not the host-side launch code.
 
-  .. literalinclude:: ../../snippets/example/34_memFence.cpp
+  .. literalinclude:: ../../snippets/example/180_memFence.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-memFenceBlockLaunch
     :end-before: END-TUTORIAL-memFenceBlockLaunch
@@ -48,13 +48,13 @@ The consumer spins on the atomic ready flag, issues an acquire fence, and then r
 This example intentionally uses ``ThreadSpec`` instead of ``FrameSpec`` because the algorithm needs an exact guarantee
 about how many thread blocks and threads are launched.
 
-  .. literalinclude:: ../../snippets/example/34_memFence.cpp
+  .. literalinclude:: ../../snippets/example/180_memFence.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-memFenceDeviceKernel
     :end-before: END-TUTORIAL-memFenceDeviceKernel
     :dedent:
 
-  .. literalinclude:: ../../snippets/example/34_memFence.cpp
+  .. literalinclude:: ../../snippets/example/180_memFence.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-memFenceDeviceLaunch
     :end-before: END-TUTORIAL-memFenceDeviceLaunch
@@ -73,6 +73,7 @@ Practical Advice
 - Keep the publication protocol simple: payload first, fence second, atomic flag update last.
 - Prefer ``scope::block`` over ``scope::device`` when block-local visibility is enough.
 - Use the weakest memory order that expresses the algorithm clearly. ``release`` / ``acquire`` is often the right pair for producer/consumer publication.
+- The meaning stays the same across backends, but the runtime cost can differ. Write the clearest correct protocol first, then measure.
 
 Common Mistakes
 ---------------
@@ -87,7 +88,6 @@ Where To Go Next
 
 - read :doc:`atomics` for conflicting updates
 - read :doc:`sharedMemory` for block-local cooperation patterns
-- read :doc:`backendDifferences` if you want to understand how the same semantics feel across different backends
 
 Complete Source File
 --------------------
@@ -95,9 +95,9 @@ Complete Source File
 .. raw:: html
 
    <details class="full-source">
-   <summary>34_memFence.cpp</summary>
+   <summary>180_memFence.cpp</summary>
 
-.. filteredliteralinclude:: ../../snippets/example/34_memFence.cpp
+.. filteredliteralinclude:: ../../snippets/example/180_memFence.cpp
    :language: cpp
    :linenos:
 

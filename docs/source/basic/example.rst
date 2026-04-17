@@ -8,7 +8,7 @@ Play online with Compiler Explorer
 
 The followed example can be executed online using `Godbolt Compiler Explorer <https://godbolt.org/z/K8q5q66Mn>`__. [#f1]_
 
-.. literalinclude:: ../../snippets/example/30_elementWiseMultiplication.cpp
+.. literalinclude:: ../../snippets/example/000_elementWiseMultiplication.cpp
    :language: cpp
    :start-after: BEGIN-EXAMPLE-elementWiseMultiplication
    :end-before: END-EXAMPLE-elementWiseMultiplication
@@ -64,19 +64,3 @@ In the CMake configuration phase of the project, you must activate the accelerat
 .. A complete list of CMake flags for the  accelerator can be found :doc:`here </advanced/cmake>`.
 
 If the configuration was successful and CMake found the CUDA SDK, the C++ api `cuda` and the executor `gpuCuda` is available.
-
-Complete Source File
---------------------
-
-.. raw:: html
-
-   <details class="full-source">
-   <summary>30_elementWiseMultiplication.cpp</summary>
-
-.. filteredliteralinclude:: ../../snippets/example/30_elementWiseMultiplication.cpp
-   :language: cpp
-   :linenos:
-
-.. raw:: html
-
-   </details>

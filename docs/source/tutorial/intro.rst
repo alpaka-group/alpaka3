@@ -16,17 +16,7 @@ You are learning how the same kinds of programs grow from memory and views into 
 
 To keep the code readable, the tutorial uses ``using namespace alpaka;`` in the examples.
 
-Recommended Reading Order
--------------------------
-
-The tutorial is intended to be read in roughly this order:
-
-1. :doc:`foundations`
-2. :doc:`kernels`
-3. :doc:`numerics`
-4. :doc:`migration`
-
-If you want one page that clarifies the central concepts before the first kernel, read :doc:`mentalModel` near the end of the foundations section.
+The main idea is that the Getting Started section should get you to a first working alpaka application quickly.
+After that, the tutorial assumes you already have a small running program and are ready to read feature-focused examples in more detail.
 
 If you are new to parallel programming, treat the early chapters as the core path and the later ones as tools you add when the algorithm actually needs them.
-You do not need warp functions, shared-memory tiles, or custom atomics to write your first correct alpaka kernel.

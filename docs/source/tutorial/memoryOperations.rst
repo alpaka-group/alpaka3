@@ -12,15 +12,24 @@ copy an image to the device, clear a histogram buffer, move results back to the 
 
 - ``alpaka::onHost::memcpy()`` always works with the entire buffer unless you specify the extent. The extent defines the number of elements, **not** the size in bytes.
 
-  .. literalinclude:: ../../snippets/example/10_memory.cpp
+  .. literalinclude:: ../../snippets/example/041_memoryOperations.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-memcpy
     :end-before: END-TUTORIAL-memcpy
     :dedent:
 
+  The optional extent overload is a separate operation, not an implicit detail.
+  The next snippet copies only the first four elements.
+
+  .. literalinclude:: ../../snippets/example/041_memoryOperations.cpp
+    :language: cpp
+    :start-after: BEGIN-TUTORIAL-memcpyExtent
+    :end-before: END-TUTORIAL-memcpyExtent
+    :dedent:
+
 - You can also set all values of a buffer to a specific value using ``alpaka::onHost::fill()``.
 
-  .. literalinclude:: ../../snippets/example/10_memory.cpp
+  .. literalinclude:: ../../snippets/example/041_memoryOperations.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-fill
     :end-before: END-TUTORIAL-fill
@@ -30,10 +39,18 @@ copy an image to the device, clear a histogram buffer, move results back to the 
   This is typically used to set all bytes to zero.
   **Attention:** The optional extent still defines the number of elements and **not** the size in bytes.
 
-  .. literalinclude:: ../../snippets/example/10_memory.cpp
+  .. literalinclude:: ../../snippets/example/041_memoryOperations.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-memset
     :end-before: END-TUTORIAL-memset
+    :dedent:
+
+  If you pass an extent, only that many elements are affected.
+
+  .. literalinclude:: ../../snippets/example/041_memoryOperations.cpp
+    :language: cpp
+    :start-after: BEGIN-TUTORIAL-memsetExtent
+    :end-before: END-TUTORIAL-memsetExtent
     :dedent:
 
 Complete Source File
@@ -42,9 +59,9 @@ Complete Source File
 .. raw:: html
 
    <details class="full-source">
-   <summary>10_memory.cpp</summary>
+   <summary>041_memoryOperations.cpp</summary>
 
-.. filteredliteralinclude:: ../../snippets/example/10_memory.cpp
+.. filteredliteralinclude:: ../../snippets/example/041_memoryOperations.cpp
    :language: cpp
    :linenos:
 

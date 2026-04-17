@@ -341,6 +341,7 @@ Numa Awareness
      Requires the dependency `hwloc`.
 
      **without CMake:**  Defining the preprocessor define `ALPAKA_HOST_MEM_PINNING_CAN_FAIL` to allow that memory pinning can fail without an exception.
+
 Intel oneAPI Threading Building Blocks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

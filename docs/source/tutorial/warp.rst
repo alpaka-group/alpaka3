@@ -29,7 +29,7 @@ A Warp Reduction With ``shflDown``
 The following example reduces one value per lane to one value per warp.
 It still uses ``makeIdxMap`` to assign block-local work, but the reduction inside the warp is handled with shuffle operations.
 
-  .. literalinclude:: ../../snippets/example/26_warp.cpp
+  .. literalinclude:: ../../snippets/example/190_warp.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-warpKernel
     :end-before: END-TUTORIAL-warpKernel
@@ -38,7 +38,7 @@ It still uses ``makeIdxMap`` to assign block-local work, but the reduction insid
 Launching the Kernel
 --------------------
 
-  .. literalinclude:: ../../snippets/example/26_warp.cpp
+  .. literalinclude:: ../../snippets/example/190_warp.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-warpLaunch
     :end-before: END-TUTORIAL-warpLaunch
@@ -50,6 +50,7 @@ Important rules:
 - Use the actual warp size reported by the backend instead of hard-coding ``32``.
 - Prefer warp functions for cooperation inside a subgroup, not for general global indexing.
 - On host backends, the warp size can be ``1``. The code still compiles and runs, but the subgroup behavior is naturally trivial there.
+- Treat warp code as an optimization tool, not as the default starting point for portable kernels.
 
 Beyond ``shflDown``
 -------------------
@@ -69,9 +70,9 @@ Complete Source File
 .. raw:: html
 
    <details class="full-source">
-   <summary>26_warp.cpp</summary>
+   <summary>190_warp.cpp</summary>
 
-.. filteredliteralinclude:: ../../snippets/example/26_warp.cpp
+.. filteredliteralinclude:: ../../snippets/example/190_warp.cpp
    :language: cpp
    :linenos:
 

@@ -22,7 +22,7 @@ That is the same shape as a brightness-and-contrast adjustment on one grayscale 
 Defining a Dispatchable Function
 --------------------------------
 
-  .. literalinclude:: ../../snippets/example/38_vendorInterop.cpp
+  .. literalinclude:: ../../snippets/example/200_vendorInterop.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-vendorSymbol
     :end-before: END-TUTORIAL-vendorSymbol
@@ -34,7 +34,7 @@ The fallback choice tells alpaka that it may call the generic alpaka implementat
 Registering a Generic alpaka Fallback
 -------------------------------------
 
-  .. literalinclude:: ../../snippets/example/38_vendorInterop.cpp
+  .. literalinclude:: ../../snippets/example/200_vendorInterop.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-vendorFallback
     :end-before: END-TUTORIAL-vendorFallback
@@ -44,7 +44,7 @@ This overload is the portable baseline.
 It works on every backend that can run the normal alpaka algorithm path, so it is a good default even when you later add CUDA-, HIP-, or SYCL-specific overloads.
 The affine operation itself is spelled out as a tiny named functor so the tutorial still shows the callable logic directly even though backend-compatible code cannot use the original local lambda form here:
 
-  .. literalinclude:: ../../snippets/example/38_vendorInterop.cpp
+  .. literalinclude:: ../../snippets/example/200_vendorInterop.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-vendorFunctor
     :end-before: END-TUTORIAL-vendorFunctor
@@ -53,7 +53,7 @@ The affine operation itself is spelled out as a tiny named functor so the tutori
 Registering a Backend-Specific Overload
 ---------------------------------------
 
-  .. literalinclude:: ../../snippets/example/38_vendorInterop.cpp
+  .. literalinclude:: ../../snippets/example/200_vendorInterop.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-vendorHost
     :end-before: END-TUTORIAL-vendorHost
@@ -73,7 +73,7 @@ The important part is the ``Spec<api, deviceKind>`` type:
 Calling the Function
 --------------------
 
-  .. literalinclude:: ../../snippets/example/38_vendorInterop.cpp
+  .. literalinclude:: ../../snippets/example/200_vendorInterop.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-vendorCall
     :end-before: END-TUTORIAL-vendorCall
@@ -108,15 +108,19 @@ The caller remains pure alpaka code, while the backend-specific overload is free
 Seen from the outside, the code still reads like "apply this operation to my data."
 That is exactly the separation you want: portable call site, backend-specific implementation detail.
 
+This is also the right escape hatch when backends differ in practical capabilities or in the libraries available around them.
+Keep the first implementation backend-neutral where possible.
+If one backend genuinely benefits from a vendor path, add that path here instead of rewriting the whole kernel structure around backend-specific assumptions.
+
 Complete Source File
 --------------------
 
 .. raw:: html
 
    <details class="full-source">
-   <summary>38_vendorInterop.cpp</summary>
+   <summary>200_vendorInterop.cpp</summary>
 
-.. filteredliteralinclude:: ../../snippets/example/38_vendorInterop.cpp
+.. filteredliteralinclude:: ../../snippets/example/200_vendorInterop.cpp
    :language: cpp
    :linenos:
 

@@ -19,7 +19,7 @@ Creating a View
 
 You can create a non-owning view from a host container and then derive a subview from it.
 
-  .. literalinclude:: ../../snippets/example/11_views.cpp
+  .. literalinclude:: ../../snippets/example/070_views.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-viewCreation
     :end-before: END-TUTORIAL-viewCreation
@@ -35,7 +35,7 @@ Copying Through a View
 Views work with the usual memory operations.
 That means you can allocate device memory based on a view and copy only the relevant slice back.
 
-  .. literalinclude:: ../../snippets/example/11_views.cpp
+  .. literalinclude:: ../../snippets/example/070_views.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-viewCopy
     :end-before: END-TUTORIAL-viewCopy
@@ -57,9 +57,9 @@ Complete Source File
 .. raw:: html
 
    <details class="full-source">
-   <summary>11_views.cpp</summary>
+   <summary>070_views.cpp</summary>
 
-.. filteredliteralinclude:: ../../snippets/example/11_views.cpp
+.. filteredliteralinclude:: ../../snippets/example/070_views.cpp
    :language: cpp
    :linenos:
 

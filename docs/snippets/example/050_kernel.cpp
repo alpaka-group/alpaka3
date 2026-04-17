@@ -43,31 +43,38 @@ TEMPLATE_LIST_TEST_CASE("tutorial kernel intro vector add", "[docs]", docs::test
     onHost::concepts::Device auto device = selector.makeDevice(0);
     onHost::Queue queue = device.makeQueue();
 
-    std::vector<int> lhs(293u);
-    std::vector<int> rhs(293u);
+    // BEGIN-TUTORIAL-allocateBuffers
+    size_t numElements = 293u;
+    auto lhsBuffer = onHost::alloc<int>(device, numElements);
+    auto rhsBuffer = onHost::allocLike(device, lhsBuffer);
+    auto resultBuffer = onHost::allocLike(device, lhsBuffer);
+    // END-TUTORIAL-allocateBuffers
+
+    std::vector<int> lhs(numElements);
+    std::vector<int> rhs(numElements);
     std::iota(lhs.begin(), lhs.end(), 0);
     std::iota(rhs.begin(), rhs.end(), 1000);
     std::vector<int> result(lhs.size(), -1);
 
-    auto lhsBuffer = onHost::alloc<int>(device, static_cast<uint32_t>(lhs.size()));
-    auto rhsBuffer = onHost::allocLike(device, lhsBuffer);
-    auto resultBuffer = onHost::allocLike(device, lhsBuffer);
-
+    // BEGIN-TUTORIAL-copyToDevice
     onHost::memcpy(queue, lhsBuffer, lhs);
     onHost::memcpy(queue, rhsBuffer, rhs);
     onHost::memset(queue, resultBuffer, 0x00);
+    // END-TUTORIAL-copyToDevice
 
     // BEGIN-TUTORIAL-kernelFrameSpec
-    onHost::concepts::FrameSpec auto frameSpec
-        = onHost::getFrameSpec<int>(device, Vec{static_cast<uint32_t>(result.size())});
+    onHost::concepts::FrameSpec auto frameSpec = onHost::getFrameSpec<int>(device, Vec{numElements});
     // END-TUTORIAL-kernelFrameSpec
 
     // BEGIN-TUTORIAL-kernelLaunch
     queue.enqueue(frameSpec, KernelBundle{VectorAddKernel{}, resultBuffer, lhsBuffer, rhsBuffer});
+    // END-TUTORIAL-kernelLaunch
 
+    // BEGIN-TUTORIAL-copyFromDevice
     onHost::memcpy(queue, result, resultBuffer);
     onHost::wait(queue);
-    // END-TUTORIAL-kernelLaunch
+    // END-TUTORIAL-copyFromDevice
+
 
     for(size_t i = 0; i < result.size(); ++i)
     {

@@ -23,7 +23,7 @@ iota
 ``onHost::iota`` is the simplest algorithm in the group.
 It fills one or more output buffers with a linear sequence and is useful for initialization, debugging, and synthetic test data.
 
-  .. literalinclude:: ../../snippets/example/14_algorithms.cpp
+  .. literalinclude:: ../../snippets/example/130_algorithms.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-iota
     :end-before: END-TUTORIAL-iota
@@ -39,7 +39,7 @@ Transform
 ``onHost::transform`` is the host-side algorithm equivalent of an element-wise kernel.
 It applies a functor to one or more inputs and writes the result into an output buffer.
 
-  .. literalinclude:: ../../snippets/example/14_algorithms.cpp
+  .. literalinclude:: ../../snippets/example/130_algorithms.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-transformCall
     :end-before: END-TUTORIAL-transformCall
@@ -50,7 +50,7 @@ That wrapper is especially useful when you want scalar semantics even though the
 Because CUDA/HIP-friendly tutorial code should not rely on local lambdas here, the example uses a tiny named functor instead.
 ``onHost::transform`` still traverses the full input range itself, so the functor only describes the per-element operation.
 
-  .. literalinclude:: ../../snippets/example/14_algorithms.cpp
+  .. literalinclude:: ../../snippets/example/130_algorithms.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-transformFunctor
     :end-before: END-TUTORIAL-transformFunctor
@@ -64,7 +64,7 @@ Reduction
 Reduction writes its result into an explicit output buffer.
 That is different from ``std::reduce`` and also different from some CUDA helper libraries that hide more of the storage details.
 
-  .. literalinclude:: ../../snippets/example/14_algorithms.cpp
+  .. literalinclude:: ../../snippets/example/130_algorithms.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-reduce
     :end-before: END-TUTORIAL-reduce
@@ -91,7 +91,7 @@ Scan follows the same overall style and can use an explicit temporary buffer.
 Unlike the other algorithms in this chapter, the current scan implementation is restricted to one-dimensional data.
 That fits common prefix-sum use cases such as offsets, compaction maps, and cumulative counters, where the logical input is already a linear sequence.
 
-  .. literalinclude:: ../../snippets/example/14_algorithms.cpp
+  .. literalinclude:: ../../snippets/example/130_algorithms.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-scan
     :end-before: END-TUTORIAL-scan
@@ -114,7 +114,7 @@ Transform-Reduce
 ``transformReduce`` combines a map step with a reduction step.
 That is the natural tool for dot products, weighted sums, norms, and many “compute a value per element and then accumulate it” patterns.
 
-  .. literalinclude:: ../../snippets/example/14_algorithms.cpp
+  .. literalinclude:: ../../snippets/example/130_algorithms.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-transformReduceCall
     :end-before: END-TUTORIAL-transformReduceCall
@@ -126,7 +126,7 @@ This is the natural dot-product pattern:
 take one product per element pair, then accumulate those products into one final value.
 The backend-compatible callable itself is still small enough to show directly:
 
-  .. literalinclude:: ../../snippets/example/14_algorithms.cpp
+  .. literalinclude:: ../../snippets/example/130_algorithms.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-transformReduceFunctor
     :end-before: END-TUTORIAL-transformReduceFunctor
@@ -138,7 +138,7 @@ Generators Instead of Input Buffers
 Several alpaka algorithms also accept generators as inputs.
 That is useful when one input is synthetic, such as a linear index, and you do not want to materialize another buffer just to hold it.
 
-  .. literalinclude:: ../../snippets/example/14_algorithms.cpp
+  .. literalinclude:: ../../snippets/example/130_algorithms.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-generatorCall
     :end-before: END-TUTORIAL-generatorCall
@@ -151,7 +151,7 @@ That is useful when the extra input is really a formula rather than stored data.
 For example, you may want "value plus index" or "weight derived from the linear position" without allocating another buffer just to hold those numbers.
 The helper functor is again small enough to show directly:
 
-  .. literalinclude:: ../../snippets/example/14_algorithms.cpp
+  .. literalinclude:: ../../snippets/example/130_algorithms.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-generatorFunctor
     :end-before: END-TUTORIAL-generatorFunctor
@@ -170,25 +170,15 @@ How This Differs From STL and CUB-Style Expectations
 That extra ceremony is useful because it keeps memory placement and execution placement visible.
 Once you understand that model, the calls stop feeling verbose and start feeling predictable.
 
-Try Next
---------
-
-If you want to turn this chapter into practice, these are good small follow-up exercises:
-
-- change the transform example from squaring to ``2 * value + 1``
-- change the reduction from sum to maximum
-- use scan to build prefix offsets for a boolean "keep/discard" array
-- change the transform-reduce example into a Euclidean norm by summing ``value * value``
-
 Complete Source File
 --------------------
 
 .. raw:: html
 
    <details class="full-source">
-   <summary>14_algorithms.cpp</summary>
+   <summary>130_algorithms.cpp</summary>
 
-.. filteredliteralinclude:: ../../snippets/example/14_algorithms.cpp
+.. filteredliteralinclude:: ../../snippets/example/130_algorithms.cpp
    :language: cpp
    :linenos:
 

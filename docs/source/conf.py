@@ -5,6 +5,7 @@ import os
 import subprocess
 import shutil
 import sys
+import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "_ext")))
 
@@ -52,8 +53,66 @@ def copy_doxygen_html(app, exception):
     dst = os.path.join(app.builder.outdir, 'doxygen_dev')
     copy_doxygen(dst, src)
 
+
+def generate_math_function_families(app):
+    xml_path = os.path.abspath(os.path.join(app.confdir, "..", "doxygen", "xml", "namespacealpaka_1_1math.xml"))
+    output_dir = os.path.join(app.srcdir, "_generated")
+    output_path = os.path.join(output_dir, "math_function_families.rst")
+    excluded_names = {"floatEqualExactNoWarning"}
+    doxygen_namespace_page = "../doxygen/namespacealpaka_1_1math.html"
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    if not os.path.exists(xml_path):
+        with open(output_path, "w", encoding="utf-8") as handle:
+            handle.write("Math function list unavailable because the Doxygen XML namespace index was not found.\n")
+        return
+
+    root = ET.parse(xml_path).getroot()
+    unary = []
+    binary = []
+    ternary = []
+    mixed_output = []
+
+    for member in root.findall('.//memberdef[@kind="function"]'):
+        name = member.findtext("name")
+        if not name or name in excluded_names:
+            continue
+
+        member_id = member.get("id")
+        anchor = member_id.split("_1")[-1] if member_id else None
+        arity = len(member.findall("param"))
+        if name == "sincos":
+            mixed_output.append((name, anchor))
+        elif arity == 1:
+            unary.append((name, anchor))
+        elif arity == 2:
+            binary.append((name, anchor))
+        elif arity == 3:
+            ternary.append((name, anchor))
+
+    def format_names(names):
+        def format_entry(entry):
+            name, anchor = entry
+            if not anchor:
+                return f"``{name}``"
+            return f"`{name} <{doxygen_namespace_page}#{anchor}>`_"
+
+        return "- " + ", ".join(format_entry(entry) for entry in sorted(names)) + "\n"
+
+    with open(output_path, "w", encoding="utf-8") as handle:
+        handle.write("Unary real and complex helpers:\n\n")
+        handle.write(format_names(unary))
+        handle.write("\nBinary helpers:\n\n")
+        handle.write(format_names(binary))
+        handle.write("\nTernary helpers:\n\n")
+        handle.write(format_names(ternary))
+        handle.write("\nMixed output helpers:\n\n")
+        handle.write(format_names(mixed_output))
+
 def setup(app):
     # Hook into the 'builder-inited' event to run the function before the build starts
+    app.connect('builder-inited', generate_math_function_families)
     if not "ALPAKA_NO_SINGLE_HEADER" in os.environ:
         app.connect('build-finished', generate_single_header)
     app.connect('build-finished', copy_doxygen_html)
@@ -127,12 +186,19 @@ html_static_path = ["_static"]
 
 # modifies the HTML Sphinx Doc layout
 html_css_files = ["custom.css"]
+html_js_files = ["sidebar-reset.js"]
 
 html_logo = "../logo/alpaka.svg"
 html_theme_options = {
     "logo_only": True,
     "collapse_navigation": False,
     "navigation_depth": 2,
+}
+html_sidebars = {
+    "**": [
+        "searchbox.html",
+        "globaltoc.html",
+    ]
 }
 
 # -- Options for HTMLHelp output ---------------------------------------------

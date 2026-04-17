@@ -17,7 +17,7 @@ Which ``api`` is available depends on the CMake flags ``alpaka_DEP_*`` or, if yo
 Here we will show how to select a ``host`` device, which is always available and represents your CPU.
 If you use a combination that is not supported because the required dependency is not loaded, or because it is an invalid ``api`` and ``deviceKind`` combination, you will see a compiler error.
 
-  .. literalinclude:: ../../snippets/example/05_device.cpp
+  .. literalinclude:: ../../snippets/example/020_device.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-devSelect
     :end-before: END-TUTORIAL-devSelect
@@ -26,7 +26,7 @@ If you use a combination that is not supported because the required dependency i
 We create an object that can allocate a device of the given device kind for us, but first we need to check if there is a device available.
 Maybe there is no device available due to driver issues.
 
-  .. literalinclude:: ../../snippets/example/05_device.cpp
+  .. literalinclude:: ../../snippets/example/020_device.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-devCount
     :end-before: END-TUTORIAL-devCount
@@ -34,7 +34,7 @@ Maybe there is no device available due to driver issues.
 
 Before we take a device let's check the device properties e.g. the name and warp size.
 
-  .. literalinclude:: ../../snippets/example/05_device.cpp
+  .. literalinclude:: ../../snippets/example/020_device.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-devProperties
     :end-before: END-TUTORIAL-devProperties
@@ -42,7 +42,7 @@ Before we take a device let's check the device properties e.g. the name and warp
 
 Calling ``makeDevice()`` using the device index to obtain the device only succeeds if the device is available, else you will get a runtime exception.
 
-  .. literalinclude:: ../../snippets/example/05_device.cpp
+  .. literalinclude:: ../../snippets/example/020_device.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-devHandleCount
     :end-before: END-TUTORIAL-devHandleCount
@@ -50,13 +50,40 @@ Calling ``makeDevice()`` using the device index to obtain the device only succee
 
 The device with the api ``host`` and the device kind ``cpu`` which represents your host system CPU is always available, therefore you have a shortcut interface function available.
 
-  .. literalinclude:: ../../snippets/example/05_device.cpp
+  .. literalinclude:: ../../snippets/example/020_device.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-devHostDev
     :end-before: END-TUTORIAL-devHostDev
     :dedent:
 
-If you want to see how to enumerate all enabled backends and executors instead of choosing one device manually, continue with :doc:`execution`.
+Enumerating Devices and Executors
+---------------------------------
+
+If you do not want to choose one backend manually, alpaka can also iterate over all enabled backend combinations that are available on the current machine.
+That is useful for examples, tests, and small comparison programs where the same code should run once per available executor.
+
+  .. literalinclude:: ../../snippets/example/020_device.cpp
+    :language: cpp
+    :start-after: BEGIN-TUTORIAL-enumerateDeviceSpec
+    :end-before: END-TUTORIAL-enumerateDeviceSpec
+    :dedent:
+
+From that selector you can get:
+
+- the number of visible devices for that backend,
+- device properties such as the reported warp size,
+- and a concrete ``onHost::Device`` handle for allocation and queue creation.
+
+Many alpaka examples are written so they run once for every enabled backend that is actually available on the current machine.
+
+  .. literalinclude:: ../../snippets/example/020_device.cpp
+    :language: cpp
+    :start-after: BEGIN-TUTORIAL-enumerateBackends
+    :end-before: END-TUTORIAL-enumerateBackends
+    :dedent:
+
+This is the easiest way to think about the execution layer:
+you have one calculation, and alpaka lets you ask where that calculation can run on this machine.
 
 Complete Source File
 --------------------
@@ -64,9 +91,9 @@ Complete Source File
 .. raw:: html
 
    <details class="full-source">
-   <summary>05_device.cpp</summary>
+   <summary>020_device.cpp</summary>
 
-.. filteredliteralinclude:: ../../snippets/example/05_device.cpp
+.. filteredliteralinclude:: ../../snippets/example/020_device.cpp
    :language: cpp
    :linenos:
 

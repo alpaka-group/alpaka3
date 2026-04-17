@@ -238,6 +238,7 @@ TEMPLATE_LIST_TEST_CASE("tutorial dynamic shared memory via member", "[docs]", d
 
     onHost::memcpy(queue, inputBuffer, hostInput);
 
+    // BEGIN-TUTORIAL-dynSharedMemberLaunch
     onHost::concepts::FrameSpec auto frameSpec = onHost::FrameSpec{1u, CVec<uint32_t, 8u>{}};
     queue.enqueue(
         frameSpec,
@@ -245,6 +246,7 @@ TEMPLATE_LIST_TEST_CASE("tutorial dynamic shared memory via member", "[docs]", d
             DynamicReverseKernel{static_cast<uint32_t>(hostInput.size() * sizeof(int))},
             outputBuffer,
             inputBuffer});
+    // END-TUTORIAL-dynSharedMemberLaunch
 
     onHost::memcpy(queue, hostOutput, outputBuffer);
     onHost::wait(queue);

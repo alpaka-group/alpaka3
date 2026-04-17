@@ -1,5 +1,3 @@
-:orphan:
-
 .. only:: html
 
   .. image:: ../logo/alpaka.svg
@@ -52,15 +50,39 @@ Individual chapters are based on the information of the chapters before.
    basic/cheatsheet.rst
 
 .. toctree::
-   :caption: Tutorial
-   :maxdepth: 2
+   :caption: Tutorial - Getting Started
+   :maxdepth: 1
    :titlesonly:
 
    tutorial/intro.rst
-   tutorial/foundations.rst
-   tutorial/kernels.rst
-   tutorial/numerics.rst
-   tutorial/migration.rst
+   tutorial/vector.rst
+   tutorial/device.rst
+   tutorial/queue.rst
+   tutorial/memory.rst
+   tutorial/memoryOperations.rst
+   tutorial/kernel.rst
+
+.. toctree::
+   :caption: Tutorial - Advanced
+   :maxdepth: 1
+   :titlesonly:
+
+   tutorial/views.rst
+   tutorial/multidim.rst
+   tutorial/kernelParallelism.rst
+   tutorial/chunked.rst
+   tutorial/synchronization.rst
+   tutorial/sharedMemory.rst
+   tutorial/algorithms.rst
+   tutorial/math.rst
+   tutorial/atomics.rst
+   tutorial/events.rst
+   tutorial/random.rst
+   tutorial/memFence.rst
+   tutorial/warp.rst
+   tutorial/intrinsics.rst
+   tutorial/vendorInterop.rst
+   tutorial/miniProject.rst
 
 .. toctree::
    :caption: Advanced
@@ -69,6 +91,8 @@ Individual chapters are based on the information of the chapters before.
 
    advanced/cmake.rst
    advanced/datastorage.rst
+   advanced/migration.rst
+   advanced/performance.rst
    advanced/benchmark.rst
    advanced/crosscompile.rst
 

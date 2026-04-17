@@ -21,7 +21,6 @@ namespace alpaka::onHost
      * In contrast to `alpaka::onHost::FrameSpec`, a `ThreadSpec` is not a logical frame decomposition. It is used
      * when a kernel requires exact guarantees about the number of blocks and the size of each block.
      */
-     */
     template<
         alpaka::concepts::Vector T_NumBlocks,
         alpaka::concepts::Vector<typename T_NumBlocks::type, T_NumBlocks::dim()> T_NumThreads>

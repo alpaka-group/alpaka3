@@ -12,7 +12,7 @@ auto main() -> int
     unsigned n = 5;
 
     /* Select a device, possible combinations:
-     * host+cpu, cuda+nvidiaGpu, hip+amdGpu, oneApi+intelGpu, oneApi+cpu,
+     * host+cpu, host+numaCpu, cuda+nvidiaGpu, hip+amdGpu, oneApi+intelGpu, oneApi+cpu,
      * oneApi+amdGpu, oneApi+nvidiaGpu
      */
     auto devSelector = ap::onHost::makeDeviceSelector(ap::api::host, ap::deviceKind::cpu);

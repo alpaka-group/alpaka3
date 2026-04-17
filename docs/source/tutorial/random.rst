@@ -20,7 +20,7 @@ This chapter connects to two of the recurring tutorial examples:
 Uniform Random Numbers in a Kernel
 ----------------------------------
 
-  .. literalinclude:: ../../snippets/example/30_random.cpp
+  .. literalinclude:: ../../snippets/example/170_random.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-randomKernel
     :end-before: END-TUTORIAL-randomKernel
@@ -35,7 +35,7 @@ This example uses:
 Launching the Kernel
 --------------------
 
-  .. literalinclude:: ../../snippets/example/30_random.cpp
+  .. literalinclude:: ../../snippets/example/170_random.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-randomLaunch
     :end-before: END-TUTORIAL-randomLaunch
@@ -68,7 +68,7 @@ Tiny Monte Carlo Pi
 The following example turns that idea into a minimal alpaka workflow:
 each worker draws one point, writes ``1`` if the point falls inside the quarter circle, and then a reduction adds up all hits.
 
-  .. literalinclude:: ../../snippets/example/31_monteCarloPi.cpp
+  .. literalinclude:: ../../snippets/example/170_random.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-piKernel
     :end-before: END-TUTORIAL-piKernel
@@ -76,7 +76,7 @@ each worker draws one point, writes ``1`` if the point falls inside the quarter 
 
 The launch and accumulation step stay compact because the reduction happens on the same queue right after the kernel.
 
-  .. literalinclude:: ../../snippets/example/31_monteCarloPi.cpp
+  .. literalinclude:: ../../snippets/example/170_random.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-piLaunch
     :end-before: END-TUTORIAL-piLaunch
@@ -84,7 +84,7 @@ The launch and accumulation step stay compact because the reduction happens on t
 
 After copying back the single reduction result, the estimate itself is just the usual Monte Carlo formula.
 
-  .. literalinclude:: ../../snippets/example/31_monteCarloPi.cpp
+  .. literalinclude:: ../../snippets/example/170_random.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-piEstimate
     :end-before: END-TUTORIAL-piEstimate
@@ -108,7 +108,7 @@ Intervals
 
 The following kernel shows all four forms side by side.
 
-  .. literalinclude:: ../../snippets/example/30_random.cpp
+  .. literalinclude:: ../../snippets/example/170_random.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-randomIntervalsKernel
     :end-before: END-TUTORIAL-randomIntervalsKernel
@@ -139,7 +139,7 @@ Normal Distribution
 ``NormalReal`` generates Gaussian noise with a chosen mean and standard deviation.
 Unlike the uniform distribution, it keeps internal state, so each worker should create and use its own distribution object.
 
-  .. literalinclude:: ../../snippets/example/30_random.cpp
+  .. literalinclude:: ../../snippets/example/170_random.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-randomNormalKernel
     :end-before: END-TUTORIAL-randomNormalKernel
@@ -147,7 +147,7 @@ Unlike the uniform distribution, it keeps internal state, so each worker should 
 
 Launching the kernel is the same as before; only the kernel logic changes.
 
-  .. literalinclude:: ../../snippets/example/30_random.cpp
+  .. literalinclude:: ../../snippets/example/170_random.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-randomNormalLaunch
     :end-before: END-TUTORIAL-randomNormalLaunch
@@ -186,30 +186,17 @@ Where To Go Next
 
 - read :doc:`algorithms` with the Monte Carlo pi example in mind if you want to summarize random samples
 - read :doc:`atomics` if random samples are written into shared bins or histograms
-- read :doc:`tuning` once the first correct random kernel is working and you want to scale it up
+- read :doc:`../advanced/performance` once the first correct random kernel is working and you want to scale it up
 
-Complete Source Files
----------------------
-
-.. raw:: html
-
-   <details class="full-source">
-   <summary>30_random.cpp</summary>
-
-.. filteredliteralinclude:: ../../snippets/example/30_random.cpp
-   :language: cpp
-   :linenos:
-
-.. raw:: html
-
-   </details>
+Complete Source File
+--------------------
 
 .. raw:: html
 
    <details class="full-source">
-   <summary>31_monteCarloPi.cpp</summary>
+   <summary>170_random.cpp</summary>
 
-.. filteredliteralinclude:: ../../snippets/example/31_monteCarloPi.cpp
+.. filteredliteralinclude:: ../../snippets/example/170_random.cpp
    :language: cpp
    :linenos:
 

@@ -146,19 +146,3 @@ An ``IBuffer`` Data Storage object is pointing to memory and manages its lifetim
 When all ``IBuffer`` Data Storage objects that are pointing to the same memory are deleted, the memory is freed.
 
 Go to the `IBuffer Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IBuffer.html>`_
-
-Complete Source File
---------------------
-
-.. raw:: html
-
-   <details class="full-source">
-   <summary>terms_extents.cpp</summary>
-
-.. filteredliteralinclude:: ../../snippets/dataStorage/terms_extents.cpp
-   :language: cpp
-   :linenos:
-
-.. raw:: html
-
-   </details>

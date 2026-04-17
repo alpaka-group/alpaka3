@@ -20,7 +20,7 @@ A Small Histogram Example
 Histograms are a classic teaching example because many input elements may contribute to the same bin.
 That means a direct ``bins[bin] += 1`` would create a data race.
 
-  .. literalinclude:: ../../snippets/example/22_atomics.cpp
+  .. literalinclude:: ../../snippets/example/150_atomics.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-atomicKernel
     :end-before: END-TUTORIAL-atomicKernel
@@ -32,7 +32,7 @@ The iteration stays data-centric; only the conflicting update needs special trea
 Launching the Atomic Kernel
 ---------------------------
 
-  .. literalinclude:: ../../snippets/example/22_atomics.cpp
+  .. literalinclude:: ../../snippets/example/150_atomics.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-atomicLaunch
     :end-before: END-TUTORIAL-atomicLaunch
@@ -99,7 +99,7 @@ Where To Go Next
 ----------------
 
 - read :doc:`memFence` when atomics interact with publication or ordering protocols
-- read :doc:`tuning` when atomics become the main performance bottleneck
+- read :doc:`../advanced/performance` when atomics become the main performance bottleneck
 - read :doc:`miniProject` for a small image histogram pipeline using atomics in context
 
 Complete Source File
@@ -108,9 +108,9 @@ Complete Source File
 .. raw:: html
 
    <details class="full-source">
-   <summary>22_atomics.cpp</summary>
+   <summary>150_atomics.cpp</summary>
 
-.. filteredliteralinclude:: ../../snippets/example/22_atomics.cpp
+.. filteredliteralinclude:: ../../snippets/example/150_atomics.cpp
    :language: cpp
    :linenos:
 

@@ -126,6 +126,36 @@ TEMPLATE_LIST_TEST_CASE("memory", "[docs]", docs::test::TestBackends)
     // check that the data is valid
     for(auto const& v : hostBuffer)
         CHECK(v == 42);
+
+    onHost::memset(hostQueue, hostBuffer, 0);
+    onHost::wait(hostQueue);
+
+    // BEGIN-TUTORIAL-memcpyExtent
+    onHost::memcpy(asyncComputeQueue, hostBuffer, computeBuffer, Vec{4u});
+    // END-TUTORIAL-memcpyExtent
+    onHost::wait(asyncComputeQueue);
+
+    CHECK(hostBuffer[0] == 42);
+    CHECK(hostBuffer[1] == 42);
+    CHECK(hostBuffer[2] == 42);
+    CHECK(hostBuffer[3] == 42);
+    CHECK(hostBuffer[4] == 0);
+    CHECK(hostBuffer[5] == 0);
+
+    onHost::fill(hostQueue, hostBuffer, 42);
+    onHost::wait(hostQueue);
+
+    // BEGIN-TUTORIAL-memsetExtent
+    onHost::memset(hostQueue, hostBuffer, 0, Vec{4u});
+    // END-TUTORIAL-memsetExtent
+    onHost::wait(hostQueue);
+
+    CHECK(hostBuffer[0] == 0);
+    CHECK(hostBuffer[1] == 0);
+    CHECK(hostBuffer[2] == 0);
+    CHECK(hostBuffer[3] == 0);
+    CHECK(hostBuffer[4] == 42);
+    CHECK(hostBuffer[5] == 42);
 }
 
 TEMPLATE_LIST_TEST_CASE("memory using std::vector", "[docs]", docs::test::TestBackends)

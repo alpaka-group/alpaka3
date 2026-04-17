@@ -11,7 +11,7 @@ Choose the Kernel Shape From the Data
 If the data is naturally a matrix or image, use two-dimensional extents and two-dimensional frames.
 This avoids hand-written index decoding and makes boundary conditions easier to read.
 
-  .. literalinclude:: ../../snippets/example/18_multidimKernel.cpp
+  .. literalinclude:: ../../snippets/example/080_multidim.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-multidimFrameSpec
     :end-before: END-TUTORIAL-multidimFrameSpec
@@ -36,7 +36,7 @@ This is a common teaching example because it introduces three important ideas at
 - handling boundaries explicitly,
 - and reading neighboring cells.
 
-  .. literalinclude:: ../../snippets/example/18_multidimKernel.cpp
+  .. literalinclude:: ../../snippets/example/080_multidim.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-multidimKernelStructure
     :end-before: END-TUTORIAL-multidimKernelStructure
@@ -60,7 +60,7 @@ Launching the 2D Kernel
 The host-side launch is unchanged except that the problem extents are vectors now, and the chosen ``FrameSpec`` is
 multidimensional as well.
 
-  .. literalinclude:: ../../snippets/example/18_multidimKernel.cpp
+  .. literalinclude:: ../../snippets/example/080_multidim.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-multidimKernelLaunch
     :end-before: END-TUTORIAL-multidimKernelLaunch
@@ -74,7 +74,7 @@ What Users Usually Need To Know Early
 
 The following habits are worth learning from the start:
 
-- Keep boundary handling explicit. A branch for the border is normal in stencil-like kernels.
+- Keep boundary handling explicit. A branch for the border is int the first implementation fine.
 - Iterate over the full valid problem range, not over guessed thread ids.
 - Use multidimensional buffers when the algorithm has multidimensional neighbors.
 - Keep reads and writes easy to see. Beginners make fewer mistakes when each output element is written once.
@@ -85,7 +85,7 @@ When to Use Manual Thread and Block Indices
 
 There are cases where explicit thread or block indices are useful, for example:
 
-- implementing a very specific GPU mapping,
+- implementing a very specific CPU/GPU mapping,
 - using an algorithm that must reason about exact block-local cooperation,
 - or porting low-level CUDA/HIP code step by step.
 
@@ -99,9 +99,9 @@ Complete Source File
 .. raw:: html
 
    <details class="full-source">
-   <summary>18_multidimKernel.cpp</summary>
+   <summary>080_multidim.cpp</summary>
 
-.. filteredliteralinclude:: ../../snippets/example/18_multidimKernel.cpp
+.. filteredliteralinclude:: ../../snippets/example/080_multidim.cpp
    :language: cpp
    :linenos:
 

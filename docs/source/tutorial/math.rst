@@ -1,5 +1,5 @@
-Math Functions in Kernels
-=========================
+Math Functions
+==============
 
 Inside kernels, prefer ``alpaka::math`` over calling backend-specific math APIs or C++ `std` math functions directly.
 That keeps the code portable across host, CUDA, HIP, and SYCL backends.
@@ -16,7 +16,7 @@ Element-wise Math Kernels
 For many kernels, the structure is still the same as vector addition:
 iterate over the data with ``makeIdxMap`` and call math functions on each element.
 
-  .. literalinclude:: ../../snippets/example/24_math.cpp
+  .. literalinclude:: ../../snippets/example/140_math.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-mathKernel
     :end-before: END-TUTORIAL-mathKernel
@@ -32,7 +32,7 @@ Distance-like Computations
 
 Reciprocal square root is another common operation in physics, graphics, and geometry kernels.
 
-  .. literalinclude:: ../../snippets/example/24_math.cpp
+  .. literalinclude:: ../../snippets/example/140_math.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-rsqrtKernel
     :end-before: END-TUTORIAL-rsqrtKernel
@@ -46,37 +46,7 @@ Even though the example is small, it matches a very common class of kernels: com
 Available Function Families
 ---------------------------
 
-Unary real and complex helpers:
-
-- ``abs``, ``arg``, ``conj``
-- ``sin``, ``cos``, ``tan``
-- ``asin``, ``acos``, ``atan``
-- ``sinh``, ``cosh``, ``tanh``
-- ``asinh``, ``acosh``, ``atanh``
-- ``sqrt``, ``rsqrt``, ``cbrt``
-- ``exp``, ``log``, ``log2``, ``log10``
-- ``erf``
-- ``ceil``, ``floor``, ``round``, ``lround``, ``llround``, ``trunc``
-- ``isnan``, ``isinf``, ``isfinite``
-
-Binary helpers:
-
-- ``atan2``
-- ``copysign``
-- ``min``, ``max``
-- ``pow``
-- ``fmod``, ``remainder``
-
-Ternary helpers:
-
-- ``fma``
-
-Mixed output helpers:
-
-- ``sincos``
-
-The list above reflects the functions exposed in ``include/alpaka/math.hpp``.
-The alpaka math unit tests also exercise the major unary, binary, and ternary operations against standard-library behavior where a direct comparison exists.
+.. include:: ../_generated/math_function_families.rst
 
 Practical Advice
 ----------------
@@ -84,17 +54,6 @@ Practical Advice
 - Use ``alpaka::math`` in device code instead of backend-specific CUDA, HIP, or SYCL names.
 - Compare floating-point results with a tolerance when testing.
 - Write the clear mathematical version first, then optimize only if profiling shows a problem.
-- Prefer one kernel per logical transform when teaching or debugging; fused kernels are useful later, but they are harder to reason about.
-
-Try Next
---------
-
-Good follow-up exercises for this chapter are:
-
-- replace the trigonometric identity with ``exp`` and ``log`` on a positive input array
-- build a simple Gaussian-like curve with ``exp(-x * x)``
-- compute a 2D point length with ``sqrt(x*x + y*y)``
-- add a small image-processing example such as gamma correction with ``pow``
 
 Complete Source File
 --------------------
@@ -102,9 +61,9 @@ Complete Source File
 .. raw:: html
 
    <details class="full-source">
-   <summary>24_math.cpp</summary>
+   <summary>140_math.cpp</summary>
 
-.. filteredliteralinclude:: ../../snippets/example/24_math.cpp
+.. filteredliteralinclude:: ../../snippets/example/140_math.cpp
    :language: cpp
    :linenos:
 

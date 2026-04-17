@@ -20,7 +20,7 @@ The deletion is deferred until all tasks queued in the queue are completed.
 
 Here is a small example for a *blocking* queue:
 
-  .. literalinclude:: ../../snippets/example/06_queue.cpp
+  .. literalinclude:: ../../snippets/example/030_queue.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-blockingQueue
     :end-before: END-TUTORIAL-blockingQueue
@@ -29,14 +29,14 @@ Here is a small example for a *blocking* queue:
 The use of a *non-blocking* queue requires explicit synchronization before accessing the modified data, otherwise a data race will occur.
 If you do not pass ``queueKind`` as an argument, you will get a *non-blocking* queue.
 
-  .. literalinclude:: ../../snippets/example/06_queue.cpp
+  .. literalinclude:: ../../snippets/example/030_queue.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-nonBlockingQueue
     :end-before: END-TUTORIAL-nonBlockingQueue
     :dedent:
 
 We will learn more about queue functions in later chapters.
-Before that, we continue with events and memory management.
+Before that, we continue with memory management.
 
 Complete Source File
 --------------------
@@ -44,9 +44,9 @@ Complete Source File
 .. raw:: html
 
    <details class="full-source">
-   <summary>06_queue.cpp</summary>
+   <summary>030_queue.cpp</summary>
 
-.. filteredliteralinclude:: ../../snippets/example/06_queue.cpp
+.. filteredliteralinclude:: ../../snippets/example/030_queue.cpp
    :language: cpp
    :linenos:
 

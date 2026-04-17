@@ -18,7 +18,7 @@ Chunked kernels are useful when:
 The Kernel Structure
 --------------------
 
-  .. literalinclude:: ../../snippets/example/28_chunkedFrames.cpp
+  .. literalinclude:: ../../snippets/example/100_chunked.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-chunkedKernel
     :end-before: END-TUTORIAL-chunkedKernel
@@ -37,7 +37,7 @@ This is the alpaka way to write many kernels where users might otherwise be temp
 Launching a Chunked Kernel
 --------------------------
 
-  .. literalinclude:: ../../snippets/example/28_chunkedFrames.cpp
+  .. literalinclude:: ../../snippets/example/100_chunked.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-chunkedLaunch
     :end-before: END-TUTORIAL-chunkedLaunch
@@ -61,9 +61,9 @@ Complete Source File
 .. raw:: html
 
    <details class="full-source">
-   <summary>28_chunkedFrames.cpp</summary>
+   <summary>100_chunked.cpp</summary>
 
-.. filteredliteralinclude:: ../../snippets/example/28_chunkedFrames.cpp
+.. filteredliteralinclude:: ../../snippets/example/100_chunked.cpp
    :language: cpp
    :linenos:
 

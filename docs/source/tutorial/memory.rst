@@ -3,13 +3,7 @@ Allocate Memory
 
 Now that we know how to :ref:`get a device <device-selection>` and create :ref:`a queue <queue_creation>`, we can move on to memory allocation.
 To allocate memory, you need a *device* and sometimes a *queue*.
-See :ref:`memory-operations` for copy, fill, and memset details once the buffers exist.
 alpaka's memory allocation methods return a ``alpaka::onHost::SharedBuffer`` handle that tracks the lifetime of the memory and frees memory when the last instance goes out of scope, similar to ``std::shared_ptr<>`` in the STL.
-
-This chapter is easiest to picture with two recurring examples from the rest of the tutorial:
-
-- an image-processing pipeline, where you may keep one host image, one device image, and perhaps one temporary output image,
-- or a Monte Carlo workflow, where you keep input parameters, random samples, and partial results in separate buffers.
 
 - Copying a ``alpaka::onHost::SharedBuffer`` handle is a shallow copy of the buffer handle and does not duplicate the data.
 - A deep copy of the memory must be explicitly triggered using ``alpaka::onHost::memcpy()``.
@@ -18,9 +12,26 @@ This chapter is easiest to picture with two recurring examples from the rest of 
 - If the extent requires the ``alpaka::concepts::VectorOrScalar`` concept, it is permissible to use a scalar instead of an alpaka vector type to allocate a one-dimensional buffer.
 - The extent object also determines the internal index type used for addressing the buffer.
 
+Choosing Extents
+----------------
+
+The extent rules above are easiest to see in code:
+
+  .. literalinclude:: ../../snippets/example/040_memory.cpp
+    :language: cpp
+    :start-after: BEGIN-TUTORIAL-allocBufferExtentForms
+    :end-before: END-TUTORIAL-allocBufferExtentForms
+    :dedent:
+
+This snippet shows the three extent-related points the chapter relies on:
+
+- a one-dimensional allocation can use a scalar extent,
+- a multidimensional allocation uses an alpaka vector extent,
+- and the extent's scalar type becomes the buffer's internal ``index_type``.
+
 The following examples show how to create memory which is **only** accessible on the device.
 
-  .. literalinclude:: ../../snippets/example/10_memory.cpp
+  .. literalinclude:: ../../snippets/example/040_memory.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-allocBufferDev
     :end-before: END-TUTORIAL-allocBufferDev
@@ -31,7 +42,7 @@ Explicit memory copies are not required to access the memory from the device or 
 When using mapped memory, you must be careful not to access the memory of the host and the device in parallel.
 Accessing this type of memory from the device is usually associated with high latency and is slow.
 
-  .. literalinclude:: ../../snippets/example/10_memory.cpp
+  .. literalinclude:: ../../snippets/example/040_memory.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-allocBufferMapped
     :end-before: END-TUTORIAL-allocBufferMapped
@@ -43,7 +54,7 @@ It is transparently migrated page by page to the location from which it is acces
 You should not access unified memory in parallel from the host and the device.
 The first access to a memory location is often associated with high latencies, but once the page has been migrated, access is just as fast as direct access to the device memory.
 
-  .. literalinclude:: ../../snippets/example/10_memory.cpp
+  .. literalinclude:: ../../snippets/example/040_memory.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-allocBufferUnified
     :end-before: END-TUTORIAL-allocBufferUnified
@@ -54,7 +65,7 @@ For this, you can use ``alpaka::onHost::allocLike(device, sourceBuffer)`` to ado
 The data in the source buffer is not copied.
 This can only be done explicitly.
 
-  .. literalinclude:: ../../snippets/example/10_memory.cpp
+  .. literalinclude:: ../../snippets/example/040_memory.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-allocLike
     :end-before: END-TUTORIAL-allocLike
@@ -66,7 +77,7 @@ Depending on the device or queue API, ``alpaka::onHost::allocDeferred()`` automa
 
 That kind of temporary buffer shows up naturally later for things such as scan scratch storage, intermediate image tiles, or one stage of a multi-step numerical pipeline.
 
-  .. literalinclude:: ../../snippets/example/10_memory.cpp
+  .. literalinclude:: ../../snippets/example/040_memory.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-allocBufferDeferred
     :end-before: END-TUTORIAL-allocBufferDeferred
@@ -78,9 +89,9 @@ Complete Source File
 .. raw:: html
 
    <details class="full-source">
-   <summary>10_memory.cpp</summary>
+   <summary>040_memory.cpp</summary>
 
-.. filteredliteralinclude:: ../../snippets/example/10_memory.cpp
+.. filteredliteralinclude:: ../../snippets/example/040_memory.cpp
    :language: cpp
    :linenos:
 
