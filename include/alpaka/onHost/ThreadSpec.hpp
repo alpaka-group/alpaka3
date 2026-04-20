@@ -13,6 +13,14 @@
 
 namespace alpaka::onHost
 {
+    /** @brief Backend-specific description of the actual block and thread launch shape.
+     *
+     * A thread specification directly describes the number of blocks and the number of threads per block that are
+     * passed to the backend. This is the closest alpaka equivalent to a CUDA grid/block launch configuration.
+     *
+     * In contrast to `alpaka::onHost::FrameSpec`, a `ThreadSpec` is not a logical frame decomposition. It is used
+     * when a kernel requires exact guarantees about the number of blocks and the size of each block.
+     */
     template<
         alpaka::concepts::Vector T_NumBlocks,
         alpaka::concepts::Vector<typename T_NumBlocks::type, T_NumBlocks::dim()> T_NumThreads>

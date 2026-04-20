@@ -14,9 +14,8 @@
 
 namespace alpaka::onHost
 {
-    /** @brief Device/Api-agnostic description of an execution pattern for a kernel.
+    /** @brief Device/Api-agnostic description of the logical parallelism exposed to a kernel.
      *
-     * @details
      * A frame specification describes how a multidimensional index range [0; K) is divided into fixed-size chunks,
      * called frames (NF), each with a frame extent (FE), where `K = NF * FE`.
      * K does not need to match the problem size (P), e.g., the number of elements in a buffer you want to process in a
@@ -26,13 +25,18 @@ namespace alpaka::onHost
      * be written to be executable with any `FrameSpec` and should not depend on hard-coded thread numbers, to ensure
      * portability between devices.
      *
+     * A `FrameSpec` is therefore not equivalent to a CUDA-style grid description. It specifies only the maximum
+     * parallelism made available to the kernel. It does not guarantee the number of physical thread blocks, nor the
+     * number of physical threads per block used by the backend. If exact control over blocks and threads is required,
+     * use `alpaka::onHost::ThreadSpec`.
+     *
      * The specification contains three parameters:
      * - `numFrames`: The n-dimensional number of frames.
-     * - `frameExtents`: The n-dimensional size of one execution unit.
-     * - `threadSpec` (optional): Backend-specific specification of the actual execution resources,
-     * consisting of the number of blocks and threads. By default, this is automatically chosen
-     * by alpaka when starting a kernel to fit the `alpaka::onHost::Device` and `alpaka::exec`, ensuring
-     * compatibility. User-provided specifications might reduce the (performance-)portability.
+     * - `frameExtents`: The n-dimensional size of one logical frame.
+     * - `threadSpec` (optional): Backend-specific description of the actual execution resources consisting of the
+     *   number of blocks and threads. By default, this is automatically chosen by alpaka when starting a kernel to
+     *   fit the `alpaka::onHost::Device` and `alpaka::exec`, ensuring compatibility. User-provided specifications
+     *   might reduce the (performance-)portability.
      */
     template<
         alpaka::concepts::Vector T_NumFrames,
