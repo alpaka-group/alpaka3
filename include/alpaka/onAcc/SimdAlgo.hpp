@@ -10,6 +10,7 @@
 #include "alpaka/onAcc/internal/SimdConcurrent.hpp"
 #include "alpaka/onAcc/internal/SimdTransformReduce.hpp"
 
+#include <bit>
 #include <cstdint>
 
 namespace alpaka::onAcc
@@ -296,6 +297,65 @@ namespace alpaka::onAcc
         {
             constexpr uint32_t maxSimdBytes = std::min(T_cacheLineInByte, T_maxConcurrencyInByte);
             return alpaka::divExZero(maxSimdBytes, static_cast<uint32_t>(sizeof(T_Type)));
+        }
+
+        template<typename T_Type>
+        struct SimdPackConfig
+        {
+            using value_type = T_Type;
+            uint32_t simdWidth;
+            uint32_t numSimdPacksPerFnCall;
+        };
+
+        /** Generate a SIMD config for the API and device kind.
+         *
+         * Produces an optimized SIMD configuration based on technical constrained.
+         * The SIMD is set to a power of two.
+         * If possible, the SIMD configuration is aligned to the cacheline size for the given device kind.
+         *
+         * @maxConcurrencyInByte The upper limit in bytes a SIMD configuration must not exceed, except a single value
+         * is larger. This parameter is used to control the register pressure.
+         *
+         * @return a configuration with the number of SIMD pack which should be used in parallel for a single
+         * invocation. And the width of a single SIMD pack.
+         */
+        template<typename T_ValueType>
+        [[nodiscard]] static consteval SimdPackConfig<T_ValueType> calcSimdPackConfig(
+            alpaka::concepts::Api auto api,
+            alpaka::concepts::DeviceKind auto deviceKind,
+            uint32_t maxConcurrencyInByte)
+        {
+            constexpr uint32_t maxArchSimdWidth = getArchSimdWidth<T_ValueType>(api, deviceKind);
+            constexpr uint32_t cachelineBytes = getCachelineSize(api, deviceKind);
+            uint32_t simdWidth = maxArchSimdWidth;
+
+            // Maximum SIMD width allowed by the byte concurrency budget.
+            uint32_t maxWidthAllowed = maxConcurrencyInByte / sizeof(T_ValueType);
+
+            // Clamp max hardware SIMD width and ensure at least 1.
+            uint32_t clampedWidth = std::max(std::min(simdWidth, maxWidthAllowed), 1u);
+
+            // Round down to the nearest power of two.
+            simdWidth = std::bit_floor(clampedWidth);
+
+            uint32_t const simdWidthInByte = simdWidth * sizeof(T_ValueType);
+
+            // Number of SIMD packs that fit into the concurrency budget.
+            uint32_t const numSimdPacksToUtilizeConcurrency = alpaka::divExZero(maxConcurrencyInByte, simdWidthInByte);
+
+            // Number of SIMD packs required to cover one cache line
+            uint32_t const numSimdPacksPerCacheLine = alpaka::divExZero(cachelineBytes, simdWidthInByte);
+
+            // Prefer the largest cache-line multiple that fits into the budget.
+            uint32_t numSimdPacksPerFnCall = numSimdPacksToUtilizeConcurrency;
+            if(numSimdPacksToUtilizeConcurrency >= numSimdPacksPerCacheLine)
+            {
+                uint32_t const cachelineMultiple
+                    = (numSimdPacksToUtilizeConcurrency / numSimdPacksPerCacheLine) * numSimdPacksPerCacheLine;
+                numSimdPacksPerFnCall = std::max(cachelineMultiple, 1u);
+            }
+
+            return {simdWidth, numSimdPacksPerFnCall};
         }
 
         T_WorkGroup m_workGroup;

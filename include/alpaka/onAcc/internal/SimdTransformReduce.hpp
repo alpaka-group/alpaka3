@@ -42,20 +42,17 @@ namespace alpaka::onAcc::internal
             auto numElements = typename ALPAKA_TYPEOF(extents)::UniVec{extents};
             using ValueType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data0)>;
 
-            constexpr uint32_t maxArchSimdWidth
-                = getArchSimdWidth<ValueType>(ALPAKA_TYPEOF(acc.getApi()){}, ALPAKA_TYPEOF(acc.getDeviceKind()){});
-            constexpr uint32_t cachlineBytes
-                = getCachelineSize(ALPAKA_TYPEOF(acc.getApi()){}, ALPAKA_TYPEOF(acc.getDeviceKind()){});
+            constexpr auto simdCfg = T_Parent::template calcSimdPackConfig<ValueType>(
+                ALPAKA_TYPEOF(acc.getApi()){},
+                ALPAKA_TYPEOF(acc.getDeviceKind()){},
+                T_maxConcurrencyInByte);
 
-            constexpr uint32_t width = std::min(
-                maxArchSimdWidth,
-                T_Parent::template calcSimdWidth<ValueType, T_maxConcurrencyInByte, cachlineBytes>());
+            constexpr uint32_t simdWidth = simdCfg.simdWidth;
 
-            auto const workGroup = asParent().getWorkGroup();
-
-            if constexpr(width != 1u)
+            if constexpr(simdWidth != 1u)
             {
-                return reduceSimdPackExecution<T_maxConcurrencyInByte, width, T_MemAlignment>(
+                constexpr uint32_t numSimdPerFnCall = simdCfg.numSimdPacksPerFnCall;
+                return reduceSimdPackExecution<simdWidth, numSimdPerFnCall, T_MemAlignment>(
                     acc,
                     numElements,
                     neutralElement,
@@ -65,6 +62,7 @@ namespace alpaka::onAcc::internal
                     ALPAKA_FORWARD(dataN)...);
             }
 
+            auto const workGroup = asParent().getWorkGroup();
             // execute the algorithm with SIMD width one
             auto traverse = onAcc::makeIdxMap(
                 acc,
@@ -225,7 +223,7 @@ namespace alpaka::onAcc::internal
             return static_cast<T_Parent const&>(*this);
         }
 
-        template<uint32_t T_maxConcurrencyInByte, uint32_t T_simdWidth, alpaka::concepts::Alignment T_MemAlignment>
+        template<uint32_t T_simdWidth, uint32_t T_numSimdPerFnCall, alpaka::concepts::Alignment T_MemAlignment>
         ALPAKA_FN_INLINE ALPAKA_FN_ACC constexpr auto reduceSimdPackExecution(
             auto const& acc,
             alpaka::concepts::Vector auto numElements,
@@ -237,31 +235,13 @@ namespace alpaka::onAcc::internal
         {
             auto reduceFunc = getReducer(acc, userReduceFunc);
 
-            using ValueType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data0)>;
-            constexpr uint32_t simdWidthInByte = T_simdWidth * sizeof(ValueType);
-            // number of simd packs fitting into the maxConcurrencyInByte
-            constexpr uint32_t numSimdPacksToUtilizeConcurrency
-                = alpaka::divExZero(T_maxConcurrencyInByte, simdWidthInByte);
-
-            constexpr uint32_t cachlineBytes
-                = getCachelineSize(ALPAKA_TYPEOF(acc.getApi()){}, ALPAKA_TYPEOF(acc.getDeviceKind()){});
-            // number of simd packs fitting into the cacheline
-            constexpr uint32_t numSimdPacksPerCacheLine = alpaka::divExZero(cachlineBytes, simdWidthInByte);
-            /* number of simd packs used per functor call
-             * - the number of simd packs per functor call should be a multiple of the number of simd packs per
-             * cacheline
-             */
-            constexpr uint32_t numSimdPacksPerFnCall
-                = alpaka::divExZero(numSimdPacksToUtilizeConcurrency, numSimdPacksPerCacheLine)
-                  * numSimdPacksPerCacheLine;
-
             auto const workGroup = asParent().getWorkGroup();
 
             // we SIMDfy only over the fast moving dimension (columns of memory)
             auto const wSize = workGroup.size(acc).back();
 
             /* Number of data elements process per functor call. */
-            auto const numElementsPerFnCall = T_simdWidth * numSimdPacksPerFnCall;
+            auto const numElementsPerFnCall = T_simdWidth * T_numSimdPerFnCall;
             /** To avoid a overflow in the index range we device first by the number of elements per
              * function call and than by the number of workers.
              */
@@ -286,7 +266,7 @@ namespace alpaka::onAcc::internal
             using SimdReturn = decltype(executeReduce<T_MemAlignment, T_simdWidth>(
                 acc,
                 iter,
-                std::make_integer_sequence<uint32_t, numSimdPacksPerFnCall>{},
+                std::make_integer_sequence<uint32_t, T_numSimdPerFnCall>{},
                 ALPAKA_FORWARD(reduceFunc),
                 ALPAKA_FORWARD(func),
                 ALPAKA_FORWARD(data0),
@@ -339,7 +319,7 @@ namespace alpaka::onAcc::internal
                             executeReduce<T_MemAlignment, T_simdWidth>(
                                 acc,
                                 iter,
-                                std::make_integer_sequence<uint32_t, numSimdPacksPerFnCall>{},
+                                std::make_integer_sequence<uint32_t, T_numSimdPerFnCall>{},
                                 ALPAKA_FORWARD(reduceFunc),
                                 ALPAKA_FORWARD(func),
                                 ALPAKA_FORWARD(data0),
@@ -356,7 +336,7 @@ namespace alpaka::onAcc::internal
                         executeReduce<T_MemAlignment, T_simdWidth>(
                             acc,
                             iter,
-                            std::make_integer_sequence<uint32_t, numSimdPacksPerFnCall>{},
+                            std::make_integer_sequence<uint32_t, T_numSimdPerFnCall>{},
                             ALPAKA_FORWARD(reduceFunc),
                             ALPAKA_FORWARD(func),
                             ALPAKA_FORWARD(data0),
