@@ -24,12 +24,18 @@ def get_modified_files(
     """
     cache_file_path_obj = pathlib.Path(cache_file_path)
 
+    git_get_commit_hash_process = subprocess.run(
+        ["git", "rev-parse", "HEAD"], stdout=subprocess.PIPE, text=True, check=True
+    )
+    current_git_commit_hash = git_get_commit_hash_process.stdout.strip()
+
     old_changes: dict[str, str] = {}
     if cache_file_path_obj.exists():
         with open(cache_file_path_obj, "r", encoding="UTF-8") as f:
             old_changes: dict[str, str] = json.load(f)
 
     current_changes = get_hashed_files(path_filter_regex)
+    current_changes["commit"] = current_git_commit_hash
 
     def dict_diffs(A: dict, B: dict) -> dict:
         _sentinel = object()
