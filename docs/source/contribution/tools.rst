@@ -68,7 +68,6 @@ Formatter versions
     :language: yaml
     :caption: .pre-commit-config.yaml
 
-
 Code Changes with Tools
 -----------------------
 

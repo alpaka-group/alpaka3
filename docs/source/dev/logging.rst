@@ -63,7 +63,6 @@ CMake Logging Options
      // long signature
      [Memory]    SharedBuffer{ dim=1, api= Host, extents={123456}, pitches={4} , alignment=16 } auto alpaka::onHost::internal::Alloc::Op<T_Type, alpaka::onHost::cpu::Device<T_Platform>, T_Extents>::operator()(alpaka::onHost::cpu::Device<T_Platform>&, const T_Extents&) const [with T_Type = unsigned int; T_Platform = alpaka::onHost::cpu::Platform<alpaka::deviceKind::Cpu>; T_Extents = alpaka::Vec<long unsigned int, 1, alpaka::ArrayStorage<long unsigned int, 1> >] alpaka/api/host/Device.hpp:198
 
-
 * ``alpaka_LOG_INDENT=<X>`` - where ``X``  can be ``ON`` or ``OFF`` which will format the output from ``alpaka_LOG_FUNCTIONS`` and ``alpaka_LOG_INFO`` depending on the call stack depth.
 
   .. code:: c++
@@ -81,7 +80,6 @@ The following CMake options requires ``alpaka_LOG=static``
 * ``alpaka_LOG_STATIC_Memory`` - activate logging for static memory information
 * ``alpaka_LOG_STATIC_Queue`` - activate logging for static queue information
 * ``alpaka_LOG_STATIC_Kernel`` - activate logging for static kernel information
-
 
 C++ Code logging
 ----------------

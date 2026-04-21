@@ -8,7 +8,7 @@ Play online with Compiler Explorer
 
 The followed example can be executed online using `Godbolt Compiler Explorer <https://godbolt.org/z/K8q5q66Mn>`__. [#f1]_
 
-.. literalinclude:: ../../snippets/example/30_elementWiseMultiplication.cpp
+.. literalinclude:: ../../snippets/example/000_elementWiseMultiplication.cpp
    :language: cpp
    :start-after: BEGIN-EXAMPLE-elementWiseMultiplication
    :end-before: END-EXAMPLE-elementWiseMultiplication

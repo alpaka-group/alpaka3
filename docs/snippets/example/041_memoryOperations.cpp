@@ -2,8 +2,11 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
+#include "docsTest.hpp"
+
 #include <alpaka/alpaka.hpp>
 
+#include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <algorithm>
@@ -14,7 +17,7 @@ using namespace alpaka;
 
 TEST_CASE("memory allocations", "[docs]")
 {
-    auto device = onHost::makeHostDevice();
+    onHost::concepts::Device auto device = onHost::makeHostDevice();
     {
         // BEGIN-TUTORIAL-allocBufferDev
         concepts::Vector auto extents = Vec{2u, 3u};
@@ -49,8 +52,8 @@ void callKernel([[maybe_unused]] auto dummyMemory)
 
 TEST_CASE("memory allocations deferred", "[docs]")
 {
-    auto device = onHost::makeHostDevice();
-    auto queue = device.makeQueue();
+    onHost::concepts::Device auto device = onHost::makeHostDevice();
+    onHost::Queue queue = device.makeQueue();
     // BEGIN-TUTORIAL-allocBufferDeferred
     concepts::Vector auto extents = Vec{2u, 3u};
     {
@@ -68,7 +71,7 @@ TEST_CASE("memory allocations deferred", "[docs]")
 
 TEST_CASE("memory allocations like", "[docs]")
 {
-    auto computeDevice = onHost::makeHostDevice();
+    onHost::concepts::Device auto computeDevice = onHost::makeHostDevice();
     // BEGIN-TUTORIAL-allocLike
     concepts::Vector auto extents = Vec{2u, 3u};
     // short notation to allocate memory on the host without a host device as first argument
@@ -80,20 +83,12 @@ TEST_CASE("memory allocations like", "[docs]")
     alpaka::unused(devDoubleBuffer);
 }
 
-TEST_CASE("memory", "[docs]")
+TEMPLATE_LIST_TEST_CASE("memory", "[docs]", docs::test::TestBackends)
 {
-    // Nvidia GPU: onHost::DeviceSpec{api::cuda, deviceKind::nvidiaGpu};
-    // Amd GPU: onHost::DeviceSpec{api::hip, deviceKind::amdGpu};
-    // Intel GPU: onHost::DeviceSpec{api::oneApi, deviceKind::intelGpu};
-    // this call selects the host Cpu
-    auto computeDevSpec = onHost::DeviceSpec{api::host, deviceKind::cpu};
+    auto computeDevSpec = TestType::makeDict()[object::deviceSpec];
     auto computeDevSelector = alpaka::onHost::makeDeviceSelector(computeDevSpec);
-    auto numComputeDevs = computeDevSelector.getDeviceCount();
-
-    if(numComputeDevs == 0)
-    {
-        std::cout << "No device for " << onHost::getName(computeDevSpec) << " found." << std::endl;
-    }
+    if(!computeDevSelector.isAvailable())
+        return;
 
     // using the typed interface and not concept + auto
     onHost::Device computeDev = computeDevSelector.makeDevice(0);
@@ -131,22 +126,44 @@ TEST_CASE("memory", "[docs]")
     // check that the data is valid
     for(auto const& v : hostBuffer)
         CHECK(v == 42);
+
+    onHost::memset(hostQueue, hostBuffer, 0);
+    onHost::wait(hostQueue);
+
+    // BEGIN-TUTORIAL-memcpyExtent
+    onHost::memcpy(asyncComputeQueue, hostBuffer, computeBuffer, Vec{4u});
+    // END-TUTORIAL-memcpyExtent
+    onHost::wait(asyncComputeQueue);
+
+    CHECK(hostBuffer[0] == 42);
+    CHECK(hostBuffer[1] == 42);
+    CHECK(hostBuffer[2] == 42);
+    CHECK(hostBuffer[3] == 42);
+    CHECK(hostBuffer[4] == 0);
+    CHECK(hostBuffer[5] == 0);
+
+    onHost::fill(hostQueue, hostBuffer, 42);
+    onHost::wait(hostQueue);
+
+    // BEGIN-TUTORIAL-memsetExtent
+    onHost::memset(hostQueue, hostBuffer, 0, Vec{4u});
+    // END-TUTORIAL-memsetExtent
+    onHost::wait(hostQueue);
+
+    CHECK(hostBuffer[0] == 0);
+    CHECK(hostBuffer[1] == 0);
+    CHECK(hostBuffer[2] == 0);
+    CHECK(hostBuffer[3] == 0);
+    CHECK(hostBuffer[4] == 42);
+    CHECK(hostBuffer[5] == 42);
 }
 
-TEST_CASE("memory using std::vector", "[docs]")
+TEMPLATE_LIST_TEST_CASE("memory using std::vector", "[docs]", docs::test::TestBackends)
 {
-    // Nvidia GPU: onHost::DeviceSpec{api::cuda, deviceKind::nvidiaGpu};
-    // Amd GPU: onHost::DeviceSpec{api::hip, deviceKind::amdGpu};
-    // Intel GPU: onHost::DeviceSpec{api::oneApi, deviceKind::intelGpu};
-    // this call selects the host Cpu
-    auto computeDevSpec = onHost::DeviceSpec{api::host, deviceKind::cpu};
+    auto computeDevSpec = TestType::makeDict()[object::deviceSpec];
     auto computeDevSelector = alpaka::onHost::makeDeviceSelector(computeDevSpec);
-    auto numComputeDevs = computeDevSelector.getDeviceCount();
-
-    if(numComputeDevs == 0)
-    {
-        std::cout << "No device for " << onHost::getName(computeDevSpec) << " found." << std::endl;
-    }
+    if(!computeDevSelector.isAvailable())
+        return;
 
     onHost::Device computeDev = computeDevSelector.makeDevice(0);
     onHost::Queue asyncComputeQueue = computeDev.makeQueue();
