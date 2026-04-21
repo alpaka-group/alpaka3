@@ -4,18 +4,14 @@
 import os
 import subprocess
 import shutil
+import sys
 
-def generate_single_header(app, exception):
-    # Destination folder relative to conf.py
-    single_header_path = os.path.abspath(os.path.join(app.builder.outdir))
-    os.makedirs(single_header_path, exist_ok=True)
+# allows to import module `build_helper`
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+from sphinx_helper.single_header import generate_single_header
+from sphinx_helper.utils import on_rtd
 
-    # Path to your script
-    script_path = os.path.abspath(os.path.join(app.srcdir, '..', '..', 'script', 'create-single-header.sh'))
 
-    # Call the script with the destination folder as argument
-    subprocess.run([script_path, single_header_path], check=True)
-    print(f"Generated single header in {single_header_path}")
 
 def build_doxygen():
     subprocess.call("cd ..; doxygen", shell=True)
@@ -51,8 +47,7 @@ def copy_doxygen_html(app, exception):
 
 def setup(app):
     # Hook into the 'builder-inited' event to run the function before the build starts
-    if not "ALPAKA_NO_SINGLE_HEADER" in os.environ:
-        app.connect('build-finished', generate_single_header)
+    app.connect('build-finished', generate_single_header)
     app.connect('build-finished', copy_doxygen_html)
 
 # -- Project information -----------------------------------------------------
@@ -71,7 +66,6 @@ master_doc = "index"
 # -- General configuration ---------------------------------------------------
 
 highlight_language = 'c++'
-on_rtd = os.environ.get("READTHEDOCS", None) == "True"
 
 show_authors = True
 
@@ -213,7 +207,7 @@ cpp_id_attributes = [
 
 # -- processing --
 
-if on_rtd:
+if on_rtd():
     build_doxygen()
     #subprocess.call(
     #    "cd ../cheatsheet; rst2pdf -s cheatsheet.style ../source/basic/cheatsheet.rst -o cheatsheet.pdf", shell=True
@@ -227,7 +221,7 @@ else:
     html_theme = "sphinx_rtd_theme"
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
-    logger.info("single header build can be skipped with the environment variable 'ALPAKA_NO_SINGLE_HEADER=1'")
+    logger.info("single header build can be force build or skipped with the environment variable 'ALPAKA_SINGLE_HEADER=ON|OFF'")
 
     if shutil.which("doxygen"):
         if not "ALPAKA_NO_DOXYGEN" in os.environ:
