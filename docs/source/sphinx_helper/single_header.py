@@ -51,6 +51,7 @@ def is_generate_single_header(app) -> bool:
     if not get_modified_files(
         os.path.join(app.builder.outdir, ".include_diff_cache"), "^include"
     ):
+        logger.info("Single Header: skip build because no file was changed")
         return False
 
     return True
@@ -76,6 +77,11 @@ def generate_single_header(app, exception):
 
     logger = logging.getLogger(__name__)
 
+    logger.info(f"Generate single header in {single_header_path} (takes some time)")
     # Call the script with the destination folder as argument
-    subprocess.run([script_path, single_header_path], check=True)
-    logger.info(f"Generated single header in {single_header_path}")
+    single_header_build = subprocess.run(
+        [script_path, single_header_path], stdout=subprocess.PIPE, text=True, check=True
+    )
+
+    if single_header_build.returncode != 0:
+        logger.error(single_header_build.stderr.strip())
