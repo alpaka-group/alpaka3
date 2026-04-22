@@ -1,5 +1,3 @@
-:orphan:
-
 .. only:: html
 
   .. image:: ../logo/alpaka.svg
@@ -41,6 +39,7 @@ Individual chapters are based on the information of the chapters before.
 .. toctree::
    :caption: Basic
    :maxdepth: 1
+   :titlesonly:
 
    basic/intro.rst
    basic/install.rst
@@ -51,18 +50,21 @@ Individual chapters are based on the information of the chapters before.
    basic/cheatsheet.rst
 
 .. toctree::
-   :caption: Tutorial
+   :caption: Tutorial - Getting Started
    :maxdepth: 1
+   :titlesonly:
 
    tutorial/intro.rst
    tutorial/vector.rst
    tutorial/device.rst
    tutorial/queue.rst
    tutorial/memory.rst
+   tutorial/memoryOperations.rst
 
 .. toctree::
    :caption: Advanced
    :maxdepth: 1
+   :titlesonly:
 
    advanced/cmake.rst
    advanced/datastorage.rst
@@ -72,6 +74,7 @@ Individual chapters are based on the information of the chapters before.
 .. toctree::
    :caption: Developer
    :maxdepth: 1
+   :titlesonly:
 
    dev/logging.rst
    dev/online_tools.rst
@@ -79,6 +82,7 @@ Individual chapters are based on the information of the chapters before.
 .. toctree::
    :caption: Contribution
    :maxdepth: 1
+   :titlesonly:
 
    contribution/sphinx.rst
    contribution/tools.rst
@@ -86,6 +90,7 @@ Individual chapters are based on the information of the chapters before.
 .. toctree::
    :maxdepth: 2
    :caption: API Reference
+   :titlesonly:
 
    doxygen
    doxygen_dev

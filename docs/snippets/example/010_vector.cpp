@@ -1,5 +1,5 @@
 /* Copyright 2025 René Widera
- * SPDX-License-Identifier: MPL-2.0
+ * SPDX-License-Identifier: ISC
  */
 
 #include <alpaka/alpaka.hpp>
