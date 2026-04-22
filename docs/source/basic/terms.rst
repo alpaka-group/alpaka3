@@ -20,6 +20,8 @@ If a function or object is in namespace ``alpaka``, it is usable *onHost* and *o
 
 .. [#f1] There are cases where the ``host`` and ``accelerator`` processor are the same physical processor, e.g. a CPU. In this case there is only a logical distinction.
 
+.. _host:
+
 Host
 ````
 
@@ -54,14 +56,69 @@ Properties:
 API
 ---
 
+The ``API`` represents the runtime environment used to execute a kernel on a specific processor.
+Depending on the runtime environment, different processor types are available.
+The processor type is selected via :ref:`device_kind`, see the next section.
+
+.. figure:: ../tutorial/images/api_deviceKind.svg
+
+Alpaka supports the following APIs:
+
+- ``host``: The processor uses the bare-metal operating system as the runtime environment. Only CPUs are supported.
+- ``cuda``: The `Nvidia CUDA SDK <https://developer.nvidia.com/cuda-toolkit>`__ is used to run kernels on Nvidia GPUs.
+- ``hip``: The `AMD ROCm/HIP SDK <https://rocmdocs.amd.com/en/latest/index.html>`__ is used to run kernels on AMD GPUs.
+- ``oneAPI``: The `Intel OneAPI Toolkit <https://rocmdocs.amd.com/en/latest/index.html>`__ is used to run kernels on CPUs, Intel GPUs and Nvidia and AMD GPUs (plugins required)
+
+.. _device_kind:
+
+Device Kind
+```````````
+
+The ``Device Kind`` determines which type of processor we want to use.
+The combination of :ref:`api` and ``Device Kind`` results in a specific processor type.
+Depending on the system, zero, one, or many processors may be available (e.g., in multi-GPU systems).
+Each of these processors is a own :ref:`Device`.
+
+The following device types are available:
+
+- ``cpu``: The host system's CPU. It uses the same processor as a standard C++ application. On a single-socket system, it uses the entire CPU. On a multi-socket system, the system can be configured as a UMA system [#f3]_, which means that two or more physical CPUs appear as a single large CPU. In this case, alpaka displays a single device.
+- ``numaCpu``: The NUMA configuration [#f4]_ of the host CPU is taken into account. A single CPU or multiple CPUs can be divided into smaller logical CPUs, which respects inhomogeneous memory topology. For example, in a dual-socket system, the operating system uses both CPUs as a single large virtual CPU. The NUMA configuration can then subdivide the two CPUs to account for the different latencies to the respective memory modules.
+- ``xGpu``: A GPU from vendor ``x``.
+
+
+.. [#f3] https://en.wikipedia.org/wiki/Uniform_memory_access
+.. [#f4] https://en.wikipedia.org/wiki/Non-uniform_memory_access
+
 .. _device:
 
 Device
 ------
 
-.. _kernel:
+A device is a specific processor in the system, such as a CPU like an ``Intel Xeon`` or ``AMD EPYC``, or a GPU like an ``Nvidia H100`` or ``AMD Instinct``.
+Depending on the system, there may be more than one processor of the same type.
+For example, a single HPC GPU node may contain eight GPUs of the same type and two NUMA CPUs [#f5]_ of the same type.
 
-Kernel
+In alpaka, we use a combination of :ref:`api` and :ref:`device_kind` to select devices of the same type.
+The programmatic approach is described in the :ref:`Device Selection <device-selection>` section of the ``Getting Started`` tutorial.
+
+Each device is controlled separately by the :ref:`host`.
+This means that if a :ref:`kernel` is to be run on two GPUs in a system, GPU 0 (device 0) is selected first, the kernel is started there, then GPU 1 (device 1) is selected, and the same kernel is started there again.
+
+.. [#f5] Depending on the :ref:`device_kind`, a system can provide a different number of CPUs. On a system with two sockets, there may be one CPU device if the :ref:`device_kind` is ``CPU``, or two CPU devices if the :ref:`device_kind` is ``numaCPU``.
+
+.. _queue:
+
+Queue
+-----
+
+.. _task:
+
+Task
+----
+
+.. _memory:
+
+Memory
 ------
 
 .. _basic-data-storage:
@@ -148,3 +205,13 @@ An ``IBuffer`` Data Storage object is pointing to memory and manages its lifetim
 When all ``IBuffer`` Data Storage objects that are pointing to the same memory are deleted, the memory is freed.
 
 Go to the `IBuffer Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IBuffer.html>`_
+
+.. _kernel:
+
+Kernel
+------
+
+.. _frame:
+
+Frame, Frame Extents and Frame Spec
+-----------------------------------
