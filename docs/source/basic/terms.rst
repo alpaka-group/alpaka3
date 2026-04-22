@@ -56,9 +56,9 @@ Properties:
 API
 ---
 
-The ``API`` represents the runtime environment used to execute a kernel on a specific processor.
-Depending on the runtime environment, different processor types are available.
-The processor type is selected via :ref:`device_kind`, see the next section.
+The ``API`` represents the underlying runtime environment that alpaka code is mapped to work on. Specifically, this ``API`` is the environment used to execute a kernel on a particular processor.
+Depending on the ``API``, one or more different processor types may be available.
+The processor type is selected via :ref:`device_kind`.
 
 .. figure:: ../tutorial/images/api_deviceKind.svg
 
@@ -75,15 +75,15 @@ Device Kind
 ```````````
 
 The ``Device Kind`` determines which type of processor we want to use.
-The combination of :ref:`api` and ``Device Kind`` results in a specific processor type.
+The combination of :ref:`api` and ``Device Kind`` defines a specific processor type, and is called a ``DeviceSpec`` in alpaka.
 Depending on the system, zero, one, or many processors may be available (e.g., in multi-GPU systems).
-Each of these processors is a own :ref:`Device`.
+Each of these processors is an own :ref:`Device`.
 
 The following device types are available:
 
 - ``cpu``: The host system's CPU. It uses the same processor as a standard C++ application. On a single-socket system, it uses the entire CPU. On a multi-socket system, the system can be configured as a UMA system [#f3]_, which means that two or more physical CPUs appear as a single large CPU. In this case, alpaka displays a single device.
 - ``numaCpu``: The NUMA configuration [#f4]_ of the host CPU is taken into account. A single CPU or multiple CPUs can be divided into smaller logical CPUs, which respects inhomogeneous memory topology. For example, in a dual-socket system, the operating system uses both CPUs as a single large virtual CPU. The NUMA configuration can then subdivide the two CPUs to account for the different latencies to the respective memory modules.
-- ``xGpu``: A GPU from vendor ``x``.
+- ``intelGpu``, ``nvidiaGpu`` and ``amdGpu``: A GPU from a specific vendor.
 
 
 .. [#f3] https://en.wikipedia.org/wiki/Uniform_memory_access
@@ -102,7 +102,7 @@ In alpaka, we use a combination of :ref:`api` and :ref:`device_kind` to select d
 The programmatic approach is described in the :ref:`Device Selection <device-selection>` section of the ``Getting Started`` tutorial.
 
 Each device is controlled separately by the :ref:`host`.
-This means that if a :ref:`kernel` is to be run on two GPUs in a system, GPU 0 (device 0) is selected first, the kernel is started there, then GPU 1 (device 1) is selected, and the same kernel is started there again.
+This means that if a :ref:`kernel` is to be run on two GPUs in a system, then one possible way to do it would be to select GPU 0 (device 0) first and start the kernel there, and then select GPU 1 (device 1)  and then start the same kernel there again.
 
 .. [#f5] Depending on the :ref:`device_kind`, a system can provide a different number of CPUs. On a system with two sockets, there may be one CPU device if the :ref:`device_kind` is ``CPU``, or two CPU devices if the :ref:`device_kind` is ``numaCPU``.
 
