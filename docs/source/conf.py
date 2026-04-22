@@ -2,53 +2,18 @@
 # Configuration file for the Sphinx documentation builder.
 
 import os
-import subprocess
-import shutil
 import sys
 
 # allows to import module `build_helper`
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 from sphinx_helper.single_header import generate_single_header
 from sphinx_helper.utils import on_rtd
-
-
-
-def build_doxygen():
-    subprocess.call("cd ..; doxygen", shell=True)
-    subprocess.call("cd ..; doxygen Doxyfile_dev", shell=True)
-
-def copy_doxygen(dst, src):
-    print("Copying from:", src)
-    print("Copying to:", dst)
-    if os.path.exists(src):
-        if os.path.exists(dst):
-            shutil.rmtree(dst)
-        shutil.copytree(src, dst)
-    else:
-        print("Doxygen HTML not found at:", src)
-
-def copy_doxygen_html(app, exception):
-    # confdir = …/repo-root/docs/source
-    confdir = os.path.dirname(app.confdir)
-
-    # --------------------------------------------------------------
-    # USER documentation (docs/doxygen/html)
-    # --------------------------------------------------------------
-    src = os.path.abspath(os.path.join(confdir, '..', 'docs/doxygen', 'html'))
-    dst = os.path.join(app.builder.outdir, 'doxygen')
-    copy_doxygen(dst, src)
-
-    # --------------------------------------------------------------
-    # DEVELOPER documentation (docs/doxygen_dev/html)
-    # --------------------------------------------------------------
-    src = os.path.abspath(os.path.join(confdir, '..', 'docs/doxygen_dev', 'html'))
-    dst = os.path.join(app.builder.outdir, 'doxygen_dev')
-    copy_doxygen(dst, src)
+from sphinx_helper.doxygen import generate_doxygen
 
 def setup(app):
     # Hook into the 'builder-inited' event to run the function before the build starts
     app.connect('build-finished', generate_single_header)
-    app.connect('build-finished', copy_doxygen_html)
+    app.connect('build-finished', generate_doxygen)
 
 # -- Project information -----------------------------------------------------
 
@@ -208,7 +173,7 @@ cpp_id_attributes = [
 # -- processing --
 
 if on_rtd():
-    build_doxygen()
+    pass
     #subprocess.call(
     #    "cd ../cheatsheet; rst2pdf -s cheatsheet.style ../source/basic/cheatsheet.rst -o cheatsheet.pdf", shell=True
     #)
@@ -221,11 +186,5 @@ else:
     html_theme = "sphinx_rtd_theme"
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
-    logger.info("single header build can be force build or skipped with the environment variable 'ALPAKA_SINGLE_HEADER=0|OFF|1|ON'")
-
-    if shutil.which("doxygen"):
-        if not "ALPAKA_NO_DOXYGEN" in os.environ:
-            build_doxygen()
-        logger.info("doxygen build can be skipped with the environment variable 'ALPAKA_NO_DOXYGEN=1'")
-    else:
-        logger.warning("could not find 'doxygen' executable. Skip building doxygen documentation.")
+    logger.info("single header build can be force build or skipped with the environment variable 'ALPAKA_DOC_SINGLE_HEADER=0|OFF|1|ON'")
+    logger.info("doxygen build can be force build or skipped with the environment variable 'ALPAKA_DOC_DOXYGEN=0|OFF|1|ON'")
