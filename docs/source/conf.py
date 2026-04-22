@@ -221,7 +221,7 @@ else:
     html_theme = "sphinx_rtd_theme"
     html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
-    logger.info("single header build can be force build or skipped with the environment variable 'ALPAKA_SINGLE_HEADER=ON|OFF'")
+    logger.info("single header build can be force build or skipped with the environment variable 'ALPAKA_SINGLE_HEADER=0|OFF|1|ON'")
 
     if shutil.which("doxygen"):
         if not "ALPAKA_NO_DOXYGEN" in os.environ:

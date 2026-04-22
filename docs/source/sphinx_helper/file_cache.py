@@ -1,4 +1,4 @@
-"""Provied functionally to check if a file was changed since last doc build process."""
+"""Provide functionally to check if a file was changed since last doc build process."""
 
 import re
 import hashlib
@@ -16,7 +16,7 @@ def get_modified_files(
         cache_file_path (str): Name of the cache file.
         path_filter_regex (str, optional): Filter which file paths should be included.
             The paths are relative to the Git project root.
-            Defaults to "", which means all files in the repostiory.
+            Defaults to "", which means all files in the repository.
 
     Returns:
         dict[str, str]: Dictionary of files, which changed since last time.
@@ -60,7 +60,7 @@ def get_modified_files(
 
 
 def get_hashed_files(path_filter_regex: str = "") -> dict[str, str]:
-    """Search for all files which are new or modified basing on git status in the repository.
+    """Search for all files which are new or modified based on git status in the repository.
 
     Args:
         path_filter_regex (str, optional): Filter which file paths should be included.

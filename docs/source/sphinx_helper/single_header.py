@@ -32,14 +32,14 @@ def is_generate_single_header(app) -> bool:
 
     if "ALPAKA_SINGLE_HEADER" in os.environ:
         env_value = os.environ["ALPAKA_SINGLE_HEADER"]
-        if env_value == "ON":
+        if env_value in ("1", "ON"):
             logger.info(
-                "Single Header: force build via environment variable ALPAKA_SINGLE_HEADER=ON"
+                f"Single Header: force build via environment variable ALPAKA_SINGLE_HEADER={env_value}"
             )
             return True
-        if env_value == "OFF":
+        if env_value in ("0", "OFF"):
             logger.info(
-                "Single Header: disable build via environment variable ALPAKA_SINGLE_HEADER=OFF"
+                f"Single Header: disable build via environment variable ALPAKA_SINGLE_HEADER={env_value}"
             )
             return False
 
