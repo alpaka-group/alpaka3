@@ -93,7 +93,7 @@ namespace alpaka::onAcc
          * @tparam T_Api Enforce an API type, if not provided api type is not checked
          */
         template<typename T_Acc, typename T_Api = alpaka::NotRequired>
-        concept Acc = alpaka::isSpecializationOf_v<T_Acc, alpaka::onAcc::Acc>
+        concept Acc = alpaka::concepts::SpecializationOf<T_Acc, onAcc::Acc>
                       && (std::same_as<T_Api, ALPAKA_TYPEOF(std::declval<T_Acc>().getApi())>
                           || std::same_as<T_Api, alpaka::NotRequired>);
     } // namespace concepts

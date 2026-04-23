@@ -209,8 +209,7 @@ namespace alpaka
         {
         };
 
-        template<typename T>
-        requires(isSpecializationOf_v<std::remove_cvref_t<T>, IdxRange>)
+        template<concepts::SpecializationOf<IdxRange> T>
         struct IsIndexRange<T> : std::true_type
         {
         };

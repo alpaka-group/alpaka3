@@ -114,7 +114,7 @@ namespace alpaka::onHost
         /** Concept to check for specializations of alpaka::onHost::DeviceSpec
          */
         template<typename T>
-        concept DeviceSpec = isSpecializationOf_v<T, onHost::DeviceSpec>;
+        concept DeviceSpec = alpaka::concepts::SpecializationOf<T, onHost::DeviceSpec>;
     } // namespace concepts
 
 } // namespace alpaka::onHost

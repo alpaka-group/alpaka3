@@ -158,7 +158,7 @@ namespace alpaka::onHost
          * alpaka, refer to the class documentation.
          */
         template<typename T_Device>
-        concept Device = alpaka::isSpecializationOf_v<T_Device, onHost::Device>;
+        concept Device = alpaka::concepts::SpecializationOf<T_Device, onHost::Device>;
     } // namespace concepts
 
     template<typename T_Device>

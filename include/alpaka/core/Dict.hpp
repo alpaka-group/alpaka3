@@ -148,13 +148,13 @@ namespace alpaka
     };
 
     template<size_t T_idx>
-    constexpr decltype(auto) get(auto& t) noexcept requires(alpaka::isSpecializationOf_v<ALPAKA_TYPEOF(t), Dict>)
+    constexpr decltype(auto) get(concepts::SpecializationOf<Dict> auto& t) noexcept
     {
         return t.template get<T_idx>();
     }
 
     template<size_t T_idx>
-    constexpr decltype(auto) get(auto const& t) noexcept requires(alpaka::isSpecializationOf_v<ALPAKA_TYPEOF(t), Dict>)
+    constexpr decltype(auto) get(concepts::SpecializationOf<Dict> auto const& t) noexcept
     {
         return t.template get<T_idx>();
     }

@@ -79,14 +79,12 @@ namespace alpaka::onAcc::internal
 
 namespace alpaka::trait
 {
-    template<typename T>
-    requires(isSpecializationOf_v<std::remove_cvref_t<T>, onAcc::internal::IdxRangeLazy>)
+    template<concepts::SpecializationOf<onAcc::internal::IdxRangeLazy> T>
     struct IsLazyIndexRange<T> : std::true_type
     {
     };
 
-    template<typename T>
-    requires(isSpecializationOf_v<std::remove_cvref_t<T>, onAcc::internal::IdxRangeFn>)
+    template<concepts::SpecializationOf<onAcc::internal::IdxRangeFn> T>
     struct IsLazyIndexRange<T> : std::true_type
     {
     };

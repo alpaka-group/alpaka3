@@ -92,7 +92,7 @@ namespace alpaka
     Tuple(T_Args&&...) -> Tuple<T_Args...>;
 
     template<size_t T_idx>
-    constexpr decltype(auto) get(auto&& t) noexcept requires(alpaka::isSpecializationOf_v<ALPAKA_TYPEOF(t), Tuple>)
+    constexpr decltype(auto) get(concepts::SpecializationOf<Tuple> auto&& t) noexcept
     {
         return ALPAKA_FORWARD(t).template get<T_idx>();
     }

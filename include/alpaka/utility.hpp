@@ -107,6 +107,17 @@ namespace alpaka
 
     /** @} */
 
+    namespace concepts
+    {
+        /** Validates if T is a specialization of the unspecialized template type U.
+         *
+         * @tparam T full type specialization
+         * @tparam U unspecialized template type
+         */
+        template<typename T, template<typename...> typename U>
+        concept SpecializationOf = isSpecializationOf_v<std::remove_cvref_t<T>, U>;
+    } // namespace concepts
+
     /**
      * @brief Helper function calculating the integer power for the given base and exponent.
      */
