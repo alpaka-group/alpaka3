@@ -128,7 +128,7 @@ def build_doxygen(app):
             logger.warning(doxygen_process.stderr.strip())
         if doxygen_process.returncode != 0:
             logger.error(f"{cmd} failed")
-            sys.exit(0)
+            sys.exit(doxygen_process.returncode)
 
     # copy user and developer to sphinx doc html output
     for src, dest in get_src_dest_paths(app):
