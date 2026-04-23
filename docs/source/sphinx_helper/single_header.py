@@ -30,26 +30,26 @@ def is_generate_single_header(app) -> bool:
         logger.info("Single Header: create because single header does not exist.")
         return True
 
-    if "ALPAKA_SINGLE_HEADER" in os.environ:
-        env_value = os.environ["ALPAKA_SINGLE_HEADER"]
+    if "ALPAKA_DOC_SINGLE_HEADER" in os.environ:
+        env_value = os.environ["ALPAKA_DOC_SINGLE_HEADER"]
         if env_value in ("1", "ON"):
             logger.info(
-                f"Single Header: force build via environment variable ALPAKA_SINGLE_HEADER={env_value}"
+                f"Single Header: force build via environment variable ALPAKA_DOC_SINGLE_HEADER={env_value}"
             )
             return True
         if env_value in ("0", "OFF"):
             logger.info(
-                f"Single Header: disable build via environment variable ALPAKA_SINGLE_HEADER={env_value}"
+                f"Single Header: disable build via environment variable ALPAKA_DOC_SINGLE_HEADER={env_value}"
             )
             return False
 
         logger.error(
-            f"Single Header: unknown value for environment variable ALPAKA_SINGLE_HEADER={env_value}"
+            f"Single Header: unknown value for environment variable ALPAKA_DOC_SINGLE_HEADER={env_value}"
         )
         sys.exit(1)
 
     if not get_modified_files(
-        os.path.join(app.builder.outdir, ".include_diff_cache"), "^include"
+        os.path.join(app.builder.outdir, ".single_header_cache.json"), "^include"
     ):
         logger.info("Single Header: skip build because no file was changed")
         return False
