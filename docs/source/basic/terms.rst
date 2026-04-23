@@ -215,3 +215,54 @@ Kernel
 
 Frame, Frame Extents and Frame Spec
 -----------------------------------
+
+A ``frame`` is a virtual processing unit with a arbitrary of parallel threads.
+It is used within a :ref:`kernel` to implement a parallel algorithm.
+The ``frame`` is mapped to a physical processing unit of a :ref:`device`.
+This allows the virtual, single-level parallelism of a frame to be mapped to the various levels of parallelism of the physical processor.
+For example, the following mappings are possible:
+
+- One ``frame`` per thread on a multi-core CPU. 1 level of hardware parallelism: threads.
+- One ``frame`` per thread on a multi-core CPU with vectorization. 2 levels of hardware parallelism: threads and vector units.
+- One ``frame`` per GPU core with multiple hardware threads organized into warp groups. On Nvidia GPUs, this is a Streaming Multiprocessor (SM), on AMD GPUs this is a Compute Unit (CU) and on Intel GPUs this is a Xe core. 3 levels of hardware parallelism: cores, warps, and threads.
+
+The size of a ``frame``, called as ``frame extent`` can have an arbitrary size and is only constraint of the algorithm being implemented.
+Ideally, all possible ``frame extent`` should be allowed, as some sizes map better to the actual hardware than others.
+Good starting points for a well-functioning ``frame extent`` include, for example:
+
+- A multiple of the number of hardware threads in a GPU core. Each hardware thread should be utilized, and each thread should do the same amount of work.
+- An integer multiple of the data size divided by the vector length of a CPU core’s vector extension. For example, if you are processing floating-point data using floats (32 bits) and your vector extension is 128 bits wide, you should use a multiple of 4, since each CPU core can process 128 bits in a single instruction.
+
+It is not necessary that the ``frame extent`` maps to the execution units of a hardware processor in a 1:N ratio.
+alpaka automatically under- or over-utilizes the execution units of physical processor to process all virtual threads within a ``frame``.
+Examples of asymmetric mappings include:
+
+- The ``frame extents`` is 7, and the ``frame`` is executed on a CPU thread without vector units. The hardware thread executes all 7 virtual threads sequentially [#f6]_.
+- The ``frame extents`` is 48, and the ``frame`` is executed on a GPU core with 32 hardware threads. 16 hardware threads each process 2 virtual threads, and 16 hardware threads each process 1 virtual thread.
+- On a CPU thread with a 256-bit vector unit, 20 floating-point numbers (32 bits) are processed. The first 16 elements (512 bits) can be processed with 2 vector instructions. The last 4 elements must be processed sequentially. So the ``frame extents`` can be 3.
+
+The ``frame spec`` is a tuple of ``frame extents`` and the number of ``frames``, and is used when enqueuing a :ref:`kernel`  to setup the level of parallelism.
+
+.. code::
+
+    // TODO: enqueue Kernel with thread spec
+
+``Frames`` are strongly couple to the function ``alpaka::onAcc::makeIdxMap()``.
+The function takes as input the ``frame`` configuration and the ``extents`` of the data to be processed and returns an index object which maps to the hardware execution unit.
+A more detailed explanation can be found in *Tutorial - Getting Started* section.
+
+``Frames`` are strongly coupled to the ``alpaka::onAcc::makeIdxMap()`` function.
+This function takes the ``frame`` configuration and the ``extents`` of the data to be processed as input and returns an index object that is mapped to the hardware execution unit.
+For a more detailed explanation, see the *Tutorial - Getting Started* section.
+
+.. code::
+
+    // TODO: example of a simple kernel
+
+.. hint::
+
+    The ``frame`` is an optional feature of alpaka.
+    It is also possible to develop an algorithm that works directly with the number of blocks, warps and threads.
+    However, we strongly recommend using ``frames`` to write performance portable code.
+
+.. [#f6] Even though the virtual threads are actually executed sequentially, the algorithm must be implemented with parallel threads in mind in order to be portable.
