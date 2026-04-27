@@ -11,7 +11,7 @@ from .utils import on_rtd
 from .file_cache import get_modified_files
 
 
-def generate_doxygen(app, exception):
+def generate_doxygen(app):
     """Build doxygen documentation.
 
     Args:
