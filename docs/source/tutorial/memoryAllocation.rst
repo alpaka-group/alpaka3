@@ -21,7 +21,7 @@ Choosing Extents
 
 The extent rules above are easiest to see in code:
 
-  .. literalinclude:: ../../snippets/example/040_memory.cpp
+  .. literalinclude:: ../../snippets/example/040_memory_allocation.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-allocBufferExtentForms
     :end-before: END-TUTORIAL-allocBufferExtentForms
@@ -35,7 +35,7 @@ This snippet shows the three extent-related points the chapter relies on:
 
 The following examples show how to create memory which is **only** accessible on the device.
 
-  .. literalinclude:: ../../snippets/example/040_memory.cpp
+  .. literalinclude:: ../../snippets/example/040_memory_allocation.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-allocBufferDev
     :end-before: END-TUTORIAL-allocBufferDev
@@ -46,7 +46,7 @@ Explicit memory copies are not required to access the memory from the device or 
 When using mapped memory, you must be careful not to access the memory of the host and the device in parallel.
 Accessing this type of memory from the device is usually associated with high latency and is slow.
 
-  .. literalinclude:: ../../snippets/example/040_memory.cpp
+  .. literalinclude:: ../../snippets/example/040_memory_allocation.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-allocBufferMapped
     :end-before: END-TUTORIAL-allocBufferMapped
@@ -58,7 +58,7 @@ It is transparently migrated page by page to the location from which it is acces
 You should not access unified memory in parallel from the host and the device.
 The first access to a memory location is often associated with high latencies, but once the page has been migrated, access is just as fast as direct access to the device memory.
 
-  .. literalinclude:: ../../snippets/example/040_memory.cpp
+  .. literalinclude:: ../../snippets/example/040_memory_allocation.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-allocBufferUnified
     :end-before: END-TUTORIAL-allocBufferUnified
@@ -69,7 +69,7 @@ For this, you can use ``alpaka::onHost::allocLike(device, sourceBuffer)`` to ado
 The data in the source buffer is not copied.
 This can only be done explicitly.
 
-  .. literalinclude:: ../../snippets/example/040_memory.cpp
+  .. literalinclude:: ../../snippets/example/040_memory_allocation.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-allocLike
     :end-before: END-TUTORIAL-allocLike
@@ -81,7 +81,7 @@ Depending on the device or queue API, ``alpaka::onHost::allocDeferred()`` automa
 
 That kind of temporary buffer shows up naturally later for things such as scan scratch storage, intermediate image tiles, or one stage of a multi-step numerical pipeline.
 
-  .. literalinclude:: ../../snippets/example/040_memory.cpp
+  .. literalinclude:: ../../snippets/example/040_memory_allocation.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-allocBufferDeferred
     :end-before: END-TUTORIAL-allocBufferDeferred
@@ -93,9 +93,9 @@ Complete Source File
 .. raw:: html
 
    <details class="full-source">
-   <summary>040_memory.cpp</summary>
+   <summary>040_memory_allocation.cpp</summary>
 
-.. filteredliteralinclude:: ../../snippets/example/040_memory.cpp
+.. filteredliteralinclude:: ../../snippets/example/040_memory_allocation.cpp
    :language: cpp
    :linenos:
 

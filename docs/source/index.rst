@@ -54,11 +54,11 @@ Individual chapters are based on the information of the chapters before.
    :maxdepth: 1
    :titlesonly:
 
-   tutorial/intro.rst
+   tutorial/motivation.rst
    tutorial/vector.rst
    tutorial/device.rst
    tutorial/queue.rst
-   tutorial/memory.rst
+   tutorial/memoryAllocation.rst
    tutorial/memoryOperations.rst
 
 .. toctree::
