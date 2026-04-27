@@ -11,9 +11,9 @@ from sphinx_helper.utils import on_rtd
 from sphinx_helper.doxygen import generate_doxygen
 
 def setup(app):
-    # Hook into the 'builder-inited' event to run the function before the build starts
+    # Doxygen XML must exist before Sphinx/Breathe reads the documents.
+    app.connect('builder-inited', generate_doxygen)
     app.connect('build-finished', generate_single_header)
-    app.connect('build-finished', generate_doxygen)
 
 # -- Project information -----------------------------------------------------
 
