@@ -56,35 +56,6 @@ The device with the api ``host`` and the device kind ``cpu`` which represents yo
     :end-before: END-TUTORIAL-devHostDev
     :dedent:
 
-Enumerating Devices and Executors
----------------------------------
-
-If you do not want to choose one backend manually, alpaka can also iterate over all enabled backend combinations that are available on the current machine.
-That is useful for examples, tests, and small comparison programs where the same code should run once per available executor.
-
-  .. literalinclude:: ../../snippets/example/020_device.cpp
-    :language: cpp
-    :start-after: BEGIN-TUTORIAL-enumerateDeviceSpec
-    :end-before: END-TUTORIAL-enumerateDeviceSpec
-    :dedent:
-
-From that selector you can get:
-
-- the number of visible devices for that backend,
-- device properties such as the reported warp size,
-- and a concrete ``onHost::Device`` handle for allocation and queue creation.
-
-Many alpaka examples are written so they run once for every enabled backend that is actually available on the current machine.
-
-  .. literalinclude:: ../../snippets/example/020_device.cpp
-    :language: cpp
-    :start-after: BEGIN-TUTORIAL-enumerateBackends
-    :end-before: END-TUTORIAL-enumerateBackends
-    :dedent:
-
-This is the easiest way to think about the execution layer:
-you have one calculation, and alpaka lets you ask where that calculation can run on this machine.
-
 Complete Source File
 --------------------
 
@@ -100,3 +71,4 @@ Complete Source File
 .. raw:: html
 
    </details>
+   <br/>

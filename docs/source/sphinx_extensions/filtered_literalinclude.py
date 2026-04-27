@@ -7,7 +7,7 @@ from docutils import nodes
 from docutils.parsers.rst import Directive, directives
 
 
-MARKER_RE = re.compile(r"^\s*//\s*(BEGIN|END)-TUTORIAL-[A-Za-z0-9_-]+\s*$")
+MARKER_RE = re.compile(r"^\s*//\s*(BEGIN|END)-[A-Za-z0-9_-]+\s*$")
 
 
 class FilteredLiteralInclude(Directive):
@@ -36,7 +36,7 @@ class FilteredLiteralInclude(Directive):
         return [literal]
 
 
-# Include a file into a rst file without the labels `TUTORIAL_[BEGIN|END]_*`
+# Include a file into a rst file without the labels `[BEGIN|END]_*`
 #
 # Is used similar to `literalinclude`
 def setup(app):

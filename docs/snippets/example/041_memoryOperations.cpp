@@ -76,6 +76,8 @@ TEMPLATE_LIST_TEST_CASE("memory", "[docs]", docs::test::TestBackends)
     onHost::wait(hostQueue);
 
     // BEGIN-TUTORIAL-memsetExtent
+    // the value type of the buffer is int, which has size of 4 bytes on an x86_64 architecture
+    static_assert(std::same_as<typename ALPAKA_TYPEOF(hostBuffer)::value_type, int>);
     onHost::memset(hostQueue, hostBuffer, 0, Vec{4u});
     // END-TUTORIAL-memsetExtent
     onHost::wait(hostQueue);
@@ -100,11 +102,13 @@ TEMPLATE_LIST_TEST_CASE("memory using std::vector", "[docs]", docs::test::TestBa
 
     onHost::SharedBuffer computeBuffer = onHost::alloc<int>(computeDev, 10);
 
+    // BEGIN-TUTORIAL-stdVector
     // use std::vector instead of an alpaka view
     std::vector stdVec = std::vector<int>(10, 0);
 
     onHost::fill(asyncComputeQueue, computeBuffer, 42);
     onHost::memcpy(asyncComputeQueue, stdVec, computeBuffer);
+    // END-TUTORIAL-stdVector
     onHost::wait(asyncComputeQueue);
 
     // check that the data is valid

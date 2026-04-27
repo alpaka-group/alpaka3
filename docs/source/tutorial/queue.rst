@@ -36,7 +36,6 @@ If you do not pass ``queueKind`` as an argument, you will get a *non-blocking* q
     :dedent:
 
 We will learn more about queue functions in later chapters.
-Before that, we continue with memory management.
 
 Complete Source File
 --------------------
@@ -53,3 +52,4 @@ Complete Source File
 .. raw:: html
 
    </details>
+   <br/>

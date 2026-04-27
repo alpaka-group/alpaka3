@@ -93,12 +93,6 @@ html_theme_options = {
     "collapse_navigation": False,
     "navigation_depth": 2,
 }
-html_sidebars = {
-    "**": [
-        "searchbox.html",
-        "globaltoc.html",
-    ]
-}
 
 # -- Options for HTMLHelp output ---------------------------------------------
 

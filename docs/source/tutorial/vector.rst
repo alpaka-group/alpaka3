@@ -5,11 +5,21 @@ Before allocating memory or launching a kernel, it is worth getting comfortable 
 alpaka uses vectors for extents, indices, and frame shapes, so understanding the basic access rules early avoids many beginner mistakes later.
 A vector is designed for integral values, but using a vector with floating-point numbers also works.
 
-The main beginner rule is simple:
-the named component order is ``w/z/y/x``.
-If you come from CUDA or HIP, do not assume a ``x/y/z`` declaration order.
-In alpaka, the rightmost component is the fastest varying dimension.
-In contrast to CUDA/HIP your are not limited to 3 dimensions and you can have as many as you like.
+The elements of the first four dimensions can be accessed either via an index (e.g., ``vec[0]``) or via a named component (e.g., ``vec.x()``).
+The order of the components is ``w/z/y/x``.
+This is the reverse order compared to CUDA or HIP, where ``x/y/z`` is used.
+
+The mapping of the index position [#f1]_ to the named component is as follows:
+
+- **alpaka**: ``vec.w() -> vec[0]; vec.z() -> vec[1]; vec.y() -> vec[2]; vec.x() -> vec[3];``
+- **CUDA/HIP**: ``vec.x() -> vec[0]; vec.y() -> vec[1]; vec.z() -> vec[2];``
+
+Unlike CUDA/HIP, alpaka vectors are not limited to three dimensions but can have any number of dimensions.
+If the alpaka vector is smaller than 4D, not all named components are available.
+For example, a 3D vector does not have the ``.w()`` component.
+If, on the other hand, the vector is larger than 4D, all additional dimensions can only be accessed via the access operator.
+
+.. [#f1] Unlike CUDA/HIP vectors, alpaka vectors do not have a fixed dimension. To simplify the example, we will use a four-dimensional vector
 
 Vec
 ---
@@ -37,13 +47,17 @@ The dimension of the vector can be queried via ``dim()``.
     :dedent:
 
 The dimensions in a multidimensional vector can be accessed via named functions or indices.
-This is the most important detail to learn early because many users first assume CUDA-like naming.
 
   .. literalinclude:: ../../snippets/example/010_vector.cpp
     :language: cpp
     :start-after: BEGIN-TUTORIAL-vectorNamedAccess
     :end-before: END-TUTORIAL-vectorNamedAccess
     :dedent:
+
+  .. warning::
+
+     If you are familiar with CUDA/HIP, these named components are well-suited for porting CUDA/HIP algorithms to alpaka.
+     However, be careful when using multidimensional data structures from CUDA/HIP applications in alpaka applications, as the order of the indices is reversed for these named components.
 
 The next example shows how to iterate over a C array where the size is defined by a vector.
 The slow moving index is the leftmost with the index ``0`` and the fast moving index is ``dim() - 1u``.
@@ -145,3 +159,4 @@ Complete Source File
 .. raw:: html
 
    </details>
+   <br/>

@@ -3,9 +3,13 @@ Allocate Memory
 
 Now that we know how to :ref:`get a device <device-selection>` and create :ref:`a queue <queue_creation>`, we can move on to memory allocation.
 To allocate memory, you need a *device* and sometimes a *queue*.
-alpaka's memory allocation methods return a ``alpaka::onHost::SharedBuffer`` handle that tracks the lifetime of the memory and frees memory when the last instance goes out of scope, similar to ``std::shared_ptr<>`` in the STL.
+alpaka's memory allocation methods return a *DataStorage* object that implements the ``alpaka::concepts::IBuffer`` interface.
+The ``alpaka::concepts::IBuffer`` interface requires that the lifetime of the memory be tracked.
+One implementation of this interface is the ``alpaka::onHost::SharedBuffer`` handle.
+It behaves like a ``std::shared_ptr<>`` from the standard library.
+When the last instance going out of scope, the memory is freed.
 
-- Copying a ``alpaka::onHost::SharedBuffer`` handle is a shallow copy of the buffer handle and does not duplicate the data.
+- If a *DataStorage* handle allow it, copying a handle is a shallow copy of the handle and does not duplicate the data.
 - A deep copy of the memory must be explicitly triggered using ``alpaka::onHost::memcpy()``.
 - A buffer is **not** initialized with default values.
 - The *extents*, which describe the number of elements per dimension, should be ``>=1``. The *extents* can have any dimensionality.
@@ -98,3 +102,4 @@ Complete Source File
 .. raw:: html
 
    </details>
+   <br/>
