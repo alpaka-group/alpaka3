@@ -42,7 +42,7 @@ namespace alpaka::math::internal
             using std::funcName;                                                                                      \
             if constexpr(requires { funcName(arg.asNativeType()); })                                                  \
             {                                                                                                         \
-                return T_Arg{sqrt(arg.asNativeType())};                                                               \
+                return T_Arg{funcName(arg.asNativeType())};                                                           \
             }                                                                                                         \
             else                                                                                                      \
             {                                                                                                         \
