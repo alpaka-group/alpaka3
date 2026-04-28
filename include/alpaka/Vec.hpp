@@ -308,9 +308,6 @@ namespace alpaka
             return Vec([this](uint32_t const i) constexpr { return -(*this)[i]; });
         }
 
-/** assign operator
- * @{
- */
 #define ALPAKA_VECTOR_ASSIGN_OP(op)                                                                                   \
     template<typename T_OtherStorage>                                                                                 \
     constexpr Vec& operator op(Vec<T_Type, T_dim, T_OtherStorage> const& rhs)                                         \
@@ -344,16 +341,17 @@ namespace alpaka
         return *this;                                                                                                 \
     }
 
-
+        /** assign operator
+         * @{
+         */
         ALPAKA_VECTOR_ASSIGN_OP(+=)
         ALPAKA_VECTOR_ASSIGN_OP(-=)
         ALPAKA_VECTOR_ASSIGN_OP(/=)
         ALPAKA_VECTOR_ASSIGN_OP(*=)
         ALPAKA_VECTOR_ASSIGN_OP(=)
+        /** @} */
 
 #undef ALPAKA_VECTOR_ASSIGN_OP
-
-        /** @} */
 
         constexpr decltype(auto) operator[](std::integral auto const idx)
         {
@@ -365,29 +363,32 @@ namespace alpaka
             return Storage::operator[](idx);
         }
 
-        /** named member access
-         *
-         * index -> name [0->x,1->y,2->z,3->w]
-         * @{
-         */
-#define ALPAKA_NAMED_ARRAY_ACCESS(functionName, dimValue)                                                             \
-    constexpr decltype(auto) functionName() requires(T_dim >= dimValue + 1)                                           \
+#define ALPAKA_NAMED_ARRAY_ACCESS(functionName, indexPos)                                                             \
+    /* An integer underflow may occur with `indexPos`, for example if `T_dim` is equal to 1 and `y()` should be       \
+     declared as `(T_dim - 2u)`. Therefore the `requires` is fine, because everything which should be theoretical     \
+     negative become much bigger.                                                                                     \
+     * than T_dim. */                                                                                                 \
+    constexpr decltype(auto) functionName() requires((indexPos) < T_dim)                                              \
     {                                                                                                                 \
-        return (*this)[T_dim - 1u - dimValue];                                                                        \
+        return (*this)[indexPos];                                                                                     \
     }                                                                                                                 \
-    constexpr decltype(auto) functionName() const requires(T_dim >= dimValue + 1)                                     \
+    constexpr decltype(auto) functionName() const requires((indexPos) < T_dim)                                        \
     {                                                                                                                 \
-        return (*this)[T_dim - 1u - dimValue];                                                                        \
+        return (*this)[indexPos];                                                                                     \
     }
 
-        ALPAKA_NAMED_ARRAY_ACCESS(x, 0u)
-        ALPAKA_NAMED_ARRAY_ACCESS(y, 1u)
-        ALPAKA_NAMED_ARRAY_ACCESS(z, 2u)
-        ALPAKA_NAMED_ARRAY_ACCESS(w, 3u)
+        /** named member access
+         *
+         * index -> name [0->w, 1->z, 2->y, 3->x]
+         * @{
+         */
+        ALPAKA_NAMED_ARRAY_ACCESS(x, T_dim - 1u)
+        ALPAKA_NAMED_ARRAY_ACCESS(y, T_dim - 2u)
+        ALPAKA_NAMED_ARRAY_ACCESS(z, T_dim - 3u)
+        ALPAKA_NAMED_ARRAY_ACCESS(w, T_dim - 4u)
+        /** @} */
 
 #undef ALPAKA_NAMED_ARRAY_ACCESS
-
-        /** @} */
 
         constexpr decltype(auto) back()
         {
@@ -754,9 +755,6 @@ namespace alpaka
         return s << vec.toString();
     }
 
-/** binary operators
- * @{
- */
 #define ALPAKA_VECTOR_BINARY_OP(typenameOrConcept, resultScalarType, op)                                              \
     template<typenameOrConcept T_Type, uint32_t T_dim, typename T_Storage, typename T_OtherStorage>                   \
     constexpr auto operator op(                                                                                       \
@@ -802,6 +800,10 @@ namespace alpaka
             result[i] = lhs op rhs[i];                                                                                \
         return result;                                                                                                \
     }
+
+    /** binary operators
+     * @{
+     */
     ALPAKA_VECTOR_BINARY_OP(typename, T_Type, +)
     ALPAKA_VECTOR_BINARY_OP(typename, T_Type, -)
     ALPAKA_VECTOR_BINARY_OP(typename, T_Type, *)
@@ -818,11 +820,9 @@ namespace alpaka
     ALPAKA_VECTOR_BINARY_OP(std::integral, T_Type, &)
     ALPAKA_VECTOR_BINARY_OP(std::integral, T_Type, |)
     ALPAKA_VECTOR_BINARY_OP(std::integral, T_Type, ^)
-
-#undef ALPAKA_VECTOR_BINARY_OP
-
     /** @} */
 
+#undef ALPAKA_VECTOR_BINARY_OP
 
     /** Give the linear index of an N-dimensional index within an N-dimensional index space.
      *
