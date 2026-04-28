@@ -1,13 +1,9 @@
 #
-# Copyright 2025 Simeon Ehrig
+# Copyright 2026 Simeon Ehrig
 # SPDX-License-Identifier: ISC
 #
 
 alpaka_install_catch2()
-
-add_executable(docs_terms_extents terms_extents.cpp)
-target_link_libraries(docs_terms_extents PRIVATE alpaka::alpaka)
-alpaka_finalize(docs_terms_extents)
 
 add_executable(docs_datastorage_interface datastorage_interface.cpp)
 target_link_libraries(docs_datastorage_interface PRIVATE alpaka::alpaka)

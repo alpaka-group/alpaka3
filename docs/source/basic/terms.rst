@@ -168,10 +168,10 @@ The ``Extents`` define the number of dimensions and the size of each dimension.
 The order of the dimensions corresponds to C/C++.
 The memory is row-oriented. The fastest index is the outer right one.
 
-.. literalinclude:: ../../snippets/dataStorage/terms_extents.cpp
+.. literalinclude:: ../../snippets/terms/datastorage_extents.cpp
   :language: cpp
-  :start-after: BEGIN-DATASTORAGE-termExtents
-  :end-before: END-DATASTORAGE-termExtents
+  :start-after: BEGIN-TERMS-dataStorageExtents
+  :end-before: END-TERMS-dataStorageExtents
   :dedent:
 
 .. figure:: images/extents_access_example.svg
