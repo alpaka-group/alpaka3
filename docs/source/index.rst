@@ -38,8 +38,7 @@ Individual chapters are based on the information of the chapters before.
 
 .. toctree::
    :caption: Basic
-   :maxdepth: 1
-   :titlesonly:
+   :maxdepth: 2
 
    basic/intro.rst
    basic/install.rst
@@ -63,8 +62,7 @@ Individual chapters are based on the information of the chapters before.
 
 .. toctree::
    :caption: Advanced
-   :maxdepth: 1
-   :titlesonly:
+   :maxdepth: 2
 
    advanced/cmake.rst
    advanced/datastorage.rst
@@ -73,16 +71,14 @@ Individual chapters are based on the information of the chapters before.
 
 .. toctree::
    :caption: Developer
-   :maxdepth: 1
-   :titlesonly:
+   :maxdepth: 2
 
    dev/logging.rst
    dev/online_tools.rst
 
 .. toctree::
    :caption: Contribution
-   :maxdepth: 1
-   :titlesonly:
+   :maxdepth: 2
 
    contribution/sphinx.rst
    contribution/tools.rst
