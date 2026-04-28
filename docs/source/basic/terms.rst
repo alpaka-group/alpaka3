@@ -25,7 +25,7 @@ If a function or object is in namespace ``alpaka``, it is usable *onHost* and *o
 Host
 ````
 
-The *onHost* is mainly controlling the application control flow, like selecting the ``accelerator``-:ref:`Device`, allocating memory, enqueuing kernels *onAcc*, and more.
+The *onHost* is mainly controlling the application control flow, like selecting the (``accelerator``)-:ref:`Device`, allocating memory, enqueuing kernels *onAcc*, and more.
 
 Properties:
     - The entry point of the *onHost* control flow is the ``main()`` function of a C++ code.
@@ -35,10 +35,19 @@ Properties:
 
 .. [#f2] In theory, all C++ functionality can be used but in practice there are limitations from the SDKs used by the backends. For example, the CUDA SDK does not support C++20 modules (valid for CUDA 13.x and before).
 
+.. _accelerator:
+
 Accelerator
 ```````````
 
-The *onAcc* namespace contains the actual algorithms that are executed on the accelerator device, like a CPU or GPU.
+The ``accelerator`` is a virtual processor that is mapped to a hardware processor.
+Therefore, the term ``accelerator`` is used as an abstraction layer (virtual processor) and serves to define which code is offloaded to a physical processor.
+The *onAcc* namespace contains the actual algorithms that are executed on the ``accelerator``, like a CPU or GPU.
+
+The ``accelerator`` does not represent a specific processor in the system. It represents a category of processors.
+For example, if we have a system with two Intel Xeon CPUs and four AMD Instinct GPUs, an ``accelerator`` can be an Intel Xeon CPU or an AMD Instinct GPU. A specific processor is a :ref:`Device`.
+The example system has 2 CPU :ref:`Devices <Device>` and 4 GPU :ref:`Devices <Device>`.
+Therefore, the host selects a :ref:`Device`, but the actual algorithm is written for an ``accelerator``, since it can run on different :ref:`Devices <Device>`.
 
 Properties:
     - *onAcc* can only be entered from the *onHost* by enqueuing a compute kernel.
