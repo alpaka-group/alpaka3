@@ -136,11 +136,56 @@ namespace alpaka::onHost
 
                 auto prop = DeviceProperties{};
                 prop.name = devProp.name;
-                prop.maxThreadsPerBlock = devProp.maxThreadsPerBlock;
                 prop.warpSize = devProp.warpSize;
                 prop.multiProcessorCount = devProp.multiProcessorCount;
                 prop.globalMemCapacityBytes = globalMemCapacityBytes;
                 prop.sharedMemPerBlockBytes = devProp.sharedMemPerBlock;
+
+                prop.maxThreadsPerBlock = devProp.maxThreadsPerBlock;
+                // will be copied into the lampda and follows cuda index order
+                Vec<uint32_t, 3u> cudaMaxThreadsPerBlock{
+                    devProp.maxThreadsDim[0u],
+                    devProp.maxThreadsDim[1u],
+                    devProp.maxThreadsDim[2u]};
+                prop.fnMaxThreadsPerBlock = [maxThreadsPerBlock = prop.maxThreadsPerBlock,
+                                             cudaMaxThreadsPerBlock](uint32_t* data, uint32_t numDims)
+                {
+                    if(numDims <= 3u)
+                    {
+                        for(uint32_t d = 0u; d < numDims; ++d)
+                            data[numDims - 1u - d] = cudaMaxThreadsPerBlock[d];
+                    }
+                    else
+                    {
+                        /* For more than 3 dimensions alpaka is linearizing to one dimension, therefore we use the
+                         * maximum for each dimension. */
+                        for(uint32_t d = 0u; d < numDims; ++d)
+                            data[d] = maxThreadsPerBlock;
+                    }
+                };
+
+                prop.maxBlocksPerGrid = std::numeric_limits<uint32_t>::max();
+                // will be copied into the lampda and follows cuda index order
+                Vec<uint32_t, 3u> cudaMaxBlocksPerGrid{
+                    devProp.maxGridSize[0u],
+                    devProp.maxGridSize[1u],
+                    devProp.maxGridSize[2u]};
+                prop.fnMaxBlocksPerGrid =
+                    [maxBlocksPerGrid = prop.maxBlocksPerGrid, cudaMaxBlocksPerGrid](uint32_t* data, uint32_t numDims)
+                {
+                    if(numDims <= 3u)
+                    {
+                        for(uint32_t d = 0u; d < numDims; ++d)
+                            data[numDims - 1u - d] = cudaMaxBlocksPerGrid[d];
+                    }
+                    else
+                    {
+                        /* For more than 3 dimensions alpaka is linearizing to one dimension, therefore we use the
+                         * maximum for each dimension. */
+                        for(uint32_t d = 0u; d < numDims; ++d)
+                            data[d] = maxBlocksPerGrid;
+                    }
+                };
 
                 return prop;
             }

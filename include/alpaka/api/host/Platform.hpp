@@ -142,7 +142,6 @@ namespace alpaka::onHost
                 ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::device);
                 auto prop = DeviceProperties{};
                 prop.name = getCpuName();
-                prop.maxThreadsPerBlock = std::numeric_limits<uint32_t>::max();
                 prop.warpSize = 1u;
                 prop.multiProcessorCount = hwloc::getNumCores(hwloc::allNumaDomains);
                 prop.globalMemCapacityBytes = hwloc::getMemCapacityBytes(hwloc::allNumaDomains);
@@ -156,6 +155,20 @@ namespace alpaka::onHost
                 }
                 else
                     alpaka::unused(deviceIdx);
+
+                prop.maxThreadsPerBlock = std::numeric_limits<uint32_t>::max();
+                prop.fnMaxThreadsPerBlock = [](uint32_t* data, uint32_t numDims)
+                {
+                    for(uint32_t d = 0u; d < numDims; ++d)
+                        data[d] = std::numeric_limits<uint32_t>::max();
+                };
+
+                prop.maxBlocksPerGrid = std::numeric_limits<uint32_t>::max();
+                prop.fnMaxBlocksPerGrid = [](uint32_t* data, uint32_t numDims)
+                {
+                    for(uint32_t d = 0u; d < numDims; ++d)
+                        data[d] = std::numeric_limits<uint32_t>::max();
+                };
 
                 return prop;
             }

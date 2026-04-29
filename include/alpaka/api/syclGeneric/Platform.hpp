@@ -228,7 +228,6 @@ namespace alpaka
 
                     auto prop = DeviceProperties{};
                     prop.name = dev.get_info<sycl::info::device::name>();
-                    prop.maxThreadsPerBlock = dev.get_info<sycl::info::device::max_work_group_size>();
                     std::vector<std::size_t> wrap_sizes = dev.get_info<sycl::info::device::sub_group_sizes>();
                     // @todo do not reduce wrap size to a single value, return all values
                     prop.warpSize = static_cast<uint32_t>(std::reduce(
@@ -247,6 +246,35 @@ namespace alpaka
                     prop.multiProcessorCount = dev.get_info<sycl::info::device::max_compute_units>();
                     prop.globalMemCapacityBytes = dev.get_info<sycl::info::device::global_mem_size>();
                     prop.sharedMemPerBlockBytes = dev.get_info<sycl::info::device::local_mem_size>();
+
+                    prop.maxThreadsPerBlock = dev.get_info<sycl::info::device::max_work_group_size>();
+                    // will be copied into the lampda
+                    auto syclMaxThreadsPerBlock = dev.get_info<sycl::info::device::max_work_item_sizes<3>>();
+                    // in sycl index order == alpaka index order
+                    prop.fnMaxThreadsPerBlock = [maxThreadsPerBlock = prop.maxThreadsPerBlock,
+                                                 syclMaxThreadsPerBlock](uint32_t* data, uint32_t numDims)
+                    {
+                        if(numDims <= 3u)
+                        {
+                            for(uint32_t d = 0u; d < numDims; ++d)
+                                data[numDims - 1u - d] = syclMaxThreadsPerBlock[3u - 1u - d];
+                        }
+                        else
+                        {
+                            /* For more than 3 dimensions alpaka is linearizing to one dimension, therefore we use the
+                             * maximum for each dimension. */
+                            for(uint32_t d = 0u; d < numDims; ++d)
+                                data[d] = maxThreadsPerBlock;
+                        }
+                    };
+
+                    prop.maxBlocksPerGrid = std::numeric_limits<uint32_t>::max();
+                    prop.fnMaxBlocksPerGrid = [](uint32_t* data, uint32_t numDims)
+                    {
+                        for(uint32_t d = 0u; d < numDims; ++d)
+                            data[d] = std::numeric_limits<uint32_t>::max();
+                    };
+
 
                     return prop;
                 }
