@@ -251,6 +251,10 @@ Therefore, :ref:`Kernels <kernel>` can be developed in compliance with the ``Thr
 
 This model corresponds to the development of a CUDA/HIP kernel, taking blocks and threads into account.
 
+The main reason for using *blocks* and *threads* is that certain performance optimizations can only be applied at the *block* level.
+For example, a chunk of shared memory can only be accessed within a *block*.
+The shared memory may be high-speed memory (depending on the :ref:`accelerator`) and can be read and write from all threads within a *block*. Another mechanism is, for example, thread synchronization functions, which only work at the *block* level and are more efficient than :ref:`device`-wide synchronizations.
+
 .. note::
 
   The ``Thread Spec`` should only be used for porting existing CUDA/HIP kernels or for highly optimized :ref:`Kernels <kernel>`. In all other cases, the :ref:`Frame Spec <frame>` should be used. It provides a parallel abstraction layer that makes it easy to write high-performance code for different :ref:`Accelerations <accelerator>`.
@@ -260,53 +264,91 @@ This model corresponds to the development of a CUDA/HIP kernel, taking blocks an
 Frame, Frame Extents and Frame Spec
 -----------------------------------
 
-A ``frame`` is a virtual processing unit with a arbitrary of parallel threads.
-It is used within a :ref:`kernel` to implement a parallel algorithm.
-The ``frame`` is mapped to a physical processing unit of a :ref:`device`.
-This allows the virtual, single-level parallelism of a frame to be mapped to the various levels of parallelism of the physical processor.
-For example, the following mappings are possible:
+``Frame Spec`` is a mechanism used to describe the parallelized algorithm within a :ref:`kernel`, but without the constraints of a :ref:`thread_spec`.
+It is an optional feature that can be used in place of a :ref:`thread_spec` or in combination with it.
+The basic idea behind a ``Frame Spec`` is to split the total data/problem size into chunks (data/problem domain decomposition) and process them in parallel as much as possible.
+Each chuck is referred to as a ``Frame``.
+The multidimensional size of a ``Frame`` is called a ``Frame Extents``.
 
-- One ``frame`` per thread on a multi-core CPU. 1 level of hardware parallelism: threads.
-- One ``frame`` per thread on a multi-core CPU with vectorization. 2 levels of hardware parallelism: threads and vector units.
-- One ``frame`` per GPU core with multiple hardware threads organized into warp groups. On Nvidia GPUs, this is a Streaming Multiprocessor (SM), on AMD GPUs this is a Compute Unit (CU) and on Intel GPUs this is a Xe core. 3 levels of hardware parallelism: cores, warps, and threads.
+The :ref:`thread_spec` require that the algorithm be written such that each *block* and each *thread* processes specific data elements.
+Thus, the :ref:`thread_spec` is mapped onto the problem domain.
+This mapping is constrained by the :ref:`accelerator`-specific restrictions.
+For example, the algorithm must account for the fact that the number of threads can be either 1 (CPU) or greater (GPU).
 
-The size of a ``frame``, called as ``frame extent`` can have an arbitrary size and is only constraint of the algorithm being implemented.
-Ideally, all possible ``frame extent`` should be allowed, as some sizes map better to the actual hardware than others.
-Good starting points for a well-functioning ``frame extent`` include, for example:
+The ``Frame Spec`` introduces an additional layer between the data domain and the :ref:`thread_spec` to enable the implementation of the algorithm while accounting for any number of parallel execution units.
+The ``Frame Spec`` defines the ``Frame Extents`` and the number of ``Frames``.
 
-- A multiple of the number of hardware threads in a GPU core. Each hardware thread should be utilized, and each thread should do the same amount of work.
-- An integer multiple of the data size divided by the vector length of a CPU core’s vector extension. For example, if you are processing floating-point data using floats (32 bits) and your vector extension is 128 bits wide, you should use a multiple of 4, since each CPU core can process 128 bits in a single instruction.
+The mapping of the ``Frame Spec`` to the data domain depends on the algorithm.
+The mapping of the ``Frame Spec`` to the thread :ref:`thread_spec` on the :ref:`accelerator`.
 
-It is not necessary that the ``frame extent`` maps to the execution units of a hardware processor in a 1:N ratio.
-alpaka automatically under- or over-utilizes the execution units of physical processor to process all virtual threads within a ``frame``.
-Examples of asymmetric mappings include:
+.. _image_frame_mapping:
 
-- The ``frame extents`` is 7, and the ``frame`` is executed on a CPU thread without vector units. The hardware thread executes all 7 virtual threads sequentially [#f6]_.
-- The ``frame extents`` is 48, and the ``frame`` is executed on a GPU core with 32 hardware threads. 16 hardware threads each process 2 virtual threads, and 16 hardware threads each process 1 virtual thread.
-- On a CPU thread with a 256-bit vector unit, 20 floating-point numbers (32 bits) are processed. The first 16 elements (512 bits) can be processed with 2 vector instructions. The last 4 elements must be processed sequentially. So the ``frame extents`` can be 3.
+.. figure:: images/frame_spec_mapping.svg
 
-The ``frame spec`` is a tuple of ``frame extents`` and the number of ``frames``, and is used when enqueuing a :ref:`kernel`  to setup the level of parallelism.
+   ``Frame Spec`` mapping.
+   The dashed lines drawn every 8 elements in the *Data Domain* section are included only for clarity and have no technical meaning.
+   The purple boxes in the *Thread Spec* section of the CPU represent vector units capable of processing two data elements in a single operation.
+   The mappings are explained in the text below.
 
-.. code::
+The mapping of a ``Frame Spec`` to the data domain and the mapping of a :ref:`thread_spec` do not have to be a 1:1 relationship.
+Both mappings support 1:1, N:1, and 1:M mappings.
+The mapping algorithms are also not hard-coded and can be swapped out or replaced with a custom-implemented algorithm.
+alpaka already provides various algorithms and attempts to use the best algorithm depending on the :ref:`accelerator`.
+Therefore, the following mappings are only possibilities.
 
-    // TODO: enqueue Kernel with thread spec
+The mental programming model of a ``Frame`` is a virtual processor core with arbitrary number of execution units.
+The ``Frame Spec`` includes information on how many execution units can run in parallel per ``Frame`` (``Frame Extents``) and how many ``Frames`` can run in parallel.
 
-``Frames`` are strongly couple to the function ``alpaka::onAcc::makeIdxMap()``.
-The function takes as input the ``frame`` configuration and the ``extents`` of the data to be processed and returns an index object which maps to the hardware execution unit.
-A more detailed explanation can be found in *Tutorial - Getting Started* section.
+In the :ref:`Frame Spec mapping <image_frame_mapping>` image, we can see that there is no 1:1 mapping between the data domain, the ``Frame Spec``, and the two different :ref:`Thread Specs <thread_spec>`.
 
-``Frames`` are strongly coupled to the ``alpaka::onAcc::makeIdxMap()`` function.
-This function takes the ``frame`` configuration and the ``extents`` of the data to be processed as input and returns an index object that is mapped to the hardware execution unit.
-For a more detailed explanation, see the *Tutorial - Getting Started* section.
+- **Mapping the Frame Spec to the problem domain**: The ``Frame Extents`` is 8. Therefore, each ``Frame`` can process up to 8 data elements in parallel. There are 6 ``Frames``. This means that 48 elements can be processed in parallel at the same time. Consequently, 3 ``Frames`` must process 16 elements, 1 ``Frame`` must process 12 elements, and 2 ``Frames`` must process 8 elements.
+- **Mapping of the CPU Thread Spec to the Frame Spec**: The :ref:`thread_spec` has 4 *blocks*, each of which contains one *thread*. On a multi-core CPU, each *block* is assigned to a CPU thread. Therefore, 2 CPU threads process 2 ``Frames``, while 2 CPU threads process 1 ``Frame``. Depending on the configuration of the mapping of ``Frames`` to data chunks, CPU thread 0 can process 3 data chunks (as ``Frame`` 0, data chunk 0 and 7, and as ``Frame`` 4, data chunk 5), and CPU thread 3 can process 1.5 data chunks (as ``Frame`` 3, data chunk 3 and 10, with only 4 elements) . Within a ``Frame``, a CPU thread processes 8 elements sequentially without vectorization or 2 elements in parallel in 4 sequential operations with vectorization.
+- **Mapping of the GPU Thread Spec to the Frame Spec**: The GPU :ref:`thread_spec` allows only 6 of the 8 GPU cores to be used, since one *block* is assigned to one GPU processor. Within a ``Frame``, all data elements are processed in parallel, since one core provides 8 hardware threads. Therefore, 3 GPU cores process 2 data chunks, one core processes 1.5 data chunk (in the last chunk, half of the hardware threads are idle), 2 GPU cores process only one data chunk, and 2 cores are idle.
 
-.. code::
+The :ref:`Frame Spec mapping <image_frame_mapping>` example shows that the ``Frame Extents`` and the number of ``Frames`` are only maximum possible values.
+The actual number of elements processed in parallel depends on the :ref:`accelerator`.
+The CPU thread without vectorization must process all elements sequentially, the CPU with vectorization can process 2 elements in parallel, and the GPU can process all 8 elements in parallel.
+Furthermore, the CPU can only execute 4 ``Frames`` in parallel, as it has only 4 CPU threads.
+Nevertheless, the ``Frame`` must be programmed on the assumption that all threads run in parallel in order to be performance-portable.
 
-    // TODO: example of a simple kernel
+By varying the ``Frame Spec``, the performance on a specific :ref:`accelerator` can be improved, as this ultimately optimizes the mapping of the data elements to be processed to the hardware execution.
+In the :ref:`Frame Spec mapping <image_frame_mapping>` example, for instance, the number of ``Frames`` could be increased to 8.
+With 8 ``Frames``, all GPU cores are utilized, and the CPU continues to distribute the load almost evenly across all CPU threads.
+Additionally, it is possible to select different ``Frame Spec`` for different :ref:`accelerator`.
+The advantage of the ``Frame Spec`` lies in the freedom to choose the tuning parameter.
+
+The reason ``Frames``  are used at all is the same as the reason for dividing algorithm into *blocks* in the ``Thread Specs``.
+Within a ``Frame``, specific performance-optimization features are available, such as shared memory.
+Unlike a *block*, however, a frame can be of arbitrary extents.
+
+A key function for using ``Frames`` in :ref:`kernels <kernel>` is the ``alpaka::onAcc::makeIdxMap()`` function.
+
+.. literalinclude:: ../../snippets/terms/frame_spec_kernel.cpp
+  :language: cpp
+  :start-after: BEGIN-TERMS-kernel-framespec
+  :end-before: END-TERMS-kernel-framespec
+  :dedent:
+
+``alpaka::onAcc::makeIdxMap()`` maps the element position in the data domain to a specific hardware thread on the :ref:`Device`.
+
+The ``Frame Spec`` is defined before the :ref:`kernel` launched and is passed as a parameter to set the maximum parallelism.
+
+.. literalinclude:: ../../snippets/terms/frame_spec_kernel.cpp
+  :language: cpp
+  :start-after: BEGIN-TERMS-framespec
+  :end-before: END-TERMS-framespec
+  :dedent:
+
+.. note::
+
+    In the explanation, we discussed how the data domain extents depends on the specific algorithm and problem.
+    But what does that mean in practice?
+    In matrix-matrix multiplication, for example, the result matrix is the data domain that we want to divide into chunks.
+    So we divide the output data into chunks.
+    An example of dividing the input data into chunks is vector reduction, where we calculate a partial result for each data chunk.
 
 .. hint::
 
     The ``frame`` is an optional feature of alpaka.
     It is also possible to develop an algorithm that works directly with the number of blocks, warps and threads.
     However, we strongly recommend using ``frames`` to write performance portable code.
-
-.. [#f6] Even though the virtual threads are actually executed sequentially, the algorithm must be implemented with parallel threads in mind in order to be portable.
