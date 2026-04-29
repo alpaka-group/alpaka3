@@ -61,6 +61,15 @@ Individual chapters are based on the information of the chapters before.
    tutorial/memoryOperations.rst
 
 .. toctree::
+   :caption: Tutorial - Advanced
+   :maxdepth: 1
+   :titlesonly:
+
+   tutorial/views.rst
+   tutorial/kernelParallelism.rst
+   tutorial/multidim.rst
+
+.. toctree::
    :caption: Advanced
    :maxdepth: 2
 

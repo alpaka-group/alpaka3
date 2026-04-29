@@ -1,0 +1,60 @@
+Views and Subviews
+==================
+
+Buffers returned by allocation methods returning :ref:`buffers <i_buffer>` which tracking the lifetime of the memory and owning the data.
+:ref:`Views <i_view>` only point to memory but does not own it and can be used within a kernel or the host.
+
+View are typically used when:
+
+- You already have a host container such as ``std::vector`` and want to use it with *alpaka*.
+- You want to work only on parts of a buffer, for example a slice, halo region, or tile.
+- You want to use the data of an buffer without copying within a kernel.
+
+Creating a View
+---------------
+
+You can create a non-owning view from a host container and then derive a subview from it.
+
+  .. literalinclude:: ../../snippets/example/070_views.cpp
+    :language: cpp
+    :start-after: BEGIN-TUTORIAL-viewCreation
+    :end-before: END-TUTORIAL-viewCreation
+    :dedent:
+
+This is useful when the data already exists and you want to keep using the original storage.
+For example, a stencil update often wants the interior cells only, while a boundary kernel wants a narrow halo view around the edge.
+
+Copying Through a View
+----------------------
+
+Views work with the usual memory operations.
+That means you can allocate device memory based on a view and copy only the relevant slice back.
+
+  .. literalinclude:: ../../snippets/example/070_views.cpp
+    :language: cpp
+    :start-after: BEGIN-TUTORIAL-viewCopy
+    :end-before: END-TUTORIAL-viewCopy
+    :dedent:
+
+Typical use cases:
+
+- Copying a subrange of a 1D vector.
+- Copying only the active interior of a ND grid.
+- Passing a tile into a helper function.
+
+Complete Source File
+--------------------
+
+.. raw:: html
+
+   <details class="full-source">
+   <summary>070_views.cpp</summary>
+
+.. filteredliteralinclude:: ../../snippets/example/070_views.cpp
+   :language: cpp
+   :linenos:
+
+.. raw:: html
+
+   </details>
+   <br/>

@@ -190,6 +190,8 @@ It does not store any information about the associated :ref:`API <api>`.
 
 Go to the `IMdSpan Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IMdSpan.html>`_
 
+.. _i_view:
+
 IView
 `````
 
@@ -197,6 +199,8 @@ An ``IView`` Data Storage object is almost identical to an ``IMdSpan`` Data Stor
 The difference is that it stores information about the associated :ref:`API <api>`.
 
 Go to the `IView Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IDataSource.html>`_
+
+.. _i_buffer:
 
 IBuffer
 ```````
