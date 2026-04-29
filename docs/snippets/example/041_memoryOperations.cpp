@@ -46,7 +46,7 @@ TEMPLATE_LIST_TEST_CASE("memory", "[docs]", docs::test::TestBackends)
     // END-TUTORIAL-fill
 
     // BEGIN-TUTORIAL-memcpy
-    // copy the data to the host to the device
+    // copy the data to the host from the device
     onHost::memcpy(asyncComputeQueue, hostBuffer, computeBuffer);
     // END-TUTORIAL-memcpy
 

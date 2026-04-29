@@ -35,6 +35,8 @@ Properties:
 
 .. [#f2] In theory, all C++ functionality can be used but in practice there are limitations from the SDKs used by the backends. For example, the CUDA SDK does not support C++20 modules (valid for CUDA 13.x and before).
 
+.. _accelerator:
+
 Accelerator
 ```````````
 
@@ -210,6 +212,48 @@ Go to the `IBuffer Interface definition <https://alpaka3.readthedocs.io/en/lates
 
 Kernel
 ------
+
+.. _thread_spec:
+
+Thread Spec
+-----------
+
+The ``Thread Spec`` describes the level of parallelism used when a :ref:`kernel` is launched on a :ref:`device`.
+It contains a number of blocks and threads.
+The mapping of blocks and threads to the processor's execution units depends on the :ref:`accelerator`.
+
+For example:
+
+- A ``Thread Spec`` with 16 blocks and 32 threads launches a :ref:`kernel` on an NVIDIA GPU that uses 16 blocks, each with 32 threads.
+- A ``Thread Spec`` with 8 blocks and 1 thread launches a :ref:`kernel` distributed across 8 software threads on a CPU.
+
+The maximum number of blocks and threads depends on the :ref:`accelerator`.
+For example, a CPU :ref:`accelerator` allows only 1 thread.
+
+It is guaranteed that the :ref:`kernel` will start with the desired level of parallelism.
+Otherwise, a runtime or compilation error will occur.
+
+Launching the kernel with a specific ``Thread Spec``:
+
+.. literalinclude:: ../../snippets/terms/thread_spec_kernel.cpp
+  :language: cpp
+  :start-after: BEGIN-TERMS-threadspec
+  :end-before: END-TERMS-threadspec
+  :dedent:
+
+Therefore, :ref:`Kernels <kernel>` can be developed in compliance with the ``Thread Spec``:
+
+.. literalinclude:: ../../snippets/terms/thread_spec_kernel.cpp
+  :language: cpp
+  :start-after: BEGIN-TERMS-kernel-threadspec
+  :end-before: END-TERMS-kernel-threadspec
+  :dedent:
+
+This model corresponds to the development of a CUDA/HIP kernel, taking blocks and threads into account.
+
+.. note::
+
+  The ``Thread Spec`` should only be used for porting existing CUDA/HIP kernels or for highly optimized :ref:`Kernels <kernel>`. In all other cases, the :ref:`Frame Spec <frame>` should be used. It provides a parallel abstraction layer that makes it easy to write high-performance code for different :ref:`Accelerations <accelerator>`.
 
 .. _frame:
 

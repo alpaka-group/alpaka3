@@ -7,6 +7,13 @@ alpaka_install_catch2()
 
 set(_DOC_TERMS_TARGET_PREFIX docs_terms)
 
-add_executable(${_DOC_TERMS_TARGET_PREFIX}_datastorage_extents datastorage_extents.cpp)
-target_link_libraries(${_DOC_TERMS_TARGET_PREFIX}_datastorage_extents PRIVATE alpaka::alpaka)
-alpaka_finalize(${_DOC_TERMS_TARGET_PREFIX}_datastorage_extents)
+set(_TARGET_DATASTORAGE_EXTENTS ${_DOC_TERMS_TARGET_PREFIX}_datastorage_extents)
+add_executable(${_TARGET_DATASTORAGE_EXTENTS} datastorage_extents.cpp)
+target_link_libraries(${_TARGET_DATASTORAGE_EXTENTS} PRIVATE alpaka::alpaka)
+alpaka_finalize(${_TARGET_DATASTORAGE_EXTENTS})
+
+set(_TARGET_THREAD_SPEC ${_DOC_TERMS_TARGET_PREFIX}_thread_spec_kernel)
+add_executable(${_TARGET_THREAD_SPEC} thread_spec_kernel.cpp)
+target_link_libraries(${_TARGET_THREAD_SPEC} PRIVATE Catch2::Catch2WithMain alpaka::alpaka alpaka::docTest)
+alpaka_finalize(${_TARGET_THREAD_SPEC})
+catch_discover_tests(${_TARGET_THREAD_SPEC})

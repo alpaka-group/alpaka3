@@ -8,6 +8,10 @@
 ################################################################################
 cmake_minimum_required(VERSION 3.25)
 
+add_library(alpakaDocTest INTERFACE)
+target_include_directories(alpakaDocTest INTERFACE include)
+add_library(alpaka::docTest ALIAS alpakaDocTest)
+
 ################################################################################
 # Add subdirectories.
 ################################################################################

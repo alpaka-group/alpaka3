@@ -49,7 +49,10 @@ function(alpaka_add_docs_target target_prefix folder)
                         target_include_directories(${_test_target_name} PRIVATE ${test_folder}/include)
                     endif()
 
-                    target_link_libraries(${_test_target_name} PRIVATE Catch2::Catch2WithMain alpaka::alpaka)
+                    target_link_libraries(
+                        ${_test_target_name}
+                        PRIVATE Catch2::Catch2WithMain alpaka::alpaka alpaka::docTest
+                    )
                     alpaka_finalize(${_test_target_name})
                     catch_discover_tests(${_test_target_name})
                 endif()
