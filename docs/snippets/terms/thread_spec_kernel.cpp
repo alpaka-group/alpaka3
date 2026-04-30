@@ -14,18 +14,23 @@
 using namespace alpaka;
 
 // BEGIN-TERMS-kernel-threadspec
-struct VectorAddKernel1D
+struct VectorAddKernel
 {
     template<typename TAcc>
     ALPAKA_FN_ACC void operator()(TAcc const& acc, alpaka::concepts::IMdSpan auto inout) const
     {
         // get the global thread ID depending on the Thread Spec
-        std::integral auto globalThreadId
-            = acc.getIdxWithin(alpaka::onAcc::origin::grid, alpaka::onAcc::unit::threads).product();
+        alpaka::concepts::Vector auto globalThreadId
+            = acc.getIdxWithin(alpaka::onAcc::origin::grid, alpaka::onAcc::unit::threads);
 
-        // if the global thread ID is bigger than the data size, do nothing
-        // if the global thread ID is smaller, not all data is processed
-        if(globalThreadId < inout.getExtents().product())
+        static_assert(globalThreadId.dim() == inout.dim());
+
+        /* `globalThreadId < inout.getExtents()` prevents out of range access.
+         * All global threads, which are greater than `inout.getExtents()` do not process data and are idle.
+         * If the total number of threads is less than `inout.getExtents()`, not all data is processed, and the result
+         * is incorrect.
+         */
+        if(globalThreadId < inout.getExtents())
         {
             inout[globalThreadId] += 1;
         }
@@ -50,18 +55,20 @@ TEMPLATE_LIST_TEST_CASE("cuda like kernel", "[docs][terms]", docs::test::TestBac
     onHost::concepts::Device auto device = selector.makeDevice(0);
     onHost::Queue queue = device.makeQueue(queueKind::nonBlocking);
 
-    auto hostMemory = onHost::allocHost<int>(alpaka::Vec{size});
+    auto hostMemory = onHost::allocHost<int>(size);
     auto deviceMemory = onHost::allocLike(device, hostMemory);
     onHost::fill(queue, deviceMemory, 42);
 
     // BEGIN-TERMS-threadspec
     // thread size 1 is valid on all accelerators
-    size_t numberOfThreads = 1;
-    // for the kernel, it is required that the of product of the number of threads and blocks is bigger than the size
-    size_t numberOfBlocks = std::ceil(static_cast<double>(size) / static_cast<double>(numberOfThreads));
+    size_t numThreadsPerBlock = 1;
+    // for the kernel, it is required that the product of the number of threads and blocks is greater than the buffer
+    // size
+    size_t numberOfBlocks = std::max(size_t{1u}, alpaka::divCeil(size, numThreadsPerBlock));
 
-    alpaka::onHost::concepts::ThreadSpec auto threadSpec = alpaka::onHost::ThreadSpec{numberOfBlocks, numberOfThreads};
-    queue.enqueue(threadSpec, VectorAddKernel1D{}, deviceMemory);
+    alpaka::onHost::concepts::ThreadSpec auto threadSpec
+        = alpaka::onHost::ThreadSpec{numberOfBlocks, numThreadsPerBlock};
+    queue.enqueue(threadSpec, VectorAddKernel{}, deviceMemory);
     // END-TERMS-threadspec
 
     onHost::memcpy(queue, hostMemory, deviceMemory);
