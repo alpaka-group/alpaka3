@@ -55,14 +55,14 @@ namespace alpaka::onHost
         /** The maximum total number of threads per thread block. */
         uint32_t maxThreadsPerBlock;
 
-        /** Maximum number of threads within a thread block.
+        /** Maximum number of threads within a thread block for each dimension.
          *
          * @attention Do not assume that the limits are equal for any dimension.
-         * The product of the result is not allowed to exceed @see maxThreadsPerBlock, but the individual entries
-         * may be larger. All values are 32-bit indexes, take care of overflows.
+         * The product of two or more dimensions can exceed maxThreadsPerBlock, this will result in an invalid
+         * configuration when used for kernel execution. All values are 32-bit indexes, take care of overflows.
          *
-         *  @tparam T_dim Number of dimension used for a kernel call.
-         *  @return Maximum number of threads within a block usable for @see ThreadSpec.
+         *  @tparam T_dim Number of dimensions used for a kernel call.
+         *  @return Maximum number of threads within a block, usable for @see ThreadSpec.
          */
         template<uint32_t T_dim>
         Vec<uint32_t, T_dim> getMaxThreadsPerBlock() const
@@ -75,14 +75,14 @@ namespace alpaka::onHost
         /** The maximum total number of blocks within a grid. */
         uint32_t maxBlocksPerGrid;
 
-        /** Maximum number of blocks within a grid.
+        /** Maximum number of blocks within a grid for each dimension.
          *
          * @attention Do not assume that the limits are equal for any dimension.
-         * The product of the result is not allowed to exceed @see maxBlocksPerGrid, but the individual entries
-         * may be larger. All values are 32-bit indexes, take care of overflows.
+         * The product of two or more dimensions can exceed maxBlocksPerGrid, this will result in an invalid
+         * configuration when used for kernel execution. All values are 32-bit indexes, take care of overflows.
          *
-         *  @tparam T_dim Number of dimension used for a kernel call.
-         *  @return Maximum number of blocks usable for @see ThreadSpec.
+         *  @tparam T_dim Number of dimensions used for a kernel call.
+         *  @return Maximum number of blocks, usable for @see ThreadSpec.
          */
         template<uint32_t T_dim>
         Vec<uint32_t, T_dim> getMaxBlocksPerGrid() const
@@ -95,14 +95,14 @@ namespace alpaka::onHost
     private:
         friend internal::GetDeviceProperties;
 
-        /** function to fill maximum number of threads per block
+        /** function to fill maximum number of threads per block per dimension
          *
          * result: pointer to vector data, follows alpaka index order
          * numDims: number of dimensions of the result, elements in result
          */
         std::function<void(uint32_t* result, uint32_t numDims)> fnMaxThreadsPerBlock;
 
-        /** function to fill maximum number of blocks within a grid
+        /** function to fill maximum number of blocks within a grid per dimension
          *
          * result: pointer to vector data, follows alpaka index order
          * numDims: number of dimensions of the result, elements in result

@@ -7,8 +7,6 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <iostream>
-
 using namespace alpaka;
 
 using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
@@ -24,23 +22,23 @@ TEMPLATE_LIST_TEST_CASE("deviceProperties", "[device][property]", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
-        return;
+        SKIP("No device available for " << deviceSpec.getName());
     }
 
     onHost::Device device = devSelector.makeDevice(0);
     onHost::DeviceProperties deviceProperties = device.getDeviceProperties();
-    std::cout << deviceProperties << "\n";
-    std::cout << "dim = 1 threadsPerBlock = " << deviceProperties.getMaxThreadsPerBlock<1>() << "\n";
-    std::cout << "dim = 2 threadsPerBlock = " << deviceProperties.getMaxThreadsPerBlock<2>() << "\n";
-    std::cout << "dim = 3 threadsPerBlock = " << deviceProperties.getMaxThreadsPerBlock<3>() << "\n";
-    std::cout << "dim = 4 threadsPerBlock = " << deviceProperties.getMaxThreadsPerBlock<4>() << "\n";
-    std::cout << "dim = 5 threadsPerBlock = " << deviceProperties.getMaxThreadsPerBlock<5>() << "\n";
+    INFO(deviceProperties);
+    INFO("dim = 1 threadsPerBlock = " << deviceProperties.getMaxThreadsPerBlock<1>());
+    INFO("dim = 2 threadsPerBlock = " << deviceProperties.getMaxThreadsPerBlock<2>());
+    INFO("dim = 3 threadsPerBlock = " << deviceProperties.getMaxThreadsPerBlock<3>());
+    INFO("dim = 4 threadsPerBlock = " << deviceProperties.getMaxThreadsPerBlock<4>());
+    INFO("dim = 5 threadsPerBlock = " << deviceProperties.getMaxThreadsPerBlock<5>());
 
-    std::cout << "dim = 1 blocksPerGrid = " << deviceProperties.getMaxBlocksPerGrid<1>() << "\n";
-    std::cout << "dim = 2 blocksPerGrid = " << deviceProperties.getMaxBlocksPerGrid<2>() << "\n";
-    std::cout << "dim = 3 blocksPerGrid = " << deviceProperties.getMaxBlocksPerGrid<3>() << "\n";
-    std::cout << "dim = 4 blocksPerGrid = " << deviceProperties.getMaxBlocksPerGrid<4>() << "\n";
-    std::cout << "dim = 5 blocksPerGrid = " << deviceProperties.getMaxBlocksPerGrid<5>() << "\n";
-    std::cout << "-----------------------------" << std::endl;
+    INFO("dim = 1 blocksPerGrid = " << deviceProperties.getMaxBlocksPerGrid<1>());
+    INFO("dim = 2 blocksPerGrid = " << deviceProperties.getMaxBlocksPerGrid<2>());
+    INFO("dim = 3 blocksPerGrid = " << deviceProperties.getMaxBlocksPerGrid<3>());
+    INFO("dim = 4 blocksPerGrid = " << deviceProperties.getMaxBlocksPerGrid<4>());
+    INFO("dim = 5 blocksPerGrid = " << deviceProperties.getMaxBlocksPerGrid<5>());
+    // This call is required else no information will be shown on the terminal.
+    SUCCEED("-----------------------------");
 }
