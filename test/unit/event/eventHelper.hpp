@@ -4,7 +4,7 @@
 
 #include <alpaka/alpaka.hpp>
 
-#include <iostream>
+#include <catch2/catch_test_macros.hpp>
 
 namespace alpaka::test::event
 {
@@ -237,7 +237,7 @@ namespace alpaka::test::event
         }
 
         // set event to ready state
-        constexpr void trigger()
+        void trigger()
         {
             for(int i = 0; i < 10; ++i)
             {
@@ -248,7 +248,7 @@ namespace alpaka::test::event
                     break;
                 else
                 {
-                    std::cout << "warning: trigger had no effect, re-trigger " << i + 1 << " of " << 10 << std::endl;
+                    WARN("trigger had no effect, re-trigger " << i + 1 << " of " << 10);
                 }
             }
         }

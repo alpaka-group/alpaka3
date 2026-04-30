@@ -105,8 +105,9 @@ void executeWaitTest(auto& device, auto const& exec)
         REQUIRE(singleQueueHostBufs[i][0] == testValue);
     }
 
-    std::cout << "✓ wait(device) verified with " << numQueues << " concurrent queues + " << numOpsPerQueue
-              << " ops on single queue" << std::endl;
+    UNSCOPED_INFO(
+        "wait(device) verified with " << numQueues << " concurrent queues + " << numOpsPerQueue
+                                      << " ops on single queue");
 }
 
 void prepareAndExecuteWaitTest(auto cfg)
@@ -117,19 +118,19 @@ void prepareAndExecuteWaitTest(auto cfg)
     auto deviceSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!deviceSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     auto deviceCount = deviceSelector.getDeviceCount();
-    std::cout << "device spec: " << deviceSpec.getName() << std::endl;
-    std::cout << "executor   : " << exec.getName() << std::endl;
+    INFO("device spec: " << deviceSpec.getName());
+    INFO("executor   : " << exec.getName());
 
     // Test wait(device) on all available devices
     for(uint32_t deviceIdx = 0; deviceIdx < deviceCount; ++deviceIdx)
     {
         auto device = deviceSelector.makeDevice(deviceIdx);
-        std::cout << "device name: " << device.getName() << " (idx=" << deviceIdx << ")" << std::endl;
+        INFO("device name: " << device.getName() << " (idx=" << deviceIdx << ")");
 
         executeWaitTest<uint32_t>(device, exec);
     }

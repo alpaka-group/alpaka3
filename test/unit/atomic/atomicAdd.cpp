@@ -45,7 +45,7 @@ TEMPLATE_LIST_TEST_CASE("cpu atomic add increments", "[executor][atomic]", TestA
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        INFO("No device available for " << deviceSpec.getName());
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 

@@ -17,7 +17,7 @@ TEST_CASE("host api creation", "")
 
     Device device = hostSelector.makeDevice(0);
     Device device2 = hostSelector.makeDevice(0);
-    std::cout << device.getName() << " == " << device2.getName() << std::endl;
+    INFO(device.getName() << " == " << device2.getName());
     // api::host has only one device therefore the device must be equal
     CHECK(device.getNativeHandle() == device2.getNativeHandle());
 }
@@ -32,7 +32,7 @@ TEST_CASE("api creation", "")
             for(uint32_t i = 0; i < numDevices; ++i)
             {
                 Device device = devSelector.makeDevice(i);
-                std::cout << "api=" << deviceSpec.getApi().getName() << "device=" << device.getName() << std::endl;
+                INFO("api=" << deviceSpec.getApi().getName() << " device=" << device.getName());
             }
 
             return 0;

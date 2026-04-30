@@ -7,8 +7,6 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <iostream>
-
 /** @file test if memcpy is working into all direction in a device queue
  *   host -> host (even a GPU device should be able to copy host memory to host memory)
  *   device -> host
@@ -144,13 +142,12 @@ TEMPLATE_LIST_TEST_CASE("memcopy test", "", DeviceSpecs)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
 
     using DataType = int;
 

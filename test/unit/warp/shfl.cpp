@@ -106,7 +106,7 @@ TEMPLATE_LIST_TEST_CASE("warp shfl moves values between lanes", "[warp][shfl]", 
     auto selector = onHost::makeDeviceSelector(deviceSpec);
     if(!selector.isAvailable())
     {
-        INFO("No device available for " << deviceSpec.getName());
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 

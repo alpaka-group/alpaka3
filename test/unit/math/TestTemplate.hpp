@@ -12,7 +12,6 @@
 #include "alpakaTest/mathHelper.hpp"
 
 #include <catch2/catch_approx.hpp>
-#include <catch2/catch_message.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <cmath>
@@ -122,7 +121,7 @@ namespace mathtest
             auto devSelector = onHost::makeDeviceSelector(deviceSpec);
             if(!devSelector.isAvailable())
             {
-                std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+                SUCCEED("No device available for " << deviceSpec.getName());
                 return;
             }
 
@@ -137,7 +136,7 @@ namespace mathtest
                 if(device.getNativeHandle().first.template get_info<sycl::info::device::double_fp_config>().size()
                    == 0)
                 {
-                    WARN(
+                    SUCCEED(
                         onHost::getName(device)
                         << " does not support double precision.\n Skip benchmark.\n"
                            "For Intel Arc GPUs, use the environment variables `IGC_EnableDPEmulation=1 "
@@ -197,8 +196,6 @@ namespace mathtest
             // Copy back the results (encapsulated in the buffer class).
             results.copyFromDevice(queue);
             alpaka::onHost::wait(queue);
-            std::cout.precision(std::numeric_limits<Underlying>::digits10 + 1);
-
 
             INFO("Operator: " << functor);
             INFO("Type: " << alpaka::onHost::demangledName<TData>()); // Compiler specific.
@@ -226,8 +223,7 @@ namespace mathtest
 
                 if(!test::isApproxEqual(results(i), stdExpectedResult))
                 {
-                    std::cerr << "Idx i: " << i << " computed : " << results(i)
-                              << " vs expected: " << stdExpectedResult << " arguments:" << args(i) << std::endl;
+                    CAPTURE(i, results(i), stdExpectedResult, args(i));
                 }
                 // Validate
                 REQUIRE(test::isApproxEqual(results(i), stdExpectedResult));

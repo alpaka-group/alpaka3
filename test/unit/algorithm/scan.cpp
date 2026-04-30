@@ -10,7 +10,6 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <functional>
-#include <iostream>
 #include <type_traits>
 
 using namespace alpaka;
@@ -55,7 +54,7 @@ int validateResult(
         if(computedY != correctResult)
         {
             if(falseResults < MAX_PRINT_FALSE_RESULTS)
-                std::cerr << "bufY[" << i << "] == " << computedY << " != " << correctResult << std::endl;
+                UNSCOPED_INFO("bufY[" << i << "] == " << computedY << " != " << correctResult);
             ++falseResults;
         }
     }
@@ -65,8 +64,9 @@ int validateResult(
         return EXIT_SUCCESS;
     }
 
-    std::cout << "Found " << falseResults << " false results, printed no more than " << MAX_PRINT_FALSE_RESULTS << "\n"
-              << "Execution results incorrect!" << std::endl;
+    UNSCOPED_INFO(
+        "Found " << falseResults << " false results, printed no more than " << MAX_PRINT_FALSE_RESULTS
+                 << ". Execution results incorrect!");
     return EXIT_FAILURE;
 }
 
@@ -82,14 +82,14 @@ void testExclusiveScan(
     auto numEl = hostIn.getExtents().x();
 
     // exclusive scan, no buffer
-    std::cout << "exclusive scan, no buffer" << std::endl;
+    INFO("exclusive scan, no buffer");
     onHost::memcpy(computeQueue, inBuf, hostIn);
     onHost::exclusiveScan(computeQueue, exec, outBuf, inBuf);
     auto res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::EXCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 
     // exclusive scan, in-place
-    std::cout << "exclusive scan, no buffer, in-place" << std::endl;
+    INFO("exclusive scan, no buffer, in-place");
     onHost::exclusiveScanInPlace(computeQueue, exec, inBuf);
     res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::EXCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
@@ -99,14 +99,14 @@ void testExclusiveScan(
         = onHost::alloc<std::byte>(computeDev, onHost::getScanBufferSize<T_Data>(inBuf.getExtents()));
 
     // exclusive scan, with buffer
-    std::cout << "exclusive scan, with buffer" << std::endl;
+    INFO("exclusive scan, with buffer");
     onHost::memcpy(computeQueue, inBuf, hostIn);
     onHost::exclusiveScan(computeQueue, exec, intermediateBuffer, outBuf, inBuf);
     res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::EXCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 
     // exclusive scan, in-place with buffer
-    std::cout << "exclusive scan, with buffer, in-place" << std::endl;
+    INFO("exclusive scan, with buffer, in-place");
     onHost::exclusiveScanInPlace(computeQueue, exec, intermediateBuffer, inBuf);
     res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::EXCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
@@ -124,14 +124,14 @@ void testInclusiveScan(
     auto numEl = hostIn.getExtents().x();
 
     // inclusive scan, no buffer
-    std::cout << "inclusive scan, no buffer" << std::endl;
+    INFO("inclusive scan, no buffer");
     onHost::memcpy(computeQueue, inBuf, hostIn);
     onHost::inclusiveScan(computeQueue, exec, outBuf, inBuf);
     auto res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::INCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 
     // inclusive scan, in-place
-    std::cout << "inclusive scan, no buffer, in-place" << std::endl;
+    INFO("inclusive scan, no buffer, in-place");
     onHost::inclusiveScanInPlace(computeQueue, exec, inBuf);
     res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::INCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
@@ -141,14 +141,14 @@ void testInclusiveScan(
         = onHost::alloc<std::byte>(computeDev, onHost::getScanBufferSize<T_Data>(inBuf.getExtents()));
 
     // inclusive scan, with buffer
-    std::cout << "inclusive scan, with buffer" << std::endl;
+    INFO("inclusive scan, with buffer");
     onHost::memcpy(computeQueue, inBuf, hostIn);
     onHost::inclusiveScan(computeQueue, exec, intermediateBuffer, outBuf, inBuf);
     res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::INCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
 
     // inclusive scan, in-place with buffer
-    std::cout << "inclusive scan, with buffer, in-place" << std::endl;
+    INFO("inclusive scan, with buffer, in-place");
     onHost::inclusiveScanInPlace(computeQueue, exec, intermediateBuffer, inBuf);
     res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::INCLUSIVE_SCAN);
     CHECK(res == EXIT_SUCCESS);
@@ -165,15 +165,15 @@ void prepareTest(auto cfg, concepts::Vector auto extents)
     auto computeDevSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!computeDevSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device computeDev = computeDevSelector.makeDevice(0);
 
-    std::cout << "device spec: " << getName(deviceSpec) << std::endl;
-    std::cout << "device name: " << computeDev.getName() << std::endl;
-    std::cout << "executor   : " << exec.getName() << std::endl;
+    INFO("device spec: " << getName(deviceSpec));
+    INFO("device name: " << computeDev.getName());
+    INFO("executor   : " << exec.getName());
 
     onHost::Queue computeQueue = computeDev.makeQueue();
 

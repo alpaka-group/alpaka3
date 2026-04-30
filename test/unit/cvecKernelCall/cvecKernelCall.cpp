@@ -9,7 +9,6 @@
 
 #include <chrono>
 #include <functional>
-#include <iostream>
 #include <thread>
 
 /** @file In this file we test if the a compile time thread extent for number of threads within a block is forwarded
@@ -52,14 +51,13 @@ TEMPLATE_LIST_TEST_CASE("CVec frame extent kernel call", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
-    std::cout << deviceSpec.getApi().getName() << std::endl;
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << device.getName() << std::endl;
+    INFO("api=" << deviceSpec.getApi().getName());
+    INFO("device=" << device.getName());
 
     Queue queue = device.makeQueue();
 
@@ -106,14 +104,13 @@ TEMPLATE_LIST_TEST_CASE("CVec thread extent kernel call", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
-    std::cout << deviceSpec.getApi().getName() << std::endl;
 
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << device.getName() << std::endl;
+    INFO("api=" << deviceSpec.getApi().getName());
+    INFO("device=" << device.getName());
 
     Queue queue = device.makeQueue();
 

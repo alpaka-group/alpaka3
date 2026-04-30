@@ -7,8 +7,6 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <iostream>
-
 
 using namespace alpaka;
 
@@ -46,7 +44,7 @@ TEMPLATE_LIST_TEST_CASE("fn with alpaka fallback", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
@@ -109,7 +107,7 @@ TEMPLATE_LIST_TEST_CASE("fn with generic fallback", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
@@ -182,7 +180,7 @@ TEMPLATE_LIST_TEST_CASE("fn without fallback", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 

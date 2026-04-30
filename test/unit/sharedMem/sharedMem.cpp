@@ -50,7 +50,7 @@ TEMPLATE_LIST_TEST_CASE("block shared iota", "[sharedMem]", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        WARN("No device available for " << deviceSpec.getName());
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
@@ -187,7 +187,7 @@ TEMPLATE_LIST_TEST_CASE("block shared alias", "[SharedMem]", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        WARN("No device available for " << deviceSpec.getName());
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
@@ -262,7 +262,7 @@ TEMPLATE_LIST_TEST_CASE("test shared memory index type", "[sharedMem]", TestApis
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        WARN("No device available for " << deviceSpec.getName());
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 

@@ -22,7 +22,8 @@ TEMPLATE_LIST_TEST_CASE("deviceProperties", "[device][property]", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        SKIP("No device available for " << deviceSpec.getName());
+        SUCCEED("No device available for " << deviceSpec.getName());
+        return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);

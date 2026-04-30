@@ -97,7 +97,7 @@ TEMPLATE_LIST_TEST_CASE("memFence producer-consumer publication", "[memFence][pr
     auto selector = onHost::makeDeviceSelector(deviceSpec);
     if(!selector.isAvailable())
     {
-        WARN("No device available for " << deviceSpec.getName());
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
     auto device = selector.makeDevice(0);
@@ -278,7 +278,7 @@ TEMPLATE_LIST_TEST_CASE("memFence block shared-memory ordering", "[memFence][blo
     auto selector = onHost::makeDeviceSelector(deviceSpec);
     if(!selector.isAvailable())
     {
-        WARN("No device available for " << deviceSpec.getName());
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
     auto device = selector.makeDevice(0);

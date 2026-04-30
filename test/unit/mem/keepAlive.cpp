@@ -8,8 +8,6 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <future>
-#include <iostream>
-
 using namespace alpaka;
 
 using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
@@ -40,13 +38,12 @@ TEMPLATE_LIST_TEST_CASE("keep alive", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
 
     onHost::Queue queue = device.makeQueue();
 

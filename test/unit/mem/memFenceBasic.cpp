@@ -50,7 +50,7 @@ TEMPLATE_LIST_TEST_CASE("thread fence operations", "[memFence][basic]", TestApis
     auto selector = onHost::makeDeviceSelector(deviceSpec);
     if(!selector.isAvailable())
     {
-        WARN("No device available for " << deviceSpec.getName());
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
     auto device = selector.makeDevice(0);
