@@ -62,7 +62,7 @@ namespace alpaka::onHost
          * configuration when used for kernel execution. All values are 32-bit indexes, take care of overflows.
          *
          *  @tparam T_dim Number of dimensions used for a kernel call.
-         *  @return Maximum number of threads within a block, usable for @see ThreadSpec.
+         *  @return Maximum number of threads within a block, usable for ThreadSpec.
          */
         template<uint32_t T_dim>
         Vec<uint32_t, T_dim> getMaxThreadsPerBlock() const
@@ -82,7 +82,7 @@ namespace alpaka::onHost
          * configuration when used for kernel execution. All values are 32-bit indexes, take care of overflows.
          *
          *  @tparam T_dim Number of dimensions used for a kernel call.
-         *  @return Maximum number of blocks, usable for @see ThreadSpec.
+         *  @return Maximum number of blocks, usable for ThreadSpec.
          */
         template<uint32_t T_dim>
         Vec<uint32_t, T_dim> getMaxBlocksPerGrid() const
