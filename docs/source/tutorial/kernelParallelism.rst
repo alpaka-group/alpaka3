@@ -81,7 +81,7 @@ There are cases where explicit thread or block indices can be useful, for exampl
 - Porting low-level CUDA/HIP code step by step.
 
 That is not the best starting point for most kernels.
-For portable code, prefer ``FrameSpec`` plus ``makeIdxMap``.
+For portable code, prefer using ``FrameSpec`` with ``makeIdxMap``.
 Once the algorithm is correct and tested, you can move to more specialized mappings if profiling shows that you need them.
 
 Complete Source File

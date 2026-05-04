@@ -3,12 +3,12 @@ Working With Multidimensional Kernels
 
 Many important beginner examples in parallel computing are naturally multidimensional:
 images, matrices, heat diffusion, cellular automata, and finite-difference stencils.
-For those problems, it is usually clearer to keep the kernel multidimensional instead of flattening everything into one linear index.
+For these kinds of problems, it is usually clearer to keep the kernel multidimensional instead of flattening everything into one linear index.
 
 Choose the Kernel Shape From the Data
 -------------------------------------
 
-If the data is naturally a matrix or image, use two-dimensional extents and two-dimensional :ref:`frames <frame>`. frames.
+If the data is naturally a matrix or image, it is convenient to use two-dimensional extents and :ref:`frames <frame>`.
 This avoids hand-written index decoding and makes boundary conditions easier to read.
 
   .. literalinclude:: ../../snippets/example/080_multidim.cpp
@@ -17,7 +17,7 @@ This avoids hand-written index decoding and makes boundary conditions easier to 
     :end-before: END-TUTORIAL-multidimFrameSpec
     :dedent:
 
-The frame shape should follow the logical shape of the work:
+We recommend that the frame shape should follow the logical shape of the work:
 
 - 1D frames for flat vectors and simple reductions.
 - 2D frames for images, matrices, and most stencil codes.
@@ -31,7 +31,7 @@ A Small 2D Stencil Example
 --------------------------
 
 The following kernel performs one five-point average step on a small 2D grid.
-This is a common teaching example because it introduces three important ideas at once:
+This introduces three important ideas at once:
 
 - Iterating over multidimensional buffers.
 - Handling boundaries explicitly.
@@ -54,7 +54,7 @@ The structure is still the same as in the one-dimensional tutorial:
 This is the natural alpaka style for stencil code.
 The project examples, such as the heat-equation stencil, operate on the multidimensional index directly and move to
 neighbors with vector offsets instead of splitting ``x`` and ``y`` into separate scalars and rebuilding indices.
-Handling the boundaries within the kernel to compute the inner part is not good for performance, but it is the best way to start writing a correct kernel.
+Handling the boundaries within the kernel which performs computation on the inner region of the domain is not good for performance, but it is the easiest and best way to start writing a correct kernel.
 If you want to optimize the boundary handling later, you can write a separate kernel for the border and launch it with a different frame shape that only covers the halo/guard region.
 
 Launching the 2D Kernel
@@ -74,9 +74,9 @@ What Users Usually Need To Know Early
 
 The following habits are worth learning from the start:
 
-- Keep boundary handling explicit. A branch for the border is in the first implementation fine.
-- Iterate over the full valid problem range, not over guessed thread ids.
-- Use multidimensional buffers when the algorithm has multidimensional neighbors.
+- Keep boundary handling explicit. It is fine to have branching for the border in the first implementation.
+- Iterate over the full valid problem range, not over guessed thread ids. Let alpaka deal with the mapping from threads to your problem.
+- Use multidimensional buffers when the algorithm is multidimensional.
 - Keep reads and writes easy to see. You make fewer mistakes when each output element is written once.
 - Start with a clear kernel and a small test case before trying to optimize shared memory use or tuning the ``FrameSpec``
 

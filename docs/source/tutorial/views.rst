@@ -1,14 +1,14 @@
 Views and Subviews
 ==================
 
-Buffers returned by allocation methods returning :ref:`buffers <i_buffer>` which tracking the lifetime of the memory and owning the data.
-:ref:`Views <i_view>` only point to memory but does not own it and can be used within a kernel or the host.
+Buffers are objects returned by memory allocation methods. They own the data stored in memory and track the lifetime of that memory. They follow the :ref:`buffer concept <i_buffer>`.
+On the other hand, :ref:`Views <i_view>` only point to memory but do not own it and can be used within a kernel in addition to on the host.
 
 View are typically used when:
 
 - You already have a host container such as ``std::vector`` and want to use it with *alpaka*.
 - You want to work only on parts of a buffer, for example a slice, halo region, or tile.
-- You want to use the data of an buffer without copying within a kernel.
+- You want to use the data of an buffer within a kernel without copying it.
 
 Creating a View
 ---------------
@@ -37,7 +37,7 @@ Copying Through a View
 ----------------------
 
 Views work with the usual memory operations.
-That means you can allocate device memory based on a view and copy only the relevant slice back.
+That means you can, for example, allocate device memory based on a view and copy only the relevant slice back.
 
   .. literalinclude:: ../../snippets/example/070_views.cpp
     :language: cpp
@@ -45,7 +45,7 @@ That means you can allocate device memory based on a view and copy only the rele
     :end-before: END-TUTORIAL-viewCopy
     :dedent:
 
-Typical use cases:
+Typical use cases include:
 
 - Copying a subrange of a 1D vector.
 - Copying only the active interior of a ND grid.
