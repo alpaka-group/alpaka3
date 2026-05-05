@@ -1,0 +1,3 @@
+test:
+  script:
+    - echo "Hello, $GITLAB_USER_LOGIN!"
