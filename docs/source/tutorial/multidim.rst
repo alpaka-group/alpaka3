@@ -8,7 +8,7 @@ For those problems, it is usually clearer to keep the kernel multidimensional in
 Choose the Kernel Shape From the Data
 -------------------------------------
 
-If the data is naturally a matrix or image, use two-dimensional extents and two-dimensional frames.
+If the data is naturally a matrix or image, use two-dimensional extents and two-dimensional :ref:`frames <frame>`. frames.
 This avoids hand-written index decoding and makes boundary conditions easier to read.
 
   .. literalinclude:: ../../snippets/example/080_multidim.cpp
@@ -79,19 +79,6 @@ The following habits are worth learning from the start:
 - Use multidimensional buffers when the algorithm has multidimensional neighbors.
 - Keep reads and writes easy to see. You make fewer mistakes when each output element is written once.
 - Start with a clear kernel and a small test case before trying to optimize shared memory use or tuning the ``FrameSpec``
-
-When to Use Manual Thread and Block Indices
--------------------------------------------
-
-There are cases where explicit thread or block indices are useful, for example:
-
-- Implementing a very specific CPU/GPU mapping.
-- Using an algorithm that must reason about exact block-local cooperation.
-- Porting low-level CUDA/HIP code step by step.
-
-That is not the best starting point for most kernels.
-For portable code, prefer ``FrameSpec`` plus ``makeIdxMap``.
-Once the algorithm is correct and tested, you can move to more specialized mappings if profiling shows that you need them.
 
 Complete Source File
 --------------------

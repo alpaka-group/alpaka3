@@ -71,9 +71,18 @@ Practical Advice
 ----------------
 
 - Start with unnested ``makeIdxMap`` when the kernel is just "process every element once".
-- Move to explicit block and thread hierarchy when the work is naturally tile-based.
+- Use hierarchy chunked kernels when there is real data reuse or tiled traversal.
 - Treat warps as one-dimensional helpers inside a block, not as a replacement for multidimensional mapping.
-- Use chunked kernels when there is real data reuse or tiled traversal.
+
+There are cases where explicit thread or block indices can be useful, for example:
+
+- Implementing a very specific CPU/GPU mapping.
+- Using an algorithm that must reason about exact block-local cooperation.
+- Porting low-level CUDA/HIP code step by step.
+
+That is not the best starting point for most kernels.
+For portable code, prefer ``FrameSpec`` plus ``makeIdxMap``.
+Once the algorithm is correct and tested, you can move to more specialized mappings if profiling shows that you need them.
 
 Complete Source File
 --------------------

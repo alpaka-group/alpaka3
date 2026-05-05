@@ -33,6 +33,17 @@ TEMPLATE_LIST_TEST_CASE("tutorial views and subviews", "[docs]", docs::test::Tes
     CHECK(middleView[Vec{size_t{0}}] == 2);
     CHECK(middleView[Vec{size_t{3}}] == 5);
 
+    // BEGIN-TUTORIAL-bufferViewCreation
+    auto hostBuffer = onHost::allocHost<int>(size_t{8});
+    auto middleViewToBuffer = hostBuffer.getSubView(size_t{2}, size_t{4});
+    // END-TUTORIAL-bufferViewCreation
+
+    onHost::memcpy(queue, middleViewToBuffer, middleView);
+    onHost::wait(queue);
+    CHECK(middleViewToBuffer.getExtents().x() == 4u);
+    CHECK(middleViewToBuffer[Vec{size_t{0}}] == 2);
+    CHECK(middleViewToBuffer[Vec{size_t{3}}] == 5);
+
     // BEGIN-TUTORIAL-viewCopy
     auto deviceBuffer = onHost::allocLike(device, hostView);
     onHost::memcpy(queue, deviceBuffer, hostView);

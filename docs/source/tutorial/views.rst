@@ -13,7 +13,16 @@ View are typically used when:
 Creating a View
 ---------------
 
-You can create a non-owning view from a host container and then derive a subview from it.
+You can create a non-owning view from *alpaka* buffers and then derive a subview from it.
+
+  .. literalinclude:: ../../snippets/example/070_views.cpp
+    :language: cpp
+    :start-after: BEGIN-TUTORIAL-bufferViewCreation
+    :end-before: END-TUTORIAL-bufferViewCreation
+    :dedent:
+
+Creating a view from a STL vector is supported too.
+The subview creating is the same as for buffers.
 
   .. literalinclude:: ../../snippets/example/070_views.cpp
     :language: cpp
