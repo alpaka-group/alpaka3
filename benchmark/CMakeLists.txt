@@ -15,3 +15,4 @@ project("alpakaBenchmarks" LANGUAGES CXX)
 alpaka_install_catch2()
 
 add_subdirectory("babelstream/")
+add_subdirectory("HACCmk")
