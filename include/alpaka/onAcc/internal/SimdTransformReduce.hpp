@@ -15,6 +15,7 @@
 #include "alpaka/onAcc/Acc.hpp"
 #include "alpaka/onAcc/WorkerGroup.hpp"
 #include "alpaka/onAcc/interface.hpp"
+#include "alpaka/simd/simdized.hpp"
 
 #include <cstdint>
 #include <new>
@@ -70,24 +71,26 @@ namespace alpaka::onAcc::internal
                 IdxRange{numElements},
                 asParent().getTraversePolicy(),
                 asParent().getIdxLayoutPolicy());
-            using ReturnType = decltype(func(
-                acc,
-                SimdPtr{data0, *(traverse.begin()), T_MemAlignment{}, CVec<uint32_t, 1u>{}},
-                SimdPtr{dataN, *(traverse.begin()), T_MemAlignment{}, CVec<uint32_t, 1u>{}}...));
 
-            auto retValue = ReturnType::fill(neutralElement);
+            using SimdOneReturnType = ALPAKA_TYPEOF(makeSimdized<1u>(neutralElement));
+            SimdOneReturnType simdizedReducedValue = makeSimdized<1u>(neutralElement);
+
             for(auto idx : traverse)
             {
-                retValue = reduceFunc(
-                    retValue,
+                simdizedReducedValue = reduceFunc(
+                    simdizedReducedValue,
                     func(
                         acc,
                         SimdPtr{data0, idx, T_MemAlignment{}, CVec<uint32_t, 1u>{}},
                         SimdPtr{dataN, idx, T_MemAlignment{}, CVec<uint32_t, 1u>{}}...));
             }
-            // std simd operator[] is returning a smart reference, therefore we need to std::as_const to enforce that
-            // the operator[] is returning the value_type
-            return std::as_const(retValue)[0];
+
+            auto result = neutralElement;
+            simdizedInvoke(
+                [](auto& lhs, alpaka::concepts::Simd auto const& rhs) { lhs = rhs[0]; },
+                result,
+                simdizedReducedValue);
+            return result;
         }
 
     private:
@@ -101,12 +104,33 @@ namespace alpaka::onAcc::internal
             return func(acc, SimdPtr{ALPAKA_FORWARD(data), dataIdx, T_MemAlignment{}, CVec<uint32_t, T_width>{}}...);
         }
 
-        /** calls the functor and forward the data T_repeat times
+        /** advance the iterator T_repeat times
+         *
+         * We do not check if the iterator points to a valid element, the caller must ensure that we can safely
+         * advance the iterator T_repeat time without jumping over iter.end().
+         *
+         * @tparam T_repeat Number of time sthe iterator should be advanced.
+         * @return Tuple with T_repeat times iterators.
+         */
+        template<uint32_t... T_repeat>
+        ALPAKA_FN_INLINE static constexpr auto makeAdvanceIterators(
+            auto& iter,
+            std::integer_sequence<uint32_t, T_repeat...>)
+        {
+            // The ternary operator is used to allow using the folding expression on iter.
+            return std::make_tuple(*(T_repeat + 1 != 0u ? iter++ : iter++)...);
+        }
+
+        /** Calls the transform functor T_repeat times and reduces the results with the given reduce function.
          *
          * The calls to the functor are independent and compile time unrolled to support instruction parallelism.
+         * In contrast to executeReduceInto() the register footprint is larger because T_repeat temporary results will
+         * be holt. This allows the compiler to use instruction level parallelism. Call this function if result of
+         * reduceFunc is a SIMD pack.
          *
          * @param iter the caller must ensure tha the interator can be increased T_repeat times without jumping over
          * iter.end()
+         * @return a single simdized pack
          */
         template<alpaka::concepts::Alignment T_MemAlignment, uint32_t T_width, uint32_t... T_repeat>
         ALPAKA_FN_INLINE static constexpr auto executeReduce(
@@ -117,12 +141,7 @@ namespace alpaka::onAcc::internal
             auto&& func,
             alpaka::concepts::IDataSource auto&&... data)
         {
-            /* We do not check if the iterator points to a valid element, the caller must ensure that we can safely
-             * increase the iterator without jumping over iter.end().
-             *
-             * The ternary operator is used to allow using the folding expression on iter.
-             */
-            auto ids = std::make_tuple(*(T_repeat + 1 != 0u ? iter++ : iter++)...);
+            auto ids = makeAdvanceIterators(iter, std::integer_sequence<uint32_t, T_repeat...>{});
             return std::apply(
                 [&](auto const&... dataIdx) constexpr
                 {
@@ -147,7 +166,81 @@ namespace alpaka::onAcc::internal
                 ids);
         }
 
-    private:
+        /** Reduce simdized packs into a single simdized pack with the given reduce function.
+         *
+         * In contrast to executeReduce() the register footprint is lower because all intermediate results are directly
+         * reduced into the result variable. Call this function if the type of result is a simdized pack is not a SIMD
+         * pack.
+         *
+         * @param result The results of reduceFn with the result of transformFn will be reduced into this simdized
+         * pack.
+         */
+        template<alpaka::concepts::Alignment T_MemAlignment, uint32_t T_width, uint32_t... T_repeat>
+        ALPAKA_FN_INLINE static constexpr void executeReduceInto(
+            concepts::Acc auto const& acc,
+            auto& iter,
+            std::integer_sequence<uint32_t, T_repeat...>,
+            auto& result,
+            auto&& reduceFn,
+            auto&& transformFn,
+            alpaka::concepts::IDataSource auto&&... data)
+        {
+            auto ids = makeAdvanceIterators(iter, std::integer_sequence<uint32_t, T_repeat...>{});
+            std::apply(
+                [&](auto const&... dataIdx) constexpr
+                {
+                    ((result = reduceFn(
+                          result,
+                          executeDoTransform<T_MemAlignment, T_width>(
+                              acc,
+                              dataIdx,
+                              ALPAKA_FORWARD(transformFn),
+                              ALPAKA_FORWARD(data)...))),
+                     ...);
+                },
+                ids);
+        }
+
+        /** Reduce T_numSimdPerFnCall simdized packs
+         *
+         */
+        template<uint32_t T_simdWidth, uint32_t T_numSimdPerFnCall, alpaka::concepts::Alignment T_MemAlignment>
+        ALPAKA_FN_INLINE static constexpr void reduceNextSimdized(
+            auto const& acc,
+            auto& iter,
+            auto& tmpReturn,
+            auto&& reduceFn,
+            auto&& transformFn,
+            alpaka::concepts::IDataSource auto&& data0,
+            alpaka::concepts::IDataSource auto&&... dataN)
+        {
+            if constexpr(alpaka::concepts::Simd<std::remove_cvref_t<decltype(tmpReturn)>>)
+            {
+                tmpReturn = reduceFn(
+                    tmpReturn,
+                    executeReduce<T_MemAlignment, T_simdWidth>(
+                        acc,
+                        iter,
+                        std::make_integer_sequence<uint32_t, T_numSimdPerFnCall>{},
+                        ALPAKA_FORWARD(reduceFn),
+                        ALPAKA_FORWARD(transformFn),
+                        ALPAKA_FORWARD(data0),
+                        ALPAKA_FORWARD(dataN)...));
+            }
+            else
+            {
+                executeReduceInto<T_MemAlignment, T_simdWidth>(
+                    acc,
+                    iter,
+                    std::make_integer_sequence<uint32_t, T_numSimdPerFnCall>{},
+                    tmpReturn,
+                    ALPAKA_FORWARD(reduceFn),
+                    ALPAKA_FORWARD(transformFn),
+                    ALPAKA_FORWARD(data0),
+                    ALPAKA_FORWARD(dataN)...);
+            }
+        }
+
         template<onAcc::concepts::Acc T_Acc, typename T_ReduceOp>
         struct ScalarReducer
         {
@@ -262,17 +355,8 @@ namespace alpaka::onAcc::internal
                 asParent().getTraversePolicy(),
                 asParent().getIdxLayoutPolicy());
 
-            auto iter = simdIdxContainer.begin();
-            using SimdReturn = decltype(executeReduce<T_MemAlignment, T_simdWidth>(
-                acc,
-                iter,
-                std::make_integer_sequence<uint32_t, T_numSimdPerFnCall>{},
-                ALPAKA_FORWARD(reduceFunc),
-                ALPAKA_FORWARD(func),
-                ALPAKA_FORWARD(data0),
-                ALPAKA_FORWARD(dataN)...));
-
-            alpaka::concepts::Simd auto tmpReturn = SimdReturn::fill(neutralElement);
+            using SimdReturn = ALPAKA_TYPEOF(makeSimdized<T_simdWidth>(neutralElement));
+            SimdReturn simdizedReducedValue = makeSimdized<T_simdWidth>(neutralElement);
 
             if constexpr(
                 domainSize.dim() > 1u && std::is_same_v<ALPAKA_TYPEOF(asParent().getTraversePolicy()), traverse::Flat>)
@@ -280,7 +364,7 @@ namespace alpaka::onAcc::internal
                 /* For cases where we traverse with the flat policy, we cannot assume that we can blindly increase the
                  * iterator later N times. This could happen in cases where we have enough concurrency. We evaluate for
                  * SIMD operations only the fast moving dimension but with the flat policy flattening the worker group
-                 * and use all workers on a linear domain. The loop must therefore be splited into iterating over all
+                 * and use all workers on a linear domain. The loop must therefore be split into iterating over all
                  * slow dimensions and an inner loop iterating over the fast moving dimension. For this we need to
                  * build our own groups out of the user-provided workgroup.
                  */
@@ -304,43 +388,39 @@ namespace alpaka::onAcc::internal
                     auto wSizeInner = ALPAKA_TYPEOF(domainSize)::fill(1).rAssign(workGroup.size(acc).back());
                     auto wInner = WorkerGroup{wIdxInner, wSizeInner};
 
-                    // iterate over the fast-moving dimension
-                    auto simdIdxContainer = onAcc::makeIdxMap(
+                    // iterate over the fast-moving dimension only
+                    auto simdIdxContainerFastDim = onAcc::makeIdxMap(
                         acc,
                         wInner,
                         IdxRange{rowIdx, domainSize, stride},
                         asParent().getTraversePolicy(),
                         asParent().getIdxLayoutPolicy())[CVec<uint32_t, ALPAKA_TYPEOF(domainSize)::dim() - 1u>{}];
 
-                    for(auto iter = simdIdxContainer.begin(); iter != simdIdxContainer.end();)
+                    for(auto iter = simdIdxContainerFastDim.begin(); iter != simdIdxContainerFastDim.end();)
                     {
-                        tmpReturn = reduceFunc(
-                            tmpReturn,
-                            executeReduce<T_MemAlignment, T_simdWidth>(
-                                acc,
-                                iter,
-                                std::make_integer_sequence<uint32_t, T_numSimdPerFnCall>{},
-                                ALPAKA_FORWARD(reduceFunc),
-                                ALPAKA_FORWARD(func),
-                                ALPAKA_FORWARD(data0),
-                                ALPAKA_FORWARD(dataN)...));
+                        reduceNextSimdized<T_simdWidth, T_numSimdPerFnCall, T_MemAlignment>(
+                            acc,
+                            iter,
+                            simdizedReducedValue,
+                            ALPAKA_FORWARD(reduceFunc),
+                            ALPAKA_FORWARD(func),
+                            ALPAKA_FORWARD(data0),
+                            ALPAKA_FORWARD(dataN)...);
                     }
                 }
             }
             else
             {
-                for(; iter != simdIdxContainer.end();)
+                for(auto iter = simdIdxContainer.begin(); iter != simdIdxContainer.end();)
                 {
-                    tmpReturn = reduceFunc(
-                        tmpReturn,
-                        executeReduce<T_MemAlignment, T_simdWidth>(
-                            acc,
-                            iter,
-                            std::make_integer_sequence<uint32_t, T_numSimdPerFnCall>{},
-                            ALPAKA_FORWARD(reduceFunc),
-                            ALPAKA_FORWARD(func),
-                            ALPAKA_FORWARD(data0),
-                            ALPAKA_FORWARD(dataN)...));
+                    reduceNextSimdized<T_simdWidth, T_numSimdPerFnCall, T_MemAlignment>(
+                        acc,
+                        iter,
+                        simdizedReducedValue,
+                        ALPAKA_FORWARD(reduceFunc),
+                        ALPAKA_FORWARD(func),
+                        ALPAKA_FORWARD(data0),
+                        ALPAKA_FORWARD(dataN)...);
                 }
             }
 
@@ -353,17 +433,28 @@ namespace alpaka::onAcc::internal
                     asParent().getTraversePolicy(),
                     asParent().getIdxLayoutPolicy()))
             {
-                // std simd non-const operator[] is returning a smart reference, therefore we need std::as_const to
-                // enforce returning a copy of the value.
-                alpaka::concepts::Simd auto funcResult = func(
+                auto transformResult = func(
                     acc,
                     SimdPtr{data0, idx, T_MemAlignment{}, CVec<uint32_t, 1u>{}},
                     SimdPtr{dataN, idx, T_MemAlignment{}, CVec<uint32_t, 1u>{}}...);
 
-                tmpReturn[0] = reduceFunc(std::as_const(tmpReturn)[0], std::as_const(funcResult)[0]);
+                simdizedInvoke(
+                    [reduceFunc](auto& lhs, alpaka::concepts::Simd auto const& rhs)
+                    {
+                        // std simd non-const operator[] is returning a smart reference, therefore we need
+                        // std::as_const to enforce returning a copy of the value.
+                        lhs[0] = reduceFunc(std::as_const(lhs)[0], rhs[0]);
+                    },
+                    simdizedReducedValue,
+                    transformResult);
             }
 
-            return tmpReturn.reduce(ALPAKA_FORWARD(reduceFunc));
+            ALPAKA_TYPEOF(neutralElement) result;
+            simdizedInvoke(
+                [reduceFunc](auto& lhs, alpaka::concepts::Simd auto const& rhs) { lhs = rhs.reduce(reduceFunc); },
+                result,
+                simdizedReducedValue);
+            return result;
         }
     };
 } // namespace alpaka::onAcc::internal

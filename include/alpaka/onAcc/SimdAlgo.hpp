@@ -61,7 +61,7 @@ namespace alpaka::onAcc
         /** execute the functor concurrently over the given data.
          *
          * @attention The number of elements to process is derived from the first MdSpan object.
-         *            All other MdSpan objects must have hat least the same number of elements.
+         *            All other MdSpan objects must have at least the same number of elements.
          *            The optimal concurrency is also derived from the first MdSpan.
          *
          * @param func the functor to be executed
@@ -107,7 +107,7 @@ namespace alpaka::onAcc
         /** execute the functor concurrently over the given data.
          *
          * @attention The number of elements to process is derived from the first MdSpan object.
-         *            All other MdSpan objects must have hat least the same number of elements.
+         *            All other MdSpan objects must have at least the same number of elements.
          *
          * @param T_maxConcurrencyInByte
          *    Maximum number of bytes to be used for concurrency.
@@ -158,21 +158,21 @@ namespace alpaka::onAcc
 
         /** @} */
 
-        /** execute the functor concurrently over the given data.
+
+        /** @brief transform the input data and reduce is to a single value
          *
-         * @attention The number of elements to process is derived from the first MdSpan object.
-         *            All other MdSpan objects must have hat least the same number of elements.
+         * @attention If no extent is given the number of elements to process is derived from the first MdSpan object.
+         *            All other MdSpan objects must have at least the same number of elements.
          *
          * @param neutralElement the neutral element for the reduction operation
          * @param reduceFunc the binary reduction operation to be executed, e.g. std::plus
          * @param transformFunc n-nary functor to be executed, values of all containers will be passed to the functor
-         * as arguments
+         * as arguments. If the result of this functor is a structured value providing an overload to simdize the type
+         * can improve the performance see alpaka::makeSimdized.
          * @param data0 the first data to be processed
          * @param dataN the remaining data to be processed
-         *
-         * @{
+         * @return A single reduced value.
          */
-
         ALPAKA_FN_INLINE ALPAKA_FN_ACC constexpr auto transformReduce(
             auto const& acc,
             auto const& neutralElement,
@@ -192,6 +192,7 @@ namespace alpaka::onAcc
         }
 
         /**
+         * @copydoc transformReduce()
          * @param extents number of elements to process in each dimension
          */
         ALPAKA_FN_INLINE ALPAKA_FN_ACC constexpr auto transformReduce(
@@ -218,12 +219,8 @@ namespace alpaka::onAcc
                 ALPAKA_FORWARD(dataN)...);
         }
 
-        /** @} */
-
-        /** execute the transformFunctor concurrently over the given data.
-         *
-         * @attention The number of elements to process is derived from the first MdSpan object.
-         *            All other MdSpan objects must have hat least the same number of elements.
+        /**
+         * @copydoc transformReduce()
          *
          * @param T_maxConcurrencyInByte
          *    Maximum number of bytes to be used for concurrency.
@@ -232,14 +229,6 @@ namespace alpaka::onAcc
          *    T_maxConcurrencyInByte.
          * @param T_MemAlignment alignment of the memory, if no alignments is given the alignment will be derived from
          * the MdSpan data descriptions
-         * @param neutralElement the neutral element for the reduction operation
-         * @param reduceFunc the binary reduction operation to be executed, e.g. std::plus
-         * @param transformFunc n-nary functor to be executed, values of all containers will be passed to the functor
-         * as arguments
-         * @param T_data0 the first data to be processed
-         * @param T_dataN the remaining data to be processed
-         *
-         * @{
          */
         template<uint32_t T_maxConcurrencyInByte, alpaka::concepts::Alignment T_MemAlignment = AutoAligned>
         ALPAKA_FN_INLINE ALPAKA_FN_ACC constexpr auto transformReduce(
@@ -261,7 +250,16 @@ namespace alpaka::onAcc
         }
 
         /**
+         * @copydoc transformReduce()
+         *
          * @param extents number of elements to process in each dimension
+         * @param T_maxConcurrencyInByte
+         *    Maximum number of bytes to be used for concurrency.
+         *    Concurrency bytes describe a virtual simd pack size which is not exceeded.
+         *    Internally a best fitting SIMD width is calculated and instruction parallelism is exposed based on
+         *    T_maxConcurrencyInByte.
+         * @param T_MemAlignment alignment of the memory, if no alignments is given the alignment will be derived from
+         * the MdSpan data descriptions
          */
         template<uint32_t T_maxConcurrencyInByte, alpaka::concepts::Alignment T_MemAlignment = AutoAligned>
         ALPAKA_FN_INLINE ALPAKA_FN_ACC constexpr auto transformReduce(
@@ -282,8 +280,6 @@ namespace alpaka::onAcc
                 ALPAKA_FORWARD(data0),
                 ALPAKA_FORWARD(dataN)...);
         }
-
-        /** @} */
 
     private:
         using ConcurrentAlgo = internal::SimdConcurrent<SimdAlgo<T_WorkGroup, T_Traverse, T_IdxLayout>>;
