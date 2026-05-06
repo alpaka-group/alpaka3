@@ -329,7 +329,9 @@ namespace alpaka::onHost
      * @return frame specification
      */
     template<typename T_DataType, typename T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
-    inline constexpr auto getFrameSpec(onHost::Device<T_Api, T_DeviceKind> const& device, auto&& extents)
+    inline constexpr auto getFrameSpec(
+        Device<T_Api, T_DeviceKind> const& device,
+        alpaka::concepts::VectorOrScalar auto const& extents)
     {
         return internal::getFrameSpec<T_DataType>(*device.get(), extents);
     }
