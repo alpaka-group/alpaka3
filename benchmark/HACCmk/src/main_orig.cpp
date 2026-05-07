@@ -142,9 +142,9 @@ int main(int argc, char* argv[])
     fcoeff = 0.23f;
     fsrrmax2 = 0.5f;
     mp_rsm2 = 0.03f;
-    dx1 = 1.0f / (float) n2;
-    dy1 = 2.0f / (float) n2;
-    dz1 = 3.0f / (float) n2;
+    dx1 = 1.0f / static_cast<float>(n2);
+    dy1 = 2.0f / static_cast<float>(n2);
+    dz1 = 3.0f / static_cast<float>(n2);
     xx[0] = 0.f;
     yy[0] = 0.f;
     zz[0] = 0.f;
@@ -155,7 +155,7 @@ int main(int argc, char* argv[])
         xx[i] = xx[i - 1] + dx1;
         yy[i] = yy[i - 1] + dy1;
         zz[i] = zz[i - 1] + dz1;
-        mass[i] = (float) i * 0.01f + xx[i];
+        mass[i] = static_cast<float>(i) * 0.01f + xx[i];
     }
 
     for(i = 0; i < n2; i++)

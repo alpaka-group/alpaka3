@@ -84,7 +84,7 @@ namespace hacc
      * @return a pointer to the memory section of the given type T. The pointer is aligned to 256 byte.
      */
     template<typename T>
-    inline auto* allocAligned(int numParticles)
+    inline T* allocAligned(int numParticles)
     {
         constexpr uint32_t alignmentBytes = 256u;
         return reinterpret_cast<T*>(
