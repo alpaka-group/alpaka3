@@ -211,6 +211,16 @@ Go to the `IBuffer Interface definition <https://alpaka3.readthedocs.io/en/lates
 Kernel
 ------
 
+.. _executor:
+
+Executor
+--------
+
+.. _thread_spec:
+
+Thread Spec
+-----------
+
 .. _frame:
 
 Frame, Frame Extents and Frame Spec

@@ -2,145 +2,88 @@ Kernel
 ======
 
 After selecting a device, creating a queue, and allocating memory, the next step is to launch work on the device.
-In *alpaka*, the simplest kernel is usually just a small function object plus a host-side launch with a ``FrameSpec``.
-If you know CUDA, a frame is understood as a logical index distribution, not as an exact block/grid launch description.
+In *alpaka*, :ref:`kernels <kernel>` are implemented as function objects, known as *functors*.
+A *functor* is a C++ ``class`` or ``struct`` that contains at least the member function ``void operator() const``, which implements the algorithm to be executed on the :ref:`device`.
+A *functor* can be extended with additional functionality and is limited only by the requirement that it must be `trivially copyable <https://en.cppreference.com/cpp/language/classes#Trivially_copyable_class>`__.
+In this tutorial, we will focus on a very simple :ref:`kernel`.
 
-What matters early is that a ``FrameSpec`` is **not** required to describe the whole problem size.
-It describes the maximum parallelism that alpaka can make available to the kernel at one time.
-The real number of thread blocks and threads per block is derived by alpaka based on the device kind and API of the queue.
-It does not guarantee how many physical thread blocks the backend will use or how large those thread blocks are.
-The actual problem processed within the kernel can be much larger.
-The kernel then uses ``makeIdxMap`` to walk over the complete data index range.
+The :ref:`kernel` is implemented using the same principle as CUDA, HIP, or SYCL. The function specifies which part of a problem a single hardware thread processes based on its ID. To execute the algorithm, the :ref:`kernel` is launched in parallel. Therefore, the same algorithm is executed n times, each time with a different thread ID.
 
-What a Beginner Kernel Looks Like
----------------------------------
+A :ref:`FrameSpec <frame>` is used to describe the parallelism of a :ref:`kernel` launch.
 
-Most first kernels in alpaka end up looking almost the same:
+Writing the Kernel
+------------------
 
-- The kernel is a function object with ``ALPAKA_FN_ACC void operator() const``.
-- The first argument is the accelerator handle ``acc`` followinfg the concepts ``onAcc::conepsts::Acc``.
-- Output buffers use ``IMdSpan`` and input buffers use ``IDataSource``.
-- Thread group mapping and work distribution is expressed with ``onAcc::makeIdxMap(...)``.
-- The kernel body only talks about data indices, not about raw block and thread IDs.
+An *alpaka* :ref:`kernel` must meet the following requirements:
 
-  .. literalinclude:: ../../snippets/example/050_kernel.cpp
-    :language: cpp
-    :start-after: BEGIN-TUTORIAL-kernelStructure
-    :end-before: END-TUTORIAL-kernelStructure
-    :dedent:
+- The kernel must be a function object. Therefore, it must implement the function call operator with the following signature: ``ALPAKA_FN_ACC void operator()(onAcc::conepsts::Acc auto acc, ...) const`` or ``constexpr void operator()(onAcc::conepsts::Acc auto acc, ...) const``.
+- The *functor* must be `trivially copyable <https://en.cppreference.com/cpp/language/classes#Trivially_copyable_class>`__.
+- The first argument is the accelerator handle ``acc``, which follow the concepts ``onAcc::conepsts::Acc``.
+- The :doc:`Device Memory <memoryAllocation>` handles are passed via the arguments [#f1]_. Typically, output buffers use ``IMdSpan`` and input buffers use ``IDataSource``.
 
-This most important rule in *alpaka* is: write the kernel in terms of the data that needs to be processed.
-``makeIdxMap`` distributes that work over chosen thread groups based on the APi, deviceKind and executor.
-That keeps the code portable across CPUs and GPUs and is usually better than manual thread index arithmetic.
+.. [#f1] We need to pass a handle instead of copying the memory directly, because the kernel must be trivially copyable. The simplest handle is a raw pointer. We strongly advise against using raw pointers, as they have many drawbacks and are a major source of errors.
+
+.. literalinclude:: ../../snippets/example/050_kernel.cpp
+  :language: cpp
+  :start-after: BEGIN-TUTORIAL-kernelStructure
+  :end-before: END-TUTORIAL-kernelStructure
+  :dedent:
+
+*alpaka* offers many different ways to write a :ref:`kernel`, but it also provides several functions to help you create a kernel easily and securely.
+``onAcc::makeIdxMap`` is the most important helper function for writing a kernel.
+It distributes a range among the workers. The second argument defines who a worker is.
+
+For the simplest kernel, we use the worker group ``onAcc::worker::threadsInGrid``, which means that the range is distributed across all global threads [#f2]_.
+In the example, the range is the extents of ``out``.
+We access all elements of ``out`` in parallel and write the sum of ``lhs`` and ``rhs`` to data position ``i``.
+The parallelism is defined by the :ref:`FrameSpec <frame>` when the :ref:`kernel` starts.
+Within the :ref:`kernel`, we work with the parallelism defined by the :ref:`ThreadSpec <thread_spec>`, which is derived from the :ref:`FrameSpec <frame>`.
+The :ref:`tutorial_launch_kernel` section explains how this derivation works.
+
+The function call ``onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{out.getExtents()})`` provides us with certain guarantees:
+
+- All elements in ``out`` are processed independently of the parallelism specified via :ref:`FrameSpec <frame>` [#f3]_.
+- This ensures that no out-of-range memory access happens.
+- Memory access is optimized based on the used :ref:`device` and :ref:`executor`. For example, a blocking access pattern is used on the CPU, while a grid-stride loop is used on the GPU.
+
+``onAcc::makeIdxMap`` offers many more features needed for performance optimization.
+Once you've finished the tutorial, check out the :doc:`chunked` section to discover the full potential of this function.
+
+.. [#f2] The total number of threads is calculated by multiplying the number of threads by the number of blocks in a :ref:`thread_spec`.
+.. [#f3] It is also possible to configure a :ref:`FrameSpec <frame>` with the values `{1,1}`, which means that all elements in ``onAcc::makeIdxMap`` are processed sequentially.
+
+.. _tutorial_launch_kernel:
 
 Launching the Kernel
 --------------------
 
-On the host side, the pattern is straightforward:
+On the host side, we first need to create a :ref:`FrameSpec <frame>`.
+A :ref:`FrameSpec <frame>` describes the maximum possible parallelism.
+A :ref:`FrameSpec <frame>` contains the number of :ref:`Frames <frame>` and the :ref:`Frame Extents <frame>`.
+When the :ref:`kernel` starts, the :ref:`FrameSpec <frame>` is reduced to a :ref:`thread_spec`.
+Therefore, the number of :ref:`Frame Extents <frame>` is reduced to the number of threads, and the number of :ref:`Frames <frame>` is reduced to the number of blocks.
+This reduction depends on the :ref:`device` and the :ref:`executor`.
+The numbers from the :ref:`Frame Extents <frame>` can be directly transferred to the :ref:`thread_spec`, but the number of blocks and/or threads may also be smaller than in the :ref:`FrameSpec <frame>`.
 
-1. Allocate buffers on the compute device.
+Let's take, for example, a :ref:`Frame Spec <frame>` with the dimensions {10, 32} (number of Frames, Frame extents):
 
-  .. literalinclude:: ../../snippets/example/050_kernel.cpp
-    :language: cpp
-    :start-after: BEGIN-TUTORIAL-allocateBuffers
-    :end-before: END-TUTORIAL-allocateBuffers
-    :dedent:
+- On a GPU, :ref:`thread_spec` could take the value ``{10, 32}`` (blocks, threads), since we can launch 10 blocks and each GPU core has 32 threads.
+- On a CPU, the :ref:`thread_spec` could be ``{10, 1}``  (blocks, threads), since we can run 10 blocks on 10 or fewer cores, but each core can have only one thread.
 
-2. Copy input data to the device.
+``onAcc::makeIdxMap`` allows the use of any number of *blocks* and *threads*.
+Therefore, any :ref:`FrameSpec <frame>` will work.
+The size of the :ref:`FrameSpec <frame>` is only relevant for performance.
+To begin with, you should use the ``onHost::getFrameSpec`` function to create a :ref:`FrameSpec <frame>`.
+This function assumes that you are using the ``onAcc::makeIdxMap`` function in your :ref:`kernel` and returns a well-functioning :ref:`FrameSpec <frame>` depending on the :ref:`device` and :ref:`executor`.
 
-  .. literalinclude:: ../../snippets/example/050_kernel.cpp
-    :language: cpp
-    :start-after: BEGIN-TUTORIAL-copyToDevice
-    :end-before: END-TUTORIAL-copyToDevice
-    :dedent:
+.. literalinclude:: ../../snippets/example/050_kernel.cpp
+  :language: cpp
+  :start-after: BEGIN-TUTORIAL-kernelLaunch
+  :end-before: END-TUTORIAL-kernelLaunch
+  :dedent:
 
-3. Choose a frame specification.
-
-  .. literalinclude:: ../../snippets/example/050_kernel.cpp
-    :language: cpp
-    :start-after: BEGIN-TUTORIAL-kernelFrameSpec
-    :end-before: END-TUTORIAL-kernelFrameSpec
-    :dedent:
-
-4. Enqueue the kernel.
-
-  .. literalinclude:: ../../snippets/example/050_kernel.cpp
-    :language: cpp
-    :start-after: BEGIN-TUTORIAL-kernelLaunch
-    :end-before: END-TUTORIAL-kernelLaunch
-    :dedent:
-
-5. Copy the result back and wait for completion before reading it.
-
-  .. literalinclude:: ../../snippets/example/050_kernel.cpp
-    :language: cpp
-    :start-after: BEGIN-TUTORIAL-copyFromDevice
-    :end-before: END-TUTORIAL-copyFromDevice
-    :dedent:
-
-
-The queue can be non-blocking, so ``alpaka::onHost::wait(queue)`` is the point where the host knows the device work is finished.
-Without that synchronization, reading the result on the host can race with the running kernel.
-
-What ``FrameSpec`` Means
-------------------------
-
-``FrameSpec`` is the maximum parallelism exposed to the kernel.
-It is not a promise that the total problem size is exactly equal to ``frameCount * frameExtent``.
-It is also not a promise that the launch will use exactly ``frameCount`` thread blocks of size ``frameExtent``.
-If the frame extent is given as a compile-time :doc:`CVec <vector>`, that extent is also available as compile-time information
-inside the kernel.
-
-Start with the following points in mind:
-
-- Chose a reasonable parallel launch shape, e.g. the expected problem size device by a frame extent, often 256 elements per frame but at least one frame.
-- In the kernel describes the full valid data range with ``makeIdxMap()`` and ``IdxRange{...}``.
-- If the problem is larger than the immediate launch shape, the workers simply iterate until the whole range is covered.
-
-That is why a kernel in this example can process a vector of length ``293`` even if the frame extent is something like ``128`` or ``256``.
-The frame specification limits the available parallelism per launch shape.
-It does not limit the logical size of the problem.
-
-Choosing the Correct Frame Specification
-----------------------------------------
-
-For a first implementation, frame selection should be boring.
-The host chooses how much work is grouped into one frame, and the kernel then iterates over the valid data indices assigned to it.
-
-  .. literalinclude:: ../../snippets/example/050_kernel.cpp
-    :language: cpp
-    :start-after: BEGIN-TUTORIAL-kernelFrameSpec
-    :end-before: END-TUTORIAL-kernelFrameSpec
-    :dedent:
-
-Rules of thumb:
-
-- ``onHost::getFrameSpec<T>(device, extents)`` is the easiest way to get a reasonable first frame specification.
-- Start with simple sizes. For 1D kernels, something around ``128`` to ``256`` elements per frame is usually a reasonable first try.
-- When you have multiple dimensions, prefer more work in the fastest varying dimension, which is usually ``x``.
-- Use a compile-time ``CVec`` frame extent when the kernel benefits from knowing the frame size at compile time.
-
-If you have seen CUDA-style beginner code, this is one of the major differences in style.
-You do not start by hand-writing a global-index formula and hoping the launch exactly matches the problem.
-Instead, you choose a sensible frame shape and let ``makeIdxMap`` carry that parallelism across the full problem range.
-
-In practice, choose the frame from the data layout first and only tune it later if profiling gives you a reason.
-The same ``FrameSpec`` can run on different backends, but it may not be equally good everywhere.
-A shape that feels natural for CUDA or HIP will run correctly on CPU backends, just with different performance characteristics.
-
-Once you are comfortable with this basic launch style, the next important alpaka step is :doc:`chunked`, where frames are treated as reusable tiles of work.
-
-How ``makeIdxMap`` Helps
-------------------------
-
-``makeIdxMap`` is the beginner-friendly way to iterate over the part of the problem assigned to the running workers.
-Conceptually, it gives you the portable version of the "grid-stride loop" idea that CUDA users often learn early:
-all threads within a group cooperate to cover the whole range, and the loop only yields valid indices.
-
-The object that describes that iteration space in the tutorial examples is ``IdxRange``.
-``IdxRange{out.getExtents()}`` means "the full valid index range of this output object".
-For a vector, that is all indices from the first element to the last element.
-For a matrix or image, it is the full multidimensional box of valid coordinates.
+In the advanced area, section :doc:`chunked`, you'll learn how ``onAcc::makeIdxMap`` works in detail.
+Once you understand this, you can manually set a :ref:`FrameSpec <frame>` that might work better than the :ref:`FrameSpec <frame>` returned by ``onHost::getFrameSpec``.
 
 Typical Beginner Mistakes
 -------------------------
@@ -149,7 +92,7 @@ Typical Beginner Mistakes
 - Forgetting to copy the result back to the host after the kernel.
 - Forgetting to wait before reading host-side results from a non-blocking queue.
 - Choosing a one-dimensional frame for naturally multidimensional code and then reimplementing manual index arithmetic in the kernel.
-- Writing the kernel in terms of raw thread IDs even though the algorithm is just "process every element once".
+- Calculate your own thread ID and use it to access the data, rather than accessing the data via ``onAcc::makeIdxMap``.
 
 Complete Source File
 --------------------
