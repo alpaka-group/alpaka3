@@ -67,26 +67,26 @@ namespace hacc
 
     int verify(int n2, auto vx2, auto vy2, auto vz2, auto vx2_hw, auto vy2_hw, auto vz2_hw)
     {
-        int error = 0;
+        int error = EXIT_SUCCESS;
         float const eps = 1.0f;
         for(int i = 0; i < n2; i++)
         {
             if(fabsf(vx2[i] - vx2_hw[i]) > eps)
             {
                 printf("error at vx2[%d] %f %f\n", i, vx2[i], vx2_hw[i]);
-                error = 1;
+                error = EXIT_FAILURE;
                 break;
             }
             if(fabsf(vy2[i] - vy2_hw[i]) > eps)
             {
                 printf("error at vy2[%d]: %f %f\n", i, vy2[i], vy2_hw[i]);
-                error = 1;
+                error = EXIT_FAILURE;
                 break;
             }
             if(fabsf(vz2[i] - vz2_hw[i]) > eps)
             {
                 printf("error at vz2[%d]: %f %f\n", i, vz2[i], vz2_hw[i]);
-                error = 1;
+                error = EXIT_FAILURE;
                 break;
             }
         }

@@ -125,7 +125,6 @@ namespace haccmkAlpaka
         }
     };
 
-    template<typename Data>
     void haccmk(
         auto devAcc,
         auto exec,
@@ -148,13 +147,13 @@ namespace haccmkAlpaka
         // a blocking queue is used to reduce the starting overhead for CPU devices
         onHost::Queue queue = devAcc.makeQueue(queueKind::blocking);
 
-        auto d_xx = onHost::alloc<Data>(devAcc, n2);
-        auto d_yy = onHost::alloc<Data>(devAcc, n2);
-        auto d_zz = onHost::alloc<Data>(devAcc, n2);
-        auto d_mass = onHost::alloc<Data>(devAcc, n2);
-        auto d_vx2 = onHost::alloc<Data>(devAcc, n1);
-        auto d_vy2 = onHost::alloc<Data>(devAcc, n1);
-        auto d_vz2 = onHost::alloc<Data>(devAcc, n1);
+        auto d_xx = onHost::alloc<float>(devAcc, n2);
+        auto d_yy = onHost::alloc<float>(devAcc, n2);
+        auto d_zz = onHost::alloc<float>(devAcc, n2);
+        auto d_mass = onHost::alloc<float>(devAcc, n2);
+        auto d_vx2 = onHost::alloc<float>(devAcc, n1);
+        auto d_vy2 = onHost::alloc<float>(devAcc, n1);
+        auto d_vz2 = onHost::alloc<float>(devAcc, n1);
 
         onHost::memcpy(queue, d_xx, xx);
         onHost::memcpy(queue, d_yy, yy);
@@ -225,12 +224,9 @@ namespace haccmkAlpaka
         // Define problem size
         IdxVec const extent(n2);
 
-        // Define the buffer element type
-        using Data = float;
-
         std::cout << "Outer loop count is set " << n1 << std::endl;
         std::cout << "Inner loop count is set " << n2 << std::endl;
-        std::cout << "Element type " << onHost::demangledName<Data>() << std::endl;
+        std::cout << "Element type float" << std::endl;
         std::cout << "Using alpaka accelerator " << onHost::demangledName(exec) << " for "
                   << deviceSpec.getApi().getName() << " " << deviceSpec.getDeviceKind().getName() << std::endl;
 
@@ -238,16 +234,16 @@ namespace haccmkAlpaka
         onHost::Device devAcc = devSelector.makeDevice(0);
 
 
-        auto xx = onHost::allocHost<Data>(extent);
-        auto yy = onHost::allocHost<Data>(extent);
-        auto zz = onHost::allocHost<Data>(extent);
-        auto mass = onHost::allocHost<Data>(extent);
-        auto vx2 = onHost::allocHost<Data>(extent);
-        auto vy2 = onHost::allocHost<Data>(extent);
-        auto vz2 = onHost::allocHost<Data>(extent);
-        auto vx2_hw = onHost::allocHost<Data>(extent);
-        auto vy2_hw = onHost::allocHost<Data>(extent);
-        auto vz2_hw = onHost::allocHost<Data>(extent);
+        auto xx = onHost::allocHost<float>(extent);
+        auto yy = onHost::allocHost<float>(extent);
+        auto zz = onHost::allocHost<float>(extent);
+        auto mass = onHost::allocHost<float>(extent);
+        auto vx2 = onHost::allocHost<float>(extent);
+        auto vy2 = onHost::allocHost<float>(extent);
+        auto vz2 = onHost::allocHost<float>(extent);
+        auto vx2_hw = onHost::allocHost<float>(extent);
+        auto vy2_hw = onHost::allocHost<float>(extent);
+        auto vz2_hw = onHost::allocHost<float>(extent);
 
         float fsrrmax2, mp_rsm2, fcoeff, dx1, dy1, dz1, dx2, dy2, dz2;
         int i = 0;
@@ -257,9 +253,9 @@ namespace haccmkAlpaka
         fcoeff = 0.23f;
         fsrrmax2 = 0.5f;
         mp_rsm2 = 0.03f;
-        dx1 = 1.0f / (float) n2;
-        dy1 = 2.0f / (float) n2;
-        dz1 = 3.0f / (float) n2;
+        dx1 = 1.0f / static_cast<float>(n2);
+        dy1 = 2.0f / static_cast<float>(n2);
+        dz1 = 3.0f / static_cast<float>(n2);
         xx[0] = 0.f;
         yy[0] = 0.f;
         zz[0] = 0.f;
@@ -270,7 +266,7 @@ namespace haccmkAlpaka
             xx[i] = xx[i - 1] + dx1;
             yy[i] = yy[i - 1] + dy1;
             zz[i] = zz[i - 1] + dz1;
-            mass[i] = (float) i * 0.01f + xx[i];
+            mass[i] = static_cast<float>(i) * 0.01f + xx[i];
         }
 
         for(i = 0; i < n2; i++)
@@ -291,8 +287,7 @@ namespace haccmkAlpaka
             vz2[i] = vz2[i] + dz2 * fcoeff;
         }
 
-        haccmk<
-            Data>(devAcc, exec, repeat, n1, n2, xx, yy, zz, mass, vx2_hw, vy2_hw, vz2_hw, fsrrmax2, mp_rsm2, fcoeff);
+        haccmk(devAcc, exec, repeat, n1, n2, xx, yy, zz, mass, vx2_hw, vy2_hw, vz2_hw, fsrrmax2, mp_rsm2, fcoeff);
 
         return hacc::verify(n2, vx2, vy2, vz2, vx2_hw, vy2_hw, vz2_hw);
     }
@@ -316,7 +311,7 @@ auto main(int argc, char* argv[]) -> int
      *  @code{.cpp}
      *  auto deviceSpec = onHost::DeviceSpec{api::cuda, deviceKind::nvidiaGpu};
      *  auto executor = exec::gpuCuda;
-     *  return example(deviceSpec, executor, n2,n1,repeat);
+     *  return example(deviceSpec, executor, n2, n1, repeat);
      *  @endcode
      *
      * Some examples for device specifications (depending on the active dependencies).
