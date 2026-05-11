@@ -43,8 +43,9 @@ TEMPLATE_LIST_TEST_CASE("tutorial kernel intro vector add", "[docs]", docs::test
     onHost::concepts::Device auto device = selector.makeDevice(0);
     onHost::Queue queue = device.makeQueue();
 
-    // When you use `makeIdxMap`, your algorithm is not subject to any restrictions regarding data size, such as the
-    // requirement that the data must be a power of two or a multiple of 100.
+    /* When you use `makeIdxMap`, your algorithm is not subject to any restrictions regarding data size, such as the
+     * requirement that the data must be a power of two or a multiple of 100.
+     */
     size_t numElements = 293u;
     auto lhsBuffer = onHost::alloc<int>(device, numElements);
     // Allocate buffers on the compute device.
@@ -63,16 +64,19 @@ TEMPLATE_LIST_TEST_CASE("tutorial kernel intro vector add", "[docs]", docs::test
     onHost::memset(queue, resultBuffer, 0x00);
 
     // BEGIN-TUTORIAL-kernelLaunch
-    // Let alpaka calculate a well-functioning `frameSpec` for you.
-    // This assumes that you are using `onAcc::makeIdxMap` in the kernel.
+    /* Let alpaka calculate a well-functioning `frameSpec` for you.
+     * This assumes that you are using `onAcc::makeIdxMap` in the kernel.
+     */
     onHost::concepts::FrameSpec auto frameSpec = onHost::getFrameSpec<int>(device, Vec{numElements});
 
-    // Create a kernel object and enqueue it along with the `frameSpec´ and kernel arguments.
-    // Depending on how many tasks are still in the queue, the kernel may be executed immediately or after a delay.
+    /* Create a kernel object and enqueue it along with the `frameSpec´ and kernel arguments.
+     * Depending on how many tasks are still in the queue, the kernel may be executed immediately or after a delay.
+     */
     queue.enqueue(frameSpec, KernelBundle{VectorAddKernel{}, resultBuffer, lhsBuffer, rhsBuffer});
-    // If you use a non-blocking queue, the kernel runs asynchronously with respect to the host.
-    // To synchronize the kernel, you must call `onHost::wait(queue)`.
-    // onHost::wait(queue);
+    /* If you use a non-blocking queue, the kernel runs asynchronously with respect to the host.
+     * To synchronize the kernel, you must call `onHost::wait(queue)`.
+     */
+    onHost::wait(queue);
     // END-TUTORIAL-kernelLaunch
 
     // Copy the result back and wait for completion before reading it.
