@@ -66,8 +66,10 @@ Individual chapters are based on the information of the chapters before.
    :titlesonly:
 
    tutorial/views.rst
-   tutorial/kernelParallelism.rst
    tutorial/multidim.rst
+   tutorial/kernelParallelism.rst
+   tutorial/synchronization.rst
+   tutorial/sharedMemory.rst
 
 .. toctree::
    :caption: Advanced
