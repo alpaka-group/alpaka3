@@ -86,13 +86,14 @@ def get_hashed_files(path_filter_regex: str = "") -> dict[str, str]:
     )
 
     modified_files = []
-    # skip if output is empty
-    if not git_status.stdout.strip():
-        for line in git_status.stdout.strip().split("\n"):
-            path = line.strip().split(" ")[1]
-            if compiled_regex.match(path):
-                if (project_root / pathlib.Path(path)).is_file():
-                    modified_files.append(path)
+    for line in git_status.stdout.strip().split("\n"):
+        # skip empty line
+        if not line:
+            continue
+        path = line.strip().split(" ")[1]
+        if compiled_regex.match(path):
+            if (project_root / pathlib.Path(path)).is_file():
+                modified_files.append(path)
 
     hash_files: dict[str, str] = {}
 
