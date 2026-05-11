@@ -29,6 +29,15 @@ namespace alpaka::onHost
         {
         }
 
+        /** Get the number of available devices for the given api and device kind.
+         *
+         * @attention In case the compiler flags you used to build your application were wrong, kernels for the given
+         * deviceKind cannot be built and the number of available devices will be zero. This can happen, e.g., if you
+         * compile for OneAPI SYCL: you can compile the application, but whether you can run on a device is evaluated
+         * at runtime.
+         *
+         * @return number of devices
+         */
         uint32_t getDeviceCount() const
         {
             return internal::GetDeviceCount::Op<ALPAKA_TYPEOF(*m_platform.get())>{}(*m_platform.get());

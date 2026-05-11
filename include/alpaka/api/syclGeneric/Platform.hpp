@@ -100,6 +100,52 @@ namespace alpaka
             template<typename T_ApiInterface, alpaka::concepts::DeviceKind T_DeviceKind>
             struct Platform : std::enable_shared_from_this<Platform<T_ApiInterface, T_DeviceKind>>
             {
+            private:
+                /** Checks if kernels can be compiled for the context and given list of devices
+                 *
+                 * It is possible that we can create a context and a list of devices for an API and device kind.
+                 * That does not mean we can compile kernels for the devices.
+                 * A reason can be:
+                 *   - the compile flags are not set to build kernels for the given device kind
+                 *   - dependencies e.g. CUDA/HIP are not available
+                 *
+                 * @return true if we can build kernels for the devices, else false.
+                 */
+                bool checkIfKernelsCanBeCompiled(std::vector<sycl::device> const& devs, sycl::context ctx)
+                {
+                    if(devs.empty())
+                        return false;
+                    try
+                    {
+                        auto kernelIds = sycl::get_kernel_ids();
+
+                        // No application kernels exist, so there is nothing to validate.
+                        if(kernelIds.empty())
+                            return true;
+                        // Check if we have already pre-compiled binaries/executables for the devices.
+                        if(sycl::has_kernel_bundle<sycl::bundle_state::executable>(ctx, devs))
+                        {
+                            // an executable exists already
+                            return true;
+                        }
+                        // Check if we can compile for the devices.
+                        if(sycl::has_kernel_bundle<sycl::bundle_state::input>(ctx, devs))
+                        {
+                            auto input = sycl::get_kernel_bundle<sycl::bundle_state::input>(ctx, devs);
+
+                            auto executable = sycl::build(input, devs);
+
+                            // return true if we can build the kernels for the devices
+                            return !executable.empty();
+                        }
+                        return false;
+                    }
+                    catch(...)
+                    {
+                        return false;
+                    }
+                }
+
             public:
                 Platform() : contextManager{make_sharedSingleton<detail::Context>()}
                 {
@@ -109,9 +155,24 @@ namespace alpaka
                         syclDevices = syclPlatform->get_devices();
                         devices.resize(syclDevices.size());
                         syclContext = contextManager->getContext(syclPlatform.value());
+
+                        /* If no call before fired an exception we need to check if we can build kernels for the
+                         * context and devices. If we are not able to compile kernels for the devices, we throw
+                         * to reset the context and device list.
+                         */
+                        if(!checkIfKernelsCanBeCompiled(syclDevices, *syclContext))
+                        {
+                            auto msg
+                                = (std::string("kernel_bundle_building for ") + T_ApiInterface::getName() + "and "
+                                   + T_DeviceKind::getName() + " failed");
+                            throw std::runtime_error(msg);
+                        }
                     }
                     catch(...)
                     {
+                        /* Reset all members, to show that the platform does not have a valid context and devices.
+                         * If later the number of devices is queried it will return that zero devices are available.
+                         */
                         syclContext.reset();
                         syclPlatform.reset();
                         syclDevices.clear();
