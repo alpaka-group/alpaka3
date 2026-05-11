@@ -1,9 +1,10 @@
 Working With Multidimensional Kernels
 =====================================
 
-Many important beginner examples in parallel computing are naturally multidimensional:
+Many important examples in parallel computing are naturally multidimensional:
 images, matrices, heat diffusion, cellular automata, and finite-difference stencils.
-For these kinds of problems, it is usually clearer to keep the kernel multidimensional instead of flattening everything into one linear index.
+*alpaka* supports multi-dimensional kernels and memory.
+That's why it's usually better to implement these types of problems using multiple dimensions rather than flattening everything into a single linear index.
 
 Choose the Kernel Shape From the Data
 -------------------------------------
@@ -17,12 +18,13 @@ This avoids hand-written index decoding and makes boundary conditions easier to 
     :end-before: END-TUTORIAL-multidimFrameSpec
     :dedent:
 
-We recommend that the frame shape should follow the logical shape of the work:
+We recommend that the frame shape should follow the logical shape of the work.
+Typical use cases for different dimensions are:
 
 - 1D frames for flat vectors and simple reductions.
 - 2D frames for images, matrices, and most stencil codes.
-- 3D frames only when the algorithm is truly volumetric.
-- ND frames for algorithms that have more than three natural dimensions, such as high-dimensional grids.
+- 3D frames for volumetric problems, such as the position of particles in a space.
+- ND frames for algorithms that have more than three natural dimensions, such as position coordinate plus a time stamp.
 
 Keep in mind that the rightmost index, usually ``x``, is the fastest varying dimension in *alpaka* buffers.
 This is important if you are using hand written ``for``-loops to iterate over the data instead of ``makeIdxMap``.
@@ -75,9 +77,8 @@ What Users Usually Need To Know Early
 The following habits are worth learning from the start:
 
 - Keep boundary handling explicit. It is fine to have branching for the border in the first implementation.
-- Iterate over the full valid problem range, not over guessed thread ids. Let alpaka deal with the mapping from threads to your problem.
 - Use multidimensional buffers when the algorithm is multidimensional.
-- Keep reads and writes easy to see. You make fewer mistakes when each output element is written once.
+- Use temporary variables to avoid reading from and writing to memory multiple times. The variable name provides a meaningful name for read and write operations, making it easier to track when data is being read and written.
 - Start with a clear kernel and a small test case before trying to optimize shared memory use or tuning the ``FrameSpec``
 
 Complete Source File

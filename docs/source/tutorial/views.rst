@@ -3,6 +3,8 @@ Views and Subviews
 
 Buffers are objects returned by memory allocation methods. They own the data stored in memory and track the lifetime of that memory. They follow the :ref:`buffer concept <i_buffer>`.
 On the other hand, :ref:`Views <i_view>` only point to memory but do not own it and can be used within a kernel in addition to on the host.
+Unlike an :ref:`MdSpan <i_mdspan>`, the :ref:`Views <i_view>` contains information about which :ref:`api` was used to allocate the memory.
+This information is required for certain functions, such as copying memory.
 
 View are typically used when:
 
@@ -48,8 +50,8 @@ That means you can, for example, allocate device memory based on a view and copy
 Typical use cases include:
 
 - Copying a subrange of a 1D vector.
-- Copying only the active interior of a ND grid.
-- Passing a tile into a helper function.
+- Only the inner area of the matrix containing the actual data, without the halo, should be copied into a stencil code.
+- One step of your algorithm operates on only a subset of your data. Use a subview to create a chunk of your data and pass it to the function that implements that step of your algorithm. This simplifies the implementation of the algorithm, since it doesn't have to worry about whether it needs to process all the data or just a chunk of it.
 
 Complete Source File
 --------------------

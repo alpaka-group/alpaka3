@@ -66,6 +66,7 @@ TEMPLATE_LIST_TEST_CASE("tutorial multidimensional stencil kernel", "[docs]", do
     // END-TUTORIAL-multidimFrameSpec
 
     // BEGIN-TUTORIAL-multidimKernelLaunch
+    static_assert(frameSpec.dim() == 2);
     queue.enqueue(frameSpec, KernelBundle{FivePointAverageKernel{}, outBuffer, inBuffer});
 
     onHost::memcpy(queue, hostOutput, outBuffer);

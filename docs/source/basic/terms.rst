@@ -178,6 +178,7 @@ The memory is row-oriented. The fastest index is the outer right one.
 
     Memory layout of a Data Storage object with the extents [3, 5]. Access to memory at position [1, 3]. For simplicity, pitches and alignment are not shown in the figure.
 
+.. _i_mdspan:
 
 IMdSpan
 ```````
