@@ -59,6 +59,7 @@ Individual chapters are based on the information of the chapters before.
    tutorial/queue.rst
    tutorial/memoryAllocation.rst
    tutorial/memoryOperations.rst
+   tutorial/kernel.rst
 
 .. toctree::
    :caption: Tutorial - Advanced
