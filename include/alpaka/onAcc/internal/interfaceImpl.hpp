@@ -91,6 +91,27 @@ namespace alpaka::onAcc
         };
 
         template<concepts::Acc T_Acc>
+        struct GetIdxWithin::Op<T_Acc, ALPAKA_TYPEOF(origin::thread), ALPAKA_TYPEOF(unit::threads)>
+        {
+            /** The identity of the thread.
+             *
+             * @return Zero for all components of the extent.
+             */
+            constexpr alpaka::concepts::Vector auto operator()(
+                T_Acc const& acc,
+                ALPAKA_TYPEOF(origin::thread),
+                ALPAKA_TYPEOF(unit::threads)) const
+            {
+                using ExtentType = ALPAKA_TYPEOF(acc[layer::thread].idx());
+
+                using ValueType = typename ExtentType::type;
+                constexpr uint32_t dim = ExtentType::dim();
+
+                return fillCVec<ValueType, dim, 0u>();
+            }
+        };
+
+        template<concepts::Acc T_Acc>
         struct GetExtentsOf::Op<T_Acc, ALPAKA_TYPEOF(origin::warp), ALPAKA_TYPEOF(unit::threads)>
         {
             constexpr alpaka::concepts::CVector<uint32_t> auto operator()(
@@ -167,6 +188,26 @@ namespace alpaka::onAcc
                 ALPAKA_TYPEOF(unit::threads)) const
             {
                 return acc[layer::block].count() * acc[layer::thread].count();
+            }
+        };
+
+        template<concepts::Acc T_Acc>
+        struct GetExtentsOf::Op<T_Acc, ALPAKA_TYPEOF(origin::thread), ALPAKA_TYPEOF(unit::threads)>
+        {
+            /** The identity of the thread.
+             *
+             * @return One for all components of the extent.
+             */
+            constexpr alpaka::concepts::Vector auto operator()(
+                T_Acc const& acc,
+                ALPAKA_TYPEOF(origin::thread),
+                ALPAKA_TYPEOF(unit::threads)) const
+            {
+                using ExtentType = ALPAKA_TYPEOF(acc[layer::thread].count());
+                using ValueType = typename ExtentType::type;
+                constexpr uint32_t dim = ExtentType::dim();
+
+                return fillCVec<ValueType, dim, 1u>();
             }
         };
     } // namespace internalCompute

@@ -73,7 +73,7 @@ namespace haccmkAlpaka
                 float yyi = yy[i];
                 float zzi = zz[i];
 
-                auto simdGrid = onAcc::SimdAlgo{onAcc::WorkerGroup{Vec{0}, Vec{1}}};
+                auto simdGrid = onAcc::SimdAlgo{onAcc::worker::allThreads};
                 move = simdGrid.transformReduce(
                     acc,
                     Vec{n2},

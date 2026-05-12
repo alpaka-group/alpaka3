@@ -19,6 +19,7 @@ namespace alpaka::onAcc
      */
     namespace origin
     {
+        ALPAKA_TAG(thread);
         ALPAKA_TAG(warp);
         ALPAKA_TAG(block);
         ALPAKA_TAG(grid);
@@ -54,6 +55,11 @@ namespace alpaka::onAcc
 
         template<>
         struct IsOrigin<ALPAKA_TYPEOF(origin::grid)> : std::true_type
+        {
+        };
+
+        template<>
+        struct IsOrigin<ALPAKA_TYPEOF(origin::thread)> : std::true_type
         {
         };
 

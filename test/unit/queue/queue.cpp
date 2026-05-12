@@ -217,10 +217,8 @@ struct IotaKernelNDSelection
             /* fameBaseIdx is unique for each thread block.
              * Therefor the workgroup for iterating over the frames in other dimensions must be one.
              */
-            for(auto frameIdx : onAcc::makeIdxMap(
-                    acc,
-                    onAcc::WorkerGroup{numFrames.fill(0), numFrames.fill(1)},
-                    IdxRange{fameBaseIdx, numFrames})[T_Selection{}])
+            for(auto frameIdx :
+                onAcc::makeIdxMap(acc, onAcc::worker::allThreads, IdxRange{fameBaseIdx, numFrames})[T_Selection{}])
             {
                 for(auto elemIdx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, onAcc::range::frameExtent))
                     if(linearize(acc[frame::extent], elemIdx) == 1u)

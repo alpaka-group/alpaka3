@@ -60,7 +60,7 @@ namespace alpaka
         }
 
         template<concepts::CVector T_CSelect>
-        constexpr ThreadSpace mapTo(T_CSelect selection) const requires(T_ThreadIdx::dim() > T_CSelect::dim())
+        constexpr auto mapTo(T_CSelect selection) const requires(T_ThreadIdx::dim() > T_CSelect::dim())
         {
             alpaka::unused(selection);
 
@@ -70,8 +70,9 @@ namespace alpaka
             auto allElements = iotaCVec<IdxType, dim>();
             constexpr auto notSelectedDims = filter(allElements, T_CSelect{});
 
-            auto threadIndex = m_threadIdx;
-            auto numThreads = m_threadCount;
+            // Transform into a universal vector because the input could be a CVec which is read only.
+            auto threadIndex = typename ALPAKA_TYPEOF(m_threadIdx)::UniVec{m_threadIdx};
+            auto numThreads = typename ALPAKA_TYPEOF(m_threadCount)::UniVec{m_threadCount};
 
             // map not selected dimensions to the slowest selected dimension
             for(uint32_t x = 0u; x < notSelectedDims.dim(); ++x)
@@ -90,7 +91,7 @@ namespace alpaka
                 numThreads[T_CSelect{}[0]] *= old;
             }
 
-            return {threadIndex, numThreads};
+            return ThreadSpace<ALPAKA_TYPEOF(threadIndex), ALPAKA_TYPEOF(numThreads)>{threadIndex, numThreads};
         }
 
         T_ThreadIdx m_threadIdx;

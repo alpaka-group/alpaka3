@@ -125,6 +125,13 @@ namespace alpaka::onAcc
         constexpr auto linearWarpsInGrid = WorkerGroup{origin::grid, unit::warps};
 
         constexpr auto linearBlocksInGrid = WorkerGroup{origin::grid, unit::blocks, linearized};
+
+        /** Represent the identity of the executor thread.
+         *
+         * All threads are in the same worker group.
+         * If used with onAcc::makeIdxMap(), any thread is getting all indices of the range.
+         */
+        constexpr auto allThreads = WorkerGroup{origin::thread, unit::threads};
     } // namespace worker
 
 } // namespace alpaka::onAcc
