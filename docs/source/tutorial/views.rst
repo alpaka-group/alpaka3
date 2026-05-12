@@ -50,8 +50,7 @@ That means you can, for example, allocate device memory based on a view and copy
 Typical use cases include:
 
 - Copying a subrange of a 1D vector.
-- Only the inner area of the matrix containing the actual data, without the halo, should be copied into a stencil code.
-- One step of your algorithm operates on only a subset of your data. Use a subview to create a chunk of your data and pass it to the function that implements that step of your algorithm. This simplifies the implementation of the algorithm, since it doesn't have to worry about whether it needs to process all the data or just a chunk of it.
+- Only the inner area of the grid containing the actual data, without the halo, should be copied into a stencil code.
 
 Complete Source File
 --------------------
