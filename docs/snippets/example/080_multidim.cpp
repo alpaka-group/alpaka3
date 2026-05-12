@@ -26,6 +26,9 @@ struct FivePointAverageKernel
 
         for(auto idx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{extents}))
         {
+            /* Copy only values in the halo region
+            idx.y() == 0u -> top halo, idx.x() == 0u -> left halo
+            idx.y() + 1u == extents.y() -> bottom halo, idx.x() + 1u == extents.x() -> right halo */
             if(idx.y() == 0u || idx.x() == 0u || idx.y() + 1u == extents.y() || idx.x() + 1u == extents.x())
             {
                 out[idx] = in[idx];

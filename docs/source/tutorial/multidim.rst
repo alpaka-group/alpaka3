@@ -24,7 +24,7 @@ Typical use cases for different dimensions are:
 - 1D frames for flat vectors and simple reductions.
 - 2D frames for images, matrices, and most stencil codes.
 - 3D frames for volumetric problems, such as the position of particles in a space.
-- ND frames for algorithms that have more than three natural dimensions, such as position coordinate plus a time stamp.
+- ND frames for algorithms that have more than three natural dimensions, such as position coordinates and discretized time, e.g., to build a layered detector within our particle simulation.
 
 Keep in mind that the rightmost index, usually ``x``, is the fastest varying dimension in *alpaka* buffers.
 This is important if you are using hand written ``for``-loops to iterate over the data instead of ``makeIdxMap``.
@@ -32,7 +32,7 @@ This is important if you are using hand written ``for``-loops to iterate over th
 A Small 2D Stencil Example
 --------------------------
 
-The following kernel performs one five-point average step on a small 2D grid.
+The following kernel performs one five-point average step on a small 2D grid [#f1]_.
 This introduces three important ideas at once:
 
 - Iterating over multidimensional buffers.
@@ -51,13 +51,20 @@ The structure is still the same as in the one-dimensional tutorial:
 - Build ``IdxRange{extents}`` to describe the full valid multidimensional index domain.
 - Map worker threads via ``makeIdxMap`` to the range.
 - Guard the boundary cells, to avoid out-of-bounds accesses.
+- The own element is updated depending on the neighbor data and maybe the own element. Indices are relative calculated compare to the index of the own output coordinate.
 - Update neighbor locations by adding or subtracting direction vectors from the current ``Vec`` index.
 
 This is the natural alpaka style for stencil code.
 The project examples, such as the heat-equation stencil, operate on the multidimensional index directly and move to
 neighbors with vector offsets instead of splitting ``x`` and ``y`` into separate scalars and rebuilding indices.
-Handling the boundaries within the kernel which performs computation on the inner region of the domain is not good for performance, but it is the easiest and best way to start writing a correct kernel.
+
+At the beginning, the range check of data access should be done within the kernel.
+While this approach does not offer the best performance, it is easier to implement correctly.
+Subsequently, the range check should be moved from the kernel to before the kernel launch, and the kernel should operate on the assumption that the range is correct in order to improve performance.
+
 If you want to optimize the boundary handling later, you can write a separate kernel for the border and launch it with a different frame shape that only covers the halo/guard region.
+
+.. [#f1] https://en.wikipedia.org/wiki/Iterative_Stencil_Loops#Stencils
 
 Launching the 2D Kernel
 -----------------------
