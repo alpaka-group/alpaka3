@@ -22,8 +22,10 @@ struct BlockSumKernel
         concepts::IMdSpan auto out,
         concepts::IDataSource auto const& in) const
     {
+        /* Each shared memory declaration is required to have a unique id.
+         * Use the preprocessor macro `__COUNTER__` or `alpaka::uniqueId()`.
+         */
         auto& blockSum = onAcc::declareSharedVar<int, uniqueId()>(acc);
-        auto const chunkExtent = acc[frame::extent];
 
         // initialize the shared variable
         for([[maybe_unused]] auto idx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{1u}))
@@ -31,15 +33,11 @@ struct BlockSumKernel
 
         onAcc::syncBlockThreads(acc);
 
-        // iterate chunked over the input data
-        for(auto chunkOffset : onAcc::makeIdxMap(
-                acc,
-                onAcc::worker::blocksInGrid,
-                IdxRange{Vec{0u}, static_cast<uint32_t>(in.getExtents().x()), chunkExtent}))
+        // iterate over the full input data
+        for(auto inputIdx :
+            onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{static_cast<uint32_t>(in.getExtents().x())}))
         {
-            // each thread in the block atomic increment to avoid data races
-            for(auto idx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{chunkExtent}))
-                onAcc::atomicAdd(acc, &blockSum, in[chunkOffset + idx]);
+            onAcc::atomicAdd(acc, &blockSum, in[inputIdx]);
         }
 
         // wait that all threads wrote there changes
@@ -62,6 +60,9 @@ struct ReverseFrameKernel
         concepts::IDataSource auto const& in) const
     {
         auto const chunkExtent = acc[frame::extent];
+        /* Each shared memory declaration is required to have a unique id.
+         * Use the preprocessor macro `__COUNTER__` or `alpaka::uniqueId()`.
+         */
         auto chunk = onAcc::declareSharedMdArray<int, uniqueId()>(acc, chunkExtent);
 
         /* Iterate in chunks over the output data.
@@ -276,15 +277,11 @@ TEMPLATE_LIST_TEST_CASE("tutorial dynamic shared memory via member", "[docs]", d
     onHost::memcpy(queue, inputBuffer, hostInput);
 
     // BEGIN-TUTORIAL-dynSharedMemberLaunch
-    constexpr uint32_t chunkSize = 8u;
-    onHost::concepts::FrameSpec auto frameSpec
-        = onHost::FrameSpec{alpaka::divCeil(dataExtent, chunkSize), CVec<uint32_t, chunkSize>{}};
+    uint32_t chunkSize = 8u;
+    onHost::concepts::FrameSpec auto frameSpec = onHost::FrameSpec{alpaka::divCeil(dataExtent, chunkSize), chunkSize};
     queue.enqueue(
         frameSpec,
-        KernelBundle{
-            DynamicReverseKernel{static_cast<uint32_t>(hostInput.size() * sizeof(int))},
-            outputBuffer,
-            inputBuffer});
+        KernelBundle{DynamicReverseKernel{static_cast<uint32_t>(chunkSize * sizeof(int))}, outputBuffer, inputBuffer});
     // END-TUTORIAL-dynSharedMemberLaunch
 
     onHost::memcpy(queue, hostOutput, outputBuffer);
@@ -316,7 +313,7 @@ TEMPLATE_LIST_TEST_CASE("tutorial dynamic shared memory via trait", "[docs]", do
 
     // BEGIN-TUTORIAL-dynSharedTraitKernelChunked
     int factor = 3;
-    constexpr uint32_t chunkSize = 8u;
+    uint32_t chunkSize = 8u;
     onHost::concepts::FrameSpec auto frameSpec = onHost::FrameSpec{1u, chunkSize};
     queue.enqueue(frameSpec, KernelBundle{DynamicScaleKernel{}, outputBuffer, inputBuffer, factor, chunkSize});
     // END-TUTORIAL-dynSharedTraitKernelChunked

@@ -3,21 +3,23 @@
 Shared Memory
 =============
 
-Shared memory is memory local to a thread block within a kernel.
+Shared memory is a scratchpad memory accessible only by threads within thread block in a kernel.
 It is useful when several threads in the same block need to reuse the same data or communicate through a fast local data chunk.
 Typical use cases are, chunked stencil kernels, block-local reductions and scans, transposes, and small reusable data sets loaded once and consumed many times.
 The amount of shared memory per thread block depends on the device and is usually limited to around 64 KiB, so it is not a good choice for large data sets.
 In alpaka there are three common ways to declare shared memory:
 
 - Declare a single shared value with ``declareSharedVar()``.
-- Declare fixed-size shared multi dimensional array or chunk with compile-time known extents with ``declareSharedMdArray()``.
+- Declare fixed-size shared multidimensional array or chunk with compile-time known extents with ``declareSharedMdArray()``.
 - And dynamic shared memory with ``getDynSharedMem()`` when the size is only known at launch time.
 
 A Single Shared Value
 ---------------------
 
-Not every shared-memory kernel needs a chunk. Sometimes one shared scalar is enough.
-The next example computes one block-local sum in a shared variable.
+Not every shared-memory kernel needs a shared data chunk. Sometimes one shared scalar is enough.
+The next example is a very simple form of a global reduction with atomics.
+All threads within a thread block accumulate into a shared memory thread block partial result.
+After all threads in the thread block finished a single thread is accumulating the partial result into the output.
 
   .. literalinclude:: ../../snippets/example/120_sharedMemory.cpp
     :language: cpp
@@ -27,13 +29,20 @@ The next example computes one block-local sum in a shared variable.
 
 This pattern is useful for block-local counters, flags, or partial reductions.
 The important detail is that the scalar still belongs to the whole thread block, not to a single thread.
-Do **not** forget to store the return type explicit as reference, in this case ``auto&``, otherwise you will get a **thread local copy** instead of the shared one.
 
-A Small Tiled Example
----------------------
+.. attention::
 
-The following kernel loads one frame-shaped chunk into shared memory, synchronizes the block, and then writes that chunk in
-reverse order.
+  Do **not** forget to store the return type explicitly as reference, in this case ``auto&``, otherwise you will get a **thread local copy** instead of the shared one.
+
+Static Shared Memory Array
+--------------------------
+
+The next example is showing a chunk-wise permutation of the indices.
+For each chunk the id's should be stored in reverse order into the output.
+The frame extent from the kernel launch parameters will be re-used as chunk extents.
+The frame extent is a `CVec` and therefore known at compile time, this allows its usage as extents to declare static shared memory.
+Static shared memory compared to dynamic shared memory, shown in the next example,
+has the benefits that the developer is not required to manage the shared memory chunk by hand and in case it is multidimensional it provides address calculations optimizations.
 
   .. literalinclude:: ../../snippets/example/120_sharedMemory.cpp
     :language: cpp
@@ -41,19 +50,12 @@ reverse order.
     :end-before: END-TUTORIAL-sharedKernel
     :dedent:
 
-The important steps are:
-
-1. declare block-local shared memory,
-2. cooperatively fill it,
-3. synchronize the block,
-4. read from the shared chunk.
-
 The "reverse order" work is only there to keep the example small.
 The same structure is what you would use in more realistic kernels:
 
-- load a small image chunk before applying a blur or stencil,
-- stage a matrix chunk before a transpose or matrix multiply step,
-- or cache a short chunk of data before several neighboring threads reuse it.
+- Load a small image chunk before applying a blur or stencil.
+- Stage a matrix chunk before a transpose or matrix multiply step.
+- Cache a short chunk of data before several neighboring threads reuse it.
 
 Launching a Shared-Memory Kernel
 --------------------------------
@@ -64,13 +66,17 @@ Launching a Shared-Memory Kernel
     :end-before: END-TUTORIAL-sharedLaunch
     :dedent:
 
-This example uses ``CVec`` for the frame extent because compile-time-known extents are the simplest way to express a fixed shared-memory chunk.
+As mentioned before ``CVec`` for the frame extent is required to allow the reuse of the frame extents within the kernel to allocate the static shared memory chunk.
 
 Dynamic Shared Memory
 ---------------------
 
-Dynamic shared memory is useful when the amount of temporary storage depends on the launch configuration or the kernel arguments.
-In alpaka you allocate it indirectly: the runtime reserves a byte buffer for each block, and the kernel accesses it through ``onAcc::getDynSharedMem<T>(acc)``.
+Dynamic shared memory is useful when the amount of shared memory depends on kernel launch parameters or the kernel arguments.
+In alpaka it will be automatically allocated indirectly for each thread block before kernel invocation.
+Again the chunk-wise index reverse example is used.
+The difference to the example before is that the frame extent is now a runtime value and to get the shared memory within the kernel ``onAcc::getDynSharedMem<T>(acc)`` is used.
+You will only get a flat pointer to the allocated data without any information about how many values are valid.
+The developer is responsible that the number of allocated bytes at kernel launch time and used within a kernel match.
 
 There are two supported ways to tell alpaka how many bytes to reserve.
 
@@ -100,8 +106,8 @@ Dynamic Size Through ``BlockDynSharedMemBytes`` Trait
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When the size should depend on the executor or the kernel arguments, alpaka uses a trait specialization.
-It is not possible to access the frame specification in the trait, therefor this examples is using a user defined data chunk size passed through the kernel arguments.
-If you provide neither a ``dynSharedMemBytes`` member nor a ``BlockDynSharedMemBytes`` specialization, alpaka reserves no dynamic shared memory for that kernel.
+It is not possible to access the frame specification in the trait, therefore this example is using a user-defined data chunk size passed through the kernel arguments.
+If you provide neither a ``dynSharedMemBytes`` member nor a trait implementation ``alpaka::onHost::trait::BlockDynSharedMemBytes`` specialization, alpaka reserves no dynamic shared memory for that kernel.
 
   .. literalinclude:: ../../snippets/example/120_sharedMemory.cpp
     :language: cpp
@@ -129,7 +135,7 @@ The difference when launching the kernel in comparison to the previous example i
 Practical Advice
 ----------------
 
-- Shared memory is local to one block. Different blocks cannot see each other's shared data.
+- Shared memory is local to the thread block. Different blocks cannot see each other's shared data.
 - Shared memory is not initialized automatically.
 - Every thread that reads shared data written by other threads usually needs a block synchronization first.
 - Reusing the same shared-memory id returns the same storage again; a different id gives you different storage.
@@ -161,3 +167,4 @@ Complete Source File
 .. raw:: html
 
    </details>
+   <br/>
