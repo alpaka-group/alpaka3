@@ -47,3 +47,5 @@ repos:
   rev: v0.11.0
   hooks:
     - id: shellcheck
+      # required that shellcheck can follow sourced scripts
+      args: [-x]
