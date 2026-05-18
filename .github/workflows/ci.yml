@@ -147,7 +147,7 @@ jobs:
     # Specify the container to use based on the matrix configuration
     container:
       image: ${{ matrix.config.container }}
-    
+
     env: ${{ matrix.config.env }}
 
     steps:
