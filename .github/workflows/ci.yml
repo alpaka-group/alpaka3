@@ -241,6 +241,8 @@ jobs:
 
       # Configure CMake with the selected compiler and options
       - name: Configure CMake
+        run: $APCI_ALPAKA_ROOT/script/ci/configure.sh
+      - name: Configure CMake (old solution)
         run: |
           mkdir build && cd build
           if [ "${{ matrix.config.compiler }}" = "gcc" ]; then

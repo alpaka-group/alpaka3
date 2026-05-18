@@ -15,6 +15,11 @@ install_msg() {
     echo_green "[INSTALL]: $1"
 }
 
+# display a install message in green
+script_msg() {
+    echo_green "[SCRIPT]: $1"
+}
+
 # display a error message in red
 error_msg() {
     echo_red "[ERROR]: $1"

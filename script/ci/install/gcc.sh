@@ -25,9 +25,19 @@ if [[ "$compiler_name" == "gcc" ]]; then
             DEBIAN_FRONTEND=noninteractive apt update
             DEBIAN_FRONTEND=noninteractive apt install -y "gcc-${compiler_version}" "g++-${compiler_version}"
             # select requested GCC as default
-            # TODO: Set instead an environment variable. Changing the system host compiler is pretty dangerous and error prone
+            # TODO: Remove me, if ACPI_CXX_COMPILER is used in production.
+            # Changing the system host compiler is pretty dangerous and error prone.
             update-alternatives --install /usr/bin/gcc gcc "/usr/bin/gcc-${compiler_version}" 100 \
                 --slave /usr/bin/g++ g++ "/usr/bin/g++-${compiler_version}"
         fi
     fi
+
+    export APCI_CC_COMPILER="/usr/bin/gcc-${compiler_version}"
+    export APCI_CXX_COMPILER="/usr/bin/g++-${compiler_version}"
+
+    $APCI_CC_COMPILER --version
+    $APCI_CXX_COMPILER --version
+
+    store_variable APCI_CC_COMPILER
+    store_variable APCI_CXX_COMPILER
 fi

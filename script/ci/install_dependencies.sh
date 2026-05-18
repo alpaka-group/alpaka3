@@ -12,5 +12,7 @@ source "${APCI_ALPAKA_ROOT}/script/ci/utils/sudo.sh"
 
 : "${APCI_DEVICE_COMPILER?'The device compiler must be specified'}"
 
+script_msg "Install software dependencies (install_dependencies.sh)"
+
 # shellcheck source=script/ci/install/gcc.sh
 source "${APCI_ALPAKA_ROOT}/script/ci/install/gcc.sh"
