@@ -224,7 +224,7 @@ void testKernels(auto const deviceSpec, auto const exec)
     uint32_t elementsPerFrameItem = getNumElemPerThread<DataType>(queue);
 
     auto numFrames = divExZero(arraySize, static_cast<Idx>(blockThreadExtentMain) * elementsPerFrameItem);
-    auto dataBlocking = onHost::FrameSpec{numFrames, static_cast<Idx>(blockThreadExtentMain)};
+    auto dataBlocking = onHost::FrameSpec{numFrames, static_cast<Idx>(blockThreadExtentMain), exec};
 
     // To record runtime data generated while running the kernels
     RuntimeResults runtimeResults;
@@ -270,7 +270,6 @@ void testKernels(auto const deviceSpec, auto const exec)
         [&]()
         {
             queue.enqueue(
-                exec,
                 dataBlocking,
                 KernelBundle{SimdForEachKernel{}, SimdInitOp{}, bufAccInputA, bufAccInputB, bufAccOutputC});
         },
@@ -292,7 +291,6 @@ void testKernels(auto const deviceSpec, auto const exec)
                 [&]()
                 {
                     queue.enqueue(
-                        exec,
                         dataBlocking,
                         KernelBundle{SimdForEachKernel{}, SimdCopyOp{}, bufAccInputA, bufAccOutputC});
                 },
@@ -300,8 +298,7 @@ void testKernels(auto const deviceSpec, auto const exec)
 
             // Test the scaling-kernel. Calculate B=scalar*C. Where C = A.
             measureKernelExec(
-                [&]()
-                { queue.enqueue(exec, dataBlocking, SimdForEachKernel{}, SimdMultOp{}, bufAccInputB, bufAccOutputC); },
+                [&]() { queue.enqueue(dataBlocking, SimdForEachKernel{}, SimdMultOp{}, bufAccInputB, bufAccOutputC); },
                 "MultKernel");
 
             // Test the addition-kernel. Calculate C=A+B. Where B=scalar*C or B=scalar*A.
@@ -309,7 +306,6 @@ void testKernels(auto const deviceSpec, auto const exec)
                 [&]()
                 {
                     queue.enqueue(
-                        exec,
                         dataBlocking,
                         KernelBundle{SimdForEachKernel{}, SimdAddOp{}, bufAccInputA, bufAccInputB, bufAccOutputC});
                 },
@@ -323,7 +319,6 @@ void testKernels(auto const deviceSpec, auto const exec)
                 [&]()
                 {
                     queue.enqueue(
-                        exec,
                         dataBlocking,
                         KernelBundle{SimdForEachKernel{}, SimdTriadOp{}, bufAccInputA, bufAccInputB, bufAccOutputC});
                 },
@@ -362,7 +357,6 @@ void testKernels(auto const deviceSpec, auto const exec)
                 [&]()
                 {
                     queue.enqueue(
-                        exec,
                         dataBlocking,
                         KernelBundle{SimdForEachKernel{}, SimdNStreamOp{}, bufAccInputA, bufAccInputB, bufAccOutputC});
                 },

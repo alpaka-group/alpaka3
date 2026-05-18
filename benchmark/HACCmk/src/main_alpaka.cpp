@@ -170,7 +170,7 @@ namespace haccmkAlpaka
         uint32_t frameExtent = alpaka::divExZero(possibleChunkSize, numElementsPerThread);
         frameExtent = std::bit_floor(frameExtent);
         frameExtent = frameExtent < devProps.warpSize ? devProps.warpSize : frameExtent;
-        auto frameSpec = onHost::FrameSpec{numeFrames, static_cast<int>(frameExtent)};
+        auto frameSpec = onHost::FrameSpec{numeFrames, static_cast<int>(frameExtent), exec};
 
         std::cout << "FrameSpec " << frameSpec << std::endl;
 
@@ -201,7 +201,7 @@ namespace haccmkAlpaka
                 mp_rsm,
                 fcoeff};
 
-            queue.enqueue(exec, frameSpec, haccKernel);
+            queue.enqueue(frameSpec, haccKernel);
             onHost::wait(devAcc);
             auto end = std::chrono::steady_clock::now();
             auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
