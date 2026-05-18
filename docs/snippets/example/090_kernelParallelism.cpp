@@ -16,20 +16,20 @@ struct ImageTileHierarchyKernel
 {
     ALPAKA_FN_ACC void operator()(
         onAcc::concepts::Acc auto const& acc,
+        concepts::Vector auto const tileExtent,
         concepts::IDataSource auto const& input,
         concepts::IMdSpan auto mask,
         concepts::IMdSpan auto rowCounts,
         int threshold) const
     {
         auto const imageExtent = input.getExtents();
-        auto const tileExtent = acc[frame::extent];
 
-        for(auto blockStart :
+        for(auto tileStart :
             onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec{0u, 0u}, imageExtent, tileExtent}))
         {
             for(auto localIdx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{tileExtent}))
             {
-                auto globalIdx = blockStart + localIdx;
+                auto globalIdx = tileStart + localIdx;
                 if(globalIdx[0u] < imageExtent[0u] && globalIdx[1u] < imageExtent[1u])
                 {
                     mask[globalIdx] = input[globalIdx] >= threshold ? 1u : 0u;
@@ -39,7 +39,7 @@ struct ImageTileHierarchyKernel
             for(auto warpRow :
                 onAcc::makeIdxMap(acc, onAcc::worker::linearWarpsInBlock, onAcc::range::linearWarpsInBlock))
             {
-                auto rowStart = blockStart + Vec{warpRow.x(), 0u};
+                auto rowStart = tileStart + Vec{warpRow.x(), 0u};
                 if(rowStart[0u] >= imageExtent[0u] || warpRow.x() >= tileExtent[0u])
                 {
                     continue;
@@ -106,7 +106,9 @@ TEMPLATE_LIST_TEST_CASE("tutorial hierarchy blocks threads warps", "[docs]", doc
 
     // BEGIN-TUTORIAL-hierarchyLaunch
     onHost::concepts::FrameSpec auto frameSpec = onHost::FrameSpec{divExZero(imageExtent, tileExtent), tileExtent};
-    queue.enqueue(frameSpec, KernelBundle{ImageTileHierarchyKernel{}, inputBuffer, maskBuffer, rowCountsBuffer, 5});
+    queue.enqueue(
+        frameSpec,
+        KernelBundle{ImageTileHierarchyKernel{}, tileExtent, inputBuffer, maskBuffer, rowCountsBuffer, 5});
     // END-TUTORIAL-hierarchyLaunch
 
     onHost::memcpy(queue, hostMask, maskBuffer);
@@ -159,22 +161,20 @@ struct ChunkedVectorAddKernel
 {
     ALPAKA_FN_ACC void operator()(
         onAcc::concepts::Acc auto const& acc,
+        auto const linearNumFrames,
+        concepts::CVector auto const linearFrameExtent,
         concepts::IMdSpan auto out,
         concepts::IDataSource auto const& in0,
         concepts::IDataSource auto const& in1) const
     {
-        auto frameExtent = acc[frame::extent];
-        auto linearNumFrames = Vec{acc[frame::count].product()};
-        auto linearFrameExtent = Vec{frameExtent.product()};
-
         for(auto linearFrameIdx : onAcc::makeIdxMap(acc, onAcc::worker::linearBlocksInGrid, IdxRange{linearNumFrames}))
         {
-            auto tile = onAcc::declareSharedMdArray<int, uniqueId()>(acc, frameExtent);
+            auto tile = onAcc::declareSharedMdArray<int, uniqueId()>(acc, linearFrameExtent);
 
             for(auto linearFrameElem :
                 onAcc::makeIdxMap(acc, onAcc::worker::linearThreadsInBlock, IdxRange{linearFrameExtent}))
             {
-                auto globalIdx = linearFrameIdx * frameExtent + linearFrameElem;
+                auto globalIdx = linearFrameIdx * linearFrameExtent + linearFrameElem;
                 tile[linearFrameElem] = in0[globalIdx];
             }
 
@@ -183,7 +183,7 @@ struct ChunkedVectorAddKernel
             for(auto linearFrameElem :
                 onAcc::makeIdxMap(acc, onAcc::worker::linearThreadsInBlock, IdxRange{linearFrameExtent}))
             {
-                auto globalIdx = linearFrameIdx * frameExtent + linearFrameElem;
+                auto globalIdx = linearFrameIdx * linearFrameExtent + linearFrameElem;
                 out[globalIdx] = tile[linearFrameElem] + in1[globalIdx];
             }
 
@@ -221,7 +221,9 @@ TEMPLATE_LIST_TEST_CASE("tutorial chunked frames kernel", "[docs]", docs::test::
     auto numFrames = Vec{totalElems / frameElementCount};
     onHost::concepts::FrameSpec auto frameSpec = onHost::FrameSpec{numFrames, frameExtent};
 
-    queue.enqueue(frameSpec, KernelBundle{ChunkedVectorAddKernel{}, outBuffer, in0Buffer, in1Buffer});
+    queue.enqueue(
+        frameSpec,
+        KernelBundle{ChunkedVectorAddKernel{}, numFrames.product(), frameExtent, outBuffer, in0Buffer, in1Buffer});
     // END-TUTORIAL-chunkedLaunch
 
     onHost::memcpy(queue, hostOut, outBuffer);

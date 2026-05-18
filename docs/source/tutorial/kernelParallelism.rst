@@ -56,8 +56,6 @@ Here frames stop being just a launch shape and become reusable tiles of work.
 
 There are a few moving parts in this pattern:
 
-- ``acc[frame::extent]`` is the current frame shape.
-- ``acc[frame::count]`` tells you how many frames exist.
 - ``linearBlocksInGrid`` lets blocks iterate over frames.
 - ``linearThreadsInBlock`` lets threads iterate over elements inside one frame.
 

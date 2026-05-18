@@ -14,7 +14,8 @@ alpaka::Vec extents{111};
 alpaka::onHost::SharedBuffer in = alpaka::onHost::alloc<int>(dev, extents);
 alpaka::onHost::SharedBuffer out = alpaka::onHost::alloc<int>(dev, extents);
 
-alpaka::onHost::concepts::FrameSpec auto frameSpec = alpaka::onHost::getFrameSpec<int>(dev, extents);
+alpaka::onHost::concepts::FrameSpec auto frameSpec
+    = alpaka::onHost::getFrameSpec<int>(dev, alpaka::exec::anyExecutor, extents);
 
 // ===== End: main first part =====
 

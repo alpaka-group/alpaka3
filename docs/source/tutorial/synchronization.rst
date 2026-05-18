@@ -21,7 +21,7 @@ If you only need memory ordering without a blocking thread barrier, check :doc:`
 Chunk Reuse Example
 -------------------
 
-The next kernel loads one frame as data chunk into thread block-local shared memory, synchronizes the block, and then lets every thread read
+The next kernel loads one data chunk into thread block-local shared memory, synchronizes the block, and then lets every thread read
 its own value together with the next neighbor.
 The key idea is the reuse pattern: one phase fills the chunk, the next phase consumes it.
 Without the synchronization point, those neighbor reads could race with threads that are still writing the chunk.
@@ -31,8 +31,6 @@ Without the synchronization point, those neighbor reads could race with threads 
     :start-after: BEGIN-TUTORIAL-syncKernel
     :end-before: END-TUTORIAL-syncKernel
     :dedent:
-
-Launching the kernel the :ref:`Frame extent <frame>` will be used as user defined chunking, therefore the launch shape is influencing the in kernel data reuse pattern.
 
 Practical Advice
 ----------------

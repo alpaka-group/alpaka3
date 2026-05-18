@@ -20,10 +20,10 @@ struct NeighborReuseKernel
     ALPAKA_FN_ACC void operator()(
         onAcc::concepts::Acc auto const& acc,
         concepts::IMdSpan auto out,
-        concepts::IDataSource auto const& in) const
+        concepts::IDataSource auto const& in,
+        concepts::CVector auto chunkExtents) const
     {
-        auto const chunkExtent = acc[frame::extent];
-        auto chunk = onAcc::declareSharedMdArray<int, uniqueId()>(acc, acc[frame::extent]);
+        auto chunk = onAcc::declareSharedMdArray<int, uniqueId()>(acc, chunkExtents);
 
         /* Iterate in chunks over the output data.
          * It is assumed that the input data have at least the extents of the output.
@@ -31,17 +31,17 @@ struct NeighborReuseKernel
         for(auto chunkOffset : onAcc::makeIdxMap(
                 acc,
                 onAcc::worker::blocksInGrid,
-                IdxRange{Vec{0u}, static_cast<uint32_t>(out.getExtents().x()), chunkExtent}))
+                IdxRange{Vec{0u}, static_cast<uint32_t>(out.getExtents().x()), chunkExtents}))
         {
             // fill the shared data chunk
-            for(auto idx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{chunkExtent}))
+            for(auto idx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{chunkExtents}))
                 chunk[idx] = in[chunkOffset + idx];
 
             onAcc::syncBlockThreads(acc);
 
-            for(auto idx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{chunkExtent}))
+            for(auto idx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{chunkExtents}))
             {
-                auto neighborIdx = (idx.x() + 1u) % chunkExtent;
+                auto neighborIdx = (idx.x() + 1u) % chunkExtents;
                 out[chunkOffset + idx] = chunk[idx] + chunk[neighborIdx];
             }
 
@@ -73,9 +73,10 @@ TEMPLATE_LIST_TEST_CASE("tutorial in-kernel synchronization", "[docs]", docs::te
 
     // BEGIN-TUTORIAL-syncLaunch
     constexpr uint32_t chunkSize = 8u;
+    auto chunkExtents = CVec<uint32_t, chunkSize>{};
     onHost::concepts::FrameSpec auto frameSpec
-        = onHost::FrameSpec{alpaka::divCeil(dataExtent, chunkSize), CVec<uint32_t, chunkSize>{}};
-    queue.enqueue(frameSpec, KernelBundle{NeighborReuseKernel{}, outputBuffer, inputBuffer});
+        = onHost::FrameSpec{alpaka::divCeil(dataExtent, chunkSize), chunkExtents};
+    queue.enqueue(frameSpec, KernelBundle{NeighborReuseKernel{}, outputBuffer, inputBuffer, chunkExtents});
     // END-TUTORIAL-syncLaunch
 
     onHost::memcpy(queue, hostOutput, outputBuffer);

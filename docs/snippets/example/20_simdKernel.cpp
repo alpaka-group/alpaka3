@@ -83,13 +83,12 @@ TEST_CASE("MD vector simd add kernel", "[docs]")
     concepts::Vector auto numFrames
         = divExZero(computeBufferOut.getExtents(), frameExtents * frameExtents.fill(1).rAssign(elementsPerFrameItem));
     // The frame specification is not required to be a multiple of the extent, it can be smaller.
-    auto frameSpec = onHost::FrameSpec{numFrames, frameExtents};
+    auto frameSpec = onHost::FrameSpec{numFrames, frameExtents, exec::cpuSerial};
     std::cout << frameSpec << std::endl;
     onHost::wait(computeQueue);
     auto const beginT = std::chrono::high_resolution_clock::now();
     // we enforce serial execution because this executor is always available deviceKind::cpu and api::host
     computeQueue.enqueue(
-        exec::cpuSerial,
         frameSpec,
         KernelBundle{MDVectorSimdAdd{}, computeBufferOut, computeBufferIn0, computeBufferIn1});
     onHost::wait(computeQueue);

@@ -67,7 +67,8 @@ TEMPLATE_LIST_TEST_CASE("tutorial kernel intro vector add", "[docs]", docs::test
     /* Let alpaka calculate a well-functioning `frameSpec` for you.
      * This assumes that you are using `onAcc::makeIdxMap` in the kernel.
      */
-    onHost::concepts::FrameSpec auto frameSpec = onHost::getFrameSpec<int>(device, Vec{numElements});
+    onHost::concepts::FrameSpec auto frameSpec
+        = onHost::getFrameSpec<int>(device, exec::anyExecutor, Vec{numElements});
 
     /* Create a kernel object and enqueue it along with the `frameSpec´ and kernel arguments.
      * Depending on how many tasks are still in the queue, the kernel may be executed immediately or after a delay.

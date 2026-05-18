@@ -39,8 +39,8 @@ Static Shared Memory Array
 
 The next example is showing a chunk-wise permutation of the indices.
 For each chunk the id's should be stored in reverse order into the output.
-The frame extent from the kernel launch parameters will be re-used as chunk extents.
-The frame extent is a `CVec` and therefore known at compile time, this allows its usage as extents to declare static shared memory.
+The frame extent from the kernel launch parameters and the chunk extents are not required to match.
+The chunks extent is a `CVec` and therefore known at compile time, this allows its usage as extents to declare static shared memory.
 Static shared memory compared to dynamic shared memory, shown in the next example,
 has the benefits that the developer is not required to manage the shared memory chunk by hand and in case it is multidimensional it provides address calculations optimizations.
 
@@ -66,15 +66,13 @@ Launching a Shared-Memory Kernel
     :end-before: END-TUTORIAL-sharedLaunch
     :dedent:
 
-As mentioned before ``CVec`` for the frame extent is required to allow the reuse of the frame extents within the kernel to allocate the static shared memory chunk.
-
 Dynamic Shared Memory
 ---------------------
 
 Dynamic shared memory is useful when the amount of shared memory depends on kernel launch parameters or the kernel arguments.
 In alpaka it will be automatically allocated indirectly for each thread block before kernel invocation.
 Again the chunk-wise index reverse example is used.
-The difference to the example before is that the frame extent is now a runtime value and to get the shared memory within the kernel ``onAcc::getDynSharedMem<T>(acc)`` is used.
+The difference to the example before is that the chunk extent is now a runtime value and to get the shared memory within the kernel ``onAcc::getDynSharedMem<T>(acc)`` is used.
 You will only get a flat pointer to the allocated data without any information about how many values are valid.
 The developer is responsible that the number of allocated bytes at kernel launch time and used within a kernel match.
 
@@ -106,7 +104,8 @@ Dynamic Size Through ``BlockDynSharedMemBytes`` Trait
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When the size should depend on the executor or the kernel arguments, alpaka uses a trait specialization.
-It is not possible to access the frame specification in the trait, therefore this example is using a user-defined data chunk size passed through the kernel arguments.
+The user-defined data chunk size passed through the kernel arguments is used to calculate the required amount of shared memory to hold a single chunk per thread block.
+The required data to hold a chunk is intended to be independent of the thread specification to control the amount of reused data.
 If you provide neither a ``dynSharedMemBytes`` member nor a trait implementation ``alpaka::onHost::trait::BlockDynSharedMemBytes`` specialization, alpaka reserves no dynamic shared memory for that kernel.
 
   .. literalinclude:: ../../snippets/example/120_sharedMemory.cpp

@@ -380,7 +380,8 @@ auto main() -> int
         {
             // BEGIN-CHEATSHEET-autoFrameSpec
             // DataType is used to optimize the kernel parameters for working on data of this type
-            onHost::concepts::FrameSpec auto frameSpec = onHost::getFrameSpec<DataType>(device, extentMd);
+            onHost::concepts::FrameSpec auto frameSpec
+                = onHost::getFrameSpec<DataType>(device, exec::anyExecutor, extentMd);
             // END-CHEATSHEET-autoFrameSpec
 
             unused(frameSpec);
@@ -400,7 +401,9 @@ auto main() -> int
                 queue.enqueue(frameSpec, KernelBundle{kernel, kernelArgs...});
                 // or use a specific executor
                 auto executor = exec::cpuSerial;
-                queue.enqueue(executor, frameSpec, KernelBundle{kernel, kernelArgs...});
+                queue.enqueue(
+                    onHost::FrameSpec{frameSpec.getNumFrames(), frameSpec.getFrameExtents(), executor},
+                    KernelBundle{kernel, kernelArgs...});
                 // END-CHEATSHEET-enqueueKernel
             };
             unused(foo);
