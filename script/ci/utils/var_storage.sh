@@ -10,6 +10,7 @@
 # shellcheck source=script/ci/utils/misc.sh
 source "${APCI_ALPAKA_ROOT}/script/ci/utils/misc.sh"
 
+# TODO: does not support exported variables. Should be fixable.
 typeofvar() {
     local type_signature
     type_signature=$(declare -p "$1" 2>/dev/null)

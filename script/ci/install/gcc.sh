@@ -32,12 +32,16 @@ if [[ "$compiler_name" == "gcc" ]]; then
         fi
     fi
 
-    export APCI_CC_COMPILER="/usr/bin/gcc-${compiler_version}"
-    export APCI_CXX_COMPILER="/usr/bin/g++-${compiler_version}"
+    # TODO: should be exported here. Because of a bug in typeofvar(), it does not work at the moment
+    APCI_CC_COMPILER="/usr/bin/gcc-${compiler_version}"
+    APCI_CXX_COMPILER="/usr/bin/g++-${compiler_version}"
 
     $APCI_CC_COMPILER --version
     $APCI_CXX_COMPILER --version
 
     store_variable APCI_CC_COMPILER
     store_variable APCI_CXX_COMPILER
+
+    export APCI_CC_COMPILER
+    export APCI_CXX_COMPILER
 fi

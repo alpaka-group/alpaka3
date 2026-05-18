@@ -10,12 +10,17 @@ source "${APCI_ALPAKA_ROOT}/script/ci/utils/default.sh"
 
 script_msg "Run CMake configure (configure.sh)"
 
-load_variable_if_not_exist APCI_CC_COMPILER
-load_variable_if_not_exist APCI_CXX_COMPILER
+parse_compiler_version "$APCI_DEVICE_COMPILER"
 
-CMAKE_ARGS=(
-    "-DCMAKE_CC_COMPILER=$APCI_CC_COMPILER"
-    "-DCMAKE_CXX_COMPILER=$APCI_CXX_COMPILER"
-)
+# TODO: remove me, if all install scripts are ported
+if [[ "$compiler_name" == "gcc" ]]; then
+    load_variable_if_not_exist APCI_CC_COMPILER
+    load_variable_if_not_exist APCI_CXX_COMPILER
 
-echo_green "cmake ${CMAKE_ARGS[*]}"
+    CMAKE_ARGS=(
+        "-DCMAKE_CC_COMPILER=$APCI_CC_COMPILER"
+        "-DCMAKE_CXX_COMPILER=$APCI_CXX_COMPILER"
+    )
+
+    echo_green "cmake ${CMAKE_ARGS[*]}"
+fi
