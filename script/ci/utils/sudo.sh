@@ -15,7 +15,7 @@ source "${APCI_ALPAKA_ROOT}/script/ci/utils/color_echo.sh"
 # inside the agc-container, the user is root and does not require sudo
 # to compatibility to other container, fake the missing sudo command
 if ! command -v sudo &>/dev/null; then
-    if [[ "$ALPAKA_CI_OS_NAME" == "Linux" ]]; then
+    if [[ "$APCI_OS_NAME" == "Linux" ]]; then
         echo_yellow "install sudo"
 
         DEBIAN_FRONTEND=noninteractive apt update

@@ -23,7 +23,7 @@ if [[ "$compiler_name" == "gcc" ]]; then
         # install requested GCC if it is not already available
         if ! command -v "gcc-${compiler_version}" >/dev/null 2>&1; then
             apt-get update
-            apt-get install -y "gcc-${compiler_version}" "gcc-${compiler_version}"
+            apt-get install -y "gcc-${compiler_version}" "g++-${compiler_version}"
             # select requested GCC as default
             # TODO: Set instead an environment variable. Changing the system host compiler is pretty dangerous and error prone
             update-alternatives --install /usr/bin/gcc gcc "/usr/bin/gcc-${compiler_version}" 100 \
