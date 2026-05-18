@@ -12,6 +12,7 @@ concurrency:
 
 env:
   alpaka_cmake_flags: "-Dalpaka_COMPILE_PEDANTIC=ON -Dalpaka_DOCS=ON -Dalpaka_TESTS=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -DBUILD_TESTING=ON -Dalpaka_HEADERCHECKS=ON -Dalpaka_LOG=dynamic -Dalpaka_FAST_MATH=OFF"
+  APCI_ALPAKA_ROOT: ${{ github.workspace }}
 
 jobs:
   pre-commit:
@@ -172,7 +173,7 @@ jobs:
           apt-get update
           apt-get install -y libtbb-dev
       - name: Install software dependencies
-        run: $GITHUB_WORKSPACE/script/ci/install_dependencies.sh
+        run: $APCI_ALPAKA_ROOT/script/ci/install_dependencies.sh
       # Install Clang if specified
       - name: Install Clang
         if: matrix.config.compiler == 'clang' && matrix.config.hip == 'no'

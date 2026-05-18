@@ -5,8 +5,6 @@
 # SPDX-License-Identifier: MPL-2.0
 #
 
-APCI_ALPAKA_ROOT=$(realpath ../..)
-
 # shellcheck source=script/ci/utils/default.sh
 source "${APCI_ALPAKA_ROOT}/script/ci/utils/default.sh"
 # shellcheck source=script/ci/utils/sudo.sh
