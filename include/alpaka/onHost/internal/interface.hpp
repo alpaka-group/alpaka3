@@ -192,18 +192,13 @@ namespace alpaka::onHost
         {
             template<
                 typename T_Queue,
-                alpaka::concepts::Executor T_Executor,
-                onHost::concepts::ThreadOrFrameSpec T_BlockCfg,
+                onHost::concepts::ThreadOrFrameSpec T_LaunchCfg,
                 alpaka::concepts::KernelBundle T_KernelBundle>
             struct Kernel
             {
-                void operator()(
-                    T_Queue& queue,
-                    T_Executor const executor,
-                    T_BlockCfg const& blockCfg,
-                    T_KernelBundle const& kernelBundle) const
+                void operator()(T_Queue& queue, T_LaunchCfg const& launchCfg, T_KernelBundle const& kernelBundle) const
                 {
-                    queue.enqueue(executor, blockCfg, kernelBundle);
+                    queue.enqueue(launchCfg, kernelBundle);
                 }
             };
 
@@ -248,34 +243,30 @@ namespace alpaka::onHost
         template<typename TKernelFn, typename... TArgs>
         inline void enqueue(
             auto& queue,
-            auto const executor,
-            onHost::concepts::ThreadOrFrameSpec auto const& blockCfg,
+            onHost::concepts::ThreadOrFrameSpec auto const& launchCfg,
             KernelBundle<TKernelFn, TArgs...> const& kernelBundle)
         {
-            Enqueue::Kernel<
-                ALPAKA_TYPEOF(queue),
-                ALPAKA_TYPEOF(executor),
-                ALPAKA_TYPEOF(blockCfg),
-                KernelBundle<TKernelFn, TArgs...>>{}(queue, executor, blockCfg, kernelBundle);
+            Enqueue::Kernel<ALPAKA_TYPEOF(queue), ALPAKA_TYPEOF(launchCfg), KernelBundle<TKernelFn, TArgs...>>{}(
+                queue,
+                launchCfg,
+                kernelBundle);
         }
 
         struct AdjustThreadSpec
         {
             template<
                 typename T_Device,
-                alpaka::concepts::Executor T_Executor,
                 onHost::concepts::FrameSpec T_FrameSpec,
                 alpaka::concepts::KernelBundle T_KernelBundle>
             struct Op
             {
                 auto operator()(
                     T_Device const& device,
-                    T_Executor const& executor,
                     T_FrameSpec const& frameSpec,
                     T_KernelBundle const& kernelBundle) const
                 {
-                    alpaka::unused(device, executor, kernelBundle);
-                    return frameSpec.getThreadSpec();
+                    alpaka::unused(device, frameSpec.getExecutor(), kernelBundle);
+                    return ThreadSpec{frameSpec.getNumFrames(), frameSpec.getFrameExtents(), frameSpec.getExecutor()};
                 }
             };
         };
@@ -283,15 +274,14 @@ namespace alpaka::onHost
         template<typename TKernelFn, typename... TArgs>
         static auto adjustThreadSpec(
             auto const& device,
-            auto const& executor,
-            onHost::concepts::FrameSpec auto const& dataBlocking,
+            onHost::concepts::FrameSpec auto const& frameSpec,
             KernelBundle<TKernelFn, TArgs...> const& kernelBundle)
         {
-            return AdjustThreadSpec::Op<
-                ALPAKA_TYPEOF(device),
-                ALPAKA_TYPEOF(executor),
-                ALPAKA_TYPEOF(dataBlocking),
-                KernelBundle<TKernelFn, TArgs...>>{}(device, executor, dataBlocking, kernelBundle);
+            return AdjustThreadSpec::
+                Op<ALPAKA_TYPEOF(device), ALPAKA_TYPEOF(frameSpec), KernelBundle<TKernelFn, TArgs...>>{}(
+                    device,
+                    frameSpec,
+                    kernelBundle);
         }
 
         struct Data
@@ -502,6 +492,7 @@ namespace alpaka::onHost
         template<typename T_DataType>
         inline constexpr auto getFrameSpec(
             auto const& internalDevice,
+            alpaka::concepts::Executor auto executor,
             alpaka::concepts::VectorOrScalar auto const& extents)
         {
             Vec extentMd = extents;
@@ -546,7 +537,7 @@ namespace alpaka::onHost
             alpaka::concepts::Vector auto numFrames
                 = divExZero(extentMd, frameExtents * frameExtents.fill(1).rAssign(elementsPerFrameItem));
             // The frame specification is not required to be a multiple of the extent, it can be smaller.
-            auto frameSpec = FrameSpec{numFrames, frameExtents};
+            auto frameSpec = FrameSpec{numFrames, frameExtents, executor};
             return frameSpec;
         }
     } // namespace internal

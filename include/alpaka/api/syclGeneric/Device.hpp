@@ -293,21 +293,22 @@ namespace alpaka::onHost
         template<
             typename T_Platform,
             alpaka::concepts::Executor T_Executor,
-            onHost::concepts::FrameSpec T_FrameSpec,
+            alpaka::concepts::Vector T_NumFrames,
+            alpaka::concepts::Vector T_FrameExtents,
             alpaka::concepts::KernelBundle T_KernelBundle>
-        struct AdjustThreadSpec::Op<syclGeneric::Device<T_Platform>, T_Executor, T_FrameSpec, T_KernelBundle>
+        struct AdjustThreadSpec::
+            Op<syclGeneric::Device<T_Platform>, FrameSpec<T_NumFrames, T_FrameExtents, T_Executor>, T_KernelBundle>
         {
-            using T_NumThreads = T_FrameSpec::ThreadExtentsVecType;
+            using FrameSpecType = FrameSpec<T_NumFrames, T_FrameExtents, T_Executor>;
 
             auto operator()(
                 syclGeneric::Device<T_Platform> const& device,
-                T_Executor const& executor,
-                T_FrameSpec const& dataBlocking,
-                T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
+                FrameSpecType const& frameSpec,
+                T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_FrameExtents>
             {
-                alpaka::unused(device, executor, kernelBundle);
+                alpaka::unused(device, kernelBundle);
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::device);
-                auto numThreads = dataBlocking.getThreadSpec().getNumThreads();
+                auto numThreads = frameSpec.getFrameExtents();
 
                 /** This limit is not exact but for typical GPUs, Intel, NVIDIA and AMD we can at least use 1024
                  * threads per block.
@@ -317,22 +318,21 @@ namespace alpaka::onHost
                 constexpr typename ALPAKA_TYPEOF(numThreads)::type hardwareLimitThreadsPerBlock = 1024u;
 
                 constexpr auto result = api::util::adjustToLimit<hardwareLimitThreadsPerBlock, 0u, 1u>(numThreads);
-                return ThreadSpec{dataBlocking.getThreadSpec().getNumBlocks(), result};
+                return ThreadSpec{frameSpec.getNumFrames(), result};
             }
 
             auto operator()(
                 syclGeneric::Device<T_Platform> const& device,
-                T_Executor const& executor,
-                T_FrameSpec const& dataBlocking,
+                FrameSpecType const& frameSpec,
                 T_KernelBundle const& kernelBundle) const
             {
-                alpaka::unused(executor, kernelBundle);
+                alpaka::unused(kernelBundle);
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::device);
-                auto numThreadsPerBlocks = dataBlocking.getThreadSpec().getNumThreads();
+                auto numThreadsPerBlocks = frameSpec.getFrameExtents();
                 auto const maxThreadsPerBlock = device.m_properties.maxThreadsPerBlock;
 
                 auto result = api::util::adjustToLimit(numThreadsPerBlocks, maxThreadsPerBlock);
-                return ThreadSpec{dataBlocking.getThreadSpec().getNumBlocks(), result};
+                return ThreadSpec{frameSpec.getNumFrames(), result};
             }
         };
 

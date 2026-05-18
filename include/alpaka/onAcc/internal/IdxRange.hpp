@@ -45,36 +45,6 @@ namespace alpaka::onAcc::internal
                 return IdxRange{extent};
         }
     };
-
-    namespace idxTrait
-    {
-        struct TotalFrameSpecExtent
-        {
-            template<typename T_Acc>
-            constexpr auto operator()(T_Acc const& acc) const
-            {
-                return acc[frame::count] * acc[frame::extent];
-            }
-        };
-
-        struct FrameCount
-        {
-            template<typename T_Acc>
-            constexpr auto operator()(T_Acc const& acc) const
-            {
-                return acc[frame::count];
-            }
-        };
-
-        struct FrameExtent
-        {
-            template<typename T_Acc>
-            constexpr auto operator()(T_Acc const& acc) const
-            {
-                return acc[frame::extent];
-            }
-        };
-    } // namespace idxTrait
 } // namespace alpaka::onAcc::internal
 
 namespace alpaka::trait

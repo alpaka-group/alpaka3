@@ -10,10 +10,6 @@ namespace alpaka::onAcc
 {
     namespace range
     {
-        constexpr auto totalFrameSpecExtent = internal::IdxRangeFn{internal::idxTrait::TotalFrameSpecExtent{}};
-        constexpr auto frameCount = internal::IdxRangeFn{internal::idxTrait::FrameCount{}};
-        constexpr auto frameExtent = internal::IdxRangeFn{internal::idxTrait::FrameExtent{}};
-
         constexpr auto threadsInGrid = internal::IdxRangeLazy{origin::grid, unit::threads};
         constexpr auto blocksInGrid = internal::IdxRangeLazy{origin::grid, unit::blocks};
         constexpr auto threadsInBlock = internal::IdxRangeLazy{origin::block, unit::threads};

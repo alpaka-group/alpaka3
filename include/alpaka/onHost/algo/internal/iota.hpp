@@ -58,7 +58,7 @@ namespace alpaka::onHost::internal
         alpaka::concepts::IMdSpan auto&&... inputs)
     {
         Vec const extentMd = extents;
-        auto frameSpec = getFrameSpec<T_DataType>(queue.getDevice(), extentMd);
+        auto frameSpec = getFrameSpec<T_DataType>(queue.getDevice(), exec, extentMd);
 
         ALPAKA_LOG_INFO(
             onHost::logger::memory,
@@ -70,6 +70,6 @@ namespace alpaka::onHost::internal
                 return ss.str();
             });
 
-        queue.enqueue(exec, frameSpec, KernelBundle{SimdIotaKernel{}, extentMd, initValue, ALPAKA_FORWARD(inputs)...});
+        queue.enqueue(frameSpec, KernelBundle{SimdIotaKernel{}, extentMd, initValue, ALPAKA_FORWARD(inputs)...});
     }
 } // namespace alpaka::onHost::internal

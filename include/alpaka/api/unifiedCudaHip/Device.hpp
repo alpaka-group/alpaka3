@@ -373,21 +373,22 @@ namespace alpaka::onHost
 
         template<
             typename T_Platform,
-            alpaka::concepts::Executor T_Executor,
-            onHost::concepts::FrameSpec T_FrameSpec,
+            alpaka::concepts::UnifiedCudaHipExecutor T_Executor,
+            alpaka::concepts::Vector T_NumFrames,
+            alpaka::concepts::Vector T_FrameExtents,
             alpaka::concepts::KernelBundle T_KernelBundle>
-        struct AdjustThreadSpec::Op<unifiedCudaHip::Device<T_Platform>, T_Executor, T_FrameSpec, T_KernelBundle>
+        struct AdjustThreadSpec::
+            Op<unifiedCudaHip::Device<T_Platform>, FrameSpec<T_NumFrames, T_FrameExtents, T_Executor>, T_KernelBundle>
         {
-            using T_NumThreads = T_FrameSpec::ThreadExtentsVecType;
+            using FrameSpecType = FrameSpec<T_NumFrames, T_FrameExtents, T_Executor>;
 
             auto operator()(
                 unifiedCudaHip::Device<T_Platform> const&,
-                T_Executor const&,
-                T_FrameSpec const& dataBlocking,
-                T_KernelBundle const&) const requires alpaka::concepts::CVector<T_NumThreads>
+                FrameSpecType const& frameSpec,
+                T_KernelBundle const&) const requires alpaka::concepts::CVector<T_FrameExtents>
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::device);
-                auto numThreads = dataBlocking.getThreadSpec().getNumThreads();
+                auto numThreads = frameSpec.getFrameExtents();
 
                 /** All modern NVIDIA and AMD GPUs support at least 1014 threads.
                  * @attention: Due to lmem, shared memory or register usage the limit could be lower. In this case the
@@ -397,21 +398,20 @@ namespace alpaka::onHost
                 constexpr typename ALPAKA_TYPEOF(numThreads)::type hardwareLimitThreadsPerBlock = 1024u;
 
                 constexpr auto result = api::util::adjustToLimit<hardwareLimitThreadsPerBlock, 0u, 1u>(numThreads);
-                return ThreadSpec{dataBlocking.getThreadSpec().getNumBlocks(), result};
+                return ThreadSpec{frameSpec.getNumFrames(), result, frameSpec.getExecutor()};
             }
 
             auto operator()(
                 unifiedCudaHip::Device<T_Platform> const& device,
-                T_Executor const&,
-                T_FrameSpec const& dataBlocking,
+                FrameSpecType const& frameSpec,
                 T_KernelBundle const&) const
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::device);
-                auto numThreadsPerBlocks = dataBlocking.getThreadSpec().getNumThreads();
+                auto numThreadsPerBlocks = frameSpec.getFrameExtents();
                 auto const maxThreadsPerBlock = device.m_properties.maxThreadsPerBlock;
 
                 auto result = api::util::adjustToLimit(numThreadsPerBlocks, maxThreadsPerBlock);
-                return ThreadSpec{dataBlocking.getThreadSpec().getNumBlocks(), result};
+                return ThreadSpec{frameSpec.getNumFrames(), result, frameSpec.getExecutor()};
             }
         };
     } // namespace internal
