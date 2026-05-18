@@ -25,24 +25,20 @@ struct VectorAddKernel1D
     template<typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc,
+        alpaka::concepts::CVector auto chunkSize,
         alpaka::concepts::IDataSource auto const& in1,
         alpaka::concepts::IDataSource auto const& in2,
         alpaka::concepts::IMdSpan auto out) const
     {
-        // product() returns a scalar therefore we need the explicit Vec1D type
-        Vec1D linearNumFrames = acc[alpaka::frame::count].product();
-        auto frameExtent = acc[alpaka::frame::extent];
-        Vec1D linearFrameExtent = frameExtent.product();
-
         /* This kernel is called with 1- dimensional frame extents, nevertheless we will linearize the indices
          * explicitly which allow calling this kernel with M-dimensional frames extents too.
          *
          * All thread blocks will be used to iterate over the frames. Each thread block will handle one or more frames.
          */
-        for(auto linearFrameIdx : alpaka::onAcc::makeIdxMap(
+        for(auto chunkOffset : alpaka::onAcc::makeIdxMap(
                 acc,
                 alpaka::onAcc::worker::linearBlocksInGrid,
-                alpaka::IdxRange{linearNumFrames}))
+                alpaka::IdxRange{Vec1D{0}, in1.getExtents(), chunkSize}))
         {
             /* We will use a 1-dimensional shared memory array to load the data from in1 for the corresponding frame
              * into it and use the cached data to compute the final result. Take care, shared memory is never
@@ -51,16 +47,16 @@ struct VectorAddKernel1D
              * The extents of a shared memory array must be known at compile time, therefore it is required that the
              * frame extent on the host side is of the type CVec.
              */
-            auto sharedIn1Data = alpaka::onAcc::declareSharedMdArray<float, alpaka::uniqueId()>(acc, frameExtent);
+            auto sharedIn1Data = alpaka::onAcc::declareSharedMdArray<float, alpaka::uniqueId()>(acc, chunkSize);
 
             // iterate over elements within the frame and use all threads from the thread block
-            for(auto linearFrameElem : alpaka::onAcc::makeIdxMap(
+            for(auto inChunkIdx : alpaka::onAcc::makeIdxMap(
                     acc,
                     alpaka::onAcc::worker::linearThreadsInBlock,
-                    alpaka::IdxRange{linearFrameExtent}))
+                    alpaka::IdxRange{chunkSize}))
             {
-                auto const globalDataIdx = linearFrameIdx * frameExtent + linearFrameElem;
-                sharedIn1Data[linearFrameElem] = in1[globalDataIdx];
+                auto const globalDataIdx = chunkOffset + inChunkIdx;
+                sharedIn1Data[inChunkIdx] = in1[globalDataIdx];
             }
 
             /* The synchronization is required because we will use for the second loop over frame element indicis a
@@ -68,14 +64,14 @@ struct VectorAddKernel1D
              */
             alpaka::onAcc::syncBlockThreads(acc);
 
-            for(auto linearFrameElem : alpaka::onAcc::makeIdxMap(
+            for(auto inChunkIdx : alpaka::onAcc::makeIdxMap(
                     acc,
                     alpaka::onAcc::worker::linearThreadsInBlock,
-                    alpaka::IdxRange{linearFrameExtent},
+                    alpaka::IdxRange{chunkSize},
                     alpaka::onAcc::traverse::tiled))
             {
-                auto const globalDataIdx = linearFrameIdx * frameExtent + linearFrameElem;
-                out[globalDataIdx] = sharedIn1Data[linearFrameElem] + in2[globalDataIdx];
+                auto const globalDataIdx = chunkOffset + inChunkIdx;
+                out[globalDataIdx] = sharedIn1Data[inChunkIdx] + in2[globalDataIdx];
             }
 
             /* Synchronization is required if the same thread block is calculating more than one frame.
@@ -92,13 +88,11 @@ struct VectorAddKernel3D
     template<typename TAcc>
     ALPAKA_FN_ACC void operator()(
         TAcc const& acc,
+        alpaka::concepts::CVector auto chunkExtents,
         alpaka::concepts::IDataSource auto const& in1,
         alpaka::concepts::IDataSource auto const& in2,
         alpaka::concepts::IMdSpan auto out) const
     {
-        auto numFramesMD = acc[alpaka::frame::count];
-        auto frameExtentMD = acc[alpaka::frame::extent];
-
         /* We will use a 3-dimensional shared memory array to load the data from in1 for the corresponding frame into
          * it and use the cached data to compute the final result. Take care, shared memory is never initialized and
          * will contain garbage after the creation.
@@ -106,22 +100,24 @@ struct VectorAddKernel3D
          * The extents of a shared memory array must be known at compile time, therefore it is required that the frame
          * extent on the host side is of the type CVec.
          */
-        auto sharedIn1Data = alpaka::onAcc::declareSharedMdArray<float, alpaka::uniqueId()>(acc, frameExtentMD);
+        auto sharedIn1Data = alpaka::onAcc::declareSharedMdArray<float, alpaka::uniqueId()>(acc, chunkExtents);
 
         /* This kernel is called with 1- dimensional frame extents, nevertheless we will linearize the indices
          * explicitly which allow calling this kernel with M-dimensional frames extents too.
          *
          * All thread blocks will be used to iterate over the frames. Each thread block will handle one or more frames.
          */
-        for(auto frameIdxMD :
-            alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::blocksInGrid, alpaka::IdxRange{numFramesMD}))
+        for(auto chunkOffset : alpaka::onAcc::makeIdxMap(
+                acc,
+                alpaka::onAcc::worker::blocksInGrid,
+                alpaka::IdxRange{Vec3D::fill(0), in1.getExtents(), chunkExtents}))
         {
             // iterate over elements within the frame and use all threads from the thread block
-            for(auto frameElemIdxMD :
-                alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInBlock, alpaka::IdxRange{frameExtentMD}))
+            for(auto inChunkIdx :
+                alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInBlock, alpaka::IdxRange{chunkExtents}))
             {
-                auto const globalDataIdxMD = frameIdxMD * frameExtentMD + frameElemIdxMD;
-                sharedIn1Data[frameElemIdxMD] = in1[globalDataIdxMD];
+                auto const globalDataIdxMD = chunkOffset + inChunkIdx;
+                sharedIn1Data[inChunkIdx] = in1[globalDataIdxMD];
             }
 
             /* The synchronization is required because we will use for the second loop over frame element indicis a
@@ -129,14 +125,14 @@ struct VectorAddKernel3D
              */
             alpaka::onAcc::syncBlockThreads(acc);
 
-            for(auto frameElemIdxMD : alpaka::onAcc::makeIdxMap(
+            for(auto inChunkIdx : alpaka::onAcc::makeIdxMap(
                     acc,
                     alpaka::onAcc::worker::threadsInBlock,
-                    alpaka::IdxRange{frameExtentMD},
+                    alpaka::IdxRange{chunkExtents},
                     alpaka::onAcc::traverse::tiled))
             {
-                auto const globalDataIdxMD = frameIdxMD * frameExtentMD + frameElemIdxMD;
-                out[globalDataIdxMD] = sharedIn1Data[frameElemIdxMD] + in2[globalDataIdxMD];
+                auto const globalDataIdxMD = chunkOffset + inChunkIdx;
+                out[globalDataIdxMD] = sharedIn1Data[inChunkIdx] + in2[globalDataIdxMD];
             }
 
             /* Synchronization is required if the same thread block is calculating more than one frame.
@@ -190,18 +186,18 @@ void testVectorAddKernel(alpaka::onHost::concepts::Device auto device, auto comp
     alpaka::onHost::memset(queue, out_d, 0x00);
 
     // launch the 1-dimensional kernel
-    constexpr auto frameExtent = 32u;
-    auto numFrames = size / frameExtent;
+    constexpr auto chunkSize = 32u;
+    auto numFrames = size / chunkSize;
     // The kernel assumes that the problem size is a multiple of the frame size.
-    verify((numFrames * frameExtent) == size);
+    verify((numFrames * chunkSize) == size);
 
-    auto frameSpec = alpaka::onHost::FrameSpec{numFrames, alpaka::CVec<uint32_t, frameExtent>{}};
+    auto frameSpec = alpaka::onHost::FrameSpec{numFrames, chunkSize, computeExec};
 
     // fill the output buffer with zeros; the size is known from the buffer objects
     alpaka::onHost::memset(queue, out_d, 0x00);
 
     std::cout << "Testing VectorAddKernel with vector indices with a grid of " << frameSpec << "\n";
-    queue.enqueue(computeExec, frameSpec, VectorAddKernel1D{}, in1_d, in2_d, out_d);
+    queue.enqueue(frameSpec, VectorAddKernel1D{}, alpaka::CVec<uint32_t, chunkSize>{}, in1_d, in2_d, out_d);
 
     // copy the results from the device to the host
     alpaka::onHost::memcpy(queue, out_h, out_d);
@@ -264,16 +260,16 @@ void testVectorAddKernel3D(alpaka::onHost::concepts::Device auto device, auto co
 
 
     // launch the 3-dimensional kernel
-    auto frameExtent = alpaka::CVec<uint32_t, 4, 4, 2>{};
-    auto numFrames = ndsize / frameExtent;
+    auto chunkExtents = alpaka::CVec<uint32_t, 4, 4, 2>{};
+    auto numFrames = ndsize / chunkExtents;
     // The kernel assumes that the problem size is a multiple of the frame size.
-    verify((numFrames * frameExtent).product() == size);
+    verify((numFrames * chunkExtents).product() == size);
 
-    auto frameSpec = alpaka::onHost::FrameSpec{numFrames, frameExtent};
+    auto frameSpec = alpaka::onHost::FrameSpec{numFrames, chunkExtents, computeExec};
 
     std::cout << "Testing VectorAddKernel3D with vector indices with a grid of " << frameSpec << "\n";
 
-    queue.enqueue(computeExec, frameSpec, VectorAddKernel3D{}, in1_d, in2_d, out_d);
+    queue.enqueue(frameSpec, VectorAddKernel3D{}, chunkExtents, in1_d, in2_d, out_d);
 
     // copy the results from the device to the host
     alpaka::onHost::memcpy(queue, out_h, out_d);

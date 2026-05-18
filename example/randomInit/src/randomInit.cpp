@@ -61,13 +61,10 @@ struct RandomInitKernelUniform
     //! @param size is the number of elements to process
     ALPAKA_FN_ACC void operator()(auto const& acc, auto outBins, uint32_t size) const
     {
-        // Calculate total number of elements across all frames
-        auto totalFrameExtens = acc[alpaka::frame::count] * acc[alpaka::frame::extent];
-
         // printf("Total number of elements: %u\n", totalFrameExtens);
-        //  Iterate over the global range of frame elements
+        //  Each thread is generating it's own seed
         for(auto [seed] :
-            alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{totalFrameExtens}))
+            alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::onAcc::range::threadsInGrid))
         // Initialize the Philox engine with the global frame element ID as the seed
         {
             // Philox generates uniform integer random numbers
@@ -75,7 +72,9 @@ struct RandomInitKernelUniform
 
             auto seedVec = alpaka::Vec{static_cast<uint32_t>(seed)};
             // Define workgroup
-            auto workGroup = alpaka::onAcc::WorkerGroup{seedVec, totalFrameExtens};
+            constexpr auto tInGrid = alpaka::onAcc::range::threadsInGrid;
+            auto numThreadGroups = tInGrid.getIdxRange(acc).distance();
+            auto workGroup = alpaka::onAcc::WorkerGroup{seedVec, numThreadGroups};
 
             // Iterate over the workgroup
             for([[maybe_unused]] auto [index] : alpaka::onAcc::makeIdxMap(acc, workGroup, alpaka::IdxRange{size}))
@@ -108,19 +107,18 @@ struct RandomInitKernel
     //! @param size is the number of elements to process
     ALPAKA_FN_ACC void operator()(auto const& acc, auto outBins, uint32_t size) const
     {
-        // Calculate total number of elements across all frames
-        auto totalFrameExtens = acc[alpaka::frame::count] * acc[alpaka::frame::extent];
-
-        // Iterate over the global range of frame elements
+        //  Each thread is generating it's own seed
         for(auto [seed] :
-            alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{totalFrameExtens}))
+            alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::onAcc::range::threadsInGrid))
         // Initialize the Philox engine with the global frame element ID as the seed
         {
             alpaka::rand::engine::Philox4x32x10 engine(static_cast<uint32_t>(seed));
 
             auto seedVec = alpaka::Vec{static_cast<uint32_t>(seed)};
             // Define workgroup
-            auto workGroup = alpaka::onAcc::WorkerGroup{seedVec, totalFrameExtens};
+            constexpr auto tInGrid = alpaka::onAcc::range::threadsInGrid;
+            auto numThreadGroups = tInGrid.getIdxRange(acc).distance();
+            auto workGroup = alpaka::onAcc::WorkerGroup{seedVec, numThreadGroups};
 
 
             // Iterate over the workgroup
@@ -207,11 +205,11 @@ bool testRandomInitKernels(
     // Frame size
 
     // Launch the 1-dimensional kernel with scalar size
-    auto frameSpec = alpaka::onHost::getFrameSpec<T_Data>(device, alpaka::Vec{blockSize});
+    auto frameSpec = alpaka::onHost::getFrameSpec<T_Data>(device, computeExec, alpaka::Vec{blockSize});
 
     // TEST - 1: Philox Generator generates integer random numbers
     std::cout << "- Testing RandomInitKernel with a grid of " << frameSpec << "\n";
-    queue.enqueue(computeExec, frameSpec, RandomInitKernel{}, outBins_d.getMdSpan(), size);
+    queue.enqueue(frameSpec, RandomInitKernel{}, outBins_d.getMdSpan(), size);
 
     // Copy the results from the device to the host
     alpaka::onHost::memcpy(queue, outBins_h, outBins_d);
@@ -257,7 +255,7 @@ bool testRandomInitKernels(
     alpaka::onHost::memcpy(queue, outBins_d, outBins_h);
 
     std::cout << "- Testing RandomInitKernelUniform with a grid of " << frameSpec << "\n";
-    queue.enqueue(computeExec, frameSpec, RandomInitKernelUniform{}, outBins_d.getMdSpan(), size);
+    queue.enqueue(frameSpec, RandomInitKernelUniform{}, outBins_d.getMdSpan(), size);
 
     // Wait for all the operations to complete
     alpaka::onHost::wait(queue);
@@ -285,7 +283,7 @@ bool testRandomInitKernels(
     alpaka::onHost::memcpy(queue, outBins_d, outBins_h);
 
     std::cout << "- Testing RandomInitKernelVec with a grid of " << frameSpec << "\n";
-    queue.enqueue(computeExec, frameSpec, RandomInitKernelVec{}, outBins_d.getMdSpan(), size);
+    queue.enqueue(frameSpec, RandomInitKernelVec{}, outBins_d.getMdSpan(), size);
 
     // Wait for all the operations to complete
     alpaka::onHost::wait(queue);

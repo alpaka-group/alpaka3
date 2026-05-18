@@ -83,7 +83,7 @@ int example(auto const devSpec, auto const computeExec)
     }
 
     auto chunkSize = alpaka::fillCVec<IdxType, Dimensions, 2>();
-    auto frameSpec = onHost::FrameSpec{divCeil(size, chunkSize), chunkSize};
+    auto frameSpec = onHost::FrameSpec{divCeil(size, chunkSize), chunkSize, computeExec};
 
     auto exampleKernel = BoundaryExampleKernel{};
 
@@ -99,7 +99,7 @@ int example(auto const devSpec, auto const computeExec)
         }
 
         auto const bd = makeCoreBoundaryDirection<Dimensions>();
-        blockingQueue.enqueue(computeExec, frameSpec, KernelBundle{exampleKernel, view, viewTarget, bd});
+        blockingQueue.enqueue(frameSpec, KernelBundle{exampleKernel, view, viewTarget, bd});
     }
 
     {
@@ -125,7 +125,7 @@ int example(auto const devSpec, auto const computeExec)
         }
 
         auto const bd = makeCoreBoundaryDirection<Dimensions>(halo);
-        blockingQueue.enqueue(computeExec, frameSpec, KernelBundle{exampleKernel, view, viewTarget, bd});
+        blockingQueue.enqueue(frameSpec, KernelBundle{exampleKernel, view, viewTarget, bd});
     }
 
     {
@@ -142,7 +142,7 @@ int example(auto const devSpec, auto const computeExec)
         }
 
         auto const bd = makeCoreBoundaryDirection<Dimensions>(lowerHalo, upperHalo);
-        blockingQueue.enqueue(computeExec, frameSpec, KernelBundle{exampleKernel, view, viewTarget, bd});
+        blockingQueue.enqueue(frameSpec, KernelBundle{exampleKernel, view, viewTarget, bd});
     }
 
     return EXIT_SUCCESS;
