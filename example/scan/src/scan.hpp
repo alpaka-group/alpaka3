@@ -47,15 +47,15 @@ namespace alpaka::example::scan
     public:
         ALPAKA_FN_ACC void operator()(
             auto const& acc,
+            concepts::Vector auto const numChunks,
+            concepts::CVector auto const chunkExtents,
             concepts::IDataSource auto const& inputVec,
             concepts::IMdSpan auto outputVec,
             auto... blockSums) const
         {
             using DeviceType = ALPAKA_TYPEOF(acc.getDeviceKind());
-            concepts::Vector auto numFrames = acc[frame::count];
 
-            concepts::CVector auto _ = acc[frame::extent];
-            concepts::CVector auto frameExtent = CVec<IdxType, elsPerThread * _.x()>{};
+            concepts::CVector auto largeChunkExtents = CVec<IdxType, elsPerThread * chunkExtents.x()>{};
             concepts::Vector auto numElements = inputVec.getExtents();
 
             /* This kernel is called with 1-dimensional frame extents.
@@ -63,34 +63,35 @@ namespace alpaka::example::scan
              * All thread blocks will be used to iterate over the frames. Each thread block will handle one or more
              * frames.
              */
-            for(auto frameIdx :
-                onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec<IdxType, 1u>{0}, numFrames}))
+            for(auto chunkIdx :
+                onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec<IdxType, 1u>{0}, numChunks}))
             {
                 auto tmp = onAcc::declareSharedMdArray<Data, uniqueId()>(
                     acc,
-                    CVec<IdxType, conflictFreeAccess<DeviceType>(frameExtent.x())>{});
-                auto const frameOffset = frameExtent * frameIdx;
+                    CVec<IdxType, conflictFreeAccess<DeviceType>(largeChunkExtents.x())>{});
+                auto const chunkOffset = largeChunkExtents * chunkIdx;
 
                 // -- COPY TO SHARED MEM --
-                for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{frameExtent}))
+                for(auto idxInChunk :
+                    onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{largeChunkExtents}))
                 {
-                    if(frameOffset + frameElem < numElements)
-                        tmp[conflictFreeAccess<DeviceType>(frameElem)] = inputVec[frameOffset + frameElem];
+                    if(chunkOffset + idxInChunk < numElements)
+                        tmp[conflictFreeAccess<DeviceType>(idxInChunk)] = inputVec[chunkOffset + idxInChunk];
                     else
-                        tmp[conflictFreeAccess<DeviceType>(frameElem)] = 0;
+                        tmp[conflictFreeAccess<DeviceType>(idxInChunk)] = 0;
                 }
 
                 // -- UP-SWEEP / REDUCE --
-                for(IdxType d = frameExtent.x() / 2_idx, offset = 1_idx; d > 0; d >>= 1, offset <<= 1)
+                for(IdxType d = largeChunkExtents.x() / 2_idx, offset = 1_idx; d > 0; d >>= 1, offset <<= 1)
                 {
                     onAcc::syncBlockThreads(acc);
-                    for(auto frameElem : onAcc::makeIdxMap(
+                    for(auto idxInChunk : onAcc::makeIdxMap(
                             acc,
                             onAcc::worker::threadsInBlock,
                             IdxRange{CVec<IdxType, 0>{}, Vec<IdxType, 1>{2_idx * d}, 2_idx}))
                     {
-                        IdxType left = offset * (frameElem + 1_idx).x() - 1_idx;
-                        IdxType right = offset * (frameElem + 2_idx).x() - 1_idx;
+                        IdxType left = offset * (idxInChunk + 1_idx).x() - 1_idx;
+                        IdxType right = offset * (idxInChunk + 2_idx).x() - 1_idx;
                         left = conflictFreeAccess<DeviceType>(left);
                         right = conflictFreeAccess<DeviceType>(right);
                         tmp[right] += tmp[left];
@@ -98,31 +99,32 @@ namespace alpaka::example::scan
                 }
                 onAcc::syncBlockThreads(acc);
 
-                for([[maybe_unused]] auto frameElem :
+                for([[maybe_unused]] auto idxInChunk :
                     onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{1}))
                 {
                     // -- SAVE BLOCK SUMS --
                     if constexpr(sizeof...(blockSums))
                     {
                         auto _blockSums = std::get<0>(std::make_tuple(blockSums...));
-                        _blockSums[frameIdx] = tmp[conflictFreeAccess<DeviceType>(frameExtent - 1_idx)];
+                        _blockSums[chunkIdx] = tmp[conflictFreeAccess<DeviceType>(largeChunkExtents - 1_idx)];
                     }
 
                     // -- SET 0 --
-                    tmp[conflictFreeAccess<DeviceType>(frameExtent - 1_idx)] = 0;
+                    tmp[conflictFreeAccess<DeviceType>(largeChunkExtents - 1_idx)] = 0;
                 }
 
                 // -- DOWN-SWEEP --
-                for(IdxType d = 1, offset = frameExtent.x() / 2_idx; d < frameExtent; d <<= 1, offset >>= 1)
+                for(IdxType d = 1, offset = largeChunkExtents.x() / 2_idx; d < largeChunkExtents;
+                    d <<= 1, offset >>= 1)
                 {
                     onAcc::syncBlockThreads(acc);
-                    for(auto frameElem : onAcc::makeIdxMap(
+                    for(auto idxInChunk : onAcc::makeIdxMap(
                             acc,
                             onAcc::worker::threadsInBlock,
                             IdxRange{CVec<IdxType, 0>{}, Vec<IdxType, 1>{2_idx * d}, 2_idx}))
                     {
-                        IdxType left = offset * (frameElem.x() + 1_idx) - 1_idx;
-                        IdxType right = offset * (frameElem.x() + 2_idx) - 1_idx;
+                        IdxType left = offset * (idxInChunk.x() + 1_idx) - 1_idx;
+                        IdxType right = offset * (idxInChunk.x() + 2_idx) - 1_idx;
                         left = conflictFreeAccess<DeviceType>(left);
                         right = conflictFreeAccess<DeviceType>(right);
                         auto t = tmp[left];
@@ -133,15 +135,16 @@ namespace alpaka::example::scan
                 onAcc::syncBlockThreads(acc);
 
                 // -- WRITE BACK --
-                for(auto frameElem : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{frameExtent}))
+                for(auto idxInChunk :
+                    onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{largeChunkExtents}))
                 {
-                    if(frameOffset + frameElem < numElements)
+                    if(chunkOffset + idxInChunk < numElements)
                     {
                         if constexpr(SCAN_TYPE == EXCLUSIVE_SCAN)
-                            outputVec[frameOffset + frameElem] = tmp[conflictFreeAccess<DeviceType>(frameElem)];
+                            outputVec[chunkOffset + idxInChunk] = tmp[conflictFreeAccess<DeviceType>(idxInChunk)];
                         else if constexpr(SCAN_TYPE == INCLUSIVE_SCAN)
-                            outputVec[frameOffset + frameElem]
-                                = inputVec[frameOffset + frameElem] + tmp[conflictFreeAccess<DeviceType>(frameElem)];
+                            outputVec[chunkOffset + idxInChunk]
+                                = inputVec[chunkOffset + idxInChunk] + tmp[conflictFreeAccess<DeviceType>(idxInChunk)];
                     }
                 }
                 onAcc::syncBlockThreads(acc);
@@ -156,10 +159,10 @@ namespace alpaka::example::scan
     public:
         ALPAKA_FN_ACC void operator()(
             auto const& acc,
+            concepts::Vector auto const chunkExtents,
             concepts::IMdSpan auto const& blockSums,
             concepts::IMdSpan auto outputVec) const
         {
-            concepts::CVector auto frameExtent = acc[frame::extent];
             concepts::Vector auto numElements = outputVec.getExtents();
 
             auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
@@ -167,7 +170,7 @@ namespace alpaka::example::scan
                 acc,
                 numElements,
                 [&](auto const&, auto&& simdOut) constexpr
-                { simdOut = simdOut.load() + blockSums[simdOut.getIdx() / frameExtent]; },
+                { simdOut = simdOut.load() + blockSums[simdOut.getIdx() / chunkExtents]; },
                 outputVec);
         }
     };
@@ -183,10 +186,10 @@ namespace alpaka::example::scan
         // Instantiate the kernel function object
         Scan_ScanBlocksKernel<SCAN_TYPE> scanBlocks;
 
-        // Define frameExtent
-        constexpr auto frameExtent = CVec<IdxType, 256u>{};
-        constexpr auto const adjustedFrameExtent = frameExtent * elsPerThread;
-        auto const frameSpec = onHost::FrameSpec{divCeil(inputVec.getExtents(), adjustedFrameExtent), frameExtent};
+        constexpr auto chunkExtent = CVec<IdxType, 256u>{};
+        constexpr auto const largeChunkExtents = chunkExtent * elsPerThread;
+        auto numLargeChunks = divCeil(inputVec.getExtents(), largeChunkExtents);
+        auto const frameSpec = onHost::FrameSpec{numLargeChunks, chunkExtent, exec};
 
         if(frameSpec.getNumFrames() > 1_idx)
         {
@@ -199,14 +202,19 @@ namespace alpaka::example::scan
 
             IdxType elementsPerWorker = getNumElemPerThread<Data>(queue);
             auto addIncrementsFrameSpec = onHost::FrameSpec{
-                divCeil(inputVec.getExtents(), adjustedFrameExtent * elementsPerWorker),
-                CVec<IdxType, adjustedFrameExtent.x()>{}};
+                divCeil(inputVec.getExtents(), largeChunkExtents * elementsPerWorker),
+                CVec<IdxType, largeChunkExtents.x()>{},
+                exec};
 
             // enqueue the kernel execution tasks
-            queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec, increments});
+            queue.enqueue(
+                frameSpec,
+                KernelBundle{scanBlocks, numLargeChunks, chunkExtent, inputVec, outputVec, increments});
             // always recurse into exclusive scan
             scan<EXCLUSIVE_SCAN>(exec, devAcc, queue, increments, blockSums);
-            queue.enqueue(exec, addIncrementsFrameSpec, KernelBundle{addIncrements, blockSums, outputVec});
+            queue.enqueue(
+                addIncrementsFrameSpec,
+                KernelBundle{addIncrements, largeChunkExtents, blockSums, outputVec});
 
             // need to wait here until the previous call is done before we can destruct the buffers for
             // increments/blockSums when running out of scope
@@ -215,7 +223,7 @@ namespace alpaka::example::scan
         else
         {
             // problem fits within 1 frame
-            queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec});
+            queue.enqueue(frameSpec, KernelBundle{scanBlocks, numLargeChunks, chunkExtent, inputVec, outputVec});
         }
     }
 } // namespace alpaka::example::scan

@@ -26,14 +26,16 @@ struct RandomInitKernelNormal
     //! @param stdDev   standard deviation
     ALPAKA_FN_ACC void operator()(auto const& acc, auto outArray, auto mean, auto stdDev) const
     {
-        auto totalFrameExtents = acc[alpaka::frame::count] * acc[alpaka::frame::extent];
-
+        //  Each thread is generating it's own seed
         for(auto [seed] :
-            alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::IdxRange{totalFrameExtents}))
+            alpaka::onAcc::makeIdxMap(acc, alpaka::onAcc::worker::threadsInGrid, alpaka::onAcc::range::threadsInGrid))
         {
             alpaka::rand::engine::Philox4x32x10 engine(static_cast<uint32_t>(seed));
             auto seedVec = alpaka::Vec{static_cast<uint32_t>(seed)};
-            auto workGroup = alpaka::onAcc::WorkerGroup{seedVec, totalFrameExtents};
+            // Define workgroup
+            constexpr auto tInGrid = alpaka::onAcc::range::threadsInGrid;
+            auto numThreadGroups = tInGrid.getIdxRange(acc).distance();
+            auto workGroup = alpaka::onAcc::WorkerGroup{seedVec, numThreadGroups};
 
             // Normal distribution with parameters
             alpaka::rand::distribution::NormalReal normalDist(mean, stdDev);
@@ -136,12 +138,12 @@ int exampleDispatch(auto const cfg, uint32_t numElements, auto const& mean, auto
     // Allocate output host and device buffers
     auto outArray_h = onHost::alloc<T_Data>(host, numElements);
     auto outArray_d = onHost::allocLike(device, outArray_h);
-    auto frameSpec = onHost::getFrameSpec<T_Data>(device, Vec{blockSizeNormal});
+    auto frameSpec = onHost::getFrameSpec<T_Data>(device, computeExec, Vec{blockSizeNormal});
 
     onHost::Queue queue = device.makeQueue();
 
     std::cout << "- Testing RandomInitKernelNormal with a grid of " << frameSpec << "\n";
-    queue.enqueue(computeExec, frameSpec, RandomInitKernelNormal{}, outArray_d.getMdSpan(), mean, stdDev);
+    queue.enqueue(frameSpec, RandomInitKernelNormal{}, outArray_d.getMdSpan(), mean, stdDev);
 
     onHost::wait(queue);
     onHost::memcpy(queue, outArray_h, outArray_d);

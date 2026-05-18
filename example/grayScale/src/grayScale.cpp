@@ -203,7 +203,7 @@ auto example(T_Cfg const& cfg, size_t numElements, size_t numberOfRuns, bool ena
     // Define frameExtent
     Vec<size_t, 1u> frameExtent = 256u;
     uint32_t elementsPerWorker = getNumElemPerThread<Data>(queue);
-    auto dataBlocking = onHost::FrameSpec{divCeil(extent, frameExtent * elementsPerWorker), frameExtent};
+    auto dataBlocking = onHost::FrameSpec{divCeil(extent, frameExtent * elementsPerWorker), frameExtent, exec};
 
     std::cout << "Using alpaka accelerator: " << onHost::demangledName(exec) << " for "
               << deviceSpec.getApi().getName() << std::endl;
@@ -218,7 +218,7 @@ auto example(T_Cfg const& cfg, size_t numElements, size_t numberOfRuns, bool ena
         onHost::wait(queue);
 
         auto const beginKernelT = std::chrono::high_resolution_clock::now();
-        queue.enqueue(exec, dataBlocking, KernelBundle{kernel, bufAccARGB, static_cast<size_t>(extent[0])});
+        queue.enqueue(dataBlocking, KernelBundle{kernel, bufAccARGB, static_cast<size_t>(extent[0])});
         onHost::wait(queue);
         auto const endKernelT = std::chrono::high_resolution_clock::now();
         double const kernelRuntime = std::chrono::duration<double>(endKernelT - beginKernelT).count();

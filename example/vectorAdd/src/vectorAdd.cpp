@@ -126,7 +126,7 @@ auto example(auto const deviceSpec, auto const exec, size_t numElements, size_t 
     Vec<size_t, 1u> chunkSize = 256u;
     // how many elements one worker should compute to ensure vectorization or instruction parallelism
     uint32_t elementsPerWorker = getNumElemPerThread<Data>(queue);
-    auto dataBlocking = onHost::FrameSpec{divCeil(extent, chunkSize * elementsPerWorker), chunkSize};
+    auto dataBlocking = onHost::FrameSpec{divCeil(extent, chunkSize * elementsPerWorker), chunkSize, exec};
 
     // Instantiate the kernel function object
     VectorAddKernel kernel;
@@ -149,7 +149,7 @@ auto example(auto const deviceSpec, auto const exec, size_t numElements, size_t 
         onHost::wait(queue);
         auto const beginT = std::chrono::high_resolution_clock::now();
         // Enqueue the kernel execution task
-        queue.enqueue(exec, dataBlocking, taskKernel);
+        queue.enqueue(dataBlocking, taskKernel);
         // wait in case we are using an asynchronous queue to time actual kernel runtime
         onHost::wait(queue);
         auto const endT = std::chrono::high_resolution_clock::now();

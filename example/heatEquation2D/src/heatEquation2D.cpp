@@ -152,11 +152,11 @@ namespace alpaka::example::heatEquation
         StencilKernel stencilKernel;
         BoundaryKernel boundaryKernel;
 
-        auto const dataBlockingStencil = FrameSpec{numChunks, chunkSize};
+        auto const dataBlockingStencil = FrameSpec{numChunks, chunkSize, computeExec};
 
         auto const longestSide = std::max(numNodesWithHalo.y(), numNodesWithHalo.x());
         auto const dataBlockingBorder
-            = FrameSpec{Vec{longestSide / chunkSize.x()}, Vec{std::max(chunkSize.y(), chunkSize.x())}};
+            = FrameSpec{Vec{longestSide / chunkSize.x()}, Vec{std::max(chunkSize.y(), chunkSize.x())}, computeExec};
 
         auto const startTime = std::chrono::high_resolution_clock::now();
 
@@ -165,7 +165,6 @@ namespace alpaka::example::heatEquation
         {
             // Compute next values
             computeQueue.enqueue(
-                computeExec,
                 dataBlockingStencil,
                 KernelBundle{
                     stencilKernel,
@@ -179,7 +178,6 @@ namespace alpaka::example::heatEquation
                     dt});
 
             computeQueue.enqueue(
-                computeExec,
                 dataBlockingBorder,
                 KernelBundle{boundaryKernel, uNextBufAcc.getMdSpan(), numNodesWithHalo, step, dx, dy, dt});
 

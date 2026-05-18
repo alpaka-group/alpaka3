@@ -176,7 +176,7 @@ namespace alpaka::example::nBody
 
         // The frame spec describes the logical parallelism exposed to the kernel, not the exact mapping on the threads
         // and the blocks of the backend.
-        auto const frameSpec = FrameSpec{numChunks, chunkSize};
+        auto const frameSpec = FrameSpec{numChunks, chunkSize, computeExec};
 
         // Make an instance of the kernel object to use later
         UpdateVelocitiesKernel updateVelocitiesKernel;
@@ -190,15 +190,11 @@ namespace alpaka::example::nBody
             // Queue one step of the simulation
             // The kernel bundle contains the kernel first, then all its arguments *except* the accelerator, which is
             // implicitly passed by alpaka.
-            computeQueue.enqueue(
-                computeExec,
-                frameSpec,
-                KernelBundle{updateVelocitiesKernel, particleData, chunkSize, dt});
+            computeQueue.enqueue(frameSpec, KernelBundle{updateVelocitiesKernel, particleData, chunkSize, dt});
 
             // execute velocity updates using simd concurrency
             onHost::concurrent<BaseType>(
                 computeQueue,
-                computeExec,
                 particleData.xPositions.getExtents(),
                 updatePositionsKernel,
                 particleData.xPositions,
