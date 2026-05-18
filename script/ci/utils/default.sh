@@ -9,6 +9,8 @@
 
 : "${APCI_ALPAKA_ROOT?'APCI_ALPAKA_ROOT is not defined. Root directory of the alpaka project'}"
 
+# shellcheck source=script/ci/utils/setup_vars.sh
+source "${APCI_ALPAKA_ROOT}/script/ci/utils/setup_vars.sh"
 # shellcheck source=script/ci/utils/set.sh
 source "${APCI_ALPAKA_ROOT}/script/ci/utils/set.sh"
 # shellcheck source=script/ci/utils/color_echo.sh
