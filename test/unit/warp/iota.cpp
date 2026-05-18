@@ -70,7 +70,7 @@ TEMPLATE_LIST_TEST_CASE("warp iota1D", "", TestApis)
      */
     auto frameSize = Vec{warpSize + 3u};
     onHost::fill(queue, dBuff, Vec{0u});
-    queue.enqueue(exec, onHost::FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff, extent});
+    queue.enqueue(onHost::FrameSpec{extent / frameSize, frameSize, exec}, KernelBundle{IotaKernelND{}, dBuff, extent});
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx == hBuff[idx]); });

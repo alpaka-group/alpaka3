@@ -25,20 +25,19 @@ struct KernelCVecFrameExtents
     template<onAcc::concepts::Acc T_Acc>
     ALPAKA_FN_ACC void operator()(T_Acc const& acc, auto result) const
     {
-        alpaka::concepts::CVector auto frameExtent = acc[alpaka::frame::extent];
+        static_assert(T_Acc::launchedWithFrameSpec());
         // compile will fail if the type is silently cast to non CVec type
         [[maybe_unused]] alpaka::concepts::CVector auto blockThreadCount
             = acc.getExtentsOf(onAcc::origin::block, onAcc::unit::threads);
         [[maybe_unused]] alpaka::concepts::CVector auto blockThreadCount2 = acc[alpaka::layer::thread].count();
         static_assert(blockThreadCount2 == blockThreadCount);
-        static_assert(frameExtent.x() == 43u);
-        result[0] = frameExtent.x() == 43u;
 
         // warp size must be accessible at compile time, this is only possible if we us ethe accelerator type
         constexpr uint32_t warpSize = ALPAKA_TYPEOF(acc)::getWarpSize();
         constexpr uint32_t warpSizeFn = onAcc::warp::getSize<T_Acc>();
 
         static_assert(warpSize == warpSizeFn);
+        result[0] = true;
     }
 };
 
@@ -68,8 +67,7 @@ TEMPLATE_LIST_TEST_CASE("CVec frame extent kernel call", "", TestApis)
     onHost::wait(queue);
     {
         queue.enqueue(
-            exec,
-            FrameSpec{Vec{1u}, CVec<uint32_t, 43u>{}},
+            FrameSpec{Vec{1u}, CVec<uint32_t, 43u>{}, exec},
             KernelBundle{KernelCVecFrameExtents{}, dBuff.getView()});
         onHost::memcpy(queue, hBuff, dBuff);
         onHost::wait(queue);
@@ -82,6 +80,7 @@ struct KernelCVecThreadExtents
     template<onAcc::concepts::Acc T_Acc>
     ALPAKA_FN_ACC void operator()(T_Acc const& acc, auto result) const
     {
+        static_assert(!T_Acc::launchedWithFrameSpec());
         // compile will fail if the type is silently cast to non CVec type
         alpaka::concepts::CVector auto blockThreadCount = acc[alpaka::layer::thread].count();
         static_assert(blockThreadCount.x() == 1u);
@@ -121,10 +120,9 @@ TEMPLATE_LIST_TEST_CASE("CVec thread extent kernel call", "", TestApis)
     onHost::wait(queue);
     {
         queue.enqueue(
-            exec,
             // we need to use one thread per thread block because serial executors will reduce the number of threads to
             // a single thread
-            ThreadSpec{Vec{1u}, CVec<uint32_t, 1u>{}},
+            ThreadSpec{Vec{1u}, CVec<uint32_t, 1u>{}, exec},
             KernelBundle{KernelCVecThreadExtents{}, dBuff});
         onHost::memcpy(queue, hBuff, dBuff);
         onHost::wait(queue);

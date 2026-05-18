@@ -39,8 +39,7 @@ void allocDeferredImplicitWait(auto device, auto exec)
         auto sharedBuffer = onHost::allocDeferred<float>(queue0, 10ul);
         onHost::fill(queue0, sharedBuffer, 3.14159265f);
         queue0.enqueue(
-            exec,
-            getFrameSpec<float>(queue0.getDevice(), sharedBuffer.getExtents()),
+            getFrameSpec<float>(queue0.getDevice(), exec, sharedBuffer.getExtents()),
             KernelBundle{RaceCheckKernel{}, dBufferResults, sharedBuffer});
         /* sharedBuffer is detroyed here before the kernel is finshed.
          * If the view is not waiting for all work in the queue enqueued before the destructor of the view is called,
@@ -77,8 +76,7 @@ void allocDeferredExplicitWait(auto device, auto exec)
 
         onHost::fill(queue0, sharedBuffer, 3.14159265f);
         queue0.enqueue(
-            exec,
-            getFrameSpec<float>(queue0.getDevice(), sharedBuffer.getExtents()),
+            getFrameSpec<float>(queue0.getDevice(), exec, sharedBuffer.getExtents()),
             KernelBundle{RaceCheckKernel{}, dBufferResults, sharedBuffer});
         /* sharedBuffer is detroyed here before the kernel is finshed.
          * If the view is not waiting for all work in the queue enqueued before the destructor of the view is called,

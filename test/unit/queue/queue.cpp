@@ -44,7 +44,7 @@ TEMPLATE_LIST_TEST_CASE("kernel no arguments", "", TestApis)
     onHost::Queue queue = device.makeQueue(queueKind::blocking);
     INFO("exec=" << onHost::demangledName(exec));
 
-    queue.enqueue(exec, onHost::FrameSpec{1, 1}, KernelBundle{NoArgumentsKernel{}});
+    queue.enqueue(onHost::FrameSpec{1, 1, exec}, KernelBundle{NoArgumentsKernel{}});
 }
 
 struct IotaKernel
@@ -52,8 +52,8 @@ struct IotaKernel
     ALPAKA_FN_ACC void operator()(auto const& acc, auto out) const
     {
         // check that frame extent keeps compile time const-ness
-        static_assert(alpaka::concepts::CVector<ALPAKA_TYPEOF(acc[frame::extent])>);
-        for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, onAcc::range::totalFrameSpecExtent))
+        static_assert(alpaka::concepts::CVector<ALPAKA_TYPEOF(acc[layer::thread].count())>);
+        for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{out.getExtents()}))
         {
             // Debug-only trace removed in favor of Catch2 diagnostics.
             out[i.x()] = i.x();
@@ -86,7 +86,7 @@ TEMPLATE_LIST_TEST_CASE("iota", "", TestApis)
     auto hBuff = onHost::allocHostLike(dBuff);
 
     constexpr auto frameSize = CVec<uint32_t, 4u>{};
-    queue.enqueue(exec, onHost::FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernel{}, dBuff});
+    queue.enqueue(onHost::FrameSpec{extent / frameSize, frameSize, exec}, KernelBundle{IotaKernel{}, dBuff});
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx.x() == hBuff[idx]); });
@@ -96,7 +96,7 @@ struct IotaKernelND
 {
     ALPAKA_FN_ACC void operator()(auto const& acc, auto out) const
     {
-        for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, onAcc::range::totalFrameSpecExtent))
+        for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{out.getExtents()}))
         {
             out[i] = i;
         }
@@ -129,7 +129,7 @@ TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
 
     onHost::wait(queue);
     constexpr auto frameSize = Vec{2u, 4u};
-    queue.enqueue(exec, onHost::FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff});
+    queue.enqueue(onHost::FrameSpec{extent / frameSize, frameSize, exec}, KernelBundle{IotaKernelND{}, dBuff});
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx == hBuff[idx]); });
@@ -161,7 +161,7 @@ TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
 
     onHost::wait(queue);
     constexpr auto frameSize = Vec{2u, 4u, 8u};
-    queue.enqueue(exec, onHost::FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff});
+    queue.enqueue(onHost::FrameSpec{extent / frameSize, frameSize, exec}, KernelBundle{IotaKernelND{}, dBuff});
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx == hBuff[idx]); });
@@ -193,33 +193,40 @@ TEMPLATE_LIST_TEST_CASE("iota4D", "", TestApis)
 
     onHost::wait(queue);
     constexpr auto frameSize = Vec{2u, 4u, 8u, 4u};
-    queue.enqueue(exec, onHost::FrameSpec{extent / frameSize, frameSize}, KernelBundle{IotaKernelND{}, dBuff});
+    queue.enqueue(onHost::FrameSpec{extent / frameSize, frameSize, exec}, KernelBundle{IotaKernelND{}, dBuff});
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(idx == hBuff[idx]); });
 }
 
+/** Test index container dimension slicing
+ *
+ * @todo This is a very bad example for slicing. Find a better usefull example.
+ */
 template<typename T_Selection>
 struct IotaKernelNDSelection
 {
-    ALPAKA_FN_ACC void operator()(auto const& acc, auto out, auto numFrames) const
+    ALPAKA_FN_ACC void operator()(auto const& acc, auto out, alpaka::concepts::Vector auto chunkSize) const
     {
-        for(auto fameBaseIdx :
-            onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, onAcc::range::frameCount)[CVec<uint32_t, 0u>{}])
+        alpaka::concepts::Vector auto outExtents = out.getExtents();
+        // select z dimension only and iterate over y,x in the inner loops
+        for(auto dataOffset :
+            onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{outExtents})[CVec<uint32_t, 0u>{}])
         {
-            /* fameBaseIdx is unique for each thread block.
-             * Therefor the workgroup for iterating over the frames in other dimensions must be one.
-             */
-            for(auto frameIdx :
-                onAcc::makeIdxMap(acc, onAcc::worker::allThreads, IdxRange{fameBaseIdx, numFrames})[T_Selection{}])
+            // dataOffset is still 3-dimensional but contains 0 in y,x
+            static_assert(alpaka::concepts::Dim<ALPAKA_TYPEOF(dataOffset), 3>);
+            // All threads in a block now iterates over the dimensions sliced out in the for loop above.
+            for(auto fullDataIdx :
+                onAcc::makeIdxMap(acc, onAcc::worker::allThreads, IdxRange{dataOffset, outExtents})[T_Selection{}])
             {
-                for(auto elemIdx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, onAcc::range::frameExtent))
-                    if(linearize(acc[frame::extent], elemIdx) == 1u)
+                for(auto elemIdx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{chunkSize}))
+                    // only elemIdx 1 is applying the change
+                    if(linearize(chunkSize, elemIdx) == 1u)
                     {
-                        // use atomics to detect data races where mre than one thread is updating the result
-                        onAcc::atomicAdd(acc, &(out[frameIdx][0]), frameIdx[0]);
-                        onAcc::atomicAdd(acc, &(out[frameIdx][1]), frameIdx[1]);
-                        onAcc::atomicAdd(acc, &(out[frameIdx][2]), frameIdx[2]);
+                        // use atomics to detect data races where more than one thread is updating the result
+                        onAcc::atomicAdd(acc, &(out[fullDataIdx][0]), fullDataIdx[0]);
+                        onAcc::atomicAdd(acc, &(out[fullDataIdx][1]), fullDataIdx[1]);
+                        onAcc::atomicAdd(acc, &(out[fullDataIdx][2]), fullDataIdx[2]);
                     }
             }
         }
@@ -246,7 +253,11 @@ TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
     onHost::Queue queue = device.makeQueue();
     constexpr Vec numBlocks = Vec{4u, 8u, 16u};
     auto numBlocksReduced = numBlocks;
-    numBlocksReduced.ref(CVec<uint32_t, 2u, 1u>{}) = 1u;
+
+    // Within the kernel we will iterate over y, x dimension
+    [[maybe_unused]] auto selection = CVec<uint32_t, 2u, 1u>{};
+    // start a 3D extent but with size 1 in y, x dimension
+    numBlocksReduced.ref(selection) = 1u;
 
     INFO("numBlocksReduced=" << numBlocksReduced);
     INFO("exec=" << onHost::demangledName(exec));
@@ -258,12 +269,12 @@ TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
     onHost::wait(queue);
     constexpr auto frameSize = Vec{1u, 1u, 2u};
 
-    [[maybe_unused]] auto selection = CVec<uint32_t, 2u, 1u>{};
+    /* Use a frame specification where we have frames in z only.
+     * The kernel is later responsible that each data point of the output is filled with data.
+     */
+    auto frameSpec = onHost::FrameSpec{numBlocksReduced, frameSize, exec};
 
-    queue.enqueue(
-        exec,
-        onHost::FrameSpec{numBlocksReduced, frameSize},
-        KernelBundle{IotaKernelNDSelection<ALPAKA_TYPEOF(selection)>{}, dBuff, numBlocks});
+    queue.enqueue(frameSpec, KernelBundle{IotaKernelNDSelection<ALPAKA_TYPEOF(selection)>{}, dBuff, frameSize});
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);
     meta::ndLoopIncIdx(numBlocks, [&](auto idx) { CHECK(idx == hBuff[idx]); });

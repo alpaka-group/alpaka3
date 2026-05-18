@@ -56,7 +56,7 @@ void executeWaitTest(auto& device, auto const& exec)
     for(uint32_t i = 0; i < numQueues; ++i)
     {
         auto kernelBundle = KernelBundle{WaitTestWriteKernel{}, devBufs[i]};
-        queues[i].enqueue(exec, onHost::FrameSpec{extent, frameSize}, kernelBundle);
+        queues[i].enqueue(onHost::FrameSpec{extent, frameSize, exec}, kernelBundle);
         // Note: We deliberately don't wait on individual queues here
     }
 
@@ -74,7 +74,7 @@ void executeWaitTest(auto& device, auto const& exec)
 
         // Enqueue multiple operations on same queue - they queue up asynchronously
         auto kernelBundle = KernelBundle{WaitTestWriteKernel{}, singleQueueBufs[i]};
-        singleQueue.enqueue(exec, onHost::FrameSpec{extent, frameSize}, kernelBundle);
+        singleQueue.enqueue(onHost::FrameSpec{extent, frameSize, exec}, kernelBundle);
     }
 
     // TEST: wait for device to complete ALL work on ALL queues (including single queue ops)

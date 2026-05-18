@@ -91,13 +91,13 @@ TEMPLATE_LIST_TEST_CASE("warp any vote observes active lanes", "[warp][any]", Wa
 
     auto const blocks = Vec<std::uint32_t, 1u>{5u};
     auto const threads = Vec<std::uint32_t, 1u>{4u * warpExtent};
-    auto const frame = onHost::FrameSpec{blocks, threads};
+    auto const frame = onHost::FrameSpec{blocks, threads, exec};
 
     for(std::uint32_t idx = 0u; idx < warpExtent; ++idx)
     {
         // Rotate through each candidate lane to ensure mask-gated votes succeed.
         onHost::memset(queue, successDev, static_cast<std::uint8_t>(true));
-        queue.enqueue(exec, frame, KernelBundle{AnyMultiThreadKernel{}, successDev, idx});
+        queue.enqueue(frame, KernelBundle{AnyMultiThreadKernel{}, successDev, idx});
         onHost::memcpy(queue, successHost, successDev);
         onHost::wait(queue);
         INFO("backend=" << deviceSpec.getName() << " idx=" << idx);

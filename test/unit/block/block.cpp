@@ -18,22 +18,18 @@ using TestApis = std::decay_t<decltype(allBackends(enabledApis, exec::enabledExe
 
 struct BlockIotaKernel
 {
-    ALPAKA_FN_ACC void operator()(auto const& acc, auto out, auto numBlocks) const
+    ALPAKA_FN_ACC void operator()(auto const& acc, auto out, auto numChunks, auto chunkExtents) const
     {
-        auto const numDataElemInBlock = acc[frame::extent];
         for(auto blockIdx : onAcc::makeIdxMap(
                 acc,
                 onAcc::worker::blocksInGrid,
-                IdxRange{ALPAKA_TYPEOF(numBlocks)::fill(0), numBlocks * numDataElemInBlock, numDataElemInBlock},
+                IdxRange{ALPAKA_TYPEOF(numChunks)::fill(0), numChunks * chunkExtents, chunkExtents},
                 onAcc::traverse::tiled,
                 onAcc::layout::contiguous))
         {
             auto blockOffset = blockIdx;
-            for(auto inBlockOffset : onAcc::makeIdxMap(
-                    acc,
-                    onAcc::worker::threadsInBlock,
-                    onAcc::range::frameExtent,
-                    onAcc::traverse::tiled))
+            for(auto inBlockOffset :
+                onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{chunkExtents}, onAcc::traverse::tiled))
             {
                 out[blockOffset + inBlockOffset] = (blockOffset + inBlockOffset).x();
             }
@@ -59,16 +55,18 @@ TEMPLATE_LIST_TEST_CASE("block iota", "", TestApis)
     INFO("device properties=" << device.getDeviceProperties());
 
     Queue queue = device.makeQueue();
-    constexpr Vec numBlocks = Vec{9u};
-    constexpr Vec blockExtent = Vec{4u};
-    constexpr Vec dataExtent = numBlocks * blockExtent;
+    constexpr Vec numChunks = Vec{9u};
+    constexpr Vec chunkExtents = Vec{4u};
+    constexpr Vec dataExtent = numChunks * chunkExtents;
     INFO("block iota exec=" << onHost::demangledName(exec));
     auto dBuff = onHost::alloc<uint32_t>(device, dataExtent);
 
     auto hBuff = onHost::allocHostLike(dBuff);
     onHost::wait(queue);
 
-    queue.enqueue(exec, FrameSpec{numBlocks / 2u, blockExtent}, KernelBundle{BlockIotaKernel{}, dBuff, numBlocks});
+    queue.enqueue(
+        FrameSpec{numChunks / 2u, chunkExtents, exec},
+        KernelBundle{BlockIotaKernel{}, dBuff, numChunks, chunkExtents});
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);
 

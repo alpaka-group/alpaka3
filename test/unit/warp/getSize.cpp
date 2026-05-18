@@ -98,8 +98,7 @@ TEMPLATE_LIST_TEST_CASE("warp size trait matches runtime size", "[warp][getSize]
 
     onHost::memset(queue, successDev, static_cast<std::uint8_t>(true));
     queue.enqueue(
-        exec,
-        onHost::ThreadSpec{blocks, threads},
+        onHost::ThreadSpec{blocks, threads, exec},
         // Pass the host-side expectation down to the device for verification.
         KernelBundle{GetSizeKernel{}, successDev, static_cast<std::uint32_t>(warpExtent)});
     onHost::memcpy(queue, successHost, successDev);

@@ -64,9 +64,9 @@ namespace alpaka::test
         auto dBufferResults = onHost::allocLike(device, hBufferResults);
         onHost::memset(queue, dBufferResults, static_cast<std::uint8_t>(true));
         // Let alpaka calculate good block and grid sizes given our full problem extent
-        onHost::concepts::FrameSpec auto frameSpec = onHost::FrameSpec{1u, 1u};
+        onHost::concepts::FrameSpec auto frameSpec = onHost::FrameSpec{1u, 1u, exec};
         auto kernel = KernelBundle{kernelFnObj, dBufferResults, ALPAKA_FORWARD(args)...};
-        queue.enqueue(exec, frameSpec, kernel);
+        queue.enqueue(frameSpec, kernel);
         onHost::memcpy(queue, hBufferResults, dBufferResults);
         alpaka::onHost::wait(queue);
         return hBufferResults[0];

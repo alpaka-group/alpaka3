@@ -18,22 +18,21 @@ template<uint32_t T_blockSize>
 struct SharedBlockIotaKernel
 {
     template<typename T>
-    ALPAKA_FN_ACC void operator()(T const& acc, auto out, auto numBlocks) const
+    ALPAKA_FN_ACC void operator()(T const& acc, auto out, auto numBlocks, auto blockExtents) const
     {
         auto& shared = declareSharedVar<uint32_t[T_blockSize], uniqueId()>(acc);
 
         for(auto blockIdx : onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{numBlocks}))
         {
-            auto const numDataElemInBlock = acc[frame::extent];
-            auto blockOffset = blockIdx * numDataElemInBlock;
-            for(auto inBlockOffset : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, onAcc::range::frameExtent))
+            auto blockOffset = blockIdx * blockExtents;
+            for(auto inBlockOffset : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{blockExtents}))
             {
                 uint32_t id = (T_blockSize - 1u - inBlockOffset).x();
                 shared[id] = id;
             }
 
             alpaka::onAcc::syncBlockThreads(acc);
-            for(auto inBlockOffset : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, onAcc::range::frameExtent))
+            for(auto inBlockOffset : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{blockExtents}))
             {
                 out[blockOffset + inBlockOffset] = (blockOffset + shared[inBlockOffset.x()]).x();
             }
@@ -68,9 +67,8 @@ TEMPLATE_LIST_TEST_CASE("block shared iota", "[sharedMem]", TestApis)
     alpaka::onHost::wait(queue);
 
     queue.enqueue(
-        exec,
-        onHost::FrameSpec{numBlocks / 2u, blockExtent},
-        KernelBundle{SharedBlockIotaKernel<blockExtent.x()>{}, dBuff, numBlocks});
+        onHost::FrameSpec{numBlocks / 2u, blockExtent, exec},
+        KernelBundle{SharedBlockIotaKernel<blockExtent.x()>{}, dBuff, numBlocks, blockExtent});
     alpaka::onHost::memcpy(queue, hBuff, dBuff);
     alpaka::onHost::wait(queue);
 
@@ -203,19 +201,19 @@ TEMPLATE_LIST_TEST_CASE("block shared alias", "[SharedMem]", TestApis)
     auto hBuff = onHost::allocHostLike(dBuff);
     alpaka::onHost::wait(queue);
     {
-        queue.enqueue(exec, onHost::FrameSpec{numBlocks, blockExtent}, KernelBundle{SharedMemAlias{}, dBuff});
+        queue.enqueue(onHost::FrameSpec{numBlocks, blockExtent, exec}, KernelBundle{SharedMemAlias{}, dBuff});
         alpaka::onHost::memcpy(queue, hBuff, dBuff);
         alpaka::onHost::wait(queue);
         CHECK(hBuff[0] == true);
     }
     {
-        queue.enqueue(exec, onHost::FrameSpec{numBlocks, blockExtent}, KernelBundle{DynSharedMemMember{}, dBuff});
+        queue.enqueue(onHost::FrameSpec{numBlocks, blockExtent, exec}, KernelBundle{DynSharedMemMember{}, dBuff});
         alpaka::onHost::memcpy(queue, hBuff, dBuff);
         alpaka::onHost::wait(queue);
         CHECK(hBuff[0] == true);
     }
     {
-        queue.enqueue(exec, onHost::FrameSpec{numBlocks, blockExtent}, KernelBundle{DynSharedMemTrait{}, dBuff});
+        queue.enqueue(onHost::FrameSpec{numBlocks, blockExtent, exec}, KernelBundle{DynSharedMemTrait{}, dBuff});
         alpaka::onHost::memcpy(queue, hBuff, dBuff);
         alpaka::onHost::wait(queue);
         CHECK(hBuff[0] == true);
@@ -243,8 +241,7 @@ void test_index_type(auto& queue, auto const& exec, auto name)
     onHost::wait(queue);
 
     queue.enqueue(
-        exec,
-        onHost::FrameSpec{alpaka::Vec{1u}, alpaka::Vec{1u}},
+        onHost::FrameSpec{alpaka::Vec{1u}, alpaka::Vec{1u}, exec},
         KernelBundle{IndexTypeKernel<T_Idx>{}, dBuff});
     alpaka::onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);

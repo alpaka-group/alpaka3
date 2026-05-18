@@ -130,8 +130,7 @@ TEMPLATE_LIST_TEST_CASE("memFence producer-consumer publication", "[memFence][pr
      * @todo: find out if this strange behaviour is an bug (most likely) or somewhere documented in SYCL or OneApi.
      */
     queue.enqueue(
-        exec,
-        onHost::ThreadSpec{3, 1},
+        onHost::ThreadSpec{3, 1, exec},
         KernelBundle{ProducerConsumerKernel{}, payload, flags, mis, iterations});
     onHost::wait(queue);
 
@@ -295,7 +294,7 @@ TEMPLATE_LIST_TEST_CASE("memFence block shared-memory ordering", "[memFence][blo
 
     {
         flag[0u] = 1u;
-        queue.enqueue(exec, onHost::FrameSpec{1, 2}, KernelBundle{BlockSharedMemOrderKernel{}, flag});
+        queue.enqueue(onHost::FrameSpec{1, 2, exec}, KernelBundle{BlockSharedMemOrderKernel{}, flag});
         onHost::wait(queue);
         CHECK(flag[0u] == 1u);
     }
@@ -307,7 +306,7 @@ TEMPLATE_LIST_TEST_CASE("memFence block shared-memory ordering", "[memFence][blo
         flag[0u] = 1u;
         // Device-scope variant, use thread specification to guarantee that we have two thread blocks
         // A frame specification is allowed silently to change the number of real thread blocks and the block size
-        queue.enqueue(exec, onHost::ThreadSpec{2, 1}, KernelBundle{DeviceFenceTestKernel{}, flag, vars_dev.data()});
+        queue.enqueue(onHost::ThreadSpec{2, 1, exec}, KernelBundle{DeviceFenceTestKernel{}, flag, vars_dev.data()});
         onHost::wait(queue);
         CHECK(flag[0u] == 1u);
     }
@@ -320,10 +319,9 @@ TEMPLATE_LIST_TEST_CASE("memFence block shared-memory ordering", "[memFence][blo
         auto queue1 = device.makeQueue();
 
         flag[0u] = 1u;
-        queue.enqueue(exec, onHost::ThreadSpec{1, 1}, KernelBundle{DeviceFenceTestKernelWriter{}, vars_dev.data()});
+        queue.enqueue(onHost::ThreadSpec{1, 1, exec}, KernelBundle{DeviceFenceTestKernelWriter{}, vars_dev.data()});
         queue1.enqueue(
-            exec,
-            onHost::ThreadSpec{1, 1},
+            onHost::ThreadSpec{1, 1, exec},
             KernelBundle{DeviceFenceTestKernelReader{}, flag, vars_dev.data()});
         onHost::wait(queue);
         onHost::wait(queue1);

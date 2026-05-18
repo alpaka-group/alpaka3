@@ -31,7 +31,7 @@ struct BlockingTestKernel
 {
     ALPAKA_FN_ACC void operator()(auto const& acc, auto out, uint32_t value) const
     {
-        for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, onAcc::range::totalFrameSpecExtent))
+        for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{out.getExtents()}))
         {
             out[i.x()] = value;
         }
@@ -72,8 +72,7 @@ TEMPLATE_LIST_TEST_CASE("blocking queue memory operations", "[bq][memory]", Test
     // Test kernel execution with blocking queue 0
     constexpr auto frameSize = CVec<uint32_t, 4u>{};
     blockingQueue0.enqueue(
-        exec,
-        onHost::FrameSpec{extent / frameSize, frameSize},
+        onHost::FrameSpec{extent / frameSize, frameSize, exec},
         KernelBundle{BlockingTestKernel{}, dBuff, testValue});
 
     // With blocking queue 1, operations should be synchronous
@@ -100,7 +99,7 @@ struct WriteValueKernel
 
     ALPAKA_FN_ACC void operator()(auto const& acc, auto view) const
     {
-        for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, onAcc::range::totalFrameSpecExtent))
+        for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{view.getExtents()}))
         {
             view[i.x()] = value;
         }
@@ -114,7 +113,7 @@ struct FillKernel
 
     ALPAKA_FN_ACC void operator()(auto const& acc, auto out) const
     {
-        for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, onAcc::range::totalFrameSpecExtent))
+        for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{out.getExtents()}))
         {
             out[i.x()] = v;
         }
@@ -145,7 +144,7 @@ TEMPLATE_LIST_TEST_CASE("blocking queue chained operations", "[bq][chain]", Test
     // keep one larger extent for coverage
     constexpr Vec extent = Vec{32u};
     constexpr auto frameSize = CVec<uint32_t, 4u>{};
-    auto frameSpec = onHost::FrameSpec{extent / frameSize, frameSize};
+    auto frameSpec = onHost::FrameSpec{extent / frameSize, frameSize, exec};
 
     // Device buffers
     auto dBufBlocking = onHost::alloc<uint32_t>(device, extent);
@@ -154,8 +153,8 @@ TEMPLATE_LIST_TEST_CASE("blocking queue chained operations", "[bq][chain]", Test
 
     // 1) Blocking queue: chain two kernels then memcpy, no wait.
     // First kernel writes 3, second overwrites with 11.
-    qBlocking0.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{3u}, dBufBlocking});
-    qBlocking1.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{11u}, dBufBlocking});
+    qBlocking0.enqueue(frameSpec, KernelBundle{WriteValueKernel{3u}, dBufBlocking});
+    qBlocking1.enqueue(frameSpec, KernelBundle{WriteValueKernel{11u}, dBufBlocking});
     // blocking finished here
     onHost::memcpy(qBlocking2, hBufBlocking, dBufBlocking);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(hBufBlocking[idx] == 11u); });
@@ -163,7 +162,7 @@ TEMPLATE_LIST_TEST_CASE("blocking queue chained operations", "[bq][chain]", Test
     // 2) allocDeferred chain on blocking queue: allocate asynchronously, immediately fill then memcpy.
     // should be ready due to blocking policy of the queue
     auto dBufAsync = onHost::allocDeferred<uint32_t>(qBlocking0, extent);
-    qBlocking1.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{kTestFillValue}, dBufAsync});
+    qBlocking1.enqueue(frameSpec, KernelBundle{WriteValueKernel{kTestFillValue}, dBufAsync});
     auto hBufAsync = onHost::allocHostLike(dBufAsync);
     onHost::memcpy(qBlocking2, hBufAsync, dBufAsync);
     meta::ndLoopIncIdx(extent, [&](auto idx) { CHECK(hBufAsync[idx] == kTestFillValue); });
@@ -185,7 +184,7 @@ TEMPLATE_LIST_TEST_CASE("mixed queues independence", "[bq][mixed]", TestApis)
 
     constexpr Vec extent = Vec{8u};
     constexpr auto frameSize = CVec<uint32_t, 4u>{};
-    auto frameSpec = onHost::FrameSpec{extent / frameSize, frameSize};
+    auto frameSpec = onHost::FrameSpec{extent / frameSize, frameSize, exec};
 
     auto qBlocking = device.makeQueue(queueKind::blocking);
     auto qNonBlocking = device.makeQueue(queueKind::nonBlocking);
@@ -195,7 +194,7 @@ TEMPLATE_LIST_TEST_CASE("mixed queues independence", "[bq][mixed]", TestApis)
     auto hBuf = onHost::allocHostLike(dBuf);
 
     // Blocking queue: immediate completion guaranteed
-    qBlocking.enqueue(exec, frameSpec, KernelBundle{WriteValueKernel{3u}, dBuf});
+    qBlocking.enqueue(frameSpec, KernelBundle{WriteValueKernel{3u}, dBuf});
     // Returns after kernel done
     onHost::memcpy(qNonBlocking, hBuf, dBuf);
     onHost::wait(qNonBlocking);
@@ -241,7 +240,7 @@ TEMPLATE_LIST_TEST_CASE("blocking queue event semantics", "[bq][event]", TestApi
     // Use global FillKernel (defined above)
 
     constexpr auto frameSize = CVec<uint32_t, 4u>{};
-    qBlocking.enqueue(exec, onHost::FrameSpec{extent / frameSize, frameSize}, KernelBundle{FillKernel{123u}, dBuf});
+    qBlocking.enqueue(onHost::FrameSpec{extent / frameSize, frameSize, exec}, KernelBundle{FillKernel{123u}, dBuf});
 
     auto e2 = device.makeEvent();
     // all prior work (kernel) complete when this returns
@@ -255,7 +254,7 @@ TEMPLATE_LIST_TEST_CASE("blocking queue event semantics", "[bq][event]", TestApi
     //   (event already complete; consumer wait should be instantaneous)
     auto e3 = device.makeEvent();
     // enqueue trivial kernel + event on blocking queue
-    qBlocking.enqueue(exec, onHost::FrameSpec{extent / frameSize, frameSize}, KernelBundle{FillKernel{77u}, dBuf});
+    qBlocking.enqueue(onHost::FrameSpec{extent / frameSize, frameSize, exec}, KernelBundle{FillKernel{77u}, dBuf});
     qBlocking.enqueue(e3);
     CHECK(e3.isComplete());
 
@@ -270,8 +269,7 @@ TEMPLATE_LIST_TEST_CASE("blocking queue event semantics", "[bq][event]", TestApi
     auto qBlockingCons = device.makeQueue(queueKind::blocking);
     auto e4 = device.makeEvent();
     qNonBlockingProd.enqueue(
-        exec,
-        onHost::FrameSpec{extent / frameSize, frameSize},
+        onHost::FrameSpec{extent / frameSize, frameSize, exec},
         KernelBundle{FillKernel{55u}, dBuf});
     // may not be complete yet
     qNonBlockingProd.enqueue(e4);

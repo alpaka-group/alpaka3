@@ -58,8 +58,7 @@ void validate(auto& queue, auto& device, auto exec, auto testCase)
     onHost::wait(queue);
     auto frameSize = testCase.m_frameSize;
     queue.enqueue(
-        exec,
-        onHost::FrameSpec{divExZero(extentMd, frameSize), frameSize},
+        onHost::FrameSpec{divExZero(extentMd, frameSize), frameSize, exec},
         KernelBundle{LastSetDataBlockIdx{}, dBuff, extentMd});
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);

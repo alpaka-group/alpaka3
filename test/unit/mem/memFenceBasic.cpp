@@ -24,7 +24,7 @@ struct MemoryFenceTestKernel
     {
         using namespace alpaka::onAcc;
         // Iterate over all logical thread indices in the launched frame.
-        for(auto idx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, onAcc::range::totalFrameSpecExtent))
+        for(auto idx : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{out.getExtents()}))
         {
             // Initial write; any subsequent fence must not block, just enforce visibility / ordering.
             out[idx.x()] = static_cast<uint32_t>(idx.x());
@@ -67,8 +67,7 @@ TEMPLATE_LIST_TEST_CASE("thread fence operations", "[memFence][basic]", TestApis
 
     // Launch kernel; frame layout splits extent by frameSize for multi-dimensional convenience.
     queue.enqueue(
-        exec,
-        onHost::FrameSpec{extent / frameSize, frameSize},
+        onHost::FrameSpec{extent / frameSize, frameSize, exec},
         KernelBundle{MemoryFenceTestKernel{}, dBuff});
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);

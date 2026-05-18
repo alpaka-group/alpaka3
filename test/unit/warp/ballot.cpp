@@ -103,7 +103,7 @@ TEMPLATE_LIST_TEST_CASE("warp ballot captures predicate lanes", "[warp][ballot]"
     auto const threads = Vec<std::uint32_t, 1u>{4u * warpExtent};
 
     onHost::memset(queue, successDev, static_cast<std::uint8_t>(true));
-    queue.enqueue(exec, onHost::FrameSpec{blocks, threads}, KernelBundle{BallotMultiThreadKernel{}, successDev});
+    queue.enqueue(onHost::FrameSpec{blocks, threads, exec}, KernelBundle{BallotMultiThreadKernel{}, successDev});
     onHost::memcpy(queue, successHost, successDev);
     onHost::wait(queue);
     INFO("backend=" << deviceSpec.getName());

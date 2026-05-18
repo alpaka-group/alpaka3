@@ -58,14 +58,14 @@ TEST_CASE("frame spec concepts", "[concepts][framespec]")
     using TestVec2 = Vec<size_t, 2>;
     using TestVec3 = Vec<size_t, 3>;
 
-    STATIC_CHECK(onHost::concepts::FrameSpec<FrameSpec<TestVec1, TestVec1, TestVec1>>);
-    STATIC_CHECK(onHost::concepts::FrameSpec<FrameSpec<TestVec2, TestVec2, TestVec2>, size_t>);
-    STATIC_CHECK(onHost::concepts::FrameSpec<FrameSpec<TestVec3, TestVec3, TestVec3>, size_t, 3>);
-    STATIC_CHECK(onHost::concepts::FrameSpec<FrameSpec<TestVec2, TestVec2, TestVec2>, size_t, 2>);
+    STATIC_CHECK(onHost::concepts::FrameSpec<FrameSpec<TestVec1, TestVec1>>);
+    STATIC_CHECK(onHost::concepts::FrameSpec<FrameSpec<TestVec2, TestVec2>, size_t>);
+    STATIC_CHECK(onHost::concepts::FrameSpec<FrameSpec<TestVec3, TestVec3>, size_t, 3>);
+    STATIC_CHECK(onHost::concepts::FrameSpec<FrameSpec<TestVec2, TestVec2>, size_t, 2>);
 
-    STATIC_CHECK_FALSE(onHost::concepts::FrameSpec<FrameSpec<TestVec1, TestVec1, TestVec1>, int>);
-    STATIC_CHECK_FALSE(onHost::concepts::FrameSpec<FrameSpec<TestVec2, TestVec2, TestVec2>, size_t, 3>);
-    STATIC_CHECK_FALSE(onHost::concepts::FrameSpec<FrameSpec<TestVec3, TestVec3, TestVec3>, int, 2>);
+    STATIC_CHECK_FALSE(onHost::concepts::FrameSpec<FrameSpec<TestVec1, TestVec1>, int>);
+    STATIC_CHECK_FALSE(onHost::concepts::FrameSpec<FrameSpec<TestVec2, TestVec2>, size_t, 3>);
+    STATIC_CHECK_FALSE(onHost::concepts::FrameSpec<FrameSpec<TestVec3, TestVec3>, int, 2>);
 }
 
 TEST_CASE("thread spec concepts", "[concepts][threadspec]")

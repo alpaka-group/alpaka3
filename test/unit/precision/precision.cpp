@@ -47,8 +47,7 @@ void iotaTest(auto& queue, auto exec, auto kernel, auto const extents, auto fram
     using KenelIdxScalarType = typename ALPAKA_TYPEOF(frameSize)::type;
     onHost::wait(queue);
     queue.enqueue(
-        exec,
-        FrameSpec{pCast<KenelIdxScalarType>(extents) / frameSize, frameSize},
+        FrameSpec{pCast<KenelIdxScalarType>(extents) / frameSize, frameSize, exec},
         KernelBundle{kernel, dBuff});
     onHost::memcpy(queue, hBuff, dBuff);
     onHost::wait(queue);

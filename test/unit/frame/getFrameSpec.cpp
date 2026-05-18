@@ -41,25 +41,25 @@ void checkFrameSpec(onHost::concepts::FrameSpec auto const& frameSpec, concepts:
 }
 
 template<typename T>
-void testScalar(auto const& computeDev)
+void testScalar(auto const& computeDev, alpaka::concepts::Executor auto exec)
 {
     auto testValues = GENERATE(1, 2, 31, 128, 129, 257, 513, 10000, 100000);
 
 
     // test lvalue
-    auto const frameSpec = alpaka::onHost::getFrameSpec<T>(computeDev, testValues);
+    auto const frameSpec = alpaka::onHost::getFrameSpec<T>(computeDev, exec, testValues);
 
     checkFrameSpec(frameSpec, testValues);
 }
 
 template<typename T>
-void testVector(auto const& computeDev)
+void testVector(auto const& computeDev, alpaka::concepts::Executor auto exec)
 {
     auto test = [&](auto vec)
     {
         {
             // test lvalue
-            auto const frameSpec = alpaka::onHost::getFrameSpec<T>(computeDev, vec);
+            auto const frameSpec = alpaka::onHost::getFrameSpec<T>(computeDev, exec, vec);
 
             checkFrameSpec(frameSpec, vec);
         }
@@ -83,10 +83,11 @@ TEMPLATE_LIST_TEST_CASE("getFrameSpec scalar", "", TestBackends)
     auto cfg = TestType::makeDict();
 
     auto deviceSpec = cfg[alpaka::object::deviceSpec];
+    auto exec = cfg[alpaka::object::exec];
     auto devSelector = alpaka::onHost::makeDeviceSelector(deviceSpec);
 
     onHost::Device computeDev = devSelector.makeDevice(0);
-    std::apply([&]<typename... T>(T...) { (testScalar<T>(computeDev), ...); }, TestBufferElemTypes{});
+    std::apply([&]<typename... T>(T...) { (testScalar<T>(computeDev, exec), ...); }, TestBufferElemTypes{});
 }
 
 TEMPLATE_LIST_TEST_CASE("getFrameSpec vector", "", TestBackends)
@@ -94,8 +95,9 @@ TEMPLATE_LIST_TEST_CASE("getFrameSpec vector", "", TestBackends)
     auto cfg = TestType::makeDict();
 
     auto deviceSpec = cfg[alpaka::object::deviceSpec];
+    auto exec = cfg[alpaka::object::exec];
     auto devSelector = alpaka::onHost::makeDeviceSelector(deviceSpec);
 
     onHost::Device computeDev = devSelector.makeDevice(0);
-    std::apply([&]<typename... T>(T...) { (testVector<T>(computeDev), ...); }, TestBufferElemTypes{});
+    std::apply([&]<typename... T>(T...) { (testVector<T>(computeDev, exec), ...); }, TestBufferElemTypes{});
 }

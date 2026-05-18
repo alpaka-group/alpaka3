@@ -225,14 +225,12 @@ struct TestAtomicOperations
         T value = static_cast<T>(32);
 
         queue.enqueue(
-            exec,
-            onHost::FrameSpec{1u, 1u},
+            onHost::FrameSpec{1u, 1u, exec},
             KernelBundle{AtomicTestKernel<alpaka::onAcc::scope::Block, T>{}, status.data(), value});
         REQUIRE(status[0]);
 
         queue.enqueue(
-            exec,
-            onHost::FrameSpec{1u, 1u},
+            onHost::FrameSpec{1u, 1u, exec},
             KernelBundle{AtomicTestKernel<alpaka::onAcc::scope::Device, T>{}, status.data(), value});
 
         REQUIRE(status[0]);

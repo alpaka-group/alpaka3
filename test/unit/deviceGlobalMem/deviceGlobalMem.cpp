@@ -99,8 +99,7 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
     onHost::wait(queue);
     {
         queue.enqueue(
-            exec,
-            FrameSpec{numBlocks, blockExtent},
+            FrameSpec{numBlocks, blockExtent, exec},
             KernelBundle{DeviceGlobalMemKernelVec{}, dBuff, dataExtent});
         onHost::memcpy(queue, hBuff, dBuff);
         onHost::wait(queue);
@@ -115,8 +114,7 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
     // scalar
     {
         queue.enqueue(
-            exec,
-            FrameSpec{numBlocks, blockExtent},
+            FrameSpec{numBlocks, blockExtent, exec},
             KernelBundle{DeviceGlobalMemKernelScalar{}, dBuff, dataExtent});
         onHost::memcpy(queue, hBuff, dBuff);
         onHost::wait(queue);
@@ -131,8 +129,7 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
     // C array
     {
         queue.enqueue(
-            exec,
-            FrameSpec{numBlocks, blockExtent},
+            FrameSpec{numBlocks, blockExtent, exec},
             KernelBundle{DeviceGlobalMemKernelCArray{}, dBuff, dataExtent});
         onHost::memcpy(queue, hBuff, dBuff);
         onHost::wait(queue);
@@ -147,8 +144,7 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
     // C array 2D
     {
         queue.enqueue(
-            exec,
-            FrameSpec{numBlocks, blockExtent},
+            FrameSpec{numBlocks, blockExtent, exec},
             KernelBundle{DeviceGlobalMemKernelCArray2D{}, dBuff, dataExtent});
         onHost::memcpy(queue, hBuff, dBuff);
         onHost::wait(queue);
@@ -231,7 +227,7 @@ TEMPLATE_LIST_TEST_CASE("device global mem copy", "", TestApis)
         queue.enqueueHostFn([&]() { val = 0u; });
         // check that we can copy from device to host
         onHost::memcpy(queue, &val, globalScalar);
-        queue.enqueue(exec, FrameSpec{numBlocks, blockExtent}, KernelBundle{DeviceGlobalMemCpyScalarKernel{}, dBuff});
+        queue.enqueue(FrameSpec{numBlocks, blockExtent, exec}, KernelBundle{DeviceGlobalMemCpyScalarKernel{}, dBuff});
         onHost::memcpy(queue, hBuff, dBuff);
         onHost::wait(queue);
         // check that copy from device to host worked
@@ -260,8 +256,7 @@ TEMPLATE_LIST_TEST_CASE("device global mem copy", "", TestApis)
         queue.enqueueHostFn([&]() { val[1][2] = 0u; });
         onHost::memcpy(queue, val, global2DCArray);
         queue.enqueue(
-            exec,
-            FrameSpec{numBlocks, blockExtent},
+            FrameSpec{numBlocks, blockExtent, exec},
             KernelBundle{DeviceGlobalMemCpyCArray2DKernel{}, dBuff});
         onHost::memcpy(queue, hBuff, dBuff);
         onHost::wait(queue);

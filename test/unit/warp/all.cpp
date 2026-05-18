@@ -91,13 +91,13 @@ TEMPLATE_LIST_TEST_CASE("warp all vote honours only active lanes", "[warp][all]"
 
     auto const blocks = Vec<std::uint32_t, 1u>{5u};
     auto const threads = Vec<std::uint32_t, 1u>{4u * warpExtent};
-    auto const frame = onHost::FrameSpec{blocks, threads};
+    auto const frame = onHost::FrameSpec{blocks, threads, exec};
 
     for(std::uint32_t idx = 0u; idx < warpExtent; ++idx)
     {
         // Iterate over each potential trigger lane to verify masked votes.
         onHost::memset(queue, successDev, static_cast<std::uint8_t>(true));
-        queue.enqueue(exec, frame, KernelBundle{AllMultiThreadKernel{}, successDev, idx});
+        queue.enqueue(frame, KernelBundle{AllMultiThreadKernel{}, successDev, idx});
         onHost::memcpy(queue, successHost, successDev);
         onHost::wait(queue);
         INFO("backend=" << deviceSpec.getName() << " idx=" << idx);

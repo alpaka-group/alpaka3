@@ -69,14 +69,14 @@ TEMPLATE_LIST_TEST_CASE("ffs", "[intrinsic][ffs]", TestBackends)
     alpaka::onHost::memcpy(queue, devInput, hostInput);
 
     // Define execution parameters
-    auto const frameSpec = alpaka::onHost::getFrameSpec<uint64_t>(devAcc, devInput.getExtents());
+    auto const frameSpec = alpaka::onHost::getFrameSpec<uint64_t>(devAcc, computeExec, devInput.getExtents());
 
     // Create kernel
     TestKernel kernel;
     auto const taskKernel = alpaka::KernelBundle{kernel, devOutput, devInput};
 
     // Execute the kernel
-    queue.enqueue(computeExec, frameSpec, taskKernel);
+    queue.enqueue(frameSpec, taskKernel);
 
     // Copy data from device to host
     std::vector<int> hostOutput(size);

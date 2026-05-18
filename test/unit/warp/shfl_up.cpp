@@ -123,7 +123,7 @@ TEMPLATE_LIST_TEST_CASE("warp shflUp shifts toward lower lanes", "[warp][shfl_up
     auto const threads = Vec<std::uint32_t, 1u>{4u * warpExtent};
 
     onHost::memset(queue, successDev, static_cast<std::uint8_t>(true));
-    queue.enqueue(exec, onHost::FrameSpec{blocks, threads}, KernelBundle{ShflUpMultiThreadKernel{}, successDev});
+    queue.enqueue(onHost::FrameSpec{blocks, threads, exec}, KernelBundle{ShflUpMultiThreadKernel{}, successDev});
     onHost::memcpy(queue, successHost, successDev);
     onHost::wait(queue);
     INFO("backend=" << deviceSpec.getName());

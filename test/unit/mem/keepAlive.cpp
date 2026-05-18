@@ -54,10 +54,10 @@ TEMPLATE_LIST_TEST_CASE("keep alive", "", TestApis)
         // enqueue everything in this scope
         auto scopedBuffer = onHost::allocDeferred<int>(queue, N);
 
-        auto framespec = getFrameSpec<int>(device, scopedBuffer.getExtents());
+        auto framespec = getFrameSpec<int>(device, exec, scopedBuffer.getExtents());
 
         // fill scoped buffer
-        queue.enqueue(exec, framespec, KernelBundle{IotaKernel{}, scopedBuffer});
+        queue.enqueue(framespec, KernelBundle{IotaKernel{}, scopedBuffer});
 
         // copy back to the original
         onHost::memcpy(queue, originalBuffer, scopedBuffer);
