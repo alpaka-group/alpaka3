@@ -32,74 +32,127 @@ jobs:
     strategy:
       matrix:
         config:
-          - { compiler: gcc, version: "12", cuda: "no", hip: "no", container: "ubuntu:24.04" }
-          - { compiler: gcc, version: "13", cuda: "no", hip: "no", container: "ubuntu:24.04" }
+          - { compiler: gcc, version: "12", cuda: "no", hip: "no", container: "ubuntu:24.04",
+              env : {APCI_DEVICE_COMPILER : gcc@12} }
+          - { compiler: gcc, version: "13", cuda: "no", hip: "no", container: "ubuntu:24.04",
+              env : {APCI_DEVICE_COMPILER : gcc@13} }
           # tbb backend on
-          - { compiler: gcc, version: "13", cuda: "no", hip: "no", container: "ubuntu:24.04", tbb: "on" }
-          - { compiler: gcc, version: "14", cuda: "no", hip: "no", container: "ubuntu:24.04" }
-          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0" }
-          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0" , simd: "EMULATION", hwloc: "no"  }
+          - { compiler: gcc, version: "13", cuda: "no", hip: "no", container: "ubuntu:24.04", tbb: "on",
+              env : {APCI_DEVICE_COMPILER : gcc@13} }
+          - { compiler: gcc, version: "14", cuda: "no", hip: "no", container: "ubuntu:24.04",
+              env : {APCI_DEVICE_COMPILER: gcc@14} }
+          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0",
+              env : {APCI_DEVICE_COMPILER: gcc@15, ALPAKA_CI_DEVICE_COMPILER_VER : 15} }
+          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0" , simd: "EMULATION", hwloc: "no",
+              env : {APCI_DEVICE_COMPILER: gcc@15} }
           # clang host compiler
-          - { compiler: clang, version: "17", cuda: "no", hip: "no", container: "ubuntu:24.04" }
-          - { compiler: clang, version: "18", cuda: "no", hip: "no", container: "ubuntu:24.04" }
-          - { compiler: clang, version: "19", cuda: "no", hip: "no", container: "ubuntu:24.04" }
-          - { compiler: clang, version: "20", cuda: "no", hip: "no", container: "ubuntu:24.04" }
-          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04" }
-          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", simd: "EMULATION", hwloc: "no"  }
-          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", tbb: "on" }
+          - { compiler: clang, version: "17", cuda: "no", hip: "no", container: "ubuntu:24.04",
+              env : {APCI_DEVICE_COMPILER : clang@17} }
+          - { compiler: clang, version: "18", cuda: "no", hip: "no", container: "ubuntu:24.04",
+              env : {APCI_DEVICE_COMPILER : clang@18} }
+          - { compiler: clang, version: "19", cuda: "no", hip: "no", container: "ubuntu:24.04",
+              env : {APCI_DEVICE_COMPILER : clang@19} }
+          - { compiler: clang, version: "20", cuda: "no", hip: "no", container: "ubuntu:24.04",
+              env : {APCI_DEVICE_COMPILER : clang@20} }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04",
+              env : {APCI_DEVICE_COMPILER : clang@21} }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", simd: "EMULATION", hwloc: "no",
+              env : {APCI_DEVICE_COMPILER : clang@21} }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", tbb: "on",
+              env : {APCI_DEVICE_COMPILER : clang@21} }
           # nvcc CUDA (nvcc does not contain simd option because nvcc can not use std::simd and is always using simd emulation
-          - { compiler: nvcc, version: "", cuda: "12.5", hip: "no", container: "nvidia/cuda:12.5.1-devel-ubuntu24.04" }
-          - { compiler: nvcc, version: "", cuda: "12.6", hip: "no", container: "nvidia/cuda:12.6.3-devel-ubuntu24.04" }
-          - { compiler: nvcc, version: "", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04" }
-          - { compiler: nvcc, version: "", cuda: "12.9", hip: "no", container: "nvidia/cuda:12.9.1-devel-ubuntu24.04" }
-          - { compiler: nvcc, version: "", cuda: "13.0", hip: "no", container: "nvidia/cuda:13.0.0-devel-ubuntu24.04" }
-          - { compiler: nvcc, version: "", cuda: "13.1", hip: "no", container: "nvidia/cuda:13.1.0-devel-ubuntu24.04" }
-          - { compiler: nvcc, version: "", cuda: "13.2", hip: "no", container: "nvidia/cuda:13.2.0-devel-ubuntu24.04" }
+          - { compiler: nvcc, version: "", cuda: "12.5", hip: "no", container: "nvidia/cuda:12.5.1-devel-ubuntu24.04",
+              env : {APCI_DEVICE_COMPILER : nvcc@12.5} }
+          - { compiler: nvcc, version: "", cuda: "12.6", hip: "no", container: "nvidia/cuda:12.6.3-devel-ubuntu24.04",
+              env : {APCI_DEVICE_COMPILER : nvcc@12.6} }
+          - { compiler: nvcc, version: "", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04",
+              env : {APCI_DEVICE_COMPILER : nvcc@12.8} }
+          - { compiler: nvcc, version: "", cuda: "12.9", hip: "no", container: "nvidia/cuda:12.9.1-devel-ubuntu24.04",
+              env : {APCI_DEVICE_COMPILER : nvcc@12.9} }
+          - { compiler: nvcc, version: "", cuda: "13.0", hip: "no", container: "nvidia/cuda:13.0.0-devel-ubuntu24.04",
+              env : {APCI_DEVICE_COMPILER : nvcc@13.0} }
+          - { compiler: nvcc, version: "", cuda: "13.1", hip: "no", container: "nvidia/cuda:13.1.0-devel-ubuntu24.04",
+              env : {APCI_DEVICE_COMPILER : nvcc@13.1} }
+          - { compiler: nvcc, version: "", cuda: "13.2", hip: "no", container: "nvidia/cuda:13.2.0-devel-ubuntu24.04",
+              env : {APCI_DEVICE_COMPILER : nvcc@13.2} }
           # clang-cuda (device compile with clang)
-          - { compiler: clang, version: "20", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04" }
-          - { compiler: clang, version: "21", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04" }
-          - { compiler: clang, version: "21", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04", simd: "EMULATION", hwloc: "no"  }
+          - { compiler: clang, version: "20", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04",
+              env : {APCI_DEVICE_COMPILER : clang@20} }
+          - { compiler: clang, version: "21", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04",
+              env : {APCI_DEVICE_COMPILER : clang@21} }
+          - { compiler: clang, version: "21", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04", simd: "EMULATION", hwloc: "no",
+              env : {APCI_DEVICE_COMPILER : clang@21} }
           # clang with ROCm HIP
-          - { compiler: clang, version: "18", cuda: "no", hip: "6.2.4", container: "rocm/dev-ubuntu-24.04:6.2.4" }
-          - { compiler: clang, version: "18", cuda: "no", hip: "6.3.4", container: "rocm/dev-ubuntu-24.04:6.3.4" }
-          - { compiler: clang, version: "19", cuda: "no", hip: "6.4.2", container: "rocm/dev-ubuntu-24.04:6.4.2" }
-          - { compiler: clang, version: "20", cuda: "no", hip: "7.0", container: "rocm/dev-ubuntu-24.04:7.0" }
-          - { compiler: clang, version: "20", cuda: "no", hip: "7.1", container: "rocm/dev-ubuntu-24.04:7.1" }
-          - { compiler: clang, version: "22", cuda: "no", hip: "7.2", container: "rocm/dev-ubuntu-24.04:7.2" }
-          - { compiler: clang, version: "22", cuda: "no", hip: "7.2", container: "rocm/dev-ubuntu-24.04:7.2", simd: "EMULATION", hwloc: "no"  }
+          - { compiler: clang, version: "18", cuda: "no", hip: "6.2.4", container: "rocm/dev-ubuntu-24.04:6.2.4",
+              env : {APCI_DEVICE_COMPILER : clang@18} }
+          - { compiler: clang, version: "18", cuda: "no", hip: "6.3.4", container: "rocm/dev-ubuntu-24.04:6.3.4",
+              env : {APCI_DEVICE_COMPILER : clang@18} }
+          - { compiler: clang, version: "19", cuda: "no", hip: "6.4.2", container: "rocm/dev-ubuntu-24.04:6.4.2",
+              env : {APCI_DEVICE_COMPILER : clang@19} }
+          - { compiler: clang, version: "20", cuda: "no", hip: "7.0", container: "rocm/dev-ubuntu-24.04:7.0",
+              env : {APCI_DEVICE_COMPILER : clang@20} }
+          - { compiler: clang, version: "20", cuda: "no", hip: "7.1", container: "rocm/dev-ubuntu-24.04:7.1",
+              env : {APCI_DEVICE_COMPILER : clang@20} }
+          - { compiler: clang, version: "22", cuda: "no", hip: "7.2", container: "rocm/dev-ubuntu-24.04:7.2",
+              env : {APCI_DEVICE_COMPILER : clang@22} }
+          - { compiler: clang, version: "22", cuda: "no", hip: "7.2", container: "rocm/dev-ubuntu-24.04:7.2", simd: "EMULATION", hwloc: "no",
+              env : {APCI_DEVICE_COMPILER : clang@22} }
           # SYCL
-          - { compiler: icpx, version: "2025.1", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.1.3-0-devel-ubuntu24.04" }
-          - { compiler: icpx, version: "2025.2", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.2.2-0-devel-ubuntu24.04" }
-          - { compiler: icpx, version: "2025.3", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.3.0-0-devel-ubuntu24.04" }
-          - { compiler: icpx, version: "2025.3", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.3.0-0-devel-ubuntu24.04", simd: "EMULATION", hwloc: "no" }
+          - { compiler: icpx, version: "2025.1", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.1.3-0-devel-ubuntu24.04",
+              env : {APCI_DEVICE_COMPILER : icpx@2025.1} }
+          - { compiler: icpx, version: "2025.2", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.2.2-0-devel-ubuntu24.04",
+              env : {APCI_DEVICE_COMPILER : icpx@2025.2} }
+          - { compiler: icpx, version: "2025.3", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.3.0-0-devel-ubuntu24.04",
+              env : {APCI_DEVICE_COMPILER : icpx@2025.3} }
+          - { compiler: icpx, version: "2025.3", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.3.0-0-devel-ubuntu24.04", simd: "EMULATION", hwloc: "no",
+              env : {APCI_DEVICE_COMPILER : icpx@2025.3} }
           # Use/validate oneAPI-provided oneTBB package with the latest icpx toolchain
-          - { compiler: icpx, version: "2025.3", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.3.0-0-devel-ubuntu24.04", tbb: "on" }
-          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "asan" }
-          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "asan" , simd: "EMULATION", hwloc: "no"  }
-          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "tsan" }
-          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "tsan" , simd: "EMULATION", hwloc: "no"  }
-          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "lsan" }
-          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "lsan" , simd: "EMULATION", hwloc: "no"  }
-          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "ubsan" }
-          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "ubsan" , simd: "EMULATION", hwloc: "no"  }
-          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "asan" }
-          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "asan" , simd: "EMULATION", hwloc: "no"  }
-          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "tsan" }
-          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "tsan" , simd: "EMULATION", hwloc: "no"  }
-          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "lsan" }
-          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "lsan" , simd: "EMULATION", hwloc: "no"  }
-          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "ubsan" }
-          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "ubsan" , simd: "EMULATION", hwloc: "no"  }
+          - { compiler: icpx, version: "2025.3", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.3.0-0-devel-ubuntu24.04", tbb: "on",
+              env : {APCI_DEVICE_COMPILER : icpx@2025.3} }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "asan",
+              env : {APCI_DEVICE_COMPILER : clang@21} }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "asan" , simd: "EMULATION", hwloc: "no",
+              env : {APCI_DEVICE_COMPILER : clang@21} }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "tsan",
+              env : {APCI_DEVICE_COMPILER : clang@21} }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "tsan" , simd: "EMULATION", hwloc: "no",
+              env : {APCI_DEVICE_COMPILER : clang@21} }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "lsan",
+              env : {APCI_DEVICE_COMPILER : clang@21} }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "lsan" , simd: "EMULATION", hwloc: "no",
+              env : {APCI_DEVICE_COMPILER : clang@21} }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "ubsan",
+              env : {APCI_DEVICE_COMPILER : clang@21} }
+          - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "ubsan" , simd: "EMULATION", hwloc: "no",
+              env : {APCI_DEVICE_COMPILER : clang@21} }
+          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "asan",
+              env : {APCI_DEVICE_COMPILER : gcc@15} }
+          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "asan" , simd: "EMULATION", hwloc: "no",
+              env : {APCI_DEVICE_COMPILER : gcc@15} }
+          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "tsan",
+              env : {APCI_DEVICE_COMPILER : gcc@15} }
+          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "tsan" , simd: "EMULATION", hwloc: "no",
+              env : {APCI_DEVICE_COMPILER : gcc@15} }
+          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "lsan",
+              env : {APCI_DEVICE_COMPILER : gcc@15} }
+          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "lsan" , simd: "EMULATION", hwloc: "no",
+              env : {APCI_DEVICE_COMPILER : gcc@15} }
+          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "ubsan",
+              env : {APCI_DEVICE_COMPILER : gcc@15} }
+          - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "ubsan" , simd: "EMULATION", hwloc: "no",
+              env : {APCI_DEVICE_COMPILER : gcc@15} }
       fail-fast: false
 
     # Specify the container to use based on the matrix configuration
     container:
       image: ${{ matrix.config.container }}
+    
+    env: ${{ matrix.config.env }}
 
     steps:
       # Checkout the repository
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # Install base dependencies
       - name: Install base dependencies
@@ -118,22 +171,8 @@ jobs:
           # GCC/Clang jobs use the distro-provided oneTBB development package to satisfy find_package(TBB)
           apt-get update
           apt-get install -y libtbb-dev
-
-      # Install GCC if specified
-      - name: Install GCC
-        if: matrix.config.compiler == 'gcc'
-        run: |
-          # install gcc only if not already available, pre installed gcc can not be called with the version number as postfix
-          if [ $(gcc --version | awk '{print($3)}' | head -n 1 | cut -d"." -f1) -ne ${{matrix.config.version}} ] ; then
-            # install requested GCC if it is not already available
-            if ! command -v gcc-${{ matrix.config.version }} >/dev/null 2>&1; then
-              apt-get update
-              apt-get install -y gcc-${{ matrix.config.version }} g++-${{ matrix.config.version }}
-              # select requested GCC as default
-              update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${{ matrix.config.version }} 100 \
-                                  --slave /usr/bin/g++ g++ /usr/bin/g++-${{ matrix.config.version }}
-            fi
-          fi
+      - name: Install software dependencies
+        run: $GITHUB_WORKSPACE/script/ci/install_dependencies.sh
       # Install Clang if specified
       - name: Install Clang
         if: matrix.config.compiler == 'clang' && matrix.config.hip == 'no'
