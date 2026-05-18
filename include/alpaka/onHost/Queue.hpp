@@ -10,6 +10,7 @@
 #include "alpaka/onHost/Event.hpp"
 #include "alpaka/onHost/concepts.hpp"
 #include "alpaka/onHost/internal/interface.hpp"
+#include "alpaka/onHost/trait.hpp"
 
 #include <memory>
 
@@ -100,78 +101,38 @@ namespace alpaka::onHost
 
         /** Enqueue a kernel functor to a queue.
          *
-         * @param executor Description how native worker threads will be mapped and grouped to compute grid layers
-         * (blocks, threads).
-         * @param domainSpec Thread or frame specification which provides a chunked description of the thread or frame
-         * index domain.
-         * @param f The compute kernel functor.
-         * @param args Arguments passed to the kernel functor.
-         */
-        void enqueue(
-            auto const executor,
-            onHost::concepts::ThreadOrFrameSpec auto const& domainSpec,
-            auto const& f,
-            auto&&... args) const
-        {
-            internal::enqueue(
-                *m_queue.get(),
-                executor,
-                domainSpec,
-                KernelBundle{f, onHost::makeAccessibleOnAcc(ALPAKA_FORWARD(args))...});
-        }
-
-        /** Enqueue a kernel functor to a queue.
-         *
-         * An available default executor is selected automatically. The default executor is the executor with the
-         * highest parallelism/performance.
-         *
-         * @param domainSpec Thread or frame specification which provides a chunked description of the thread or frame
-         * index domain.
-         * @param f The compute kernel functor.
-         * @param args Arguments passed to the kernel functor.
-         */
-        void enqueue(onHost::concepts::ThreadOrFrameSpec auto const& domainSpec, auto const& f, auto&&... args) const
-        {
-            auto executors = supportedExecutors(internal::getDevice(*m_queue.get()), exec::allExecutors);
-            internal::enqueue(
-                *m_queue.get(),
-                std::get<0>(executors),
-                domainSpec,
-                KernelBundle{f, onHost::makeAccessibleOnAcc(ALPAKA_FORWARD(args))...});
-        }
-
-        /** Enqueue a kernel functor to a queue.
-         *
-         * An available default executor is selected automatically. The default executor is the executor with the
-         * highest parallelism/performance.
-         *
-         * @param domainSpec Thread or frame specification which provides a chunked description of the thread or frame
-         * index domain.
-         * @param kernelBundle The compute kernel and its arguments.
-         */
-        template<typename TKernelFn, typename... TArgs>
-        void enqueue(
-            onHost::concepts::ThreadOrFrameSpec auto const& domainSpec,
-            KernelBundle<TKernelFn, TArgs...> const& kernelBundle) const
-        {
-            auto executors = supportedExecutors(internal::getDevice(*m_queue.get()), exec::allExecutors);
-            internal::enqueue(*m_queue.get(), std::get<0>(executors), domainSpec, kernelBundle);
-        }
-
-        /** Enqueue a kernel functor to a queue.
-         *
-         * @param executor Description how native worker threads will be mapped and grouped to compute grid layers
-         * (blocks, threads).
-         * @param domainSpec Thread or frame specification which provides a chunked description of the thread or frame
-         * index domain.
+         * @param launchCfg Thread or frame specification which provides a chunked description of the thread or
+         * frame index domain.
          * @param kernelBundle The compute kernel and its arguments.
          */
         void enqueue(
-            alpaka::concepts::Executor auto const executor,
-            onHost::concepts::ThreadOrFrameSpec auto const& domainSpec,
+            onHost::concepts::ThreadOrFrameSpec auto const& launchCfg,
             alpaka::concepts::KernelBundle auto const& kernelBundle) const
         {
-            internal::enqueue(*m_queue.get(), executor, domainSpec, kernelBundle);
+            if constexpr(ALPAKA_TYPEOF(launchCfg)::getExecutor() == alpaka::exec::anyExecutor)
+            {
+                auto executors
+                    = alpaka::onHost::supportedExecutors(internal::getDevice(*m_queue.get()), exec::allExecutors);
+                FrameSpec frameSpecWithExecutor
+                    = FrameSpec{launchCfg.getNumFrames(), launchCfg.getFrameExtents(), std::get<0>(executors)};
+                internal::enqueue(*m_queue.get(), frameSpecWithExecutor, kernelBundle);
+            }
+            else
+            {
+                internal::enqueue(*m_queue.get(), launchCfg, kernelBundle);
+            }
+        }
+
+        /** Enqueue a kernel functor to a queue.
+         *
+         * @param launchCfg Thread or frame specification which provides a chunked description of the thread or
+         * frame index domain.
+         * @param f The compute kernel functor.
+         * @param args Arguments passed to the kernel functor.
+         */
+        void enqueue(onHost::concepts::ThreadOrFrameSpec auto const& launchCfg, auto const& f, auto&&... args) const
+        {
+            enqueue(launchCfg, KernelBundle{f, onHost::makeAccessibleOnAcc(ALPAKA_FORWARD(args))...});
         }
 
         /** Enqueue an operation which is executed on the host side.

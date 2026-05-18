@@ -101,9 +101,12 @@ namespace alpaka::onHost
         };
     } // namespace cpu
 
-    inline auto makeAcc(exec::CpuOmpBlocks, auto const& threadBlocking, uint32_t numaIdx, bool setThreadAffinity)
+    inline auto makeAcc(
+        alpaka::onHost::concepts::ThreadSpec auto const& threadSpec,
+        uint32_t numaIdx,
+        bool setThreadAffinity) requires std::same_as<ALPAKA_TYPEOF(threadSpec.getExecutor()), exec::CpuOmpBlocks>
     {
-        return cpu::OmpBlocks(threadBlocking, numaIdx, setThreadAffinity);
+        return cpu::OmpBlocks(threadSpec, numaIdx, setThreadAffinity);
     }
 } // namespace alpaka::onHost
 

@@ -187,36 +187,7 @@ namespace alpaka::onHost
             alpaka::concepts::Api T_Api,
             alpaka::concepts::DeviceKind T_DeviceKind,
             alpaka::concepts::Executor T_Executor,
-            typename TKernelBundle,
-            typename T_OptimizedThreadSpec,
-            typename T_NumFrames,
-            typename T_FrameSize>
-        __global__ void gpuKernel(
-            TKernelBundle const kernelBundle,
-            T_OptimizedThreadSpec const optimizedThreadSpec,
-            T_NumFrames const numFrames,
-            T_FrameSize const frameExtent)
-        {
-            constexpr auto warpSizeValue = alpaka::onAcc::unifiedCudaHip::internal::WarpSize::Get<T_DeviceKind>{}();
-            auto acc = onAcc::Acc{
-                Dict{
-                    DictEntry(layer::block, onAcc::unifiedCudaHip::BlockLayer{optimizedThreadSpec}),
-                    DictEntry(layer::thread, onAcc::unifiedCudaHip::ThreadLayer{optimizedThreadSpec}),
-                    DictEntry(frame::count, numFrames),
-                    DictEntry(frame::extent, frameExtent),
-                    DictEntry(action::threadBlockSync, onAcc::unifiedCudaHip::Sync{}),
-                    DictEntry(object::api, T_Api{}),
-                    DictEntry(object::deviceKind, T_DeviceKind{}),
-                    DictEntry(object::exec, T_Executor{}),
-                    DictEntry(object::warpSize, warpSizeValue)},
-            };
-            kernelBundle(acc);
-        }
-
-        template<
-            alpaka::concepts::Api T_Api,
-            alpaka::concepts::DeviceKind T_DeviceKind,
-            alpaka::concepts::Executor T_Executor,
+            bool launchedWidthFrameSpec,
             typename TKernelBundle,
             typename T_OptimizedThreadSpec>
         __global__ void gpuKernel(TKernelBundle const kernelBundle, T_OptimizedThreadSpec const optimizedThreadSpec)
@@ -226,6 +197,7 @@ namespace alpaka::onHost
                 Dict{
                     DictEntry(layer::block, onAcc::unifiedCudaHip::BlockLayer{optimizedThreadSpec}),
                     DictEntry(layer::thread, onAcc::unifiedCudaHip::ThreadLayer{optimizedThreadSpec}),
+                    DictEntry(object::launchedWidthFrameSpec, std::bool_constant<launchedWidthFrameSpec>{}),
                     DictEntry(action::threadBlockSync, onAcc::unifiedCudaHip::Sync{}),
                     DictEntry(object::api, T_Api{}),
                     DictEntry(object::deviceKind, T_DeviceKind{}),
@@ -268,19 +240,22 @@ namespace alpaka::onHost
             };
 
             template<
-                alpaka::concepts::Executor T_Executor,
+                bool launchedWidthFrameSpec,
                 typename T_Device,
-                typename T_NumBlocks,
-                typename T_NumThreads,
-                typename T_KernelBundle,
-                typename... T_Args>
+                alpaka::concepts::Vector T_NumBlocks,
+                alpaka::concepts::Vector T_NumThreads,
+                alpaka::concepts::Executor T_Executor,
+                typename T_KernelBundle>
             void operator()(
-                T_Executor const,
                 unifiedCudaHip::Queue<T_Device>& queue,
-                ThreadSpec<T_NumBlocks, T_NumThreads> const& threadSpec,
-                T_KernelBundle const& kernelBundle,
-                T_Args const&... args) const
+                ThreadSpec<T_NumBlocks, T_NumThreads, T_Executor> const& threadSpec,
+                T_KernelBundle const& kernelBundle) const
             {
+                static_assert(
+                    ALPAKA_TYPEOF(threadSpec)::getExecutor() != exec::anyExecutor,
+                    "'exec::anyExecutor' can not be used to enqueue an kernel.");
+                ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::queue);
+
                 using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
                     ApiInterface,
@@ -318,9 +293,9 @@ namespace alpaka::onHost
                     ALPAKA_TYPEOF(getApi(queue)),
                     ALPAKA_TYPEOF(getDeviceKind(queue)),
                     T_Executor,
+                    launchedWidthFrameSpec,
                     T_KernelBundle,
-                    ALPAKA_TYPEOF(optimizedThreadSpec),
-                    T_Args...>;
+                    ALPAKA_TYPEOF(optimizedThreadSpec)>;
 
                 uint32_t blockDynSharedMemBytes
                     = onHost::getDynSharedMemBytes(exec::gpuCuda, threadSpec, kernelBundle);
@@ -329,7 +304,7 @@ namespace alpaka::onHost
                     convertVecToUniformCudaHipDim(numBlocks),
                     convertVecToUniformCudaHipDim(numThreadsPerBlock),
                     static_cast<std::size_t>(blockDynSharedMemBytes),
-                    queue.getNativeHandle()>>>(kernelBundle, optimizedThreadSpec, args...);
+                    queue.getNativeHandle()>>>(kernelBundle, optimizedThreadSpec);
 
                 queue.conditionalWait();
             }
@@ -445,20 +420,19 @@ namespace alpaka::onHost
         template<
             typename T_Device,
             alpaka::concepts::UnifiedCudaHipExecutor T_Executor,
-            typename T_NumBlocks,
-            typename T_NumThreads,
+            alpaka::concepts::Vector T_NumBlocks,
+            alpaka::concepts::Vector T_NumThreads,
             typename T_KernelBundle>
         struct Enqueue::
-            Kernel<unifiedCudaHip::Queue<T_Device>, T_Executor, ThreadSpec<T_NumBlocks, T_NumThreads>, T_KernelBundle>
+            Kernel<unifiedCudaHip::Queue<T_Device>, ThreadSpec<T_NumBlocks, T_NumThreads, T_Executor>, T_KernelBundle>
         {
             void operator()(
                 unifiedCudaHip::Queue<T_Device>& queue,
-                T_Executor const executor,
-                ThreadSpec<T_NumBlocks, T_NumThreads> const& threadBlocking,
+                ThreadSpec<T_NumBlocks, T_NumThreads, T_Executor> const& threadSpec,
                 T_KernelBundle const& kernelBundle) const
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::queue);
-                unifiedCudaHip::CallKernel{}(executor, queue, threadBlocking, kernelBundle);
+                unifiedCudaHip::CallKernel{}.template operator()<false>(queue, threadSpec, kernelBundle);
             }
         };
 
@@ -467,30 +441,21 @@ namespace alpaka::onHost
             alpaka::concepts::UnifiedCudaHipExecutor T_Executor,
             typename T_NumFrames,
             typename T_FrameExtents,
-            typename T_ThreadExtents,
             typename T_KernelBundle>
-        struct Enqueue::Kernel<
-            unifiedCudaHip::Queue<T_Device>,
-            T_Executor,
-            FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents>,
-            T_KernelBundle>
+        struct Enqueue::
+            Kernel<unifiedCudaHip::Queue<T_Device>, FrameSpec<T_NumFrames, T_FrameExtents, T_Executor>, T_KernelBundle>
         {
             void operator()(
                 unifiedCudaHip::Queue<T_Device>& queue,
-                T_Executor const executor,
-                FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents> const& frameSpec,
+                FrameSpec<T_NumFrames, T_FrameExtents, T_Executor> const& frameSpec,
                 T_KernelBundle const& kernelBundle) const
             {
+                static_assert(
+                    ALPAKA_TYPEOF(frameSpec)::getExecutor() != exec::anyExecutor,
+                    "'exec::anyExecutor' can not be used to enqueue an kernel.");
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::queue);
-                auto threadBlocking
-                    = internal::adjustThreadSpec(*queue.m_device.get(), executor, frameSpec, kernelBundle);
-                unifiedCudaHip::CallKernel{}(
-                    executor,
-                    queue,
-                    threadBlocking,
-                    kernelBundle,
-                    frameSpec.getNumFrames(),
-                    frameSpec.getFrameExtents());
+                auto threadBlocking = internal::adjustThreadSpec(*queue.m_device.get(), frameSpec, kernelBundle);
+                unifiedCudaHip::CallKernel{}.template operator()<true>(queue, threadBlocking, kernelBundle);
             }
         };
 

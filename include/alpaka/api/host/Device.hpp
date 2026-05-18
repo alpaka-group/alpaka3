@@ -298,74 +298,79 @@ namespace alpaka::onHost
          */
         template<
             typename T_Platform,
-            onHost::concepts::FrameSpec T_FrameSpec,
+            alpaka::concepts::Vector T_NumFrames,
+            alpaka::concepts::Vector T_FrameExtents,
             alpaka::concepts::KernelBundle T_KernelBundle>
-        struct AdjustThreadSpec::Op<cpu::Device<T_Platform>, exec::CpuSerial, T_FrameSpec, T_KernelBundle>
+        struct AdjustThreadSpec::
+            Op<cpu::Device<T_Platform>, FrameSpec<T_NumFrames, T_FrameExtents, exec::CpuSerial>, T_KernelBundle>
         {
-            using T_NumThreads = T_FrameSpec::ThreadExtentsVecType;
+            using FrameSpecType = FrameSpec<T_NumFrames, T_FrameExtents, exec::CpuSerial>;
 
             auto operator()(
                 cpu::Device<T_Platform> const& device,
-                exec::CpuSerial const& executor,
-                T_FrameSpec const& dataBlocking,
-                T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
+                FrameSpecType const& frameSpec,
+                T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_FrameExtents>
             {
-                alpaka::unused(device, executor, dataBlocking, kernelBundle);
+                alpaka::unused(device, kernelBundle);
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel);
+
                 /// @todo add shortcut to create a CVec with equal values
-                auto const allOne
-                    = ALPAKA_TYPEOF(iotaCVec<typename T_NumThreads::type, T_NumThreads::dim()>())::template fill<1u>();
-                return ThreadSpec{allOne, allOne};
+                auto const allOne = ALPAKA_TYPEOF(
+                    iotaCVec<typename T_FrameExtents::type, T_FrameExtents::dim()>())::template fill<1u>();
+                return ThreadSpec{allOne, allOne, frameSpec.getExecutor()};
             }
 
             auto operator()(
                 cpu::Device<T_Platform> const& device,
-                exec::CpuSerial const& executor,
-                T_FrameSpec const& dataBlocking,
+                FrameSpecType const& frameSpec,
                 T_KernelBundle const& kernelBundle) const
             {
-                alpaka::unused(device, executor, dataBlocking, kernelBundle);
+                alpaka::unused(device, kernelBundle);
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel);
                 /// @todo add shortcut to create a CVec with equal values
-                auto const allOne
-                    = ALPAKA_TYPEOF(iotaCVec<typename T_NumThreads::type, T_NumThreads::dim()>())::template fill<1u>();
-                return ThreadSpec{allOne, allOne};
+                auto const allOne = ALPAKA_TYPEOF(
+                    iotaCVec<typename T_FrameExtents::type, T_FrameExtents::dim()>())::template fill<1u>();
+                return ThreadSpec{allOne, allOne, frameSpec.getExecutor()};
             }
         };
 
         template<
             typename T_Platform,
             alpaka::concepts::Executor T_Executor,
-            onHost::concepts::FrameSpec T_FrameSpec,
+            alpaka::concepts::Vector T_NumFrames,
+            alpaka::concepts::Vector T_FrameExtents,
             alpaka::concepts::KernelBundle T_KernelBundle>
         requires exec::isSeqExecutor_v<T_Executor>
-        struct AdjustThreadSpec::Op<cpu::Device<T_Platform>, T_Executor, T_FrameSpec, T_KernelBundle>
+        struct AdjustThreadSpec::
+            Op<cpu::Device<T_Platform>, FrameSpec<T_NumFrames, T_FrameExtents, T_Executor>, T_KernelBundle>
         {
-            using T_NumThreads = T_FrameSpec::ThreadExtentsVecType;
+            using FrameSpecType = FrameSpec<T_NumFrames, T_FrameExtents, T_Executor>;
 
             auto operator()(
                 cpu::Device<T_Platform> const& device,
-                T_Executor const& executor,
-                T_FrameSpec const& dataBlocking,
-                T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_NumThreads>
+                FrameSpecType const& frameSpec,
+                T_KernelBundle const& kernelBundle) const requires alpaka::concepts::CVector<T_FrameExtents>
             {
-                alpaka::unused(device, executor, kernelBundle);
+                alpaka::unused(device, kernelBundle);
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel);
-                auto numThreadBlocks = dataBlocking.getThreadSpec().getNumBlocks();
-                return ThreadSpec{numThreadBlocks, T_NumThreads::template fill<1u>()};
+
+                // map the number of frames to thread blocks
+                auto numThreadBlocks = frameSpec.getNumFrames();
+                return ThreadSpec{numThreadBlocks, T_FrameExtents::template fill<1u>(), frameSpec.getExecutor()};
             }
 
             auto operator()(
                 cpu::Device<T_Platform> const& device,
-                T_Executor const& executor,
-                T_FrameSpec const& dataBlocking,
+                FrameSpecType const& frameSpec,
                 T_KernelBundle const& kernelBundle) const
             {
-                alpaka::unused(device, executor, kernelBundle);
+                alpaka::unused(device, kernelBundle);
                 ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::kernel);
-                auto numThreadBlocks = dataBlocking.getThreadSpec().getNumBlocks();
-                auto const numThreads = Vec<typename T_NumThreads::type, T_NumThreads::dim()>::fill(1);
-                return ThreadSpec{numThreadBlocks, numThreads};
+
+                // map the number of frames to thread blocks
+                auto numThreadBlocks = frameSpec.getNumFrames();
+                auto const numThreads = Vec<typename T_FrameExtents::type, T_FrameExtents::dim()>::fill(1);
+                return ThreadSpec{numThreadBlocks, numThreads, frameSpec.getExecutor()};
             }
         };
 

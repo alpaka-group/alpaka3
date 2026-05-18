@@ -319,21 +319,104 @@ namespace alpaka::onHost::internal
     template<
         typename T_Device,
         alpaka::concepts::Executor T_Executor,
-        onHost::concepts::ThreadSpec T_ThreadSpec,
+        alpaka::concepts::Vector T_NumBlocks,
+        alpaka::concepts::Vector T_NumThreads,
         alpaka::concepts::KernelBundle T_KernelBundle>
-    struct Enqueue::Kernel<syclGeneric::Queue<T_Device>, T_Executor, T_ThreadSpec, T_KernelBundle>
+    struct Enqueue::
+        Kernel<syclGeneric::Queue<T_Device>, ThreadSpec<T_NumBlocks, T_NumThreads, T_Executor>, T_KernelBundle>
     {
         void operator()(
             syclGeneric::Queue<T_Device>& queue,
-            T_Executor const executor,
-            T_ThreadSpec const& threadBlocking,
+            ThreadSpec<T_NumBlocks, T_NumThreads, T_Executor> const& threadSpec,
             T_KernelBundle const& kernelBundle) const
         {
+            static_assert(
+                ALPAKA_TYPEOF(threadSpec)::getExecutor() != exec::anyExecutor,
+                "'exec::anyExecutor' can not be used to enqueue an kernel.");
+            ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::queue);
+
             constexpr auto st_shared_mem_bytes = onAcc::oneApi::StaticSharedMemory::sizeLookupBufferInBytes(
                 ALPAKA_SYCL_NUM_MAX_SHARED_MEMORY_ALLOCATIONS);
             // allocate dynamic shared memory -- needs at least 1 byte to make the Xilinx Runtime happy
             u_int32_t blockDynSharedMemBytes
-                = std::max(u_int32_t(1), onHost::getDynSharedMemBytes(executor, threadBlocking, kernelBundle));
+                = std::max(u_int32_t(1), onHost::getDynSharedMemBytes(T_Executor{}, threadSpec, kernelBundle));
+            assert(
+                st_shared_mem_bytes + blockDynSharedMemBytes
+                <= queue.m_device->getNativeHandle().first.template get_info<sycl::info::device::local_mem_size>());
+
+            sycl::event ev = queue.dispatchWarpSize(
+                [&](auto warpSize) requires std::same_as<
+                    std::integral_constant<
+                        typename ALPAKA_TYPEOF(warpSize)::value_type,
+                        ALPAKA_TYPEOF(warpSize)::value>,
+                    ALPAKA_TYPEOF(warpSize)>
+                {
+                    return queue.m_queue.submit(
+                        [warpSize, threadSpec, kernelBundle, blockDynSharedMemBytes](sycl::handler& cgh)
+                        {
+                            using ApiType = decltype(getApi(queue));
+                            using DeviceKindType = ALPAKA_TYPEOF(getDeviceKind(queue));
+
+                            auto st_shared_accessor
+                                = sycl::local_accessor<std::byte>{sycl::range<1>{st_shared_mem_bytes}, cgh};
+
+                            auto dyn_shared_accessor
+                                = sycl::local_accessor<std::byte>{sycl::range<1>{blockDynSharedMemBytes}, cgh};
+
+                            auto workerDesc = detail::getWorkerDescription(threadSpec);
+                            auto optimizedThreadSpec = workerDesc.second;
+                            constexpr uint32_t syclDim = workerDesc.first.dimensions;
+
+                            constexpr uint32_t w = ALPAKA_TYPEOF(warpSize)::value;
+                            detail::EnqueueKernelWithWarpSize<syclDim, w, ALPAKA_SYCL_SUBGROUP_SIZE & w>::call(
+                                cgh,
+                                workerDesc.first,
+                                kernelBundle,
+                                st_shared_accessor,
+                                dyn_shared_accessor,
+                                optimizedThreadSpec,
+                                DictEntry(object::api, ApiType{}),
+                                DictEntry(object::deviceKind, DeviceKindType{}),
+                                DictEntry(object::exec, T_Executor{}),
+                                DictEntry(object::launchedWidthFrameSpec, std::bool_constant<false>{}),
+                                DictEntry(object::warpSize, warpSize));
+                        });
+                });
+
+            queue.setLastEvent(ev);
+            if(queue.isBlocking())
+                ev.wait_and_throw();
+        }
+    };
+
+    template<
+        typename T_Device,
+        alpaka::concepts::Executor T_Executor,
+        alpaka::concepts::Vector T_NumFrames,
+        alpaka::concepts::Vector T_FrameExtents,
+        alpaka::concepts::KernelBundle T_KernelBundle>
+    struct Enqueue::
+        Kernel<syclGeneric::Queue<T_Device>, FrameSpec<T_NumFrames, T_FrameExtents, T_Executor>, T_KernelBundle>
+    {
+        void operator()(
+            syclGeneric::Queue<T_Device>& queue,
+            FrameSpec<T_NumFrames, T_FrameExtents, T_Executor> const& frameSpec,
+            T_KernelBundle const& kernelBundle) const
+        {
+            static_assert(
+                ALPAKA_TYPEOF(frameSpec)::getExecutor() != exec::anyExecutor,
+                "'exec::anyExecutor' can not be used to enqueue an kernel.");
+            ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::queue);
+
+            auto const threadBlocking = internal::adjustThreadSpec(*queue.m_device.get(), frameSpec, kernelBundle);
+
+            constexpr auto st_shared_mem_bytes = onAcc::oneApi::StaticSharedMemory::sizeLookupBufferInBytes(
+                ALPAKA_SYCL_NUM_MAX_SHARED_MEMORY_ALLOCATIONS);
+
+            // allocate dynamic shared memory -- needs at least 1 byte to make the Xilinx Runtime happy
+            u_int32_t blockDynSharedMemBytes
+                = std::max(u_int32_t(1), onHost::getDynSharedMemBytes(T_Executor{}, threadBlocking, kernelBundle));
+
             assert(
                 st_shared_mem_bytes + blockDynSharedMemBytes
                 <= queue.m_device->getNativeHandle().first.template get_info<sycl::info::device::local_mem_size>());
@@ -350,77 +433,6 @@ namespace alpaka::onHost::internal
                         {
                             using ApiType = decltype(getApi(queue));
                             using DeviceKindType = ALPAKA_TYPEOF(getDeviceKind(queue));
-
-                            auto st_shared_accessor
-                                = sycl::local_accessor<std::byte>{sycl::range<1>{st_shared_mem_bytes}, cgh};
-
-                            auto dyn_shared_accessor
-                                = sycl::local_accessor<std::byte>{sycl::range<1>{blockDynSharedMemBytes}, cgh};
-
-                            auto workerDesc = detail::getWorkerDescription(threadBlocking);
-                            auto optimizedThreadSpec = workerDesc.second;
-                            constexpr uint32_t syclDim = workerDesc.first.dimensions;
-
-                            constexpr uint32_t w = ALPAKA_TYPEOF(warpSize)::value;
-                            detail::EnqueueKernelWithWarpSize<syclDim, w, ALPAKA_SYCL_SUBGROUP_SIZE & w>::call(
-                                cgh,
-                                workerDesc.first,
-                                kernelBundle,
-                                st_shared_accessor,
-                                dyn_shared_accessor,
-                                optimizedThreadSpec,
-                                DictEntry(object::api, ApiType{}),
-                                DictEntry(object::deviceKind, DeviceKindType{}),
-                                DictEntry(object::exec, T_Executor{}),
-                                DictEntry(object::warpSize, warpSize));
-                        });
-                });
-
-            queue.setLastEvent(ev);
-            if(queue.isBlocking())
-                ev.wait_and_throw();
-        }
-    };
-
-    template<
-        typename T_Device,
-        alpaka::concepts::Executor T_Executor,
-        onHost::concepts::FrameSpec T_FrameSpec,
-        alpaka::concepts::KernelBundle T_KernelBundle>
-    struct Enqueue::Kernel<syclGeneric::Queue<T_Device>, T_Executor, T_FrameSpec, T_KernelBundle>
-    {
-        void operator()(
-            syclGeneric::Queue<T_Device>& queue,
-            T_Executor const executor,
-            T_FrameSpec const& frameSpec,
-            T_KernelBundle const& kernelBundle) const
-        {
-            auto const threadBlocking
-                = internal::adjustThreadSpec(*queue.m_device.get(), executor, frameSpec, kernelBundle);
-
-            constexpr auto st_shared_mem_bytes = onAcc::oneApi::StaticSharedMemory::sizeLookupBufferInBytes(
-                ALPAKA_SYCL_NUM_MAX_SHARED_MEMORY_ALLOCATIONS);
-
-            // allocate dynamic shared memory -- needs at least 1 byte to make the Xilinx Runtime happy
-            u_int32_t blockDynSharedMemBytes
-                = std::max(u_int32_t(1), onHost::getDynSharedMemBytes(executor, threadBlocking, kernelBundle));
-
-            assert(
-                st_shared_mem_bytes + blockDynSharedMemBytes
-                <= queue.m_device->getNativeHandle().first.template get_info<sycl::info::device::local_mem_size>());
-
-            sycl::event ev = queue.dispatchWarpSize(
-                [&](auto warpSize) requires std::same_as<
-                    std::integral_constant<
-                        typename ALPAKA_TYPEOF(warpSize)::value_type,
-                        ALPAKA_TYPEOF(warpSize)::value>,
-                    ALPAKA_TYPEOF(warpSize)>
-                {
-                    return queue.m_queue.submit(
-                        [warpSize, threadBlocking, frameSpec, kernelBundle, blockDynSharedMemBytes](sycl::handler& cgh)
-                        {
-                            using ApiType = decltype(getApi(queue));
-                            using DeviceKindType = ALPAKA_TYPEOF(getDeviceKind(queue));
                             auto st_shared_accessor
                                 = sycl::local_accessor<std::byte>{sycl::range<1>{st_shared_mem_bytes}, cgh};
                             auto dyn_shared_accessor
@@ -442,8 +454,7 @@ namespace alpaka::onHost::internal
                                 DictEntry(object::api, ApiType{}),
                                 DictEntry(object::deviceKind, DeviceKindType{}),
                                 DictEntry(object::exec, T_Executor{}),
-                                DictEntry(frame::count, frameSpec.getNumFrames()),
-                                DictEntry(frame::extent, frameSpec.getFrameExtents()),
+                                DictEntry(object::launchedWidthFrameSpec, std::bool_constant<true>{}),
                                 DictEntry(object::warpSize, warpSize));
                         });
                 });

@@ -72,6 +72,24 @@ namespace alpaka::onAcc
             return T_Storage::operator[](object::deviceKind);
         }
 
+        /** Check if a frame spec was used to enqueue the kernel
+         *
+         * To be able to use the result as constexpr value you must call the static function via the type
+         * `Acc_t::launchedWithFrameSpec()` else the warp size can only be used as runtime value.
+         *
+         * If the kernel was enqueued via a frame specification the thread specification to within the kernel can
+         * differ, the number of thread block is not necessary equal to the number of frames and the thread block
+         * extent is not necessary equal to the frame extents.
+         *
+         * @return true if the kernel was launched based on a frame specification, false if a thread specification was
+         * used.
+         */
+        static constexpr bool launchedWithFrameSpec()
+        {
+            // is std::true_type or std::false_type
+            return ALPAKA_TYPEOF(std::declval<T_Storage>()[object::launchedWidthFrameSpec])::value;
+        }
+
         /** Get the warp size
          *
          * To be able to use the warp size as constexpr value you must call the static function via the type

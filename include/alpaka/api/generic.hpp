@@ -69,7 +69,8 @@ namespace alpaka::internal::generic
         ALPAKA_LOG_FUNCTION(onHost::logger::memory);
 
         auto extents = onHost::getExtents(dest);
-        auto frameSpec = onHost::internal::getFrameSpec<T_Value>(*onHost::internal::getDevice(internalQueue), extents);
+        auto frameSpec
+            = onHost::internal::getFrameSpec<T_Value>(*onHost::internal::getDevice(internalQueue), executor, extents);
 
         ALPAKA_LOG_INFO(
             onHost::logger::memory,
@@ -81,10 +82,6 @@ namespace alpaka::internal::generic
                 return ss.str();
             });
 
-        onHost::internal::enqueue(
-            internalQueue,
-            executor,
-            frameSpec,
-            KernelBundle{SimdFillKernel{}, dest, elementValue});
+        onHost::internal::enqueue(internalQueue, frameSpec, KernelBundle{SimdFillKernel{}, dest, elementValue});
     }
 } // namespace alpaka::internal::generic

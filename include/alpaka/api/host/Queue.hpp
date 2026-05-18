@@ -147,12 +147,12 @@ namespace alpaka::onHost
 
             friend struct internal::Enqueue;
 
-            template<alpaka::concepts::Vector T_NumBlocks, alpaka::concepts::Vector T_NumThreads>
-            void enqueue(
-                auto const executor,
-                ThreadSpec<T_NumBlocks, T_NumThreads> const& threadBlocking,
-                auto const& kernelBundle)
+            template<alpaka::onHost::concepts::ThreadSpec T_ThreadSpec>
+            void enqueue(T_ThreadSpec const& threadSpec, auto const& kernelBundle)
             {
+                static_assert(
+                    ALPAKA_TYPEOF(threadSpec)::getExecutor() != exec::anyExecutor,
+                    "'exec::anyExecutor' can not be used to enqueue an kernel.");
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::queue);
                 auto deviceKind = alpaka::getDeviceKind(m_device);
 
@@ -161,29 +161,26 @@ namespace alpaka::onHost
                  * by the callback thread. */
                 bool setThreadAffinity = m_isBlocking;
                 submit(
-                    [kernelBundle, executor, threadBlocking, deviceKind, numIdx = m_numaIdx, setThreadAffinity]()
+                    [kernelBundle, threadSpec, deviceKind, numIdx = m_numaIdx, setThreadAffinity]()
                     {
                         auto moreLayer = Dict{
+                            DictEntry(object::launchedWidthFrameSpec, std::false_type{}),
                             DictEntry(object::api, api::host),
                             DictEntry(object::deviceKind, deviceKind),
-                            DictEntry(object::exec, executor)};
-                        onAcc::Acc acc = makeAcc(executor, threadBlocking, numIdx, setThreadAffinity);
+                            DictEntry(object::exec, threadSpec.getExecutor())};
+                        onAcc::Acc acc = makeAcc(threadSpec, numIdx, setThreadAffinity);
                         acc(kernelBundle, moreLayer);
                     });
             }
 
-            template<
-                alpaka::concepts::Executor T_Executor,
-                alpaka::concepts::Vector T_NumFrames,
-                alpaka::concepts::Vector T_FrameExtents,
-                alpaka::concepts::Vector T_ThreadExtents>
-            void enqueue(
-                T_Executor const executor,
-                FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents> const& frameSpec,
-                auto const& kernelBundle)
+            template<alpaka::onHost::concepts::FrameSpec T_FrameSpec>
+            void enqueue(T_FrameSpec const& frameSpec, auto const& kernelBundle)
             {
+                static_assert(
+                    ALPAKA_TYPEOF(frameSpec)::getExecutor() != exec::anyExecutor,
+                    "'exec::anyExecutor' can not be used to enqueue an kernel.");
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::queue);
-                auto threadBlocking = internal::adjustThreadSpec(*m_device.get(), executor, frameSpec, kernelBundle);
+                auto adjustedThreadSpec = internal::adjustThreadSpec(*m_device.get(), frameSpec, kernelBundle);
                 auto deviceKind = alpaka::getDeviceKind(m_device);
 
                 /* Only set the thread affinity if we use a blocking queue, else the affinity is already set in the
@@ -191,21 +188,14 @@ namespace alpaka::onHost
                  * by the callback thread. */
                 bool setThreadAffinity = m_isBlocking;
                 submit(
-                    [kernelBundle,
-                     executor,
-                     threadBlocking,
-                     deviceKind,
-                     frameSpec,
-                     numIdx = m_numaIdx,
-                     setThreadAffinity]()
+                    [kernelBundle, adjustedThreadSpec, deviceKind, numIdx = m_numaIdx, setThreadAffinity]()
                     {
                         auto moreLayer = Dict{
-                            DictEntry(frame::count, frameSpec.getNumFrames()),
-                            DictEntry(frame::extent, frameSpec.getFrameExtents()),
+                            DictEntry(object::launchedWidthFrameSpec, std::true_type{}),
                             DictEntry(object::api, api::host),
                             DictEntry(object::deviceKind, deviceKind),
-                            DictEntry(object::exec, executor)};
-                        onAcc::Acc acc = makeAcc(executor, threadBlocking, numIdx, setThreadAffinity);
+                            DictEntry(object::exec, adjustedThreadSpec.getExecutor())};
+                        onAcc::Acc acc = makeAcc(adjustedThreadSpec, numIdx, setThreadAffinity);
                         acc(kernelBundle, moreLayer);
                     });
             }

@@ -49,7 +49,7 @@ namespace alpaka::onHost::internal
         alpaka::concepts::IDataSource auto&&... in)
     {
         Vec const extentMd = extents;
-        auto frameSpec = getFrameSpec<T_DataType>(queue.getDevice(), extentMd);
+        auto frameSpec = getFrameSpec<T_DataType>(queue.getDevice(), exec, extentMd);
 
         ALPAKA_LOG_INFO(
             onHost::logger::memory,
@@ -62,7 +62,6 @@ namespace alpaka::onHost::internal
             });
 
         queue.enqueue(
-            exec,
             frameSpec,
             KernelBundle{SimdConcurrentKernel{}, extentMd, ALPAKA_FORWARD(fn), ALPAKA_FORWARD(in)...});
     }

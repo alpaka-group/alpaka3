@@ -31,6 +31,8 @@ namespace alpaka
 
         ALPAKA_TAG(exec);
 
+        ALPAKA_TAG(launchedWidthFrameSpec);
+
         ALPAKA_TAG(deviceSpec);
 
         ALPAKA_TAG(dynSharedMemBytes);
@@ -261,12 +263,6 @@ namespace alpaka
         ALPAKA_TAG(shared);
         ALPAKA_TAG(dynShared);
     } // namespace layer
-
-    namespace frame
-    {
-        ALPAKA_TAG(count);
-        ALPAKA_TAG(extent);
-    } // namespace frame
 
     namespace action
     {

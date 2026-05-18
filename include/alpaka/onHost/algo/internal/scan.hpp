@@ -117,17 +117,17 @@ namespace alpaka::onHost::internal
     public:
         ALPAKA_FN_ACC void operator()(
             auto const& acc,
+            alpaka::concepts::Vector auto const numChunks,
+            alpaka::concepts::CVector auto const largeChunkExtents,
             alpaka::concepts::IDataSource auto const& inputVec,
             alpaka::concepts::IMdSpan auto outputVec,
             auto... blockSums) const
         {
             using DeviceType = ALPAKA_TYPEOF(acc.getDeviceKind());
             using AccType = ALPAKA_TYPEOF(acc);
-            alpaka::concepts::Vector auto numFrames = acc[frame::count];
 
             alpaka::concepts::CVector auto numThreadsPerBlock = acc[layer::thread].count();
-            alpaka::concepts::CVector auto frameExtent = acc[frame::extent];
-            constexpr std::integral auto elsPerThread = frameExtent.x() / numThreadsPerBlock.x();
+            constexpr std::integral auto elsPerThread = largeChunkExtents.x() / numThreadsPerBlock.x();
             alpaka::concepts::CVector auto chunkExtent = CVec<T_Idx, elsPerThread * numThreadsPerBlock.x()>{};
             alpaka::concepts::Vector auto numElements = inputVec.getExtents();
 
@@ -146,18 +146,18 @@ namespace alpaka::onHost::internal
              * All thread blocks will be used to iterate over the frames. Each thread block will handle one or more
              * frames.
              */
-            for(auto frameIdx :
-                onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec<T_Idx, 1u>{0}, numFrames}))
+            for(auto chunkIdx :
+                onAcc::makeIdxMap(acc, onAcc::worker::blocksInGrid, IdxRange{Vec<T_Idx, 1u>{0}, numChunks}))
             {
                 bool const lastFrameFull = validElementsInLastFrame == chunkExtent;
-                bool const isLastFrame = frameIdx == numFrames - T_Idx{1};
+                bool const isLastFrame = chunkIdx == numChunks - T_Idx{1};
 
                 // allocate "per-thread" register memory to store all mini blocks of a thread persistently
                 LocalArray regMem;
 
                 constexpr auto conflictFreeAdr = conflictFreeAccess<AccType>(miniBlocksPerChunk - T_Idx{1}) + T_Idx{1};
                 auto tmp = onAcc::declareSharedMdArray<T_Data, uniqueId()>(acc, CVec<T_Idx, conflictFreeAdr>{});
-                auto const frameOffset = chunkExtent * frameIdx;
+                auto const frameOffset = chunkExtent * chunkIdx;
 
                 for(auto frameElem : onAcc::makeIdxMap(
                         acc,
@@ -231,7 +231,7 @@ namespace alpaka::onHost::internal
                     if constexpr(sizeof...(blockSums))
                     {
                         auto _blockSums = std::get<0>(std::make_tuple(blockSums...));
-                        _blockSums[frameIdx] = tmp[conflictFreeAccess<AccType>(miniBlocksPerChunk - T_Idx{1})];
+                        _blockSums[chunkIdx] = tmp[conflictFreeAccess<AccType>(miniBlocksPerChunk - T_Idx{1})];
                     }
 
                     // -- SET 0 --
@@ -334,13 +334,13 @@ namespace alpaka::onHost::internal
     public:
         ALPAKA_FN_ACC void operator()(
             auto const& acc,
+            alpaka::concepts::CVector auto const largeChunkExtents,
             alpaka::concepts::IMdSpan auto const& blockSums,
             alpaka::concepts::IMdSpan auto outputVec) const
         {
             alpaka::concepts::Vector auto numElements = outputVec.getExtents();
             alpaka::concepts::CVector auto numThreadsPerBlock = acc[layer::thread].count();
-            alpaka::concepts::CVector auto frameExtent = acc[frame::extent];
-            constexpr auto elsPerThread = frameExtent.x() / numThreadsPerBlock.x();
+            constexpr auto elsPerThread = largeChunkExtents.x() / numThreadsPerBlock.x();
             alpaka::concepts::CVector auto chunkExtent = CVec<T_Idx, elsPerThread * numThreadsPerBlock.x()>{};
 
             auto simdGrid = onAcc::SimdAlgo{onAcc::worker::threadsInGrid};
@@ -397,8 +397,8 @@ namespace alpaka::onHost::internal
 
         // Define chunkExtent
         constexpr auto chunkExtent = CVec<T_Idx, chunkSize>{};
-        alpaka::Vec numFrames = divCeil(inputVec.getExtents(), chunkExtent);
-        auto const frameSpec = onHost::FrameSpec{numFrames, chunkExtent, CVec<T_Idx, 256u>{}};
+        alpaka::Vec numChunks = divCeil(inputVec.getExtents(), chunkExtent);
+        auto const frameSpec = onHost::FrameSpec{numChunks, CVec<T_Idx, 256u>{}};
 
         ALPAKA_LOG_INFO(
             onHost::logger::memory,
@@ -410,7 +410,7 @@ namespace alpaka::onHost::internal
                     ss << ", scanType= INCLUSIVE_SCAN";
                 else if(SCAN_TYPE == EXCLUSIVE_SCAN)
                     ss << ", scanType= EXCLUSIVE_SCAN";
-                ss << ", numFrames= " << numFrames;
+                ss << ", numFrames= " << numChunks;
                 ss << ", chunkExtent= " << chunkExtent;
                 ss << ", value_type=" << onHost::demangledName<T_Data>();
                 ss << "}";
@@ -436,16 +436,18 @@ namespace alpaka::onHost::internal
             auto bufferNext = buffer.getSubView(bufSizeBytes, buffer.getExtents() - bufSizeBytes);
 
             // enqueue the kernel execution tasks
-            queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec, increments});
+            queue.enqueue(
+                frameSpec,
+                KernelBundle{scanBlocks, numChunks, chunkExtent, inputVec, outputVec, increments});
 
             // always recurse into exclusive scan
             scan<EXCLUSIVE_SCAN>(queue, devAcc, exec, bufferNext, increments, increments);
-            queue.enqueue(exec, frameSpec, KernelBundle{addIncrements, increments, outputVec});
+            queue.enqueue(frameSpec, KernelBundle{addIncrements, chunkExtent, increments, outputVec});
         }
         else
         {
             // problem fits within 1 frame
-            queue.enqueue(exec, frameSpec, KernelBundle{scanBlocks, inputVec, outputVec});
+            queue.enqueue(frameSpec, KernelBundle{scanBlocks, numChunks, chunkExtent, inputVec, outputVec});
         }
     }
 

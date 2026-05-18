@@ -5,6 +5,7 @@
 #pragma once
 
 #include "alpaka/Vec.hpp"
+#include "alpaka/api/executor.hpp"
 #include "alpaka/concepts.hpp"
 #include "alpaka/core/common.hpp"
 
@@ -20,11 +21,15 @@ namespace alpaka::onHost
      *
      * In contrast to `alpaka::onHost::FrameSpec`, a `ThreadSpec` is not a logical frame decomposition. It is used
      * when a kernel requires exact guarantees about the number of blocks and the size of each block.
+     *
+     * @tparam T_Executor If the executor is alpaka::exec::AnyExecutor alpaka will select a good fitting executor for
+     * the action where the ThreadSpec is used.
      */
     template<
         alpaka::concepts::Vector T_NumBlocks,
-        alpaka::concepts::Vector<typename T_NumBlocks::type, T_NumBlocks::dim()> T_NumThreads>
-    struct ThreadSpec
+        alpaka::concepts::Vector<typename T_NumBlocks::type, T_NumBlocks::dim()> T_NumThreads,
+        alpaka::concepts::Executor T_Executor = alpaka::exec::AnyExecutor>
+    struct ThreadSpec : T_Executor
     {
         using index_type = typename T_NumBlocks::type;
         using NumBlocksVecType = typename T_NumBlocks::UniVec;
@@ -39,6 +44,19 @@ namespace alpaka::onHost
             : m_numBlocks(numBlocks)
             , m_numThreads(numThreadsPerBlock)
         {
+        }
+
+        constexpr ThreadSpec(T_NumBlocks const& numBlocks, T_NumThreads const& numThreadsPerBlock, T_Executor executor)
+            : T_Executor(std::move(executor))
+            , m_numBlocks(numBlocks)
+            , m_numThreads(numThreadsPerBlock)
+        {
+            alpaka::unused(executor);
+        }
+
+        [[nodiscard]] static constexpr T_Executor getExecutor()
+        {
+            return T_Executor{};
         }
 
         [[nodiscard]] constexpr NumThreadsVecType const& getNumThreads() const noexcept
@@ -61,6 +79,13 @@ namespace alpaka::onHost
     ThreadSpec(T_NumBlocks const&, T_NumThreads const&)
         -> ThreadSpec<alpaka::trait::getVec_t<T_NumBlocks>, alpaka::trait::getVec_t<T_NumThreads>>;
 
+    template<
+        alpaka::concepts::VectorOrScalar T_NumBlocks,
+        alpaka::concepts::VectorOrScalar T_NumThreads,
+        alpaka::concepts::Executor T_Executor>
+    ThreadSpec(T_NumBlocks const&, T_NumThreads const&, T_Executor)
+        -> ThreadSpec<alpaka::trait::getVec_t<T_NumBlocks>, alpaka::trait::getVec_t<T_NumThreads>, T_Executor>;
+
     namespace trait
     {
         template<typename T>
@@ -68,8 +93,11 @@ namespace alpaka::onHost
         {
         };
 
-        template<alpaka::concepts::Vector T_NumBlocks, alpaka::concepts::Vector T_NumThreads>
-        struct IsThreadSpec<onHost::ThreadSpec<T_NumBlocks, T_NumThreads>> : std::true_type
+        template<
+            alpaka::concepts::Vector T_NumBlocks,
+            alpaka::concepts::Vector T_NumThreads,
+            alpaka::concepts::Executor T_Executor>
+        struct IsThreadSpec<onHost::ThreadSpec<T_NumBlocks, T_NumThreads, T_Executor>> : std::true_type
         {
         };
     } // namespace trait

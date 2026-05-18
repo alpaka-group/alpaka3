@@ -5,6 +5,7 @@
 #pragma once
 
 #include "alpaka/Vec.hpp"
+#include "alpaka/api/executor.hpp"
 #include "alpaka/concepts.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/onHost/ThreadSpec.hpp"
@@ -19,70 +20,53 @@ namespace alpaka::onHost
      * A frame specification describes how a multidimensional index range [0; K) is divided into fixed-size chunks,
      * called frames (NF), each with a frame extent (FE), where `K = NF * FE`.
      * K does not need to match the problem size (P), e.g., the number of elements in a buffer you want to process in a
-     * kernel. How NF and FE are mapped to physical worker threads and thread blocks within the kernel depends entirely
-     * on the kernel implementation. Often, the best performance of a kernel can be achieved if `K <= P`, and if the
-     * kernel uses SIMD operations, `K <= P/(SIMD width)`. A kernel enqueued with a frame specification should always
-     * be written to be executable with any `FrameSpec` and should not depend on hard-coded thread numbers, to ensure
+     * kernel. Often, the best performance of a kernel can be achieved if `K <= P`, and if the
+     * kernel uses SIMD operations, `K <= P/(SIMD width)`.
+     * alpaka derives the onHost::ThreadSpec to launch the kernel, based on a hysteric and additional launch
+     * information from the `FrameSpec`. Therefor a kernel enqueued with a frame specification should always be written
+     * to be executable with any onHost::ThreadSpec and should not depend on hard-coded thread numbers, to ensure
      * portability between devices.
      *
      * A `FrameSpec` is therefore not equivalent to a CUDA-style grid description. It specifies only the maximum
      * parallelism made available to the kernel. It does not guarantee the number of physical thread blocks, nor the
      * number of physical threads per block used by the backend. If exact control over blocks and threads is required,
-     * use `alpaka::onHost::ThreadSpec`.
+     * use onHost::ThreadSpec.
      *
-     * The specification contains three parameters:
-     * - `numFrames`: The n-dimensional number of frames.
-     * - `frameExtents`: The n-dimensional size of one logical frame.
-     * - `threadSpec` (optional): Backend-specific description of the actual execution resources consisting of the
-     *   number of blocks and threads. By default, this is automatically chosen by alpaka when starting a kernel to
-     *   fit the `alpaka::onHost::Device` and `alpaka::exec`, ensuring compatibility. User-provided specifications
-     *   might reduce the (performance-)portability.
+     * @tparam T_NumFrames The n-dimensional number of frames.
+     * @tparam T_FrameExtents The n-dimensional size of one logical frame.
+     * @tparam T_Executor The executor used to translate the onHost::ThreadSpec into a thread block hierarchy.
+     * If the executor is exec::AnyExecutor alpaka will select a good fitting executor for the action where the
+     * ThreadSpec is used.
      */
     template<
         alpaka::concepts::Vector T_NumFrames,
         alpaka::concepts::Vector<typename T_NumFrames::type, T_NumFrames::dim()> T_FrameExtents,
-        alpaka::concepts::Vector<typename T_NumFrames::type, T_NumFrames::dim()> T_ThreadExtents>
-    struct FrameSpec
+        alpaka::concepts::Executor T_Executor = alpaka::exec::AnyExecutor>
+    struct FrameSpec : T_Executor
     {
         using index_type = typename T_NumFrames::type;
 
         using NumFramesVecType = T_NumFrames;
         using FrameExtentsVecType = T_FrameExtents;
-        using ThreadExtentsVecType = T_ThreadExtents;
-        using ThreadSpecType = ThreadSpec<T_NumFrames, T_ThreadExtents>;
 
     private:
         NumFramesVecType m_numFrames;
         FrameExtentsVecType m_frameExtents;
-        ThreadSpecType m_threadSpec;
 
     public:
-        constexpr FrameSpec(T_NumFrames const& numFrames, T_FrameExtents const& frameExtent)
-            : m_numFrames(numFrames)
-            , m_frameExtents(frameExtent)
-            , m_threadSpec(numFrames, frameExtent)
-        {
-        }
-
         constexpr FrameSpec(
             T_NumFrames const& numFrames,
             T_FrameExtents const& frameExtent,
-            T_ThreadExtents const& numThreads)
+            T_Executor executor = T_Executor{})
             : m_numFrames(numFrames)
             , m_frameExtents(frameExtent)
-            , m_threadSpec(numFrames, numThreads)
         {
+            alpaka::unused(executor);
         }
 
-        constexpr FrameSpec(
-            T_NumFrames const& numFrames,
-            T_FrameExtents const& frameExtent,
-            T_NumFrames numBlocks,
-            T_FrameExtents const& numThreads)
-            : m_numFrames(numFrames)
-            , m_frameExtents(frameExtent)
-            , m_threadSpec(numBlocks, numThreads)
+        [[nodiscard]] static constexpr T_Executor getExecutor()
         {
+            return T_Executor{};
         }
 
         [[nodiscard]] constexpr NumFramesVecType const& getNumFrames() const noexcept
@@ -95,11 +79,6 @@ namespace alpaka::onHost
             return m_frameExtents;
         }
 
-        [[nodiscard]] constexpr ThreadSpecType const& getThreadSpec() const noexcept
-        {
-            return m_threadSpec;
-        }
-
         [[nodiscard]] static consteval uint32_t dim()
         {
             return T_FrameExtents::dim();
@@ -110,22 +89,14 @@ namespace alpaka::onHost
     FrameSpec(T_NumFrames const&, T_FrameExtents const&) -> FrameSpec<
         alpaka::trait::getVec_t<T_NumFrames>,
         alpaka::trait::getVec_t<T_FrameExtents>,
-        alpaka::trait::getVec_t<T_FrameExtents>>;
+        alpaka::exec::AnyExecutor>;
 
     template<
         alpaka::concepts::VectorOrScalar T_NumFrames,
         alpaka::concepts::VectorOrScalar T_FrameExtents,
-        alpaka::concepts::VectorOrScalar T_ThreadExtents>
-    FrameSpec(T_NumFrames const&, T_FrameExtents const&, T_ThreadExtents const&) -> FrameSpec<
-        alpaka::trait::getVec_t<T_NumFrames>,
-        alpaka::trait::getVec_t<T_FrameExtents>,
-        alpaka::trait::getVec_t<T_ThreadExtents>>;
-
-    template<alpaka::concepts::VectorOrScalar T_NumFrames, alpaka::concepts::VectorOrScalar T_FrameExtents>
-    FrameSpec(T_NumFrames const&, T_FrameExtents const&, T_NumFrames const&, T_FrameExtents const&) -> FrameSpec<
-        alpaka::trait::getVec_t<T_NumFrames>,
-        alpaka::trait::getVec_t<T_FrameExtents>,
-        alpaka::trait::getVec_t<T_FrameExtents>>;
+        alpaka::concepts::Executor T_Executor>
+    FrameSpec(T_NumFrames const&, T_FrameExtents const&, T_Executor)
+        -> FrameSpec<alpaka::trait::getVec_t<T_NumFrames>, alpaka::trait::getVec_t<T_FrameExtents>, T_Executor>;
 
     namespace trait
     {
@@ -137,8 +108,8 @@ namespace alpaka::onHost
         template<
             alpaka::concepts::Vector T_NumFrames,
             alpaka::concepts::Vector T_FrameExtents,
-            alpaka::concepts::Vector T_ThreadExtents>
-        struct IsFrameSpec<onHost::FrameSpec<T_NumFrames, T_FrameExtents, T_ThreadExtents>> : std::true_type
+            alpaka::concepts::Executor T_Executor>
+        struct IsFrameSpec<onHost::FrameSpec<T_NumFrames, T_FrameExtents, T_Executor>> : std::true_type
         {
         };
     } // namespace trait
@@ -171,8 +142,7 @@ namespace alpaka::onHost
 
     std::ostream& operator<<(std::ostream& s, concepts::FrameSpec auto const& d)
     {
-        return s << "FrameSpec{ frames=" << d.getNumFrames() << ", frameExtent=" << d.getFrameExtents() << ", "
-                 << d.getThreadSpec() << " }";
+        return s << "FrameSpec{ frames=" << d.getNumFrames() << ", frameExtent=" << d.getFrameExtents() << " }";
     }
 
 } // namespace alpaka::onHost
