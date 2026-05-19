@@ -189,8 +189,13 @@ namespace alpaka
          * @param value Value which is set for all lanes
          * @return new Simd<...>
          */
-        static constexpr auto fill(concepts::Convertible<T_Type> auto const& value)
+        static constexpr auto fill(concepts::Convertible<T_Type> auto value)
         {
+            /* Note the function is taking value as copy because it is typically a scalar value.
+             * If a const reference is used, it would not be possible to pass a host defined constexpr value into
+             * fill() when CUDA is used. Issue was seen with nvcc CUDA 13.0.2. see
+             * https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#constexpr-variables
+             */
             return Simd{Storage::fill(static_cast<T_Type>(value))};
         }
 
