@@ -25,4 +25,5 @@ fi
 
 DEBIAN_FRONTEND=noninteractive apt update
 # python3 is required for var_storage.sh
-DEBIAN_FRONTEND=noninteractive apt install -y python3
+# software-properties-common: 'add-apt-repository' and certificates for wget https download
+DEBIAN_FRONTEND=noninteractive apt install -y python3 software-properties-common

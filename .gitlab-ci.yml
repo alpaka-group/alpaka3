@@ -3,6 +3,7 @@
   variables:
     APCI_ALPAKA_ROOT: "$CI_PROJECT_DIR"
   script:
+    - $APCI_ALPAKA_ROOT/script/ci/print_vars.sh
     - $APCI_ALPAKA_ROOT/script/ci/install_dependencies.sh
     - $APCI_ALPAKA_ROOT/script/ci/configure.sh
 

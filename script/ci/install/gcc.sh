@@ -22,8 +22,9 @@ if [[ "$compiler_name" == "gcc" ]]; then
     if [[ "$(gcc --version | awk '{print($3)}' | head -n 1 | cut -d"." -f1)" -ne "${compiler_version}" ]]; then
         # install requested GCC if it is not already available
         if ! command -v "gcc-${compiler_version}" >/dev/null 2>&1; then
-            DEBIAN_FRONTEND=noninteractive apt update
-            DEBIAN_FRONTEND=noninteractive apt install -y "gcc-${compiler_version}" "g++-${compiler_version}"
+            sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+            DEBIAN_FRONTEND=noninteractive sudo apt update
+            DEBIAN_FRONTEND=noninteractive sudo apt install -y "gcc-${compiler_version}" "g++-${compiler_version}"
             # select requested GCC as default
             # TODO: Remove me, if ACPI_CXX_COMPILER is used in production.
             # Changing the system host compiler is pretty dangerous and error prone.
