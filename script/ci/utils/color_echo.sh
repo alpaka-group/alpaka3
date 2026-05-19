@@ -10,7 +10,7 @@
 echo_green() {
     # `-t 1`: if executed in terminal
     # `tput colors`: if no colors available, the value is negative
-    if [[ -t 1 ]] && command -v tput >/dev/null && [[ "$(tput colors)" -gt 0 ]]; then
+    if [[ -n "${_APCI_FORCE_COLOR_OUTPUT+x}" ]] || [[ -t 1 ]] && command -v tput >/dev/null && [[ "$(tput colors)" -gt 0 ]]; then
         echo -e "\e[1;32m$1\e[0m"
     else
         echo -e "$1"
@@ -20,7 +20,7 @@ echo_green() {
 echo_blue() {
     # `-t 1`: if executed in terminal
     # `tput colors`: if no colors available, the value is negative
-    if [[ -t 1 ]] && command -v tput >/dev/null && [[ "$(tput colors)" -gt 0 ]]; then
+    if [[ -n "${_APCI_FORCE_COLOR_OUTPUT+x}" ]] || [[ -t 1 ]] && command -v tput >/dev/null && [[ "$(tput colors)" -gt 0 ]]; then
         echo -e "\e[1;34m$1\e[0m"
     else
         echo -e "$1"
@@ -30,7 +30,7 @@ echo_blue() {
 echo_yellow() {
     # `-t 1`: if executed in terminal
     # `tput colors`: if no colors available, the value is negative
-    if [[ -t 1 ]] && command -v tput >/dev/null && [[ "$(tput colors)" -gt 0 ]]; then
+    if [[ -n "${_APCI_FORCE_COLOR_OUTPUT+x}" ]] || [[ -t 1 ]] && command -v tput >/dev/null && [[ "$(tput colors)" -gt 0 ]]; then
         echo -e "\e[1;33m$1\e[0m"
     else
         echo -e "$1"
@@ -40,7 +40,7 @@ echo_yellow() {
 echo_red() {
     # `-t 1`: if executed in terminal
     # `tput colors`: if no colors available, the value is negative
-    if [[ -t 1 ]] && command -v tput >/dev/null && [[ "$(tput colors)" -gt 0 ]]; then
+    if [[ -n "${_APCI_FORCE_COLOR_OUTPUT+x}" ]] || [[ -t 1 ]] && command -v tput >/dev/null && [[ "$(tput colors)" -gt 0 ]]; then
         echo -e "\e[1;31m$1\e[0m"
     else
         echo -e "$1"
