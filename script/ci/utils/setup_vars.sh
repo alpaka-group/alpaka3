@@ -10,3 +10,17 @@
 if [[ -n ${GITHUB_ACTIONS+x} ]]; then
     export APCI_OS_NAME="$RUNNER_OS"
 fi
+
+if [[ -n ${GITLAB_CI+x} ]]; then
+    if echo "${CI_RUNNER_EXECUTABLE_ARCH}" | grep -q -i "linux"; then
+        export APCI_OS_NAME=Linux
+    fi
+    # not validated because we didn't used a windows runner yet
+    if echo "${CI_RUNNER_EXECUTABLE_ARCH}" | grep -q -i "windows"; then
+        export APCI_OS_NAME=Windows
+    fi
+    # not validated because we didn't used a MacOS runner yet
+    if echo "${CI_RUNNER_EXECUTABLE_ARCH}" | grep -q -i "macos"; then
+        export APCI_OS_NAME=macOS
+    fi
+fi
