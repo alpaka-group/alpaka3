@@ -32,9 +32,22 @@ if [[ "$compiler_name" == "gcc" ]]; then
         fi
     fi
 
+    # we assume gcc, g++, gcc-<version> and g++-<version> are in the same folder
+    gcc_base_path="$(dirname "$(which gcc)")"
+
+    # workaround for gcc container
+    # there is no g++-<version> executable
+    for exe_name in gcc g++; do
+        version_exe_name="${gcc_base_path}/${exe_name}-${compiler_version}"
+        if [[ ! -f "${version_exe_name}" ]]; then
+            ln -s "${gcc_base_path}/${exe_name}" "${version_exe_name}"
+        fi
+        unset version_exe_name
+    done
+
     # TODO: should be exported here. Because of a bug in typeofvar(), it does not work at the moment
-    APCI_CC_COMPILER="/usr/bin/gcc-${compiler_version}"
-    APCI_CXX_COMPILER="/usr/bin/g++-${compiler_version}"
+    APCI_CC_COMPILER="${gcc_base_path}/gcc-${compiler_version}"
+    APCI_CXX_COMPILER="${gcc_base_path}/g++-${compiler_version}"
 
     $APCI_CC_COMPILER --version
     $APCI_CXX_COMPILER --version
@@ -44,4 +57,6 @@ if [[ "$compiler_name" == "gcc" ]]; then
 
     export APCI_CC_COMPILER
     export APCI_CXX_COMPILER
+
+    unset gcc_base_path
 fi
