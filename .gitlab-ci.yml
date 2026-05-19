@@ -1,0 +1,17 @@
+.gcc-base:
+  image: docker.io/ubuntu:24.04
+  variables:
+    APCI_ALPAKA_ROOT: "$CI_PROJECT_DIR"
+  script:
+    - $APCI_ALPAKA_ROOT/script/ci/install_dependencies.sh
+    - $APCI_ALPAKA_ROOT/script/ci/configure.sh
+
+gcc-13:
+  extends: .gcc-base
+  variables:
+    APCI_DEVICE_COMPILER : gcc@13
+
+gcc-15:
+  extends: .gcc-base
+  variables:
+    APCI_DEVICE_COMPILER : gcc@15

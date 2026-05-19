@@ -49,7 +49,9 @@ if [[ "$compiler_name" == "gcc" ]]; then
     APCI_CC_COMPILER="${gcc_base_path}/gcc-${compiler_version}"
     APCI_CXX_COMPILER="${gcc_base_path}/g++-${compiler_version}"
 
+    echo_green "${APCI_CC_COMPILER} --version"
     $APCI_CC_COMPILER --version
+    echo_green "${APCI_CXX_COMPILER} --version"
     $APCI_CXX_COMPILER --version
 
     store_variable APCI_CC_COMPILER
@@ -59,4 +61,6 @@ if [[ "$compiler_name" == "gcc" ]]; then
     export APCI_CXX_COMPILER
 
     unset gcc_base_path
+else
+    echo_green "Skipped install GCC because it is not required for the job"
 fi
