@@ -8,10 +8,16 @@
 # setup environment variables depending on os environment (on local system, GitLab CI, GitHub Action ...)
 
 if [[ -n ${GITHUB_ACTIONS+x} ]]; then
+    # force color output
+    export TERM=xterm-256color
+
     export APCI_OS_NAME="$RUNNER_OS"
 fi
 
 if [[ -n ${GITLAB_CI+x} ]]; then
+    # force color output
+    export TERM=xterm-256color
+
     if echo "${CI_RUNNER_EXECUTABLE_ARCH}" | grep -q -i "linux"; then
         export APCI_OS_NAME=Linux
     fi
