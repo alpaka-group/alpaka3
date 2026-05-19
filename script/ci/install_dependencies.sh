@@ -7,8 +7,8 @@
 
 # shellcheck source=script/ci/utils/default.sh
 source "${APCI_ALPAKA_ROOT}/script/ci/utils/default.sh"
-# shellcheck source=script/ci/utils/sudo.sh
-source "${APCI_ALPAKA_ROOT}/script/ci/utils/sudo.sh"
+# shellcheck source=script/ci/utils/install_helper_apps.sh
+source "${APCI_ALPAKA_ROOT}/script/ci/utils/install_helper_apps.sh"
 
 : "${APCI_DEVICE_COMPILER?'The device compiler must be specified'}"
 
