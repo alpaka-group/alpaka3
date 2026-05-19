@@ -7,8 +7,6 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <iostream>
-
 using namespace alpaka;
 
 using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
@@ -103,13 +101,12 @@ TEMPLATE_LIST_TEST_CASE("allocDeferred", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << deviceSpec.getApi().getName() << "on " << device.getName() << std::endl;
+    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
 
     // repeat the test multiple times to increase the change to trigger data races
     constexpr int testRounds = 10;

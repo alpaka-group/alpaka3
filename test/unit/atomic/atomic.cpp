@@ -206,7 +206,7 @@ struct TestAtomicOperations
         {
             if(device.getNativeHandle().first.template get_info<sycl::info::device::double_fp_config>().size() == 0)
             {
-                WARN(
+                SUCCEED(
                     onHost::getName(device)
                     << " does not support double precision.\n Skip benchmark.\n"
                        "For Intel Arc GPUs, use the environment variables `IGC_EnableDPEmulation=1 "
@@ -249,7 +249,7 @@ TEMPLATE_LIST_TEST_CASE("atomicOperationsWorking", "[atomic]", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        INFO("No device available for " << deviceSpec.getName());
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 

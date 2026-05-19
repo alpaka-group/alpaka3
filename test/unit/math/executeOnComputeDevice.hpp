@@ -8,7 +8,6 @@
 
 #include <alpaka/alpaka.hpp>
 
-#include <catch2/catch_message.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <utility>
@@ -34,7 +33,7 @@ namespace alpaka::test
         auto devSelector = onHost::makeDeviceSelector(deviceSpec);
         if(!devSelector.isAvailable())
         {
-            std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+            SUCCEED("No device available for " << deviceSpec.getName());
             return false;
         }
 
@@ -48,7 +47,7 @@ namespace alpaka::test
         {
             if(device.getNativeHandle().first.template get_info<sycl::info::device::double_fp_config>().size() == 0)
             {
-                WARN(
+                SUCCEED(
                     onHost::getName(device)
                     << " does not support double precision.\n Skip benchmark.\n"
                        "For Intel Arc GPUs, use the environment variables `IGC_EnableDPEmulation=1 "

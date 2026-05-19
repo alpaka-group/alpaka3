@@ -13,8 +13,6 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <iostream>
-
 using namespace alpaka;
 
 using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
@@ -47,8 +45,9 @@ struct Case
 void validate(auto& queue, auto& device, auto exec, auto testCase)
 {
     Vec extentMd = testCase.m_extents;
-    std::cout << " exec=" << onHost::demangledName(exec) << " extents=" << testCase.m_extents
-              << " frame size=" << testCase.m_frameSize << std::endl;
+    INFO(
+        "exec=" << onHost::demangledName(exec) << " extents=" << testCase.m_extents
+                << " frame size=" << testCase.m_frameSize);
     auto dBuff = onHost::alloc<Vec<uint32_t, extentMd.dim()>>(device, extentMd);
 
     auto hBuff = onHost::allocHostLike(dBuff);
@@ -84,14 +83,13 @@ TEMPLATE_LIST_TEST_CASE("kernelCallMD", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
-    std::cout << deviceSpec.getApi().getName() << std::endl;
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << device.getName() << std::endl;
+    INFO("api=" << deviceSpec.getApi().getName());
+    INFO("device=" << device.getName());
 
     onHost::Queue queue = device.makeQueue();
 

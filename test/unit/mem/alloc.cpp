@@ -7,8 +7,6 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <iostream>
-
 using namespace alpaka;
 
 using TestBackends = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
@@ -111,13 +109,12 @@ TEMPLATE_LIST_TEST_CASE("alloc", "", TestBackends)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
 
     allocDeferredImplicitWait(device, exec);
 }
@@ -131,13 +128,12 @@ TEMPLATE_LIST_TEST_CASE("alloc zero bytes", "", TestDeviceSpecs)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
 
     auto hostDevice = onHost::makeHostDevice();
 
@@ -201,13 +197,12 @@ TEMPLATE_LIST_TEST_CASE("alloc alignment", "", TestDeviceSpecs)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
 
     using DataType = int;
 
@@ -236,13 +231,12 @@ TEMPLATE_LIST_TEST_CASE("alloc volatile memory", "", TestDeviceSpecs)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
 
     using DataType = int;
 

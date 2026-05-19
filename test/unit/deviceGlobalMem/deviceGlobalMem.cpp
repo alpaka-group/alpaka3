@@ -7,8 +7,6 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <iostream>
-
 using namespace alpaka;
 using namespace alpaka::onHost;
 
@@ -79,19 +77,17 @@ TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
     auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
-    std::cout << deviceSpec.getApi().getName() << std::endl;
-
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << "device name: " << device.getName() << "\n";
-    std::cout << "executor   : " << exec.getName() << std::endl;
+    INFO("api        :" << deviceSpec.getApi().getName());
+    INFO("device name: " << device.getName());
+    INFO("executor   : " << exec.getName());
 
     Queue queue = device.makeQueue();
     constexpr Vec numBlocks = Vec{1u};
@@ -200,25 +196,23 @@ TEMPLATE_LIST_TEST_CASE("device global mem copy", "", TestApis)
     auto deviceSpec = cfg[object::deviceSpec];
     auto exec = cfg[object::exec];
 
-    std::cout << deviceSpec.getApi().getName() << std::endl;
-
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << device.getName() << std::endl;
+    INFO("api=" << deviceSpec.getApi().getName());
+    INFO("device=" << device.getName());
 
     Queue queue = device.makeQueue();
     constexpr Vec numBlocks = Vec{1u};
     constexpr Vec blockExtent = Vec{4u};
     constexpr Vec dataExtent = 13u;
-    std::cout << "device name: " << device.getName() << "\n";
-    std::cout << "executor   : " << exec.getName() << std::endl;
+    INFO("device name: " << device.getName());
+    INFO("executor   : " << exec.getName());
 
     auto dBuff = onHost::alloc<uint32_t>(device, dataExtent);
     auto hBuff = onHost::allocHostLike(dBuff);

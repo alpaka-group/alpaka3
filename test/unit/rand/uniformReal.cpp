@@ -137,7 +137,7 @@ void testCase(HelperPack<T_Engine, T_FP, T_Interval>, uint64_t seed, T_FP minF, 
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        INFO("No device available for " << deviceSpec.getName());
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 

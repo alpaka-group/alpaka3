@@ -9,8 +9,6 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <iostream>
-
 /** @file
  *
  * This tests evaluated if events in a queue follows a defined behaviour. Events used to describe dependencies
@@ -47,18 +45,18 @@ TEMPLATE_LIST_TEST_CASE("device analysis", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
 
     bool hasCQueue = detectConcurrentQueue(device);
-    std::cout << "Concurrent kernel queue detected: " << (hasCQueue ? "yes" : "no") << std::endl;
+    INFO("Concurrent kernel queue detected: " << (hasCQueue ? "yes" : "no"));
 
     bool supportMappedMemTrigger = mappedMemTriggerDetection(device);
-    std::cout << "Can trigger via mapped memory: " << (supportMappedMemTrigger ? "yes" : "no") << std::endl;
+    INFO("Can trigger via mapped memory: " << (supportMappedMemTrigger ? "yes" : "no"));
 }
 
 TEMPLATE_LIST_TEST_CASE("event creation and enqueue", "", TestApis)
@@ -69,12 +67,12 @@ TEMPLATE_LIST_TEST_CASE("event creation and enqueue", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
 
     onHost::Queue queue = device.makeQueue();
     onHost::Event ev = device.makeEvent();
@@ -91,12 +89,12 @@ TEMPLATE_LIST_TEST_CASE("basic queue wait for event", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
 
     onHost::Queue queue0 = device.makeQueue();
     onHost::Queue queue1 = device.makeQueue();
@@ -120,12 +118,12 @@ TEMPLATE_LIST_TEST_CASE("test trigger event", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
 
     bool hasConcurrentKernelQueues = checkIfDeviceCanExecuteEventTests(device);
     if(!hasConcurrentKernelQueues)
@@ -134,8 +132,9 @@ TEMPLATE_LIST_TEST_CASE("test trigger event", "", TestApis)
          * kernel in a separate queue. The second reason is that kernel, memory operation enqueued in different queues
          * will not run out of order which is assumed for some of the tests.
          */
-        std::cout << "Event tests can not be executed with " << deviceSpec.getName()
-                  << " because the device does not support concurrent queues." << std::endl;
+        SUCCEED(
+            "Event tests can not be executed with " << deviceSpec.getName()
+                                                    << " because the device does not support concurrent queues.");
         return;
     }
 
@@ -156,12 +155,12 @@ TEMPLATE_LIST_TEST_CASE("eventTestShouldBeFalseWhileInQueueAndTrueAfterBeingProc
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
 
     bool hasConcurrentKernelQueues = checkIfDeviceCanExecuteEventTests(device);
     if(!hasConcurrentKernelQueues)
@@ -170,8 +169,9 @@ TEMPLATE_LIST_TEST_CASE("eventTestShouldBeFalseWhileInQueueAndTrueAfterBeingProc
          * kernel in a separate queue. The second reason is that kernel, memory operation enqueued in different queues
          * will not run out of order which is assumed for some of the tests.
          */
-        std::cout << "Event tests can not be executed with " << deviceSpec.getName()
-                  << " because the device does not support concurrent queues." << std::endl;
+        SUCCEED(
+            "Event tests can not be executed with " << deviceSpec.getName()
+                                                    << " because the device does not support concurrent queues.");
         return;
     }
 
@@ -194,12 +194,12 @@ TEMPLATE_LIST_TEST_CASE("eventReEnqueueShouldBePossibleIfNobodyWaitsFor", "", Te
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
 
     bool hasConcurrentKernelQueues = checkIfDeviceCanExecuteEventTests(device);
     if(!hasConcurrentKernelQueues)
@@ -208,14 +208,14 @@ TEMPLATE_LIST_TEST_CASE("eventReEnqueueShouldBePossibleIfNobodyWaitsFor", "", Te
          * kernel in a separate queue. The second reason is that kernel, memory operation enqueued in different queues
          * will not run out of order which is assumed for some of the tests.
          */
-        std::cout << "Event tests can not be executed with " << deviceSpec.getName()
-                  << " because the device does not support concurrent queues." << std::endl;
+        SUCCEED(
+            "Event tests can not be executed with " << deviceSpec.getName()
+                                                    << " because the device does not support concurrent queues.");
         return;
     }
     if(deviceSpec.getApi() == api::oneApi && deviceSpec.getDeviceKind() == deviceKind::intelGpu)
     {
-        std::cout << "Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking."
-                  << std::endl;
+        SUCCEED("Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking.");
         return;
     }
 
@@ -270,12 +270,12 @@ TEMPLATE_LIST_TEST_CASE("eventReEnqueueShouldBePossibleIfSomeoneWaitsFor", "", T
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
 
     bool hasConcurrentKernelQueues = checkIfDeviceCanExecuteEventTests(device);
     if(!hasConcurrentKernelQueues)
@@ -284,14 +284,14 @@ TEMPLATE_LIST_TEST_CASE("eventReEnqueueShouldBePossibleIfSomeoneWaitsFor", "", T
          * kernel in a separate queue. The second reason is that kernel, memory operation enqueued in different queues
          * will not run out of order which is assumed for some of the tests.
          */
-        std::cout << "Event tests can not be executed with " << deviceSpec.getName()
-                  << " because the device does not support concurrent queues." << std::endl;
+        SUCCEED(
+            "Event tests can not be executed with " << deviceSpec.getName()
+                                                    << " because the device does not support concurrent queues.");
         return;
     }
     if(deviceSpec.getApi() == api::oneApi && deviceSpec.getDeviceKind() == deviceKind::intelGpu)
     {
-        std::cout << "Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking."
-                  << std::endl;
+        SUCCEED("Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking.");
         return;
     }
 
@@ -360,12 +360,12 @@ TEMPLATE_LIST_TEST_CASE("waitForEventThatAlreadyFinishedShouldBeSkipped", "", Te
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
 
     bool hasConcurrentKernelQueues = checkIfDeviceCanExecuteEventTests(device);
     if(!hasConcurrentKernelQueues)
@@ -374,14 +374,14 @@ TEMPLATE_LIST_TEST_CASE("waitForEventThatAlreadyFinishedShouldBeSkipped", "", Te
          * kernel in a separate queue. The second reason is that kernel, memory operation enqueued in different queues
          * will not run out of order which is assumed for some of the tests.
          */
-        std::cout << "Event tests can not be executed with " << deviceSpec.getName()
-                  << " because the device does not support concurrent queues." << std::endl;
+        SUCCEED(
+            "Event tests can not be executed with " << deviceSpec.getName()
+                                                    << " because the device does not support concurrent queues.");
         return;
     }
     if(deviceSpec.getApi() == api::oneApi && deviceSpec.getDeviceKind() == deviceKind::intelGpu)
     {
-        std::cout << "Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking."
-                  << std::endl;
+        SUCCEED("Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking.");
         return;
     }
 
@@ -447,12 +447,12 @@ TEMPLATE_LIST_TEST_CASE("evReEnqueueWithSomeoneWaitsForEventInOrderLifetimeRelea
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
 
     bool hasConcurrentKernelQueues = checkIfDeviceCanExecuteEventTests(device);
     if(!hasConcurrentKernelQueues)
@@ -461,14 +461,14 @@ TEMPLATE_LIST_TEST_CASE("evReEnqueueWithSomeoneWaitsForEventInOrderLifetimeRelea
          * kernel in a separate queue. The second reason is that kernel, memory operation enqueued in different queues
          * will not run out of order which is assumed for some of the tests.
          */
-        std::cout << "Event tests can not be executed with " << deviceSpec.getName()
-                  << " because the device does not support concurrent queues." << std::endl;
+        SUCCEED(
+            "Event tests can not be executed with " << deviceSpec.getName()
+                                                    << " because the device does not support concurrent queues.");
         return;
     }
     if(deviceSpec.getApi() == api::oneApi && deviceSpec.getDeviceKind() == deviceKind::intelGpu)
     {
-        std::cout << "Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking."
-                  << std::endl;
+        SUCCEED("Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking.");
         return;
     }
 
@@ -574,12 +574,12 @@ TEMPLATE_LIST_TEST_CASE("EventOutOfOrderLifetimeRelease", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-    std::cout << deviceSpec.getApi().getName() << " on " << device.getName() << std::endl;
+    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
 
     bool hasConcurrentKernelQueues = checkIfDeviceCanExecuteEventTests(device);
     if(!hasConcurrentKernelQueues)
@@ -588,14 +588,14 @@ TEMPLATE_LIST_TEST_CASE("EventOutOfOrderLifetimeRelease", "", TestApis)
          * kernel in a separate queue. The second reason is that kernel, memory operation enqueued in different queues
          * will not run out of order which is assumed for some of the tests.
          */
-        std::cout << "Event tests can not be executed with " << deviceSpec.getName()
-                  << " because the device does not support concurrent queues." << std::endl;
+        SUCCEED(
+            "Event tests can not be executed with " << deviceSpec.getName()
+                                                    << " because the device does not support concurrent queues.");
         return;
     }
     if(deviceSpec.getApi() == api::oneApi && deviceSpec.getDeviceKind() == deviceKind::intelGpu)
     {
-        std::cout << "Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking."
-                  << std::endl;
+        SUCCEED("Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking.");
         return;
     }
 

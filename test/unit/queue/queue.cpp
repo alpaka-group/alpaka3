@@ -7,8 +7,6 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <iostream>
-
 using namespace alpaka;
 
 using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
@@ -33,19 +31,18 @@ TEMPLATE_LIST_TEST_CASE("kernel no arguments", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
-    std::cout << deviceSpec.getApi().getName() << std::endl;
 
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << device.getName() << std::endl;
-    std::cout << "mem     :" << device.getDeviceProperties().globalMemCapacityBytes << std::endl;
-    std::cout << "free mem:" << device.getFreeGlobalMemBytes() << std::endl;
+    INFO("api=" << deviceSpec.getApi().getName());
+    INFO("device=" << device.getName());
+    INFO("mem=" << device.getDeviceProperties().globalMemCapacityBytes);
+    INFO("free mem=" << device.getFreeGlobalMemBytes());
 
     onHost::Queue queue = device.makeQueue(queueKind::blocking);
-    std::cout << "exec=" << onHost::demangledName(exec) << std::endl;
+    INFO("exec=" << onHost::demangledName(exec));
 
     queue.enqueue(exec, onHost::FrameSpec{1, 1}, KernelBundle{NoArgumentsKernel{}});
 }
@@ -58,7 +55,7 @@ struct IotaKernel
         static_assert(alpaka::concepts::CVector<ALPAKA_TYPEOF(acc[frame::extent])>);
         for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, onAcc::range::totalFrameSpecExtent))
         {
-            //            std::cout<<i<<std::endl;
+            // Debug-only trace removed in favor of Catch2 diagnostics.
             out[i.x()] = i.x();
         }
     }
@@ -73,18 +70,17 @@ TEMPLATE_LIST_TEST_CASE("iota", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
-    std::cout << deviceSpec.getApi().getName() << std::endl;
 
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << device.getName() << std::endl;
+    INFO("api=" << deviceSpec.getApi().getName());
+    INFO("device=" << device.getName());
 
     onHost::Queue queue = device.makeQueue();
     constexpr Vec extent = Vec{12u};
-    std::cout << "exec=" << onHost::demangledName(exec) << std::endl;
+    INFO("exec=" << onHost::demangledName(exec));
     auto dBuff = onHost::alloc<uint32_t>(device, extent);
 
     auto hBuff = onHost::allocHostLike(dBuff);
@@ -116,18 +112,17 @@ TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
-    std::cout << deviceSpec.getApi().getName() << std::endl;
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << device.getName() << std::endl;
+    INFO("api=" << deviceSpec.getApi().getName());
+    INFO("device=" << device.getName());
 
     onHost::Queue queue = device.makeQueue();
     constexpr Vec extent = Vec{8u, 16u};
-    std::cout << "exec=" << onHost::demangledName(exec) << std::endl;
+    INFO("exec=" << onHost::demangledName(exec));
     auto dBuff = onHost::alloc<Vec<uint32_t, 2u>>(device, extent);
 
     auto hBuff = onHost::allocHostLike(dBuff);
@@ -149,18 +144,17 @@ TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
-    std::cout << deviceSpec.getApi().getName() << std::endl;
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << device.getName() << std::endl;
+    INFO("api=" << deviceSpec.getApi().getName());
+    INFO("device=" << device.getName());
 
     onHost::Queue queue = device.makeQueue();
     constexpr Vec extent = Vec{4u, 8u, 16u};
-    std::cout << "exec=" << onHost::demangledName(exec) << std::endl;
+    INFO("exec=" << onHost::demangledName(exec));
     auto dBuff = onHost::alloc<Vec<uint32_t, 3u>>(device, extent);
 
     auto hBuff = onHost::allocHostLike(dBuff);
@@ -182,18 +176,17 @@ TEMPLATE_LIST_TEST_CASE("iota4D", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
-    std::cout << deviceSpec.getApi().getName() << std::endl;
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << device.getName() << std::endl;
+    INFO("api=" << deviceSpec.getApi().getName());
+    INFO("device=" << device.getName());
 
     onHost::Queue queue = device.makeQueue();
     constexpr Vec extent = Vec{4u, 8u, 16, 32};
-    std::cout << "exec=" << onHost::demangledName(exec) << std::endl;
+    INFO("exec=" << onHost::demangledName(exec));
     auto dBuff = onHost::alloc<Vec<uint32_t, 4u>>(device, extent);
 
     auto hBuff = onHost::allocHostLike(dBuff);
@@ -242,22 +235,21 @@ TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
-    std::cout << deviceSpec.getApi().getName() << std::endl;
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << device.getName() << std::endl;
+    INFO("api=" << deviceSpec.getApi().getName());
+    INFO("device=" << device.getName());
 
     onHost::Queue queue = device.makeQueue();
     constexpr Vec numBlocks = Vec{4u, 8u, 16u};
     auto numBlocksReduced = numBlocks;
     numBlocksReduced.ref(CVec<uint32_t, 2u, 1u>{}) = 1u;
 
-    std::cout << numBlocksReduced << std::endl;
-    std::cout << "exec=" << onHost::demangledName(exec) << std::endl;
+    INFO("numBlocksReduced=" << numBlocksReduced);
+    INFO("exec=" << onHost::demangledName(exec));
     auto dBuff = onHost::alloc<Vec<uint32_t, 3u>>(device, numBlocks);
 
     auto hBuff = onHost::allocHostLike(dBuff);
@@ -334,14 +326,13 @@ TEMPLATE_LIST_TEST_CASE("memcpy", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
-    std::cout << deviceSpec.getApi().getName() << std::endl;
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << device.getName() << std::endl;
+    INFO("api=" << deviceSpec.getApi().getName());
+    INFO("device=" << device.getName());
 
     onHost::Queue queue = device.makeQueue();
     constexpr Vec problemSize = Vec{16u};
@@ -405,26 +396,21 @@ TEMPLATE_LIST_TEST_CASE("host task callback", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
-    std::cout << deviceSpec.getApi().getName() << std::endl;
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << device.getName() << std::endl;
+    INFO("api=" << deviceSpec.getApi().getName());
+    INFO("device=" << device.getName());
 
     onHost::Queue queue = device.makeQueue();
 
     std::promise<bool> promise;
 
-    queue.enqueueHostFn(
-        [&]()
-        {
-            std::cout << "Host Callback executed!" << std::endl;
-            promise.set_value(true);
-        });
+    queue.enqueueHostFn([&]() { promise.set_value(true); });
 
+    INFO("Host callback enqueued");
     CHECK(promise.get_future().get());
 }
 
@@ -436,14 +422,13 @@ TEMPLATE_LIST_TEST_CASE("host task", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
-    std::cout << deviceSpec.getApi().getName() << std::endl;
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << device.getName() << std::endl;
+    INFO("api=" << deviceSpec.getApi().getName());
+    INFO("device=" << device.getName());
 
     onHost::Queue queue = device.makeQueue();
 
@@ -472,14 +457,13 @@ TEMPLATE_LIST_TEST_CASE("queue wait should work", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
-    std::cout << deviceSpec.getApi().getName() << std::endl;
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << device.getName() << std::endl;
+    INFO("api=" << deviceSpec.getApi().getName());
+    INFO("device=" << device.getName());
 
     onHost::Queue queue = device.makeQueue();
 
@@ -503,14 +487,13 @@ TEMPLATE_LIST_TEST_CASE("task is destroyed after execution", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
-    std::cout << deviceSpec.getApi().getName() << std::endl;
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << device.getName() << std::endl;
+    INFO("api=" << deviceSpec.getApi().getName());
+    INFO("device=" << device.getName());
 
     onHost::Queue queue = device.makeQueue();
 

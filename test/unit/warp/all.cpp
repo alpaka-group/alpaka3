@@ -76,7 +76,7 @@ TEMPLATE_LIST_TEST_CASE("warp all vote honours only active lanes", "[warp][all]"
     auto selector = onHost::makeDeviceSelector(deviceSpec);
     if(!selector.isAvailable())
     {
-        INFO("No device available for " << deviceSpec.getName());
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 

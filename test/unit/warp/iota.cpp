@@ -7,8 +7,6 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
-#include <iostream>
-
 using namespace alpaka;
 
 using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
@@ -47,21 +45,20 @@ TEMPLATE_LIST_TEST_CASE("warp iota1D", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
-    std::cout << deviceSpec.getApi().getName() << std::endl;
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << device.getName() << std::endl;
+    INFO("api=" << deviceSpec.getApi().getName());
+    INFO("device=" << device.getName());
 
     auto deviceProperties = devSelector.getDeviceProperties(0);
     uint32_t warpSize = deviceProperties.warpSize;
 
     onHost::Queue queue = device.makeQueue();
     Vec extent = Vec{warpSize * 123u};
-    std::cout << "exec=" << onHost::demangledName(exec) << std::endl;
+    INFO("exec=" << onHost::demangledName(exec));
     auto dBuff = onHost::alloc<Vec<uint32_t, 1u>>(device, extent);
 
     auto hBuff = onHost::allocHostLike(dBuff);

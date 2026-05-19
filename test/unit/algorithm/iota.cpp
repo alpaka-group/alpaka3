@@ -10,7 +10,6 @@
 
 #include <chrono>
 #include <functional>
-#include <iostream>
 #include <type_traits>
 
 using namespace alpaka;
@@ -36,8 +35,8 @@ void executeTest(concepts::Executor auto exec, auto const& computeQueue, concept
             onHost::wait(computeQueue);
         }
         auto const endT = std::chrono::high_resolution_clock::now();
-        std::cout << "Time for iota: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-                  << " data size: " << extentMd << std::endl;
+        UNSCOPED_INFO(
+            "Time for iota: " << std::chrono::duration<double>(endT - beginT).count() << "s data size: " << extentMd);
 
         onHost::memcpy(computeQueue, hostBufferOut0, computeBufferIn0);
         onHost::wait(computeQueue);
@@ -68,8 +67,9 @@ void executeTest(concepts::Executor auto exec, auto const& computeQueue, concept
             onHost::wait(computeQueue);
         }
         auto const endT = std::chrono::high_resolution_clock::now();
-        std::cout << "Time for iota two inputs: " << std::chrono::duration<double>(endT - beginT).count() << 's'
-                  << " data size: " << extentMd << std::endl;
+        UNSCOPED_INFO(
+            "Time for iota two inputs: " << std::chrono::duration<double>(endT - beginT).count()
+                                         << "s data size: " << extentMd);
 
         onHost::memcpy(computeQueue, hostBufferOut0, computeBufferIn0);
         onHost::memcpy(computeQueue, hostBufferOut1, computeBufferIn1);
@@ -99,15 +99,15 @@ void prepareTest(auto cfg, concepts::Vector auto extentMd)
     auto computeDevSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!computeDevSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device computeDev = computeDevSelector.makeDevice(0);
 
-    std::cout << "device spec: " << getName(deviceSpec) << std::endl;
-    std::cout << "device name: " << computeDev.getName() << std::endl;
-    std::cout << "executor   : " << exec.getName() << std::endl;
+    INFO("device spec: " << getName(deviceSpec));
+    INFO("device name: " << computeDev.getName());
+    INFO("executor   : " << exec.getName());
 
     onHost::Queue computeQueue = computeDev.makeQueue();
     executeTest<DataType>(exec, computeQueue, extentMd);

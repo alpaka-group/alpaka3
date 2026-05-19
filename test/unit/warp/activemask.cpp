@@ -70,7 +70,7 @@ TEMPLATE_LIST_TEST_CASE("warp activemask reflects participating lanes", "[warp][
     auto selector = onHost::makeDeviceSelector(deviceSpec);
     if(!selector.isAvailable())
     {
-        INFO("No device available for " << deviceSpec.getName());
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 

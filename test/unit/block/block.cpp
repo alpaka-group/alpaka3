@@ -9,7 +9,6 @@
 
 #include <chrono>
 #include <functional>
-#include <iostream>
 #include <thread>
 
 using namespace alpaka;
@@ -51,20 +50,19 @@ TEMPLATE_LIST_TEST_CASE("block iota", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
-    std::cout << deviceSpec.getApi().getName() << std::endl;
     onHost::Device device = devSelector.makeDevice(0);
-
-    std::cout << device.getDeviceProperties() << std::endl;
+    INFO("api=" << deviceSpec.getApi().getName());
+    INFO("device properties=" << device.getDeviceProperties());
 
     Queue queue = device.makeQueue();
     constexpr Vec numBlocks = Vec{9u};
     constexpr Vec blockExtent = Vec{4u};
     constexpr Vec dataExtent = numBlocks * blockExtent;
-    std::cout << "block iota exec=" << onHost::demangledName(exec) << std::endl;
+    INFO("block iota exec=" << onHost::demangledName(exec));
     auto dBuff = onHost::alloc<uint32_t>(device, dataExtent);
 
     auto hBuff = onHost::allocHostLike(dBuff);

@@ -16,7 +16,6 @@
 
 #include <atomic>
 #include <barrier>
-#include <iostream>
 #include <thread>
 #include <vector>
 
@@ -48,14 +47,14 @@ TEMPLATE_LIST_TEST_CASE("blocking queue memory operations", "[bq][memory]", Test
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        std::cout << "No device available for " << deviceSpec.getName() << std::endl;
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
 
     onHost::Device device = devSelector.makeDevice(0);
-    std::cout << "device spec: " << getName(deviceSpec) << "\n";
-    std::cout << "device name: " << device.getName() << "\n";
-    std::cout << "executor   : " << exec.getName() << std::endl;
+    INFO("device spec: " << getName(deviceSpec));
+    INFO("device name: " << device.getName());
+    INFO("executor   : " << exec.getName());
 
     auto blockingQueue0 = device.makeQueue(queueKind::blocking);
     auto blockingQueue1 = device.makeQueue(queueKind::blocking);
@@ -132,13 +131,13 @@ TEMPLATE_LIST_TEST_CASE("blocking queue chained operations", "[bq][chain]", Test
     auto sel = onHost::makeDeviceSelector(deviceSpec);
     if(!sel.isAvailable())
     {
-        // backend not available
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
     onHost::Device device = sel.makeDevice(0);
-    std::cout << "device spec: " << getName(deviceSpec) << "\n";
-    std::cout << "device name: " << device.getName() << "\n";
-    std::cout << "executor   : " << exec.getName() << std::endl;
+    INFO("device spec: " << getName(deviceSpec));
+    INFO("device name: " << device.getName());
+    INFO("executor   : " << exec.getName());
     auto qBlocking0 = device.makeQueue(queueKind::blocking);
     auto qBlocking1 = device.makeQueue(queueKind::blocking);
     auto qBlocking2 = device.makeQueue(queueKind::blocking);
@@ -178,7 +177,10 @@ TEMPLATE_LIST_TEST_CASE("mixed queues independence", "[bq][mixed]", TestApis)
     auto exec = cfg[object::exec];
     auto sel = onHost::makeDeviceSelector(deviceSpec);
     if(!sel.isAvailable())
+    {
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
+    }
     onHost::Device device = sel.makeDevice(0);
 
     constexpr Vec extent = Vec{8u};
@@ -208,7 +210,10 @@ TEMPLATE_LIST_TEST_CASE("blocking queue event semantics", "[bq][event]", TestApi
 
     auto sel = onHost::makeDeviceSelector(deviceSpec);
     if(!sel.isAvailable())
+    {
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
+    }
     onHost::Device device = sel.makeDevice(0);
 
     // Blocking producer queue, non-blocking consumer queue
@@ -296,7 +301,10 @@ TEMPLATE_LIST_TEST_CASE("blocking queue event cache functionality", "[event][blo
 
     auto sel = onHost::makeDeviceSelector(deviceSpec);
     if(!sel.isAvailable())
+    {
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
+    }
 
     onHost::Device device = sel.makeDevice(0);
 
@@ -369,7 +377,10 @@ TEMPLATE_LIST_TEST_CASE("blocking queue event race condition", "[bq][event][race
 
     auto sel = onHost::makeDeviceSelector(deviceSpec);
     if(!sel.isAvailable())
+    {
+        SUCCEED("No device available for " << deviceSpec.getName());
         return;
+    }
     onHost::Device device = sel.makeDevice(0);
     auto blockingQueue = device.makeQueue(queueKind::blocking);
 
