@@ -15,11 +15,12 @@ source "${APCI_ALPAKA_ROOT}/script/ci/utils/default.sh"
 
 parse_compiler_version "$APCI_DEVICE_COMPILER"
 
-if [[ "$compiler_name" == "gcc" ]]; then
-    install_msg "GCC $compiler_version"
+script_msg "Install GCC"
 
+if [[ "$compiler_name" == "gcc" ]]; then
     # install gcc only if not already available, pre installed gcc can not be called with the version number as postfix
-    if [[ "$(gcc --version | awk '{print($3)}' | head -n 1 | cut -d"." -f1)" -ne "${compiler_version}" ]]; then
+    if [[ ! $(command -v gcc) || "$(gcc --version | awk '{print($3)}' | head -n 1 | cut -d"." -f1)" -ne "${compiler_version}" ]]; then
+        install_msg "GCC $compiler_version"
         # install requested GCC if it is not already available
         if ! command -v "gcc-${compiler_version}" >/dev/null 2>&1; then
             sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test

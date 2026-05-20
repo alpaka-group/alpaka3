@@ -52,3 +52,12 @@ parse_compiler_version() {
     export compiler_name
     export compiler_version
 }
+
+# does an 'apt update' only if no 'apt update' was done before
+# ATTENTION: If you add a new ppa no 'apt update' is performed. Instead call directly
+# `DEBIAN_FRONTEND=noninteractive apt update`.
+lazy_apt_update() {
+    if [[ -z "$(ls -A '/var/lib/apt/lists/')" ]]; then
+        DEBIAN_FRONTEND=noninteractive apt update
+    fi
+}

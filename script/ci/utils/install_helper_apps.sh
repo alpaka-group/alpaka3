@@ -7,23 +7,30 @@
 
 : "${APCI_ALPAKA_ROOT?'APCI_ALPAKA_ROOT is not defined. Root directory of the alpaka project'}"
 
+# shellcheck source=script/ci/utils/setup_vars.sh
+source "${APCI_ALPAKA_ROOT}/script/ci/utils/setup_vars.sh"
 # shellcheck source=script/ci/utils/set.sh
 source "${APCI_ALPAKA_ROOT}/script/ci/utils/set.sh"
 # shellcheck source=script/ci/utils/color_echo.sh
 source "${APCI_ALPAKA_ROOT}/script/ci/utils/color_echo.sh"
+# shellcheck source=script/ci/utils/misc.sh
+source "${APCI_ALPAKA_ROOT}/script/ci/utils/misc.sh"
 
 # inside the agc-container, the user is root and does not require sudo
 # to compatibility to other container, fake the missing sudo command
 if ! command -v sudo &>/dev/null; then
     if [[ "$APCI_OS_NAME" == "Linux" ]]; then
-        echo_yellow "install sudo"
+        install_msg "sudo"
 
-        DEBIAN_FRONTEND=noninteractive apt update
+        lazy_apt_update
         DEBIAN_FRONTEND=noninteractive apt install -y sudo
     fi
 fi
 
-DEBIAN_FRONTEND=noninteractive apt update
+lazy_apt_update
 # python3 is required for var_storage.sh
 # software-properties-common: 'add-apt-repository' and certificates for wget https download
-DEBIAN_FRONTEND=noninteractive apt install -y python3 software-properties-common
+_helper_apps=(python3 software-properties-common)
+install_msg "${_helper_apps[*]}"
+DEBIAN_FRONTEND=noninteractive apt install -y "${_helper_apps[@]}"
+unset _helper_apps
