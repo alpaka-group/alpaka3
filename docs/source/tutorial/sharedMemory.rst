@@ -40,7 +40,7 @@ Static Shared Memory Array
 The next example is showing a chunk-wise permutation of the indices.
 For each chunk the id's should be stored in reverse order into the output.
 The frame extent from the kernel launch parameters and the chunk extents are not required to match.
-The chunks extent is a `CVec` and therefore known at compile time, this allows its usage as extents to declare static shared memory.
+The chunks extent is a ``CVec`` and therefore known at compile time, this allows its usage as extents to declare static shared memory.
 Static shared memory compared to dynamic shared memory, shown in the next example,
 has the benefits that the developer is not required to manage the shared memory chunk by hand and in case it is multidimensional it provides address calculations optimizations.
 
