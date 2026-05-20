@@ -221,19 +221,30 @@ namespace alpaka::onAcc
                 auto begin = m_idxRange.m_begin + groupOffset;
 
                 auto strideMD = m_idxRange.m_stride[selectedDims];
-
-                auto numElements = divCeil(
-                                       m_idxRange.distance()[selectedDims],
-                                       m_threadSpace.m_threadCount[selectedDims] * strideMD)
-                                       .product();
-                auto linearCurrent
-                    = linearize(m_threadSpace.m_threadCount[selectedDims], threadIdx[selectedDims]) * numElements;
                 auto extentMD = divCeil(m_idxRange.distance()[selectedDims], strideMD);
+
+                auto threadCountMD = m_threadSpace.m_threadCount[selectedDims];
+
+                auto numWorkerSlots = threadCountMD.product();
+                auto linearSlotIdx = linearize(threadCountMD, threadIdx[selectedDims]);
+
+                auto logicalExtent = extentMD.product();
+
+                // elements per slot
+                auto base = logicalExtent / numWorkerSlots;
+                // remainder elements will be given to the slots with id lower than rem
+                auto rem = logicalExtent % numWorkerSlots;
+
+                auto nextLinearSlotIdx = linearSlotIdx + IdxType{1};
+
+                auto linearCurrent = linearSlotIdx * base + std::min(linearSlotIdx, rem);
+                auto linearEnd = nextLinearSlotIdx * base + std::min(nextLinearSlotIdx, rem);
+
                 return const_iterator(
                     begin,
                     linearCurrent,
                     IdxType{1u},
-                    std::min(linearCurrent + numElements, extentMD.product()),
+                    std::min(linearEnd, logicalExtent),
                     extentMD,
                     strideMD);
             }
@@ -252,11 +263,22 @@ namespace alpaka::onAcc
             else if constexpr(std::is_same_v<T_IdxMapperFn, layout::Contiguous>)
             {
                 auto strideMD = m_idxRange.m_stride[selectedDims];
-                auto numElements
-                    = divCeil(m_idxRange.distance()[selectedDims], numThreads[selectedDims] * strideMD).product();
-                auto linearCurrent = linearize(numThreads[selectedDims], threadIdx[selectedDims]) * numElements;
                 auto extentMD = divCeil(m_idxRange.distance()[selectedDims], strideMD);
-                return const_iterator_end(std::min(linearCurrent + numElements, extentMD.product()));
+
+                auto numWorkerSlots = numThreads[selectedDims].product();
+                auto linearSlotIdx = linearize(numThreads[selectedDims], threadIdx[selectedDims]);
+
+                auto logicalExtent = extentMD.product();
+
+                // elements per slot
+                auto base = logicalExtent / numWorkerSlots;
+                // remainder elements will be given to the slots with id lower than rem
+                auto rem = logicalExtent % numWorkerSlots;
+
+                auto nextLinearSlotIdx = linearSlotIdx + IdxType{1};
+                auto linearEnd = nextLinearSlotIdx * base + std::min(nextLinearSlotIdx, rem);
+
+                return const_iterator_end(std::min(linearEnd, logicalExtent));
             }
         }
 
