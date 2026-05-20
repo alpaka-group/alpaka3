@@ -155,7 +155,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
       - name: export GitHub Actions variables to environment variables
-        run: echo "ACPI_IMAGE_NAME=${{ matrix.config.container }}" >> $GITHUB_ENV
+        run: |
+            echo "ACPI_IMAGE_NAME=${{ matrix.config.container }}" >> $GITHUB_ENV
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+                echo "ACPI_GIT_URL=${{ github.event.pull_request.head.repo.clone_url }}" >> $GITHUB_OUTPUT
+                echo "ACPI_BRANCH_NAME=${{ github.event.pull_request.head.ref }}" >> $GITHUB_ENV
+            else
+                echo "ACPI_GIT_URL=https://github.com/${{ github.repository }}.git" >> $GITHUB_OUTPUT
+                echo "ACPI_BRANCH_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
+            fi
       - name: print env
         run: env
       - name: job configuration environment variables
