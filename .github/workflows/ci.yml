@@ -154,6 +154,8 @@ jobs:
       # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v6
+      - name: export GitHub Actions variables to environment variables
+        run: echo "ACPI_IMAGE_NAME=${{ matrix.config.container }}" >> $GITHUB_ENV
       - name: print env
         run: env
       - name: job configuration environment variables
