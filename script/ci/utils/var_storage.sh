@@ -10,16 +10,15 @@
 # shellcheck source=script/ci/utils/misc.sh
 source "${APCI_ALPAKA_ROOT}/script/ci/utils/misc.sh"
 
-# TODO: does not support exported variables. Should be fixable.
 typeofvar() {
     local type_signature
     type_signature=$(declare -p "$1" 2>/dev/null)
 
-    if [[ "$type_signature" =~ "declare --" ]]; then
+    if [[ "$type_signature" =~ declare\ (--|-x) ]]; then
         printf "string"
-    elif [[ "$type_signature" =~ "declare -a" ]]; then
+    elif [[ "$type_signature" =~ declare\ (-a|-ax) ]]; then
         printf "array"
-    elif [[ "$type_signature" =~ "declare -A" ]]; then
+    elif [[ "$type_signature" =~ declare\ (-A|-Ax) ]]; then
         printf "map"
     else
         printf "none"

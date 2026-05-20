@@ -9,7 +9,9 @@
 # shellcheck source=script/ci/utils/default.sh
 source "${APCI_ALPAKA_ROOT}/script/ci/utils/default.sh"
 
-# TODO: add guard which fails if runner is MacOS or Windows -> implementation is Linux specific
+if [[ "$APCI_OS_NAME" != "Linux" ]]; then
+    exit_error "Install GCC script does not support Windows or MacOS"
+fi
 
 : "${APCI_DEVICE_COMPILER?'The device compiler must be specified'}"
 
@@ -47,9 +49,8 @@ if [[ "$compiler_name" == "gcc" ]]; then
         unset version_exe_name
     done
 
-    # TODO: should be exported here. Because of a bug in typeofvar(), it does not work at the moment
-    APCI_CC_COMPILER="${gcc_base_path}/gcc-${compiler_version}"
-    APCI_CXX_COMPILER="${gcc_base_path}/g++-${compiler_version}"
+    export APCI_CC_COMPILER="${gcc_base_path}/gcc-${compiler_version}"
+    export APCI_CXX_COMPILER="${gcc_base_path}/g++-${compiler_version}"
 
     echo_green "${APCI_CC_COMPILER} --version"
     $APCI_CC_COMPILER --version
@@ -58,9 +59,6 @@ if [[ "$compiler_name" == "gcc" ]]; then
 
     store_variable APCI_CC_COMPILER
     store_variable APCI_CXX_COMPILER
-
-    export APCI_CC_COMPILER
-    export APCI_CXX_COMPILER
 
     unset gcc_base_path
 else
