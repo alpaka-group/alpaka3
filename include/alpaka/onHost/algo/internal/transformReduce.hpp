@@ -46,9 +46,7 @@ namespace alpaka::onHost::internal
             // Shared memory for block-wide reduction
             T_DataType* dynS = onAcc::getDynSharedMem<T_DataType>(acc);
             auto pitchMd = alpaka::calculatePitchesFromExtents<T_DataType>(chunkExtents);
-            auto tbSum = MdSpan{dynS, chunkExtents, pitchMd}; // makeMdSpan(dynS, frameExtent, pitchMd);
-            //  auto tbSum = onAcc::declareSharedMdArray<T_DataType, uniqueId()>(acc, CVec<uint32_t, 2>{});
-            // T_DataType* dynS = &tbSum[0];
+            auto tbSum = MdSpan{dynS, chunkExtents, pitchMd};
 
             auto traverseInFrame = alpaka::onAcc::makeIdxMap(
                 acc,
@@ -62,18 +60,18 @@ namespace alpaka::onHost::internal
                 tbSum[elemIdxInFrame] = neutralElement;
             }
 
-            auto const frameDataExtent = numChunks * chunkExtents;
+            auto const chunkDataExtent = numChunks * chunkExtents;
             auto traverseOverFrames = alpaka::onAcc::makeIdxMap(
                 acc,
                 alpaka::onAcc::worker::blocksInGrid,
-                alpaka::IdxRange{frameDataExtent.fill(0), frameDataExtent, chunkExtents});
+                alpaka::IdxRange{chunkDataExtent.fill(0), chunkDataExtent, chunkExtents});
 
-            for(auto frameIdx : traverseOverFrames)
+            for(auto chunkIdx : traverseOverFrames)
             {
-                for(alpaka::concepts::Vector auto elemIdxInFrame : traverseInFrame)
+                for(alpaka::concepts::Vector auto elemIdxInChunk : traverseInFrame)
                 {
                     auto allThreads = alpaka::onAcc::SimdAlgo{
-                        alpaka::onAcc::WorkerGroup{frameIdx + elemIdxInFrame, frameDataExtent}};
+                        alpaka::onAcc::WorkerGroup{chunkIdx + elemIdxInChunk, chunkDataExtent}};
 
                     // reduce functor with simd package support
                     callTransformFn(
@@ -81,7 +79,7 @@ namespace alpaka::onHost::internal
                         allThreads,
                         extentMd,
                         neutralElement,
-                        tbSum[elemIdxInFrame],
+                        tbSum[elemIdxInChunk],
                         reduceFunc,
                         transformFunc,
                         ALPAKA_FORWARD(inputs)...);
@@ -224,13 +222,6 @@ namespace alpaka::onHost::internal
         using IndexType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(extentMd)>;
         auto frameSpec = getFrameSpec<T_DataType>(queue.getDevice(), exec, extentMd);
 
-        /* Derive the chunks size and number of chunks from the SIMD optimized frame specification.
-         * Having the chunking independent of the number of threads in a block helps to control the numerical precision
-         * to reduce numerical issues due to long chains of reductions.
-         */
-        auto numChunks = frameSpec.getNumFrames();
-        auto chunkExtents = frameSpec.getFrameExtents();
-
         /* Adjust the launch parameters to not oversubscribe a device too much.
          *
          * @todo: This heuristic should be adjusted based on benchmarking different cases.
@@ -250,6 +241,13 @@ namespace alpaka::onHost::internal
                 static_cast<IndexType>(numMultiProcessors * multiprocessorScaling));
             frameSpec = FrameSpec{adjsutedNumFrames, frameSpec.getFrameExtents(), exec};
         }
+
+        /* Derive the chunk size and number of chunks from the SIMD optimized frame specification.
+         * The chunking parameters influences the numerical precision because it provides the possibility to control
+         * the length of the accumulation chain of a single thread.
+         */
+        auto numChunks = frameSpec.getNumFrames();
+        auto chunkExtents = frameSpec.getFrameExtents();
 
         auto kernelFn = SimdTransformReduceKernel{
             static_cast<uint32_t>(frameSpec.getFrameExtents().product() * sizeof(T_DataType))};

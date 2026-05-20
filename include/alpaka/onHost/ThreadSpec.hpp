@@ -29,7 +29,7 @@ namespace alpaka::onHost
         alpaka::concepts::Vector T_NumBlocks,
         alpaka::concepts::Vector<typename T_NumBlocks::type, T_NumBlocks::dim()> T_NumThreads,
         alpaka::concepts::Executor T_Executor = alpaka::exec::AnyExecutor>
-    struct ThreadSpec : T_Executor
+    struct ThreadSpec
     {
         using index_type = typename T_NumBlocks::type;
         using NumBlocksVecType = typename T_NumBlocks::UniVec;
@@ -40,15 +40,11 @@ namespace alpaka::onHost
         NumThreadsVecType m_numThreads;
 
     public:
-        constexpr ThreadSpec(T_NumBlocks const& numBlocks, T_NumThreads const& numThreadsPerBlock)
+        constexpr ThreadSpec(
+            T_NumBlocks const& numBlocks,
+            T_NumThreads const& numThreadsPerBlock,
+            T_Executor executor = T_Executor{})
             : m_numBlocks(numBlocks)
-            , m_numThreads(numThreadsPerBlock)
-        {
-        }
-
-        constexpr ThreadSpec(T_NumBlocks const& numBlocks, T_NumThreads const& numThreadsPerBlock, T_Executor executor)
-            : T_Executor(std::move(executor))
-            , m_numBlocks(numBlocks)
             , m_numThreads(numThreadsPerBlock)
         {
             alpaka::unused(executor);

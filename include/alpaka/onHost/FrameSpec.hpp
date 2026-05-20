@@ -42,7 +42,7 @@ namespace alpaka::onHost
         alpaka::concepts::Vector T_NumFrames,
         alpaka::concepts::Vector<typename T_NumFrames::type, T_NumFrames::dim()> T_FrameExtents,
         alpaka::concepts::Executor T_Executor = alpaka::exec::AnyExecutor>
-    struct FrameSpec : T_Executor
+    struct FrameSpec
     {
         using index_type = typename T_NumFrames::type;
 
@@ -64,7 +64,7 @@ namespace alpaka::onHost
             alpaka::unused(executor);
         }
 
-        [[nodiscard]] static constexpr T_Executor getExecutor()
+        [[nodiscard]] static constexpr T_Executor getExecutor() noexcept
         {
             return T_Executor{};
         }

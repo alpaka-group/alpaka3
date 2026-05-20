@@ -52,7 +52,7 @@ struct BlockSumKernel
 // END-TUTORIAL-sharedScalarKernel
 
 // BEGIN-TUTORIAL-sharedKernel
-struct ReverseFrameKernel
+struct ReverseChunkKernel
 {
     ALPAKA_FN_ACC void operator()(
         onAcc::concepts::Acc auto const& acc,
@@ -222,7 +222,7 @@ TEMPLATE_LIST_TEST_CASE("tutorial shared memory chunk", "[docs]", docs::test::Te
     auto chunkExtents = CVec<uint32_t, chunkSize>{};
     onHost::concepts::FrameSpec auto frameSpec
         = onHost::FrameSpec{alpaka::divCeil(dataExtent, chunkSize), frameExtents};
-    queue.enqueue(frameSpec, KernelBundle{ReverseFrameKernel{}, outputBuffer, inputBuffer, chunkExtents});
+    queue.enqueue(frameSpec, KernelBundle{ReverseChunkKernel{}, outputBuffer, inputBuffer, chunkExtents});
     // END-TUTORIAL-sharedLaunch
 
     onHost::memcpy(queue, hostOutput, outputBuffer);
