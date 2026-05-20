@@ -13,9 +13,6 @@ if [[ -n ${GITHUB_ACTIONS+x} ]]; then
     export _APCI_FORCE_COLOR_OUTPUT=1
 
     export APCI_OS_NAME="$RUNNER_OS"
-
-    # TODO: replace place holder
-    export ACPI_IMAGE_NAME="wurst"
 fi
 
 if [[ -n ${GITLAB_CI+x} ]]; then
