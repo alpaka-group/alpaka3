@@ -92,7 +92,7 @@ namespace alpaka
                 return alpakaStdSimd::where(mask.asNativeType(), asNativeType());
             }
 
-            static constexpr auto fill(T_Type const& value)
+            static constexpr auto fill(T_Type value)
             {
                 return StdSimd{BaseType(value)};
             }
