@@ -154,9 +154,10 @@ jobs:
       # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v6
-
+      - name: print env
+        run: env
       - name: job configuration environment variables
-        run: $APCI_ALPAKA_ROOT/script/ci/print_vars.sh
+        run: $APCI_ALPAKA_ROOT/script/ci/job_info.sh
       # Install base dependencies
       - name: Install base dependencies
         run: |
