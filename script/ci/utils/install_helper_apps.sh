@@ -16,16 +16,23 @@ source "${APCI_ALPAKA_ROOT}/script/ci/utils/color_echo.sh"
 # shellcheck source=script/ci/utils/misc.sh
 source "${APCI_ALPAKA_ROOT}/script/ci/utils/misc.sh"
 
-# inside the agc-container, the user is root and does not require sudo
-# to compatibility to other container, fake the missing sudo command
-if ! command -v sudo &>/dev/null; then
-    if [[ "$APCI_OS_NAME" == "Linux" ]]; then
-        install_msg "sudo"
+########################
+# install sudo
+########################
 
-        lazy_apt_update
-        DEBIAN_FRONTEND=noninteractive apt install -y sudo
-    fi
-fi
+# shellcheck source=script/ci/utils/helper_apps/sudo.sh
+source "${APCI_ALPAKA_ROOT}/script/ci/utils/helper_apps/sudo.sh"
+
+########################
+# install agc-manager
+########################
+
+# shellcheck source=script/ci/utils/helper_apps/agc-manager.sh
+source "${APCI_ALPAKA_ROOT}/script/ci/utils/helper_apps/agc-manager.sh"
+
+########################
+# install via apt
+########################
 
 lazy_apt_update
 # python3 is required for var_storage.sh

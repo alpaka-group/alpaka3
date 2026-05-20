@@ -12,6 +12,9 @@ source "${APCI_ALPAKA_ROOT}/script/ci/utils/install_helper_apps.sh"
 
 : "${APCI_DEVICE_COMPILER?'The device compiler must be specified'}"
 
+# disable false positive
+# shellcheck disable=SC2218
+# SC2218: This function is only defined later. Move the definition up.
 script_msg "Install software dependencies (install_dependencies.sh)"
 
 # shellcheck source=script/ci/install/gcc.sh
