@@ -15,7 +15,7 @@ function(alpaka_install_catch2)
                 WARNING
                 "Your System version of CATCH2 V3 should have set '-DCATCH_CONFIG_NO_POSIX_SIGNALS=ON', else some tests e.g. with managed memory can fail."
             )
-            find_package(Catch2 3.5.3 REQUIRED)
+            find_package(Catch2 3.15.0 REQUIRED)
             include(Catch)
         else()
             message(STATUS "download and install Catch2 locally")
@@ -23,7 +23,7 @@ function(alpaka_install_catch2)
             set(CATCH_CONFIG_NO_POSIX_SIGNALS ON)
             # get Catch2 v3 and build it from source with the same C++ standard as the tests
             include(FetchContent)
-            FetchContent_Declare(Catch2 GIT_REPOSITORY https://github.com/catchorg/Catch2.git GIT_TAG v3.5.3)
+            FetchContent_Declare(Catch2 GIT_REPOSITORY https://github.com/catchorg/Catch2.git GIT_TAG v3.15.0)
             FetchContent_MakeAvailable(Catch2)
             target_compile_features(Catch2 PUBLIC cxx_std_20)
             include(Catch)
