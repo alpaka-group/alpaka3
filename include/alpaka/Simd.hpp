@@ -121,11 +121,15 @@ namespace alpaka
          * This constructor is not constexpr because std::simd is using a reinterpret_cast during the initialization
          * with a generator and complains that this is not allowed in constexpr functions.
          */
-        template<typename F>
-        requires(std::is_invocable_v<F, std::integral_constant<uint32_t, 0u>>)
+        template<
+            typename F,
+            std::enable_if_t<std::is_invocable_v<F, std::integral_constant<uint32_t, 0u>>, uint32_t> = 0u>
         ALPAKA_FN_HOST_ACC explicit Simd(F&& generator)
             : Simd(std::forward<F>(generator), std::make_integer_sequence<uint32_t, T_width>{})
         {
+            /* Do not change the enable if to `requires(std::is_invocable_v<F, std::integral_constant<uint32_t, 0u>>)`
+             * nvcc 12.3.2 has a bug that creates compile issue when requires with std::is_invocable is used.
+             */
         }
 
         /** Constructor for SIMD pack
