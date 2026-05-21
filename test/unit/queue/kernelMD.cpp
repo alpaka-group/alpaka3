@@ -10,6 +10,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -75,21 +76,7 @@ void validate(auto& queue, auto& device, auto exec, auto testCase)
 
 TEMPLATE_LIST_TEST_CASE("kernelCallMD", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("api=" << deviceSpec.getApi().getName());
-    INFO("device=" << device.getName());
-
+    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
     onHost::Queue queue = device.makeQueue();
 
     auto testCfg = std::make_tuple(

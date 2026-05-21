@@ -11,6 +11,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -40,21 +41,7 @@ struct BlockingTestKernel
 
 TEMPLATE_LIST_TEST_CASE("blocking queue memory operations", "[bq][memory]", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("device spec: " << getName(deviceSpec));
-    INFO("device name: " << device.getName());
-    INFO("executor   : " << exec.getName());
+    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
 
     auto blockingQueue0 = device.makeQueue(queueKind::blocking);
     auto blockingQueue1 = device.makeQueue(queueKind::blocking);
@@ -123,20 +110,8 @@ struct FillKernel
 // enqueue different steps of a compute chain in independent blocking queues
 TEMPLATE_LIST_TEST_CASE("blocking queue chained operations", "[bq][chain]", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
+    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
 
-    auto sel = onHost::makeDeviceSelector(deviceSpec);
-    if(!sel.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-    onHost::Device device = sel.makeDevice(0);
-    INFO("device spec: " << getName(deviceSpec));
-    INFO("device name: " << device.getName());
-    INFO("executor   : " << exec.getName());
     auto qBlocking0 = device.makeQueue(queueKind::blocking);
     auto qBlocking1 = device.makeQueue(queueKind::blocking);
     auto qBlocking2 = device.makeQueue(queueKind::blocking);
@@ -171,16 +146,7 @@ TEMPLATE_LIST_TEST_CASE("blocking queue chained operations", "[bq][chain]", Test
 // Test blocking and non-blocking queue should be usable together
 TEMPLATE_LIST_TEST_CASE("mixed queues independence", "[bq][mixed]", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-    auto sel = onHost::makeDeviceSelector(deviceSpec);
-    if(!sel.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-    onHost::Device device = sel.makeDevice(0);
+    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
 
     constexpr Vec extent = Vec{8u};
     constexpr auto frameSize = CVec<uint32_t, 4u>{};
@@ -203,17 +169,7 @@ TEMPLATE_LIST_TEST_CASE("mixed queues independence", "[bq][mixed]", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("blocking queue event semantics", "[bq][event]", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto sel = onHost::makeDeviceSelector(deviceSpec);
-    if(!sel.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-    onHost::Device device = sel.makeDevice(0);
+    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
 
     // Blocking producer queue, non-blocking consumer queue
     auto qBlocking = device.makeQueue(queueKind::blocking);
@@ -294,17 +250,7 @@ TEMPLATE_LIST_TEST_CASE("blocking queue event semantics", "[bq][event]", TestApi
 // blocking queue event-cache behavior tests
 TEMPLATE_LIST_TEST_CASE("blocking queue event cache functionality", "[event][blocking-queue]", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-
-    auto sel = onHost::makeDeviceSelector(deviceSpec);
-    if(!sel.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = sel.makeDevice(0);
+    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
 
     SECTION("Rapid event enqueueing")
     {
@@ -370,16 +316,7 @@ TEMPLATE_LIST_TEST_CASE("blocking queue event cache functionality", "[event][blo
 // Test for race condition in blocking queue event enqueue
 TEMPLATE_LIST_TEST_CASE("blocking queue event race condition", "[bq][event][race]", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-
-    auto sel = onHost::makeDeviceSelector(deviceSpec);
-    if(!sel.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-    onHost::Device device = sel.makeDevice(0);
+    onHost::Device device = test::getDevice(TestType::makeDict());
     auto blockingQueue = device.makeQueue(queueKind::blocking);
 
     // Test concurrent event operations to detect race conditions

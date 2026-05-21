@@ -7,6 +7,7 @@
 #include <alpaka/meta/CartesianProduct.hpp>
 #include <alpaka/meta/TypeListOps.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -130,18 +131,7 @@ void testCase(HelperPack<T_Engine, T_FP, T_Interval>, uint64_t seed, T_FP minF, 
     using namespace alpaka;
 
     // ---- device selection ---------------------------------------------------
-    auto cfg = T_TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    auto device = devSelector.makeDevice(0);
+    auto [device, exec] = test::getDeviceExecutor(T_TestType::makeDict());
     auto queue = device.makeQueue(queueKind::blocking);
 
     // ---- allocate output buffer (1D of N values) ----------------------------

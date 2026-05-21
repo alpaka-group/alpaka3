@@ -4,6 +4,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -38,17 +39,7 @@ using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, 
 
 TEMPLATE_LIST_TEST_CASE("fn with alpaka fallback", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
+    onHost::Device device = test::getDevice(TestType::makeDict());
 
     if constexpr(device.getApi() == api::host && device.getDeviceKind() == deviceKind::cpu)
     {
@@ -101,17 +92,7 @@ using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, 
 
 TEMPLATE_LIST_TEST_CASE("fn with generic fallback", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
+    onHost::Device device = test::getDevice(TestType::makeDict());
 
     if constexpr(device.getApi() == api::host && device.getDeviceKind() == deviceKind::cpu)
     {
@@ -174,17 +155,7 @@ using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, 
 
 TEMPLATE_LIST_TEST_CASE("fn without fallback", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
+    onHost::Device device = test::getDevice(TestType::makeDict());
 
     if constexpr(device.getApi() == api::host && device.getDeviceKind() == deviceKind::cpu)
     {

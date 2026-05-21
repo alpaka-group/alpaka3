@@ -4,6 +4,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -43,23 +44,8 @@ struct KernelCVecFrameExtents
 
 TEMPLATE_LIST_TEST_CASE("CVec frame extent kernel call", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("api=" << deviceSpec.getApi().getName());
-    INFO("device=" << device.getName());
-
+    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
     Queue queue = device.makeQueue();
-
 
     auto dBuff = onHost::alloc<bool>(device, Vec{1u});
 
@@ -96,23 +82,8 @@ struct KernelCVecThreadExtents
 
 TEMPLATE_LIST_TEST_CASE("CVec thread extent kernel call", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("api=" << deviceSpec.getApi().getName());
-    INFO("device=" << device.getName());
-
+    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
     Queue queue = device.makeQueue();
-
 
     auto dBuff = onHost::alloc<bool>(device, Vec{1u});
 

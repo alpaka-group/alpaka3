@@ -11,6 +11,7 @@
 
 #include <alpaka/onAcc/warp.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -109,21 +110,11 @@ namespace
 
 TEMPLATE_LIST_TEST_CASE("warp shflDown shifts toward higher lanes", "[warp][shfl_down]", WarpTestBackends)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
+    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
 
-    auto selector = onHost::makeDeviceSelector(deviceSpec);
-    if(!selector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    auto deviceProperties = selector.getDeviceProperties(0);
+    auto deviceProperties = device.getDeviceProperties();
     auto const warpExtent = deviceProperties.warpSize;
 
-    auto device = selector.makeDevice(0);
     auto queue = device.makeQueue(queueKind::blocking);
 
     auto successHost = onHost::allocHost<bool>(1u);
@@ -136,6 +127,5 @@ TEMPLATE_LIST_TEST_CASE("warp shflDown shifts toward higher lanes", "[warp][shfl
     queue.enqueue(onHost::FrameSpec{blocks, threads, exec}, KernelBundle{ShflDownMultiThreadKernel{}, successDev});
     onHost::memcpy(queue, successHost, successDev);
     onHost::wait(queue);
-    INFO("backend=" << deviceSpec.getName());
     CHECK(successHost[0]);
 }

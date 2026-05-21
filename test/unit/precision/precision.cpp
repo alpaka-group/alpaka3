@@ -6,6 +6,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -66,22 +67,8 @@ enum Sign : bool
 template<Sign T_signedMemIdx, Sign T_signedKernelIdx>
 void callTests(auto cfg)
 {
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    Device device = devSelector.makeDevice(0);
+    auto [device, exec] = test::getDeviceExecutor(cfg);
     Queue queue = device.makeQueue();
-
-    INFO(
-        "device=" << device.getName() << " api=" << deviceSpec.getApi().getName()
-                  << " exec=" << onHost::demangledName(exec));
 
     IotaKernelND iotaKernelND;
     {
@@ -223,22 +210,8 @@ struct IotaKernelNDForceCast
 template<typename T_MemIdx, typename T_LoopIdx>
 void callForceCastTests(auto cfg)
 {
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    Device device = devSelector.makeDevice(0);
+    auto [device, exec] = test::getDeviceExecutor(cfg);
     Queue queue = device.makeQueue();
-
-    INFO(
-        "device=" << device.getName() << " api=" << deviceSpec.getApi().getName()
-                  << " exec=" << onHost::demangledName(exec));
 
     IotaKernelNDForceCast<T_LoopIdx> iotaKernelNDForceCast;
 

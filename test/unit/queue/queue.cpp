@@ -4,6 +4,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -24,26 +25,12 @@ struct NoArgumentsKernel
  */
 TEMPLATE_LIST_TEST_CASE("kernel no arguments", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
+    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
 
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("api=" << deviceSpec.getApi().getName());
-    INFO("device=" << device.getName());
     INFO("mem=" << device.getDeviceProperties().globalMemCapacityBytes);
     INFO("free mem=" << device.getFreeGlobalMemBytes());
 
     onHost::Queue queue = device.makeQueue(queueKind::blocking);
-    INFO("exec=" << onHost::demangledName(exec));
-
     queue.enqueue(onHost::FrameSpec{1, 1, exec}, KernelBundle{NoArgumentsKernel{}});
 }
 
@@ -63,24 +50,9 @@ struct IotaKernel
 
 TEMPLATE_LIST_TEST_CASE("iota", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("api=" << deviceSpec.getApi().getName());
-    INFO("device=" << device.getName());
-
+    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
     onHost::Queue queue = device.makeQueue();
     constexpr Vec extent = Vec{12u};
-    INFO("exec=" << onHost::demangledName(exec));
     auto dBuff = onHost::alloc<uint32_t>(device, extent);
 
     auto hBuff = onHost::allocHostLike(dBuff);
@@ -105,24 +77,10 @@ struct IotaKernelND
 
 TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("api=" << deviceSpec.getApi().getName());
-    INFO("device=" << device.getName());
-
+    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
     onHost::Queue queue = device.makeQueue();
+
     constexpr Vec extent = Vec{8u, 16u};
-    INFO("exec=" << onHost::demangledName(exec));
     auto dBuff = onHost::alloc<Vec<uint32_t, 2u>>(device, extent);
 
     auto hBuff = onHost::allocHostLike(dBuff);
@@ -137,24 +95,10 @@ TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("api=" << deviceSpec.getApi().getName());
-    INFO("device=" << device.getName());
-
+    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
     onHost::Queue queue = device.makeQueue();
+
     constexpr Vec extent = Vec{4u, 8u, 16u};
-    INFO("exec=" << onHost::demangledName(exec));
     auto dBuff = onHost::alloc<Vec<uint32_t, 3u>>(device, extent);
 
     auto hBuff = onHost::allocHostLike(dBuff);
@@ -169,24 +113,10 @@ TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("iota4D", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("api=" << deviceSpec.getApi().getName());
-    INFO("device=" << device.getName());
-
+    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
     onHost::Queue queue = device.makeQueue();
+
     constexpr Vec extent = Vec{4u, 8u, 16, 32};
-    INFO("exec=" << onHost::demangledName(exec));
     auto dBuff = onHost::alloc<Vec<uint32_t, 4u>>(device, extent);
 
     auto hBuff = onHost::allocHostLike(dBuff);
@@ -235,22 +165,9 @@ struct IotaKernelNDSelection
 
 TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("api=" << deviceSpec.getApi().getName());
-    INFO("device=" << device.getName());
-
+    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
     onHost::Queue queue = device.makeQueue();
+
     constexpr Vec numBlocks = Vec{4u, 8u, 16u};
     auto numBlocksReduced = numBlocks;
 
@@ -260,7 +177,6 @@ TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
     numBlocksReduced.ref(selection) = 1u;
 
     INFO("numBlocksReduced=" << numBlocksReduced);
-    INFO("exec=" << onHost::demangledName(exec));
     auto dBuff = onHost::alloc<Vec<uint32_t, 3u>>(device, numBlocks);
 
     auto hBuff = onHost::allocHostLike(dBuff);
@@ -331,20 +247,7 @@ private:
 /** Test that memcpy and memset can be called with non copy-able and move-able data as lvalue and rvalue. */
 TEMPLATE_LIST_TEST_CASE("memcpy", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("api=" << deviceSpec.getApi().getName());
-    INFO("device=" << device.getName());
-
+    onHost::Device device = test::getDevice(TestType::makeDict());
     onHost::Queue queue = device.makeQueue();
     constexpr Vec problemSize = Vec{16u};
 
@@ -401,20 +304,7 @@ TEMPLATE_LIST_TEST_CASE("memcpy", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("host task callback", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("api=" << deviceSpec.getApi().getName());
-    INFO("device=" << device.getName());
-
+    onHost::Device device = test::getDevice(TestType::makeDict());
     onHost::Queue queue = device.makeQueue();
 
     std::promise<bool> promise;
@@ -427,20 +317,7 @@ TEMPLATE_LIST_TEST_CASE("host task callback", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("host task", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("api=" << deviceSpec.getApi().getName());
-    INFO("device=" << device.getName());
-
+    onHost::Device device = test::getDevice(TestType::makeDict());
     onHost::Queue queue = device.makeQueue();
 
     bool flag = false;
@@ -462,20 +339,7 @@ TEMPLATE_LIST_TEST_CASE("host task", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("queue wait should work", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("api=" << deviceSpec.getApi().getName());
-    INFO("device=" << device.getName());
-
+    onHost::Device device = test::getDevice(TestType::makeDict());
     onHost::Queue queue = device.makeQueue();
 
     std::atomic<bool> callbackFinished{false};
@@ -492,20 +356,7 @@ TEMPLATE_LIST_TEST_CASE("queue wait should work", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("task is destroyed after execution", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("api=" << deviceSpec.getApi().getName());
-    INFO("device=" << device.getName());
-
+    onHost::Device device = test::getDevice(TestType::makeDict());
     onHost::Queue queue = device.makeQueue();
 
     struct Task

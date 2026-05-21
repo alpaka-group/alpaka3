@@ -4,6 +4,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -31,20 +32,7 @@ struct IotaKernel
 
 TEMPLATE_LIST_TEST_CASE("keep alive", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
-
+    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
     onHost::Queue queue = device.makeQueue();
 
     constexpr std::size_t N = 256;

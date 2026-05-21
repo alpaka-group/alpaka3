@@ -7,6 +7,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -239,19 +240,7 @@ struct TestAtomicOperations
 
 TEMPLATE_LIST_TEST_CASE("atomicOperationsWorking", "[atomic]", TestApis)
 {
-    auto cfg = TestType::makeDict();
-
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    auto device = devSelector.makeDevice(0);
+    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
 
     // According to the CUDA 12.1 Programming Guide, Section 7.14. Atomic Functions, an atomic function performs a
     // read-modify-write atomic operation on one 32-bit or 64-bit word residing in global or shared memory.
