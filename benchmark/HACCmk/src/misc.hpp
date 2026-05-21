@@ -76,6 +76,9 @@ namespace hacc
             return EXIT_FAILURE;
         }
 
+        // The first round is a warmup round and timings will not be monitored.
+        numRepetitions += 1;
+
         return EXIT_SUCCESS;
     }
 

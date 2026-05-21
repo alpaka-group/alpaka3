@@ -103,9 +103,11 @@ void haccmk(
 
             auto end = std::chrono::steady_clock::now();
             auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-            total_time += time;
+            // first round is a warmup round
+            if(r != 0)
+                total_time += time;
         }
-        printf("Average kernel execution time %f (s)\n", (total_time * 1e-9f) / repeat);
+        printf("Average kernel execution time %f (s)\n", (total_time * 1e-9f) / (repeat - 1));
 #if defined(_OPENMP)
 #    pragma omp target update from(vx2[0 : n], vy2[0 : n], vz2[0 : n])
 #endif

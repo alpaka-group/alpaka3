@@ -205,10 +205,12 @@ namespace haccmkAlpaka
             onHost::wait(devAcc);
             auto end = std::chrono::steady_clock::now();
             auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-            total_time += time;
+            // first round is a warmup round
+            if(i != 0)
+                total_time += time;
         }
 
-        printf("Average kernel execution time %f (s)\n", (total_time * 1e-9f) / repeat);
+        printf("Average kernel execution time %f (s)\n", (total_time * 1e-9f) / (repeat - 1));
         onHost::memcpy(queue, vx2, d_vx2, n1);
         onHost::memcpy(queue, vy2, d_vy2, n1);
         onHost::memcpy(queue, vz2, d_vz2, n1);
