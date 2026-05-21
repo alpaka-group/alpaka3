@@ -32,86 +32,67 @@ void haccmk(
     T* __restrict vy2,
     T* __restrict vz2)
 {
-#if defined(_OPENMP)
-#    pragma omp target data map(to : xx[0 : ilp], yy[0 : ilp], zz[0 : ilp], mass[0 : ilp])                            \
-        map(tofrom : vx2[0 : n], vy2[0 : n], vz2[0 : n])
-#endif
+    float total_time = 0.f;
+
+    for(int r = 0; r < repeat; r++)
     {
-        float total_time = 0.f;
+        auto start = std::chrono::steady_clock::now();
 
-        for(int r = 0; r < repeat; r++)
+#if defined(_OPENMP)
+#    pragma omp parallel for
+#endif
+        for(int i = 0; i < n; i++)
         {
-#if defined(_OPENMP)
-            /* BUG This update is not working as expected, therefore the final values contains the changes from the
-             * device for each repetition. Therefore, vx2,vy2,vz2 in the kernel are assigned instead of using `+=`.
-             */
-#    pragma omp target update to(vx2[0 : n])
-#    pragma omp target update to(vy2[0 : n])
-#    pragma omp target update to(vz2[0 : n])
-#endif
-            auto start = std::chrono::steady_clock::now();
+            float const ma0 = 0.269327f;
+            float const ma1 = -0.0750978f;
+            float const ma2 = 0.0114808f;
+            float const ma3 = -0.00109313f;
+            float const ma4 = 0.0000605491f;
+            float const ma5 = -0.00000147177f;
 
-#if defined(_OPENMP)
-#    pragma omp target teams distribute parallel for
-#endif
-            for(int i = 0; i < n; i++)
+            float dxc, dyc, dzc, m, r2, f, xi, yi, zi;
+
+            xi = 0.f;
+            yi = 0.f;
+            zi = 0.f;
+
+            float xxi = xx[i];
+            float yyi = yy[i];
+            float zzi = zz[i];
+
+            for(int j = 0; j < ilp; j++)
             {
-                float const ma0 = 0.269327f;
-                float const ma1 = -0.0750978f;
-                float const ma2 = 0.0114808f;
-                float const ma3 = -0.00109313f;
-                float const ma4 = 0.0000605491f;
-                float const ma5 = -0.00000147177f;
+                dxc = xx[j] - xxi;
+                dyc = yy[j] - yyi;
+                dzc = zz[j] - zzi;
 
-                float dxc, dyc, dzc, m, r2, f, xi, yi, zi;
+                r2 = dxc * dxc + dyc * dyc + dzc * dzc;
 
-                xi = 0.f;
-                yi = 0.f;
-                zi = 0.f;
+                m = mass[j] * (r2 < fsrrmax);
 
-                float xxi = xx[i];
-                float yyi = yy[i];
-                float zzi = zz[i];
+                f = r2 + mp_rsm;
+                f = m * (1.f / (f * sqrtf(f)) - (ma0 + r2 * (ma1 + r2 * (ma2 + r2 * (ma3 + r2 * (ma4 + r2 * ma5))))));
 
-                for(int j = 0; j < ilp; j++)
-                {
-                    dxc = xx[j] - xxi;
-                    dyc = yy[j] - yyi;
-                    dzc = zz[j] - zzi;
-
-                    r2 = dxc * dxc + dyc * dyc + dzc * dzc;
-
-                    m = mass[j] * (r2 < fsrrmax);
-
-                    f = r2 + mp_rsm;
-                    f = m
-                        * (1.f / (f * sqrtf(f))
-                           - (ma0 + r2 * (ma1 + r2 * (ma2 + r2 * (ma3 + r2 * (ma4 + r2 * ma5))))));
-
-                    xi = xi + f * dxc;
-                    yi = yi + f * dyc;
-                    zi = zi + f * dzc;
-                }
-
-                /* No `+=` is used.
-                 * This differs to the original publication but is necessary due to the OpenMP bug.
-                 */
-                vx2[i] = xi * fcoeff;
-                vy2[i] = yi * fcoeff;
-                vz2[i] = zi * fcoeff;
+                xi = xi + f * dxc;
+                yi = yi + f * dyc;
+                zi = zi + f * dzc;
             }
 
-            auto end = std::chrono::steady_clock::now();
-            auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-            // first round is a warmup round
-            if(r != 0)
-                total_time += time;
+            /* No `+=` is used.
+             * This differs to the original publication but is necessary due to the OpenMP bug.
+             */
+            vx2[i] = xi * fcoeff;
+            vy2[i] = yi * fcoeff;
+            vz2[i] = zi * fcoeff;
         }
-        printf("Average kernel execution time %f (s)\n", (total_time * 1e-9f) / (repeat - 1));
-#if defined(_OPENMP)
-#    pragma omp target update from(vx2[0 : n], vy2[0 : n], vz2[0 : n])
-#endif
+
+        auto end = std::chrono::steady_clock::now();
+        auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        // first round is a warmup round
+        if(r != 0)
+            total_time += time;
     }
+    printf("Average kernel execution time %f (s)\n", (total_time * 1e-9f) / (repeat - 1));
 }
 
 int main(int argc, char* argv[])
