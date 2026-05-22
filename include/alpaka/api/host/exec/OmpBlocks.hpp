@@ -55,18 +55,15 @@ namespace alpaka::onHost
                     auto blockSharedMem = onAcc::cpu::SingleThreadStaticShared<simdWidth>{};
 
                     // dynamic shared mem
-                    uint32_t blockDynSharedMemBytes
-                        = onHost::getDynSharedMemBytes(exec::cpuOmpBlocks, m_threadBlocking, kernelBundle);
+                    uint32_t blockDynSharedMemBytes = onHost::getDynSharedMemBytes(m_threadBlocking, kernelBundle);
                     auto const blockDynSharedMemEntry = DictEntry{layer::dynShared, std::ref(blockSharedMem)};
                     auto const blockDynSharedMemBytesEntry
                         = DictEntry{object::dynSharedMemBytes, std::ref(blockDynSharedMemBytes)};
 
                     /* Only add dynamic shared memory objects if defined by the user, if not we will get a clean static
                      * assert if the kernel tries to access dynamic shared memory */
-                    auto additionalDict = conditionalAppendDict<trait::HasUserDefinedDynSharedMemBytes<
-                        exec::CpuOmpBlocks,
-                        T_ThreadSpec,
-                        ALPAKA_TYPEOF(kernelBundle)>::value>(
+                    auto additionalDict = conditionalAppendDict<
+                        trait::HasUserDefinedDynSharedMemBytes<T_ThreadSpec, ALPAKA_TYPEOF(kernelBundle)>::value>(
                         dict,
                         Dict{blockDynSharedMemEntry, blockDynSharedMemBytesEntry});
 

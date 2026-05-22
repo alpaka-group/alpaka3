@@ -74,20 +74,15 @@ namespace alpaka::onHost
                             auto const blockSyncEntry = DictEntry{action::threadBlockSync, onAcc::cpu::NoOp{}};
 
                             // dynamic shared mem
-                            uint32_t blockDynSharedMemBytes = onHost::getDynSharedMemBytes(
-                                alpaka::exec::CpuTbbBlocks{},
-                                m_threadBlocking,
-                                kernelBundle);
+                            uint32_t blockDynSharedMemBytes
+                                = onHost::getDynSharedMemBytes(m_threadBlocking, kernelBundle);
                             auto const blockDynSharedMemEntry = DictEntry{layer::dynShared, std::ref(blockSharedMem)};
                             auto const blockDynSharedMemBytesEntry
                                 = DictEntry{object::dynSharedMemBytes, std::ref(blockDynSharedMemBytes)};
 
-                            auto additionalDict = conditionalAppendDict<trait::HasUserDefinedDynSharedMemBytes<
-                                alpaka::exec::CpuTbbBlocks,
-                                T_ThreadSpec,
-                                ALPAKA_TYPEOF(kernelBundle)>::value>(
-                                dict,
-                                Dict{blockDynSharedMemEntry, blockDynSharedMemBytesEntry});
+                            auto additionalDict = conditionalAppendDict<
+                                trait::HasUserDefinedDynSharedMemBytes<T_ThreadSpec, ALPAKA_TYPEOF(kernelBundle)>::
+                                    value>(dict, Dict{blockDynSharedMemEntry, blockDynSharedMemBytesEntry});
 
                             auto const warpSizeEntry
                                 = DictEntry{object::warpSize, std::integral_constant<uint32_t, 1u>{}};

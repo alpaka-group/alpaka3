@@ -339,7 +339,7 @@ namespace alpaka::onHost::internal
                 ALPAKA_SYCL_NUM_MAX_SHARED_MEMORY_ALLOCATIONS);
             // allocate dynamic shared memory -- needs at least 1 byte to make the Xilinx Runtime happy
             u_int32_t blockDynSharedMemBytes
-                = std::max(u_int32_t(1), onHost::getDynSharedMemBytes(T_Executor{}, threadSpec, kernelBundle));
+                = std::max(u_int32_t(1), onHost::getDynSharedMemBytes(threadSpec, kernelBundle));
             assert(
                 st_shared_mem_bytes + blockDynSharedMemBytes
                 <= queue.m_device->getNativeHandle().first.template get_info<sycl::info::device::local_mem_size>());
@@ -415,7 +415,7 @@ namespace alpaka::onHost::internal
 
             // allocate dynamic shared memory -- needs at least 1 byte to make the Xilinx Runtime happy
             u_int32_t blockDynSharedMemBytes
-                = std::max(u_int32_t(1), onHost::getDynSharedMemBytes(T_Executor{}, threadBlocking, kernelBundle));
+                = std::max(u_int32_t(1), onHost::getDynSharedMemBytes(threadBlocking, kernelBundle));
 
             assert(
                 st_shared_mem_bytes + blockDynSharedMemBytes

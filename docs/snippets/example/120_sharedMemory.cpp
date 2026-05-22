@@ -177,16 +177,16 @@ struct DynamicScaleKernel
 // BEGIN-TUTORIAL-dynSharedTraitSpec
 namespace alpaka::onHost::trait
 {
-    template<typename T_Spec>
+    template<concepts::ThreadSpec T_Spec>
     struct BlockDynSharedMemBytes<DynamicScaleKernel, T_Spec>
     {
         BlockDynSharedMemBytes(DynamicScaleKernel const&, T_Spec const& spec) : m_spec(spec)
         {
         }
 
-        uint32_t operator()(auto const executor, auto const& out, auto const& in, int factor, uint32_t chunkSize) const
+        uint32_t operator()(auto const& out, auto const& in, int factor, uint32_t chunkSize) const
         {
-            alpaka::unused(executor, out, in, factor);
+            alpaka::unused(out, in, factor);
             return static_cast<uint32_t>(chunkSize * sizeof(int));
         }
 

@@ -297,8 +297,7 @@ namespace alpaka::onHost
                     T_KernelBundle,
                     ALPAKA_TYPEOF(optimizedThreadSpec)>;
 
-                uint32_t blockDynSharedMemBytes
-                    = onHost::getDynSharedMemBytes(exec::gpuCuda, threadSpec, kernelBundle);
+                uint32_t blockDynSharedMemBytes = onHost::getDynSharedMemBytes(threadSpec, kernelBundle);
 
                 kernelName<<<
                     convertVecToUniformCudaHipDim(numBlocks),

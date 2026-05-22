@@ -160,7 +160,7 @@ struct DynSharedMemTrait
 
 namespace alpaka::onHost::trait
 {
-    template<typename T_Spec>
+    template<concepts::ThreadSpec T_Spec>
     struct BlockDynSharedMemBytes<DynSharedMemTrait, T_Spec>
     {
         BlockDynSharedMemBytes(DynSharedMemTrait const& kernel, T_Spec const& spec)
@@ -168,9 +168,9 @@ namespace alpaka::onHost::trait
             alpaka::unused(kernel, spec);
         }
 
-        uint32_t operator()(auto const executor, auto const&... args) const
+        uint32_t operator()(auto const&... args) const
         {
-            alpaka::unused(executor, args...);
+            alpaka::unused(args...);
             return 32;
         }
     };

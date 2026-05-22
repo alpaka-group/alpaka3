@@ -104,6 +104,7 @@ Dynamic Size Through ``BlockDynSharedMemBytes`` Trait
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When the size should depend on the executor or the kernel arguments, alpaka uses a trait specialization.
+If you call a kernel with a frame specification the thread specification in the constructor of the trait will be the derived specification used to launch the kernel.
 The user-defined data chunk size passed through the kernel arguments is used to calculate the required amount of shared memory to hold a single chunk per thread block.
 The required data to hold a chunk is intended to be independent of the thread specification to control the amount of reused data.
 If you provide neither a ``dynSharedMemBytes`` member nor a trait implementation ``alpaka::onHost::trait::BlockDynSharedMemBytes`` specialization, alpaka reserves no dynamic shared memory for that kernel.

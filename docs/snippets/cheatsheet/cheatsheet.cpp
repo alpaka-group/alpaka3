@@ -78,17 +78,17 @@ struct DynSharedMemTrait
 // specialization within the host code
 namespace alpaka::onHost::trait
 {
-    template<typename T_FrameSpec>
-    struct BlockDynSharedMemBytes<DynSharedMemTrait, T_FrameSpec>
+    template<concepts::ThreadSpec T_ThreadSpec>
+    struct BlockDynSharedMemBytes<DynSharedMemTrait, T_ThreadSpec>
     {
-        BlockDynSharedMemBytes(DynSharedMemTrait const& kernel, T_FrameSpec const& spec)
+        BlockDynSharedMemBytes(DynSharedMemTrait const& kernel, T_ThreadSpec const& spec)
         {
             alpaka::unused(kernel, spec);
         }
 
-        // the signature is very similar to the kernel operator() signature with the difference that the first
-        // parameter is the executor and not the accelerator
-        uint32_t operator()([[maybe_unused]] auto const executor, [[maybe_unused]] auto const&... args) const
+        // the signature is very similar to the kernel operator() signature with the difference that no accelerator is
+        // provided.
+        uint32_t operator()([[maybe_unused]] auto const&... args) const
         {
             return 32;
         }
