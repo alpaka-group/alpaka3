@@ -71,6 +71,8 @@ Individual chapters are based on the information of the chapters before.
    tutorial/kernelParallelism.rst
    tutorial/synchronization.rst
    tutorial/sharedMemory.rst
+   tutorial/math.rst
+   tutorial/atomics.rst
 
 .. toctree::
    :caption: Advanced

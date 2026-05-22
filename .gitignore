@@ -4,6 +4,7 @@
 /docs/doxygen
 /docs/doxygen_dev
 /docs/cheatsheet/cheatsheet.pdf
+/docs/_generated/
 
 **/build*/
 

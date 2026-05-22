@@ -12,10 +12,12 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 from sphinx_helper.single_header import generate_single_header
 from sphinx_helper.utils import on_rtd
 from sphinx_helper.doxygen import generate_doxygen
+from sphinx_helper.math_function_families import generate_math_function_families
 
 def setup(app):
     # Doxygen XML must exist before Sphinx/Breathe reads the documents.
     app.connect('builder-inited', generate_doxygen)
+    app.connect('builder-inited', generate_math_function_families)
     app.connect('build-finished', generate_single_header)
 
 # -- Project information -----------------------------------------------------
