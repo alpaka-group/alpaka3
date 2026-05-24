@@ -165,9 +165,16 @@ namespace alpaka::onAcc
          *            All other MdSpan objects must have at least the same number of elements.
          *
          * @param neutralElement the neutral element for the reduction operation
-         * @param reduceFunc the binary reduction operation to be executed, e.g. std::plus
-         * @param transformFunc n-nary functor to be executed, values of all containers will be passed to the functor
-         * as arguments. If the result of this functor is a structured value providing an overload to simdize the type
+         * @param reduceFunc The binary reduction operation to be executed, e.g. std::plus. The functor should support
+         * Simd packages.
+         * @param transformFunc N-nary functor to be executed, values of all containers will be passed to the functor
+         * as arguments. The functor should support Simd packages. If not you can enforce the element wise execution by
+         * wrapping into
+         * @see ScalarFunc. If you would like to support stencil executions wrapp fn into @see StencilFunc. StencilFunc
+         * is getting all arguments as @see SimdPtr. If StencilFunc is used you should take care to not read outside of
+         * valid memory ranges by using sub-views to your input and output data. Optionally a transformFn can have an
+         * accelerator as first argument.
+         * If the result of this functor is a structured value providing an overload to simdize the type
          * can improve the performance see alpaka::makeSimdized.
          * @param data0 the first data to be processed
          * @param dataN the remaining data to be processed
