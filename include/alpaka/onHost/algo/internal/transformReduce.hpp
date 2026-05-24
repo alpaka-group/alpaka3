@@ -4,8 +4,6 @@
 
 #pragma once
 
-
-#include "alpaka/Simd.hpp"
 #include "alpaka/Vec.hpp"
 #include "alpaka/api/util.hpp"
 #include "alpaka/core/common.hpp"
@@ -74,15 +72,11 @@ namespace alpaka::onHost::internal
                         alpaka::onAcc::WorkerGroup{chunkIdx + elemIdxInChunk, chunkDataExtent}};
 
                     // reduce functor with simd package support
-                    callTransformFn(
-                        acc,
-                        allThreads,
-                        extentMd,
-                        neutralElement,
-                        tbSum[elemIdxInChunk],
-                        reduceFunc,
-                        transformFunc,
-                        ALPAKA_FORWARD(inputs)...);
+                    auto reducedValue
+                        = allThreads
+                              .transformReduce(acc, extentMd, neutralElement, reduceFunc, transformFunc, inputs...);
+                    auto& tbSumRef = tbSum[elemIdxInChunk];
+                    tbSumRef = reduceFunc(tbSumRef, reducedValue);
                 }
             }
 
@@ -131,81 +125,6 @@ namespace alpaka::onHost::internal
                 }
                 else
                     atomicInvoke(reduceFunc, acc, output.data(), dynS[laneIdInBlock]);
-            }
-        }
-
-        template<uint32_t... T_idx>
-        ALPAKA_FN_INLINE ALPAKA_FN_ACC static constexpr auto loadAncExecuteScalarOp(
-            std::integer_sequence<uint32_t, T_idx...>,
-            auto&& op,
-            auto const& acc,
-            auto&& func,
-            auto&&... data)
-
-        {
-            return Simd{op(CVec<uint32_t, T_idx>{}, acc, ALPAKA_FORWARD(func), ALPAKA_FORWARD(data)...)...};
-        }
-
-        ALPAKA_FN_INLINE ALPAKA_FN_ACC static constexpr void callTransformFn(
-            auto const& acc,
-            auto const& allThreads,
-            alpaka::concepts::Vector auto const& extentMd,
-            auto const& neutralElement,
-            auto& result,
-            auto&& reduceFunc,
-            auto&& transformFunc,
-            alpaka::concepts::IDataSource auto&&... inputs)
-        {
-            // Use the generic transformFunc and the variant reduceFunc
-            if constexpr(isSpecializationOf_v<ALPAKA_TYPEOF(transformFunc), StencilFunc>)
-            {
-                auto reducedValue = allThreads.transformReduce(
-                    acc,
-                    extentMd,
-                    neutralElement,
-                    ALPAKA_FORWARD(reduceFunc),
-                    [&](auto const& acc, alpaka::concepts::SimdPtr auto&&... in)
-                    { return callFunctor(acc, transformFunc, ALPAKA_FORWARD(in)...); },
-                    ALPAKA_FORWARD(inputs)...);
-                result = reduceFunc(result, reducedValue);
-            }
-            else if constexpr(isSpecializationOf_v<ALPAKA_TYPEOF(transformFunc), ScalarFunc>)
-            {
-                auto reducedValue = allThreads.transformReduce(
-                    acc,
-                    extentMd,
-                    neutralElement,
-                    ALPAKA_FORWARD(reduceFunc),
-                    [&](auto const& acc,
-                        alpaka::concepts::SimdPtr auto&& inPtr0,
-                        alpaka::concepts::SimdPtr auto const&... inPtr) constexpr
-                    {
-                        return loadAncExecuteScalarOp(
-                            std::make_integer_sequence<uint32_t, ALPAKA_TYPEOF(inPtr0)::width()>{},
-                            [](alpaka::concepts::CVector auto idx,
-                               auto const& acc,
-                               auto&& func,
-                               alpaka::concepts::Simd auto&&... data) constexpr
-                            { return callFunctor(acc, func, data[idx.x()]...); },
-                            acc,
-                            transformFunc,
-                            inPtr0.load(),
-                            inPtr.load()...);
-                    },
-                    ALPAKA_FORWARD(inputs)...);
-                result = reduceFunc(result, reducedValue);
-            }
-            else
-            {
-                auto reducedValue = allThreads.transformReduce(
-                    acc,
-                    extentMd,
-                    neutralElement,
-                    ALPAKA_FORWARD(reduceFunc),
-                    [&transformFunc](auto const& acc, alpaka::concepts::SimdPtr auto&&... inPtr)
-                    { return callFunctor(acc, transformFunc, inPtr.load()...); },
-                    ALPAKA_FORWARD(inputs)...);
-                result = reduceFunc(result, reducedValue);
             }
         }
     };

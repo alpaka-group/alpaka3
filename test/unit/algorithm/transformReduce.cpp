@@ -369,3 +369,174 @@ TEMPLATE_LIST_TEST_CASE("transformReduce generator", "", TestBackends)
 
     std::apply([&](auto... extents) { (prepareTest<DataType>(cfg, extents, setups), ...); }, extentMdList);
 }
+
+struct OnAccTransformReduceKernel
+{
+    ALPAKA_FN_ACC void operator()(
+        auto const& acc,
+        alpaka::concepts::IMdSpan auto out,
+        auto const& extentMd,
+        auto const& neutralElement,
+        auto const& reduceFunc,
+        auto const& transformFunc,
+        auto const&... inputs) const
+    {
+        auto simdGrid = onAcc::SimdAlgo{onAcc::WorkerGroup{extentMd.fill(0), extentMd.fill(1)}};
+        out[0u] = simdGrid.transformReduce(acc, extentMd, neutralElement, reduceFunc, transformFunc, inputs...);
+    }
+};
+
+struct TestOnAccWithMdSpan
+{
+    template<typename T_DataType>
+    static void executeTest(
+        concepts::Executor auto exec,
+        auto const& computeQueue,
+        auto const setup,
+        concepts::Vector auto extentMd)
+    {
+        INFO(
+            "run onAcc reduce(func) : " << onHost::demangledName(std::get<1>(setup).second) << "("
+                                        << onHost::demangledName(std::get<2>(setup).second) << ")");
+
+        auto computeDev = computeQueue.getDevice();
+        using DataType = T_DataType;
+        using OutDataType = ALPAKA_TYPEOF(std::get<0>(setup));
+        onHost::SharedBuffer computeBufferOut = onHost::alloc<OutDataType>(computeDev, 1u);
+        onHost::SharedBuffer computeBufferIn0 = onHost::alloc<DataType>(computeDev, extentMd);
+        onHost::SharedBuffer computeBufferIn1 = onHost::allocLike(computeDev, computeBufferIn0);
+        onHost::SharedBuffer hostBufferIota = onHost::allocHostLike(computeBufferIn0);
+        onHost::SharedBuffer hostBufferOut = onHost::allocHostLike(computeBufferOut);
+
+        DataType iotaCounter = 0;
+        for(auto& value : hostBufferIota)
+        {
+            value = iotaCounter;
+            ++iotaCounter;
+        }
+
+        onHost::memcpy(computeQueue, computeBufferIn0, hostBufferIota);
+        onHost::memcpy(computeQueue, computeBufferIn1, hostBufferIota);
+
+        onHost::wait(computeQueue);
+        auto const beginT = std::chrono::high_resolution_clock::now();
+
+        computeQueue.enqueue(
+            onHost::FrameSpec{1u, 1u, exec},
+            KernelBundle{
+                OnAccTransformReduceKernel{},
+                computeBufferOut,
+                extentMd,
+                std::get<0>(setup),
+                std::get<1>(setup).first,
+                std::get<2>(setup).first,
+                computeBufferIn0,
+                computeBufferIn1});
+
+        onHost::wait(computeQueue);
+        auto const endT = std::chrono::high_resolution_clock::now();
+        UNSCOPED_INFO(
+            "Time for onAcc transform reduce: " << std::chrono::duration<double>(endT - beginT).count()
+                                                << "s data size: " << hostBufferIota.getExtents());
+
+        onHost::memcpy(computeQueue, hostBufferOut, computeBufferOut);
+        onHost::wait(computeQueue);
+
+        DataType refIotaCounter = 0;
+        auto result = std::get<0>(setup);
+        meta::ndLoopIncIdx(
+            extentMd,
+            [&](auto idx)
+            {
+                alpaka::unused(idx);
+                result = std::get<1>(setup).second(result, std::get<2>(setup).second(refIotaCounter, refIotaCounter));
+                ++refIotaCounter;
+            });
+        CHECK(*hostBufferOut.data() == result);
+    }
+};
+
+template<typename T_DataType>
+void prepareOnAccTest(auto cfg, concepts::Vector auto extentMd, auto const& setupTuple)
+{
+    using DataType = T_DataType;
+
+    auto deviceSpec = cfg[object::deviceSpec];
+    alpaka::concepts::Executor auto exec = cfg[object::exec];
+
+    auto computeDevSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!computeDevSelector.isAvailable())
+    {
+        SUCCEED("No device available for " << deviceSpec.getName());
+        return;
+    }
+
+    onHost::Device computeDev = computeDevSelector.makeDevice(0);
+
+    INFO("device spec: " << getName(deviceSpec));
+    INFO("device name: " << computeDev.getName());
+    INFO("executor   : " << exec.getName());
+
+    onHost::Queue computeQueue = computeDev.makeQueue();
+
+    std::apply(
+        [&](auto const&... setup)
+        { (std::get<3>(setup).template executeTest<DataType>(exec, computeQueue, setup, extentMd), ...); },
+        setupTuple);
+}
+
+TEMPLATE_LIST_TEST_CASE("onAcc transformReduce", "", TestBackends)
+{
+    auto cfg = TestType::makeDict();
+
+    using DataType = int;
+
+    auto setups = std::make_tuple(
+        std::make_tuple(
+            DataType{0},
+            std::make_pair(std::plus{}, std::plus{}),
+            std::make_pair(std::plus{}, std::plus{}),
+            TestOnAccWithMdSpan{}),
+        std::make_tuple(
+            DataType{0},
+            std::make_pair(std::plus{}, std::plus{}),
+            std::make_pair(StencilFunc{StencilAdd{}}, std::plus{}),
+            TestOnAccWithMdSpan{}),
+        std::make_tuple(
+            DataType{0},
+            std::make_pair(std::plus{}, std::plus{}),
+            std::make_pair(StencilFunc{StencilAddWithAcc{}}, std::plus{}),
+            TestOnAccWithMdSpan{}),
+        std::make_tuple(
+            size_t{0},
+            std::make_pair(std::plus{}, std::plus{}),
+            std::make_pair(
+                AddUpCastWithAcc{},
+                [](DataType const& a, DataType const& b) { return static_cast<size_t>(a + b); }),
+            TestOnAccWithMdSpan{}),
+        std::make_tuple(
+            DataType{0},
+            std::make_pair(std::plus{}, std::plus{}),
+            std::make_pair(
+                ScalarFunc{[] ALPAKA_FN_ACC(DataType const& a, DataType const& b)
+                           { return math::min(a + DataType{1}, b); }},
+                [](DataType const& a, DataType const& b) { return math::min(a + DataType{1}, b); }),
+            TestOnAccWithMdSpan{}),
+        std::make_tuple(
+            DataType{0},
+            std::make_pair(std::plus{}, std::plus{}),
+            std::make_pair(
+                ScalarFunc{ScalarOpWithAcc{}},
+                [](DataType const& a, DataType const& b) { return a * DataType{2} + b; }),
+            TestOnAccWithMdSpan{}),
+        std::make_tuple(
+            std::numeric_limits<DataType>::max(),
+            std::make_pair(ScalarFunc{myTest::MinValue{}}, myTest::MinValue{}),
+            std::make_pair(std::plus{}, std::plus{}),
+            TestOnAccWithMdSpan{}));
+
+    auto extentMdList
+        = std::make_tuple(Vec{5, 7, 3, 11}, Vec{93, 7, 123}, Vec{5, 7, 4111}, Vec{5, 7, 3}, Vec{7, 3}, Vec{3});
+
+    std::apply([&](auto... extents) { (prepareOnAccTest<DataType>(cfg, extents, setups), ...); }, extentMdList);
+}

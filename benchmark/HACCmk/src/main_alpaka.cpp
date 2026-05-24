@@ -80,21 +80,21 @@ namespace haccmkAlpaka
                     move,
                     std::plus{},
                     [&](auto const&,
-                        concepts::SimdPtr auto&& simd_xx1,
-                        concepts::SimdPtr auto&& simd_yy1,
-                        concepts::SimdPtr auto&& simd_zz1,
-                        concepts::SimdPtr auto&& simd_mass1) constexpr
+                        concepts::Simd auto const& simd_xx1,
+                        concepts::Simd auto const& simd_yy1,
+                        concepts::Simd auto const& simd_zz1,
+                        concepts::Simd auto const& simd_mass1) constexpr
                     {
-                        concepts::Simd auto dxc = simd_xx1.load() - xxi;
-                        concepts::Simd auto dyc = simd_yy1.load() - yyi;
-                        concepts::Simd auto dzc = simd_zz1.load() - zzi;
+                        concepts::Simd auto dxc = simd_xx1 - xxi;
+                        concepts::Simd auto dyc = simd_yy1 - yyi;
+                        concepts::Simd auto dzc = simd_zz1 - zzi;
 
                         concepts::Simd auto r2 = dxc * dxc + dyc * dyc + dzc * dzc;
 
-                        using SimdType = ALPAKA_TYPEOF(simd_mass1.load());
+                        using SimdType = ALPAKA_TYPEOF(simd_mass1);
                         concepts::Simd auto m = SimdType::fill(0.f);
 
-                        where(r2 < fsrrmax2, m) = simd_mass1.load();
+                        where(r2 < fsrrmax2, m) = simd_mass1;
 
                         alpaka::concepts::Simd auto tmp = r2 + mp_rsm2;
                         concepts::Simd auto bar = alpaka::math::sqrt(tmp);

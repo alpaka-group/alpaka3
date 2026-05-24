@@ -42,6 +42,7 @@ namespace alpaka::onAcc::internal
         {
             auto numElements = typename ALPAKA_TYPEOF(extents)::UniVec{extents};
             using ValueType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data0)>;
+            decltype(auto) transformFunc = wrapTransformFunc(ALPAKA_FORWARD(func));
 
             constexpr auto simdCfg = T_Parent::template calcSimdPackConfig<ValueType>(
                 ALPAKA_TYPEOF(acc.getApi()){},
@@ -58,7 +59,7 @@ namespace alpaka::onAcc::internal
                     numElements,
                     neutralElement,
                     ALPAKA_FORWARD(reduceFunc),
-                    ALPAKA_FORWARD(func),
+                    transformFunc,
                     ALPAKA_FORWARD(data0),
                     ALPAKA_FORWARD(dataN)...);
             }
@@ -79,8 +80,9 @@ namespace alpaka::onAcc::internal
             {
                 simdizedReducedValue = reduceFunc(
                     simdizedReducedValue,
-                    func(
+                    callFunctor(
                         acc,
+                        transformFunc,
                         SimdPtr{data0, idx, T_MemAlignment{}, CVec<uint32_t, 1u>{}},
                         SimdPtr{dataN, idx, T_MemAlignment{}, CVec<uint32_t, 1u>{}}...));
             }
@@ -94,6 +96,52 @@ namespace alpaka::onAcc::internal
         }
 
     private:
+        template<uint32_t... T_idx>
+        ALPAKA_FN_INLINE ALPAKA_FN_ACC static constexpr auto loadAncExecuteScalarOp(
+            std::integer_sequence<uint32_t, T_idx...>,
+            auto&& op,
+            auto const& acc,
+            auto&& func,
+            auto&&... data)
+        {
+            return Simd{op(CVec<uint32_t, T_idx>{}, acc, ALPAKA_FORWARD(func), ALPAKA_FORWARD(data)...)...};
+        }
+
+        ALPAKA_FN_INLINE ALPAKA_FN_ACC static constexpr decltype(auto) wrapTransformFunc(auto&& transformFunc)
+        {
+            if constexpr(isSpecializationOf_v<ALPAKA_TYPEOF(transformFunc), StencilFunc>)
+            {
+                return ALPAKA_FORWARD(transformFunc);
+            }
+            else if constexpr(isSpecializationOf_v<ALPAKA_TYPEOF(transformFunc), ScalarFunc>)
+            {
+                return [transformFunc = ALPAKA_FORWARD(transformFunc)](
+                           onAcc::concepts::Acc auto const& acc,
+                           alpaka::concepts::SimdPtr auto&& inPtr0,
+                           alpaka::concepts::SimdPtr auto const&... inPtr) constexpr
+                {
+                    return loadAncExecuteScalarOp(
+                        std::make_integer_sequence<uint32_t, ALPAKA_TYPEOF(inPtr0)::width()>{},
+                        [](alpaka::concepts::CVector auto idx,
+                           auto const& acc,
+                           auto&& func,
+                           alpaka::concepts::Simd auto const&... data) constexpr
+                        { return callFunctor(acc, func, data[idx.x()]...); },
+                        acc,
+                        transformFunc,
+                        inPtr0.load(),
+                        inPtr.load()...);
+                };
+            }
+            else
+            {
+                return [transformFunc = ALPAKA_FORWARD(transformFunc)](
+                           onAcc::concepts::Acc auto const& acc,
+                           alpaka::concepts::SimdPtr auto&&... inPtr) constexpr
+                { return callFunctor(acc, transformFunc, inPtr.load()...); };
+            }
+        }
+
         template<alpaka::concepts::Alignment T_MemAlignment, uint32_t T_width>
         ALPAKA_FN_INLINE static constexpr auto executeDoTransform(
             concepts::Acc auto const& acc,
@@ -101,7 +149,7 @@ namespace alpaka::onAcc::internal
             auto&& func,
             alpaka::concepts::IDataSource auto&&... data)
         {
-            return func(acc, SimdPtr{ALPAKA_FORWARD(data), dataIdx, T_MemAlignment{}, CVec<uint32_t, T_width>{}}...);
+            return callFunctor(acc, func, SimdPtr{data, dataIdx, T_MemAlignment{}, CVec<uint32_t, T_width>{}}...);
         }
 
         /** advance the iterator T_repeat times
@@ -152,16 +200,12 @@ namespace alpaka::onAcc::internal
                         executeDoTransform<T_MemAlignment, T_width>(
                             acc,
                             std::get<0>(std::make_tuple(dataIdx...)),
-                            ALPAKA_FORWARD(func),
-                            ALPAKA_FORWARD(data)...));
+                            func,
+                            data...));
                     auto results = Simd<ComponentType, std::tuple_size_v<ALPAKA_TYPEOF(ids)>>{
-                        executeDoTransform<T_MemAlignment, T_width>(
-                            acc,
-                            dataIdx,
-                            ALPAKA_FORWARD(func),
-                            ALPAKA_FORWARD(data)...)...};
+                        executeDoTransform<T_MemAlignment, T_width>(acc, dataIdx, func, data...)...};
 
-                    return results.reduce(ALPAKA_FORWARD(reduceFunc));
+                    return results.reduce(reduceFunc);
                 },
                 ids);
         }
@@ -191,11 +235,7 @@ namespace alpaka::onAcc::internal
                 {
                     ((result = reduceFn(
                           result,
-                          executeDoTransform<T_MemAlignment, T_width>(
-                              acc,
-                              dataIdx,
-                              ALPAKA_FORWARD(transformFn),
-                              ALPAKA_FORWARD(data)...))),
+                          executeDoTransform<T_MemAlignment, T_width>(acc, dataIdx, transformFn, data...))),
                      ...);
                 },
                 ids);
@@ -222,10 +262,10 @@ namespace alpaka::onAcc::internal
                         acc,
                         iter,
                         std::make_integer_sequence<uint32_t, T_numSimdPerFnCall>{},
-                        ALPAKA_FORWARD(reduceFn),
-                        ALPAKA_FORWARD(transformFn),
-                        ALPAKA_FORWARD(data0),
-                        ALPAKA_FORWARD(dataN)...));
+                        reduceFn,
+                        transformFn,
+                        data0,
+                        dataN...));
             }
             else
             {
@@ -234,10 +274,10 @@ namespace alpaka::onAcc::internal
                     iter,
                     std::make_integer_sequence<uint32_t, T_numSimdPerFnCall>{},
                     tmpReturn,
-                    ALPAKA_FORWARD(reduceFn),
-                    ALPAKA_FORWARD(transformFn),
-                    ALPAKA_FORWARD(data0),
-                    ALPAKA_FORWARD(dataN)...);
+                    reduceFn,
+                    transformFn,
+                    data0,
+                    dataN...);
             }
         }
 
@@ -433,8 +473,9 @@ namespace alpaka::onAcc::internal
                     asParent().getTraversePolicy(),
                     asParent().getIdxLayoutPolicy()))
             {
-                auto transformResult = func(
+                auto transformResult = callFunctor(
                     acc,
+                    func,
                     SimdPtr{data0, idx, T_MemAlignment{}, CVec<uint32_t, 1u>{}},
                     SimdPtr{dataN, idx, T_MemAlignment{}, CVec<uint32_t, 1u>{}}...);
 
