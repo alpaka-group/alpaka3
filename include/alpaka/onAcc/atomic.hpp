@@ -7,6 +7,7 @@
 #include "alpaka/api/api.hpp"
 #include "alpaka/api/trait.hpp"
 #include "alpaka/core/common.hpp"
+#include "alpaka/onAcc/Acc.hpp"
 #include "alpaka/onAcc/atomicOp.hpp"
 #include "alpaka/onAcc/internal/interface.hpp"
 #include "alpaka/onAcc/scope.hpp"
@@ -183,22 +184,32 @@ namespace alpaka::onAcc
         return atomicOp<AtomicCas>(acc, addr, compare, value, hier);
     }
 
-    namespace trait
+    namespace atomic
     {
-
-        template<typename T_Functor>
-        struct FunctorToAtomicOp;
-
-        template<>
-        struct FunctorToAtomicOp<std::plus<>>
-
+        /** Defines the equivalent of an atomic invoke for user defined functors.
+         *
+         * This function can be specialized within the namespace of the user functor type and will be found via ADL.
+         * Typically, this functor is used within the reduce and transformReduce algorithm.
+         * The implementation must implement the functor equivalent atomic function.
+         *
+         * @param fn non-atomic user functor
+         * @param inOut pointer to the values which is updated
+         * @param args arguments normally forwarded to the user functor
+         */
+        ALPAKA_FN_ACC void atomicInvoke(auto&& fn, concepts::Acc auto const& acc, auto* inOut, auto&&... args)
         {
-            using type = alpaka::onAcc::AtomicAdd;
-        };
-    } // namespace trait
+            alpaka::unused(fn, acc, inOut, args...);
+            static_assert(
+                false,
+                "You must specialize atomicInvoke() for your functor. Best place the overload in the namespace of the "
+                "functor, it will be found by ADL.");
+        }
 
-    // Add more functors as needed
-    template<typename T_Functor>
-    using FunctorToAtomicOp_t = typename trait::FunctorToAtomicOp<std::decay_t<T_Functor>>::type;
+        template<typename T>
+        ALPAKA_FN_ACC void atomicInvoke(std::plus<T>, concepts::Acc auto const& acc, auto* inOut, auto&&... args)
+        {
+            atomicAdd(acc, inOut, ALPAKA_FORWARD(args)...);
+        }
+    } // namespace atomic
 
 } // namespace alpaka::onAcc

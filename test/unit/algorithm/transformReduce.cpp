@@ -61,20 +61,26 @@ struct ScalarOpWithAcc
     }
 };
 
-// This functor des not support Simd and must be wrapped by @see ScalarFunc
-struct MinValue
+namespace myTest
 {
-    constexpr auto operator()(auto const& a, auto const& b) const
+    // This functor des not support Simd and must be wrapped by @see ScalarFunc
+    struct MinValue
     {
-        return math::min(a, b);
-    }
-};
+        constexpr auto operator()(auto const& a, auto const& b) const
+        {
+            return math::min(a, b);
+        }
+    };
 
-template<>
-struct alpaka::onAcc::trait::FunctorToAtomicOp<MinValue>
-{
-    using type = alpaka::onAcc::AtomicMin;
-};
+    ALPAKA_FN_ACC void atomicInvoke(
+        MinValue const&,
+        alpaka::onAcc::concepts::Acc auto const& acc,
+        auto* dest,
+        auto const src)
+    {
+        onAcc::atomicMin(acc, dest, src);
+    }
+} // namespace myTest
 
 struct TestWithMdSpan
 {
@@ -224,7 +230,7 @@ TEMPLATE_LIST_TEST_CASE("transformReduce", "", TestBackends)
             TestWithMdSpan{}),
         std::make_tuple(
             std::numeric_limits<DataType>::max(),
-            std::make_pair(ScalarFunc{MinValue{}}, MinValue{}),
+            std::make_pair(ScalarFunc{myTest::MinValue{}}, myTest::MinValue{}),
             // we use variable.load() in the functor therefore we need to wrap the functor as StencilFunc
             std::make_pair(std::plus{}, std::plus{}),
             TestWithMdSpan{}));
@@ -352,7 +358,7 @@ TEMPLATE_LIST_TEST_CASE("transformReduce generator", "", TestBackends)
             TestWithGenerator{}),
         std::make_tuple(
             std::numeric_limits<DataType>::max(),
-            std::make_pair(ScalarFunc{MinValue{}}, MinValue{}),
+            std::make_pair(ScalarFunc{myTest::MinValue{}}, myTest::MinValue{}),
             // we use variable.load() in the functor therefore we need to wrap the functor as StencilFunc
             std::make_pair(std::plus{}, std::plus{}),
             TestWithGenerator{}));
