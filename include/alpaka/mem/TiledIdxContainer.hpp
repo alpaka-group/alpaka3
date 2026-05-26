@@ -264,15 +264,23 @@ namespace alpaka::onAcc
             }
             else if constexpr(std::is_same_v<T_IdxMapperFn, layout::Contiguous>)
             {
-                auto extent = m_idxRange.distance();
-                auto numElements = divCeil(extent, m_idxRange.m_stride * numThreads);
-                auto first = threadIdx * numElements * m_idxRange.m_stride;
+                IdxVecType extent = m_idxRange.distance();
+                IdxVecType logicalExtent = divCeil(extent, m_idxRange.m_stride);
 
-                return const_iterator(
-                    m_idxRange.m_begin,
-                    first,
-                    extent.min(first + numElements * m_idxRange.m_stride),
-                    m_idxRange.m_stride);
+                // elements per slot
+                IdxVecType base = logicalExtent / numThreads;
+                // remainder elements will be given to the slots with id lower than rem
+                IdxVecType rem = logicalExtent % numThreads;
+
+                IdxVecType firstLogical = threadIdx * base + threadIdx.min(rem);
+                IdxVecType first = firstLogical * m_idxRange.m_stride;
+
+                IdxVecType nextThreadIdx = threadIdx + IdxType{1};
+                IdxVecType endLogical = nextThreadIdx * base + nextThreadIdx.min(rem);
+                // crop to the end of the index range
+                IdxVecType end = extent.min(endLogical * m_idxRange.m_stride);
+
+                return const_iterator(m_idxRange.m_begin, first, end, m_idxRange.m_stride);
             }
         }
 
@@ -287,11 +295,20 @@ namespace alpaka::onAcc
             }
             else if constexpr(std::is_same_v<T_IdxMapperFn, layout::Contiguous>)
             {
-                auto extent = m_idxRange.distance();
-                auto numElements = divCeil(extent, m_idxRange.m_stride * numThreads);
-                auto first = threadIdx * numElements * m_idxRange.m_stride;
+                IdxVecType extent = m_idxRange.distance();
+                IdxVecType logicalExtent = divCeil(extent, m_idxRange.m_stride);
 
-                return const_iterator_end(m_idxRange.m_begin + extent.min(first + numElements * m_idxRange.m_stride));
+                // elements per slot
+                IdxVecType base = logicalExtent / numThreads;
+                // remainder elements will be given to the slots with id lower than rem
+                IdxVecType rem = logicalExtent % numThreads;
+
+                IdxVecType nextSlotIdx = threadIdx + IdxType{1};
+                IdxVecType endLogical = nextSlotIdx * base + nextSlotIdx.min(rem);
+                // crop to the end of the index range
+                IdxVecType end = extent.min(endLogical * m_idxRange.m_stride);
+
+                return const_iterator_end(m_idxRange.m_begin + end);
             }
         }
 

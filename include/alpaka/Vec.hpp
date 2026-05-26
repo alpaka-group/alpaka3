@@ -571,7 +571,7 @@ namespace alpaka
         template<typename T_OtherStorage>
         constexpr auto min(Vec<T_Type, T_dim, T_OtherStorage> const& rhs) const
         {
-            Vec result{};
+            typename Vec::UniVec result{};
             for(uint32_t d = 0u; d < T_dim; d++)
                 result[d] = std::min((*this)[d], rhs[d]);
             return result;
