@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <iostream>
 #include <memory>
+#include <mutex>
 #include <type_traits>
 
 namespace alpaka::onHost

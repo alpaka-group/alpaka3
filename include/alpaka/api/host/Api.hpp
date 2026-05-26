@@ -5,13 +5,12 @@
 #pragma once
 
 #include "alpaka/api/host/cpuArchSize.hpp"
-#include "alpaka/api/host/hwloc/hwlocConfig.hpp"
 #include "alpaka/api/trait.hpp"
 #include "alpaka/concepts.hpp"
 #include "alpaka/mem/trait.hpp"
 #include "alpaka/onHost/trait.hpp"
 
-#include <sstream>
+#include <string>
 
 namespace alpaka
 {

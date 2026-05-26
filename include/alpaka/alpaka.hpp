@@ -8,7 +8,6 @@
 #include "alpaka/Simd.hpp"
 #include "alpaka/SimdWhereExpr.hpp"
 #include "alpaka/UniqueId.hpp"
-#include "alpaka/Vec.hpp"
 #include "alpaka/api/api.hpp"
 #include "alpaka/api/cpu.hpp"
 #include "alpaka/api/cuda/warp.hpp"
