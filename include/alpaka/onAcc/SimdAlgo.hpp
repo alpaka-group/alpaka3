@@ -170,8 +170,8 @@ namespace alpaka::onAcc
          * @param transformFunc N-nary functor to be executed, values of all containers will be passed to the functor
          * as arguments. The functor should support Simd packages. If not you can enforce the element wise execution by
          * wrapping into
-         * @see ScalarFunc. If you would like to support stencil executions wrapp fn into @see StencilFunc. StencilFunc
-         * is getting all arguments as @see SimdPtr. If StencilFunc is used you should take care to not read outside of
+         * ScalarFunc. If you would like to support stencil executions wrapp fn into StencilFunc. StencilFunc
+         * is getting all arguments as SimdPtr. If StencilFunc is used you should take care to not read outside of
          * valid memory ranges by using sub-views to your input and output data. Optionally a transformFn can have an
          * accelerator as first argument.
          * If the result of this functor is a structured value providing an overload to simdize the type
