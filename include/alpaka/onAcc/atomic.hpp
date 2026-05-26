@@ -198,9 +198,9 @@ namespace alpaka::onAcc
          */
         ALPAKA_FN_ACC void atomicInvoke(auto&& fn, concepts::Acc auto const& acc, auto* inOut, auto&&... args)
         {
-            alpaka::unused(fn, acc, inOut, args...);
+            alpaka::unused(acc, inOut, args...);
             static_assert(
-                false,
+                sizeof(ALPAKA_TYPEOF(fn)) && false,
                 "You must specialize atomicInvoke() for your functor. Best place the overload in the namespace of the "
                 "functor, it will be found by ADL.");
         }

@@ -63,7 +63,7 @@ struct ScalarOpWithAcc
 
 namespace myTest
 {
-    // This functor des not support Simd and must be wrapped by @see ScalarFunc
+    // This functor des not support Simd and must be wrapped by ScalarFunc
     struct MinValue
     {
         constexpr auto operator()(auto const& a, auto const& b) const

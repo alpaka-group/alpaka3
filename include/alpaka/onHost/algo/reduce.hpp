@@ -20,8 +20,7 @@ namespace alpaka::onHost
      * @param binaryReduceFn Reduce binary functor, the functor operation must be transitive and commutative.
      *   The atomic operation atomic::atomicInvoke(ReduceFnType, onAcc::concepts::Acc, auto* destination,auto source)
      * must be overloaded. The functor execution order is not specified. The functor should support Simd packages, if
-     * not you can enforce the element wise execution by wrapping into
-     *   @see ScalarFunc.
+     * not you can enforce the element wise execution by wrapping into ScalarFunc.
      * @param in The input data which should be reduced.
      *
      * @{
@@ -59,7 +58,7 @@ namespace alpaka::onHost
     }
 
     /**
-     * A available default executor will be selected automaticlally. The default executor is a executor with most
+     * A available default executor will be selected automatically. The default executor is a executor with most
      * parallelism/performance.
      */
     template<typename DataType, typename T_Device, alpaka::concepts::QueueKind T_QueueKind>
