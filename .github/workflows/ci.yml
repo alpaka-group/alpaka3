@@ -151,6 +151,15 @@ jobs:
     env: ${{ matrix.config.env }}
 
     steps:
+      # Git ≥ 2.18 is required else action/checkout is falling back to GIT rest API which can produce the following error:
+      # The repository will be downloaded using the GitHub REST API
+      # To create a local Git repository instead, add Git 2.18 or higher to the PATH
+      # Downloading the archive
+      # Sorry. Your account was suspended - https://docs.github.com/rest
+      - name: Install git
+        run: |
+          apt-get update
+          apt-get install -y git
       # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v6
@@ -169,8 +178,7 @@ jobs:
       # Install base dependencies
       - name: Install base dependencies
         run: |
-          apt-get update
-          apt-get install -y cmake build-essential ninja-build git
+          apt-get install -y cmake build-essential ninja-build
           export "SANITIZERS_DIR=$(pwd)/sanitizer"
           echo "ASAN_OPTIONS=suppressions=${SANITIZERS_DIR}/asan_suppressions.txt" >> $GITHUB_ENV
           echo "TSAN_OPTIONS=suppressions=${SANITIZERS_DIR}/tsan_suppressions.txt,ignore_noninstrumented_modules=1" >> $GITHUB_ENV
