@@ -81,22 +81,23 @@ namespace alpaka
          *
          * @{
          */
-        constexpr auto operator[](alpaka::concepts::IndexVec<IdxType, T_MdSpan::dim()> auto const& idx) const
+        constexpr auto operator[](
+            alpaka::concepts::IndexVec<typename IdxType::type, T_MdSpan::dim()> auto const& idx) const
         {
             constexpr uint32_t valueAlignment = static_cast<uint32_t>(alignof(value_type));
             constexpr auto align = Alignment<valueAlignment>{};
-            return SimdPtr<T_MdSpan, T_IdxType, ALPAKA_TYPEOF(align), T_SimdWidth>{
+            return SimdPtr<T_MdSpan, IdxType, ALPAKA_TYPEOF(align), T_SimdWidth>{
                 static_cast<T_MdSpan>(*this),
                 idx + m_idx,
                 align,
                 T_SimdWidth{}};
         }
 
-        constexpr auto operator[](alpaka::concepts::IndexVec<IdxType, T_MdSpan::dim()> auto const& idx)
+        constexpr auto operator[](alpaka::concepts::IndexVec<typename IdxType::type, T_MdSpan::dim()> auto const& idx)
         {
             constexpr uint32_t valueAlignment = static_cast<uint32_t>(alignof(value_type));
             constexpr auto align = Alignment<valueAlignment>{};
-            return SimdPtr<T_MdSpan, T_IdxType, ALPAKA_TYPEOF(align), T_SimdWidth>{
+            return SimdPtr<T_MdSpan, IdxType, ALPAKA_TYPEOF(align), T_SimdWidth>{
                 static_cast<T_MdSpan>(*this),
                 idx + m_idx,
                 align,
