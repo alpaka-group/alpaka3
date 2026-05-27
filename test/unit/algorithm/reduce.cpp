@@ -16,35 +16,44 @@ using namespace alpaka;
 
 using TestBackends = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs, exec::enabledExecutors))>;
 
-// This functor des not support Simd and must be wrapped by @see ScalarFunc
-struct MinValue
+namespace myTest
 {
-    constexpr auto operator()(auto const& a, auto const& b) const
+    // This functor des not support Simd and must be wrapped by ScalarFunc
+    struct MinValue
     {
-        return math::min(a, b);
-    }
-};
+        constexpr auto operator()(auto const& a, auto const& b) const
+        {
+            return math::min(a, b);
+        }
+    };
 
-template<>
-struct alpaka::onAcc::trait::FunctorToAtomicOp<MinValue>
-{
-    using type = alpaka::onAcc::AtomicMin;
-};
-
-// This functor des not support Simd and must be wrapped by @see ScalarFunc
-struct MaxValue
-{
-    constexpr auto operator()(auto const& a, auto const& b) const
+    ALPAKA_FN_ACC void atomicInvoke(
+        MinValue const&,
+        alpaka::onAcc::concepts::Acc auto const& acc,
+        auto* dest,
+        auto const src)
     {
-        return math::max(a, b);
+        onAcc::atomicMin(acc, dest, src);
     }
-};
 
-template<>
-struct alpaka::onAcc::trait::FunctorToAtomicOp<MaxValue>
-{
-    using type = alpaka::onAcc::AtomicMax;
-};
+    // This functor des not support Simd and must be wrapped by ScalarFunc
+    struct MaxValue
+    {
+        constexpr auto operator()(auto const& a, auto const& b) const
+        {
+            return math::max(a, b);
+        }
+    };
+
+    ALPAKA_FN_ACC void atomicInvoke(
+        MaxValue const&,
+        alpaka::onAcc::concepts::Acc auto const& acc,
+        auto* dest,
+        auto const src)
+    {
+        onAcc::atomicMax(acc, dest, src);
+    }
+} // namespace myTest
 
 struct TestWithMdSpan
 {
@@ -144,8 +153,16 @@ TEMPLATE_LIST_TEST_CASE("reduce", "", TestBackends)
     // This list is not directly defined within the function TestWithMdSpan due to nvcc compile issues.
     auto setups = std::make_tuple(
         std::make_tuple(DataType{0}, std::plus{}, std::plus{}, TestWithMdSpan{}),
-        std::make_tuple(std::numeric_limits<DataType>::max(), ScalarFunc{MinValue{}}, MinValue{}, TestWithMdSpan{}),
-        std::make_tuple(std::numeric_limits<DataType>::min(), ScalarFunc{MaxValue{}}, MaxValue{}, TestWithMdSpan{}));
+        std::make_tuple(
+            std::numeric_limits<DataType>::max(),
+            ScalarFunc{myTest::MinValue{}},
+            myTest::MinValue{},
+            TestWithMdSpan{}),
+        std::make_tuple(
+            std::numeric_limits<DataType>::min(),
+            ScalarFunc{myTest::MaxValue{}},
+            myTest::MaxValue{},
+            TestWithMdSpan{}));
 
     // different extents for testing
     auto extentMdList
@@ -208,11 +225,15 @@ TEMPLATE_LIST_TEST_CASE("reduce generator", "", TestBackends)
     // This list is not directly defined within the function TestWithGenerator due to nvcc compile issues.
     auto setup = std::make_tuple(
         std::make_tuple(DataType{0}, std::plus{}, std::plus{}, TestWithGenerator{}),
-        std::make_tuple(std::numeric_limits<DataType>::max(), ScalarFunc{MinValue{}}, MinValue{}, TestWithGenerator{}),
+        std::make_tuple(
+            std::numeric_limits<DataType>::max(),
+            ScalarFunc{myTest::MinValue{}},
+            myTest::MinValue{},
+            TestWithGenerator{}),
         std::make_tuple(
             std::numeric_limits<DataType>::min(),
-            ScalarFunc{MaxValue{}},
-            MaxValue{},
+            ScalarFunc{myTest::MaxValue{}},
+            myTest::MaxValue{},
             TestWithGenerator{}));
 
     // different extents for testing

@@ -26,14 +26,14 @@ namespace alpaka::onHost
      * @param out MdSpan for the result. The value_type must be equal to neutralElement and the result of the binary
      * reduce functor type. The result is written to the first element of the output data.
      * @param binaryReduceFn Reduce binary functor, the functor operation must be transitive and commutative.
-     *   The atomic trait alpaka::onAcc::trait::FunctorToAtomicOp<> must be specialized.
-     *   The functor execution order is not specified.
-     *   The functor should support Simd packages, if not you can enforce the element wise execution by wrapping into
+     *   The atomic operation atomic::atomicInvoke(ReduceFnType, onAcc::concepts::Acc, auto* destination,auto source)
+     * must be overloaded. The functor execution order is not specified. The functor should support Simd packages, if
+     * not you can enforce the element wise execution by wrapping into
      *   @see ScalarFunc.
      * @param transformFn The function to apply to each element of the input data.
      *   The functor should support Simd packages. If not you can enforce the element wise execution by wrapping into
-     * @see ScalarFunc. If you would like to support stencil executions wrapp fn into @see StencilFunc. StencilFunc is
-     * getting all arguments as @see SimdPtr. If StencilFunc is used you should take care to not read outside of valid
+     * ScalarFunc. If you would like to support stencil executions wrapp fn into StencilFunc. StencilFunc is
+     * getting all arguments as SimdPtr. If StencilFunc is used you should take care to not read outside of valid
      * memory ranges by using sub-views to your input and output data. Optionally a transformFn can have an accelerator
      * as first argument.
      * @param in The input data to transform, all input data is passed to fn. transformFn must support as many
