@@ -107,7 +107,7 @@ namespace alpaka::onAcc::internal
             return Simd{op(CVec<uint32_t, T_idx>{}, acc, ALPAKA_FORWARD(func), ALPAKA_FORWARD(data)...)...};
         }
 
-        ALPAKA_FN_INLINE ALPAKA_FN_ACC static constexpr auto wrapTransformFunc(auto&& transformFunc)
+        ALPAKA_FN_INLINE ALPAKA_FN_ACC static constexpr decltype(auto) wrapTransformFunc(auto&& transformFunc)
         {
             if constexpr(isSpecializationOf_v<ALPAKA_TYPEOF(transformFunc), StencilFunc>)
             {
