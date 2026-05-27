@@ -8,7 +8,7 @@
 : "${APCI_ALPAKA_ROOT?'APCI_ALPAKA_ROOT is not defined. Root directory of the alpaka project'}"
 
 # shellcheck source=script/ci/utils/color_echo.sh
-source "${APCI_ALPAKA_ROOT}/script/ci/utils//color_echo.sh"
+source "${APCI_ALPAKA_ROOT}/script/ci/utils/color_echo.sh"
 
 # display a install message in green
 install_msg() {
@@ -53,11 +53,43 @@ parse_compiler_version() {
     export compiler_version
 }
 
+# If an error occurs (command does not return 0), try running the command again.
+# Usage: retry_cmd command arg1 arg2 ...
+#
+# Configure variables
+# - RETRY_CMD_MAX: number of retires (default 10)
+# - RETRY_CMD_WAIT: wait N seconds between two tries (default 1)
+retry_cmd() {
+    if [[ $# -lt 1 ]]; then
+        exit_error "retry_cmd requires at least one argument."
+    fi
+    (
+        set +euo pipefail
+        local max_tries="${RETRY_CMD_MAX:-10}"
+
+        # time in seconds
+        local wait_time="${RETRY_CMD_WAIT:-1}"
+
+        for ((i = 0; i < max_tries; ++i)); do
+            "$@"
+            result="$?"
+
+            if [[ "$result" -eq 0 ]]; then
+                return 0
+            fi
+
+            echo_yellow "[WARNING]: Attempt #${i} to run '$*' failed"
+            sleep "$wait_time"
+        done
+        exit_error "run '$*' failed" "$result"
+    )
+}
+
 # does an 'apt update' only if no 'apt update' was done before
 # ATTENTION: If you add a new ppa no 'apt update' is performed. Instead call directly
 # `DEBIAN_FRONTEND=noninteractive apt update`.
 lazy_apt_update() {
     if [[ -z "$(ls -A '/var/lib/apt/lists/')" ]]; then
-        DEBIAN_FRONTEND=noninteractive apt update
+        DEBIAN_FRONTEND=noninteractive retry_cmd apt update
     fi
 }

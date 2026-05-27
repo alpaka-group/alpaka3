@@ -188,11 +188,15 @@ jobs:
         run: $APCI_ALPAKA_ROOT/script/ci/install/gcc.sh
       # Install Clang if specified
       - name: Install Clang
+        shell: bash
         if: matrix.config.compiler == 'clang' && matrix.config.hip == 'no'
         run: |
+          # TODO: temporary solution -> replace with install clang.sh script
+          source $APCI_ALPAKA_ROOT/script/ci/utils/default.sh
           apt update
           apt install -y software-properties-common wget gnupg2
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+          retry_cmd wget https://apt.llvm.org/llvm-snapshot.gpg.key
+          mv ./llvm-snapshot.gpg.key /etc/apt/trusted.gpg.d/apt.llvm.org.asc
           case ${{ matrix.config.version }} in
             20)
                 add-apt-repository -y "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-20 main"
@@ -201,7 +205,7 @@ jobs:
                 add-apt-repository -y "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-21 main"
                 ;;
           esac
-          apt-get update
+          retry_cmd apt update
           apt-get install -y clang-${{ matrix.config.version }}
           update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${{ matrix.config.version }} 100 \
                               --slave /usr/bin/clang++ clang++ /usr/bin/clang++-${{ matrix.config.version }}
