@@ -156,13 +156,46 @@ namespace alpaka
         ALPAKA_VECTOR_BINARY_OP(typename, -)
         ALPAKA_VECTOR_BINARY_OP(typename, *)
         ALPAKA_VECTOR_BINARY_OP(typename, /)
-        ALPAKA_VECTOR_BINARY_OP(std::integral, %)
         ALPAKA_VECTOR_BINARY_OP(std::integral, <<)
         ALPAKA_VECTOR_BINARY_OP(std::integral, >>)
         ALPAKA_VECTOR_BINARY_OP(std::integral, &)
         ALPAKA_VECTOR_BINARY_OP(std::integral, |)
         ALPAKA_VECTOR_BINARY_OP(std::integral, ^)
 
+        /** Workaround clang + glibc 12 issue with std::simd modulo operator
+         *
+         * /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/experimental/bits/simd_x86.h:1492:51: error:
+         * explicit qualification required to use member '_S_divides' from dependent base class 1492 |           return
+         * _Base::_S_minus(__x, _S_multiplies(__y, _S_divides(__x, __y)));
+         *
+         * This workaround is executing the operation lane by lane which can break SIMD usage if the auto vectorizer is
+         * not understanding the code.
+         */
+#    if defined(__clang__) && defined(__GLIBCXX__) && (!defined(_GLIBCXX_RELEASE) || _GLIBCXX_RELEASE == 12)
+        template<std::integral T_Type, uint32_t T_width>
+        constexpr auto operator%(const StdSimd<T_Type, T_width>& lhs, const StdSimd<T_Type, T_width>& rhs)
+        {
+            using BaseType = typename StdSimd<T_Type, T_width>::BaseType;
+            return StdSimd<T_Type, T_width>(
+                BaseType([&](int i) { return lhs.asNativeType()[i] % rhs.asNativeType()[i]; }));
+        }
+
+        template<std::integral T_Type, uint32_t T_width>
+        constexpr auto operator%(StdSimd<T_Type, T_width> const& lhs, T_Type rhs)
+        {
+            using BaseType = typename StdSimd<T_Type, T_width>::BaseType;
+            return StdSimd<T_Type, T_width>(BaseType([&](int i) { return lhs.asNativeType()[i] % rhs; }));
+        }
+
+        template<std::integral T_Type, uint32_t T_width>
+        constexpr auto operator%(T_Type lhs, StdSimd<T_Type, T_width> const& rhs)
+        {
+            using BaseType = typename StdSimd<T_Type, T_width>::BaseType;
+            return StdSimd<T_Type, T_width>(BaseType([&](int i) { return lhs % rhs.asNativeType()[i]; }));
+        }
+#    else
+        ALPAKA_VECTOR_BINARY_OP(std::integral, %)
+#    endif
 #    undef ALPAKA_VECTOR_BINARY_OP
 
     } // namespace internal
