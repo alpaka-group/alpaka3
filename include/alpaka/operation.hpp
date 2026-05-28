@@ -10,10 +10,16 @@
 #include <algorithm>
 #include <type_traits>
 
-namespace alpaka::onAcc
+/** Contains functors with operation following the atomic operation semantics.
+ *
+ * @attention The operations itself are not atomic, only the argument interface follows corresponding atomic
+ * operations. The argument updated is always hand in as pointer.
+ *
+ */
+namespace alpaka::operation
 {
     //! The addition function object.
-    struct AtomicAdd
+    struct Add
     {
         //! \return The old value of addr.
         template<typename T>
@@ -34,7 +40,7 @@ namespace alpaka::onAcc
     };
 
     //! The subtraction function object.
-    struct AtomicSub
+    struct Sub
     {
         //! \return The old value of addr.
         ALPAKA_NO_HOST_ACC_WARNING
@@ -56,7 +62,7 @@ namespace alpaka::onAcc
     };
 
     //! The minimum function object.
-    struct AtomicMin
+    struct Min
     {
         //! \return The old value of addr.
         ALPAKA_NO_HOST_ACC_WARNING
@@ -71,7 +77,7 @@ namespace alpaka::onAcc
     };
 
     //! The maximum function object.
-    struct AtomicMax
+    struct Max
     {
         //! \return The old value of addr.
         ALPAKA_NO_HOST_ACC_WARNING
@@ -86,7 +92,7 @@ namespace alpaka::onAcc
     };
 
     //! The exchange function object.
-    struct AtomicExch
+    struct Exch
     {
         //! \return The old value of addr.
         ALPAKA_NO_HOST_ACC_WARNING
@@ -101,7 +107,7 @@ namespace alpaka::onAcc
     };
 
     //! The increment function object.
-    struct AtomicInc
+    struct Inc
     {
         //! Increments up to value, then reset to 0.
         //!
@@ -118,7 +124,7 @@ namespace alpaka::onAcc
     };
 
     //! The decrement function object.
-    struct AtomicDec
+    struct Dec
     {
         //! Decrement down to 0, then reset to value.
         //!
@@ -135,7 +141,7 @@ namespace alpaka::onAcc
     };
 
     //! The and function object.
-    struct AtomicAnd
+    struct And
     {
         //! \return The old value of addr.
         ALPAKA_NO_HOST_ACC_WARNING
@@ -150,7 +156,7 @@ namespace alpaka::onAcc
     };
 
     //! The or function object.
-    struct AtomicOr
+    struct Or
     {
         //! \return The old value of addr.
         ALPAKA_NO_HOST_ACC_WARNING
@@ -165,7 +171,7 @@ namespace alpaka::onAcc
     };
 
     //! The exclusive or function object.
-    struct AtomicXor
+    struct Xor
     {
         //! \return The old value of addr.
         ALPAKA_NO_HOST_ACC_WARNING
@@ -180,9 +186,9 @@ namespace alpaka::onAcc
     };
 
     //! The compare and swap function object.
-    struct AtomicCas
+    struct Cas
     {
-        //! AtomicCas for non floating point values
+        //! Cas for non floating point values
         // \return The old value of addr.
         ALPAKA_NO_HOST_ACC_WARNING
         template<typename T, std::enable_if_t<!std::is_floating_point_v<T>, bool> = true>
@@ -196,13 +202,13 @@ namespace alpaka::onAcc
             return old;
         }
 
-        //! AtomicCas for floating point values
+        //! Cas for floating point values
         // \return The old value of addr.
         ALPAKA_NO_HOST_ACC_WARNING
         template<typename T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true>
         ALPAKA_FN_HOST_ACC auto operator()(T* addr, T const& compare, T const& value) const -> T
         {
-            static_assert(sizeof(T) == 4u || sizeof(T) == 8u, "AtomicCas is supporting only 32bit and 64bit values!");
+            static_assert(sizeof(T) == 4u || sizeof(T) == 8u, "Cas is supporting only 32bit and 64bit values!");
             // Type to reinterpret too to perform the bit comparison
             using BitType = std::conditional_t<sizeof(T) == 4u, unsigned int, unsigned long long>;
 
@@ -228,4 +234,4 @@ namespace alpaka::onAcc
             return old;
         }
     };
-} // namespace alpaka::onAcc
+} // namespace alpaka::operation

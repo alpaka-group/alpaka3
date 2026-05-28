@@ -108,10 +108,10 @@ struct KernelWait
 
         int* ptr = nullptr;
         // BEGIN-CHEATSHEET-atomicAdd
-        // Operation: onAcc::AtomicAdd, onAcc::AtomicSub, onAcc::AtomicMin, onAcc::AtomicMax, onAcc::AtomicExch,
-        //            onAcc::AtomicInc, onAcc::AtomicDec, onAcc::AtomicAnd, onAcc::AtomicOr, onAcc::AtomicXor,
-        //            onAcc::AtomicCas
-        using Operation = onAcc::AtomicAdd;
+        // Operation: operation::Add, operation::Sub, operation::Min, operation::Max, operation::Exch,
+        //            operation::Inc, operation::Dec, operation::And, operation::Or, operation::Xor,
+        //            operation::Cas
+        using Operation = operation::Add;
         auto result = atomicOp<Operation>(acc, ptr, 1);
         // Also dedicated functions available, e.g.:
         auto old = onAcc::atomicAdd(acc, ptr, 1);

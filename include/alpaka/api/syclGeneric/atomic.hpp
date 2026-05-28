@@ -6,9 +6,9 @@
 
 #include "alpaka/api/syclGeneric/tag.hpp"
 #include "alpaka/core/config.hpp"
-#include "alpaka/onAcc/atomicOp.hpp"
 #include "alpaka/onAcc/internal/interface.hpp"
 #include "alpaka/onAcc/scope.hpp"
+#include "alpaka/operation.hpp"
 
 #if ALPAKA_LANG_SYCL
 
@@ -72,7 +72,7 @@ namespace alpaka::onAcc::internalCompute
     // Add.
     //! The SYCL accelerator atomic operation.
     template<typename T, typename T_Scope>
-    struct Atomic::Op<AtomicAdd, onAcc::internal::SyclAtomic, T, T_Scope>
+    struct Atomic::Op<alpaka::operation::Add, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "SYCL atomics do not support this type");
 
@@ -85,7 +85,7 @@ namespace alpaka::onAcc::internalCompute
     // Sub.
     //! The SYCL accelerator atomic operation.
     template<typename T, typename T_Scope>
-    struct Atomic::Op<AtomicSub, onAcc::internal::SyclAtomic, T, T_Scope>
+    struct Atomic::Op<alpaka::operation::Sub, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "SYCL atomics do not support this type");
 
@@ -98,7 +98,7 @@ namespace alpaka::onAcc::internalCompute
     // Min.
     //! The SYCL accelerator atomic operation.
     template<typename T, typename T_Scope>
-    struct Atomic::Op<AtomicMin, onAcc::internal::SyclAtomic, T, T_Scope>
+    struct Atomic::Op<alpaka::operation::Min, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "SYCL atomics do not support this type");
 
@@ -111,7 +111,7 @@ namespace alpaka::onAcc::internalCompute
     // Max.
     //! The SYCL accelerator atomic operation.
     template<typename T, typename T_Scope>
-    struct Atomic::Op<AtomicMax, onAcc::internal::SyclAtomic, T, T_Scope>
+    struct Atomic::Op<alpaka::operation::Max, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "SYCL atomics do not support this type");
 
@@ -124,7 +124,7 @@ namespace alpaka::onAcc::internalCompute
     // Exch.
     //! The SYCL accelerator atomic operation.
     template<typename T, typename T_Scope>
-    struct Atomic::Op<AtomicExch, onAcc::internal::SyclAtomic, T, T_Scope>
+    struct Atomic::Op<alpaka::operation::Exch, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(
             (std::is_integral_v<T> || std::is_floating_point_v<T>) and (sizeof(T) == 4 || sizeof(T) == 8),
@@ -139,7 +139,7 @@ namespace alpaka::onAcc::internalCompute
     // Inc.
     //! The SYCL accelerator atomic operation.
     template<typename T, typename T_Scope>
-    struct Atomic::Op<AtomicInc, onAcc::internal::SyclAtomic, T, T_Scope>
+    struct Atomic::Op<alpaka::operation::Inc, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(
             std::is_unsigned_v<T> && (sizeof(T) == 4 || sizeof(T) == 8),
@@ -156,7 +156,7 @@ namespace alpaka::onAcc::internalCompute
     // Dec.
     //! The SYCL accelerator atomic operation.
     template<typename T, typename T_Scope>
-    struct Atomic::Op<AtomicDec, onAcc::internal::SyclAtomic, T, T_Scope>
+    struct Atomic::Op<alpaka::operation::Dec, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(
             std::is_unsigned_v<T> && (sizeof(T) == 4 || sizeof(T) == 8),
@@ -173,7 +173,7 @@ namespace alpaka::onAcc::internalCompute
     // And.
     //! The SYCL accelerator atomic operation.
     template<typename T, typename T_Scope>
-    struct Atomic::Op<AtomicAnd, onAcc::internal::SyclAtomic, T, T_Scope>
+    struct Atomic::Op<alpaka::operation::And, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(std::is_integral_v<T>, "Bitwise operations only supported for integral types.");
 
@@ -186,7 +186,7 @@ namespace alpaka::onAcc::internalCompute
     // Or.
     //! The SYCL accelerator atomic operation.
     template<typename T, typename T_Scope>
-    struct Atomic::Op<AtomicOr, onAcc::internal::SyclAtomic, T, T_Scope>
+    struct Atomic::Op<alpaka::operation::Or, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(std::is_integral_v<T>, "Bitwise operations only supported for integral types.");
 
@@ -199,7 +199,7 @@ namespace alpaka::onAcc::internalCompute
     // Xor.
     //! The SYCL accelerator atomic operation.
     template<typename T, typename T_Scope>
-    struct Atomic::Op<AtomicXor, onAcc::internal::SyclAtomic, T, T_Scope>
+    struct Atomic::Op<alpaka::operation::Xor, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(std::is_integral_v<T>, "Bitwise operations only supported for integral types.");
 
@@ -212,7 +212,7 @@ namespace alpaka::onAcc::internalCompute
     // Cas.
     //! The SYCL accelerator atomic operation.
     template<typename T, typename T_Scope>
-    struct Atomic::Op<AtomicCas, onAcc::internal::SyclAtomic, T, T_Scope>
+    struct Atomic::Op<alpaka::operation::Cas, onAcc::internal::SyclAtomic, T, T_Scope>
     {
         static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>, "SYCL atomics do not support this type");
 

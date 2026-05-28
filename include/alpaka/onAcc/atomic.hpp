@@ -8,9 +8,9 @@
 #include "alpaka/api/trait.hpp"
 #include "alpaka/core/common.hpp"
 #include "alpaka/onAcc/Acc.hpp"
-#include "alpaka/onAcc/atomicOp.hpp"
 #include "alpaka/onAcc/internal/interface.hpp"
 #include "alpaka/onAcc/scope.hpp"
+#include "alpaka/operation.hpp"
 
 #include <type_traits>
 
@@ -65,7 +65,7 @@ namespace alpaka::onAcc
     template<typename T, typename T_Scope = scope::Device>
     constexpr auto atomicAdd(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
-        return atomicOp<AtomicAdd>(acc, addr, value, hier);
+        return atomicOp<operation::Add>(acc, addr, value, hier);
     }
 
     //! Executes an atomic sub operation.
@@ -76,7 +76,7 @@ namespace alpaka::onAcc
     template<typename T, typename T_Scope = scope::Device>
     constexpr auto atomicSub(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
-        return atomicOp<AtomicSub>(acc, addr, value, hier);
+        return atomicOp<operation::Sub>(acc, addr, value, hier);
     }
 
     //! Executes an atomic min operation.
@@ -87,7 +87,7 @@ namespace alpaka::onAcc
     template<typename T, typename T_Scope = scope::Device>
     constexpr auto atomicMin(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
-        return atomicOp<AtomicMin>(acc, addr, value, hier);
+        return atomicOp<operation::Min>(acc, addr, value, hier);
     }
 
     //! Executes an atomic max operation.
@@ -98,7 +98,7 @@ namespace alpaka::onAcc
     template<typename T, typename T_Scope = scope::Device>
     constexpr auto atomicMax(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
-        return atomicOp<AtomicMax>(acc, addr, value, hier);
+        return atomicOp<operation::Max>(acc, addr, value, hier);
     }
 
     //! Executes an atomic exchange operation.
@@ -109,7 +109,7 @@ namespace alpaka::onAcc
     template<typename T, typename T_Scope = scope::Device>
     constexpr auto atomicExch(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
-        return atomicOp<AtomicExch>(acc, addr, value, hier);
+        return atomicOp<operation::Exch>(acc, addr, value, hier);
     }
 
     //! Executes an atomic increment operation.
@@ -120,7 +120,7 @@ namespace alpaka::onAcc
     template<typename T, typename T_Scope = scope::Device>
     constexpr auto atomicInc(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
-        return atomicOp<AtomicInc>(acc, addr, value, hier);
+        return atomicOp<operation::Inc>(acc, addr, value, hier);
     }
 
     //! Executes an atomic decrement operation.
@@ -131,7 +131,7 @@ namespace alpaka::onAcc
     template<typename T, typename T_Scope = scope::Device>
     constexpr auto atomicDec(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
-        return atomicOp<AtomicDec>(acc, addr, value, hier);
+        return atomicOp<operation::Dec>(acc, addr, value, hier);
     }
 
     //! Executes an atomic and operation.
@@ -142,7 +142,7 @@ namespace alpaka::onAcc
     template<typename T, typename T_Scope = scope::Device>
     constexpr auto atomicAnd(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
-        return atomicOp<AtomicAnd>(acc, addr, value, hier);
+        return atomicOp<operation::And>(acc, addr, value, hier);
     }
 
     //! Executes an atomic or operation.
@@ -153,7 +153,7 @@ namespace alpaka::onAcc
     template<typename T, typename T_Scope = scope::Device>
     constexpr auto atomicOr(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
-        return atomicOp<AtomicOr>(acc, addr, value, hier);
+        return atomicOp<operation::Or>(acc, addr, value, hier);
     }
 
     //! Executes an atomic xor operation.
@@ -164,7 +164,7 @@ namespace alpaka::onAcc
     template<typename T, typename T_Scope = scope::Device>
     constexpr auto atomicXor(auto const& acc, T* const addr, T const& value, T_Scope const hier = T_Scope()) -> T
     {
-        return atomicOp<AtomicXor>(acc, addr, value, hier);
+        return atomicOp<operation::Xor>(acc, addr, value, hier);
     }
 
     //! Executes an atomic compare-and-swap operation.
@@ -181,7 +181,7 @@ namespace alpaka::onAcc
         T const& value,
         T_Scope const hier = T_Scope()) -> T
     {
-        return atomicOp<AtomicCas>(acc, addr, compare, value, hier);
+        return atomicOp<operation::Cas>(acc, addr, compare, value, hier);
     }
 
     namespace atomic

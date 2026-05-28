@@ -6,9 +6,9 @@
 
 #include "alpaka/api/host/tag.hpp"
 #include "alpaka/core/config.hpp"
-#include "alpaka/onAcc/atomicOp.hpp"
 #include "alpaka/onAcc/internal/interface.hpp"
 #include "alpaka/onAcc/scope.hpp"
+#include "alpaka/operation.hpp"
 
 #include <array>
 #include <atomic>
@@ -54,9 +54,9 @@ namespace alpaka::onAcc
 
     namespace internalCompute
     {
-        //! The CPU accelerators AtomicAdd.
+        //! The CPU accelerators operation::Add.
         template<typename T, typename T_Scope>
-        struct Atomic::Op<AtomicAdd, internal::StlAtomic, T, T_Scope>
+        struct Atomic::Op<operation::Add, internal::StlAtomic, T, T_Scope>
         {
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
@@ -66,9 +66,9 @@ namespace alpaka::onAcc
             }
         };
 
-        //! The CPU accelerators AtomicSub.
+        //! The CPU accelerators operation::Sub.
         template<typename T, typename T_Scope>
-        struct Atomic::Op<AtomicSub, internal::StlAtomic, T, T_Scope>
+        struct Atomic::Op<alpaka::operation::Sub, internal::StlAtomic, T, T_Scope>
         {
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
@@ -78,9 +78,9 @@ namespace alpaka::onAcc
             }
         };
 
-        //! The CPU accelerators AtomicMin.
+        //! The CPU accelerators operation::Min.
         template<typename T, typename T_Scope>
-        struct Atomic::Op<AtomicMin, internal::StlAtomic, T, T_Scope>
+        struct Atomic::Op<alpaka::operation::Min, internal::StlAtomic, T, T_Scope>
         {
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
@@ -98,9 +98,9 @@ namespace alpaka::onAcc
             }
         };
 
-        //! The CPU accelerators AtomicMax.
+        //! The CPU accelerators operation::Max.
         template<typename T, typename T_Scope>
-        struct Atomic::Op<AtomicMax, internal::StlAtomic, T, T_Scope>
+        struct Atomic::Op<alpaka::operation::Max, internal::StlAtomic, T, T_Scope>
         {
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
@@ -118,9 +118,9 @@ namespace alpaka::onAcc
             }
         };
 
-        //! The CPU accelerators AtomicExch.
+        //! The CPU accelerators operation::Exch.
         template<typename T, typename T_Scope>
-        struct Atomic::Op<AtomicExch, internal::StlAtomic, T, T_Scope>
+        struct Atomic::Op<alpaka::operation::Exch, internal::StlAtomic, T, T_Scope>
         {
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
@@ -136,9 +136,9 @@ namespace alpaka::onAcc
             }
         };
 
-        //! The CPU accelerators AtomicInc.
+        //! The CPU accelerators operation::Inc.
         template<typename T, typename T_Scope>
-        struct Atomic::Op<AtomicInc, internal::StlAtomic, T, T_Scope>
+        struct Atomic::Op<alpaka::operation::Inc, internal::StlAtomic, T, T_Scope>
         {
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
@@ -154,9 +154,9 @@ namespace alpaka::onAcc
             }
         };
 
-        //! The CPU accelerators AtomicDec.
+        //! The CPU accelerators operation::Dec.
         template<typename T, typename T_Scope>
-        struct Atomic::Op<AtomicDec, internal::StlAtomic, T, T_Scope>
+        struct Atomic::Op<alpaka::operation::Dec, internal::StlAtomic, T, T_Scope>
         {
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
@@ -172,9 +172,9 @@ namespace alpaka::onAcc
             }
         };
 
-        //! The CPU accelerators AtomicAnd.
+        //! The CPU accelerators operation::And.
         template<typename T, typename T_Scope>
-        struct Atomic::Op<AtomicAnd, internal::StlAtomic, T, T_Scope>
+        struct Atomic::Op<alpaka::operation::And, internal::StlAtomic, T, T_Scope>
         {
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
@@ -184,9 +184,9 @@ namespace alpaka::onAcc
             }
         };
 
-        //! The CPU accelerators AtomicOr.
+        //! The CPU accelerators operation::Or.
         template<typename T, typename T_Scope>
-        struct Atomic::Op<AtomicOr, internal::StlAtomic, T, T_Scope>
+        struct Atomic::Op<alpaka::operation::Or, internal::StlAtomic, T, T_Scope>
         {
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
@@ -196,9 +196,9 @@ namespace alpaka::onAcc
             }
         };
 
-        //! The CPU accelerators AtomicXor.
+        //! The CPU accelerators operation::Xor.
         template<typename T, typename T_Scope>
-        struct Atomic::Op<AtomicXor, internal::StlAtomic, T, T_Scope>
+        struct Atomic::Op<alpaka::operation::Xor, internal::StlAtomic, T, T_Scope>
         {
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
@@ -208,9 +208,9 @@ namespace alpaka::onAcc
             }
         };
 
-        //! The CPU accelerators AtomicCas.
+        //! The CPU accelerators operation::Cas.
         template<typename T, typename T_Scope>
-        struct Atomic::Op<AtomicCas, internal::StlAtomic, T, T_Scope>
+        struct Atomic::Op<alpaka::operation::Cas, internal::StlAtomic, T, T_Scope>
         {
             ALPAKA_FN_HOST static auto atomicOp(
                 internal::StlAtomic const&,

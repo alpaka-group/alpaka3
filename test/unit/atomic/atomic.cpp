@@ -113,7 +113,7 @@ constexpr auto testAtomicCas(TAcc const& acc, bool* success, T& operand, T opera
         {
             operand = operandOrig;
             T const ret
-                = alpaka::onAcc::atomicOp<alpaka::onAcc::AtomicCas>(acc, &operand, compare, value, T_AtomicScope{});
+                = alpaka::onAcc::atomicOp<alpaka::operation::Cas>(acc, &operand, compare, value, T_AtomicScope{});
             ALPAKA_CHECK(*success, equals(operandOrig, ret));
             ALPAKA_CHECK(*success, equals(operand, reference));
         }
@@ -132,7 +132,7 @@ constexpr auto testAtomicCas(TAcc const& acc, bool* success, T& operand, T opera
         {
             operand = operandOrig;
             T const ret
-                = alpaka::onAcc::atomicOp<alpaka::onAcc::AtomicCas>(acc, &operand, compare, value, T_AtomicScope{});
+                = alpaka::onAcc::atomicOp<alpaka::operation::Cas>(acc, &operand, compare, value, T_AtomicScope{});
             ALPAKA_CHECK(*success, equals(operandOrig, ret));
             ALPAKA_CHECK(*success, equals(operand, reference));
         }

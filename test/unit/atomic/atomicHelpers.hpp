@@ -23,7 +23,7 @@
 #define ALPAKA_MAKE_ATOMIC_TEST_FUNCTOR(OpName)                                                                       \
     struct OpName                                                                                                     \
     {                                                                                                                 \
-        using Op = alpaka::onAcc::Atomic##OpName;                                                                     \
+        using Op = alpaka::operation::OpName;                                                                         \
                                                                                                                       \
         static constexpr auto atomic(auto&&... args)                                                                  \
         {                                                                                                             \

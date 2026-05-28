@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "alpaka/onAcc/atomicOp.hpp"
 #include "alpaka/onAcc/internal/interface.hpp"
+#include "alpaka/operation.hpp"
 
 namespace alpaka::onAcc::internal
 {
@@ -30,11 +30,11 @@ namespace alpaka::onAcc::internalCompute
     };
 
     template<typename T, typename T_Scope>
-    struct Atomic::Op<AtomicCas, internal::NonAtomic, T, T_Scope>
+    struct Atomic::Op<operation::Cas, internal::NonAtomic, T, T_Scope>
     {
         static auto atomicOp(internal::NonAtomic const&, T* const addr, T const& compare, T const& value) -> T
         {
-            return AtomicCas{}(addr, compare, value);
+            return operation::Cas{}(addr, compare, value);
         }
     };
 } // namespace alpaka::onAcc::internalCompute

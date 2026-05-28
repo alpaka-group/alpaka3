@@ -8,9 +8,9 @@
 #include "alpaka/api/unifiedCudaHip/tag.hpp"
 #include "alpaka/core/Unreachable.hpp"
 #include "alpaka/core/config.hpp"
-#include "alpaka/onAcc/atomicOp.hpp"
 #include "alpaka/onAcc/internal/interface.hpp"
 #include "alpaka/onAcc/scope.hpp"
+#include "alpaka/operation.hpp"
 
 #include <limits>
 #include <type_traits>
@@ -82,7 +82,7 @@ namespace alpaka::onAcc::internalCompute
                     assumed = old;
                     T v = *(reinterpret_cast<T*>(&assumed));
                     TOp{}(&v, value);
-                    using Cas = Atomic::Op<AtomicCas, internal::CudaHipAtomic, EmulatedType, T_Scope>;
+                    using Cas = Atomic::Op<alpaka::operation::Cas, internal::CudaHipAtomic, EmulatedType, T_Scope>;
                     old = Cas::atomicOp(ctx, addressAsIntegralType, assumed, reinterpretValue(v));
                     // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
                 } while(assumed != old);
@@ -90,9 +90,9 @@ namespace alpaka::onAcc::internalCompute
             }
         };
 
-        //! Emulate AtomicCas with equivalent unisigned integral type
+        //! Emulate operation::Cas with equivalent unisigned integral type
         template<typename T, typename T_Scope>
-        struct EmulateAtomic<AtomicCas, internal::CudaHipAtomic, T, T_Scope> : private EmulationBase
+        struct EmulateAtomic<alpaka::operation::Cas, internal::CudaHipAtomic, T, T_Scope> : private EmulationBase
         {
             static __device__ auto atomic(
                 internal::CudaHipAtomic const ctx,
@@ -105,30 +105,34 @@ namespace alpaka::onAcc::internalCompute
                 EmulatedType reinterpretedCompare = reinterpretValue(compare);
                 EmulatedType reinterpretedValue = reinterpretValue(value);
 
-                auto old = Atomic::Op<AtomicCas, internal::CudaHipAtomic, EmulatedType, T_Scope>::atomicOp(
-                    ctx,
-                    addressAsIntegralType,
-                    reinterpretedCompare,
-                    reinterpretedValue);
+                auto old
+                    = Atomic::Op<alpaka::operation::Cas, internal::CudaHipAtomic, EmulatedType, T_Scope>::atomicOp(
+                        ctx,
+                        addressAsIntegralType,
+                        reinterpretedCompare,
+                        reinterpretedValue);
 
                 return *(reinterpret_cast<T*>(&old));
             }
         };
 
-        //! Emulate AtomicSub with atomicAdd
+        //! Emulate operation::Sub with atomicAdd
         template<typename T, typename T_Scope>
-        struct EmulateAtomic<AtomicSub, internal::CudaHipAtomic, T, T_Scope>
+        struct EmulateAtomic<alpaka::operation::Sub, internal::CudaHipAtomic, T, T_Scope>
         {
             static __device__ auto atomic(internal::CudaHipAtomic const ctx, T* const addr, T const& value) -> T
             {
-                return Atomic::Op<AtomicAdd, internal::CudaHipAtomic, T, T_Scope>::atomicOp(ctx, addr, -value);
+                return Atomic::Op<alpaka::operation::Add, internal::CudaHipAtomic, T, T_Scope>::atomicOp(
+                    ctx,
+                    addr,
+                    -value);
             }
         };
 
-        //! AtomicDec can not be implemented for floating point types!
+        //! operation::Dec can not be implemented for floating point types!
         template<typename T, typename T_Scope>
         struct EmulateAtomic<
-            AtomicDec,
+            operation::Dec,
             internal::CudaHipAtomic,
             T,
             T_Scope,
@@ -136,15 +140,17 @@ namespace alpaka::onAcc::internalCompute
         {
             static __device__ auto atomic(internal::CudaHipAtomic const&, T* const, T const&) -> T
             {
-                static_assert(!sizeof(T), "EmulateAtomic<AtomicDec> is not supported for floating point data types!");
+                static_assert(
+                    !sizeof(T),
+                    "EmulateAtomic<alpaka::operation::Dec> is not supported for floating point data types!");
                 return T{};
             }
         };
 
-        //! AtomicInc can not be implemented for floating point types!
+        //! operation::Inc can not be implemented for floating point types!
         template<typename T, typename T_Scope>
         struct EmulateAtomic<
-            AtomicInc,
+            operation::Inc,
             internal::CudaHipAtomic,
             T,
             T_Scope,
@@ -152,15 +158,17 @@ namespace alpaka::onAcc::internalCompute
         {
             static __device__ auto atomic(internal::CudaHipAtomic const&, T* const, T const&) -> T
             {
-                static_assert(!sizeof(T), "EmulateAtomic<AtomicInc> is not supported for floating point data types!");
+                static_assert(
+                    !sizeof(T),
+                    "EmulateAtomic<alpaka::operation::Inc> is not supported for floating point data types!");
                 return T{};
             }
         };
 
-        //! AtomicAnd can not be implemented for floating point types!
+        //! operation::And can not be implemented for floating point types!
         template<typename T, typename T_Scope>
         struct EmulateAtomic<
-            AtomicAnd,
+            operation::And,
             internal::CudaHipAtomic,
             T,
             T_Scope,
@@ -168,15 +176,17 @@ namespace alpaka::onAcc::internalCompute
         {
             static __device__ auto atomic(internal::CudaHipAtomic const&, T* const, T const&) -> T
             {
-                static_assert(!sizeof(T), "EmulateAtomic<AtomicAnd> is not supported for floating point data types!");
+                static_assert(
+                    !sizeof(T),
+                    "EmulateAtomic<alpaka::operation::And> is not supported for floating point data types!");
                 return T{};
             }
         };
 
-        //! AtomicOr can not be implemented for floating point types!
+        //! operation::Or can not be implemented for floating point types!
         template<typename T, typename T_Scope>
         struct EmulateAtomic<
-            AtomicOr,
+            operation::Or,
             internal::CudaHipAtomic,
             T,
             T_Scope,
@@ -184,15 +194,17 @@ namespace alpaka::onAcc::internalCompute
         {
             static __device__ auto atomic(internal::CudaHipAtomic const&, T* const, T const&) -> T
             {
-                static_assert(!sizeof(T), "EmulateAtomic<AtomicOr> is not supported for floating point data types!");
+                static_assert(
+                    !sizeof(T),
+                    "EmulateAtomic<alpaka::operation::Or> is not supported for floating point data types!");
                 return T{};
             }
         };
 
-        //! AtomicXor can not be implemented for floating point types!
+        //! operation::Xor can not be implemented for floating point types!
         template<typename T, typename T_Scope>
         struct EmulateAtomic<
-            AtomicXor,
+            operation::Xor,
             internal::CudaHipAtomic,
             T,
             T_Scope,
@@ -200,7 +212,9 @@ namespace alpaka::onAcc::internalCompute
         {
             static __device__ auto atomic(internal::CudaHipAtomic const&, T* const, T const&) -> T
             {
-                static_assert(!sizeof(T), "EmulateAtomic<AtomicXor> is not supported for floating point data types!");
+                static_assert(
+                    !sizeof(T),
+                    "EmulateAtomic<alpaka::operation::Xor> is not supported for floating point data types!");
                 return T{};
             }
         };
@@ -248,7 +262,7 @@ namespace alpaka::onAcc::internalCompute
     };
 
     template<typename T, typename T_Scope>
-    struct Atomic::Op<AtomicCas, internal::CudaHipAtomic, T, T_Scope>
+    struct Atomic::Op<alpaka::operation::Cas, internal::CudaHipAtomic, T, T_Scope>
     {
         static __device__ auto atomicOp(
             [[maybe_unused]] internal::CudaHipAtomic const ctx,
@@ -258,32 +272,33 @@ namespace alpaka::onAcc::internalCompute
         {
             static_assert(
                 sizeof(T) == 4u || sizeof(T) == 8u,
-                "atomicOp<AtomicCas, internal::CudaHipAtomic, T>(atomic, addr, compare, value) is not "
+                "atomicOp<alpaka::operation::Cas, internal::CudaHipAtomic, T>(atomic, addr, compare, value) is not "
                 "supported! Only 64 and "
                 "32bit atomics are supported.");
 
-            if constexpr(::AlpakaBuiltInAtomic<AtomicCas, T, T_Scope>::value)
-                return ::AlpakaBuiltInAtomic<AtomicCas, T, T_Scope>::atomic(addr, compare, value);
+            if constexpr(::AlpakaBuiltInAtomic<alpaka::operation::Cas, T, T_Scope>::value)
+                return ::AlpakaBuiltInAtomic<alpaka::operation::Cas, T, T_Scope>::atomic(addr, compare, value);
 
             else if constexpr(std::is_same_v<unsigned long int, T>)
             {
-                if constexpr(sizeof(T) == 4u && ::AlpakaBuiltInAtomic<AtomicCas, unsigned int, T_Scope>::value)
-                    return ::AlpakaBuiltInAtomic<AtomicCas, unsigned int, T_Scope>::atomic(
+                if constexpr(
+                    sizeof(T) == 4u && ::AlpakaBuiltInAtomic<alpaka::operation::Cas, unsigned int, T_Scope>::value)
+                    return ::AlpakaBuiltInAtomic<alpaka::operation::Cas, unsigned int, T_Scope>::atomic(
                         reinterpret_cast<unsigned int*>(addr),
                         static_cast<unsigned int>(compare),
                         static_cast<unsigned int>(value));
                 else if constexpr(
                     sizeof(T) == 8u
-                    && ::AlpakaBuiltInAtomic<AtomicCas, unsigned long long int, T_Scope>::value) // LP64
+                    && ::AlpakaBuiltInAtomic<alpaka::operation::Cas, unsigned long long int, T_Scope>::value) // LP64
                 {
-                    return ::AlpakaBuiltInAtomic<AtomicCas, unsigned long long int, T_Scope>::atomic(
+                    return ::AlpakaBuiltInAtomic<alpaka::operation::Cas, unsigned long long int, T_Scope>::atomic(
                         reinterpret_cast<unsigned long long int*>(addr),
                         static_cast<unsigned long long int>(compare),
                         static_cast<unsigned long long int>(value));
                 }
             }
 
-            return detail::EmulateAtomic<AtomicCas, internal::CudaHipAtomic, T, T_Scope>::atomic(
+            return detail::EmulateAtomic<alpaka::operation::Cas, internal::CudaHipAtomic, T, T_Scope>::atomic(
                 ctx,
                 addr,
                 compare,
