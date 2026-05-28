@@ -156,7 +156,7 @@ namespace alpaka
                 auto const op = std::identity{})
             {
                 return CVec<T, op(T_indices)...>{};
-            };
+            }
         };
 
         template<typename T>
