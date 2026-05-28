@@ -31,9 +31,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <iostream>
+#include <iosfwd>
 #include <ranges>
 #include <sstream>
+#include <string>
 #include <type_traits>
 
 namespace alpaka

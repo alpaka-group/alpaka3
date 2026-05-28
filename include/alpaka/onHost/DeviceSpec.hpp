@@ -5,6 +5,7 @@
 #pragma once
 
 #include "alpaka/api/api.hpp"
+#include "alpaka/api/host/hwloc/hwlocConfig.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/tag.hpp"
 

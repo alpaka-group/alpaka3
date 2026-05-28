@@ -6,7 +6,6 @@
 
 #include "alpaka/core/config.hpp"
 
-#include <regex>
 #include <source_location>
 #include <string>
 #include <string_view>
@@ -64,18 +63,46 @@ namespace alpaka::onHost
      */
     inline std::string simplifyFunctionSignature(std::string const& deName)
     {
-        // 1. Remove the type assignments in template parameters (e.g., T_DeviceKind = ...)
-        std::string simplified = std::regex_replace(deName, std::regex("<[^>]*=\\s*[^>]*>"), "<...>");
+        std::string simplified;
+        simplified.reserve(deName.size());
 
-        // 2. Remove redundant occurrences of "alpaka::" within the template arguments (keep it once)
-        simplified = std::regex_replace(simplified, std::regex("alpaka::(?![A-Za-z0-9_]+<)"), "");
+        int templateDepth = 0;
+        // Simplify nested templates by removing template arguments, e.g., <...>
+        for(char const c : deName)
+        {
+            if(c == '<')
+            {
+                if(templateDepth++ == 0)
+                    simplified += "<...>";
+                continue;
+            }
+            if(c == '>')
+            {
+                if(templateDepth > 0)
+                {
+                    --templateDepth;
+                    continue;
+                }
+            }
+            if(templateDepth > 0)
+                continue;
+            simplified += c;
+        }
 
-        // 3. Simplify nested templates by removing template arguments, e.g., <...>
-        simplified = std::regex_replace(simplified, std::regex("<[^>]*>"), "<...>");
-
-        // 4. Optionally remove remaining `alpaka::` namespaces if desired
-        simplified = std::regex_replace(simplified, std::regex("^(alpaka::)+"), "");
-
+        // Remove "alpaka::" from the signatures
+        std::string withoutAlpaka;
+        withoutAlpaka.reserve(simplified.size());
+        constexpr std::string_view alpakaNamespace = "alpaka::";
+        for(size_t i = 0; i < simplified.size();)
+        {
+            if(simplified.compare(i, alpakaNamespace.size(), alpakaNamespace) == 0)
+            {
+                i += alpakaNamespace.size();
+                continue;
+            }
+            withoutAlpaka += simplified[i++];
+        }
+        simplified = std::move(withoutAlpaka);
         return simplified;
     }
 
