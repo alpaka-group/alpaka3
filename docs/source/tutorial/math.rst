@@ -2,8 +2,10 @@ Math Functions
 ==============
 
 Inside kernels, prefer ``alpaka::math`` over calling backend-specific math APIs or C++ `std` math functions directly.
-That keeps the code portable across the API's ``host``, ``cuda``, ``hip``, and ``oneApi``.
-*alpaka*'s math functions can also be used outside of kernels on the host side.
+*alpaka* provides a wide range of mathematical functions in the `alpaka::math <../doxygen/namespacealpaka_1_1math.html>`_ namespace.
+These enable a portable codebase while delivering the best possible performance for the data types used.
+To this end, *alpaka* uses the native math functions of the :ref:`api` (e.g., CUDA built-in math functions) with which a kernel is executed, whenever available.
+*alpaka* math functions can also be used in host code outside of kernels.
 
 Element-wise Math
 -----------------

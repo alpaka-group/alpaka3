@@ -2,18 +2,14 @@ Atomics
 =======
 
 Atomics are the tool you reach for when several workers may update the same memory location.
-Typical examples are histograms, counters, sparse assembly, work lists, and some reductions.
-
-When to Use Atomics
--------------------
-
 Use an atomic operation only when two or more workers can hit the same location at the same time.
-If every output element is written exactly once, atomics are usually unnecessary and slower than a plain store.
+Atomics have performance disadvantages, so they should be used only when necessary.
+Typical examples are histograms, counters, sparse assembly, work lists, and some reductions.
 
 Histogram
 ---------
 
-Histograms are a typical example because many input elements may contribute to the same bin.
+`Histograms <https://en.wikipedia.org/wiki/Histogram>`_ are a typical example because many input elements may contribute to the same bin.
 That means a direct ``bins[bin] += 1`` would create a data race.
 
   .. literalinclude:: ../../snippets/example/150_atomics.cpp
@@ -62,14 +58,14 @@ If you are accumulating into shared memory or another block-private structure, b
 If all blocks may update the same global counter, histogram bin, or reduction output, you need device scope.
 
 *alpaka* provides operations such as ``atomicAdd``, ``atomicMin``, ``atomicMax``, ``atomicExch``, and ``atomicCas``.
-For a first encounter, ``atomicAdd`` with the default device scope is the easiest one to reason about.
+You can find a complete list of all available atomic operations in the `Doxygen documentation <../doxygen/namespacealpaka_1_1onAcc.html>`_.
 
 Common Mistakes
 ---------------
 
-- Using atomics for data that is actually written exactly once.
 - Choosing device scope when block-local scope would be enough.
-- Mixing atomics and non-atomic accesses to the same location without a clear protocol. This leads to data races.
+- Mixing atomics and non-atomic accesses to the same location without a clear code structure. This leads to data races.
+  Try to reuse common and well-known software pattern and idioms.
 - Trying to use atomics as a substitute to synchronize threads.
 
 Complete Source File
