@@ -38,13 +38,14 @@ namespace alpaka::onHost
                 , m_numaIdx{numaIdx}
                 , m_setThreadAffinity{setThreadAffinity}
             {
+                if(m_threadBlocking.getNumThreads().product() != 1u)
+                {
+                    throw std::runtime_error("Thread block extent must be 1.");
+                }
             }
 
             void operator()(auto const& kernelBundle, auto const& dict) const
             {
-                if(m_threadBlocking.getNumThreads().product() != 1u)
-                    throw std::runtime_error("Thread block extent must be 1.");
-
                 auto blockCount = m_threadBlocking.getNumBlocks();
 
                 constexpr uint32_t simdWidth
