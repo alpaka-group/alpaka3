@@ -20,9 +20,9 @@ alpaka_install_catch2()
 #    extension.
 #  - folder: Takes all .cpp files in the specified folder and creates an test
 #    executable for each.
-#  - ignore_files: List of source files which should be ignored and compile and
-#    test target should be created.
-function(alpaka_add_docs_target target_prefix folder ignore_files)
+#  - normal_test_files: List of source files which should be added as normal test
+#    without Catch2
+function(alpaka_add_docs_target target_prefix folder normal_test_files)
     message(DEBUG "doc snippets target prefix: ${target_prefix}")
 
     file(GLOB test_folders ${folder})
@@ -40,9 +40,10 @@ function(alpaka_add_docs_target target_prefix folder ignore_files)
                 endif()
 
                 get_filename_component(source_file_name_with_extension ${source_file} NAME)
-                if(source_file_name_with_extension IN_LIST ignore_files)
-                    message(DEBUG "skip file ${source_file_name_with_extension}")
-                    continue()
+                if(source_file_name_with_extension IN_LIST normal_test_files)
+                    set(catch2_test FALSE)
+                else()
+                    set(catch2_test TRUE)
                 endif()
 
                 get_filename_component(source_file_extension ${source_file} EXT)
@@ -57,9 +58,17 @@ function(alpaka_add_docs_target target_prefix folder ignore_files)
                         target_include_directories(${_test_target_name} PRIVATE ${test_folder}/include)
                     endif()
 
-                    target_link_libraries(${_test_target_name} PRIVATE Catch2::Catch2WithMain alpaka::alpaka)
+                    target_link_libraries(${_test_target_name} PRIVATE alpaka::alpaka)
+                    if(catch2_test)
+                        target_link_libraries(${_test_target_name} PRIVATE Catch2::Catch2WithMain)
+                    endif()
                     alpaka_finalize(${_test_target_name})
-                    catch_discover_tests(${_test_target_name})
+
+                    if(catch2_test)
+                        catch_discover_tests(${_test_target_name})
+                    else()
+                        add_test(NAME ${_test_target_name} COMMAND ${_test_target_name})
+                    endif()
                 endif()
             endforeach()
         endif()
@@ -67,13 +76,3 @@ function(alpaka_add_docs_target target_prefix folder ignore_files)
 endfunction()
 
 alpaka_add_docs_target(docs_test_ ${CMAKE_CURRENT_SOURCE_DIR} "000_elementWiseMultiplication.cpp")
-
-# 000_elementWiseMultiplication does not use CATCH2. Therefore add manually CMake target.
-set(_TARGET_DOC_ELEMENT_WISE_MULTIPLICATION docs_test_000_elementWiseMultiplication)
-add_executable(
-    ${_TARGET_DOC_ELEMENT_WISE_MULTIPLICATION}
-    "${CMAKE_CURRENT_SOURCE_DIR}/000_elementWiseMultiplication.cpp"
-)
-target_link_libraries(${_TARGET_DOC_ELEMENT_WISE_MULTIPLICATION} PRIVATE alpaka::alpaka)
-alpaka_finalize(${_TARGET_DOC_ELEMENT_WISE_MULTIPLICATION})
-add_test(NAME ${_TARGET_DOC_ELEMENT_WISE_MULTIPLICATION} COMMAND ${_TARGET_DOC_ELEMENT_WISE_MULTIPLICATION})
