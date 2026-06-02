@@ -35,14 +35,15 @@ namespace alpaka::onHost
                 , m_numaIdx{numaIdx}
                 , m_setThreadAffinity{setThreadAffinity}
             {
+                if(m_threadBlocking.getNumThreads().product() != 1u)
+                {
+                    throw std::runtime_error("Thread block extent must be 1.");
+                }
             }
 
             void operator()(auto const& kernelBundle, auto const& dict) const
             {
                 using NumThreadsVecType = typename T_ThreadSpec::NumThreadsVecType;
-
-                if(m_threadBlocking.getNumThreads().product() != 1u)
-                    throw std::runtime_error("Thread block extent must be 1.");
 #    pragma omp parallel
                 {
                     if(m_setThreadAffinity)
