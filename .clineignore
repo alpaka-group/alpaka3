@@ -1,0 +1,7 @@
+# CMake presets build outputs
+/build/
+
+# Documentation build outputs
+/docs/source/build/
+/docs/doxygen
+/docs/doxygen_dev
