@@ -20,7 +20,9 @@ alpaka_install_catch2()
 #    extension.
 #  - folder: Takes all .cpp files in the specified folder and creates an test
 #    executable for each.
-function(alpaka_add_docs_target target_prefix folder)
+#  - ignore_files: List of source files which should be ignored and compile and
+#    test target should be created.
+function(alpaka_add_docs_target target_prefix folder ignore_files)
     message(DEBUG "doc snippets target prefix: ${target_prefix}")
 
     file(GLOB test_folders ${folder})
@@ -34,6 +36,12 @@ function(alpaka_add_docs_target target_prefix folder)
             foreach(source_file ${test_sources})
                 # the include folder is a special case, therefore ignore it
                 if(source_file STREQUAL "${test_folder}/include")
+                    continue()
+                endif()
+
+                get_filename_component(source_file_name_with_extension ${source_file} NAME)
+                if(source_file_name_with_extension IN_LIST ignore_files)
+                    message(DEBUG "skip file ${source_file_name_with_extension}")
                     continue()
                 endif()
 
@@ -58,4 +66,14 @@ function(alpaka_add_docs_target target_prefix folder)
     endforeach()
 endfunction()
 
-alpaka_add_docs_target(docs_test_ ${CMAKE_CURRENT_SOURCE_DIR})
+alpaka_add_docs_target(docs_test_ ${CMAKE_CURRENT_SOURCE_DIR} "000_elementWiseMultiplication.cpp")
+
+# 000_elementWiseMultiplication does not use CATCH2. Therefore add manually CMake target.
+set(_TARGET_DOC_ELEMENT_WISE_MULTIPLICATION docs_test_000_elementWiseMultiplication)
+add_executable(
+    ${_TARGET_DOC_ELEMENT_WISE_MULTIPLICATION}
+    "${CMAKE_CURRENT_SOURCE_DIR}/000_elementWiseMultiplication.cpp"
+)
+target_link_libraries(${_TARGET_DOC_ELEMENT_WISE_MULTIPLICATION} PRIVATE alpaka::alpaka)
+alpaka_finalize(${_TARGET_DOC_ELEMENT_WISE_MULTIPLICATION})
+add_test(NAME ${_TARGET_DOC_ELEMENT_WISE_MULTIPLICATION} COMMAND ${_TARGET_DOC_ELEMENT_WISE_MULTIPLICATION})
