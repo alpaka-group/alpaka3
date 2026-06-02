@@ -8,6 +8,7 @@
 #include "alpaka/api/trait.hpp"
 #include "alpaka/executor.hpp"
 #include "alpaka/onHost/Event.hpp"
+#include "alpaka/onHost/FrameSpec.hpp"
 #include "alpaka/onHost/concepts.hpp"
 #include "alpaka/onHost/internal/interface.hpp"
 #include "alpaka/onHost/trait.hpp"
@@ -109,13 +110,25 @@ namespace alpaka::onHost
             onHost::concepts::ThreadOrFrameSpec auto const& launchCfg,
             alpaka::concepts::KernelBundle auto const& kernelBundle) const
         {
-            if constexpr(ALPAKA_TYPEOF(launchCfg)::getExecutor() == alpaka::exec::anyExecutor)
+            if constexpr(
+                isFrameSpec_v<ALPAKA_TYPEOF(launchCfg)>
+                && ALPAKA_TYPEOF(launchCfg)::getExecutor() == alpaka::exec::anyExecutor)
             {
                 auto executors
                     = alpaka::onHost::supportedExecutors(internal::getDevice(*m_queue.get()), exec::allExecutors);
                 FrameSpec frameSpecWithExecutor
                     = FrameSpec{launchCfg.getNumFrames(), launchCfg.getFrameExtents(), std::get<0>(executors)};
                 internal::enqueue(*m_queue.get(), frameSpecWithExecutor, kernelBundle);
+            }
+            else if constexpr(
+                isThreadSpec_v<ALPAKA_TYPEOF(launchCfg)>
+                && ALPAKA_TYPEOF(launchCfg)::getExecutor() == alpaka::exec::anyExecutor)
+            {
+                auto executors
+                    = alpaka::onHost::supportedExecutors(internal::getDevice(*m_queue.get()), exec::allExecutors);
+                ThreadSpec threadSpecWithExecutor
+                    = ThreadSpec{launchCfg.getNumBlocks(), launchCfg.getNumThreads(), std::get<0>(executors)};
+                internal::enqueue(*m_queue.get(), threadSpecWithExecutor, kernelBundle);
             }
             else
             {
