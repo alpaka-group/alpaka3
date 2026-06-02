@@ -35,7 +35,7 @@ However, there are valid cases where a function argument only requires ``alpaka:
   :end-before: END-DATASTORAGE-writeableDatasource
   :dedent:
 
-For example, `alpaka::onAcc::SimdAlgo.concurrent() <https://alpaka3.readthedocs.io/en/latest/doxygen/structalpaka_1_1onAcc_1_1SimdAlgo.html#a5face31ec9941f1eeb69fef9ea9fba01>`_ requires the ``IDataSource`` interface for the ``Data Storage`` object.
+For example, `alpaka::onAcc::SimdAlgo.concurrent() <../doxygen/structalpaka_1_1onAcc_1_1SimdAlgo.html#a5face31ec9941f1eeb69fef9ea9fba01>`_ requires the ``IDataSource`` interface for the ``Data Storage`` object.
 The ``IDataSource`` interface only supports reading data. Depending on the user-defined functor, some of the ``Data Storage`` objects must be writable, so they must implement the ``IMdSpan`` interface.
 However, the ``IMdSpan`` interface would prevent the user from using generators that only implement the ``IDataSource`` interface.
 Therefore, the minimum requirement must be the non-constant ``IDataSource`` interface.

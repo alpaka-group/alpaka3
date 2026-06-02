@@ -150,14 +150,14 @@ IDataSource
 An object that implements the ``IDataSource`` interface behaves like a multidimensional memory that can only be read.
 It is mainly used for generators that do not refer to physical memory.
 Instead, it generates the returned data directly, depending on the memory access index and preconfigured values from the generator's construction time.
-A concrete generator is the `LinearizedIdxGenerator <https://alpaka3.readthedocs.io/en/latest/doxygen/structalpaka_1_1LinearizedIdxGenerator.html>`_.
+A concrete generator is the `LinearizedIdxGenerator <../doxygen/structalpaka_1_1LinearizedIdxGenerator.html>`_.
 
 An ``IDataSource`` Data Storage object contains three components: ``Extents``, ``Pitches`` and ``Alignment``.
 ``Pitches`` and ``Alignment`` are only relevant if you want to access the physical storage without the access operator.
 Therefore, these two terms are explained in the :ref:`advanced section <memory-layout-of-multidimensional-data-storage>`.
 The :ref:`extents <Extents>` are described in the next section.
 
-Go to the `IDataSource Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IDataSource.html>`_
+Go to the `IDataSource Interface definition <../doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IDataSource.html>`_
 
 .. _extents:
 
@@ -189,7 +189,7 @@ This means that deleting an ``IMdSpan`` Data Storage object does not free up mem
 In addition, the user is responsible for ensuring that an ``IMdSpan`` Data Storage object references valid memory.
 It does not store any information about the associated :ref:`API <api>`.
 
-Go to the `IMdSpan Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IMdSpan.html>`_
+Go to the `IMdSpan Interface definition <../doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IMdSpan.html>`_
 
 .. _i_view:
 
@@ -199,7 +199,7 @@ IView
 An ``IView`` Data Storage object is almost identical to an ``IMdSpan`` Data Storage object.
 The difference is that it stores information about the associated :ref:`API <api>`.
 
-Go to the `IView Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IDataSource.html>`_
+Go to the `IView Interface definition <../doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IDataSource.html>`_
 
 .. _i_buffer:
 
@@ -209,7 +209,7 @@ IBuffer
 An ``IBuffer`` Data Storage object is pointing to memory and manages its lifetime.
 When all ``IBuffer`` Data Storage objects that are pointing to the same memory are deleted, the memory is freed.
 
-Go to the `IBuffer Interface definition <https://alpaka3.readthedocs.io/en/latest/doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IBuffer.html>`_
+Go to the `IBuffer Interface definition <../doxygen/conceptalpaka_1_1concepts_1_1impl_1_1IBuffer.html>`_
 
 .. _kernel:
 
