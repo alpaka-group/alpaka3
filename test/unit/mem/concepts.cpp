@@ -76,6 +76,18 @@ void iMdSpanCallByUniversalReference(concepts::IMdSpan auto&&)
 {
 }
 
+/* TODO: remove me, if ICPX 2025.1 is not supported anymore.
+ *
+ * CATCH 3.15 use a Clang specific pragma to suppress the warning "-Wvariadic-macro-arguments-omitted".
+ * The warning was introduced in Clang 20.1. ICPX 2025.1 based on Clang 20.0 (dev version).
+ * Therefore, the detection if the warning is available does not work correctly, and we need to disable the warning
+ * of unknown warnings temporary.
+ */
+#if ALPAKA_COMP_ICPX && ALPAKA_COMP_ICPX < ALPAKA_VERSION_NUMBER(2025, 2, 0)
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wunknown-warning-option"
+#endif
+
 TEMPLATE_TEST_CASE_SIG(
     "IDataSource, IMdSpan, IView and IBuffer concept test",
     "[mem][concepts]",
@@ -183,6 +195,11 @@ TEMPLATE_TEST_CASE_SIG(
         STATIC_REQUIRE(alpaka::concepts::IBuffer<BufferType>);
     }
 }
+
+#if ALPAKA_COMP_ICPX && ALPAKA_COMP_ICPX < ALPAKA_VERSION_NUMBER(2025, 2, 0)
+#    pragma clang diagnostic pop
+#endif
+
 
 TEST_CASE("test alpaka::concepts::IMdSpan optional element type", "[mem][concepts]")
 {
