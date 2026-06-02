@@ -57,10 +57,9 @@ namespace alpaka::onHost
     {
         if constexpr(exec == alpaka::exec::anyExecutor)
         {
-            auto availableExecutors = supportedExecutors(queue.getDevice(), exec::allExecutors);
             internal::transform(
                 queue,
-                std::get<0>(availableExecutors),
+                defaultExecutor(queue.getDevice()),
                 ALPAKA_FORWARD(out),
                 ALPAKA_FORWARD(fn),
                 ALPAKA_FORWARD(in)...);
@@ -80,8 +79,12 @@ namespace alpaka::onHost
         auto&& fn,
         alpaka::concepts::IDataSource auto&&... in)
     {
-        auto executor = supportedExecutors(queue.getDevice(), exec::allExecutors);
-        transform(queue, std::get<0>(executor), ALPAKA_FORWARD(out), ALPAKA_FORWARD(fn), ALPAKA_FORWARD(in)...);
+        transform(
+            queue,
+            defaultExecutor(queue.getDevice()),
+            ALPAKA_FORWARD(out),
+            ALPAKA_FORWARD(fn),
+            ALPAKA_FORWARD(in)...);
     }
 
     /** @} */

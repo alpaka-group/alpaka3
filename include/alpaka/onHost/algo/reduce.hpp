@@ -36,10 +36,9 @@ namespace alpaka::onHost
     {
         if constexpr(exec == alpaka::exec::anyExecutor)
         {
-            auto availableExecutors = supportedExecutors(queue.getDevice(), exec::allExecutors);
             internal::transformReduce(
                 queue,
-                std::get<0>(availableExecutors),
+                defaultExecutor(queue.getDevice()),
                 neutralElement,
                 out,
                 ALPAKA_FORWARD(binaryReduceFn),
@@ -70,8 +69,13 @@ namespace alpaka::onHost
         alpaka::concepts::IDataSource auto&& in)
         requires(std::same_as<DataType, alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>>)
     {
-        auto executor = supportedExecutors(queue.getDevice(), exec::allExecutors);
-        reduce(queue, std::get<0>(executor), neutralElement, out, ALPAKA_FORWARD(binaryReduceFn), ALPAKA_FORWARD(in));
+        reduce(
+            queue,
+            defaultExecutor(queue.getDevice()),
+            neutralElement,
+            out,
+            ALPAKA_FORWARD(binaryReduceFn),
+            ALPAKA_FORWARD(in));
     }
 
     /** @} */

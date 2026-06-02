@@ -531,13 +531,12 @@ namespace alpaka::onHost
                                && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
-                auto executors = supportedExecutors(getDevice(queue), exec::allExecutors);
                 // avoid that we pass a SharedBuffer and convert non alpaka data views
                 alpaka::concepts::IView<T_Value> auto dataView = makeView(dest);
 
                 alpaka::internal::generic::fill(
                     queue,
-                    std::get<0>(executors),
+                    defaultExecutor(getDevice(queue)),
                     dataView.getSubView(extents),
                     elementValue);
             }
