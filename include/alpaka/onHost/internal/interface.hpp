@@ -485,19 +485,17 @@ namespace alpaka::onHost
             return GetPitches::Op<ALPAKA_TYPEOF(*any.get())>{}(*any.get());
         }
 
-        /** implementation to get a SIMD optimized frame spec
+        /** Provide a frame specification for the given extents
          *
-         * @param internalDevice must be a alpaka internal device implementation
+         * @param internalDevice must be an alpaka internal device implementation
          */
-        template<typename T_DataType>
         inline constexpr auto getFrameSpec(
             auto const& internalDevice,
             alpaka::concepts::Executor auto executor,
             alpaka::concepts::VectorOrScalar auto const& extents)
         {
+            static_assert(executor != exec::anyExecutor, "'exec::anyExecutor' can not be used here");
             Vec extentMd = extents;
-            auto deviceKind = alpaka::internal::getDeviceKind(internalDevice);
-            auto deviceApi = alpaka::internal::getApi(internalDevice);
             using ExtentVecType = ALPAKA_TYPEOF(extentMd);
             // check that all extent dimensions are greater than zero
             ALPAKA_ASSERT((extentMd > ExtentVecType::fill(0u)).reduce(std::logical_and{}));
@@ -507,8 +505,8 @@ namespace alpaka::onHost
             // try to create a specification with a frame size of 512 elements
             IndexType numFrameElements = 512;
             // avoid non-power of two values
-            auto fastDimensionValue = roundDownToPowerOfTwo(std::min(warpSize, extentMd.x()));
-            auto frameExtents = ExtentVecType::fill(1).rAssign(fastDimensionValue);
+            IndexType fastDimensionValue = roundDownToPowerOfTwo(std::min(warpSize, extentMd.x()));
+            ExtentVecType frameExtents = ExtentVecType::fill(1).rAssign(fastDimensionValue);
             numFrameElements /= frameExtents.x();
             // distribute remainder frame elements
             while(numFrameElements > IndexType{1})
@@ -532,12 +530,46 @@ namespace alpaka::onHost
                     break;
                 numFrameElements /= IndexType{2};
             }
+
+            ExtentVecType numFrames = divExZero(extentMd, frameExtents);
+            auto frameSpec = FrameSpec{numFrames, frameExtents, executor};
+            return frameSpec;
+        }
+
+        /** Provides a SIMD optimized frame specification
+         *
+         * The frame specification is optimized for a flat non-hierarchical execution via onAcc::worker::threadsInGrid.
+         *
+         * @tparam T_DataType the data type for which you would like to SIMD optimize
+         * @param internalDevice must be a alpaka internal device implementation
+         */
+        template<typename T_DataType>
+        inline constexpr auto getSimdFrameSpec(
+            auto const& internalDevice,
+            alpaka::concepts::Executor auto executor,
+            alpaka::concepts::VectorOrScalar auto const& extents)
+        {
+            static_assert(executor != exec::anyExecutor, "'exec::anyExecutor' can not be used here");
+            Vec extentMd = extents;
+            auto deviceKind = alpaka::internal::getDeviceKind(internalDevice);
+            auto deviceApi = alpaka::internal::getApi(internalDevice);
+            using ExtentVecType = ALPAKA_TYPEOF(extentMd);
+            // check that all extent dimensions are greater than zero
+            ALPAKA_ASSERT((extentMd > ExtentVecType::fill(0u)).reduce(std::logical_and{}));
+            using IndexType = alpaka::trait::GetValueType_t<ExtentVecType>;
+
+            ExtentVecType frameExtents = getFrameSpec(internalDevice, executor, extents).getFrameExtents();
+
             IndexType elementsPerFrameItem
                 = static_cast<IndexType>(getNumElemPerThread<T_DataType>(deviceApi, deviceKind));
-            alpaka::concepts::Vector auto numFrames
+
+            /* The number of frames depends on an imaginary frame extent where each frame item is computing multiple
+             * elements from the problem extents.
+             */
+            ExtentVecType numFrames
                 = divExZero(extentMd, frameExtents * frameExtents.fill(1).rAssign(elementsPerFrameItem));
             // The frame specification is not required to be a multiple of the extent, it can be smaller.
-            auto frameSpec = FrameSpec{numFrames, frameExtents, executor};
+            FrameSpec frameSpec = FrameSpec{numFrames, frameExtents, executor};
             return frameSpec;
         }
     } // namespace internal

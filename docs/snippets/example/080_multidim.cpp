@@ -65,7 +65,7 @@ TEMPLATE_LIST_TEST_CASE("tutorial multidimensional stencil kernel", "[docs]", do
     onHost::memset(queue, outBuffer, 0x00);
 
     // BEGIN-TUTORIAL-multidimFrameSpec
-    onHost::concepts::FrameSpec auto frameSpec = onHost::getFrameSpec<int>(device, exec::anyExecutor, problemExtents);
+    onHost::concepts::FrameSpec auto frameSpec = onHost::getFrameSpec(device, exec::anyExecutor, problemExtents);
     // END-TUTORIAL-multidimFrameSpec
 
     // BEGIN-TUTORIAL-multidimKernelLaunch

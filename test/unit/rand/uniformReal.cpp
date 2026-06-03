@@ -159,7 +159,7 @@ void testCase(HelperPack<T_Engine, T_FP, T_Interval>, uint64_t seed, T_FP minF, 
 
     // ---- launch kernel -------------------------------------------------------
     queue.enqueue(
-        onHost::getFrameSpec<T_FP>(device, exec, Vec{N}),
+        onHost::getFrameSpec(device, exec, Vec{N}),
         KernelBundle{UniformRealKernel<T_Engine, T_FP, T_Interval>{}, devRes.getMdSpan(), seed, minF, maxF});
 
     onHost::memcpy(queue, hostRes, devRes);
