@@ -73,6 +73,7 @@ Individual chapters are based on the information of the chapters before.
    tutorial/sharedMemory.rst
    tutorial/math.rst
    tutorial/atomics.rst
+   tutorial/memFence.rst
 
 .. toctree::
    :caption: Advanced
