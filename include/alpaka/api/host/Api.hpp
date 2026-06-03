@@ -55,6 +55,33 @@ namespace alpaka
         struct IsDeviceSupportedBy::Op<deviceKind::NumaCpu, api::Host> : std::true_type
         {
         };
+
+        template<typename T_DeviceKind>
+        struct GetMaxThreadsPerBlock::Op<api::Host, T_DeviceKind, exec::CpuSerial>
+        {
+            consteval uint32_t operator()(api::Host const, T_DeviceKind const, exec::CpuSerial const) const
+            {
+                return 1u;
+            }
+        };
+
+        template<typename T_DeviceKind>
+        struct GetMaxThreadsPerBlock::Op<api::Host, T_DeviceKind, exec::CpuOmpBlocks>
+        {
+            consteval uint32_t operator()(api::Host const, T_DeviceKind const, exec::CpuOmpBlocks const) const
+            {
+                return 1u;
+            }
+        };
+
+        template<typename T_DeviceKind>
+        struct GetMaxThreadsPerBlock::Op<api::Host, T_DeviceKind, exec::CpuTbbBlocks>
+        {
+            consteval uint32_t operator()(api::Host const, T_DeviceKind const, exec::CpuTbbBlocks const) const
+            {
+                return 1u;
+            }
+        };
     } // namespace onHost::trait
 
     namespace trait

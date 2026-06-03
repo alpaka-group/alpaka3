@@ -383,21 +383,19 @@ namespace alpaka::onHost
             using FrameSpecType = FrameSpec<T_NumFrames, T_FrameExtents, T_Executor>;
 
             auto operator()(
-                unifiedCudaHip::Device<T_Platform> const&,
+                unifiedCudaHip::Device<T_Platform> const& device,
                 FrameSpecType const& frameSpec,
                 T_KernelBundle const&) const requires alpaka::concepts::CVector<T_FrameExtents>
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::device);
                 auto numThreads = frameSpec.getFrameExtents();
 
-                /** All modern NVIDIA and AMD GPUs support at least 1014 threads.
-                 * @attention: Due to lmem, shared memory or register usage the limit could be lower. In this case the
-                 * kernel call will vail at runtime with invalid kernel configuration. We can not avoid this at compile
-                 * time.
-                 */
-                constexpr typename ALPAKA_TYPEOF(numThreads)::type hardwareLimitThreadsPerBlock = 1024u;
-
-                constexpr auto result = api::util::adjustToLimit<hardwareLimitThreadsPerBlock, 0u, 1u>(numThreads);
+                using ApiType = ALPAKA_TYPEOF(getApi(device));
+                using DeviceKindType = ALPAKA_TYPEOF(getDeviceKind(device));
+                constexpr auto result = api::util::adjustToLimit<
+                    alpaka::onHost::getMaxThreadsPerBlock(ApiType{}, DeviceKindType{}, T_Executor{}),
+                    0u,
+                    1u>(numThreads);
                 return ThreadSpec{frameSpec.getNumFrames(), result, frameSpec.getExecutor()};
             }
 
