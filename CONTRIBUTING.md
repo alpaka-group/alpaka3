@@ -23,10 +23,10 @@ will make the next commit pass.
 
 ## Formatting
 
-Please format your code before opening pull requests using clang-format 16 and the .clang-format file placed in 
+Please format your code before opening pull requests using clang-format 20 and the .clang-format file placed in 
 the repository root. If you were using `pre-commit` during your changes, this has happened automatically already. If
 not, find further instructions below.
 
-### Visual Studio and CLion
+### Visual Studio, Visual Studio Code and CLion
 Support for clang-format is built-in since Visual Studio 2017 15.7 and CLion 2019.1.
 The .clang-format file in the repository will be automatically detected and formatting is done as you type, or triggered when pressing the format hotkey.
