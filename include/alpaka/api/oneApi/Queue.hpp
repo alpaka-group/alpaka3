@@ -179,11 +179,14 @@ namespace alpaka::onHost::internal
             requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
                      && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
         {
-            auto executors = supportedExecutors(getDevice(queue), exec::allExecutors);
             // avoid that we pass a SharedBuffer and convert non alpaka data views
             auto dataView = makeView(dest);
 
-            alpaka::internal::generic::fill(queue, std::get<0>(executors), dataView.getSubView(extents), elementValue);
+            alpaka::internal::generic::fill(
+                queue,
+                defaultExecutor(getDevice(queue)),
+                dataView.getSubView(extents),
+                elementValue);
         }
     };
 

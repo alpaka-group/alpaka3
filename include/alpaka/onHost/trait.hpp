@@ -141,6 +141,15 @@ namespace alpaka::onHost
             listOfExecutors);
     }
 
+    /** Select a default executor for the given device.
+     *
+     * Picks the first executor (with the most parallelism) supported by the device out of all known executors.
+     */
+    constexpr auto defaultExecutor(internal::concepts::DeviceHandle auto deviceHandle)
+    {
+        return std::get<0>(supportedExecutors(deviceHandle, exec::allExecutors));
+    }
+
     constexpr auto supportedDevices(auto const api)
     {
         return meta::filter(

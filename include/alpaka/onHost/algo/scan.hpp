@@ -52,11 +52,10 @@ namespace alpaka::onHost
         auto devAcc = queue.getDevice();
         if constexpr(exec == alpaka::exec::anyExecutor)
         {
-            auto availableExecutors = supportedExecutors(queue.getDevice(), exec::allExecutors);
             internal::scan<internal::INCLUSIVE_SCAN>(
                 queue,
                 devAcc,
-                std::get<0>(availableExecutors),
+                defaultExecutor(devAcc),
                 buffer,
                 outputVec,
                 inputVec);
@@ -74,13 +73,7 @@ namespace alpaka::onHost
         auto devAcc = queue.getDevice();
         if constexpr(exec == alpaka::exec::anyExecutor)
         {
-            auto availableExecutors = supportedExecutors(queue.getDevice(), exec::allExecutors);
-            internal::scan<internal::INCLUSIVE_SCAN>(
-                queue,
-                devAcc,
-                std::get<0>(availableExecutors),
-                outputVec,
-                inputVec);
+            internal::scan<internal::INCLUSIVE_SCAN>(queue, devAcc, defaultExecutor(devAcc), outputVec, inputVec);
         }
         else
             internal::scan<internal::INCLUSIVE_SCAN>(queue, devAcc, exec, outputVec, inputVec);
@@ -109,14 +102,7 @@ namespace alpaka::onHost
         auto devAcc = queue.getDevice();
         if constexpr(exec == alpaka::exec::anyExecutor)
         {
-            auto availableExecutors = supportedExecutors(queue.getDevice(), exec::allExecutors);
-            internal::scan<internal::INCLUSIVE_SCAN>(
-                queue,
-                devAcc,
-                std::get<0>(availableExecutors),
-                buffer,
-                dataVec,
-                dataVec);
+            internal::scan<internal::INCLUSIVE_SCAN>(queue, devAcc, defaultExecutor(devAcc), buffer, dataVec, dataVec);
         }
         else
             internal::scan<internal::INCLUSIVE_SCAN>(queue, devAcc, exec, buffer, dataVec, dataVec);
@@ -130,8 +116,7 @@ namespace alpaka::onHost
         auto devAcc = queue.getDevice();
         if constexpr(exec == alpaka::exec::anyExecutor)
         {
-            auto availableExecutors = supportedExecutors(queue.getDevice(), exec::allExecutors);
-            internal::scan<internal::INCLUSIVE_SCAN>(queue, devAcc, std::get<0>(availableExecutors), dataVec, dataVec);
+            internal::scan<internal::INCLUSIVE_SCAN>(queue, devAcc, defaultExecutor(devAcc), dataVec, dataVec);
         }
         else
             internal::scan<internal::INCLUSIVE_SCAN>(queue, devAcc, exec, dataVec, dataVec);
@@ -162,11 +147,10 @@ namespace alpaka::onHost
         auto devAcc = queue.getDevice();
         if constexpr(exec == alpaka::exec::anyExecutor)
         {
-            auto availableExecutors = supportedExecutors(queue.getDevice(), exec::allExecutors);
             internal::scan<internal::EXCLUSIVE_SCAN>(
                 queue,
                 devAcc,
-                std::get<0>(availableExecutors),
+                defaultExecutor(devAcc),
                 buffer,
                 outputVec,
                 inputVec);
@@ -184,13 +168,7 @@ namespace alpaka::onHost
         auto devAcc = queue.getDevice();
         if constexpr(exec == alpaka::exec::anyExecutor)
         {
-            auto availableExecutors = supportedExecutors(queue.getDevice(), exec::allExecutors);
-            internal::scan<internal::EXCLUSIVE_SCAN>(
-                queue,
-                devAcc,
-                std::get<0>(availableExecutors),
-                outputVec,
-                inputVec);
+            internal::scan<internal::EXCLUSIVE_SCAN>(queue, devAcc, defaultExecutor(devAcc), outputVec, inputVec);
         }
         else
             internal::scan<internal::EXCLUSIVE_SCAN>(queue, devAcc, exec, outputVec, inputVec);
@@ -219,14 +197,7 @@ namespace alpaka::onHost
         auto devAcc = queue.getDevice();
         if constexpr(exec == alpaka::exec::anyExecutor)
         {
-            auto availableExecutors = supportedExecutors(queue.getDevice(), exec::allExecutors);
-            internal::scan<internal::EXCLUSIVE_SCAN>(
-                queue,
-                devAcc,
-                std::get<0>(availableExecutors),
-                buffer,
-                dataVec,
-                dataVec);
+            internal::scan<internal::EXCLUSIVE_SCAN>(queue, devAcc, defaultExecutor(devAcc), buffer, dataVec, dataVec);
         }
         else
             internal::scan<internal::EXCLUSIVE_SCAN>(queue, devAcc, exec, buffer, dataVec, dataVec);
@@ -240,8 +211,7 @@ namespace alpaka::onHost
         auto devAcc = queue.getDevice();
         if constexpr(exec == alpaka::exec::anyExecutor)
         {
-            auto availableExecutors = supportedExecutors(queue.getDevice(), exec::allExecutors);
-            internal::scan<internal::EXCLUSIVE_SCAN>(queue, devAcc, std::get<0>(availableExecutors), dataVec, dataVec);
+            internal::scan<internal::EXCLUSIVE_SCAN>(queue, devAcc, defaultExecutor(devAcc), dataVec, dataVec);
         }
         else
             internal::scan<internal::EXCLUSIVE_SCAN>(queue, devAcc, exec, dataVec, dataVec);

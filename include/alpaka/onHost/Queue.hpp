@@ -114,20 +114,20 @@ namespace alpaka::onHost
                 isFrameSpec_v<ALPAKA_TYPEOF(launchCfg)>
                 && ALPAKA_TYPEOF(launchCfg)::getExecutor() == alpaka::exec::anyExecutor)
             {
-                auto executors
-                    = alpaka::onHost::supportedExecutors(internal::getDevice(*m_queue.get()), exec::allExecutors);
-                FrameSpec frameSpecWithExecutor
-                    = FrameSpec{launchCfg.getNumFrames(), launchCfg.getFrameExtents(), std::get<0>(executors)};
+                FrameSpec frameSpecWithExecutor = FrameSpec{
+                    launchCfg.getNumFrames(),
+                    launchCfg.getFrameExtents(),
+                    alpaka::onHost::defaultExecutor(internal::getDevice(*m_queue.get()))};
                 internal::enqueue(*m_queue.get(), frameSpecWithExecutor, kernelBundle);
             }
             else if constexpr(
                 isThreadSpec_v<ALPAKA_TYPEOF(launchCfg)>
                 && ALPAKA_TYPEOF(launchCfg)::getExecutor() == alpaka::exec::anyExecutor)
             {
-                auto executors
-                    = alpaka::onHost::supportedExecutors(internal::getDevice(*m_queue.get()), exec::allExecutors);
-                ThreadSpec threadSpecWithExecutor
-                    = ThreadSpec{launchCfg.getNumBlocks(), launchCfg.getNumThreads(), std::get<0>(executors)};
+                ThreadSpec threadSpecWithExecutor = ThreadSpec{
+                    launchCfg.getNumBlocks(),
+                    launchCfg.getNumThreads(),
+                    alpaka::onHost::defaultExecutor(internal::getDevice(*m_queue.get()))};
                 internal::enqueue(*m_queue.get(), threadSpecWithExecutor, kernelBundle);
             }
             else

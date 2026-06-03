@@ -41,10 +41,9 @@ namespace alpaka::onHost
     {
         if constexpr(exec == alpaka::exec::anyExecutor)
         {
-            auto availableExecutors = supportedExecutors(queue.getDevice(), exec::allExecutors);
             internal::iota(
                 queue,
-                std::get<0>(availableExecutors),
+                defaultExecutor(queue.getDevice()),
                 onHost::getExtents(out0),
                 initValue,
                 ALPAKA_FORWARD(out0),
@@ -76,10 +75,9 @@ namespace alpaka::onHost
             && std::conjunction_v<
                 std::is_convertible<T_DataType, typename alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(outOther)>>...>)
     {
-        auto executor = supportedExecutors(queue.getDevice(), exec::allExecutors);
         internal::iota<T_DataType>(
             queue,
-            std::get<0>(executor),
+            defaultExecutor(queue.getDevice()),
             onHost::getExtents(out0),
             initValue,
             ALPAKA_FORWARD(out0),
