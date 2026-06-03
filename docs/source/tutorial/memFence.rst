@@ -27,7 +27,7 @@ On parallel devices, e.g. a GPU, the ordering guarantee is required.
     :end-before: END-TUTORIAL-memFenceBlockKernel
     :dedent:
 
-The frame extent to start the kernel is set to two.
+The kernel start with a frame spec and the initialization of the success flag are shown below.
 
   .. literalinclude:: ../../snippets/example/180_memFence.cpp
     :language: cpp

@@ -19,7 +19,7 @@ struct BlockFenceKernel
         auto shared = onAcc::declareSharedMdArray<int, uniqueId()>(acc, CVec<uint32_t, T_chunkSize>{});
 
         // only one thread is setting intial conditions
-        for(auto _ : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{1u}))
+        for([[maybe_unused]] auto _ : onAcc::makeIdxMap(acc, onAcc::worker::threadsInBlock, IdxRange{1u}))
         {
             shared[0] = 1;
             shared[1] = 2;
