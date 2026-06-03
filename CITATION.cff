@@ -1,0 +1,87 @@
+cff-version: 1.2.0
+message: "If you use alpaka in research, please cite the software and the related publications listed here."
+title: "alpaka"
+type: software
+authors:
+  - name: "alpaka contributors"
+license: "MPL-2.0"
+repository-code: "https://github.com/alpaka-group/alpaka3"
+url: "https://github.com/alpaka-group/alpaka3"
+version: "3.0.0"
+abstract: "A header-only C++20 abstraction library for accelerator development with performance portability across CPUs and GPUs."
+preferred-citation:
+  type: conference-paper
+  title: "Alpaka - An Abstraction Library for Parallel Kernel Acceleration"
+  authors:
+    - family-names: Zenker
+      given-names: Erik
+    - family-names: Worpitz
+      given-names: Benjamin
+    - family-names: Widera
+      given-names: Rene
+    - family-names: Huebl
+      given-names: Axel
+    - family-names: Juckeland
+      given-names: Guido
+    - family-names: Knuepfer
+      given-names: Andreas
+    - family-names: Nagel
+      given-names: Wolfgang E.
+    - family-names: Bussmann
+      given-names: Michael
+  year: 2016
+  month: 5
+  publisher: "IEEE Computer Society"
+  url: "http://arxiv.org/abs/1602.08477"
+references:
+  - type: conference-paper
+    title: "Tuning and optimization for a variety of many-core architectures without changing a single line of implementation code using the Alpaka library"
+    authors:
+      - family-names: Matthes
+        given-names: A.
+      - family-names: Widera
+        given-names: R.
+      - family-names: Zenker
+        given-names: E.
+      - family-names: Worpitz
+        given-names: B.
+      - family-names: Huebl
+        given-names: A.
+      - family-names: Bussmann
+        given-names: M.
+    year: 2017
+    month: 6
+    url: "https://arxiv.org/abs/1706.10086"
+  - type: conference-paper
+    title: "Alpaka - An Abstraction Library for Parallel Kernel Acceleration"
+    authors:
+      - family-names: Zenker
+        given-names: Erik
+      - family-names: Worpitz
+        given-names: Benjamin
+      - family-names: Widera
+        given-names: Rene
+      - family-names: Huebl
+        given-names: Axel
+      - family-names: Juckeland
+        given-names: Guido
+      - family-names: Knuepfer
+        given-names: Andreas
+      - family-names: Nagel
+        given-names: Wolfgang E.
+      - family-names: Bussmann
+        given-names: Michael
+    year: 2016
+    month: 5
+    publisher: "IEEE Computer Society"
+    url: "http://arxiv.org/abs/1602.08477"
+  - type: thesis
+    title: "Investigating performance portability of a highly scalable particle-in-cell simulation code on various multi-core architectures"
+    authors:
+      - family-names: Worpitz
+        given-names: Benjamin
+    year: 2015
+    month: 9
+    institution: "Technische Universitaet Dresden"
+    doi: "10.5281/zenodo.49768"
+    url: "http://dx.doi.org/10.5281/zenodo.49768"

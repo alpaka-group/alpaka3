@@ -1,7 +1,15 @@
 **alpaka** - Abstraction Library for Parallel Kernel Acceleration
 =================================================================
 
-[![License](https://img.shields.io/badge/license-MPL--2.0-blue.svg)](https://www.mozilla.org/en-US/MPL/2.0/)
+[![License](https://img.shields.io/badge/license-MPL--2.0-6c757d.svg)](https://www.mozilla.org/en-US/MPL/2.0/)
+[![CI](https://github.com/alpaka-group/alpaka3/actions/workflows/ci.yml/badge.svg?branch=dev&event=push)](https://github.com/alpaka-group/alpaka3/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-Read%20the%20Docs-0f766e.svg)](https://alpaka3.readthedocs.io)
+[![User API](https://img.shields.io/badge/User%20API-Doxygen-2563eb.svg)](https://alpaka3.readthedocs.io/en/latest/doxygen/namespaces.html)
+[![Dev API](https://img.shields.io/badge/Dev%20API-Doxygen-7c3aed.svg)](https://alpaka3.readthedocs.io/en/latest/doxygen_dev/namespaces.html)
+[![C++20](https://img.shields.io/badge/C%2B%2B-20-ea580c.svg)](https://isocpp.org/std/the-standard)
+[![Platforms](https://img.shields.io/badge/platform-linux-4b5563.svg)](https://github.com/alpaka-group/alpaka3)
+[![Architectures](https://img.shields.io/badge/architectures-x86%20%7C%20ARM%20%7C%20RISC--V-0284c7.svg)](#)
+[![Accelerators](https://img.shields.io/badge/accelerators-NVIDIA%20GPU%20%7C%20AMD%20GPU%20%7C%20Intel%20GPU-0891b2.svg)](#)
 
 ![alpaka](docs/logo/alpaka_401x135.png)
 
@@ -34,3 +42,8 @@ Documentation
 -------------
 
 The documentation is available at: https://alpaka3.readthedocs.io
+
+Citation
+--------
+
+If you use **alpaka** in research, please cite it using the metadata in [CITATION.cff](CITATION.cff).
