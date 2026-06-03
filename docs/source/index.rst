@@ -74,6 +74,7 @@ Individual chapters are based on the information of the chapters before.
    tutorial/math.rst
    tutorial/atomics.rst
    tutorial/memFence.rst
+   tutorial/events.rst
    tutorial/random.rst
 
 .. toctree::
