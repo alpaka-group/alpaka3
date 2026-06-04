@@ -45,7 +45,7 @@ namespace alpaka::onHost
     /** Object pitches
      *
      * @param any can be a std::vector, std::array, ...
-     * @return the number of elements of the object
+     * @return the pitches in bytes (number of elements of the object * sizeof(object) + padding)
      */
     inline decltype(auto) getPitches(auto&& any)
     {
@@ -55,7 +55,7 @@ namespace alpaka::onHost
     /** Handle pitches
      *
      * @param handle can be a view, a data
-     * @return the number of elements of the object
+     * @return the pitches in bytes (number of elements of the object * sizeof(object) + padding)
      */
     inline decltype(auto) getPitches(alpaka::concepts::HasGet auto&& handle)
     {
