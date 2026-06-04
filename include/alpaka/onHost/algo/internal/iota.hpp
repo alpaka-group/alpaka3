@@ -58,7 +58,7 @@ namespace alpaka::onHost::internal
         alpaka::concepts::IMdSpan auto&&... inputs)
     {
         Vec const extentMd = extents;
-        auto frameSpec = getFrameSpec<T_DataType>(queue.getDevice(), exec, extentMd);
+        auto frameSpec = getSimdFrameSpec<T_DataType>(queue.getDevice(), exec, extentMd);
 
         ALPAKA_LOG_INFO(
             onHost::logger::memory,

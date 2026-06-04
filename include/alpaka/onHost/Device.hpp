@@ -323,17 +323,47 @@ namespace alpaka::onHost
 
     /** Provides a frame specification to operate on a given index range
      *
-     * The frame specification will be optimized for SIMD executions in the highest dimension.
-     *
      * @param extents size of the index range
      * @return frame specification
      */
-    template<typename T_DataType, typename T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
-    inline constexpr auto getFrameSpec(
+    template<typename T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
+    inline constexpr concepts::FrameSpec auto getFrameSpec(
         Device<T_Api, T_DeviceKind> const& device,
         alpaka::concepts::Executor auto executor,
         alpaka::concepts::VectorOrScalar auto const& extents)
     {
-        return internal::getFrameSpec<T_DataType>(*device.get(), executor, extents);
+        if constexpr(executor == exec::anyExecutor)
+        {
+            auto usedExecutor = defaultExecutor(device);
+            return internal::getFrameSpec(*device.get(), usedExecutor, extents);
+        }
+        else
+            return internal::getFrameSpec(*device.get(), executor, extents);
+    }
+
+    /** Provides a frame specification to operate on a given index range
+     *
+     * The frame specification will be optimized for SIMD executions in the highest dimension
+     * for a flat non-hierarchical execution via onAcc::worker::threadsInGrid.
+     * Do not use this functions for kernel using hierarchical thread parallelism, in many cases the frame
+     * specification depends on the outer parallelism in the kernel.
+     *
+     * @tparam T_DataType the data type for which you would like to SIMD optimize
+     * @param extents number of elements for each dimension of the type T_DataType
+     * @return frame specification
+     */
+    template<typename T_DataType, typename T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
+    inline constexpr concepts::FrameSpec auto getSimdFrameSpec(
+        Device<T_Api, T_DeviceKind> const& device,
+        alpaka::concepts::Executor auto executor,
+        alpaka::concepts::VectorOrScalar auto const& extents)
+    {
+        if constexpr(executor == exec::anyExecutor)
+        {
+            auto usedExecutor = defaultExecutor(device);
+            return internal::getSimdFrameSpec<T_DataType>(*device.get(), usedExecutor, extents);
+        }
+        else
+            return internal::getSimdFrameSpec<T_DataType>(*device.get(), executor, extents);
     }
 } // namespace alpaka::onHost

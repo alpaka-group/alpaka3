@@ -62,7 +62,7 @@ TEMPLATE_LIST_TEST_CASE("popcount", "[intrinsic][popc]", TestBackends)
     alpaka::onHost::memcpy(queue, devInput, hostInput);
 
     // Define execution parameters
-    auto const frameSpec = alpaka::onHost::getFrameSpec<uint64_t>(devAcc, computeExec, devInput.getExtents());
+    auto const frameSpec = alpaka::onHost::getFrameSpec(devAcc, computeExec, devInput.getExtents());
 
     // Create kernel
     TestKernel kernel;

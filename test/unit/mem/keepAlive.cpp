@@ -54,7 +54,7 @@ TEMPLATE_LIST_TEST_CASE("keep alive", "", TestApis)
         // enqueue everything in this scope
         auto scopedBuffer = onHost::allocDeferred<int>(queue, N);
 
-        auto framespec = getFrameSpec<int>(device, exec, scopedBuffer.getExtents());
+        auto framespec = getFrameSpec(device, exec, scopedBuffer.getExtents());
 
         // fill scoped buffer
         queue.enqueue(framespec, KernelBundle{IotaKernel{}, scopedBuffer});

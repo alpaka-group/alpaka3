@@ -379,12 +379,14 @@ auto main() -> int
 
         {
             // BEGIN-CHEATSHEET-autoFrameSpec
+            // Provides kernel start parameters sutable for the device and executor
+            onHost::concepts::FrameSpec auto frameSpec = onHost::getFrameSpec(device, exec::anyExecutor, extentMd);
             // DataType is used to optimize the kernel parameters for working on data of this type
-            onHost::concepts::FrameSpec auto frameSpec
-                = onHost::getFrameSpec<DataType>(device, exec::anyExecutor, extentMd);
+            onHost::concepts::FrameSpec auto simdFrameSpec
+                = onHost::getSimdFrameSpec<DataType>(device, exec::anyExecutor, extentMd);
             // END-CHEATSHEET-autoFrameSpec
 
-            unused(frameSpec);
+            unused(frameSpec, simdFrameSpec);
         }
 
         {

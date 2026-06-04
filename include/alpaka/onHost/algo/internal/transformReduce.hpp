@@ -142,7 +142,7 @@ namespace alpaka::onHost::internal
     {
         auto extentMd = onHost::getExtents(in0);
         using IndexType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(extentMd)>;
-        auto frameSpec = getFrameSpec<T_DataType>(queue.getDevice(), exec, extentMd);
+        auto frameSpec = getSimdFrameSpec<T_DataType>(queue.getDevice(), exec, extentMd);
 
         /* Adjust the launch parameters to not oversubscribe a device too much.
          *

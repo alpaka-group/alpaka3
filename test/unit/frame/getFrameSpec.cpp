@@ -47,7 +47,7 @@ void testScalar(auto const& computeDev, alpaka::concepts::Executor auto exec)
 
 
     // test lvalue
-    auto const frameSpec = alpaka::onHost::getFrameSpec<T>(computeDev, exec, testValues);
+    auto const frameSpec = alpaka::onHost::getFrameSpec(computeDev, exec, testValues);
 
     checkFrameSpec(frameSpec, testValues);
 }
@@ -59,7 +59,7 @@ void testVector(auto const& computeDev, alpaka::concepts::Executor auto exec)
     {
         {
             // test lvalue
-            auto const frameSpec = alpaka::onHost::getFrameSpec<T>(computeDev, exec, vec);
+            auto const frameSpec = alpaka::onHost::getFrameSpec(computeDev, exec, vec);
 
             checkFrameSpec(frameSpec, vec);
         }

@@ -205,7 +205,7 @@ bool testRandomInitKernels(
     // Frame size
 
     // Launch the 1-dimensional kernel with scalar size
-    auto frameSpec = alpaka::onHost::getFrameSpec<T_Data>(device, computeExec, alpaka::Vec{blockSize});
+    auto frameSpec = alpaka::onHost::getFrameSpec(device, computeExec, alpaka::Vec{blockSize});
 
     // TEST - 1: Philox Generator generates integer random numbers
     std::cout << "- Testing RandomInitKernel with a grid of " << frameSpec << "\n";

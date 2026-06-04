@@ -35,7 +35,7 @@ void validateAccess(auto device, alpaka::concepts::Executor auto exec, concepts:
     REQUIRE(onHost::isDataAccessible(deviceQueue, deviceAccessibleData) == true);
     onHost::fill(deviceQueue, deviceStatus, 0);
     deviceQueue.enqueue(
-        getFrameSpec<float>(deviceQueue.getDevice(), exec, deviceAccessibleData.getExtents()),
+        getFrameSpec(deviceQueue.getDevice(), exec, deviceAccessibleData.getExtents()),
         KernelBundle{IotaValidate{}, deviceStatus, deviceAccessibleData});
     onHost::memcpy(deviceQueue, hostStatus, deviceStatus);
     onHost::wait(deviceQueue);

@@ -89,7 +89,7 @@ namespace alpaka::onHost::internal
     {
         auto extentMd = onHost::getExtents(out);
         using DataType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>;
-        auto frameSpec = getFrameSpec<DataType>(queue.getDevice(), exec, extentMd);
+        auto frameSpec = getSimdFrameSpec<DataType>(queue.getDevice(), exec, extentMd);
 
         ALPAKA_LOG_INFO(
             onHost::logger::memory,

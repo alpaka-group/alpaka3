@@ -138,7 +138,7 @@ int exampleDispatch(auto const cfg, uint32_t numElements, auto const& mean, auto
     // Allocate output host and device buffers
     auto outArray_h = onHost::alloc<T_Data>(host, numElements);
     auto outArray_d = onHost::allocLike(device, outArray_h);
-    auto frameSpec = onHost::getFrameSpec<T_Data>(device, computeExec, Vec{blockSizeNormal});
+    auto frameSpec = onHost::getFrameSpec(device, computeExec, Vec{blockSizeNormal});
 
     onHost::Queue queue = device.makeQueue();
 

@@ -69,8 +69,10 @@ namespace alpaka::internal::generic
         ALPAKA_LOG_FUNCTION(onHost::logger::memory);
 
         auto extents = onHost::getExtents(dest);
-        auto frameSpec
-            = onHost::internal::getFrameSpec<T_Value>(*onHost::internal::getDevice(internalQueue), executor, extents);
+        auto frameSpec = onHost::internal::getSimdFrameSpec<T_Value>(
+            *onHost::internal::getDevice(internalQueue),
+            executor,
+            extents);
 
         ALPAKA_LOG_INFO(
             onHost::logger::memory,
