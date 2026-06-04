@@ -14,39 +14,28 @@ Queue Rules
 - ``onHost::wait(event)`` waits until the event has been processed which means that all previous enqueues tasks are completed.
 - ``queue1.waitFor(event)`` inserts a dependency so work in ``queue1`` enqueued after starts only after the event is reached.
 
-Creating an Event
------------------
+Use Cases
+---------
+
+Multiple queues are primarily used in the following scenarios:
+
+- Host and device queues: Run independent tasks on the host CPU and the device (e.g., a GPU) and synchronize both devices.
+- Many queues for many devices: For example, in multi-GPU systems, each GPU requires its own queue.
+- Many queues for a single device: Enables better utilization of a single device. The performance benefits depend on the :ref:`API`.
+
+Creating and Using an Event
+---------------------------
+
+In the following example, we create two queues (``queue0`` and ``queue1``).
+Both execute functions on the host via ``enqueueHostFn()``.
+Without synchronization between the queues using events, a race condition is possible.
+It is possible that ``queue1`` increments the value ``valueA`` before ``valueA`` is set to ``41`` in ``queue0``.
 
   .. literalinclude:: ../../snippets/example/160_events.cpp
     :language: cpp
-    :start-after: BEGIN-TUTORIAL-eventCreation
-    :end-before: END-TUTORIAL-eventCreation
+    :start-after: BEGIN-TUTORIAL-event
+    :end-before: END-TUTORIAL-event
     :dedent:
-
-This records a point in ``queue0`` after the earlier tasks in that queue.
-
-Waiting From Another Queue
---------------------------
-
-  .. literalinclude:: ../../snippets/example/160_events.cpp
-    :language: cpp
-    :start-after: BEGIN-TUTORIAL-eventWait
-    :end-before: END-TUTORIAL-eventWait
-    :dedent:
-
-This is the standard way to connect two queues without forcing the host to block between them.
-
-Check Event state
------------------
-
-  .. literalinclude:: ../../snippets/example/160_events.cpp
-    :language: cpp
-    :start-after: BEGIN-TUTORIAL-eventComplete
-    :end-before: END-TUTORIAL-eventComplete
-    :dedent:
-
-An enqueued event can be checked for completion.
-This is useful for example to check if a long-running task is finished.
 
 Complete Source File
 --------------------
