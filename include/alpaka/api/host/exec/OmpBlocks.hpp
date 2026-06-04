@@ -30,12 +30,12 @@ namespace alpaka::onHost
         template<onHost::concepts::ThreadSpec T_ThreadSpec>
         struct OmpBlocks
         {
-            constexpr OmpBlocks(T_ThreadSpec threadBlocking, uint32_t numaIdx, bool setThreadAffinity)
-                : m_threadBlocking{std::move(threadBlocking)}
+            constexpr OmpBlocks(T_ThreadSpec threadSpec, uint32_t numaIdx, bool setThreadAffinity)
+                : m_threadSpec{std::move(threadSpec)}
                 , m_numaIdx{numaIdx}
                 , m_setThreadAffinity{setThreadAffinity}
             {
-                if(m_threadBlocking.getNumThreads().product() != 1u)
+                if(m_threadSpec.getNumThreads().product() != 1u)
                 {
                     throw std::runtime_error("Thread block extent must be 1.");
                 }
@@ -44,19 +44,32 @@ namespace alpaka::onHost
             void operator()(auto const& kernelBundle, auto const& dict) const
             {
                 using NumThreadsVecType = typename T_ThreadSpec::NumThreadsVecType;
-#    pragma omp parallel
+
+                bool shouldSetThreadAffinity = m_setThreadAffinity;
+
+                /* Do not change the affinity if we are executed within a OpenMP parallel section, the user should keep
+                 * the control over it.
+                 */
+                if(::omp_in_parallel() != 0)
+                    shouldSetThreadAffinity = false;
+
+                auto fn = [&kernelBundle,
+                           &dict,
+                           threadSpec = m_threadSpec,
+                           numaIdx = m_numaIdx,
+                           setThreadAffinity = shouldSetThreadAffinity]()
                 {
-                    if(m_setThreadAffinity)
-                        internal::hwloc::setThreadAffinity(m_numaIdx);
+                    if(setThreadAffinity)
+                        internal::hwloc::setThreadAffinity(numaIdx);
 
                     // copy from num blocks to derive correct index type
-                    auto blockIdx = m_threadBlocking.getNumBlocks();
+                    auto blockIdx = threadSpec.getNumBlocks();
                     constexpr uint32_t simdWidth
                         = alpaka::getArchSimdWidth<uint8_t>(api::host, ALPAKA_TYPEOF(dict[object::deviceKind]){});
                     auto blockSharedMem = onAcc::cpu::SingleThreadStaticShared<simdWidth>{};
 
                     // dynamic shared mem
-                    uint32_t blockDynSharedMemBytes = onHost::getDynSharedMemBytes(m_threadBlocking, kernelBundle);
+                    uint32_t blockDynSharedMemBytes = onHost::getDynSharedMemBytes(threadSpec, kernelBundle);
                     auto const blockDynSharedMemEntry = DictEntry{layer::dynShared, std::ref(blockSharedMem)};
                     auto const blockDynSharedMemBytesEntry
                         = DictEntry{object::dynSharedMemBytes, std::ref(blockDynSharedMemBytes)};
@@ -68,7 +81,7 @@ namespace alpaka::onHost
                         dict,
                         Dict{blockDynSharedMemEntry, blockDynSharedMemBytesEntry});
 
-                    auto blockCount = m_threadBlocking.getNumBlocks();
+                    auto blockCount = threadSpec.getNumBlocks();
 
                     auto const blockLayerEntry = DictEntry{
                         layer::block,
@@ -90,10 +103,24 @@ namespace alpaka::onHost
                         kernelBundle(acc);
                         blockSharedMem.reset();
                     }
+                };
+
+                if(::omp_in_parallel() != 0)
+                {
+                    /* we are already in a OpenMP parllel section, do not start a new section to avoid nested
+                     * parallelism which is typical slow
+                     */
+                    fn();
+                }
+                else
+                {
+#    pragma omp parallel
+                    fn();
                 }
             }
 
-            T_ThreadSpec m_threadBlocking;
+        private:
+            T_ThreadSpec m_threadSpec;
             uint32_t m_numaIdx;
             bool m_setThreadAffinity;
         };
