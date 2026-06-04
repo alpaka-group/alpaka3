@@ -53,10 +53,10 @@ struct IntervalExamplesKernel
 
         for(auto [idx] : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{coValues.getExtents()}))
         {
-            coValues[idx] = rand::distribution::UniformReal{0.0f, 1.0f, rand::interval::co}(engine);
-            ocValues[idx] = rand::distribution::UniformReal{0.0f, 1.0f, rand::interval::oc}(engine);
-            ccValues[idx] = rand::distribution::UniformReal{0.0f, 1.0f, rand::interval::cc}(engine);
-            ooValues[idx] = rand::distribution::UniformReal{0.0f, 1.0f, rand::interval::oo}(engine);
+            coValues[idx] = rand::distribution::UniformReal{0.0f, 1.0f, rand::interval::co}(engine); // 0 <= val <  1
+            ocValues[idx] = rand::distribution::UniformReal{0.0f, 1.0f, rand::interval::oc}(engine); // 0 <  val <= 1
+            ccValues[idx] = rand::distribution::UniformReal{0.0f, 1.0f, rand::interval::cc}(engine); // 0 <= val <= 1
+            ooValues[idx] = rand::distribution::UniformReal{0.0f, 1.0f, rand::interval::oo}(engine); // 0 <  val <  1
         }
     }
 };
