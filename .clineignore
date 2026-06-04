@@ -2,6 +2,6 @@
 /build/
 
 # Documentation build outputs
-/docs/source/build/
+/docs/build/
 /docs/doxygen
 /docs/doxygen_dev
