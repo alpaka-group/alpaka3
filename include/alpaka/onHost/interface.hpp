@@ -45,7 +45,12 @@ namespace alpaka::onHost
     /** Object pitches
      *
      * @param any can be a std::vector, std::array, ...
-     * @return the pitches in bytes (number of elements of the object * sizeof(object) + padding)
+     * @return Multidimensional value with number of bytes to jump to the next value within the corresponding
+     *         dimension.
+     *         The inner-most dimension (x) is sizeof(value_type), the next dimension (y) is the byte-stride of a
+     *         full row including padding, and so on for higher dimensions.
+     *         Given an ND index, the element-wise product with the pitches summed (dot product) yields the byte
+     *         offset from the start of the buffer to that data element.
      */
     inline decltype(auto) getPitches(auto&& any)
     {
@@ -55,7 +60,12 @@ namespace alpaka::onHost
     /** Handle pitches
      *
      * @param handle can be a view, a data
-     * @return the pitches in bytes (number of elements of the object * sizeof(object) + padding)
+     * @return Multidimensional value with number of bytes to jump to the next value within the corresponding
+     *         dimension.
+     *         The inner-most dimension (x) is sizeof(value_type), the next dimension (y) is the byte-stride of a
+     *         full row including padding, and so on for higher dimensions.
+     *         Given an ND index, the element-wise product with the pitches summed (dot product) yields the byte
+     *         offset from the start of the buffer to that data element.
      */
     inline decltype(auto) getPitches(alpaka::concepts::HasGet auto&& handle)
     {
