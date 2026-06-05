@@ -66,13 +66,13 @@ The same principals are required for vectorization on CPU.
 
 When the padding bytes are added, the ``Extents`` can no longer be used to calculate the memory location of a specific element.
 The ``Extents`` assume that the memory is contiguous.
-``Pitches`` solves this problem.
-They stores the number of bytes required to jump to the next element in a dimension, including the padding bytes.
-In the simplest case, when 1D ``Data Storage`` is used, the size of the value type in bytes is the same number which the ``Pitch`` stores.
-For example, if the value type is float (32 bits), the ``Pitch`` is 4 bytes.
-With 2D ``Data Storage``, the first number of a 2D ``Pitch`` stores the size of the row in bytes, i.e., ``number_of_elements * sizeof(value_type) + padding_bytes``.
-So if you have a memory pointer and add the ``Pitch[0]``, we jump one row further. 
-``Pitch[1]`` is again the size of the value type.
+``Pitches`` solves this problem: it is a multidimensional value where each component stores the number of bytes required to jump to the next element within the corresponding dimension, including the padding bytes.
+The innermost dimension (``x``) pitch is ``sizeof(value_type)``, the next dimension (``y``) pitch is the byte-stride of a full row including padding, and so on for higher dimensions.
+In general, given an N-dimensional zero-based index, the dot product (element-wise multiplication and sum) of the index with the pitches yields the byte offset from the start of the buffer to that data element.
+In the simplest case, when 1D ``Data Storage`` is used, the size of the value type in bytes is the pitch value.
+For example, if the value type is ``float`` (32 bits), the pitch is 4 bytes.
+With 2D ``Data Storage``, the first pitch dimension, ``Pitch[0]`` (row stride), stores the size of a row in bytes, i.e., ``number_of_elements_in_x * sizeof(value_type) + padding_bytes``, so adding ``Pitch[0]`` to a memory pointer jumps one row forward.
+``Pitch[1]`` (column stride) is again the size of the value type.
 
 Compared to the above example from Nvidia, we have chosen slightly different numbers for the example for illustrative purposes.
 The example has 3 rows with 5 elements each.
