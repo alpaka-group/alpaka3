@@ -81,9 +81,15 @@ namespace alpaka
          *
          * @{
          */
-        constexpr alpaka::concepts::SimdPtr auto operator[](
-            alpaka::concepts::IndexVec<typename IdxType::type, T_MdSpan::dim()> auto const& idx) const
+        constexpr alpaka::concepts::SimdPtr auto operator[](auto const& idx) const
         {
+            /* Do not use concepts::IndexVec as concept in the function signature else nvcc (tested 12.X -> 13.0)
+             * segfaults during compile.
+             */
+            static_assert(
+                alpaka::concepts::IndexVec<ALPAKA_TYPEOF(idx), typename IdxType::type, T_MdSpan::dim()>,
+                "The dimension of idx must match the encapsulated MdSpan dimension and the index type of idx must be "
+                "lossless castable to the MdSpan index type");
             constexpr uint32_t valueAlignment = static_cast<uint32_t>(alignof(value_type));
             constexpr auto align = Alignment<valueAlignment>{};
             return SimdPtr<T_MdSpan, IdxType, ALPAKA_TYPEOF(align), T_SimdWidth>{
@@ -93,9 +99,15 @@ namespace alpaka
                 T_SimdWidth{}};
         }
 
-        constexpr alpaka::concepts::SimdPtr auto operator[](
-            alpaka::concepts::IndexVec<typename IdxType::type, T_MdSpan::dim()> auto const& idx)
+        constexpr alpaka::concepts::SimdPtr auto operator[](auto const& idx)
         {
+            /* Do not use concepts::IndexVec as concept in the function signature else nvcc (tested 12.X -> 13.0)
+             * segfaults during compile.
+             */
+            static_assert(
+                alpaka::concepts::IndexVec<ALPAKA_TYPEOF(idx), typename IdxType::type, T_MdSpan::dim()>,
+                "The dimension of idx must match the encapsulated MdSpan dimension and the index type of idx must be "
+                "lossless castable to the MdSpan index type");
             constexpr uint32_t valueAlignment = static_cast<uint32_t>(alignof(value_type));
             constexpr auto align = Alignment<valueAlignment>{};
             return SimdPtr<T_MdSpan, IdxType, ALPAKA_TYPEOF(align), T_SimdWidth>{
