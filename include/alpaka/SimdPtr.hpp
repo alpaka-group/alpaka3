@@ -81,7 +81,7 @@ namespace alpaka
          *
          * @{
          */
-        constexpr auto operator[](
+        constexpr alpaka::concepts::SimdPtr auto operator[](
             alpaka::concepts::IndexVec<typename IdxType::type, T_MdSpan::dim()> auto const& idx) const
         {
             constexpr uint32_t valueAlignment = static_cast<uint32_t>(alignof(value_type));
@@ -93,7 +93,8 @@ namespace alpaka
                 T_SimdWidth{}};
         }
 
-        constexpr auto operator[](alpaka::concepts::IndexVec<typename IdxType::type, T_MdSpan::dim()> auto const& idx)
+        constexpr alpaka::concepts::SimdPtr auto operator[](
+            alpaka::concepts::IndexVec<typename IdxType::type, T_MdSpan::dim()> auto const& idx)
         {
             constexpr uint32_t valueAlignment = static_cast<uint32_t>(alignof(value_type));
             constexpr auto align = Alignment<valueAlignment>{};
