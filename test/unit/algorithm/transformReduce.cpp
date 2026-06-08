@@ -149,7 +149,7 @@ struct TestWithMdSpan
                 ++refIotaCounter;
             });
         CHECK(*hostBufferOut.data() == result);
-    };
+    }
 };
 
 template<typename T_DataType>
@@ -307,7 +307,7 @@ struct TestWithGenerator
                 ++refIotaCounter;
             });
         CHECK(*hostBufferOut.data() == result);
-    };
+    }
 };
 
 TEMPLATE_LIST_TEST_CASE("transformReduce generator", "", TestBackends)

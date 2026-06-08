@@ -123,7 +123,7 @@ struct TestWithMdSpan
                 CHECK(hostBufferOut[idx] == std::get<1>(setup)(refIotaCounter, refIotaCounter));
                 ++refIotaCounter;
             });
-    };
+    }
 };
 
 template<typename T_DataType>
@@ -250,7 +250,7 @@ struct TestWithGenerator
                 CHECK(hostBufferOut[idx] == std::get<1>(setup)(refIotaCounter, generator[idx]));
                 ++refIotaCounter;
             });
-    };
+    }
 };
 
 TEMPLATE_LIST_TEST_CASE("transform generator", "", TestBackends)

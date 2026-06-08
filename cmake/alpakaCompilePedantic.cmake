@@ -14,6 +14,13 @@ if(TARGET alpaka_target_cuda)
         alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--Wext-lambda-captures-this>")
         alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--Werror all-warnings>")
         alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--Werror default-stream-launch>")
+        alpaka_set_compiler_options(
+            DEVICE
+            target
+            alpaka_target_cuda
+            "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-pedantic>"
+            "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler -Wno-pedantic>"
+        )
         alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Wall>")
         alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Wextra>")
         if(CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL 12.8)
@@ -26,12 +33,14 @@ endif()
 if(TARGET alpaka_target_hip)
     alpaka_set_compiler_options(DEVICE target alpaka_target_hip "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-Wall>")
     alpaka_set_compiler_options(DEVICE target alpaka_target_hip "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-Wextra>")
+    alpaka_set_compiler_options(DEVICE target alpaka_target_hip "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-Wpedantic>")
     alpaka_set_compiler_options(DEVICE target alpaka_target_hip "$<$<COMPILE_LANGUAGE:HIP>:SHELL:-Werror>")
 endif()
 
 if(TARGET alpaka_target_host)
     alpaka_set_compiler_options(HOST target alpaka_target_host "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-Wall>")
     alpaka_set_compiler_options(HOST target alpaka_target_host "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-Wextra>")
+    alpaka_set_compiler_options(HOST target alpaka_target_host "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-Wpedantic>")
     alpaka_set_compiler_options(HOST target alpaka_target_host "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-Werror>")
     alpaka_set_compiler_options(HOST target alpaka_target_host "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-Wundef>")
     if((alpaka_TSAN OR alpaka_ASAN) AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")

@@ -111,7 +111,7 @@ struct TestWithMdSpan
             });
 
         CHECK(*hostBufferOut.data() == result);
-    };
+    }
 };
 
 template<typename T_DataType>
@@ -213,7 +213,7 @@ struct TestWithGenerator
         meta::ndLoopIncIdx(extentMd, [&](auto idx) { result = std::get<2>(functorPair)(result, generator[idx]); });
 
         CHECK(*hostBufferOut.data() == result);
-    };
+    }
 };
 
 TEMPLATE_LIST_TEST_CASE("reduce generator", "", TestBackends)
