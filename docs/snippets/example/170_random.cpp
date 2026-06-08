@@ -103,7 +103,7 @@ TEMPLATE_LIST_TEST_CASE("tutorial random numbers", "[docs]", docs::test::TestBac
     auto randomBuffer = onHost::allocLike(device, hostValues);
 
     // BEGIN-TUTORIAL-randomLaunch
-    onHost::concepts::FrameSpec auto frameSpec = onHost::getFrameSpec<float>(device, exec, randomBuffer.getExtents());
+    onHost::concepts::FrameSpec auto frameSpec = onHost::getFrameSpec(device, exec, randomBuffer.getExtents());
     queue.enqueue(frameSpec, KernelBundle{UniformRandomKernel{}, randomBuffer, 1234u});
     // END-TUTORIAL-randomLaunch
 
@@ -144,7 +144,7 @@ TEMPLATE_LIST_TEST_CASE("tutorial random intervals", "[docs]", docs::test::TestB
     auto ccBuffer = onHost::allocLike(device, hostCc);
     auto ooBuffer = onHost::allocLike(device, hostOo);
 
-    onHost::concepts::FrameSpec auto frameSpec = onHost::getFrameSpec<float>(device, exec, coBuffer.getExtents());
+    onHost::concepts::FrameSpec auto frameSpec = onHost::getFrameSpec(device, exec, coBuffer.getExtents());
     queue.enqueue(frameSpec, KernelBundle{IntervalExamplesKernel{}, coBuffer, ocBuffer, ccBuffer, ooBuffer, 999u});
 
     onHost::memcpy(queue, hostCo, coBuffer);
@@ -182,7 +182,7 @@ TEMPLATE_LIST_TEST_CASE("tutorial random normal distribution", "[docs]", docs::t
     auto randomBuffer = onHost::allocLike(device, hostValues);
 
     // BEGIN-TUTORIAL-randomNormalLaunch
-    onHost::concepts::FrameSpec auto frameSpec = onHost::getFrameSpec<float>(device, exec, randomBuffer.getExtents());
+    onHost::concepts::FrameSpec auto frameSpec = onHost::getFrameSpec(device, exec, randomBuffer.getExtents());
     queue.enqueue(frameSpec, KernelBundle{NormalNoiseKernel{}, randomBuffer, 2025u, 5.0f, 2.0f});
     // END-TUTORIAL-randomNormalLaunch
 
@@ -243,7 +243,7 @@ TEMPLATE_LIST_TEST_CASE("tutorial monte carlo pi", "[docs]", docs::test::TestBac
     auto hitCountBuffer = onHost::alloc<uint32_t>(device, Vec{1u});
     auto hostHitCount = onHost::allocHostLike(hitCountBuffer);
 
-    onHost::concepts::FrameSpec auto frameSpec = onHost::getFrameSpec<uint32_t>(device, exec, hitBuffer.getExtents());
+    onHost::concepts::FrameSpec auto frameSpec = onHost::getFrameSpec(device, exec, hitBuffer.getExtents());
 
     // BEGIN-TUTORIAL-piLaunch
     queue.enqueue(frameSpec, KernelBundle{MonteCarloPiKernel{}, hitBuffer, 2026u});
