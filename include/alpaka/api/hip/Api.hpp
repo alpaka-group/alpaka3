@@ -54,6 +54,16 @@ namespace alpaka
         {
         };
 #endif
+
+        /** All modern AMD GPUs support at least 1024 threads per block. */
+        template<>
+        struct GetMaxThreadsPerBlock::Op<api::Hip, deviceKind::AmdGpu, exec::GpuHip>
+        {
+            consteval uint32_t operator()(api::Hip const, deviceKind::AmdGpu const, exec::GpuHip const) const
+            {
+                return 1024u;
+            }
+        };
     } // namespace onHost::trait
 
     namespace unifiedCudaHip::trait

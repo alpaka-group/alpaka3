@@ -26,7 +26,7 @@ namespace alpaka::api::util
             std::integral auto... T_idx>
         consteval auto adjustToLimit(concepts::CVector auto const input, std::index_sequence<T_idx...>)
         {
-            if constexpr(input.product() <= T_limit)
+            if constexpr(input.product() <= static_cast<typename ALPAKA_TYPEOF(input)::type>(T_limit))
                 return input;
             else
             {
@@ -34,7 +34,7 @@ namespace alpaka::api::util
 
                 constexpr auto newValue = CVec<
                     typename ALPAKA_TYPEOF(input)::type,
-                    (T_idx == T_index ? divExZero(input[T_idx], static_cast<ALPAKA_TYPEOF(T_limit)>(2))
+                    (T_idx == T_index ? divExZero(input[T_idx], static_cast<typename ALPAKA_TYPEOF(input)::type>(2))
                                       : input[T_idx])...>{};
 
                 constexpr auto nextIncrement = dim == 1u ? 0u : T_increment;
@@ -44,8 +44,9 @@ namespace alpaka::api::util
                 {
                     constexpr auto nextIncrement = dim == 1u ? 0u : -1u;
 
-                    return adjustToLimit < T_limit, dim == 1 ? 0 : dim - 1u,
-                           nextIncrement > (newValue, std::index_sequence<T_idx...>{});
+                    return adjustToLimit<T_limit, (dim == 1 ? 0 : dim - 1u), nextIncrement>(
+                        newValue,
+                        std::index_sequence<T_idx...>{});
                 }
                 else if constexpr(nextIdx == 0u)
                 {

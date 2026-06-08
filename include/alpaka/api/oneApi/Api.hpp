@@ -57,6 +57,20 @@ namespace alpaka
         struct IsDeviceSupportedBy::Op<deviceKind::Cpu, api::OneApi> : std::true_type
         {
         };
+
+        /** This limit is not exact but for typical CPUs, and GPUs from Intel, NVIDIA and AMD we can at least use 1024
+         * threads per block.
+         *  @todo Check if this produces issues on FPGAs, in this case the deviceKind should be used and the
+         * limit should be different for each deviceKind.
+         */
+        template<alpaka::concepts::DeviceKind T_DeviceKind>
+        struct GetMaxThreadsPerBlock::Op<api::OneApi, T_DeviceKind, exec::OneApi>
+        {
+            consteval uint32_t operator()(api::OneApi const, T_DeviceKind const, exec::OneApi const) const
+            {
+                return 1024u;
+            }
+        };
     } // namespace onHost::trait
 
 #endif

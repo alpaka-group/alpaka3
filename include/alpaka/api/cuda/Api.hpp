@@ -55,6 +55,16 @@ namespace alpaka
         {
         };
 #endif
+
+        /** All modern NVIDIA GPUs support at least 1024 threads per block. */
+        template<>
+        struct GetMaxThreadsPerBlock::Op<api::Cuda, deviceKind::NvidiaGpu, exec::GpuCuda>
+        {
+            consteval uint32_t operator()(api::Cuda const, deviceKind::NvidiaGpu const, exec::GpuCuda const) const
+            {
+                return 1024u;
+            }
+        };
     } // namespace onHost::trait
 
     namespace unifiedCudaHip::trait

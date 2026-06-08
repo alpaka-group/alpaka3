@@ -119,6 +119,27 @@ namespace alpaka::onHost
         struct HasUserDefinedDynSharedMemBytes<T_ThreadSpec, T_KernelBundle> : std::false_type
         {
         };
+
+        // required to return a compile time constant
+        struct GetMaxThreadsPerBlock
+        {
+            template<
+                alpaka::concepts::Api T_Api,
+                alpaka::concepts::DeviceKind T_DeviceKind,
+                alpaka::concepts::Executor T_Exec>
+            struct Op
+            {
+                consteval uint32_t operator()(T_Api const, T_DeviceKind const, T_Exec const) const
+                {
+                    static_assert(
+                        sizeof(T_Api) && false,
+                        "Missing definition of GetMaxThreadsPerBlock for this combination of API, device kind, "
+                        "and executor.");
+                    return 1u;
+                }
+            };
+        };
+
     } // namespace trait
 
     consteval bool isPlatformAvaiable(alpaka::concepts::Api auto api)
@@ -171,6 +192,24 @@ namespace alpaka::onHost
     {
         alpaka::unused(spec, kernelBundle);
         return trait::HasUserDefinedDynSharedMemBytes<T_ThreadSpec, T_KernelBundle>::value;
+    }
+
+    /** A safe(ish) compile time lower bound on max threads per block for a given combination of API, device kind and
+     * executor.
+     *
+     * Returns the minimum number of threads-per-block guaranteed to be supported across
+     * all devices of the executor's backend family. The actual device may support more;
+     * this is a conservative bound for compile-time clamping of block sizes.
+     *
+     * @attention Due to lmem, shared memory or register usage the actual limit could be lower. In this case
+     * the kernel launched using this compile time max will fail at runtime with invalid kernel configuration. We can
+     * not avoid this at compile time.
+     *
+     */
+    template<alpaka::concepts::Api T_Api, alpaka::concepts::DeviceKind T_DeviceKind, alpaka::concepts::Executor T_Exec>
+    consteval uint32_t getMaxThreadsPerBlock(T_Api api, T_DeviceKind deviceKind, T_Exec exec)
+    {
+        return trait::GetMaxThreadsPerBlock::Op<T_Api, T_DeviceKind, T_Exec>{}(api, deviceKind, exec);
     }
 
 } // namespace alpaka::onHost

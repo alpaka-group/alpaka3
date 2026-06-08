@@ -310,14 +310,12 @@ namespace alpaka::onHost
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::device);
                 auto numThreads = frameSpec.getFrameExtents();
 
-                /** This limit is not exact but for typical GPUs, Intel, NVIDIA and AMD we can at least use 1024
-                 * threads per block.
-                 *  @todo Check if this produces issues on FPGAs, in this case the deviceKind should be used and the
-                 * limit should be different for each deviceKind.
-                 */
-                constexpr typename ALPAKA_TYPEOF(numThreads)::type hardwareLimitThreadsPerBlock = 1024u;
-
-                constexpr auto result = api::util::adjustToLimit<hardwareLimitThreadsPerBlock, 0u, 1u>(numThreads);
+                using ApiType = ALPAKA_TYPEOF(getApi(device));
+                using DeviceKindType = ALPAKA_TYPEOF(getDeviceKind(device));
+                constexpr auto result = api::util::adjustToLimit<
+                    alpaka::onHost::getMaxThreadsPerBlock(ApiType{}, DeviceKindType{}, T_Executor{}),
+                    0u,
+                    1u>(numThreads);
                 return ThreadSpec{frameSpec.getNumFrames(), result};
             }
 
