@@ -12,6 +12,7 @@
 #include "alpaka/onAcc/scope.hpp"
 #include "alpaka/operation.hpp"
 
+#include <bit>
 #include <limits>
 #include <type_traits>
 
@@ -23,27 +24,23 @@ namespace alpaka::onAcc::internalCompute
     {
         struct EmulationBase
         {
-            //! reinterprets an address as an 32bit value for atomicCas emulation usage
-            template<typename TAddressType>
-            static __device__ auto reinterpretAddress(TAddressType* address)
-                -> std::enable_if_t<sizeof(TAddressType) == 4u, unsigned int*>
-            {
-                return reinterpret_cast<unsigned int*>(address);
-            }
+            template<typename T_Type>
+            using AtomicCasType = std::conditional_t<
+                sizeof(T_Type) == 4u,
+                unsigned int,
+                std::conditional_t<sizeof(T_Type) == 8u, unsigned long long int, void>>;
 
-            //! reinterprets a address as an 64bit value for atomicCas emulation usage
-            template<typename TAddressType>
-            static __device__ auto reinterpretAddress(TAddressType* address)
-                -> std::enable_if_t<sizeof(TAddressType) == 8u, unsigned long long int*>
-            {
-                return reinterpret_cast<unsigned long long int*>(address);
-            }
+            template<typename T_Type>
+            static __device__ auto reinterpretAddress(T_Type* address)
+                -> AtomicCasType<T_Type>* requires(sizeof(T_Type) == 4u || sizeof(T_Type) == 8u) {
+                    return reinterpret_cast<AtomicCasType<T_Type>*>(address);
+                }
 
-            //! reinterprets a value to be usable for the atomicCAS emulation
             template<typename T_Type>
             static __device__ auto reinterpretValue(T_Type value)
+                -> AtomicCasType<T_Type> requires(sizeof(T_Type) == 4u || sizeof(T_Type) == 8u)
             {
-                return *reinterpretAddress(&value);
+                return std::bit_cast<AtomicCasType<T_Type>>(value);
             }
         };
 
@@ -80,13 +77,13 @@ namespace alpaka::onAcc::internalCompute
                 do
                 {
                     assumed = old;
-                    T v = *(reinterpret_cast<T*>(&assumed));
+                    T v = std::bit_cast<T>(assumed);
                     TOp{}(&v, value);
                     using Cas = Atomic::Op<alpaka::operation::Cas, internal::CudaHipAtomic, EmulatedType, T_Scope>;
                     old = Cas::atomicOp(ctx, addressAsIntegralType, assumed, reinterpretValue(v));
                     // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
                 } while(assumed != old);
-                return *(reinterpret_cast<T*>(&old));
+                return std::bit_cast<T>(old);
             }
         };
 
@@ -112,7 +109,7 @@ namespace alpaka::onAcc::internalCompute
                         reinterpretedCompare,
                         reinterpretedValue);
 
-                return *(reinterpret_cast<T*>(&old));
+                return std::bit_cast<T>(old);
             }
         };
 

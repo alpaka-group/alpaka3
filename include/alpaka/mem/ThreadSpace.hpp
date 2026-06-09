@@ -105,7 +105,7 @@ namespace alpaka
         template<typename T_To, typename T_ThreadIdx, typename T_ThreadCount>
         struct PCast::Op<T_To, ThreadSpace<T_ThreadIdx, T_ThreadCount>>
         {
-            constexpr decltype(auto) operator()(auto&& input) const
+            constexpr auto operator()(auto&& input) const
                 requires std::convertible_to<typename T_ThreadIdx::type, T_To>
                          && (!std::same_as<T_To, typename T_ThreadIdx::type>)
             {
@@ -115,7 +115,7 @@ namespace alpaka
             constexpr decltype(auto) operator()(auto&& input) const
                 requires std::same_as<T_To, typename T_ThreadIdx::type>
             {
-                return input;
+                return std::forward<decltype(input)>(input);
             }
         };
     } // namespace internal

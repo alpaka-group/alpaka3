@@ -507,7 +507,7 @@ namespace alpaka
         template<typename T_To, typename T_Type, uint32_t T_width, typename T_Storage>
         struct PCast::Op<T_To, alpaka::SimdMask<T_Type, T_width, T_Storage>>
         {
-            constexpr decltype(auto) operator()(auto&& input) const
+            constexpr auto operator()(auto&& input) const
                 requires std::convertible_to<T_Type, T_To> && (!std::same_as<T_To, T_Type>)
             {
                 return typename alpaka::SimdMask<T_To, T_width, T_Storage>::UniSimdMask(
@@ -516,7 +516,7 @@ namespace alpaka
 
             constexpr decltype(auto) operator()(auto&& input) const requires std::same_as<T_To, T_Type>
             {
-                return input;
+                return std::forward<decltype(input)>(input);
             }
         };
     } // namespace internal

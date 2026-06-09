@@ -173,7 +173,7 @@ namespace alpaka
             alpaka::concepts::Vector T_Stride>
         struct PCast::Op<T_To, IdxRange<T_End, T_Begin, T_Stride>>
         {
-            constexpr decltype(auto) operator()(auto&& input) const
+            constexpr auto operator()(auto&& input) const
                 requires std::convertible_to<typename T_End::type, T_To> && (!std::same_as<T_To, typename T_End::type>)
             {
                 return IdxRange{pCast<T_To>(input.m_begin), pCast<T_To>(input.m_end), pCast<T_To>(input.m_stride)};
@@ -181,7 +181,7 @@ namespace alpaka
 
             constexpr decltype(auto) operator()(auto&& input) const requires std::same_as<T_To, typename T_End::type>
             {
-                return input;
+                return std::forward<decltype(input)>(input);
             }
         };
 
