@@ -307,7 +307,12 @@ struct CrossStencil
         using VecIdxType = typename SimdPtrType::IdxType;
 
         // Load the value the simd pointer is pointing to.
-        auto result = in.load();
+        concepts::Simd auto result = in.load();
+
+        // Arbitrary constant added to the result.
+        using SimdType = ALPAKA_TYPEOF(result);
+        concepts::Simd auto const value = SimdType::fill(42);
+        result += value;
 
         for(uint32_t d = 0u; d < VecIdxType::dim(); ++d)
         {
@@ -391,7 +396,7 @@ void testStencilTransform(auto cfg, concepts::Vector auto extentMd)
         {
             concepts::Vector auto const inIdx = outIdx + halo;
 
-            DataType expected = hostIn[inIdx];
+            DataType expected = hostIn[inIdx] + 42;
 
             for(uint32_t d = 0u; d < extentMd.dim(); ++d)
             {
