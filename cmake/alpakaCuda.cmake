@@ -26,6 +26,7 @@ check_language(CUDA)
 
 if(CMAKE_CUDA_COMPILER)
     enable_language(CUDA)
+    message(STATUS "CUDA language is available")
     checkcompilercxxsupport(CUDA ${alpaka_CXX_STANDARD})
 
     if(NOT TARGET alpaka::cuda)
@@ -135,5 +136,27 @@ if(CMAKE_CUDA_COMPILER)
     ## GCC compiler flag to show a longer stack for concept diagnostics
     if(${_alpaka_CUDA_HOST_COMPILER} STREQUAL "GNU")
         alpaka_set_compiler_options(HOST target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-fconcepts-diagnostics-depth=${alpaka_GCC_CONCEPT_DEPTH}>")
+    endif()
+else()
+    find_package(CUDAToolkit)
+    if(NOT CUDAToolkit_FOUND)
+        message(
+            WARNING
+            "CUDA support was requested, but no Cuda Compiler/Toolchain has been found. "
+            "CUDA backends will be disabled. "
+        )
+    else()
+        if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.26)
+            set(_alpaka_CMAKE_CONFIGURE_LOG "${CMAKE_BINARY_DIR}/CMakeFiles/CMakeConfigureLog.yaml")
+        else()
+            set(_alpaka_CMAKE_CONFIGURE_LOG "${CMAKE_BINARY_DIR}/CMakeFiles/CMakeError.log")
+        endif()
+        message(
+            FATAL_ERROR
+            "CUDA support was requested, but CMake did not accept "
+            "CUDA as a language. This usually means that there is a compatibility problem, "
+            "for example an unsupported host compiler. Check "
+            "'${_alpaka_CMAKE_CONFIGURE_LOG}' for further information."
+        )
     endif()
 endif()
