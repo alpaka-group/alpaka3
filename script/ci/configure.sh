@@ -13,7 +13,7 @@ script_msg "Run CMake configure (configure.sh)"
 parse_compiler_version "$APCI_DEVICE_COMPILER"
 
 # TODO: remove me, if all install scripts are ported
-if [[ "$compiler_name" == "gcc" ]]; then
+if [[ "$compiler_name" == "gcc" || ("$compiler_name" == "clang" && "$APCI_HIP" == 0) ]]; then
     load_variable_if_not_exist APCI_CC_COMPILER
     load_variable_if_not_exist APCI_CXX_COMPILER
 

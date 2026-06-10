@@ -19,3 +19,5 @@ script_msg "Install software dependencies (install_dependencies.sh)"
 
 # shellcheck source=script/ci/install/gcc.sh
 source "${APCI_ALPAKA_ROOT}/script/ci/install/gcc.sh"
+# shellcheck source=script/ci/install/clang.sh
+source "${APCI_ALPAKA_ROOT}/script/ci/install/clang.sh"

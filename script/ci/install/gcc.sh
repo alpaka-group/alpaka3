@@ -73,5 +73,5 @@ if [[ "$compiler_name" == "gcc" ]]; then
 
     unset gcc_base_path
 else
-    echo_green "Skipped install GCC because it is not required for the job"
+    echo_green "Skipped install GCC because it is not required for the job."
 fi

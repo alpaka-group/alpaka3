@@ -13,6 +13,13 @@ if [[ -n ${GITHUB_ACTIONS+x} ]]; then
     export _APCI_FORCE_COLOR_OUTPUT=1
 
     export APCI_OS_NAME="$RUNNER_OS"
+
+    # The Github Actions are handwritten, therefore set some undefined variables to default
+    # variables. GitLab CI will not do it, because all jobs are generated and default
+    # values for undefined variables are an error source.
+    if [[ -z ${APCI_HIP+x} ]]; then
+        export APCI_HIP=0
+    fi
 fi
 
 if [[ -n ${GITLAB_CI+x} ]]; then
