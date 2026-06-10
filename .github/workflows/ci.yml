@@ -43,7 +43,7 @@ jobs:
           - { compiler: gcc, version: "14", cuda: "no", hip: "no", container: "ubuntu:24.04",
               env : {APCI_DEVICE_COMPILER: gcc@14, APCI_CMAKE : 3.28.3} }
           - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0",
-              env : {APCI_DEVICE_COMPILER: gcc@15} }
+              env : {APCI_DEVICE_COMPILER: gcc@15, APCI_CMAKE : 3.28.3} }
           - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0" , simd: "EMULATION", hwloc: "no",
               env : {APCI_DEVICE_COMPILER: gcc@15, APCI_CMAKE : 3.25.1} }
           # clang host compiler
@@ -293,11 +293,11 @@ jobs:
         run: |
           cd build
           pwd
-          ninja
+          /opt/cmake/${APCI_CMAKE}/bin/cmake --build . -j
 
       # Run tests (assuming your project has tests)
       - name: Run Tests
         if: matrix.config.cuda == 'no' && matrix.config.hip == 'no'
         run: |
           cd build
-          ctest --output-on-failure
+          /opt/cmake/${APCI_CMAKE}/bin/ctest --output-on-failure

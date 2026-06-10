@@ -8,5 +8,5 @@
 choco uninstall cmake.install
 choco install cmake.install --no-progress --version "${APCI_CMAKE}"
 
-APCI_CMAKE_BIN=$(which cmake)
-export APCI_CMAKE_BIN
+APCI_CMAKE_BIN_PATH=$(dirname "$(which cmake)")
+export APCI_CMAKE_BIN_PATH

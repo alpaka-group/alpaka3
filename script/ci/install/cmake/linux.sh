@@ -8,8 +8,8 @@
 if agc-manager -e "cmake@${APCI_CMAKE}"; then
     echo_green "use preinstalled cmake@${APCI_CMAKE}"
 
-    APCI_CMAKE_BIN=$(agc-manager -b "cmake@${APCI_CMAKE}")/bin/cmake
-    export APCI_CMAKE_BIN
+    APCI_CMAKE_BIN_PATH=$(agc-manager -b "cmake@${APCI_CMAKE}")/bin
+    export APCI_CMAKE_BIN_PATH
 else
     install_msg "cmake@${APCI_CMAKE}"
 
@@ -33,8 +33,8 @@ else
     sudo mv "/tmp/${_cmake_pkg_file_name_base}"/* "${_cmake_install_path}"
     sudo rm -rf "/tmp/${_cmake_pkg_file_name_base}" "/tmp/${_cmake_pkg_file_name}"
 
-    APCI_CMAKE_BIN="${_cmake_install_path}/bin/cmake"
-    export APCI_CMAKE_BIN
+    APCI_CMAKE_BIN_PATH="${_cmake_install_path}/bin"
+    export APCI_CMAKE_BIN_PATH
 
     unset _cmake_install_path \
         _cmake_ver_semantic \

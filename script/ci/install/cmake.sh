@@ -27,5 +27,5 @@ if [[ "$APCI_OS_NAME" == "macOS" ]]; then
     exit_error "Install CMake script does not support MacOS"
 fi
 
-${APCI_CMAKE_BIN} --version
-store_variable APCI_CMAKE_BIN
+"${APCI_CMAKE_BIN_PATH}/cmake" --version
+store_variable APCI_CMAKE_BIN_PATH
