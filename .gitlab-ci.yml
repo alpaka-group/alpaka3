@@ -15,33 +15,39 @@ gcc-13:
   extends: .base
   variables:
     APCI_DEVICE_COMPILER : gcc@13
+    APCI_CMAKE: 3.28.3
 
 gcc-15:
   image: docker.io/ubuntu:24.04
   extends: .base
   variables:
     APCI_DEVICE_COMPILER : gcc@15
+    APCI_CMAKE: 3.28.3
 
 gcc-12-agc:
   image: registry.hzdr.de/crp/alpaka-group-container/alpaka-ci-ubuntu24.04-gcc:4.0
   extends: .base
   variables:
     APCI_DEVICE_COMPILER : gcc@12
+    APCI_CMAKE: 3.31.4
 
 clang-19:
   image: docker.io/ubuntu:24.04
   extends: .base
   variables:
     APCI_DEVICE_COMPILER : clang@19
+    APCI_CMAKE: 3.28.3
 
 clang-21:
   image: docker.io/ubuntu:24.04
   extends: .base
   variables:
     APCI_DEVICE_COMPILER : clang@21
+    APCI_CMAKE: 3.28.3
 
 clang-20-agc:
   image: registry.hzdr.de/crp/alpaka-group-container/alpaka-ci-ubuntu24.04-gcc:4.0
   extends: .base
   variables:
     APCI_DEVICE_COMPILER : clang@20
+    APCI_CMAKE: 3.31.4

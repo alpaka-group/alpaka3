@@ -29,7 +29,7 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/docs/snippets/fetchContent/)
 # We need to pass through the C++ compiler since the environment isnt shared with the process
 execute_process(
     COMMAND
-        cmake -S ${CMAKE_CURRENT_SOURCE_DIR}/fetchContent -DCMAKE_BUILD_TYPE=Release
+        ${CMAKE_COMMAND} -S ${CMAKE_CURRENT_SOURCE_DIR}/fetchContent -DCMAKE_BUILD_TYPE=Release
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/docs/snippets/fetchContent
     RESULT_VARIABLE SUBPROJECT_CONFIGURE_RESULT
@@ -48,7 +48,7 @@ endif()
 add_custom_target(
     fetchContent_build
     ALL
-    COMMAND cmake --build .
+    COMMAND ${CMAKE_COMMAND} --build .
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/docs/snippets/fetchContent
     COMMENT "Building fetchContent snippet..."
     VERBATIM
