@@ -14,6 +14,7 @@ parse_compiler_version "$APCI_DEVICE_COMPILER"
 
 # TODO: remove me, if all install scripts are ported
 if [[ "$compiler_name" == "gcc" || ("$compiler_name" == "clang" && "$APCI_HIP" == 0) ]]; then
+    load_variable_if_not_exist APCI_CMAKE_BIN
     load_variable_if_not_exist APCI_CC_COMPILER
     load_variable_if_not_exist APCI_CXX_COMPILER
 
@@ -22,5 +23,5 @@ if [[ "$compiler_name" == "gcc" || ("$compiler_name" == "clang" && "$APCI_HIP" =
         "-DCMAKE_CXX_COMPILER=$APCI_CXX_COMPILER"
     )
 
-    echo_green "cmake ${CMAKE_ARGS[*]}"
+    echo_green "${APCI_CMAKE_BIN} ${CMAKE_ARGS[*]}"
 fi

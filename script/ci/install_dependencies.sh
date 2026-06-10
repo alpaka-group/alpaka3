@@ -17,6 +17,8 @@ source "${APCI_ALPAKA_ROOT}/script/ci/utils/install_helper_apps.sh"
 # SC2218: This function is only defined later. Move the definition up.
 script_msg "Install software dependencies (install_dependencies.sh)"
 
+# shellcheck source=script/ci/install/cmake.sh
+source "${APCI_ALPAKA_ROOT}/script/ci/install/cmake.sh"
 # shellcheck source=script/ci/install/gcc.sh
 source "${APCI_ALPAKA_ROOT}/script/ci/install/gcc.sh"
 # shellcheck source=script/ci/install/clang.sh
