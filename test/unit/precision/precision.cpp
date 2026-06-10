@@ -67,7 +67,13 @@ enum Sign : bool
 template<Sign T_signedMemIdx, Sign T_signedKernelIdx>
 void callTests(auto cfg)
 {
-    auto [device, exec] = test::getDeviceExecutor(cfg);
+    auto optionalDeviceExec = test::getDeviceExecutor(cfg);
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device device = std::get<0>(*optionalDeviceExec);
+    alpaka::concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
     Queue queue = device.makeQueue();
 
     IotaKernelND iotaKernelND;
@@ -210,7 +216,13 @@ struct IotaKernelNDForceCast
 template<typename T_MemIdx, typename T_LoopIdx>
 void callForceCastTests(auto cfg)
 {
-    auto [device, exec] = test::getDeviceExecutor(cfg);
+    auto optionalDeviceExec = test::getDeviceExecutor(cfg);
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device device = std::get<0>(*optionalDeviceExec);
+    alpaka::concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
     Queue queue = device.makeQueue();
 
     IotaKernelNDForceCast<T_LoopIdx> iotaKernelNDForceCast;

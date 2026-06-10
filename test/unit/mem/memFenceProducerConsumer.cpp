@@ -91,7 +91,13 @@ struct ProducerConsumerKernel
 
 TEMPLATE_LIST_TEST_CASE("memFence producer-consumer publication", "[memFence][producer-consumer]", TestApis)
 {
-    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device device = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
     auto queue = device.makeQueue();
 
     // modest to keep test fast.
@@ -261,7 +267,13 @@ struct BlockSharedMemOrderKernel
 
 TEMPLATE_LIST_TEST_CASE("memFence block shared-memory ordering", "[memFence][block-shared]", TestApis)
 {
-    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device device = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
     auto queue = device.makeQueue();
 
     // success flag: 1 = pass, 0 = failure detected

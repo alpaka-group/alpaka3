@@ -131,7 +131,13 @@ void testCase(HelperPack<T_Engine, T_FP, T_Interval>, uint64_t seed, T_FP minF, 
     using namespace alpaka;
 
     // ---- device selection ---------------------------------------------------
-    auto [device, exec] = test::getDeviceExecutor(T_TestType::makeDict());
+    auto optionalDeviceExec = test::getDeviceExecutor(T_TestType::makeDict());
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device device = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
     auto queue = device.makeQueue(queueKind::blocking);
 
     // ---- allocate output buffer (1D of N values) ----------------------------

@@ -93,7 +93,13 @@ template<typename T_DataType>
 void prepareTest(auto cfg, concepts::Vector auto extentMd)
 {
     using DataType = T_DataType;
-    auto [computeDev, exec] = test::getDeviceExecutor(cfg);
+    auto optionalDeviceExec = test::getDeviceExecutor(cfg);
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device computeDev = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
 
     onHost::Queue computeQueue = computeDev.makeQueue();
     executeTest<DataType>(exec, computeQueue, extentMd);

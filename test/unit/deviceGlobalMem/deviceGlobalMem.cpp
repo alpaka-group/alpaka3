@@ -74,7 +74,13 @@ struct DeviceGlobalMemKernelCArray2D
 
 TEMPLATE_LIST_TEST_CASE("device global mem", "", TestApis)
 {
-    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device device = std::get<0>(*optionalDeviceExec);
+    alpaka::concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
 
     Queue queue = device.makeQueue();
     constexpr Vec numBlocks = Vec{1u};
@@ -175,8 +181,14 @@ struct DeviceGlobalMemCpyCArray2DKernel
 
 TEMPLATE_LIST_TEST_CASE("device global mem copy", "", TestApis)
 {
-    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
-    
+    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device device = std::get<0>(*optionalDeviceExec);
+    alpaka::concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
+
     Queue queue = device.makeQueue();
     constexpr Vec numBlocks = Vec{1u};
     constexpr Vec blockExtent = Vec{4u};

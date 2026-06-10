@@ -157,7 +157,13 @@ template<typename T_DataType>
 void prepareTest(auto cfg, concepts::Vector auto extentMd, auto const& setupTuple)
 {
     using DataType = T_DataType;
-    auto [computeDev, exec] = test::getDeviceExecutor(cfg);
+    auto optionalDeviceExec = test::getDeviceExecutor(cfg);
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device computeDev = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
 
     onHost::Queue computeQueue = computeDev.makeQueue();
 
@@ -447,21 +453,13 @@ void prepareOnAccTest(auto cfg, concepts::Vector auto extentMd, auto const& setu
 {
     using DataType = T_DataType;
 
-    auto deviceSpec = cfg[object::deviceSpec];
-    alpaka::concepts::Executor auto exec = cfg[object::exec];
-
-    auto computeDevSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!computeDevSelector.isAvailable())
+    auto optionalDeviceExec = test::getDeviceExecutor(cfg);
+    if(!optionalDeviceExec)
     {
-        SUCCEED("No device available for " << deviceSpec.getName());
         return;
     }
-
-    onHost::Device computeDev = computeDevSelector.makeDevice(0);
-
-    INFO("device spec: " << getName(deviceSpec));
-    INFO("device name: " << computeDev.getName());
-    INFO("executor   : " << exec.getName());
+    onHost::Device computeDev = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
 
     onHost::Queue computeQueue = computeDev.makeQueue();
 

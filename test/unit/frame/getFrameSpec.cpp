@@ -5,6 +5,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
@@ -80,24 +81,26 @@ void testVector(auto const& computeDev, alpaka::concepts::Executor auto exec)
 
 TEMPLATE_LIST_TEST_CASE("getFrameSpec scalar", "", TestBackends)
 {
-    auto cfg = TestType::makeDict();
+    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device computeDev = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
 
-    auto deviceSpec = cfg[alpaka::object::deviceSpec];
-    auto exec = cfg[alpaka::object::exec];
-    auto devSelector = alpaka::onHost::makeDeviceSelector(deviceSpec);
-
-    onHost::Device computeDev = devSelector.makeDevice(0);
     std::apply([&]<typename... T>(T...) { (testScalar<T>(computeDev, exec), ...); }, TestBufferElemTypes{});
 }
 
 TEMPLATE_LIST_TEST_CASE("getFrameSpec vector", "", TestBackends)
 {
-    auto cfg = TestType::makeDict();
+    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device computeDev = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
 
-    auto deviceSpec = cfg[alpaka::object::deviceSpec];
-    auto exec = cfg[alpaka::object::exec];
-    auto devSelector = alpaka::onHost::makeDeviceSelector(deviceSpec);
-
-    onHost::Device computeDev = devSelector.makeDevice(0);
     std::apply([&]<typename... T>(T...) { (testVector<T>(computeDev, exec), ...); }, TestBufferElemTypes{});
 }

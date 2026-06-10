@@ -10,18 +10,20 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <optional>
 #include <tuple>
 
 namespace alpaka::test
 {
     /** Takes a test configuration and create the device 0.
      *
-     * If no device is available, skip the test. Prints information about the device Spec, API and device.
+     * Prints information about the device Spec, API and device.
      *
      * @param cfg Test configuration. An entry of the list returned from alpaka::onHost::allBackends().
-     * @return The device 0.
+     * @return The device 0 if available. Otherwise, the std::optional is invalid.
      */
     auto getDevice(auto cfg)
+        -> std::optional<decltype(onHost::makeDeviceSelector(cfg[object::deviceSpec]).makeDevice(0))>
     {
         auto deviceSpec = cfg[object::deviceSpec];
         auto devSelector = onHost::makeDeviceSelector(deviceSpec);
@@ -30,11 +32,8 @@ namespace alpaka::test
 
         if(!devSelector.isAvailable())
         {
-            /* The REQUIRE_FALSE is required because otherwise all test cases in a file can be skipped because of a
-            missing device and now check was performed. In the case the Catch2 will fail because it assumes that at
-            least one check is done in test file. */
-            REQUIRE_FALSE(devSelector.isAvailable());
-            SKIP("No device available for " << deviceSpec.getName());
+            WARN("No device available for " << deviceSpec.getName());
+            return {};
         }
 
         onHost::Device device = devSelector.makeDevice(0);
@@ -42,20 +41,25 @@ namespace alpaka::test
         return device;
     }
 
-    /** Takes a test configuration and create the device 0 and an executor.
+    /** Takes a test configuration and create the device 0 and extract the executor.
      *
-     * If no device is available, skip the test. Prints information about the device Spec, API, device and
-     * executor.
+     * Prints information about the device Spec, API, device and executor.
      *
      * @param cfg Test configuration. An entry of the list returned from alpaka::onHost::allBackends().
-     * @return A std::tuple device and executor. Can be assigned to a structure binding (auto[device, exec]).
+     * @return A std::optional containing a std::tuple with the device 0 and an executor.
      */
-    auto getDeviceExecutor(auto cfg)
+    auto getDeviceExecutor(auto cfg) -> std::optional<std::tuple<
+        decltype(onHost::makeDeviceSelector(cfg[object::deviceSpec]).makeDevice(0)),
+        decltype(cfg[object::exec])>>
     {
-        onHost::Device device = alpaka::test::getDevice(cfg);
+        auto device = alpaka::test::getDevice(cfg);
+        if(!device)
+        {
+            return {};
+        }
         concepts::Executor auto executor = cfg[object::exec];
         UNSCOPED_INFO("Executor: " << executor.getName());
 
-        return std::make_tuple(device, executor);
+        return std::make_tuple(*device, executor);
     }
 } // namespace alpaka::test

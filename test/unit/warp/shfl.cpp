@@ -100,7 +100,13 @@ namespace
 
 TEMPLATE_LIST_TEST_CASE("warp shfl moves values between lanes", "[warp][shfl]", WarpTestBackends)
 {
-    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device device = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
 
     auto deviceProperties = device.getDeviceProperties();
     auto const warpExtent = deviceProperties.warpSize;

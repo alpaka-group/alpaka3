@@ -102,7 +102,13 @@ void allocDeferredImplicitWait(auto device, alpaka::concepts::Executor auto exec
 
 TEMPLATE_LIST_TEST_CASE("alloc", "", TestBackends)
 {
-    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device device = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
 
     allocDeferredImplicitWait(device, exec);
 }

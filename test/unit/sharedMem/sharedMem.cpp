@@ -43,7 +43,13 @@ struct SharedBlockIotaKernel
 
 TEMPLATE_LIST_TEST_CASE("block shared iota", "[sharedMem]", TestApis)
 {
-    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device device = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
     onHost::Queue queue = device.makeQueue();
 
     constexpr Vec numBlocks = Vec{2u};
@@ -166,7 +172,13 @@ namespace alpaka::onHost::trait
 
 TEMPLATE_LIST_TEST_CASE("block shared alias", "[SharedMem]", TestApis)
 {
-    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device device = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
 
     onHost::Queue queue = device.makeQueue();
     constexpr Vec numBlocks = Vec{1u};
@@ -228,7 +240,13 @@ void test_index_type(auto& queue, auto const& exec, auto name)
 
 TEMPLATE_LIST_TEST_CASE("test shared memory index type", "[sharedMem]", TestApis)
 {
-    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device device = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
     alpaka::onHost::Queue queue = device.makeQueue();
 
     test_index_type<uint32_t>(queue, exec, "uint32_t");

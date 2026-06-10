@@ -6,6 +6,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -22,20 +23,13 @@ TEMPLATE_LIST_TEST_CASE("queue isEmpty", "[queue][isEmpty]", TestSetup)
 {
     using Backend = std::tuple_element_t<0u, TestType>;
     using QueueKind = std::tuple_element_t<1u, TestType>;
-    auto cfg = Backend::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto sel = onHost::makeDeviceSelector(deviceSpec);
-    if(!sel.isAvailable())
+    auto optionalDevice = test::getDevice(Backend::makeDict());
+    if(!optionalDevice)
     {
-        // backend not available
         return;
     }
-    onHost::Device device = sel.makeDevice(0);
-    INFO("device spec: " << getName(deviceSpec));
-    INFO("device name: " << device.getName());
-    INFO("executor   : " << exec.getName());
+    onHost::Device device = *optionalDevice;
+
     INFO("queue kind : " << QueueKind::getName());
 
     auto queue = device.makeQueue(QueueKind{});

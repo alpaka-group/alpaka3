@@ -11,7 +11,7 @@
 #include "alpaka/onHost/demangledName.hpp"
 #include "alpakaTest/mathHelper.hpp"
 
-#include <catch2/catch_approx.hpp>
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <cmath>
@@ -115,23 +115,19 @@ namespace mathtest
             std::random_device rd{};
             auto const seed = rd();
 
-            auto deviceSpec = cfg[object::deviceSpec];
-            auto exec = cfg[object::exec];
-
-            auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-            if(!devSelector.isAvailable())
+            auto optionalDeviceExec = test::getDeviceExecutor(cfg);
+            if(!optionalDeviceExec)
             {
-                SUCCEED("No device available for " << deviceSpec.getName());
                 return;
             }
-
-            onHost::Device device = devSelector.makeDevice(0);
+            onHost::Device device = std::get<0>(*optionalDeviceExec);
+            concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
 
 #if ALPAKA_LANG_ONEAPI
             // support for double precision is not guaranteed for sycl devices such as Intel GPUs
             if constexpr(
                 std::is_same_v<trait::GetValueType_t<TData>, double>
-                && ALPAKA_TYPEOF(deviceSpec.getApi()){} == api::oneApi)
+                && ALPAKA_TYPEOF(device.getApi()){} == api::oneApi)
             {
                 if(device.getNativeHandle().first.template get_info<sycl::info::device::double_fp_config>().size()
                    == 0)
@@ -148,9 +144,6 @@ namespace mathtest
             INFO(
                 "testing" << " data type:" << alpaka::onHost::demangledName<TData>()
                           << " functor:" << alpaka::onHost::demangledName<TWrappedFunctor>() << " seed:" << seed);
-            INFO(deviceSpec.getApi().getName());
-            INFO("exec:" << onHost::demangledName(exec));
-            INFO("device:" << device.getName());
             onHost::Queue queue = device.makeQueue();
 
 

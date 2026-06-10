@@ -4,6 +4,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 
 #include <vector>
@@ -27,18 +28,13 @@ struct PopcountKernel
 
 TEMPLATE_LIST_TEST_CASE("clz", "[intrinsic][clz]", TestBackends)
 {
-    using Backend = TestType;
-    auto cfg = Backend::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto computeExec = cfg[object::exec];
-
-    // Select a device
-    auto devSelector = alpaka::onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
+    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
     {
         return;
     }
-    alpaka::onHost::Device devAcc = devSelector.makeDevice(0);
+    onHost::Device devAcc = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto computeExec = std::get<1>(*optionalDeviceExec);
 
     // Create a queue on the device
     alpaka::onHost::Queue queue = devAcc.makeQueue();

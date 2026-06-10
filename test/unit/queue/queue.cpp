@@ -25,7 +25,13 @@ struct NoArgumentsKernel
  */
 TEMPLATE_LIST_TEST_CASE("kernel no arguments", "", TestApis)
 {
-    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device device = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
 
     INFO("mem=" << device.getDeviceProperties().globalMemCapacityBytes);
     INFO("free mem=" << device.getFreeGlobalMemBytes());
@@ -50,7 +56,14 @@ struct IotaKernel
 
 TEMPLATE_LIST_TEST_CASE("iota", "", TestApis)
 {
-    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device device = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
+
     onHost::Queue queue = device.makeQueue();
     constexpr Vec extent = Vec{12u};
     auto dBuff = onHost::alloc<uint32_t>(device, extent);
@@ -77,7 +90,13 @@ struct IotaKernelND
 
 TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
 {
-    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device device = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
     onHost::Queue queue = device.makeQueue();
 
     constexpr Vec extent = Vec{8u, 16u};
@@ -95,7 +114,13 @@ TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
 {
-    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device device = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
     onHost::Queue queue = device.makeQueue();
 
     constexpr Vec extent = Vec{4u, 8u, 16u};
@@ -113,7 +138,13 @@ TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("iota4D", "", TestApis)
 {
-    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device device = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
     onHost::Queue queue = device.makeQueue();
 
     constexpr Vec extent = Vec{4u, 8u, 16, 32};
@@ -165,7 +196,13 @@ struct IotaKernelNDSelection
 
 TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
 {
-    auto [device, exec] = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
+    {
+        return;
+    }
+    onHost::Device device = std::get<0>(*optionalDeviceExec);
+    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
     onHost::Queue queue = device.makeQueue();
 
     constexpr Vec numBlocks = Vec{4u, 8u, 16u};
@@ -247,7 +284,12 @@ private:
 /** Test that memcpy and memset can be called with non copy-able and move-able data as lvalue and rvalue. */
 TEMPLATE_LIST_TEST_CASE("memcpy", "", TestApis)
 {
-    onHost::Device device = test::getDevice(TestType::makeDict());
+    auto optionalDevice = test::getDevice(TestType::makeDict());
+    if(!optionalDevice)
+    {
+        return;
+    }
+    onHost::Device device = *optionalDevice;
     onHost::Queue queue = device.makeQueue();
     constexpr Vec problemSize = Vec{16u};
 
@@ -304,7 +346,12 @@ TEMPLATE_LIST_TEST_CASE("memcpy", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("host task callback", "", TestApis)
 {
-    onHost::Device device = test::getDevice(TestType::makeDict());
+    auto optionalDevice = test::getDevice(TestType::makeDict());
+    if(!optionalDevice)
+    {
+        return;
+    }
+    onHost::Device device = *optionalDevice;
     onHost::Queue queue = device.makeQueue();
 
     std::promise<bool> promise;
@@ -317,7 +364,12 @@ TEMPLATE_LIST_TEST_CASE("host task callback", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("host task", "", TestApis)
 {
-    onHost::Device device = test::getDevice(TestType::makeDict());
+    auto optionalDevice = test::getDevice(TestType::makeDict());
+    if(!optionalDevice)
+    {
+        return;
+    }
+    onHost::Device device = *optionalDevice;
     onHost::Queue queue = device.makeQueue();
 
     bool flag = false;
@@ -339,7 +391,12 @@ TEMPLATE_LIST_TEST_CASE("host task", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("queue wait should work", "", TestApis)
 {
-    onHost::Device device = test::getDevice(TestType::makeDict());
+    auto optionalDevice = test::getDevice(TestType::makeDict());
+    if(!optionalDevice)
+    {
+        return;
+    }
+    onHost::Device device = *optionalDevice;
     onHost::Queue queue = device.makeQueue();
 
     std::atomic<bool> callbackFinished{false};
@@ -356,7 +413,12 @@ TEMPLATE_LIST_TEST_CASE("queue wait should work", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("task is destroyed after execution", "", TestApis)
 {
-    onHost::Device device = test::getDevice(TestType::makeDict());
+    auto optionalDevice = test::getDevice(TestType::makeDict());
+    if(!optionalDevice)
+    {
+        return;
+    }
+    onHost::Device device = *optionalDevice;
     onHost::Queue queue = device.makeQueue();
 
     struct Task
