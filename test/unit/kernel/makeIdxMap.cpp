@@ -4,6 +4,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
@@ -83,20 +84,11 @@ void runTest(Queue& queue, Exec exec, Extent const& extentsAndFrameSize, Policy 
  */
 TEMPLATE_LIST_TEST_CASE("makeIdxMap", "[kernel][makeIdxMap]", TestBackends)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
         return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("api=" << deviceSpec.getApi().getName());
-    INFO("device=" << device.getName());
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
 
     onHost::Queue queue = device.makeQueue();
 

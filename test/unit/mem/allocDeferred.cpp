@@ -4,6 +4,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -92,19 +93,11 @@ void allocDeferredExplicitWait(auto device, auto exec)
 
 TEMPLATE_LIST_TEST_CASE("allocDeferred", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
         return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
 
     // repeat the test multiple times to increase the change to trigger data races
     constexpr int testRounds = 10;

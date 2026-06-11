@@ -8,6 +8,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <utility>
@@ -27,23 +28,17 @@ namespace alpaka::test
     template<typename T_DataType = alpaka::NotRequired>
     bool executeOnComputeDevice(auto cfg, auto kernelFnObj, auto&&... args)
     {
-        auto deviceSpec = cfg[object::deviceSpec];
-        auto exec = cfg[object::exec];
-
-        auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-        if(!devSelector.isAvailable())
+        auto optionalDeviceExec = test::getAvailableDeviceExecutor(cfg);
+        if(!optionalDeviceExec)
         {
-            SUCCEED("No device available for " << deviceSpec.getName());
             return false;
         }
-
-        INFO("testing" << " functor:" << alpaka::onHost::demangledName(kernelFnObj));
-        INFO("api:" << deviceSpec.getApi().getName());
-        onHost::Device device = devSelector.makeDevice(0);
+        onHost::Device device = test::getDevice(optionalDeviceExec);
+        concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
 
 #if ALPAKA_LANG_ONEAPI
         // support for double precision is not guaranteed for sycl devices such as Intel GPUs
-        if constexpr(std::is_same_v<T_DataType, double> && std::is_same_v<decltype(deviceSpec.getApi()), api::OneApi>)
+        if constexpr(std::is_same_v<T_DataType, double> && std::is_same_v<decltype(device.getApi()), api::OneApi>)
         {
             if(device.getNativeHandle().first.template get_info<sycl::info::device::double_fp_config>().size() == 0)
             {

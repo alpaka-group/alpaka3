@@ -6,6 +6,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -39,18 +40,10 @@ using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledDevice
  */
 TEMPLATE_LIST_TEST_CASE("device analysis", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
+    auto optionalDevice = test::getAvailableDevice(TestType::makeDict());
+    if(!optionalDevice)
         return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
+    onHost::Device device = test::getDevice(optionalDevice);
 
     bool hasCQueue = detectConcurrentQueue(device);
     INFO("Concurrent kernel queue detected: " << (hasCQueue ? "yes" : "no"));
@@ -61,18 +54,10 @@ TEMPLATE_LIST_TEST_CASE("device analysis", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("event creation and enqueue", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
+    auto optionalDevice = test::getAvailableDevice(TestType::makeDict());
+    if(!optionalDevice)
         return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
+    onHost::Device device = test::getDevice(optionalDevice);
 
     onHost::Queue queue = device.makeQueue();
     onHost::Event ev = device.makeEvent();
@@ -83,18 +68,10 @@ TEMPLATE_LIST_TEST_CASE("event creation and enqueue", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("basic queue wait for event", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
+    auto optionalDevice = test::getAvailableDevice(TestType::makeDict());
+    if(!optionalDevice)
         return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
+    onHost::Device device = test::getDevice(optionalDevice);
 
     onHost::Queue queue0 = device.makeQueue();
     onHost::Queue queue1 = device.makeQueue();

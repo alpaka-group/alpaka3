@@ -4,6 +4,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -38,18 +39,11 @@ TEMPLATE_LIST_TEST_CASE("cpu atomic add increments", "[executor][atomic]", TestA
      */
     using namespace alpaka;
 
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
         return;
-    }
-
-    auto device = devSelector.makeDevice(0);
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
     auto queue = device.makeQueue(queueKind::blocking);
 
     auto counterDev = onHost::alloc<std::uint32_t>(device, Vec{1u});

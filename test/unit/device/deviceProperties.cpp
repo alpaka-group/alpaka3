@@ -4,6 +4,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -16,17 +17,11 @@ using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledDevice
  */
 TEMPLATE_LIST_TEST_CASE("deviceProperties", "[device][property]", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
+    auto optionalDevice = test::getAvailableDevice(TestType::makeDict());
+    if(!optionalDevice)
         return;
-    }
+    onHost::Device device = test::getDevice(optionalDevice);
 
-    onHost::Device device = devSelector.makeDevice(0);
     onHost::DeviceProperties deviceProperties = device.getDeviceProperties();
     INFO(deviceProperties);
     INFO("dim = 1 threadsPerBlock = " << deviceProperties.getMaxThreadsPerBlock<1>());

@@ -4,6 +4,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <alpakaTest/testMacros.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -42,25 +43,16 @@ struct SharedBlockIotaKernel
 
 TEMPLATE_LIST_TEST_CASE("block shared iota", "[sharedMem]", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
         return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO(deviceSpec.getApi().getName() << " " << device.getName());
-
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
     onHost::Queue queue = device.makeQueue();
+
     constexpr Vec numBlocks = Vec{2u};
     constexpr Vec blockExtent = Vec{128u};
     constexpr Vec dataExtent = numBlocks * blockExtent;
-    INFO("block shared iota exec=" << onHost::demangledName(exec));
     auto dBuff = onHost::alloc<uint32_t>(device, dataExtent);
 
     auto hBuff = onHost::allocHostLike(dBuff);
@@ -178,19 +170,11 @@ namespace alpaka::onHost::trait
 
 TEMPLATE_LIST_TEST_CASE("block shared alias", "[SharedMem]", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
         return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO(deviceSpec.getApi().getName() << " " << device.getName());
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
 
     onHost::Queue queue = device.makeQueue();
     constexpr Vec numBlocks = Vec{1u};
@@ -252,19 +236,11 @@ void test_index_type(auto& queue, auto const& exec, auto name)
 
 TEMPLATE_LIST_TEST_CASE("test shared memory index type", "[sharedMem]", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
         return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO(deviceSpec.getApi().getName() << " " << device.getName());
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
     alpaka::onHost::Queue queue = device.makeQueue();
 
     test_index_type<uint32_t>(queue, exec, "uint32_t");

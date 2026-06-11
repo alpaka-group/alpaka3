@@ -6,6 +6,7 @@
 #include <alpaka/onHost/example/executors.hpp>
 #include <alpaka/onHost/executeForEach.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -158,22 +159,11 @@ template<typename T_Data>
 void prepareTest(auto cfg, concepts::Vector auto extents)
 {
     using DataType = T_Data;
-
-    auto deviceSpec = cfg[object::deviceSpec];
-    concepts::Executor auto exec = cfg[object::exec];
-
-    auto computeDevSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!computeDevSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(cfg);
+    if(!optionalDeviceExec)
         return;
-    }
-
-    onHost::Device computeDev = computeDevSelector.makeDevice(0);
-
-    INFO("device spec: " << getName(deviceSpec));
-    INFO("device name: " << computeDev.getName());
-    INFO("executor   : " << exec.getName());
+    onHost::Device computeDev = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
 
     onHost::Queue computeQueue = computeDev.makeQueue();
 

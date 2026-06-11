@@ -12,6 +12,7 @@
 
 #include <alpaka/onAcc/warp.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -99,21 +100,15 @@ namespace
 
 TEMPLATE_LIST_TEST_CASE("warp shfl moves values between lanes", "[warp][shfl]", WarpTestBackends)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto selector = onHost::makeDeviceSelector(deviceSpec);
-    if(!selector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
         return;
-    }
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
 
-    auto deviceProperties = selector.getDeviceProperties(0);
+    auto deviceProperties = device.getDeviceProperties();
     auto const warpExtent = deviceProperties.warpSize;
 
-    auto device = selector.makeDevice(0);
     auto queue = device.makeQueue(queueKind::blocking);
 
     auto successHost = onHost::allocHost<bool>(1u);
@@ -126,6 +121,5 @@ TEMPLATE_LIST_TEST_CASE("warp shfl moves values between lanes", "[warp][shfl]", 
     queue.enqueue(onHost::FrameSpec{blocks, threads, exec}, KernelBundle{ShflMultiThreadKernel{}, successDev});
     onHost::memcpy(queue, successHost, successDev);
     onHost::wait(queue);
-    INFO("backend=" << deviceSpec.getName());
     CHECK(successHost[0]);
 }

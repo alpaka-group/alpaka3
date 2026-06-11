@@ -4,6 +4,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -39,20 +40,11 @@ struct BlockIotaKernel
 
 TEMPLATE_LIST_TEST_CASE("block iota", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
         return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("api=" << deviceSpec.getApi().getName());
-    INFO("device properties=" << device.getDeviceProperties());
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    alpaka::concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
 
     Queue queue = device.makeQueue();
     constexpr Vec numChunks = Vec{9u};

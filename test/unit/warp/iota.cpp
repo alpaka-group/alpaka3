@@ -4,6 +4,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -38,27 +39,17 @@ struct IotaKernelND
 
 TEMPLATE_LIST_TEST_CASE("warp iota1D", "", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
         return;
-    }
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
 
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("api=" << deviceSpec.getApi().getName());
-    INFO("device=" << device.getName());
-
-    auto deviceProperties = devSelector.getDeviceProperties(0);
+    auto deviceProperties = device.getDeviceProperties();
     uint32_t warpSize = deviceProperties.warpSize;
 
     onHost::Queue queue = device.makeQueue();
     Vec extent = Vec{warpSize * 123u};
-    INFO("exec=" << onHost::demangledName(exec));
     auto dBuff = onHost::alloc<Vec<uint32_t, 1u>>(device, extent);
 
     auto hBuff = onHost::allocHostLike(dBuff);

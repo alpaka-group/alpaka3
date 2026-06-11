@@ -8,6 +8,7 @@
 
 #include <alpaka/alpaka.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -43,17 +44,12 @@ struct MemoryFenceTestKernel
 // Run over all enabled backend+executor combinations exposed via TestApis.
 TEMPLATE_LIST_TEST_CASE("thread fence operations", "[memFence][basic]", TestApis)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto selector = onHost::makeDeviceSelector(deviceSpec);
-    if(!selector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    if(!optionalDeviceExec)
         return;
-    }
-    auto device = selector.makeDevice(0);
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
+
     auto queue = device.makeQueue();
 
     constexpr Vec extent = Vec{16u};
