@@ -39,13 +39,11 @@ struct IotaKernelND
 
 TEMPLATE_LIST_TEST_CASE("warp iota1D", "", TestApis)
 {
-    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
     if(!optionalDeviceExec)
-    {
         return;
-    }
-    onHost::Device device = std::get<0>(*optionalDeviceExec);
-    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
 
     auto deviceProperties = device.getDeviceProperties();
     uint32_t warpSize = deviceProperties.warpSize;

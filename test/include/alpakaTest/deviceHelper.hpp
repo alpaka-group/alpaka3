@@ -22,7 +22,7 @@ namespace alpaka::test
      * @param cfg Test configuration. An entry of the list returned from alpaka::onHost::allBackends().
      * @return The device 0 if available. Otherwise, the std::optional is invalid.
      */
-    auto getDevice(auto cfg)
+    [[nodiscard]] auto getAvailableDevice(auto const& cfg)
         -> std::optional<decltype(onHost::makeDeviceSelector(cfg[object::deviceSpec]).makeDevice(0))>
     {
         auto deviceSpec = cfg[object::deviceSpec];
@@ -48,11 +48,11 @@ namespace alpaka::test
      * @param cfg Test configuration. An entry of the list returned from alpaka::onHost::allBackends().
      * @return A std::optional containing a std::tuple with the device 0 and an executor.
      */
-    auto getDeviceExecutor(auto cfg) -> std::optional<std::tuple<
+    [[nodiscard]] auto getAvailableDeviceExecutor(auto const& cfg) -> std::optional<std::tuple<
         decltype(onHost::makeDeviceSelector(cfg[object::deviceSpec]).makeDevice(0)),
         decltype(cfg[object::exec])>>
     {
-        auto device = alpaka::test::getDevice(cfg);
+        auto device = alpaka::test::getAvailableDevice(cfg);
         if(!device)
         {
             return {};
@@ -61,5 +61,38 @@ namespace alpaka::test
         UNSCOPED_INFO("Executor: " << executor.getName());
 
         return std::make_tuple(*device, executor);
+    }
+
+    /** Takes std::optional with an alpaka::onHost::Device and returns the device.
+     *
+     * @attention Does not check, if the optional is valid.
+     */
+    template<alpaka::concepts::Api T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
+    [[nodiscard]] alpaka::onHost::Device<T_Api, T_DeviceKind> getDevice(
+        std::optional<alpaka::onHost::Device<T_Api, T_DeviceKind>> const& optionalDevice)
+    {
+        return *optionalDevice;
+    }
+
+    /** Takes std::optional with an alpaka::onHost::Device and an executor and returns the device.
+     *
+     * @attention Does not check, if the optional is valid.
+     */
+    template<alpaka::concepts::Api T_Api, alpaka::concepts::DeviceKind T_DeviceKind, alpaka::concepts::Executor T_Exec>
+    [[nodiscard]] alpaka::onHost::Device<T_Api, T_DeviceKind> getDevice(
+        std::optional<std::tuple<alpaka::onHost::Device<T_Api, T_DeviceKind>, T_Exec>> const& optionalDeviceExec)
+    {
+        return std::get<0>(*optionalDeviceExec);
+    }
+
+    /** Takes std::optional with an alpaka::onHost::Device and an executor and returns the executor.
+     *
+     * @attention Does not check, if the optional is valid.
+     */
+    template<alpaka::concepts::Api T_Api, alpaka::concepts::DeviceKind T_DeviceKind, alpaka::concepts::Executor T_Exec>
+    [[nodiscard]] T_Exec getExecutor(
+        std::optional<std::tuple<alpaka::onHost::Device<T_Api, T_DeviceKind>, T_Exec>> const& optionalDeviceExec)
+    {
+        return std::get<1>(*optionalDeviceExec);
     }
 } // namespace alpaka::test

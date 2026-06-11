@@ -81,26 +81,22 @@ void testVector(auto const& computeDev, alpaka::concepts::Executor auto exec)
 
 TEMPLATE_LIST_TEST_CASE("getFrameSpec scalar", "", TestBackends)
 {
-    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
     if(!optionalDeviceExec)
-    {
         return;
-    }
-    onHost::Device computeDev = std::get<0>(*optionalDeviceExec);
-    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
+    onHost::Device computeDev = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
 
     std::apply([&]<typename... T>(T...) { (testScalar<T>(computeDev, exec), ...); }, TestBufferElemTypes{});
 }
 
 TEMPLATE_LIST_TEST_CASE("getFrameSpec vector", "", TestBackends)
 {
-    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
     if(!optionalDeviceExec)
-    {
         return;
-    }
-    onHost::Device computeDev = std::get<0>(*optionalDeviceExec);
-    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
+    onHost::Device computeDev = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
 
     std::apply([&]<typename... T>(T...) { (testVector<T>(computeDev, exec), ...); }, TestBufferElemTypes{});
 }

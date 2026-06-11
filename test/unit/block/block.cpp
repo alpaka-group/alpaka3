@@ -40,13 +40,11 @@ struct BlockIotaKernel
 
 TEMPLATE_LIST_TEST_CASE("block iota", "", TestApis)
 {
-    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
     if(!optionalDeviceExec)
-    {
         return;
-    }
-    onHost::Device device = std::get<0>(*optionalDeviceExec);
-    alpaka::concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    alpaka::concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
 
     Queue queue = device.makeQueue();
     constexpr Vec numChunks = Vec{9u};

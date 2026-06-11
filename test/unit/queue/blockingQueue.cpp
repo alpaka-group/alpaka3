@@ -41,13 +41,11 @@ struct BlockingTestKernel
 
 TEMPLATE_LIST_TEST_CASE("blocking queue memory operations", "[bq][memory]", TestApis)
 {
-    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
     if(!optionalDeviceExec)
-    {
         return;
-    }
-    onHost::Device device = std::get<0>(*optionalDeviceExec);
-    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
 
     auto blockingQueue0 = device.makeQueue(queueKind::blocking);
     auto blockingQueue1 = device.makeQueue(queueKind::blocking);
@@ -116,13 +114,11 @@ struct FillKernel
 // enqueue different steps of a compute chain in independent blocking queues
 TEMPLATE_LIST_TEST_CASE("blocking queue chained operations", "[bq][chain]", TestApis)
 {
-    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
     if(!optionalDeviceExec)
-    {
         return;
-    }
-    onHost::Device device = std::get<0>(*optionalDeviceExec);
-    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
 
     auto qBlocking0 = device.makeQueue(queueKind::blocking);
     auto qBlocking1 = device.makeQueue(queueKind::blocking);
@@ -158,13 +154,11 @@ TEMPLATE_LIST_TEST_CASE("blocking queue chained operations", "[bq][chain]", Test
 // Test blocking and non-blocking queue should be usable together
 TEMPLATE_LIST_TEST_CASE("mixed queues independence", "[bq][mixed]", TestApis)
 {
-    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
     if(!optionalDeviceExec)
-    {
         return;
-    }
-    onHost::Device device = std::get<0>(*optionalDeviceExec);
-    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
 
     constexpr Vec extent = Vec{8u};
     constexpr auto frameSize = CVec<uint32_t, 4u>{};
@@ -187,13 +181,11 @@ TEMPLATE_LIST_TEST_CASE("mixed queues independence", "[bq][mixed]", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("blocking queue event semantics", "[bq][event]", TestApis)
 {
-    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
     if(!optionalDeviceExec)
-    {
         return;
-    }
-    onHost::Device device = std::get<0>(*optionalDeviceExec);
-    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
 
     // Blocking producer queue, non-blocking consumer queue
     auto qBlocking = device.makeQueue(queueKind::blocking);
@@ -274,12 +266,10 @@ TEMPLATE_LIST_TEST_CASE("blocking queue event semantics", "[bq][event]", TestApi
 // blocking queue event-cache behavior tests
 TEMPLATE_LIST_TEST_CASE("blocking queue event cache functionality", "[event][blocking-queue]", TestApis)
 {
-    auto optionalDevice = test::getDevice(TestType::makeDict());
+    auto optionalDevice = test::getAvailableDevice(TestType::makeDict());
     if(!optionalDevice)
-    {
         return;
-    }
-    onHost::Device device = *optionalDevice;
+    onHost::Device device = test::getDevice(optionalDevice);
 
     SECTION("Rapid event enqueueing")
     {
@@ -345,12 +335,10 @@ TEMPLATE_LIST_TEST_CASE("blocking queue event cache functionality", "[event][blo
 // Test for race condition in blocking queue event enqueue
 TEMPLATE_LIST_TEST_CASE("blocking queue event race condition", "[bq][event][race]", TestApis)
 {
-    auto optionalDevice = test::getDevice(TestType::makeDict());
+    auto optionalDevice = test::getAvailableDevice(TestType::makeDict());
     if(!optionalDevice)
-    {
         return;
-    }
-    onHost::Device device = *optionalDevice;
+    onHost::Device device = test::getDevice(optionalDevice);
     auto blockingQueue = device.makeQueue(queueKind::blocking);
 
     // Test concurrent event operations to detect race conditions

@@ -28,13 +28,11 @@ struct TestKernel
 
 TEMPLATE_LIST_TEST_CASE("popcount", "[intrinsic][popc]", TestBackends)
 {
-    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
     if(!optionalDeviceExec)
-    {
         return;
-    }
-    onHost::Device devAcc = std::get<0>(*optionalDeviceExec);
-    concepts::Executor auto computeExec = std::get<1>(*optionalDeviceExec);
+    onHost::Device devAcc = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto computeExec = test::getExecutor(optionalDeviceExec);
 
     // Create a queue on the device
     alpaka::onHost::Queue queue = devAcc.makeQueue();

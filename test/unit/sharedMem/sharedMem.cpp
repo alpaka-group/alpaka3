@@ -43,13 +43,11 @@ struct SharedBlockIotaKernel
 
 TEMPLATE_LIST_TEST_CASE("block shared iota", "[sharedMem]", TestApis)
 {
-    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
     if(!optionalDeviceExec)
-    {
         return;
-    }
-    onHost::Device device = std::get<0>(*optionalDeviceExec);
-    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
     onHost::Queue queue = device.makeQueue();
 
     constexpr Vec numBlocks = Vec{2u};
@@ -172,13 +170,11 @@ namespace alpaka::onHost::trait
 
 TEMPLATE_LIST_TEST_CASE("block shared alias", "[SharedMem]", TestApis)
 {
-    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
     if(!optionalDeviceExec)
-    {
         return;
-    }
-    onHost::Device device = std::get<0>(*optionalDeviceExec);
-    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
 
     onHost::Queue queue = device.makeQueue();
     constexpr Vec numBlocks = Vec{1u};
@@ -240,13 +236,11 @@ void test_index_type(auto& queue, auto const& exec, auto name)
 
 TEMPLATE_LIST_TEST_CASE("test shared memory index type", "[sharedMem]", TestApis)
 {
-    auto optionalDeviceExec = test::getDeviceExecutor(TestType::makeDict());
+    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
     if(!optionalDeviceExec)
-    {
         return;
-    }
-    onHost::Device device = std::get<0>(*optionalDeviceExec);
-    concepts::Executor auto exec = std::get<1>(*optionalDeviceExec);
+    onHost::Device device = test::getDevice(optionalDeviceExec);
+    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
     alpaka::onHost::Queue queue = device.makeQueue();
 
     test_index_type<uint32_t>(queue, exec, "uint32_t");
