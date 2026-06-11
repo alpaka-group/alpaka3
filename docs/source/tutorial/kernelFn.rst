@@ -40,9 +40,9 @@ Specializing a Kernel Function for CUDA
 In some situations you may want to provide a backend-specific implementation.
 Typical reasons include:
 
-* using native backend features that are not available through the portable abstraction,
-* achieving maximum performance for a specific platform,
-* gradually porting existing CUDA code to *alpaka*.
+* using native backend features that are not available through the portable abstraction
+* achieving maximum performance for a specific platform
+* gradually porting existing CUDA code to *alpaka*
 
 This can be achieved by overloading ``fnDispatch`` for a specific API and device kind.
 When a kernel is launched on a matching backend, *alpaka* automatically selects the specialized overload.
@@ -66,7 +66,8 @@ When a kernel is launched, *alpaka* selects the most specialized matching ``fnDi
 For example:
 
 * ``fnDispatch(VectorAdd, ...)`` provides a generic implementation.
-* ``fnDispatch(VectorAdd::Spec<alpaka::api::Cuda, T_DeviceKind>, ...)`` provides a CUDA-specific implementation.
+* ``fnDispatch(VectorAdd::Spec<api::Cuda, T_DeviceKind>, ...)`` provides a CUDA-specific implementation.
+* ``fnDispatch(VectorAdd::Spec<api::OneApi, deviceKind::IntelGpu>, ...)`` provides a implementation for the Intel GPU accessed via OneApi. (not used in this example)
 
 If the kernel is executed on a queue for an CUDA device, the CUDA specialization is selected.
 For all other backends, the generic implementation is used automatically.

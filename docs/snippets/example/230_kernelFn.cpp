@@ -18,8 +18,11 @@ using namespace alpaka;
 namespace tutorial
 {
 
+    /* The function symbol is only defined without specifying the argument signature.
+     * You need to provide at least a generic function dispatch signature for the symbol.     */
     ALPAKA_FN_SYMBOL(VectorAdd);
 
+    // Genic function dispatch signature which is used if no more specific specification for the symbol is provided.
     ALPAKA_FN_ACC void fnDispatch(
         VectorAdd,
         onAcc::concepts::Acc auto const& acc,
@@ -30,7 +33,7 @@ namespace tutorial
         ALPAKA_ASSERT_ACC(out.getExtents() == lhs.getExtents());
         ALPAKA_ASSERT_ACC(out.getExtents() == rhs.getExtents());
 
-        auto [globalThreadIdx] = acc.getIdxWithin(alpaka::onAcc::origin::grid, alpaka::onAcc::unit::threads);
+        auto [globalThreadIdx] = acc.getIdxWithin(onAcc::origin::grid, onAcc::unit::threads);
         if(globalThreadIdx == 0u)
             printf("The alpaka kernel implementation is running\n");
 
@@ -53,7 +56,7 @@ namespace tutorial
      */
     template<typename T_DeviceKind>
     ALPAKA_FN_ACC void fnDispatch(
-        VectorAdd::Spec<alpaka::api::Cuda, T_DeviceKind>,
+        VectorAdd::Spec<api::Cuda, T_DeviceKind>,
         onAcc::concepts::Acc auto const& acc,
         concepts::IMdSpan auto out,
         concepts::IDataSource auto const& lhs,
