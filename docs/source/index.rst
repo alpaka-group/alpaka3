@@ -77,6 +77,7 @@ Individual chapters are based on the information of the chapters before.
    tutorial/events.rst
    tutorial/random.rst
    tutorial/intrinsics.rst
+   tutorial/warp.rst
    tutorial/kernelFn.rst
 
 .. toctree::
