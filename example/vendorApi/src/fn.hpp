@@ -32,7 +32,7 @@ namespace vendorExample
      * }
      * @endcode
      */
-    constexpr void fnRegister(Transform::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>)
+    constexpr void alpakaFnRegister(Transform::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>)
     {
     }
 
@@ -41,7 +41,7 @@ namespace vendorExample
      * This function will be called if Transform::call() is called with a queue or device specification of api Host and
      * device kind Cpu.
      */
-    constexpr void fnDispatch(
+    constexpr void alpakaFnDispatch(
         Transform::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>,
         auto&& queue,
         alpaka::concepts::IMdSpan auto&& output,

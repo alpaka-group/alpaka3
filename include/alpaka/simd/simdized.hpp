@@ -20,7 +20,7 @@ namespace alpaka
      * A simdized value is not necessarily a data type wrapped by alpaka::Simd, it can be a structured hierarchical
      * type where each component is a SIMD pack. This function can be specialized within the namespace of the input
      * type and will be found via ADL.
-     * @see simdizedInvoke should be specialized together with this function.
+     * @see alpakaSimdizedInvoke should be specialized together with this function.
      *
      * Simdizing of structured types as shown in the code example often improves the performance compared to wrapping
      * into a SIMD pack.
@@ -55,7 +55,7 @@ namespace alpaka
     /** Invokes the callable object fn with the parameters args.
      *
      * For structured data where each component is a SIMD pack, the functor should be forwarded to the members while
-     * recursively calling simdizedInvoke.
+     * recursively calling alpakaSimdizedInvoke.
      * As soon as there is no use specialization available, the recursion is terminated by the invocation of the
      * functor with the forwarded arguments. This function can be specialized within the namespace of the argument
      * types and will be found via ADL.
@@ -66,19 +66,19 @@ namespace alpaka
      * rule but are useful within the user code.
      * @code{.cpp}
      * // A typical case of how this specialization is called is
-     * // `simdizedInvoke(f, Pos<int>{}, Pos<alpaka::Simd<int,4>>{})`.
-     * constexpr void simdizedInvoke(auto&& f, alpaka::concepts::SpecializationOf<Pos> auto&&... args)
+     * // `alpakaSimdizedInvoke(f, Pos<int>{}, Pos<alpaka::Simd<int,4>>{})`.
+     * constexpr void alpakaSimdizedInvoke(auto&& f, alpaka::concepts::SpecializationOf<Pos> auto&&... args)
      * {
      *    // Accessing .x and .y must be supported by all arguments.
-     *    simdizedInvoke(ALPAKA_FORWARD(f), ALPAKA_FORWARD(args).x...);
-     *    simdizedInvoke(ALPAKA_FORWARD(f), ALPAKA_FORWARD(args).y...);
+     *    alpakaSimdizedInvoke(ALPAKA_FORWARD(f), ALPAKA_FORWARD(args).x...);
+     *    alpakaSimdizedInvoke(ALPAKA_FORWARD(f), ALPAKA_FORWARD(args).y...);
      * }
      * @endcode
      *
      * @param fn Callable object to which the arguments will be forwarded.
      * @param args Arguments forwarded to fn.
      */
-    constexpr void simdizedInvoke(auto&& fn, auto&&... args)
+    constexpr void alpakaSimdizedInvoke(auto&& fn, auto&&... args)
     {
         ALPAKA_FORWARD(fn)(ALPAKA_FORWARD(args)...);
     }

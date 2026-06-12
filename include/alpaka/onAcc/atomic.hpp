@@ -196,17 +196,18 @@ namespace alpaka::onAcc
          * @param inOut pointer to the values which is updated
          * @param args arguments normally forwarded to the user functor
          */
-        ALPAKA_FN_ACC void atomicInvoke(auto&& fn, concepts::Acc auto const& acc, auto* inOut, auto&&... args)
+        ALPAKA_FN_ACC void alpakaAtomicInvoke(auto&& fn, concepts::Acc auto const& acc, auto* inOut, auto&&... args)
         {
             alpaka::unused(acc, inOut, args...);
             static_assert(
                 sizeof(ALPAKA_TYPEOF(fn)) && false,
-                "You must specialize atomicInvoke() for your functor. Best place the overload in the namespace of the "
+                "You must specialize alpakaAtomicInvoke() for your functor. Best place the overload in the namespace "
+                "of the "
                 "functor, it will be found by ADL.");
         }
 
         template<typename T>
-        ALPAKA_FN_ACC void atomicInvoke(std::plus<T>, concepts::Acc auto const& acc, auto* inOut, auto&&... args)
+        ALPAKA_FN_ACC void alpakaAtomicInvoke(std::plus<T>, concepts::Acc auto const& acc, auto* inOut, auto&&... args)
         {
             atomicAdd(acc, inOut, ALPAKA_FORWARD(args)...);
         }

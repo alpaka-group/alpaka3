@@ -12,9 +12,9 @@ Writing a Kernel as a Function
 
 This example uses the simple one-dimensional vector-add kernel from the :ref:`kernel tutorial <tutorial-kernel>`.
 
-Instead of defining a functor with ``operator()``, you implement a function named ``fnDispatch``.
+Instead of defining a functor with ``operator()``, you implement a function named ``alpakaFnDispatch``.
 The first argument must be an *alpaka* function symbol or a function-symbol specialization, which allows *alpaka* to select the correct implementation at compile time.
-Function symbols and all corresponding ``fnDispatch`` overloads must be placed inside a namespace.
+Function symbols and all corresponding ``alpakaFnDispatch`` overloads must be placed inside a namespace.
 *alpaka* relies on `Argument-Dependent Lookup (ADL) <https://de.wikipedia.org/wiki/Argument_dependent_name_lookup>`_ to find matching overloads, and functions located in the global namespace cannot be found reliably.
 
 The following example defines a generic vector-add kernel implementation that can run on any supported backend.
@@ -44,7 +44,7 @@ Typical reasons include:
 * achieving maximum performance for a specific platform
 * gradually porting existing CUDA code to *alpaka*
 
-This can be achieved by overloading ``fnDispatch`` for a specific API and device kind.
+This can be achieved by overloading ``alpakaFnDispatch`` for a specific API and device kind.
 When a kernel is launched on a matching backend, *alpaka* automatically selects the specialized overload.
 
 The example below provides a CUDA-specific implementation using native CUDA thread and grid indices.
@@ -61,13 +61,13 @@ Without this guard, compilation would fail on systems where CUDA support is not 
 Overload Resolution
 -------------------
 
-When a kernel is launched, *alpaka* selects the most specialized matching ``fnDispatch`` overload.
+When a kernel is launched, *alpaka* selects the most specialized matching ``alpakaFnDispatch`` overload.
 
 For example:
 
-* ``fnDispatch(VectorAdd, ...)`` provides a generic implementation.
-* ``fnDispatch(VectorAdd::Spec<api::Cuda, T_DeviceKind>, ...)`` provides a CUDA-specific implementation.
-* ``fnDispatch(VectorAdd::Spec<api::OneApi, deviceKind::IntelGpu>, ...)`` provides a implementation for the Intel GPU accessed via OneApi. (not used in this example)
+* ``alpakaFnDispatch(VectorAdd, ...)`` provides a generic implementation.
+* ``alpakaFnDispatch(VectorAdd::Spec<api::Cuda, T_DeviceKind>, ...)`` provides a CUDA-specific implementation.
+* ``alpakaFnDispatch(VectorAdd::Spec<api::OneApi, deviceKind::IntelGpu>, ...)`` provides a implementation for the Intel GPU accessed via OneApi. (not used in this example)
 
 If the kernel is executed on a queue for an CUDA device, the CUDA specialization is selected.
 For all other backends, the generic implementation is used automatically.

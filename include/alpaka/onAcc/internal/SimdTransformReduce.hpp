@@ -88,7 +88,7 @@ namespace alpaka::onAcc::internal
             }
 
             auto result = neutralElement;
-            simdizedInvoke(
+            alpakaSimdizedInvoke(
                 [](auto& lhs, alpaka::concepts::Simd auto const& rhs) { lhs = rhs[0]; },
                 result,
                 simdizedReducedValue);
@@ -479,7 +479,7 @@ namespace alpaka::onAcc::internal
                     SimdPtr{data0, idx, T_MemAlignment{}, CVec<uint32_t, 1u>{}},
                     SimdPtr{dataN, idx, T_MemAlignment{}, CVec<uint32_t, 1u>{}}...);
 
-                simdizedInvoke(
+                alpakaSimdizedInvoke(
                     [reduceFunc](auto& lhs, alpaka::concepts::Simd auto const& rhs)
                     {
                         // std simd non-const operator[] is returning a smart reference, therefore we need
@@ -491,7 +491,7 @@ namespace alpaka::onAcc::internal
             }
 
             ALPAKA_TYPEOF(neutralElement) result;
-            simdizedInvoke(
+            alpakaSimdizedInvoke(
                 [reduceFunc](auto& lhs, alpaka::concepts::Simd auto const& rhs) { lhs = rhs.reduce(reduceFunc); },
                 result,
                 simdizedReducedValue);

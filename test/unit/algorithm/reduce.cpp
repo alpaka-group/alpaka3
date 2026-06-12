@@ -28,7 +28,7 @@ namespace myTest
         }
     };
 
-    ALPAKA_FN_ACC void atomicInvoke(
+    ALPAKA_FN_ACC void alpakaAtomicInvoke(
         MinValue const&,
         alpaka::onAcc::concepts::Acc auto const& acc,
         auto* dest,
@@ -46,7 +46,7 @@ namespace myTest
         }
     };
 
-    ALPAKA_FN_ACC void atomicInvoke(
+    ALPAKA_FN_ACC void alpakaAtomicInvoke(
         MaxValue const&,
         alpaka::onAcc::concepts::Acc auto const& acc,
         auto* dest,

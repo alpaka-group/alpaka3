@@ -23,7 +23,7 @@ namespace tutorial
     ALPAKA_FN_SYMBOL(VectorAdd);
 
     // Genic function dispatch signature which is used if no more specific specification for the symbol is provided.
-    ALPAKA_FN_ACC void fnDispatch(
+    ALPAKA_FN_ACC void alpakaFnDispatch(
         VectorAdd,
         onAcc::concepts::Acc auto const& acc,
         concepts::IMdSpan auto out,
@@ -55,7 +55,7 @@ namespace tutorial
      * to the usage of CUDA build in variables.
      */
     template<typename T_DeviceKind>
-    ALPAKA_FN_ACC void fnDispatch(
+    ALPAKA_FN_ACC void alpakaFnDispatch(
         VectorAdd::Spec<api::Cuda, T_DeviceKind>,
         onAcc::concepts::Acc auto const& acc,
         concepts::IMdSpan auto out,

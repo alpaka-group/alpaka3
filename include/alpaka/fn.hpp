@@ -26,11 +26,11 @@
  * The main components of the interface are:
  * - `alpaka::fn::Fn`: The function symbol baseclass that can be used to register, dispatch and call third party
  * functions.
- * - `fnRegister`: A function template that can be specialized to register a function overload for a
+ * - `alpakaFnRegister`: A function template that can be specialized to register a function overload for a
  * device specification. This is optional and only required if Registration::enforced is set to the function
  * symbol. It allows the usage of isRegistered() function to check if a third party function overload is defined.
- * - `fnDispatch`: A function template that can be specialized to dispatch a function symbol to a third party function
- * depending on the device specification.
+ * - `alpakaFnDispatch`: A function template that can be specialized to dispatch a function symbol to a third party
+ * function depending on the device specification.
  *
  * For an example of how to use the interface see example/vendorApi.
  */
@@ -96,16 +96,16 @@ namespace alpaka::fn
     enum class Registration : int
     {
         /** The isRegistered() function will always return true. This can be used to skip the registration of the
-         * function symbol via fnRegister().
+         * function symbol via alpakaFnRegister().
          */
         alwaysTrue = 1,
-        /** It is required to define fnRegister() for a function symbol. isRegistered() can be called to check if
+        /** It is required to define alpakaFnRegister() for a function symbol. isRegistered() can be called to check if
          * a vendor function overload is registered for the given device specification.
          */
         enforced = 2,
         /** The isRegistered() function is not available and no registration of the vendor function overloads is
          * required. This can be used if you do not want to use the isRegistered() function and do not want to require
-         * the definition of fnRegister() for a function symbol.
+         * the definition of alpakaFnRegister() for a function symbol.
          */
         none = 3
     };
@@ -114,23 +114,23 @@ namespace alpaka::fn
     {
         /** @brief Concept to check if a function symbol can be called.
          *
-         * This concept checks if the fnDispatch() can be called with the given function symbol (if
+         * This concept checks if the alpakaFnDispatch() can be called with the given function symbol (if
          * Fallback::toGeneric) or function symbol device specification. It is used to check if a function dispatch is
          * defined for the given device specification or function symbol and if it can be called with the given
          * arguments.
          */
         template<typename T_FnSpec, typename... Args>
         concept DispatchedFnInvocable
-            = requires(T_FnSpec fnSpec, Args&&... args) { fnDispatch(fnSpec, std::forward<Args>(args)...); };
+            = requires(T_FnSpec fnSpec, Args&&... args) { alpakaFnDispatch(fnSpec, std::forward<Args>(args)...); };
 
         /** @brief Concept to check if a function symbol is registered.
          *
-         * This concept checks if the fnRegister() can be called with the given function symbol or
+         * This concept checks if the alpakaFnRegister() can be called with the given function symbol or
          * function symbol device specification. It is used to check if a vendor function overload is defined for the
          * given device specification without taking any function arguments into account.
          */
         template<typename T_FnSpec>
-        concept FnRegistered = requires(T_FnSpec fnSpec) { fnRegister(fnSpec); };
+        concept FnRegistered = requires(T_FnSpec fnSpec) { alpakaFnRegister(fnSpec); };
     } // namespace concepts
 
     /** @brief Base class for function symbols.
@@ -142,7 +142,7 @@ namespace alpaka::fn
      * set to Fallback::none no fallback is performed and a static assert is triggered if no function overload is
      * defined for the given device specification.
      * @tparam T_registrationPolicy If set to Registration::enforced the isRegistered() can be called, and it is
-     * required to define fnRegister() for on T_FnClass. If set to Registration::none the isRegistered()
+     * required to define alpakaFnRegister() for on T_FnClass. If set to Registration::none the isRegistered()
      * function is not available and no registration of the vendor function overloads is required. If set to
      * Registration::alwaysTrue isRegistered() will always return true. This can be used to skip the registration
      * of the function symbol.
@@ -180,7 +180,7 @@ namespace alpaka::fn
          * @code
          * ALPAKA_FN_SYMBOL(Foo,alpaka::fn::Fallback::none, alpaka::fn::Registration::enforced);
          *
-         * void fnRegister(Foo::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>)
+         * void alpakaFnRegister(Foo::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>)
          * {
          * }
          *
@@ -233,7 +233,7 @@ namespace alpaka::fn
             static_assert(
                 T_registrationPolicy != Registration::enforced || concepts::FnRegistered<ALPAKA_TYPEOF(spec(any))>,
                 "Function dispatch for the given function symbol, API and device kind is not registered.");
-            return fnDispatch(spec(any), std::forward<T_Any>(any), std::forward<Args>(args)...);
+            return alpakaFnDispatch(spec(any), std::forward<T_Any>(any), std::forward<Args>(args)...);
         }
 
         /** Fallback operator() to alpaka implementation if the function is not dispatchable for the given device
@@ -252,7 +252,7 @@ namespace alpaka::fn
                 T_registrationPolicy != Registration::enforced
                     || concepts::FnRegistered<ALPAKA_TYPEOF(spec(api::Alpaka{}, getDeviceKind(any)))>,
                 "Function for the given function group, device kind the api fn::api::alpaka is not registered.");
-            return fnDispatch(
+            return alpakaFnDispatch(
                 spec(api::Alpaka{}, getDeviceKind(any)),
                 std::forward<T_Any>(any),
                 std::forward<Args>(args)...);
@@ -275,7 +275,7 @@ namespace alpaka::fn
             static_assert(
                 T_registrationPolicy != Registration::enforced || concepts::FnRegistered<T_FnClass>,
                 "Function dispatch for the given function symbol, is not registered.");
-            return fnDispatch(T_FnClass{}, std::forward<T_Any>(any), std::forward<Args>(args)...);
+            return alpakaFnDispatch(T_FnClass{}, std::forward<T_Any>(any), std::forward<Args>(args)...);
         }
 
         /** Call the function overload for the given device specification.
@@ -304,7 +304,7 @@ namespace alpaka::fn
  * triggered if no vendor function overload is defined for the given device specification. Default:
  * Fallback::toGeneric.
  * @param optional_registartion If set to Registration::enforced the isRegistered() can be called, and it is
- * required to define fnRegister() for on T_FnClass. If set to Registration::none the isRegistered()
+ * required to define alpakaFnRegister() for on T_FnClass. If set to Registration::none the isRegistered()
  * function is not available and no registration of the vendor function overloads is required. If set to
  * Registration::alwaysTrue isRegistered() will always return true. This can be used to skip the registration of
  * the function symbol. Default: Registration::none.

@@ -18,11 +18,11 @@ namespace vendorExample
      *
      * @{
      */
-    constexpr void fnRegister(Transform::Spec<alpaka::api::Cuda, alpaka::deviceKind::NvidiaGpu>)
+    constexpr void alpakaFnRegister(Transform::Spec<alpaka::api::Cuda, alpaka::deviceKind::NvidiaGpu>)
     {
     }
 
-    constexpr void fnDispatch(
+    constexpr void alpakaFnDispatch(
         Transform::Spec<alpaka::api::Cuda, alpaka::deviceKind::NvidiaGpu>,
         auto&& queue,
         alpaka::concepts::IMdSpan auto&& output,

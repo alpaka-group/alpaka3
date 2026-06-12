@@ -18,12 +18,12 @@ namespace vendorExample
      * @{
      */
     template<alpaka::concepts::DeviceKind T_DeviceKind>
-    constexpr void fnRegister(Transform::Spec<alpaka::fn::api::Alpaka, T_DeviceKind>)
+    constexpr void alpakaFnRegister(Transform::Spec<alpaka::fn::api::Alpaka, T_DeviceKind>)
     {
     }
 
     template<alpaka::concepts::DeviceKind T_DeviceKind>
-    constexpr void fnDispatch(
+    constexpr void alpakaFnDispatch(
         Transform::Spec<alpaka::fn::api::Alpaka, T_DeviceKind>,
         auto&& queue,
         alpaka::concepts::IMdSpan auto&& output,

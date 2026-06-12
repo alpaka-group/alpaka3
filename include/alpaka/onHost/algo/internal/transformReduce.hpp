@@ -110,21 +110,21 @@ namespace alpaka::onHost::internal
             // Atomic update of the global result
             if(laneIdInBlock == 0)
             {
-                using alpaka::onAcc::atomic::atomicInvoke;
+                using alpaka::onAcc::atomic::alpakaAtomicInvoke;
                 if constexpr(
                     alpaka::concepts::SpecializationOf<ALPAKA_TYPEOF(reduceFunc), ScalarFunc>
                     || alpaka::concepts::SpecializationOf<ALPAKA_TYPEOF(reduceFunc), StencilFunc>)
                 {
                     // Handle wrapped reduce functors e.g. ScalarFunc or StencilFunc
                     using ReduceFunctor = typename ALPAKA_TYPEOF(reduceFunc)::Functor;
-                    atomicInvoke(
+                    alpakaAtomicInvoke(
                         static_cast<ReduceFunctor const&>(reduceFunc),
                         acc,
                         output.data(),
                         dynS[laneIdInBlock]);
                 }
                 else
-                    atomicInvoke(reduceFunc, acc, output.data(), dynS[laneIdInBlock]);
+                    alpakaAtomicInvoke(reduceFunc, acc, output.data(), dynS[laneIdInBlock]);
             }
         }
     };

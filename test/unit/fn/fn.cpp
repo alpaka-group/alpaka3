@@ -13,16 +13,16 @@ using namespace alpaka;
 
 ALPAKA_FN_SYMBOL(FnFallBackAlpakaRegisterEnforced, alpaka::fn::Fallback::toAlpaka, alpaka::fn::Registration::enforced);
 
-constexpr void fnRegister(FnFallBackAlpakaRegisterEnforced::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>)
+constexpr void alpakaFnRegister(FnFallBackAlpakaRegisterEnforced::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>)
 {
 }
 
 template<concepts::DeviceKind T_DeviceKind>
-constexpr void fnRegister(FnFallBackAlpakaRegisterEnforced::Spec<alpaka::fn::api::Alpaka, T_DeviceKind>)
+constexpr void alpakaFnRegister(FnFallBackAlpakaRegisterEnforced::Spec<alpaka::fn::api::Alpaka, T_DeviceKind>)
 {
 }
 
-constexpr int fnDispatch(
+constexpr int alpakaFnDispatch(
     FnFallBackAlpakaRegisterEnforced::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>,
     auto const&)
 {
@@ -30,7 +30,9 @@ constexpr int fnDispatch(
 }
 
 template<concepts::DeviceKind T_DeviceKind>
-constexpr int fnDispatch(FnFallBackAlpakaRegisterEnforced::Spec<alpaka::fn::api::Alpaka, T_DeviceKind>, auto const&)
+constexpr int alpakaFnDispatch(
+    FnFallBackAlpakaRegisterEnforced::Spec<alpaka::fn::api::Alpaka, T_DeviceKind>,
+    auto const&)
 {
     return 43;
 }
@@ -71,22 +73,22 @@ ALPAKA_FN_SYMBOL(
     alpaka::fn::Fallback::toGeneric,
     alpaka::fn::Registration::enforced);
 
-constexpr void fnRegister(FnFallBackGenericRegisterEnforced::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>)
+constexpr void alpakaFnRegister(FnFallBackGenericRegisterEnforced::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>)
 {
 }
 
-constexpr void fnRegister(FnFallBackGenericRegisterEnforced)
+constexpr void alpakaFnRegister(FnFallBackGenericRegisterEnforced)
 {
 }
 
-constexpr int fnDispatch(
+constexpr int alpakaFnDispatch(
     FnFallBackGenericRegisterEnforced::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>,
     auto const&)
 {
     return 52;
 }
 
-constexpr int fnDispatch(FnFallBackGenericRegisterEnforced, auto const&)
+constexpr int alpakaFnDispatch(FnFallBackGenericRegisterEnforced, auto const&)
 {
     return 53;
 }
@@ -139,20 +141,22 @@ TEMPLATE_LIST_TEST_CASE("fn with generic fallback", "", TestApis)
  */
 ALPAKA_FN_SYMBOL(FnFallBackNoRegisterEnforced, alpaka::fn::Fallback::none, alpaka::fn::Registration::enforced);
 
-constexpr void fnRegister(FnFallBackNoRegisterEnforced::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>)
+constexpr void alpakaFnRegister(FnFallBackNoRegisterEnforced::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>)
 {
 }
 
-constexpr void fnRegister(FnFallBackNoRegisterEnforced)
+constexpr void alpakaFnRegister(FnFallBackNoRegisterEnforced)
 {
 }
 
-constexpr int fnDispatch(FnFallBackNoRegisterEnforced::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>, auto const&)
+constexpr int alpakaFnDispatch(
+    FnFallBackNoRegisterEnforced::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>,
+    auto const&)
 {
     return 62;
 }
 
-constexpr int fnDispatch(FnFallBackNoRegisterEnforced, auto const&)
+constexpr int alpakaFnDispatch(FnFallBackNoRegisterEnforced, auto const&)
 {
     return 63;
 }

@@ -26,11 +26,11 @@ namespace haccmkAlpaka
         }
     };
 
-    constexpr void simdizedInvoke(auto&& f, alpaka::concepts::SpecializationOf<DeltaMove> auto&&... args)
+    constexpr void alpakaSimdizedInvoke(auto&& f, alpaka::concepts::SpecializationOf<DeltaMove> auto&&... args)
     {
-        simdizedInvoke(ALPAKA_FORWARD(f), ALPAKA_FORWARD(args).x...);
-        simdizedInvoke(ALPAKA_FORWARD(f), ALPAKA_FORWARD(args).y...);
-        simdizedInvoke(ALPAKA_FORWARD(f), ALPAKA_FORWARD(args).z...);
+        alpakaSimdizedInvoke(ALPAKA_FORWARD(f), ALPAKA_FORWARD(args).x...);
+        alpakaSimdizedInvoke(ALPAKA_FORWARD(f), ALPAKA_FORWARD(args).y...);
+        alpakaSimdizedInvoke(ALPAKA_FORWARD(f), ALPAKA_FORWARD(args).z...);
     }
 
     template<uint32_t T_width, typename T>
@@ -38,7 +38,7 @@ namespace haccmkAlpaka
     {
         using SimdMemberType = ALPAKA_TYPEOF(alpaka::makeSimdized<T_width>(std::declval<T>()));
         DeltaMove<SimdMemberType> result;
-        simdizedInvoke([](alpaka::concepts::Simd auto& lhs, auto const& rhs) { lhs = rhs; }, result, value);
+        alpakaSimdizedInvoke([](alpaka::concepts::Simd auto& lhs, auto const& rhs) { lhs = rhs; }, result, value);
         return result;
     }
 
