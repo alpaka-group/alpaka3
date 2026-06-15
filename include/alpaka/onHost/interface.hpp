@@ -78,20 +78,20 @@ namespace alpaka::onHost
      * @name Query the name
      */
 
-    /** Compile‑time available name for a given object.
+    /** Compile-time available name for a given object.
      *
      * @param any object whose name shall be queried
-     * @return a `std::string`‑compatible value holding the static name
+     * @return a `std::string`-compatible value holding the static name
      */
     inline std::convertible_to<std::string> auto getStaticName(auto const& any)
     {
         return alpaka::internal::GetStaticName::Op<ALPAKA_TYPEOF(any)>{}(any);
     }
 
-    /** Compile‑time available name of an handle
+    /** Compile-time available name of an handle
      *
      * @param handle object whose name shall be queried
-     * @return a `std::string`‑compatible value holding the static name
+     * @return a `std::string`-compatible value holding the static name
      */
     inline std::convertible_to<std::string> auto getStaticName(concepts::StaticNameHandle auto const& handle)
     {
@@ -101,7 +101,7 @@ namespace alpaka::onHost
     /** Runtime name for a given object.
      *
      * @param any object whose name shall be queried
-     * @return a `std::string`‑compatible value holding the name
+     * @return a `std::string`-compatible value holding the name
      */
     inline std::convertible_to<std::string> auto getName(auto&& any)
     {
@@ -111,7 +111,7 @@ namespace alpaka::onHost
     /** Runtime name for a given handle.
      *
      * @param handle object whose name shall be queried
-     * @return a `std::string`‑compatible value holding the name
+     * @return a `std::string`-compatible value holding the name
      */
     inline std::convertible_to<std::string> auto getName(concepts::NameHandle auto const& handle)
     {
@@ -123,10 +123,10 @@ namespace alpaka::onHost
     /** Get the native handle of an handle.
      *
      * The native handle can be passed to the underlying backend API
-     * (e.g. CUDA, HIP, OpenMP) for low‑level operations.
+     * (e.g. CUDA, HIP, OpenMP) for low-level operations.
      *
      * @param handle object exposing a native handle
-     * @return the native handle returned by the backend‑specific implementation
+     * @return the native handle returned by the backend-specific implementation
      */
     inline auto getNativeHandle(auto const& handle)
     {
@@ -149,7 +149,7 @@ namespace alpaka::onHost
      */
     /** pointer to data of an object
      *
-     * For multi‑dimensional data the data is not required to be continuous.
+     * For multi-dimensional data the data is not required to be continuous.
      *
      * @param any object providing data access (e.g. std::vector)
      * @return raw pointer to the underlying data (equivalent to `std::data`)
@@ -161,7 +161,7 @@ namespace alpaka::onHost
 
     /** pointer to data of an handle
      *
-     * For multi‑dimensional data the data is not required to be continuous.
+     * For multi-dimensional data the data is not required to be continuous.
      *
      * @param handle handle providing data access (e.g. view)
      * @return raw pointer to the underlying data

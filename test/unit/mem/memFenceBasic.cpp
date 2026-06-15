@@ -35,7 +35,7 @@ struct MemoryFenceTestKernel
             // Convenience helper forms (should map to identical implementations).
             onAcc::memFence(acc, onAcc::scope::Block{}, order::AcqRel{});
             onAcc::memFence(acc, onAcc::scope::Device{}, order::SeqCst{});
-            // Post‑fence update. If fences caused unintended reordering, test value would mismatch.
+            // Post-fence update. If fences caused unintended reordering, test value would mismatch.
             out[idx.x()] += 1u;
         }
     }

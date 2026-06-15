@@ -69,7 +69,7 @@ TEMPLATE_LIST_TEST_CASE("tutorial kernel intro vector add", "[docs]", docs::test
      */
     onHost::concepts::FrameSpec auto frameSpec = onHost::getFrameSpec(device, exec::anyExecutor, Vec{numElements});
 
-    /* Create a kernel object and enqueue it along with the `frameSpec´ and kernel arguments.
+    /* Create a kernel object and enqueue it along with the `frameSpec` and kernel arguments.
      * Depending on how many tasks are still in the queue, the kernel may be executed immediately or after a delay.
      */
     queue.enqueue(frameSpec, KernelBundle{VectorAddKernel{}, resultBuffer, lhsBuffer, rhsBuffer});

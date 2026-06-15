@@ -83,8 +83,8 @@ bool validateNormal(auto const& data, auto expectedMean, auto expectedStdDev)
     std::cout << "Normal distribution stats:\n";
     std::cout << "   Mean:      " << mean << " (expected " << expectedMean << ")\n";
     std::cout << "   Stddev:    " << stddev << " (expected " << expectedStdDev << ")\n";
-    std::cout << "   Skewness:  " << skewness << " (ideal ≈ 0)\n";
-    std::cout << "   Kurtosis:  " << kurtosis << " (ideal ≈ 3)\n";
+    std::cout << "   Skewness:  " << skewness << " (ideal ~= 0)\n";
+    std::cout << "   Kurtosis:  " << kurtosis << " (ideal ~= 3)\n";
 
     // Acceptable tolerance for mean and stddev (adjust as needed for your sample size)
     double meanTol = 0.01;

@@ -9,6 +9,8 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include <array>
+
 using namespace alpaka;
 
 // BEGIN-TUTORIAL-hierarchyKernel
@@ -140,21 +142,6 @@ TEMPLATE_LIST_TEST_CASE("tutorial hierarchy blocks threads warps", "[docs]", doc
     CHECK(hostRowCounts[2u] == warpSize);
     CHECK(hostRowCounts[3u] == 0u);
 }
-
-/* Copyright 2026 René Widera
- * SPDX-License-Identifier: MPL-2.0
- */
-
-#include "docsTest.hpp"
-
-#include <alpaka/alpaka.hpp>
-
-#include <catch2/catch_template_test_macros.hpp>
-#include <catch2/catch_test_macros.hpp>
-
-#include <array>
-
-using namespace alpaka;
 
 // BEGIN-TUTORIAL-chunkedKernel
 struct ChunkedVectorAddKernel

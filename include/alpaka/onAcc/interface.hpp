@@ -34,7 +34,7 @@ namespace alpaka::onAcc
     } // namespace concepts
 
     /**@{
-     * @name range‑based loop indexable index container
+     * @name range-based loop indexable index container
      */
 
     /** Creates an index container
@@ -51,7 +51,7 @@ namespace alpaka::onAcc
      * @param range     Index range description.
      * @param traverse  Policy describing how the next value can be found.
      * @param idxLayout Policy describing how real worker threads will be mapped to the range.
-     * @return A index container that can be used in a range‑based for loop.
+     * @return A index container that can be used in a range-based for loop.
      */
     template<concepts::IdxTraversing T_Traverse = traverse::Flat, concepts::IdxMapping T_IdxLayout = layout::Optimized>
     ALPAKA_FN_HOST_ACC constexpr auto makeIdxMap(
@@ -104,7 +104,7 @@ namespace alpaka::onAcc
      * @param range     Index range description.
      * @param traverse  Policy describing how the next value can be found.
      * @param idxLayout Policy describing how real worker threads will be mapped to the range.
-     * @return A index container that can be used in a range‑based for loop.
+     * @return A index container that can be used in a range-based for loop.
      */
     template<
         typename T_ScalarIdxType,
@@ -126,7 +126,7 @@ namespace alpaka::onAcc
     }
 
     ///@cond NO_HTML
-    /** Specialisation for one‑dimensional ranges. */
+    /** Specialisation for one-dimensional ranges. */
     template<
         concepts::IdxTraversing T_Traverse = traverse::Tiled,
         concepts::IdxMapping T_IdxLayout = layout::Optimized>
@@ -145,7 +145,7 @@ namespace alpaka::onAcc
                 idxLayout);
     }
 
-    /** Specialisation for one‑dimensional ranges. */
+    /** Specialisation for one-dimensional ranges. */
     template<
         typename T_ScalarIdxType,
         concepts::IdxTraversing T_Traverse = traverse::Tiled,

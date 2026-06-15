@@ -20,7 +20,7 @@ channels:
   - conda-forge
 
 dependencies:
-  # Core Python – choose the version you need
+  # Core Python - choose the version you need
   - python >=3.9,<3.13        # adjust as required
 
   # ---------------------------------------------------------

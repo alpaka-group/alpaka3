@@ -165,7 +165,7 @@ namespace alpaka::onAcc::warp
     /** Read data from threads with higher lane index within a warp.
      *
      * It copies from a lane with higher ID relative to caller.
-     * The lane ID is calculated by adding delta to the caller’s lane ID.
+     * The lane ID is calculated by adding delta to the caller's lane ID.
      *
      * Effectively executes:
      *
@@ -201,7 +201,7 @@ namespace alpaka::onAcc::warp
     /** Read data from threads with lower lane index within a warp.
      *
      * It copies from a lane with lower ID relative to caller.
-     * The lane ID is calculated by subtracting delta from the caller’s lane ID.
+     * The lane ID is calculated by subtracting delta from the caller's lane ID.
      *
      * Effectively executes:
      *
@@ -236,7 +236,7 @@ namespace alpaka::onAcc::warp
     /** Exchange data between threads within a warp.
      *
      * It copies from a lane based on bitwise XOR of own lane ID.
-     * The lane ID is calculated by performing a bitwise XOR of the caller’s lane ID with laneMask
+     * The lane ID is calculated by performing a bitwise XOR of the caller's lane ID with laneMask
      *
      * Effectively executes:
      *

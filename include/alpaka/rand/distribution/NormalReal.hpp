@@ -14,7 +14,7 @@ namespace alpaka::rand::distribution
     namespace internal
     {
         /**
-         * @brief Scalar Box–Muller transform for floating-point types.
+         * @brief Scalar Box-Muller transform for floating-point types.
          *
          * Generates independent standard normal samples from a uniform
          * scalar engine. The implementation caches the second sample so
