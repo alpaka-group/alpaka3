@@ -49,3 +49,10 @@ repos:
     - id: shellcheck
       # required that shellcheck can follow sourced scripts
       args: [-x]
+- repo: local
+  hooks:
+    - id: ascii-check
+      name: ASCII check
+      entry: python3 script/gitPreCommit/checkForNonASCII.py
+      language: system
+      files: \.(c|cc|cpp|cxx|cu|h|hh|hpp|hxx|cuh)$

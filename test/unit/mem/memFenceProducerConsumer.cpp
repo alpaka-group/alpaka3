@@ -71,7 +71,7 @@ struct ProducerConsumerKernel
                 }
                 // Acquire fence: prevents compiler/hardware from speculatively reading
                 // payload before observing the flag. This is the "Acquire" part; which is completing the
-                // release-acquire pair The busy‑wait loop guarantees thread 1 doesn’t leave the loop until it
+                // release-acquire pair The busy-wait loop guarantees thread 1 doesn't leave the loop until it
                 // has observed flag==1, but it does not by itself force any refresh/invalidation of the cache
                 // line holding payload array values, nor prevent the compiler from reordering a payload-read
                 // above the while-loop unless the flag read is treated as a dependency (atomic/volatile) and

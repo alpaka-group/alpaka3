@@ -6,7 +6,7 @@
     width: auto;
 }
 
-/* Phones <1600px – use the whole width */
+/* Phones <1600px - use the whole width */
 @media (max-width: 1600px) {
     .wy-nav-content {
         max-width: none;
