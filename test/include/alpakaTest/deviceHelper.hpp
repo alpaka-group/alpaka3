@@ -32,7 +32,7 @@ namespace alpaka::test
 
         if(!devSelector.isAvailable())
         {
-            WARN("No device available for " << deviceSpec.getName());
+            SKIP("No device available for " << deviceSpec.getName());
             return {};
         }
 
