@@ -131,11 +131,17 @@ TEMPLATE_LIST_TEST_CASE("alloc zero bytes", "", TestDeviceSpecs)
     int dataSize = 0;
 
     [[maybe_unused]] auto hostBuffer = onHost::allocHost<int>(dataSize);
+    CHECK(hostBuffer.getExtents() == alpaka::Vec{dataSize});
     [[maybe_unused]] auto hostBufferAsync = onHost::allocDeferred<int>(onHost::makeHostDevice().makeQueue(), dataSize);
+    CHECK(hostBufferAsync.getExtents() == alpaka::Vec{dataSize});
     [[maybe_unused]] auto hostBufferMapped = onHost::allocMapped<int>(device, dataSize);
+    CHECK(hostBufferMapped.getExtents() == alpaka::Vec{dataSize});
     [[maybe_unused]] auto deviceView = onHost::alloc<int>(device, dataSize);
+    CHECK(deviceView.getExtents() == alpaka::Vec{dataSize});
     [[maybe_unused]] auto deviceViewAsync = onHost::allocDeferred<int>(device.makeQueue(), dataSize);
+    CHECK(deviceViewAsync.getExtents() == alpaka::Vec{dataSize});
     [[maybe_unused]] auto unifiedView = onHost::allocUnified<int>(device, dataSize);
+    CHECK(unifiedView.getExtents() == alpaka::Vec{dataSize});
 }
 
 /** Evaluates on the host side that all rows start with an address which is a multiple of the alignment of the MdSpan
@@ -207,11 +213,17 @@ void volatileBuffers(auto& device, alpaka::concepts::Vector auto extents)
 {
     // just test if they can be allocated and destructed again
     auto hostBuffer = onHost::allocHost<T_DataType volatile>(extents);
+    STATIC_REQUIRE(std::is_same_v<typename ALPAKA_TYPEOF(hostBuffer)::value_type, T_DataType volatile>);
     auto hostBufferAsync = onHost::allocDeferred<T_DataType volatile>(onHost::makeHostDevice().makeQueue(), extents);
+    STATIC_REQUIRE(std::is_same_v<typename ALPAKA_TYPEOF(hostBufferAsync)::value_type, T_DataType volatile>);
     auto hostBufferMapped = onHost::allocMapped<T_DataType volatile>(device, extents);
+    STATIC_REQUIRE(std::is_same_v<typename ALPAKA_TYPEOF(hostBufferMapped)::value_type, T_DataType volatile>);
     auto deviceView = onHost::alloc<T_DataType volatile>(device, extents);
+    STATIC_REQUIRE(std::is_same_v<typename ALPAKA_TYPEOF(deviceView)::value_type, T_DataType volatile>);
     auto deviceViewAsync = onHost::allocDeferred<T_DataType volatile>(device.makeQueue(), extents);
+    STATIC_REQUIRE(std::is_same_v<typename ALPAKA_TYPEOF(deviceViewAsync)::value_type, T_DataType volatile>);
     auto unifiedView = onHost::allocUnified<T_DataType volatile>(device, extents);
+    STATIC_REQUIRE(std::is_same_v<typename ALPAKA_TYPEOF(unifiedView)::value_type, T_DataType volatile>);
 }
 
 TEMPLATE_LIST_TEST_CASE("alloc volatile memory", "", TestDeviceSpecs)

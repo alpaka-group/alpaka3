@@ -75,7 +75,7 @@ function(alpaka_add_test_target target_prefix folder)
                         PRIVATE Catch2::Catch2WithMain alpaka::alpaka alpaka::test
                     )
                     alpaka_finalize(${_test_target_name})
-                    catch_discover_tests(${_test_target_name})
+                    catch_discover_tests(${_test_target_name} EXTRA_ARGS "-w NoAssertions")
                 endif()
             endforeach()
         endif()

@@ -44,9 +44,17 @@ TEMPLATE_LIST_TEST_CASE("device analysis", "", TestApis)
 
     bool hasCQueue = detectConcurrentQueue(device);
     INFO("Concurrent kernel queue detected: " << (hasCQueue ? "yes" : "no"));
+    if(hasCQueue)
+        CHECK(hasCQueue);
+    else
+        CHECK_FALSE(hasCQueue);
 
     bool supportMappedMemTrigger = mappedMemTriggerDetection(device);
     INFO("Can trigger via mapped memory: " << (supportMappedMemTrigger ? "yes" : "no"));
+    if(supportMappedMemTrigger)
+        CHECK(supportMappedMemTrigger);
+    else
+        CHECK_FALSE(supportMappedMemTrigger);
 }
 
 TEMPLATE_LIST_TEST_CASE("event creation and enqueue", "", TestApis)

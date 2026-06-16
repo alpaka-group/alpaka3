@@ -27,8 +27,8 @@ using namespace alpaka;
  */
 void requiresMutableBufferMd(concepts::IMdSpan auto buffer)
 {
-    static_assert(!std::is_const_v<std::remove_pointer_t<decltype(buffer.data())>>);
-    static_assert(!std::is_const_v<std::remove_reference_t<decltype(buffer[Vec{0, 0}])>>);
+    STATIC_REQUIRE(!std::is_const_v<std::remove_pointer_t<decltype(buffer.data())>>);
+    STATIC_REQUIRE(!std::is_const_v<std::remove_reference_t<decltype(buffer[Vec{0, 0}])>>);
 }
 
 TEST_CASE("mdspan inner const copy constructor", "[mem][mdspan][correctness][copyConstruct]")
@@ -113,6 +113,13 @@ TEST_CASE("mdspan inner const move operator", "[mem][mdspan][correctness][moveCo
     // should not compile
     // MutMdSpan copy_mut_mdspan3(std::move(copy_const_mdspan3));
 
+    // at the moment it is more performant efficient, that a mdspan is still valid after a move
+    CHECK(copy_mut_mdspan);
+    CHECK(copy_const_mdspan);
+    CHECK(copy_mut_mdspan2);
+    CHECK(copy_const_mdspan2);
+    CHECK(copy_const_mdspan3);
+
     MutMdSpan assign_mut_mdspan(ptr, extents, pitches);
     ConstMdSpan assign_const_mdspan(const_ptr, extents, pitches);
 
@@ -121,6 +128,13 @@ TEST_CASE("mdspan inner const move operator", "[mem][mdspan][correctness][moveCo
     [[maybe_unused]] ConstMdSpan assign_const_mdspan3 = std::move(assign_mut_mdspan2);
     // should not compile
     // MutMdSpan assign_mut_mdspan3 = std::move(assign_const_mdspan3);
+
+    // at the moment it is more performant efficient, that a mdspan is still valid after a move
+    CHECK(assign_mut_mdspan);
+    CHECK(assign_const_mdspan);
+    CHECK(assign_mut_mdspan2);
+    CHECK(assign_const_mdspan2);
+    CHECK(assign_const_mdspan3);
 }
 
 template<typename TExpectedValueType, typename TExpectedReferenceType, typename TMdSpan>
@@ -266,6 +280,12 @@ TEST_CASE(
     // should not compile
     // MutMdSpanArray constr_mut_md3(std::move(constr_const_md3));
 
+    // at the moment it is more performant efficient, that a mdspan is still valid after a move
+    CHECK(constr_mut_md);
+    CHECK(constr_const_md);
+    CHECK(constr_mut_md2);
+    CHECK(constr_const_md2);
+
     MutMdSpanArray assign_mut_md(static_data);
     ConstMdSpanArray assign_const_md(const_static_data);
 
@@ -274,6 +294,13 @@ TEST_CASE(
     [[maybe_unused]] ConstMdSpanArray assign_const_md3 = std::move(assign_mut_md2);
     // should not compile
     // MutMdSpanArray assign_mut_md3 = std::move(assign_const_md3);
+
+    // at the moment it is more performant efficient, that a mdspan is still valid after a move
+    CHECK(assign_mut_md);
+    CHECK(assign_const_md);
+    CHECK(assign_mut_md2);
+    CHECK(assign_const_md2);
+    CHECK(assign_const_md3);
 }
 
 TEST_CASE("View inner const copy constructor", "[mem][view][correctness][copyConstruct]")
@@ -358,6 +385,13 @@ TEST_CASE("View inner const move constructor and move assignment operator", "[me
     // should not compile
     // MutView construct_mut_view3(std::move(construct_const_view3));
 
+    // at the moment it is more performant efficient, that a view is still valid after a move
+    CHECK(construct_mut_view);
+    CHECK(construct_const_view);
+    CHECK(construct_mut_view2);
+    CHECK(construct_const_view2);
+    CHECK(construct_const_view3);
+
     MutView assign_mut_view(api::host, ptr, extents, pitches);
     ConstView assign_const_view(api::host, const_ptr, extents, pitches);
 
@@ -366,6 +400,13 @@ TEST_CASE("View inner const move constructor and move assignment operator", "[me
     [[maybe_unused]] ConstView assign_const_view3 = std::move(assign_mut_view2);
     // should not compile
     // MutView assign_mut_view3 = std::move(assign_const_view3);
+
+    // at the moment it is more performant efficient, that a view is still valid after a move
+    CHECK(assign_mut_view);
+    CHECK(assign_const_view);
+    CHECK(assign_mut_view2);
+    CHECK(assign_const_view2);
+    CHECK(assign_const_view3);
 }
 
 TEST_CASE("sharedBuffer inner const copy constructor", "[mem][sharedBuffer][correctness][copyConstruct]")
@@ -450,6 +491,13 @@ TEST_CASE("sharedBuffer inner const move operator", "[mem][sharedBuffer][correct
     // should not compile
     // MutSharedBuffer copy_mut_shared_buffer3(std::move(copy_const_shared_buffer3));
 
+    // check lifetime
+    CHECK_FALSE(copy_mut_shared_buffer);
+    CHECK_FALSE(copy_const_shared_buffer);
+    CHECK_FALSE(copy_mut_shared_buffer2);
+    CHECK(copy_const_shared_buffer2);
+    CHECK(copy_const_shared_buffer3);
+
     MutSharedBuffer assign_mut_shared_buffer(api::host, ptr, extents, pitches, [] {});
     ConstSharedBuffer assign_const_shared_buffer(api::host, const_ptr, extents, pitches, [] {});
 
@@ -458,39 +506,46 @@ TEST_CASE("sharedBuffer inner const move operator", "[mem][sharedBuffer][correct
     [[maybe_unused]] ConstSharedBuffer assign_const_shared_buffer3 = std::move(assign_mut_shared_buffer2);
     // should not compile
     // MutSharedBuffer assign_mut_shared_buffer3 = std::move(assign_const_shared_buffer3);
+
+    // check lifetime
+    CHECK_FALSE(assign_mut_shared_buffer2);
+    CHECK_FALSE(assign_mut_shared_buffer2);
+    CHECK_FALSE(assign_const_shared_buffer);
+    CHECK(assign_const_shared_buffer2);
+    CHECK(assign_const_shared_buffer3);
 }
 
 TEST_CASE("buffer const correctness MD", "[mem][sharedBuffer][correctness]")
 {
     auto buffer0 = onHost::allocHost<int>(Vec{10, 10});
     requiresMutableBufferMd(buffer0);
-    static_assert(!std::is_const_v<std::remove_pointer_t<decltype(buffer0.data())>>);
+    STATIC_REQUIRE(!std::is_const_v<std::remove_pointer_t<decltype(buffer0.data())>>);
 
     SECTION("getSubView/getSubBuffer from mutable DataStorage object")
     {
         [[maybe_unused]] auto subBuffer0 = buffer0.getSubSharedBuffer(Vec{2, 2});
-        static_assert(!std::is_const_v<std::remove_pointer_t<decltype(subBuffer0.data())>>);
-        static_assert(!std::is_const_v<std::remove_reference_t<decltype(subBuffer0[Vec{0, 0}])>>);
+        STATIC_REQUIRE(!std::is_const_v<std::remove_pointer_t<decltype(subBuffer0.data())>>);
+        STATIC_REQUIRE(!std::is_const_v<std::remove_reference_t<decltype(subBuffer0[Vec{0, 0}])>>);
 
         [[maybe_unused]] auto subOffsetBuffer0 = buffer0.getSubSharedBuffer(Vec{1, 1}, Vec{2, 2});
-        static_assert(!std::is_const_v<std::remove_pointer_t<decltype(subOffsetBuffer0.data())>>);
-        static_assert(!std::is_const_v<std::remove_reference_t<decltype(subOffsetBuffer0[Vec{0, 0}])>>);
+        STATIC_REQUIRE(!std::is_const_v<std::remove_pointer_t<decltype(subOffsetBuffer0.data())>>);
+        STATIC_REQUIRE(!std::is_const_v<std::remove_reference_t<decltype(subOffsetBuffer0[Vec{0, 0}])>>);
 
         [[maybe_unused]] auto subView0 = buffer0.getSubView(Vec{2, 2});
-        static_assert(!std::is_const_v<std::remove_pointer_t<decltype(subView0.data())>>);
-        static_assert(!std::is_const_v<std::remove_reference_t<decltype(subView0[Vec{0, 0}])>>);
+        STATIC_REQUIRE(!std::is_const_v<std::remove_pointer_t<decltype(subView0.data())>>);
+        STATIC_REQUIRE(!std::is_const_v<std::remove_reference_t<decltype(subView0[Vec{0, 0}])>>);
 
         [[maybe_unused]] auto subOffsetView0 = buffer0.getSubView(Vec{1, 1}, Vec{2, 2});
-        static_assert(!std::is_const_v<std::remove_pointer_t<decltype(subOffsetView0.data())>>);
-        static_assert(!std::is_const_v<std::remove_reference_t<decltype(subOffsetView0[Vec{0, 0}])>>);
+        STATIC_REQUIRE(!std::is_const_v<std::remove_pointer_t<decltype(subOffsetView0.data())>>);
+        STATIC_REQUIRE(!std::is_const_v<std::remove_reference_t<decltype(subOffsetView0[Vec{0, 0}])>>);
 
         [[maybe_unused]] View view = buffer0.getView();
-        static_assert(!std::is_const_v<std::remove_pointer_t<decltype(view.data())>>);
-        static_assert(!std::is_const_v<std::remove_reference_t<decltype(view[Vec{0, 0}])>>);
+        STATIC_REQUIRE(!std::is_const_v<std::remove_pointer_t<decltype(view.data())>>);
+        STATIC_REQUIRE(!std::is_const_v<std::remove_reference_t<decltype(view[Vec{0, 0}])>>);
 
         [[maybe_unused]] MdSpan mdSpan = buffer0.getMdSpan();
-        static_assert(!std::is_const_v<std::remove_pointer_t<decltype(mdSpan.data())>>);
-        static_assert(!std::is_const_v<std::remove_reference_t<decltype(mdSpan[Vec{0, 0}])>>);
+        STATIC_REQUIRE(!std::is_const_v<std::remove_pointer_t<decltype(mdSpan.data())>>);
+        STATIC_REQUIRE(!std::is_const_v<std::remove_reference_t<decltype(mdSpan[Vec{0, 0}])>>);
     }
 
     SECTION("getSubView/getSubBuffer from non-mutable DataStorage object (inner const)")
@@ -498,28 +553,28 @@ TEST_CASE("buffer const correctness MD", "[mem][sharedBuffer][correctness]")
         onHost::SharedBuffer innerConstBuffer0 = buffer0.getConstSharedBuffer();
 
         [[maybe_unused]] auto subBuffer0 = innerConstBuffer0.getSubSharedBuffer(Vec{2, 2});
-        static_assert(std::is_const_v<std::remove_pointer_t<decltype(subBuffer0.data())>>);
-        static_assert(std::is_const_v<std::remove_reference_t<decltype(subBuffer0[Vec{0, 0}])>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_pointer_t<decltype(subBuffer0.data())>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_reference_t<decltype(subBuffer0[Vec{0, 0}])>>);
 
         [[maybe_unused]] auto subOffsetBuffer0 = innerConstBuffer0.getSubSharedBuffer(Vec{1, 1}, Vec{2, 2});
-        static_assert(std::is_const_v<std::remove_pointer_t<decltype(subOffsetBuffer0.data())>>);
-        static_assert(std::is_const_v<std::remove_reference_t<decltype(subOffsetBuffer0[Vec{0, 0}])>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_pointer_t<decltype(subOffsetBuffer0.data())>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_reference_t<decltype(subOffsetBuffer0[Vec{0, 0}])>>);
 
         [[maybe_unused]] auto subView0 = innerConstBuffer0.getSubView(Vec{2, 2});
-        static_assert(std::is_const_v<std::remove_pointer_t<decltype(subView0.data())>>);
-        static_assert(std::is_const_v<std::remove_reference_t<decltype(subView0[Vec{0, 0}])>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_pointer_t<decltype(subView0.data())>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_reference_t<decltype(subView0[Vec{0, 0}])>>);
 
         [[maybe_unused]] auto subOffsetView0 = innerConstBuffer0.getSubView(Vec{1, 1}, Vec{2, 2});
-        static_assert(std::is_const_v<std::remove_pointer_t<decltype(subOffsetView0.data())>>);
-        static_assert(std::is_const_v<std::remove_reference_t<decltype(subOffsetView0[Vec{0, 0}])>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_pointer_t<decltype(subOffsetView0.data())>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_reference_t<decltype(subOffsetView0[Vec{0, 0}])>>);
 
         [[maybe_unused]] View view = innerConstBuffer0.getView();
-        static_assert(std::is_const_v<std::remove_pointer_t<decltype(view.data())>>);
-        static_assert(std::is_const_v<std::remove_reference_t<decltype(view[Vec{0, 0}])>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_pointer_t<decltype(view.data())>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_reference_t<decltype(view[Vec{0, 0}])>>);
 
         [[maybe_unused]] MdSpan mdSpan = innerConstBuffer0.getMdSpan();
-        static_assert(std::is_const_v<std::remove_pointer_t<decltype(mdSpan.data())>>);
-        static_assert(std::is_const_v<std::remove_reference_t<decltype(mdSpan[Vec{0, 0}])>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_pointer_t<decltype(mdSpan.data())>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_reference_t<decltype(mdSpan[Vec{0, 0}])>>);
     }
 
     SECTION("getSubView/getSubBuffer from non-mutable DataStorage object (outer const)")
@@ -528,27 +583,27 @@ TEST_CASE("buffer const correctness MD", "[mem][sharedBuffer][correctness]")
         requiresMutableBufferMd(outerConstBuffer0);
 
         [[maybe_unused]] auto subBuffer0 = outerConstBuffer0.getSubSharedBuffer(Vec{2, 2});
-        static_assert(std::is_const_v<std::remove_pointer_t<decltype(subBuffer0.data())>>);
-        static_assert(std::is_const_v<std::remove_reference_t<decltype(subBuffer0[Vec{0, 0}])>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_pointer_t<decltype(subBuffer0.data())>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_reference_t<decltype(subBuffer0[Vec{0, 0}])>>);
 
         [[maybe_unused]] auto subOffsetBuffer0 = outerConstBuffer0.getSubSharedBuffer(Vec{1, 1}, Vec{2, 2});
-        static_assert(std::is_const_v<std::remove_pointer_t<decltype(subOffsetBuffer0.data())>>);
-        static_assert(std::is_const_v<std::remove_reference_t<decltype(subOffsetBuffer0[Vec{0, 0}])>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_pointer_t<decltype(subOffsetBuffer0.data())>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_reference_t<decltype(subOffsetBuffer0[Vec{0, 0}])>>);
 
         [[maybe_unused]] auto subView0 = outerConstBuffer0.getSubView(Vec{2, 2});
-        static_assert(std::is_const_v<std::remove_pointer_t<decltype(subView0.data())>>);
-        static_assert(std::is_const_v<std::remove_reference_t<decltype(subView0[Vec{0, 0}])>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_pointer_t<decltype(subView0.data())>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_reference_t<decltype(subView0[Vec{0, 0}])>>);
 
         [[maybe_unused]] auto subOffsetView0 = outerConstBuffer0.getSubView(Vec{1, 1}, Vec{2, 2});
-        static_assert(std::is_const_v<std::remove_pointer_t<decltype(subOffsetView0.data())>>);
-        static_assert(std::is_const_v<std::remove_reference_t<decltype(subOffsetView0[Vec{0, 0}])>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_pointer_t<decltype(subOffsetView0.data())>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_reference_t<decltype(subOffsetView0[Vec{0, 0}])>>);
 
         [[maybe_unused]] View view = outerConstBuffer0.getView();
-        static_assert(std::is_const_v<std::remove_pointer_t<decltype(view.data())>>);
-        static_assert(std::is_const_v<std::remove_reference_t<decltype(view[Vec{0, 0}])>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_pointer_t<decltype(view.data())>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_reference_t<decltype(view[Vec{0, 0}])>>);
 
         [[maybe_unused]] MdSpan mdSpan = outerConstBuffer0.getMdSpan();
-        static_assert(std::is_const_v<std::remove_pointer_t<decltype(mdSpan.data())>>);
-        static_assert(std::is_const_v<std::remove_reference_t<decltype(mdSpan[Vec{0, 0}])>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_pointer_t<decltype(mdSpan.data())>>);
+        STATIC_REQUIRE(std::is_const_v<std::remove_reference_t<decltype(mdSpan[Vec{0, 0}])>>);
     }
 }
