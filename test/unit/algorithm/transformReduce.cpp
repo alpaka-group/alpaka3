@@ -157,11 +157,9 @@ template<typename T_DataType>
 void prepareTest(auto cfg, concepts::Vector auto extentMd, auto const& setupTuple)
 {
     using DataType = T_DataType;
-    auto optionalDeviceExec = test::getAvailableDeviceExecutor(cfg);
-    if(!optionalDeviceExec)
-        return;
-    onHost::Device computeDev = test::getDevice(optionalDeviceExec);
-    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
+    auto deviceExec = test::getAvailableDeviceExecutor(cfg);
+    onHost::Device computeDev = test::getDevice(deviceExec);
+    concepts::Executor auto exec = test::getExecutor(deviceExec);
 
     onHost::Queue computeQueue = computeDev.makeQueue();
 
@@ -451,11 +449,9 @@ void prepareOnAccTest(auto cfg, concepts::Vector auto extentMd, auto const& setu
 {
     using DataType = T_DataType;
 
-    auto optionalDeviceExec = test::getAvailableDeviceExecutor(cfg);
-    if(!optionalDeviceExec)
-        return;
-    onHost::Device computeDev = test::getDevice(optionalDeviceExec);
-    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
+    auto deviceExec = test::getAvailableDeviceExecutor(cfg);
+    onHost::Device computeDev = test::getDevice(deviceExec);
+    concepts::Executor auto exec = test::getExecutor(deviceExec);
 
     onHost::Queue computeQueue = computeDev.makeQueue();
 

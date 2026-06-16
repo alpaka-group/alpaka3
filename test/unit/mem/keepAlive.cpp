@@ -32,11 +32,9 @@ struct IotaKernel
 
 TEMPLATE_LIST_TEST_CASE("keep alive", "", TestApis)
 {
-    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
-    if(!optionalDeviceExec)
-        return;
-    onHost::Device device = test::getDevice(optionalDeviceExec);
-    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
+    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    onHost::Device device = test::getDevice(deviceExec);
+    concepts::Executor auto exec = test::getExecutor(deviceExec);
     onHost::Queue queue = device.makeQueue();
 
     constexpr std::size_t N = 256;

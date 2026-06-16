@@ -159,11 +159,9 @@ template<typename T_Data>
 void prepareTest(auto cfg, concepts::Vector auto extents)
 {
     using DataType = T_Data;
-    auto optionalDeviceExec = test::getAvailableDeviceExecutor(cfg);
-    if(!optionalDeviceExec)
-        return;
-    onHost::Device computeDev = test::getDevice(optionalDeviceExec);
-    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
+    auto deviceExec = test::getAvailableDeviceExecutor(cfg);
+    onHost::Device computeDev = test::getDevice(deviceExec);
+    concepts::Executor auto exec = test::getExecutor(deviceExec);
 
     onHost::Queue computeQueue = computeDev.makeQueue();
 

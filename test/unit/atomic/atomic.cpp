@@ -240,11 +240,9 @@ struct TestAtomicOperations
 
 TEMPLATE_LIST_TEST_CASE("atomicOperationsWorking", "[atomic]", TestApis)
 {
-    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
-    if(!optionalDeviceExec)
-        return;
-    onHost::Device device = test::getDevice(optionalDeviceExec);
-    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
+    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    onHost::Device device = test::getDevice(deviceExec);
+    concepts::Executor auto exec = test::getExecutor(deviceExec);
 
     // According to the CUDA 12.1 Programming Guide, Section 7.14. Atomic Functions, an atomic function performs a
     // read-modify-write atomic operation on one 32-bit or 64-bit word residing in global or shared memory.

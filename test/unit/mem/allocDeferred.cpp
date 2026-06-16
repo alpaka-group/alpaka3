@@ -93,11 +93,9 @@ void allocDeferredExplicitWait(auto device, auto exec)
 
 TEMPLATE_LIST_TEST_CASE("allocDeferred", "", TestApis)
 {
-    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
-    if(!optionalDeviceExec)
-        return;
-    onHost::Device device = test::getDevice(optionalDeviceExec);
-    concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
+    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    onHost::Device device = test::getDevice(deviceExec);
+    concepts::Executor auto exec = test::getExecutor(deviceExec);
 
     // repeat the test multiple times to increase the change to trigger data races
     constexpr int testRounds = 10;

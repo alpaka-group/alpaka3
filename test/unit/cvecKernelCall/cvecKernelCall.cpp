@@ -44,11 +44,9 @@ struct KernelCVecFrameExtents
 
 TEMPLATE_LIST_TEST_CASE("CVec frame extent kernel call", "", TestApis)
 {
-    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
-    if(!optionalDeviceExec)
-        return;
-    onHost::Device device = test::getDevice(optionalDeviceExec);
-    alpaka::concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
+    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    onHost::Device device = test::getDevice(deviceExec);
+    alpaka::concepts::Executor auto exec = test::getExecutor(deviceExec);
     Queue queue = device.makeQueue();
 
     auto dBuff = onHost::alloc<bool>(device, Vec{1u});
@@ -86,11 +84,9 @@ struct KernelCVecThreadExtents
 
 TEMPLATE_LIST_TEST_CASE("CVec thread extent kernel call", "", TestApis)
 {
-    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
-    if(!optionalDeviceExec)
-        return;
-    onHost::Device device = test::getDevice(optionalDeviceExec);
-    alpaka::concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
+    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    onHost::Device device = test::getDevice(deviceExec);
+    alpaka::concepts::Executor auto exec = test::getExecutor(deviceExec);
     Queue queue = device.makeQueue();
 
     auto dBuff = onHost::alloc<bool>(device, Vec{1u});

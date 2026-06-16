@@ -28,13 +28,9 @@ namespace alpaka::test
     template<typename T_DataType = alpaka::NotRequired>
     bool executeOnComputeDevice(auto cfg, auto kernelFnObj, auto&&... args)
     {
-        auto optionalDeviceExec = test::getAvailableDeviceExecutor(cfg);
-        if(!optionalDeviceExec)
-        {
-            return false;
-        }
-        onHost::Device device = test::getDevice(optionalDeviceExec);
-        concepts::Executor auto exec = test::getExecutor(optionalDeviceExec);
+        auto deviceExec = test::getAvailableDeviceExecutor(cfg);
+        onHost::Device device = test::getDevice(deviceExec);
+        concepts::Executor auto exec = test::getExecutor(deviceExec);
 
 #if ALPAKA_LANG_ONEAPI
         // support for double precision is not guaranteed for sycl devices such as Intel GPUs

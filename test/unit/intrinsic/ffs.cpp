@@ -42,11 +42,9 @@ static int32_t naiveFfs(TValue value)
 
 TEMPLATE_LIST_TEST_CASE("ffs", "[intrinsic][ffs]", TestBackends)
 {
-    auto optionalDeviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
-    if(!optionalDeviceExec)
-        return;
-    onHost::Device devAcc = test::getDevice(optionalDeviceExec);
-    concepts::Executor auto computeExec = test::getExecutor(optionalDeviceExec);
+    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    onHost::Device devAcc = test::getDevice(deviceExec);
+    concepts::Executor auto computeExec = test::getExecutor(deviceExec);
 
     // Create a queue on the device
     alpaka::onHost::Queue queue = devAcc.makeQueue();
