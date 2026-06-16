@@ -25,20 +25,20 @@ struct CompileTimeKernel1D
         using namespace alpaka;
 
         constexpr auto vec = Vec{3};
-        static_assert(vec.dim() == 1);
-        static_assert(vec.x() == 3);
-        static_assert(vec == Vec{3});
+        STATIC_REQUIRE(vec.dim() == 1);
+        STATIC_REQUIRE(vec.x() == 3);
+        STATIC_REQUIRE(vec == Vec{3});
 
         // compile time vector
         auto detailCVec = detail::CVec<int, 23>{};
-        static_assert(detailCVec[0] == 23);
+        STATIC_REQUIRE(detailCVec[0] == 23);
 
         auto cvec = CVec<int, 23>{};
-        static_assert(cvec[0] == 23);
+        STATIC_REQUIRE(cvec[0] == 23);
 
         auto selectVec = CVec<int, 0>{};
         constexpr auto selectRes = vec[selectVec];
-        static_assert(selectRes == Vec{3});
+        STATIC_REQUIRE(selectRes == Vec{3});
 
         constexpr auto typeLambda = [](auto const typeDummy) constexpr
         {
@@ -69,7 +69,7 @@ struct CompileTimeKernel1D
 
         constexpr auto inputTypes = std::tuple<int, uint32_t, uint64_t, float, double>{};
         constexpr bool x = std::apply([&](auto... args) constexpr { return (typeLambda(args) && ...); }, inputTypes);
-        static_assert(x);
+        STATIC_REQUIRE(x);
     }
 };
 
@@ -81,53 +81,53 @@ struct CompileTimeKernel2D
         using namespace alpaka;
 
         constexpr auto vec = Vec{3, 7};
-        static_assert(vec.dim() == 2);
-        static_assert(vec.y() == 3 && vec.x() == 7);
-        static_assert(vec == Vec{3, 7});
-        static_assert(vec != Vec{7, 3});
-        static_assert(Vec{7} == Vec{7, 3}.eraseBack());
+        STATIC_REQUIRE(vec.dim() == 2);
+        STATIC_REQUIRE(vec.y() == 3 && vec.x() == 7);
+        STATIC_REQUIRE(vec == Vec{3, 7});
+        STATIC_REQUIRE(vec != Vec{7, 3});
+        STATIC_REQUIRE(Vec{7} == Vec{7, 3}.eraseBack());
 
-        static_assert(Vec{3} == Vec{7, 3}.rshrink<1u>());
-        static_assert(Vec{3} == Vec{7, 3}.rshrink<1u>(1u));
-        static_assert(Vec{7} == Vec{7, 3}.rshrink<1u>(0u));
+        STATIC_REQUIRE(Vec{3} == Vec{7, 3}.rshrink<1u>());
+        STATIC_REQUIRE(Vec{3} == Vec{7, 3}.rshrink<1u>(1u));
+        STATIC_REQUIRE(Vec{7} == Vec{7, 3}.rshrink<1u>(0u));
 
-        static_assert(Vec{7} == Vec{7, 3}.remove<1u>());
-        static_assert(Vec{3} == Vec{7, 3}.remove<0u>());
+        STATIC_REQUIRE(Vec{7} == Vec{7, 3}.remove<1u>());
+        STATIC_REQUIRE(Vec{3} == Vec{7, 3}.remove<0u>());
 
         // assign and rAssign
-        static_assert(Vec{1, 3} == Vec{7, 3}.assign<0u>(1));
-        static_assert(Vec{1, 3} == Vec{7, 3}.assign(CVec<uint32_t, 0>{}, Vec{1}));
-        static_assert(Vec{7, 1} == Vec{7, 3}.rAssign<1u>(1));
+        STATIC_REQUIRE(Vec{1, 3} == Vec{7, 3}.assign<0u>(1));
+        STATIC_REQUIRE(Vec{1, 3} == Vec{7, 3}.assign(CVec<uint32_t, 0>{}, Vec{1}));
+        STATIC_REQUIRE(Vec{7, 1} == Vec{7, 3}.rAssign<1u>(1));
 
-        static_assert(Vec{0, 1} == mapToND(Vec{3, 2}, 1));
-        static_assert(Vec{1, 0} == mapToND(Vec{3, 2}, 2));
-        static_assert(Vec{1, 1} == mapToND(Vec{3, 2}, 3));
+        STATIC_REQUIRE(Vec{0, 1} == mapToND(Vec{3, 2}, 1));
+        STATIC_REQUIRE(Vec{1, 0} == mapToND(Vec{3, 2}, 2));
+        STATIC_REQUIRE(Vec{1, 1} == mapToND(Vec{3, 2}, 3));
 
-        static_assert(linearize(Vec{3, 2}, Vec{0, 1}) == 1);
-        static_assert(linearize(Vec{3, 2}, Vec{1, 0}) == 2);
-        static_assert(linearize(Vec{3, 2}, Vec{1, 1}) == 3);
+        STATIC_REQUIRE(linearize(Vec{3, 2}, Vec{0, 1}) == 1);
+        STATIC_REQUIRE(linearize(Vec{3, 2}, Vec{1, 0}) == 2);
+        STATIC_REQUIRE(linearize(Vec{3, 2}, Vec{1, 1}) == 3);
 
         // compile time vector
         auto detailCVec = detail::CVec<int, 3, 2>{};
-        static_assert(detailCVec[0] == 3);
-        static_assert(detailCVec[1] == 2);
+        STATIC_REQUIRE(detailCVec[0] == 3);
+        STATIC_REQUIRE(detailCVec[1] == 2);
 
         auto cvec = CVec<int, 3, 2>{};
-        static_assert(cvec[0] == 3);
-        static_assert(cvec[1] == 2);
+        STATIC_REQUIRE(cvec[0] == 3);
+        STATIC_REQUIRE(cvec[1] == 2);
 
-        static_assert(linearize(cvec, Vec{0, 1}) == 1);
+        STATIC_REQUIRE(linearize(cvec, Vec{0, 1}) == 1);
 
         auto selectVec = CVec<int, 1, 0>{};
         constexpr auto selectRes = vec[selectVec];
-        static_assert(selectRes == Vec{7, 3});
+        STATIC_REQUIRE(selectRes == Vec{7, 3});
 
         constexpr auto iota2 = iotaCVec<int, 2u>();
-        static_assert(iota2 == Vec{0, 1});
+        STATIC_REQUIRE(iota2 == Vec{0, 1});
 
         // CVec fallback to Vec for different operations
         constexpr auto allVec = CVec<int, 2u, 2u>::fill(1u);
-        static_assert(allVec == Vec{1, 1});
+        STATIC_REQUIRE(allVec == Vec{1, 1});
 
         constexpr auto typeLambda = [](auto const typeDummy) constexpr
         {
@@ -162,7 +162,7 @@ struct CompileTimeKernel2D
 
         constexpr auto inputTypes = std::tuple<int, uint32_t, uint64_t, float, double>{};
         constexpr bool x = std::apply([&](auto... args) constexpr { return (typeLambda(args) && ...); }, inputTypes);
-        static_assert(x);
+        STATIC_REQUIRE(x);
     }
 };
 
@@ -174,55 +174,55 @@ struct CompileTimeKernel3D
         using namespace alpaka;
 
         constexpr auto vec = Vec{3, 7, 5};
-        static_assert(vec.dim() == 3);
-        static_assert(vec.z() == 3 && vec.y() == 7 && vec.x() == 5);
-        static_assert(vec == Vec{3, 7, 5});
-        static_assert(vec != Vec{7, 3, 5});
-        static_assert(Vec{7, 3} == Vec{7, 3, 5}.eraseBack());
+        STATIC_REQUIRE(vec.dim() == 3);
+        STATIC_REQUIRE(vec.z() == 3 && vec.y() == 7 && vec.x() == 5);
+        STATIC_REQUIRE(vec == Vec{3, 7, 5});
+        STATIC_REQUIRE(vec != Vec{7, 3, 5});
+        STATIC_REQUIRE(Vec{7, 3} == Vec{7, 3, 5}.eraseBack());
 
-        static_assert(Vec{3, 5} == Vec{7, 3, 5}.rshrink<2u>());
-        static_assert(Vec{7, 3} == Vec{7, 3, 5}.rshrink<2u>(1u));
-        static_assert(Vec{5, 7} == Vec{7, 3, 5}.rshrink<2u>(0u));
+        STATIC_REQUIRE(Vec{3, 5} == Vec{7, 3, 5}.rshrink<2u>());
+        STATIC_REQUIRE(Vec{7, 3} == Vec{7, 3, 5}.rshrink<2u>(1u));
+        STATIC_REQUIRE(Vec{5, 7} == Vec{7, 3, 5}.rshrink<2u>(0u));
 
-        static_assert(Vec{7, 5} == Vec{7, 3, 5}.remove<1u>());
-        static_assert(Vec{3, 5} == Vec{7, 3, 5}.remove<0u>());
+        STATIC_REQUIRE(Vec{7, 5} == Vec{7, 3, 5}.remove<1u>());
+        STATIC_REQUIRE(Vec{3, 5} == Vec{7, 3, 5}.remove<0u>());
 
         // assign and rAssign
-        static_assert(Vec{7, 1, 5} == Vec{7, 3, 5}.assign<1u>(1));
-        static_assert(Vec{42, 3, 43} == Vec{7, 3, 5}.assign(CVec<uint32_t, 0, 2>{}, Vec{42, 43}));
-        static_assert(Vec{7, 3, 1} == Vec{7, 3, 5}.rAssign(1));
-        static_assert(Vec{7, 1, 5} == Vec{7, 3, 5}.rAssign<1>(1));
+        STATIC_REQUIRE(Vec{7, 1, 5} == Vec{7, 3, 5}.assign<1u>(1));
+        STATIC_REQUIRE(Vec{42, 3, 43} == Vec{7, 3, 5}.assign(CVec<uint32_t, 0, 2>{}, Vec{42, 43}));
+        STATIC_REQUIRE(Vec{7, 3, 1} == Vec{7, 3, 5}.rAssign(1));
+        STATIC_REQUIRE(Vec{7, 1, 5} == Vec{7, 3, 5}.rAssign<1>(1));
 
-        static_assert(Vec{0, 0, 1} == mapToND(Vec{5, 3, 2}, 1));
-        static_assert(Vec{0, 1, 0} == mapToND(Vec{5, 3, 2}, 2));
-        static_assert(Vec{0, 1, 1} == mapToND(Vec{5, 3, 2}, 3));
-        static_assert(Vec{1, 0, 0} == mapToND(Vec{5, 3, 2}, 6));
+        STATIC_REQUIRE(Vec{0, 0, 1} == mapToND(Vec{5, 3, 2}, 1));
+        STATIC_REQUIRE(Vec{0, 1, 0} == mapToND(Vec{5, 3, 2}, 2));
+        STATIC_REQUIRE(Vec{0, 1, 1} == mapToND(Vec{5, 3, 2}, 3));
+        STATIC_REQUIRE(Vec{1, 0, 0} == mapToND(Vec{5, 3, 2}, 6));
 
-        static_assert(linearize(Vec{5, 3, 2}, Vec{0, 0, 1}) == 1);
-        static_assert(linearize(Vec{5, 3, 2}, Vec{0, 1, 0}) == 2);
-        static_assert(linearize(Vec{5, 3, 2}, Vec{0, 1, 1}) == 3);
-        static_assert(linearize(Vec{5, 3, 2}, Vec{1, 0, 0}) == 6);
+        STATIC_REQUIRE(linearize(Vec{5, 3, 2}, Vec{0, 0, 1}) == 1);
+        STATIC_REQUIRE(linearize(Vec{5, 3, 2}, Vec{0, 1, 0}) == 2);
+        STATIC_REQUIRE(linearize(Vec{5, 3, 2}, Vec{0, 1, 1}) == 3);
+        STATIC_REQUIRE(linearize(Vec{5, 3, 2}, Vec{1, 0, 0}) == 6);
 
         // compile time vector
         auto detailCVec = detail::CVec<int, 5, 3, 2>{};
-        static_assert(detailCVec[0] == 5);
-        static_assert(detailCVec[1] == 3);
-        static_assert(detailCVec[2] == 2);
+        STATIC_REQUIRE(detailCVec[0] == 5);
+        STATIC_REQUIRE(detailCVec[1] == 3);
+        STATIC_REQUIRE(detailCVec[2] == 2);
 
         auto cvec = CVec<int, 5, 3, 2>{};
-        static_assert(cvec[0] == 5);
-        static_assert(cvec[1] == 3);
-        static_assert(cvec[2] == 2);
+        STATIC_REQUIRE(cvec[0] == 5);
+        STATIC_REQUIRE(cvec[1] == 3);
+        STATIC_REQUIRE(cvec[2] == 2);
 
-        static_assert(linearize(cvec, Vec{0, 0, 1}) == 1);
+        STATIC_REQUIRE(linearize(cvec, Vec{0, 0, 1}) == 1);
 
         auto selectVec = CVec<int, 1, 2, 0>{};
         constexpr auto selectRes = vec[selectVec];
-        static_assert(selectRes == Vec{7, 5, 3});
+        STATIC_REQUIRE(selectRes == Vec{7, 5, 3});
 
         auto selectVec2 = CVec<int, 1, 2>{};
         constexpr auto selectRes2 = vec[selectVec2];
-        static_assert(selectRes2 == Vec{7, 5});
+        STATIC_REQUIRE(selectRes2 == Vec{7, 5});
 
         // cvec filter
         // empty results are undefined because zero length vectors don't exist
@@ -230,15 +230,15 @@ struct CompileTimeKernel3D
         auto m1 = CVec<int, 1, 5>{};
 
         constexpr auto l = filter(m0, m1);
-        static_assert(l == Vec{2, 0});
+        STATIC_REQUIRE(l == Vec{2, 0});
 
         constexpr auto vecSrcApply = CVec<int, 1, 2>{};
         constexpr auto vecResApply
             = alpaka::apply([](auto const... args) constexpr { return Vec{(args + 1)...}; }, vecSrcApply);
-        static_assert(vecResApply == Vec{2, 3});
+        STATIC_REQUIRE(vecResApply == Vec{2, 3});
 
         constexpr auto iota3 = iotaCVec<int, 3u>();
-        static_assert(iota3 == Vec{0, 1, 2});
+        STATIC_REQUIRE(iota3 == Vec{0, 1, 2});
     }
 };
 
@@ -280,7 +280,7 @@ struct CompileTimeKernelCompare2D
 
         constexpr auto inputTypes = std::tuple<int, uint32_t, uint64_t, float, double>{};
         constexpr bool x = std::apply([&](auto... args) constexpr { return (typeLambda(args) && ...); }, inputTypes);
-        static_assert(x);
+        STATIC_REQUIRE(x);
     }
 };
 
@@ -295,7 +295,7 @@ struct CompileTimeKernelDivCeilAndDivExZero
         constexpr auto vec1 = Vec{7};
         constexpr auto vec2 = Vec{3};
         // (7 + 3 - 1) / 3 = 9 / 3 = 3
-        static_assert(divCeil(vec1, vec2) == Vec{(7 + 3 - 1) / 3});
+        STATIC_REQUIRE(divCeil(vec1, vec2) == Vec{(7 + 3 - 1) / 3});
 
         // Test divCeil with 3D vectors
         constexpr auto vec3 = Vec{3, 7, 5};
@@ -303,14 +303,14 @@ struct CompileTimeKernelDivCeilAndDivExZero
         // (3 + 2 - 1) / 2 = 4 / 2 = 2
         // (7 + 3 - 1) / 3 = 9 / 3 = 3
         // (5 + 4 - 1) / 4 = 8 / 4 = 2
-        static_assert(divCeil(vec3, vec4) == Vec{(3 + 2 - 1) / 2, (7 + 3 - 1) / 3, (5 + 4 - 1) / 4});
+        STATIC_REQUIRE(divCeil(vec3, vec4) == Vec{(3 + 2 - 1) / 2, (7 + 3 - 1) / 3, (5 + 4 - 1) / 4});
 
         // Test divExZero with 1D vectors
         constexpr auto vec5 = Vec{7};
         constexpr auto vec6 = Vec{3};
         // 7 / 3 = 2
-        static_assert(divExZero(vec5, vec6) == Vec{std::max(7 / 3, 1)});
-        static_assert(divExZero(vec5, Vec{8}) == Vec{1});
+        STATIC_REQUIRE(divExZero(vec5, vec6) == Vec{std::max(7 / 3, 1)});
+        STATIC_REQUIRE(divExZero(vec5, Vec{8}) == Vec{1});
 
         // Test divExZero with 3D vectors
         constexpr auto vec7 = Vec{3, 7, 5};
@@ -318,7 +318,7 @@ struct CompileTimeKernelDivCeilAndDivExZero
         // 3 / 2 = 1 -> no clamping needed, already 1
         // 7 / 3 = 2
         // 5 / 4 = 1 -> no clamping needed, already 1
-        static_assert(divExZero(vec7, vec8) == Vec{std::max(3 / 2, 1), std::max(7 / 3, 1), std::max(5 / 4, 1)});
+        STATIC_REQUIRE(divExZero(vec7, vec8) == Vec{std::max(3 / 2, 1), std::max(7 / 3, 1), std::max(5 / 4, 1)});
     }
 };
 

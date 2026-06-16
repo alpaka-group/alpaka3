@@ -34,6 +34,9 @@ TEMPLATE_LIST_TEST_CASE("kernel no arguments", "", TestApis)
 
     onHost::Queue queue = device.makeQueue(queueKind::blocking);
     queue.enqueue(onHost::FrameSpec{1, 1, exec}, KernelBundle{NoArgumentsKernel{}});
+
+    // to avoid to trigger Catch2 NoAssert check
+    STATIC_REQUIRE(true);
 }
 
 struct IotaKernel

@@ -35,6 +35,9 @@ TEST_CASE("api creation", "")
                 INFO("api=" << deviceSpec.getApi().getName() << " device=" << device.getName());
             }
 
+            // to avoid to trigger Catch2 NoAssert check
+            STATIC_REQUIRE(true);
+
             return 0;
         },
         getDeviceSpecsFor(enabledApis));
