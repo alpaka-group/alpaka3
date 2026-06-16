@@ -385,6 +385,11 @@ namespace alpaka::onHost
                 ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
                 constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
 
+                // use always 64bit precision to avoid overflows in the pitch calculations
+                auto extentMd = pCast<size_t>(extents);
+                if(extentMd.product() == size_t{0u})
+                    return;
+
                 /* Get all required properties outside the lambda function to not extend the life-time of the data.
                  * The life-time is not extended to have some life-time behaviours with all backends.
                  */
@@ -394,36 +399,38 @@ namespace alpaka::onHost
                 if constexpr(dim == 1u)
                 {
                     queue.submit(
-                        [extents, destPtr, srcPtr]()
+                        [numElementsInX = extentMd.x(), destPtr, srcPtr]()
                         {
-                            std::memcpy(destPtr, srcPtr, extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
+                            std::memcpy(
+                                destPtr,
+                                srcPtr,
+                                numElementsInX * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
                         });
                 }
                 else
                 {
                     // memcpy is implemented as row wise copy therefore the last dimension is not required
-                    auto destPitchBytesWithoutColumn = dest.getPitches().eraseBack();
-                    auto sourcePitchBytesWithoutColumn = source.getPitches().eraseBack();
+                    auto destPitchBytesWithoutColumn = pCast<size_t>(onHost::getPitches(dest).eraseBack());
+                    auto sourcePitchBytesWithoutColumn = pCast<size_t>(onHost::getPitches(source).eraseBack());
 
                     queue.submit(
-                        [extents, destPtr, srcPtr, destPitchBytesWithoutColumn, sourcePitchBytesWithoutColumn]()
+                        [extentMd, destPtr, srcPtr, destPitchBytesWithoutColumn, sourcePitchBytesWithoutColumn]()
                         {
-                            auto const dstExtentWithoutColumn = extents.eraseBack();
-                            if(static_cast<std::size_t>(extents.product()) != 0u)
-                            {
-                                meta::ndLoopIncIdx(
-                                    dstExtentWithoutColumn,
-                                    [&](auto const& idx)
-                                    {
-                                        std::memcpy(
-                                            reinterpret_cast<std::uint8_t*>(destPtr)
-                                                + (idx * destPitchBytesWithoutColumn).sum(),
-                                            reinterpret_cast<std::uint8_t const*>(srcPtr)
-                                                + (idx * sourcePitchBytesWithoutColumn).sum(),
-                                            static_cast<size_t>(extents.back())
-                                                * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
-                                    });
-                            }
+                            alpaka::concepts::Vector<size_t> auto const dstExtentWithoutColumn
+                                = pCast<size_t>(extentMd.eraseBack());
+
+                            meta::ndLoopIncIdx(
+                                dstExtentWithoutColumn,
+                                [&](auto const& idx)
+                                {
+                                    std::memcpy(
+                                        reinterpret_cast<std::uint8_t*>(destPtr)
+                                            + (idx * destPitchBytesWithoutColumn).sum(),
+                                        reinterpret_cast<std::uint8_t const*>(srcPtr)
+                                            + (idx * sourcePitchBytesWithoutColumn).sum(),
+                                        static_cast<size_t>(extentMd.back())
+                                            * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
+                                });
                         });
                 }
             }

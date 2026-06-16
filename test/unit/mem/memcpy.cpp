@@ -40,7 +40,7 @@ void memcpyHostToHostTest(auto& device, alpaka::concepts::Vector auto extents)
         extents,
         [&](auto idx)
         {
-            CHECK(refIotaCounter == output[idx]);
+            REQUIRE(refIotaCounter == output[idx]);
             ++refIotaCounter;
         });
 }
@@ -68,7 +68,7 @@ void memcpyDeviceToHostTest(auto& device, alpaka::concepts::Vector auto extents)
         extents,
         [&](auto idx)
         {
-            CHECK(refIotaCounter == output[idx]);
+            REQUIRE(refIotaCounter == output[idx]);
             ++refIotaCounter;
         });
 }
@@ -99,7 +99,7 @@ void memcpyHostToDeviceTest(auto& device, alpaka::concepts::Vector auto extents)
         extents,
         [&](auto idx)
         {
-            CHECK(refIotaCounter == hostOutput[idx]);
+            REQUIRE(refIotaCounter == hostOutput[idx]);
             ++refIotaCounter;
         });
 }
@@ -130,7 +130,7 @@ void memcpyHostToDeviceDevice(auto& device, alpaka::concepts::Vector auto extent
         extents,
         [&](auto idx)
         {
-            CHECK(refIotaCounter == hostOutput[idx]);
+            REQUIRE(refIotaCounter == hostOutput[idx]);
             ++refIotaCounter;
         });
 }
@@ -151,8 +151,14 @@ TEMPLATE_LIST_TEST_CASE("memcopy test", "", DeviceSpecs)
 
     using DataType = int;
 
-    auto extentMdList
-        = std::make_tuple(Vec{5, 7, 3, 11}, Vec{93, 7, 123}, Vec{5, 7, 4111}, Vec{5, 7, 3}, Vec{7, 3}, Vec{3});
+    auto extentMdList = std::make_tuple(
+        Vec{17, 19, 23, 29, 31},
+        Vec{5, 7, 3, 11},
+        Vec{93, 7, 123},
+        Vec{5, 7, 4111},
+        Vec{5, 7, 3},
+        Vec{7, 3},
+        Vec{3});
 
     SECTION("host->host")
     {
@@ -169,5 +175,116 @@ TEMPLATE_LIST_TEST_CASE("memcopy test", "", DeviceSpecs)
     SECTION("device->device")
     {
         std::apply([&](auto... extents) { (memcpyHostToDeviceDevice<DataType>(device, extents), ...); }, extentMdList);
+    }
+}
+
+template<typename T_DataType>
+void memcpySubViewTest(auto& copyQueue, auto& destDevice, auto& srcDevice, alpaka::concepts::Vector auto extents)
+{
+    DYNAMIC_SECTION(
+        "extents=" << extents << " copy: " << srcDevice.getApi().getName() << " -> " << destDevice.getApi().getName())
+    {
+        auto destQueue = destDevice.makeQueue(queueKind::blocking);
+        auto srcQueue = srcDevice.makeQueue(queueKind::blocking);
+
+        using IndexType = ALPAKA_TYPEOF(extents)::type;
+        constexpr uint32_t dim = ALPAKA_TYPEOF(extents)::dim();
+
+        auto negGuard = iotaCVec<IndexType, dim>() + IndexType{1u};
+        // times 2 avoid that the negative and positive guard is equal
+        auto posGuard = (iotaCVec<IndexType, dim>() + IndexType{1u}) * IndexType{2u};
+
+        /* Increase the size of the input in x dimension to create the buffer with a different pitch in y dimension.
+         * This should guard against mixing source and destination pitch in the copy implementation.
+         */
+        auto inputExtents = extents.rAssign(extents.x() * 9u);
+        alpaka::concepts::IBuffer auto inputFull = onHost::alloc<T_DataType>(srcDevice, inputExtents);
+        // we use posGuard on the negative side to have different offsets for input and output sub-views
+        alpaka::concepts::IView auto input = inputFull.getSubView(posGuard, extents - posGuard - negGuard);
+        alpaka::concepts::IBuffer auto outputFull = onHost::alloc<T_DataType>(destDevice, extents);
+        alpaka::concepts::IView auto output = outputFull.getSubView(negGuard, extents - negGuard - posGuard);
+
+        alpaka::concepts::IBuffer auto resultFull = onHost::allocHost<T_DataType>(extents);
+        onHost::fill(srcQueue, inputFull, T_DataType{0});
+        onHost::iota(srcQueue, T_DataType{0}, input);
+        onHost::fill(destQueue, outputFull, T_DataType{42});
+        // Overwrite the inner part
+        onHost::memcpy(copyQueue, output, input);
+        onHost::memcpy(copyQueue, resultFull, outputFull);
+
+        // validate without using the forward iterator
+        T_DataType refIotaCounter = 0;
+        meta::ndLoopIncIdx(
+            extents,
+            [&](auto idx)
+            {
+                // value in the guard region is always 42
+                if((idx < negGuard).reduce(std::logical_or{})
+                   || (idx >= (extents - posGuard)).reduce(std::logical_or{}))
+                    REQUIRE(T_DataType{42} == resultFull[idx]);
+                else
+                {
+                    REQUIRE(refIotaCounter == resultFull[idx]);
+                    ++refIotaCounter;
+                }
+            });
+        // check that we touched at least once an inner value
+        REQUIRE(refIotaCounter != 0);
+    }
+}
+
+TEMPLATE_LIST_TEST_CASE("memcopy subview test", "", DeviceSpecs)
+{
+    auto deviceSpec = TestType{};
+
+    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
+    if(!devSelector.isAvailable())
+    {
+        SUCCEED("No device available for " << deviceSpec.getName());
+        return;
+    }
+
+    onHost::Device device = devSelector.makeDevice(0);
+    INFO(deviceSpec.getApi().getName() << " on " << device.getName());
+
+    using DataType = int;
+
+    auto extentMdList
+        = std::make_tuple(Vec{17}, Vec{17, 19}, Vec{17, 19, 23}, Vec{17, 19, 23, 29}, Vec{17, 19, 23, 29, 31});
+
+
+    SECTION("host->host")
+    {
+        auto copyQueue = device.makeQueue(queueKind::blocking);
+        auto host = onHost::makeHostDevice();
+        std::apply(
+            [&](auto... extents) { (memcpySubViewTest<DataType>(copyQueue, host, host, extents), ...); },
+            extentMdList);
+    }
+
+    SECTION("device->host")
+    {
+        auto copyQueue = device.makeQueue(queueKind::blocking);
+        auto host = onHost::makeHostDevice();
+        std::apply(
+            [&](auto... extents) { (memcpySubViewTest<DataType>(copyQueue, host, device, extents), ...); },
+            extentMdList);
+    }
+
+    SECTION("host->device")
+    {
+        auto copyQueue = device.makeQueue(queueKind::blocking);
+        auto host = onHost::makeHostDevice();
+        std::apply(
+            [&](auto... extents) { (memcpySubViewTest<DataType>(copyQueue, device, host, extents), ...); },
+            extentMdList);
+    }
+
+    SECTION("device->device")
+    {
+        auto copyQueue = device.makeQueue(queueKind::blocking);
+        std::apply(
+            [&](auto... extents) { (memcpySubViewTest<DataType>(copyQueue, device, device, extents), ...); },
+            extentMdList);
     }
 }
