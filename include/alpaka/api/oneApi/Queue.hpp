@@ -76,16 +76,20 @@ namespace alpaka::onHost::internal
         void operator()(
             syclGeneric::Queue<T_Device>& queue,
             auto&& dest,
-            T_Source const& source,
+            T_Source const& src,
             T_Extents const& extents) const requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
         {
             sycl::queue sycl_queue = queue.getNativeHandle();
 
+            // use always 64bit precision to avoid overflows in the pitch calculations
             auto extentMd = pCast<size_t>(extents);
-            auto const destPitchBytesWithoutColumn = dest.getPitches().eraseBack();
+            if(extentMd.product() == size_t{0u})
+                return;
+
             auto* destPtr = data(dest);
-            auto const sourcePitchBytesWithoutColumn = source.getPitches().eraseBack();
-            auto* sourcePtr = data(source);
+            auto destPitch = pCast<size_t>(onHost::getPitches(dest));
+            auto const* srcPtr = data(src);
+            auto srcPitch = pCast<size_t>(onHost::getPitches(src));
 
             constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
 
@@ -95,27 +99,141 @@ namespace alpaka::onHost::internal
             {
                 ev = sycl_queue.ext_oneapi_memcpy2d(
                     destPtr,
-                    destPitchBytesWithoutColumn.back(),
-                    sourcePtr,
-                    sourcePitchBytesWithoutColumn.back(),
+                    destPitch.y(),
+                    srcPtr,
+                    srcPitch.y(),
                     extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
                     extentMd.y());
             }
             else if constexpr(dim >= 3u)
             {
-                auto const dstExtentWithoutColumn = extentMd.eraseBack();
-                ev = sycl_queue.ext_oneapi_memcpy2d(
-                    destPtr,
-                    destPitchBytesWithoutColumn.back(),
-                    sourcePtr,
-                    sourcePitchBytesWithoutColumn.back(),
-                    extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
-                    dstExtentWithoutColumn.product());
+                // Both src and dest must be contiguous memory after the 2 dimension
+                bool isContiguous = true;
+
+                /* Skip the fastest dimension.
+                 * We need to check that we do not have padding between dimension 2->3 or higher.
+                 * Padding in column or between rows is no problem because this is supported by 2d memcpy
+                 */
+                for(uint32_t d = dim - 2u; d >= 1u; --d)
+                {
+                    isContiguous = isContiguous && (extentMd[d] * destPitch[d] == destPitch[d - 1u])
+                                   && (extentMd[d] * srcPitch[d] == srcPitch[d - 1u]);
+                }
+
+                if(isContiguous)
+                {
+                    /* If the memory is contiguous in the dimensions higher than 2 we can emulate the N-dimensional
+                     * copy with a 2D memcpy by mapping the higher dimensions into y.
+                     * This is more efficient than calling the sycl memcopy function multiple times.
+                     */
+                    alpaka::concepts::Vector<size_t, 2u> auto mappedExtentMd = extentMd.template rshrink<2u>();
+                    // remove x dimension, fuse all other dimensions into the y component
+                    mappedExtentMd.y() = extentMd.eraseBack().product();
+                    using VecIdxType = ALPAKA_TYPEOF(mappedExtentMd);
+
+                    ev = memcopy2D<alpaka::trait::GetValueType_t<T_Dest>>(
+                        sycl_queue,
+                        // 3D is nativ supported therefore we can handle the memcpy with a single call
+                        VecIdxType::fill(1u),
+                        VecIdxType::fill(0u),
+                        VecIdxType::fill(0u),
+                        mappedExtentMd,
+                        destPtr,
+                        destPitch.template rshrink<2u>(),
+                        srcPtr,
+                        srcPitch.template rshrink<2u>());
+                }
+                else
+                {
+                    // remove the 2 fast moving dimensions
+                    auto repetitions = extentMd.template rshrink<dim - 2u>(dim - 3u);
+                    auto srcPitchJump = srcPitch.template rshrink<dim - 2u>(dim - 3u);
+                    auto destPitchJump = destPitch.template rshrink<dim - 2u>(dim - 3u);
+
+                    ev = memcopy2D<alpaka::trait::GetValueType_t<T_Dest>>(
+                        sycl_queue,
+                        repetitions,
+                        destPitchJump,
+                        srcPitchJump,
+                        extentMd,
+                        destPtr,
+                        destPitch,
+                        srcPtr,
+                        srcPitch);
+                }
             }
 
             queue.setLastEvent(ev);
             if(queue.isBlocking())
                 ev.wait_and_throw();
+        }
+
+        /** Memcopy which calls multiple times the 2D memcpy.
+         *
+         * The copy method is repetitions times repeated and the srcPtr and destPtr is advanced each time by the
+         * corresponding pitches in bytes.
+         *
+         *  @param repetitions how often the 2D memcpy should be called
+         *  @param destPitchJump bytes vector with pitches required to jump to the next 2D block to copy for the
+         * destPtr. Dimension must be equal to repetitions.
+         *  @param srcPitchJump bytes vector with pitches required to jump to the next 2D block to copy for the srcPtr.
+         * Dimension must be equal to repetitions.
+         *  @param extentMd Extents to describe how many elements should be copied. Dimension should be equal to the
+         * original buffer/view dimension.
+         *  @param destPitchesOriginal Original pitches of destPtr. Dimension should be equal to the original
+         * buffer/view dimension.
+         *  @param srcPitchesOriginal Original pitches of srcPtr. Dimension should be equal to the original buffer/view
+         * dimension.
+         */
+        template<typename T_ValueType>
+        sycl::event memcopy2D(
+            sycl::queue& sycl_queue,
+            alpaka::concepts::Vector<size_t> auto const& repetitions,
+            alpaka::concepts::Vector<size_t> auto const& destPitchJump,
+            alpaka::concepts::Vector<size_t> auto const& srcPitchJump,
+            alpaka::concepts::Vector<size_t> auto const& extentMd,
+            void* destPtr,
+            alpaka::concepts::Vector<size_t> auto const& destPitchesOriginal,
+            void const* srcPtr,
+            alpaka::concepts::Vector<size_t> auto const& srcPitchesOriginal) const
+        {
+            static_assert(
+                ALPAKA_TYPEOF(repetitions)::dim() == ALPAKA_TYPEOF(destPitchJump)::dim()
+                && ALPAKA_TYPEOF(repetitions)::dim() == ALPAKA_TYPEOF(srcPitchJump)::dim());
+            static_assert(
+                ALPAKA_TYPEOF(extentMd)::dim() == ALPAKA_TYPEOF(destPitchesOriginal)::dim()
+                && ALPAKA_TYPEOF(extentMd)::dim() == ALPAKA_TYPEOF(srcPitchesOriginal)::dim());
+
+            sycl::event ev;
+            meta::ndLoopIncIdx(
+                repetitions,
+                [&](auto const& idx)
+                {
+                    if(idx != repetitions - ALPAKA_TYPEOF(repetitions)::fill(1u))
+                    {
+                        // Sycl is allowed to optimize and not create events for each call.
+                        sycl_queue.ext_oneapi_memcpy2d(
+                            reinterpret_cast<uint8_t*>(destPtr) + (idx * destPitchJump).sum(),
+                            destPitchesOriginal.y(),
+                            reinterpret_cast<uint8_t const*>(srcPtr) + (idx * srcPitchJump).sum(),
+                            srcPitchesOriginal.y(),
+                            extentMd.x() * sizeof(T_ValueType),
+                            extentMd.y());
+                    }
+                    else
+                    {
+                        // the last call must create an event
+                        ev = sycl_queue.ext_oneapi_memcpy2d(
+                            reinterpret_cast<uint8_t*>(destPtr) + (idx * destPitchJump).sum(),
+                            destPitchesOriginal.y(),
+                            reinterpret_cast<uint8_t const*>(srcPtr) + (idx * srcPitchJump).sum(),
+                            srcPitchesOriginal.y(),
+                            extentMd.x() * sizeof(T_ValueType),
+                            extentMd.y());
+                    }
+                });
+
+            return ev;
         }
     };
 

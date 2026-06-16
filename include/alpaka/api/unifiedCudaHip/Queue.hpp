@@ -3,6 +3,7 @@
  */
 #pragma once
 
+#include "alpaka/Vec.hpp"
 #include "alpaka/api/concepts/api.hpp"
 #include "alpaka/api/cuda/IdxLayer.hpp"
 #include "alpaka/api/cuda/computeApi.hpp"
@@ -464,25 +465,31 @@ namespace alpaka::onHost
             void operator()(
                 unifiedCudaHip::Queue<T_Device>& queue,
                 auto&& dest,
-                T_Source const& source,
+                T_Source const& src,
                 T_Extents const& extents) const requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
                 using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
 
+                // use always 64bit precision to avoid overflows in the pitch calculations
                 auto extentMd = pCast<size_t>(extents);
+
+                if(extentMd.product() == size_t{0u})
+                    return;
 
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
                     ApiInterface,
                     ApiInterface::setDevice(onHost::getNativeHandle(queue.m_device)));
 
                 void* destPtr = toVoidPtr(onHost::data(dest));
-                void const* srcPtr = toVoidPtr(onHost::data(source));
+                auto destPitch = pCast<size_t>(onHost::getPitches(dest));
+                void const* srcPtr = toVoidPtr(onHost::data(src));
+                auto srcPitch = pCast<size_t>(onHost::getPitches(src));
 
                 auto copyKind = unifiedCudaHip::MemcpyKind<
                     ApiInterface,
                     ALPAKA_TYPEOF(alpaka::internal::getApi(dest)),
-                    ALPAKA_TYPEOF(alpaka::internal::getApi(source))>::kind;
+                    ALPAKA_TYPEOF(alpaka::internal::getApi(src))>::kind;
 
                 constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
                 if constexpr(dim == 1u)
@@ -503,43 +510,163 @@ namespace alpaka::onHost
                         ApiInterface,
                         ApiInterface::memcpy2DAsync(
                             destPtr,
-                            dest.getPitches().y(),
+                            destPitch.y(),
                             srcPtr,
-                            source.getPitches().y(),
+                            srcPitch.y(),
                             extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
                             extentMd.y(),
                             copyKind,
                             internal::getNativeHandle(queue)));
                 }
-                else if constexpr(dim >= 3u)
+                else if constexpr(dim == 3u)
                 {
-                    auto const extentMdNoXY = extentMd.eraseBack().eraseBack();
-                    // zero-init required per CUDA documentation
-                    typename ApiInterface::Memcpy3DParms_t memCpy3DParms{};
+                    using VecIdxType = ALPAKA_TYPEOF(extentMd);
 
-                    memCpy3DParms.srcPtr = ApiInterface::makePitchedPtr(
-                        // CUDA/HIP does not support const for pitched pointer
-                        const_cast<void*>(srcPtr),
-                        source.getPitches().y(),
-                        source.getExtents().x(),
-                        source.getExtents().y());
-                    memCpy3DParms.dstPtr = ApiInterface::makePitchedPtr(
+                    memcopy3D<alpaka::trait::GetValueType_t<T_Dest>, ApiInterface>(
+                        queue,
+                        copyKind,
+                        // 3D is nativ supported therefore we can handle the memcpy with a single call
+                        VecIdxType::fill(1u),
+                        // we do not need to adjust the src and dest pointer
+                        VecIdxType::fill(0u),
+                        VecIdxType::fill(0u),
+                        extentMd,
                         destPtr,
-                        dest.getPitches().y(),
-                        dest.getExtents().x(),
-                        dest.getExtents().y());
-                    memCpy3DParms.extent = ApiInterface::makeExtent(
-                        extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
-                        extentMd.y(),
-                        extentMdNoXY.product());
-                    memCpy3DParms.kind = copyKind;
+                        destPitch,
+                        srcPtr,
+                        srcPitch);
+                }
+                else if constexpr(dim >= 4u)
+                {
+                    // Both src and dest must be contiguous memory after the 3 dimension.
+                    bool isContiguous = true;
+                    /* Skip the fastest two dimensions.
+                     * We need to check that we do not have padding between dimension 3->4 or higher.
+                     * Padding in between row and column is no problem because this is supported by CUDA/HIP.
+                     */
+                    for(uint32_t d = dim - 3u; d >= 1u; --d)
+                    {
+                        isContiguous = isContiguous && (extentMd[d] * destPitch[d] == destPitch[d - 1u])
+                                       && (extentMd[d] * srcPitch[d] == srcPitch[d - 1u]);
+                    }
 
-                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
-                        ApiInterface,
-                        ApiInterface::memcpy3DAsync(&memCpy3DParms, internal::getNativeHandle(queue)));
+                    if(isContiguous)
+                    {
+                        /* If the memory is contiguous in the dimensions higher than 3 we can emulate the N-dimensional
+                         * copy with a 3D memcpy by mapping the higher dimensions into z.
+                         * This is more efficient than calling the CUDA/HIP copy function multiple times.
+                         */
+                        alpaka::concepts::Vector<size_t, 3u> auto mappedExtentMd = extentMd.template rshrink<3u>();
+                        // remove x,y dimension, fuse all other dimensions into the z component
+                        mappedExtentMd.z() = extentMd.template rshrink<dim - 2u>(dim - 3u).product();
+                        using VecIdxType = ALPAKA_TYPEOF(mappedExtentMd);
+
+                        memcopy3D<alpaka::trait::GetValueType_t<T_Dest>, ApiInterface>(
+                            queue,
+                            copyKind,
+                            // 3D is nativ supported therefore we can handle the memcpy with a single call
+                            VecIdxType::fill(1u),
+                            VecIdxType::fill(0u),
+                            VecIdxType::fill(0u),
+                            mappedExtentMd,
+                            destPtr,
+                            destPitch.template rshrink<3u>(),
+                            srcPtr,
+                            srcPitch.template rshrink<3u>());
+                    }
+                    else
+                    {
+                        // remove the 3 fast moving dimensions
+                        auto repetitions = extentMd.template rshrink<dim - 3u>(dim - 4u);
+                        auto srcPitchJump = srcPitch.template rshrink<dim - 3u>(dim - 4u);
+                        auto destPitchJump = destPitch.template rshrink<dim - 3u>(dim - 4u);
+
+                        memcopy3D<alpaka::trait::GetValueType_t<T_Dest>, ApiInterface>(
+                            queue,
+                            copyKind,
+                            repetitions,
+                            destPitchJump,
+                            srcPitchJump,
+                            extentMd,
+                            destPtr,
+                            destPitch,
+                            srcPtr,
+                            srcPitch);
+                    }
                 }
 
                 queue.conditionalWait();
+            }
+
+            /** Memcopy which calls multiple times the 3D memcpy.
+             *
+             * The copy method is repetitions times repeated and the srcPtr and destPtr is advanced each time by the
+             * corresponding pitches in bytes.
+             *
+             *  @param copyKind cuda/hip memcopy kind
+             *  @param repetitions how often the 3D memcpy should be called
+             *  @param destPitchJump bytes vector with pitches required to jump to the next 3D block to copy for the
+             * destPtr. Dimension must be equal to repetitions.
+             *  @param srcPitchJump bytes vector with pitches required to jump to the next 3D block to copy for the
+             * srcPtr. Dimension must be equal to repetitions.
+             *  @param extentMd Extents to describe how many elements should be copied. Dimension should be equal to
+             * the original buffer/view dimension.
+             *  @param destPitchesOriginal Original pitches of destPtr. Dimension should be equal to the original
+             * buffer/view dimension.
+             *  @param srcPitchesOriginal Original pitches of srcPtr. Dimension should be equal to the original
+             * buffer/view dimension.
+             */
+            template<typename T_ValueType, typename T_ApiInterface>
+            void memcopy3D(
+                auto& queue,
+                auto copyKind,
+                alpaka::concepts::Vector<size_t> auto const& repetitions,
+                alpaka::concepts::Vector<size_t> auto const& destPitchJump,
+                alpaka::concepts::Vector<size_t> auto const& srcPitchJump,
+                alpaka::concepts::Vector<size_t> auto const& extentMd,
+                void* destPtr,
+                alpaka::concepts::Vector<size_t> auto const& destPitchesOriginal,
+                void const* srcPtr,
+                alpaka::concepts::Vector<size_t> auto const& srcPitchesOriginal) const
+            {
+                static_assert(
+                    ALPAKA_TYPEOF(repetitions)::dim() == ALPAKA_TYPEOF(destPitchJump)::dim()
+                    && ALPAKA_TYPEOF(repetitions)::dim() == ALPAKA_TYPEOF(srcPitchJump)::dim());
+                static_assert(
+                    ALPAKA_TYPEOF(extentMd)::dim() == ALPAKA_TYPEOF(destPitchesOriginal)::dim()
+                    && ALPAKA_TYPEOF(extentMd)::dim() == ALPAKA_TYPEOF(srcPitchesOriginal)::dim());
+
+                meta::ndLoopIncIdx(
+                    repetitions,
+                    [&](auto const& idx)
+                    {
+                        // zero-init required per CUDA documentation
+                        typename T_ApiInterface::Memcpy3DParms_t memCpy3DParms{};
+
+                        memCpy3DParms.srcPtr = T_ApiInterface::makePitchedPtr(
+                            // CUDA/HIP does not support const for pitched pointer
+                            const_cast<uint8_t*>(
+                                reinterpret_cast<uint8_t const*>(srcPtr) + (idx * srcPitchJump).sum()),
+                            srcPitchesOriginal.y(),
+                            extentMd.x(),
+                            // number of elements in y dimension in the original memory blob
+                            srcPitchesOriginal.z() / srcPitchesOriginal.y());
+                        memCpy3DParms.dstPtr = T_ApiInterface::makePitchedPtr(
+                            reinterpret_cast<uint8_t*>(destPtr) + (idx * destPitchJump).sum(),
+                            destPitchesOriginal.y(),
+                            extentMd.x(),
+                            // number of elements in y dimension in the original memory blob
+                            destPitchesOriginal.z() / destPitchesOriginal.y());
+                        memCpy3DParms.extent = T_ApiInterface::makeExtent(
+                            extentMd.x() * sizeof(T_ValueType),
+                            extentMd.y(),
+                            extentMd.z());
+                        memCpy3DParms.kind = copyKind;
+
+                        ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
+                            T_ApiInterface,
+                            T_ApiInterface::memcpy3DAsync(&memCpy3DParms, internal::getNativeHandle(queue)));
+                    });
             }
         };
 
