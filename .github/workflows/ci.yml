@@ -301,3 +301,20 @@ jobs:
         run: |
           cd build
           /opt/cmake/${APCI_CMAKE}/bin/ctest --output-on-failure
+
+  # Check that all generated matrix jobs passed
+  # This job allow us to add 'ci-jobmatrix' as required job in GitHub and never miss marking matrix jobs as
+  # required check. This avoids that we merge broken PR's and is workarounding an issue of GitHub that
+  # The names selectable as required jobs not match the names shown at the end of each PR.
+  ci-jobmatrix:
+    name: ci-jobmatrix
+    runs-on: ubuntu-latest
+    needs: [ci]
+    if: always()
+    steps:
+      - name: Check matrix result
+        run: |
+          if [ "${{ needs.ci.result }}" != "success" ]; then
+            echo "Matrix CI failed: ${{ needs.ci.result }}"
+            exit 1
+          fi
