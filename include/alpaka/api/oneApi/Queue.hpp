@@ -35,8 +35,12 @@ namespace alpaka::onHost::internal
         {
             sycl::queue sycl_queue = queue.getNativeHandle();
 
+            // use always 64bit precision to avoid overflows in the pitch calculations
             auto extentMd = pCast<size_t>(extents);
-            auto const destPitchBytesWithoutColumn = dest.getPitches().eraseBack();
+            if(extentMd.product() == size_t{0u})
+                return;
+
+            auto destPitch = pCast<size_t>(onHost::getPitches(dest));
             auto* destPtr = data(dest);
 
             constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
@@ -47,25 +51,118 @@ namespace alpaka::onHost::internal
             {
                 ev = sycl_queue.ext_oneapi_memset2d(
                     destPtr,
-                    destPitchBytesWithoutColumn.back(),
+                    destPitch.y(),
                     byteValue,
                     extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
                     extentMd.y());
             }
             else if constexpr(dim >= 3u)
             {
-                auto const dstExtentWithoutColumn = extentMd.eraseBack();
-                ev = sycl_queue.ext_oneapi_memset2d(
-                    destPtr,
-                    destPitchBytesWithoutColumn.back(),
-                    byteValue,
-                    extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
-                    dstExtentWithoutColumn.product());
+                // dest must be contiguous memory after the 2 dimension
+                bool isContiguous = true;
+
+                /* Skip the fastest dimension.
+                 * We need to check that we do not have padding between dimension 2->3 or higher.
+                 * Padding in column or between rows is no problem because this is supported by 2d memcpy
+                 */
+                for(uint32_t d = dim - 2u; d >= 1u; --d)
+                    isContiguous = isContiguous && (extentMd[d] * destPitch[d] == destPitch[d - 1u]);
+
+                if(isContiguous)
+                {
+                    /* If the memory is contiguous in the dimensions higher than 2 we can emulate the N-dimensional
+                     * memset with a 2D memset by mapping the higher dimensions into y.
+                     * This is more efficient than calling the sycl memset function multiple times.
+                     */
+                    alpaka::concepts::Vector<size_t, 2u> auto mappedExtentMd = extentMd.template rshrink<2u>();
+                    // remove x dimension, fuse all other dimensions into the y component
+                    mappedExtentMd.y() = extentMd.eraseBack().product();
+
+                    ev = memset2D<alpaka::trait::GetValueType_t<T_Dest>>(
+                        sycl_queue,
+                        byteValue,
+                        // 2D is nativ supported therefore we can handle the memset with a single call
+                        ALPAKA_TYPEOF(mappedExtentMd)::fill(1u),
+                        ALPAKA_TYPEOF(mappedExtentMd)::fill(0u),
+                        mappedExtentMd,
+                        destPtr,
+                        destPitch.template rshrink<2u>());
+                }
+                else
+                {
+                    // remove the 2 fast moving dimensions
+                    auto repetitions = extentMd.template rshrink<dim - 2u>(dim - 3u);
+                    auto destPitchJump = destPitch.template rshrink<dim - 2u>(dim - 3u);
+
+                    ev = memset2D<alpaka::trait::GetValueType_t<T_Dest>>(
+                        sycl_queue,
+                        byteValue,
+                        repetitions,
+                        destPitchJump,
+                        extentMd,
+                        destPtr,
+                        destPitch);
+                }
             }
 
             queue.setLastEvent(ev);
             if(queue.isBlocking())
                 ev.wait_and_throw();
+        }
+
+        /** Memset which calls multiple times the memset2D.
+         *
+         * The memset method is repetitions times repeated and the destPtr is advanced each time by the corresponding
+         * pitches in bytes.
+         *
+         *  @param repetitions how often memset2D should be called
+         *  @param destPitchJump bytes vector with pitches required to jump to the next 2D block to memset for the
+         * destPtr. Dimension must be equal to repetitions.
+         *  @param extentMd Extents to describe how many elements should be copied. Dimension should be equal to the
+         * original buffer/view dimension.
+         *  @param destPitchesOriginal Original pitches of destPtr. Dimension should be equal to the original
+         * buffer/view dimension.
+         */
+        template<typename T_ValueType>
+        sycl::event memset2D(
+            sycl::queue& sycl_queue,
+            uint8_t byteValue,
+            alpaka::concepts::Vector<size_t> auto const& repetitions,
+            alpaka::concepts::Vector<size_t> auto const& destPitchJump,
+            alpaka::concepts::Vector<size_t> auto const& extentMd,
+            void* destPtr,
+            alpaka::concepts::Vector<size_t> auto const& destPitchesOriginal) const
+        {
+            static_assert(ALPAKA_TYPEOF(repetitions)::dim() == ALPAKA_TYPEOF(destPitchJump)::dim());
+            static_assert(ALPAKA_TYPEOF(extentMd)::dim() == ALPAKA_TYPEOF(destPitchesOriginal)::dim());
+
+            sycl::event ev;
+            meta::ndLoopIncIdx(
+                repetitions,
+                [&](auto const& idx)
+                {
+                    if(idx != repetitions - ALPAKA_TYPEOF(repetitions)::fill(1u))
+                    {
+                        // Sycl is allowed to optimize and not create events for each call.
+                        sycl_queue.ext_oneapi_memset2d(
+                            reinterpret_cast<uint8_t*>(destPtr) + (idx * destPitchJump).sum(),
+                            destPitchesOriginal.y(),
+                            byteValue,
+                            extentMd.x() * sizeof(T_ValueType),
+                            extentMd.y());
+                    }
+                    else
+                    {
+                        // the last call must create an event
+                        ev = sycl_queue.ext_oneapi_memset2d(
+                            reinterpret_cast<uint8_t*>(destPtr) + (idx * destPitchJump).sum(),
+                            destPitchesOriginal.y(),
+                            byteValue,
+                            extentMd.x() * sizeof(T_ValueType),
+                            extentMd.y());
+                    }
+                });
+            return ev;
         }
     };
 

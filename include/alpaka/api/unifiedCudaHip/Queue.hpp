@@ -762,13 +762,18 @@ namespace alpaka::onHost
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
                 using ApiInterface = typename unifiedCudaHip::Queue<T_Device>::ApiInterface;
+
+                // use always 64bit precision to avoid overflows in the pitch calculations
                 auto extentMd = pCast<size_t>(extents);
+                if(extentMd.product() == size_t{0u})
+                    return;
 
                 ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
                     ApiInterface,
                     ApiInterface::setDevice(onHost::getNativeHandle(queue.m_device)));
 
                 void* destPtr = toVoidPtr(onHost::data(dest));
+                auto destPitch = pCast<size_t>(onHost::getPitches(dest));
 
                 constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
                 if constexpr(dim == 1u)
@@ -787,36 +792,126 @@ namespace alpaka::onHost
                         ApiInterface,
                         ApiInterface::memset2DAsync(
                             destPtr,
-                            dest.getPitches().y(),
+                            destPitch.y(),
                             static_cast<int>(byteValue),
                             extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
                             extentMd.y(),
                             internal::getNativeHandle(queue)));
                 }
-                else if constexpr(dim >= 3u)
+                else if constexpr(dim == 3u)
                 {
-                    typename ApiInterface::PitchedPtr_t const pitchedPtrVal = ApiInterface::makePitchedPtr(
+                    using VecIdxType = ALPAKA_TYPEOF(extentMd);
+
+                    memset3D<alpaka::trait::GetValueType_t<T_Dest>, ApiInterface>(
+                        queue,
+                        byteValue,
+                        // 3D is nativ supported therefore we can handle the memset with a single call
+                        VecIdxType::fill(1u),
+                        VecIdxType::fill(0u),
+                        extentMd,
                         destPtr,
-                        dest.getPitches().y(),
-                        dest.getExtents().x(),
-                        dest.getExtents().y());
+                        destPitch);
+                }
+                else if constexpr(dim >= 4u)
+                {
+                    // dest must be contiguous memory after the 3 dimension
+                    bool isContiguous = true;
+                    /* Skip the fastest two dimensions.
+                     * We need to check that we do not have padding between dimension 3->4 or higher.
+                     * Padding in between row and column is no problem because this is supported by CUDA/HIP.
+                     */
+                    for(uint32_t d = dim - 3u; d >= 1u; --d)
+                        isContiguous = isContiguous && (extentMd[d] * destPitch[d] == destPitch[d - 1u]);
 
-                    auto const extentMdNoXY = extentMd.eraseBack().eraseBack();
-                    typename ApiInterface::Extent_t const extentVal = ApiInterface::makeExtent(
-                        extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
-                        extentMd.y(),
-                        extentMdNoXY.product());
+                    if(isContiguous)
+                    {
+                        /* If the memory is contiguous in the dimensions higher than 3 we can emulate the N-dimensional
+                         * memset with a 3D memset by mapping the higher dimensions into z.
+                         * This is more efficient than calling the CUDA/HIP memset function multiple times.
+                         */
+                        alpaka::concepts::Vector<size_t, 3u> auto mappedExtentMd = extentMd.template rshrink<3u>();
+                        // remove x,y dimension, fuse all other dimensions into the z component
+                        mappedExtentMd.z() = extentMd.template rshrink<dim - 2u>(dim - 3u).product();
+                        using VecIdxType = ALPAKA_TYPEOF(mappedExtentMd);
 
-                    ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
-                        ApiInterface,
-                        ApiInterface::memset3DAsync(
-                            pitchedPtrVal,
-                            static_cast<int>(byteValue),
-                            extentVal,
-                            internal::getNativeHandle(queue)));
+                        memset3D<alpaka::trait::GetValueType_t<T_Dest>, ApiInterface>(
+                            queue,
+                            byteValue,
+                            // 3D is nativ supported therefore we can handle the memset with a single call
+                            VecIdxType::fill(1u),
+                            VecIdxType::fill(0u),
+                            mappedExtentMd,
+                            destPtr,
+                            destPitch.template rshrink<3u>());
+                    }
+                    else
+                    {
+                        auto repetitions = extentMd.template rshrink<dim - 3u>(dim - 4u);
+                        auto destPitchJump = destPitch.template rshrink<dim - 3u>(dim - 4u);
+
+                        memset3D<alpaka::trait::GetValueType_t<T_Dest>, ApiInterface>(
+                            queue,
+                            byteValue,
+                            repetitions,
+                            destPitchJump,
+                            extentMd,
+                            destPtr,
+                            destPitch);
+                    }
                 }
 
                 queue.conditionalWait();
+            }
+
+            /** Memset which calls multiple times the 3D memset.
+             *
+             * The memset method is repetitions times repeated and the destPtr is advanced each time by the
+             * corresponding pitches in bytes.
+             *
+             *  @param repetitions how often the 3D memset should be called
+             *  @param destPitchJump bytes vector with pitches required to jump to the next 3D block to memset for the
+             * destPtr. Dimension must be equal to repetitions.
+             *  @param extentMd Extents to describe how many elements should be set. Dimension should be equal to the
+             * original buffer/view dimension.
+             *  @param destPitchesOriginal Original pitches of destPtr. Dimension should be equal to the original
+             * buffer/view dimension.
+             */
+            template<typename T_ValueType, typename T_ApiInterface>
+            void memset3D(
+                auto& queue,
+                uint8_t byteValue,
+                alpaka::concepts::Vector<size_t> auto const& repetitions,
+                alpaka::concepts::Vector<size_t> auto const& destPitchJump,
+                alpaka::concepts::Vector<size_t> auto const& extentMd,
+                void* destPtr,
+                alpaka::concepts::Vector<size_t> auto const& destPitchesOriginal) const
+            {
+                static_assert(ALPAKA_TYPEOF(repetitions)::dim() == ALPAKA_TYPEOF(destPitchJump)::dim());
+                static_assert(ALPAKA_TYPEOF(extentMd)::dim() == ALPAKA_TYPEOF(destPitchesOriginal)::dim());
+
+                meta::ndLoopIncIdx(
+                    repetitions,
+                    [&](auto const& idx)
+                    {
+                        auto const pitchedPtrVal = T_ApiInterface::makePitchedPtr(
+                            reinterpret_cast<uint8_t*>(destPtr) + (idx * destPitchJump).sum(),
+                            destPitchesOriginal.y(),
+                            extentMd.x(),
+                            destPitchesOriginal.z() / destPitchesOriginal.y());
+
+                        auto const extentVal = T_ApiInterface::makeExtent(
+                            extentMd.x() * sizeof(T_ValueType),
+                            extentMd.y(),
+                            extentMd.z());
+
+                        ALPAKA_UNIFORM_CUDA_HIP_RT_CHECK(
+                            T_ApiInterface,
+                            T_ApiInterface::memset3DAsync(
+                                pitchedPtrVal,
+                                static_cast<int>(byteValue),
+                                extentVal,
+                                internal::getNativeHandle(queue)));
+                    });
             }
         };
 

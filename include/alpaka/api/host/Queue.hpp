@@ -495,41 +495,42 @@ namespace alpaka::onHost
                 ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
                 constexpr auto dim = alpaka::trait::getDim_v<T_Extents>;
 
+                // use always 64bit precision to avoid overflows in the pitch calculations
+                auto extentMd = pCast<size_t>(extents);
+                if(extentMd.product() == size_t{0u})
+                    return;
+
                 void* destPtr = static_cast<void*>(alpaka::onHost::data(dest));
 
                 if constexpr(dim == 1u)
                 {
                     queue.submit(
-                        [extents, destPtr, byteValue]()
+                        [numElementsInX = extentMd.x(), destPtr, byteValue]()
                         {
                             std::memset(
                                 destPtr,
                                 byteValue,
-                                extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
+                                numElementsInX * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
                         });
                 }
                 else
                 {
                     // memset is implemented as row wise memset therefore the last dimension is not required
-                    auto destPitchBytesWithoutColumn = dest.getPitches().eraseBack();
+                    auto destPitchBytesWithoutColumn = pCast<size_t>(onHost::getPitches(dest).eraseBack());
                     queue.submit(
-                        [extents, destPtr, destPitchBytesWithoutColumn, byteValue]()
+                        [extentMd, destPtr, destPitchBytesWithoutColumn, byteValue]()
                         {
-                            auto const dstExtentWithoutColumn = extents.eraseBack();
-                            if(static_cast<std::size_t>(extents.product()) != 0u)
-                            {
-                                meta::ndLoopIncIdx(
-                                    dstExtentWithoutColumn,
-                                    [&](auto const& idx)
-                                    {
-                                        std::memset(
-                                            reinterpret_cast<std::uint8_t*>(destPtr)
-                                                + (idx * destPitchBytesWithoutColumn).sum(),
-                                            byteValue,
-                                            static_cast<size_t>(extents.back())
-                                                * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
-                                    });
-                            }
+                            auto const dstExtentWithoutColumn = extentMd.eraseBack();
+                            meta::ndLoopIncIdx(
+                                dstExtentWithoutColumn,
+                                [&](auto const& idx)
+                                {
+                                    std::memset(
+                                        reinterpret_cast<std::uint8_t*>(destPtr)
+                                            + (idx * destPitchBytesWithoutColumn).sum(),
+                                        byteValue,
+                                        extentMd.back() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
+                                });
                         });
                 }
             }
