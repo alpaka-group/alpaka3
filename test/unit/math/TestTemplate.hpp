@@ -132,7 +132,7 @@ namespace mathtest
                 if(device.getNativeHandle().first.template get_info<sycl::info::device::double_fp_config>().size()
                    == 0)
                 {
-                    SUCCEED(
+                    SKIP(
                         onHost::getName(device)
                         << " does not support double precision.\n Skip benchmark.\n"
                            "For Intel Arc GPUs, use the environment variables `IGC_EnableDPEmulation=1 "

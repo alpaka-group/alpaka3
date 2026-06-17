@@ -95,7 +95,7 @@ TEMPLATE_LIST_TEST_CASE("test trigger event", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        SUCCEED("No device available for " << deviceSpec.getName());
+        SKIP("No device available for " << deviceSpec.getName());
         return;
     }
 
@@ -132,7 +132,7 @@ TEMPLATE_LIST_TEST_CASE("eventTestShouldBeFalseWhileInQueueAndTrueAfterBeingProc
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        SUCCEED("No device available for " << deviceSpec.getName());
+        SKIP("No device available for " << deviceSpec.getName());
         return;
     }
 
@@ -171,7 +171,7 @@ TEMPLATE_LIST_TEST_CASE("eventReEnqueueShouldBePossibleIfNobodyWaitsFor", "", Te
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        SUCCEED("No device available for " << deviceSpec.getName());
+        SKIP("No device available for " << deviceSpec.getName());
         return;
     }
 
@@ -185,14 +185,14 @@ TEMPLATE_LIST_TEST_CASE("eventReEnqueueShouldBePossibleIfNobodyWaitsFor", "", Te
          * kernel in a separate queue. The second reason is that kernel, memory operation enqueued in different queues
          * will not run out of order which is assumed for some of the tests.
          */
-        SUCCEED(
+        SKIP(
             "Event tests can not be executed with " << deviceSpec.getName()
                                                     << " because the device does not support concurrent queues.");
         return;
     }
     if(deviceSpec.getApi() == api::oneApi && deviceSpec.getDeviceKind() == deviceKind::intelGpu)
     {
-        SUCCEED("Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking.");
+        SKIP("Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking.");
         return;
     }
 
@@ -247,7 +247,7 @@ TEMPLATE_LIST_TEST_CASE("eventReEnqueueShouldBePossibleIfSomeoneWaitsFor", "", T
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        SUCCEED("No device available for " << deviceSpec.getName());
+        SKIP("No device available for " << deviceSpec.getName());
         return;
     }
 
@@ -261,14 +261,14 @@ TEMPLATE_LIST_TEST_CASE("eventReEnqueueShouldBePossibleIfSomeoneWaitsFor", "", T
          * kernel in a separate queue. The second reason is that kernel, memory operation enqueued in different queues
          * will not run out of order which is assumed for some of the tests.
          */
-        SUCCEED(
+        SKIP(
             "Event tests can not be executed with " << deviceSpec.getName()
                                                     << " because the device does not support concurrent queues.");
         return;
     }
     if(deviceSpec.getApi() == api::oneApi && deviceSpec.getDeviceKind() == deviceKind::intelGpu)
     {
-        SUCCEED("Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking.");
+        SKIP("Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking.");
         return;
     }
 
@@ -337,7 +337,7 @@ TEMPLATE_LIST_TEST_CASE("waitForEventThatAlreadyFinishedShouldBeSkipped", "", Te
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        SUCCEED("No device available for " << deviceSpec.getName());
+        SKIP("No device available for " << deviceSpec.getName());
         return;
     }
 
@@ -351,14 +351,14 @@ TEMPLATE_LIST_TEST_CASE("waitForEventThatAlreadyFinishedShouldBeSkipped", "", Te
          * kernel in a separate queue. The second reason is that kernel, memory operation enqueued in different queues
          * will not run out of order which is assumed for some of the tests.
          */
-        SUCCEED(
+        SKIP(
             "Event tests can not be executed with " << deviceSpec.getName()
                                                     << " because the device does not support concurrent queues.");
         return;
     }
     if(deviceSpec.getApi() == api::oneApi && deviceSpec.getDeviceKind() == deviceKind::intelGpu)
     {
-        SUCCEED("Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking.");
+        SKIP("Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking.");
         return;
     }
 
@@ -424,7 +424,7 @@ TEMPLATE_LIST_TEST_CASE("evReEnqueueWithSomeoneWaitsForEventInOrderLifetimeRelea
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        SUCCEED("No device available for " << deviceSpec.getName());
+        SKIP("No device available for " << deviceSpec.getName());
         return;
     }
 
@@ -438,14 +438,14 @@ TEMPLATE_LIST_TEST_CASE("evReEnqueueWithSomeoneWaitsForEventInOrderLifetimeRelea
          * kernel in a separate queue. The second reason is that kernel, memory operation enqueued in different queues
          * will not run out of order which is assumed for some of the tests.
          */
-        SUCCEED(
+        SKIP(
             "Event tests can not be executed with " << deviceSpec.getName()
                                                     << " because the device does not support concurrent queues.");
         return;
     }
     if(deviceSpec.getApi() == api::oneApi && deviceSpec.getDeviceKind() == deviceKind::intelGpu)
     {
-        SUCCEED("Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking.");
+        SKIP("Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking.");
         return;
     }
 
@@ -551,7 +551,7 @@ TEMPLATE_LIST_TEST_CASE("EventOutOfOrderLifetimeRelease", "", TestApis)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        SUCCEED("No device available for " << deviceSpec.getName());
+        SKIP("No device available for " << deviceSpec.getName());
         return;
     }
 
@@ -565,14 +565,14 @@ TEMPLATE_LIST_TEST_CASE("EventOutOfOrderLifetimeRelease", "", TestApis)
          * kernel in a separate queue. The second reason is that kernel, memory operation enqueued in different queues
          * will not run out of order which is assumed for some of the tests.
          */
-        SUCCEED(
+        SKIP(
             "Event tests can not be executed with " << deviceSpec.getName()
                                                     << " because the device does not support concurrent queues.");
         return;
     }
     if(deviceSpec.getApi() == api::oneApi && deviceSpec.getDeviceKind() == deviceKind::intelGpu)
     {
-        SUCCEED("Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking.");
+        SKIP("Skip test for " << deviceSpec.getName() << " because the test is typically deadlocking.");
         return;
     }
 

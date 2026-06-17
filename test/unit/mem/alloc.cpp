@@ -120,7 +120,7 @@ TEMPLATE_LIST_TEST_CASE("alloc zero bytes", "", TestDeviceSpecs)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        SUCCEED("No device available for " << deviceSpec.getName());
+        SKIP("No device available for " << deviceSpec.getName());
         return;
     }
 
@@ -189,7 +189,7 @@ TEMPLATE_LIST_TEST_CASE("alloc alignment", "", TestDeviceSpecs)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        SUCCEED("No device available for " << deviceSpec.getName());
+        SKIP("No device available for " << deviceSpec.getName());
         return;
     }
 
@@ -223,7 +223,7 @@ TEMPLATE_LIST_TEST_CASE("alloc volatile memory", "", TestDeviceSpecs)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        SUCCEED("No device available for " << deviceSpec.getName());
+        SKIP("No device available for " << deviceSpec.getName());
         return;
     }
 

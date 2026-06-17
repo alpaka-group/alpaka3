@@ -118,7 +118,7 @@ void prepareAndExecuteWaitTest(auto cfg)
     auto deviceSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!deviceSelector.isAvailable())
     {
-        SUCCEED("No device available for " << deviceSpec.getName());
+        SKIP("No device available for " << deviceSpec.getName());
         return;
     }
 

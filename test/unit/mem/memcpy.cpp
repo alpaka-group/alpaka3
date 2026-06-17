@@ -142,7 +142,7 @@ TEMPLATE_LIST_TEST_CASE("memcopy test", "", DeviceSpecs)
     auto devSelector = onHost::makeDeviceSelector(deviceSpec);
     if(!devSelector.isAvailable())
     {
-        SUCCEED("No device available for " << deviceSpec.getName());
+        SKIP("No device available for " << deviceSpec.getName());
         return;
     }
 
