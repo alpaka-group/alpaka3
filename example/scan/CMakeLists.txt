@@ -31,7 +31,9 @@ if(NOT TARGET alpaka::alpaka)
 endif()
 
 set(HAS_CUDA_CUB 0)
-if(alpaka_DEP_CUDA)
+# alpaka probes CUDA with check_language(CUDA),
+# which only sets CMAKE_CUDA_COMPILER if a valid CUDA compiler/toolchain is provided.
+if(CMAKE_CUDA_COMPILER)
     find_package(CUDAToolkit)
     if(NOT CUDAToolkit_FOUND)
         message(STATUS "Optional CUDAToolkit not found, cub scan implementation will be disabled.")
@@ -43,7 +45,9 @@ if(alpaka_DEP_CUDA)
 endif()
 
 set(HAS_HIP_CUB 0)
-if(alpaka_DEP_HIP)
+# alpaka probes HIP with check_language(HIP),
+# which only sets CMAKE_HIP_COMPILER if a valid HIP compiler/toolchain is provided.
+if(CMAKE_HIP_COMPILER)
     find_package(hip)
     find_package(hipCUB)
     if(NOT hip_FOUND)
