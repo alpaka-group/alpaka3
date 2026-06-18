@@ -31,8 +31,9 @@ if(NOT TARGET alpaka::alpaka)
         find_package(alpaka REQUIRED)
     endif()
 endif()
-
-if(alpaka_DEP_CUDA)
+# alpaka probes CUDA with check_language(CUDA),
+# which only sets CMAKE_CUDA_COMPILER if a valid CUDA compiler/toolchain is provided.
+if(CMAKE_CUDA_COMPILER)
     find_package(CUDAToolkit)
     if(NOT CUDAToolkit_FOUND)
         message(STATUS "Optional CUDAToolkit not found, alpaka vendor api will not use thrust")
