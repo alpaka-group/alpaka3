@@ -1,3 +1,5 @@
+.. _tutorial-fnkernel:
+
 Kernel Function
 ===============
 

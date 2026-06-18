@@ -79,6 +79,7 @@ Individual chapters are based on the information of the chapters before.
    tutorial/intrinsics.rst
    tutorial/warp.rst
    tutorial/kernelFn.rst
+   tutorial/vendorInterop.rst
 
 .. toctree::
    :caption: Advanced
