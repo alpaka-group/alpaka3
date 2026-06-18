@@ -462,6 +462,11 @@ namespace alpaka::onHost
         template<typename T_Device, typename T_Dest, typename T_Source, typename T_Extents>
         struct Memcpy::Op<unifiedCudaHip::Queue<T_Device>, T_Dest, T_Source, T_Extents>
         {
+            /** Perform data copy.
+             *
+             * To understand the usage of pitches to shift pointers within the implementation see
+             * https://alpaka3.readthedocs.io/en/latest/advanced/datastorage.html#pitches
+             */
             void operator()(
                 unifiedCudaHip::Queue<T_Device>& queue,
                 auto&& dest,
