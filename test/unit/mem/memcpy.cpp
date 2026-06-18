@@ -205,11 +205,14 @@ void memcpySubViewTest(auto& copyQueue, auto& destDevice, auto& srcDevice, alpak
         alpaka::concepts::IView auto output = outputFull.getSubView(negGuard, extents - negGuard - posGuard);
 
         alpaka::concepts::IBuffer auto resultFull = onHost::allocHost<T_DataType>(extents);
-        onHost::fill(srcQueue, inputFull, T_DataType{0});
+
         onHost::iota(srcQueue, T_DataType{0}, input);
         onHost::fill(destQueue, outputFull, T_DataType{42});
-        // Overwrite the inner part
+        /* Overwrite the inner part, this is the operation we would like to validate in this test setup.
+         * It is operating on subviews.
+         */
         onHost::memcpy(copyQueue, output, input);
+        // Use copy of the full buffer, this is already validated in a separate test.
         onHost::memcpy(copyQueue, resultFull, outputFull);
 
         // validate without using the forward iterator

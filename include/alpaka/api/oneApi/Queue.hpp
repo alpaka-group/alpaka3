@@ -73,6 +73,11 @@ namespace alpaka::onHost::internal
     requires(alpaka::trait::getDim_v<T_Extents> > 1u)
     struct internal::Memcpy::Op<syclGeneric::Queue<T_Device>, T_Dest, T_Source, T_Extents>
     {
+        /** Perform data copy.
+         *
+         * To understand the usage of pitches to shift pointers within the implementation see
+         * https://alpaka3.readthedocs.io/en/latest/advanced/datastorage.html#pitches
+         */
         void operator()(
             syclGeneric::Queue<T_Device>& queue,
             auto&& dest,
@@ -133,7 +138,7 @@ namespace alpaka::onHost::internal
 
                     ev = memcopy2D<alpaka::trait::GetValueType_t<T_Dest>>(
                         sycl_queue,
-                        // 3D is nativ supported therefore we can handle the memcpy with a single call
+                        // 2D is nativ supported therefore we can handle the memcpy with a single call
                         VecIdxType::fill(1u),
                         VecIdxType::fill(0u),
                         VecIdxType::fill(0u),
