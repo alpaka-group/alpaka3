@@ -388,10 +388,10 @@ namespace alpaka
         constexpr Simd<type, T_width - 1u> remove() const requires(T_width >= 2u)
         {
             Simd<type, T_width - 1u> result{};
-            for(int i = 0u; i < static_cast<int>(T_width - 1u); ++i)
+            for(uint32_t i = 0u; i < T_width - 1u; ++i)
             {
                 // skip component which must be deleted
-                int const sourceIdx = i >= static_cast<int>(laneIdxToRemove) ? i + 1 : i;
+                uint32_t const sourceIdx = i >= static_cast<uint32_t>(laneIdxToRemove) ? i + 1 : i;
                 result[i] = (*this)[sourceIdx];
             }
             return result;
