@@ -122,8 +122,8 @@ namespace alpaka::onHost::internal
             }
             catch(...)
             {
-                // do to mising drivers or other issues we can not query the pointer type, in this case we assume that
-                // the memory is not accessible for the device
+                // due to missing drivers or other issues we can not query the pointer type, in this case we assume
+                // that the memory is not accessible for the device
             }
         }
 
@@ -139,7 +139,7 @@ namespace alpaka::onHost::internal
             if(deviceKind == deviceKind::cpu || deviceKind == deviceKind::numaCpu)
             {
                 /* If the device kind is not CPU and usm alloc type is shared, we do not know if the memory is shared
-                 * within the same sycl context. Therefor only know we mark only shared and host alloced memory
+                 * within the same sycl context. Therefore we only mark shared and host allocated memory
                  * accessible in case the device kind is CPU.
                  */
                 if(sycl_data_alloc_type == sycl::usm::alloc::shared || sycl_data_alloc_type == sycl::usm::alloc::host)

@@ -44,7 +44,7 @@ namespace alpaka
 
     /** basic tuple implementation
      *
-     * This class is trivially copyable if all members are trivially copable too and can therefore used for a
+     * This class is trivially copyable if all members are trivially copyable too and can therefore be used for a
      * collection to pass arguments into kernels. You should use @see alpaka::apply to apply operation to the tuple.
      */
     template<typename... T_Args>

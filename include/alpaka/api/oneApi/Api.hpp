@@ -135,7 +135,7 @@ namespace alpaka
         {
             constexpr uint32_t operator()(api::OneApi const, T_DeviceKind const) const
             {
-                // loading 16 byte per thread will result in optimal memory bandwith
+                // loading 16 byte per thread will result in optimal memory bandwidth
                 // copied from CUDA/HIP -> not verified if this is the optional value
                 return 16u;
             }

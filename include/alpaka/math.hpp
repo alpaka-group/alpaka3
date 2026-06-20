@@ -99,7 +99,7 @@ namespace alpaka::math
         return internal::Round::Op<ALPAKA_TYPEOF(mathImpl), ALPAKA_TYPEOF(arg)>{}(mathImpl, arg);
     }
 
-    /** Computes the nearest integer value to arg (in in integer format), rounding halfway cases away from zero,
+    /** Computes the nearest integer value to arg (in integer format), rounding halfway cases away from zero,
      * regardless of the current rounding mode.
      */
     constexpr auto lround(auto const& arg)
@@ -108,7 +108,7 @@ namespace alpaka::math
         return internal::Lround::Op<ALPAKA_TYPEOF(mathImpl), ALPAKA_TYPEOF(arg)>{}(mathImpl, arg);
     }
 
-    /** Computes the nearest integer value to arg (in in integer format), rounding halfway cases away from zero,
+    /** Computes the nearest integer value to arg (in integer format), rounding halfway cases away from zero,
      * regardless of the current rounding mode.
      */
     constexpr auto llround(auto const& arg)
@@ -211,7 +211,7 @@ namespace alpaka::math
         return internal::Log::Op<ALPAKA_TYPEOF(mathImpl), ALPAKA_TYPEOF(arg)>{}(mathImpl, arg);
     }
 
-    /** Computes the natural (base 2) logarithm of arg.
+    /** Computes the base 2 logarithm of arg.
      *
      * Valid real arguments are non-negative. For other values the result
      * may depend on the backend and compilation options, will likely
@@ -223,7 +223,7 @@ namespace alpaka::math
         return internal::Log2::Op<ALPAKA_TYPEOF(mathImpl), ALPAKA_TYPEOF(arg)>{}(mathImpl, arg);
     }
 
-    /* Computes the natural (base 10) logarithm of arg.
+    /* Computes the base 10 logarithm of arg.
      *
      * Valid real arguments are non-negative. For other values the result
      * may depend on the backend and compilation options, will likely

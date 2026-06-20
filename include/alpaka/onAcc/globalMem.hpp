@@ -11,7 +11,7 @@
  *
  * The variable is only forward declared as external symbol.
  *
- * @attention If you compile with a CUDA or HIP compiler and not compile with the option device repeatable code
+ * @attention If you compile with a CUDA or HIP compiler and not compile with the option device-relocatable code
  * (-rdc=true) no symbol will be exposed due to the fact that device linking is disabled.
  *
  * @param attributes The keyword 'extern' is automatically set and the attribute 'inline' is allowed.

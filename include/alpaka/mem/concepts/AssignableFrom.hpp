@@ -22,7 +22,7 @@ namespace alpaka::concepts
      * @code
      *      T_To to;
      *      T_From from;
-     *      to = foo;
+     *      to = from;
      * @endcode
      */
     template<typename T_To, typename T_From>

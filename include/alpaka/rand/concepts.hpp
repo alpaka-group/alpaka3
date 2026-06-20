@@ -23,7 +23,7 @@ namespace alpaka::rand
 
         /**
          * Concept for random-engines which return a vector. This mirrors std::uniform_random_bit_generator, except
-         * that the return type of must be a Vector.
+         * that the return type must be a Vector.
          */
         template<typename T>
         concept UniformVectorEngine

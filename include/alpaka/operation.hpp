@@ -12,8 +12,8 @@
 
 /** Contains functors with operation following the atomic operation semantics.
  *
- * @attention The operations itself are not atomic, only the argument interface follows corresponding atomic
- * operations. The argument updated is always hand in as pointer.
+ * @attention The operations themselves are not atomic, only the argument interface follows corresponding atomic
+ * operations. The argument to be updated is always handed in as a pointer.
  *
  */
 namespace alpaka::operation
@@ -209,10 +209,10 @@ namespace alpaka::operation
         ALPAKA_FN_HOST_ACC auto operator()(T* addr, T const& compare, T const& value) const -> T
         {
             static_assert(sizeof(T) == 4u || sizeof(T) == 8u, "Cas is supporting only 32bit and 64bit values!");
-            // Type to reinterpret too to perform the bit comparison
+            // Type to reinterpret to to perform the bit comparison
             using BitType = std::conditional_t<sizeof(T) == 4u, unsigned int, unsigned long long>;
 
-            // type used to have a safe way to reinterprete the data into another type
+            // type used to have a safe way to reinterpret the data into another type
             // std::variant can not be used because clang8 has issues to compile std::variant
             struct BitUnion
             {

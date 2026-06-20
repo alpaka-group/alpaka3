@@ -5,11 +5,11 @@
 /** @file This file provides a basic implementation of a SIMD vector.
  *
  * The implementation is based on the class Vec:
- *   - the storge policy should become the native SIMD implementation e.g. std::simd
- *   - load/ store and simd specifis should be implemented in the storage policy
+ *   - the storage policy should become the native SIMD implementation e.g. std::simd
+ *   - load/ store and simd specifics should be implemented in the storage policy
  *   - the name of storage policy should be changed
  *
- *   The current operator operations relay on compilers auto vectorization.
+ *   The current operator operations rely on compilers auto vectorization.
  */
 
 #pragma once

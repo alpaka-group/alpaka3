@@ -24,7 +24,7 @@ namespace alpaka::onAcc
      * group. All worker with the same id will get the same index as result.
      * @param T_Traverse Policy to configure the method used to find the next valid index for a worker. @see namespace
      * traverse
-     * @param T_IdxLayout Policy to define how indecision will be mapped to worker threads. @see namsepsace layout
+     * @param T_IdxLayout Policy to define how index data will be mapped to worker threads. @see namespace layout
      */
     template<
         typename T_WorkGroup,
@@ -159,7 +159,7 @@ namespace alpaka::onAcc
         /** @} */
 
 
-        /** @brief transform the input data and reduce is to a single value
+        /** @brief transform the input data and reduce it to a single value
          *
          * @attention If no extent is given the number of elements to process is derived from the first MdSpan object.
          *            All other MdSpan objects must have at least the same number of elements.
@@ -312,12 +312,12 @@ namespace alpaka::onAcc
 
         /** Generate a SIMD config for the API and device kind.
          *
-         * Produces an optimized SIMD configuration based on technical constrained.
+         * Produces an optimized SIMD configuration based on technical constraints.
          * The SIMD is set to a power of two.
          * If possible, the SIMD configuration is aligned to the cacheline size for the given device kind.
          *
-         * @maxConcurrencyInByte The upper limit in bytes a SIMD configuration must not exceed, except a single value
-         * is larger. This parameter is used to control the register pressure.
+         * @param maxConcurrencyInByte The upper limit in bytes a SIMD configuration must not exceed, except a single
+         * value is larger. This parameter is used to control the register pressure.
          *
          * @return a configuration with the number of SIMD pack which should be used in parallel for a single
          * invocation. And the width of a single SIMD pack.

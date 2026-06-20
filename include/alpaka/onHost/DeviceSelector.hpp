@@ -68,7 +68,7 @@ namespace alpaka::onHost
         DeviceSpec<T_Api, T_DeviceKind> m_deviceSpec;
     };
 
-    /** create a object to get access to devices */
+    /** create an object to get access to devices */
     template<typename T_Api, alpaka::concepts::DeviceKind T_DeviceKind>
     inline auto makeDeviceSelector(DeviceSpec<T_Api, T_DeviceKind> deviceSpec)
     {

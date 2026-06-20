@@ -78,8 +78,8 @@ namespace alpaka::onAcc
          * `Acc_t::launchedWithFrameSpec()` else the warp size can only be used as runtime value.
          *
          * If the kernel was enqueued via a frame specification the thread specification to within the kernel can
-         * differ, the number of thread block is not necessary equal to the number of frames and the thread block
-         * extent is not necessary equal to the frame extents.
+         * differ, the number of thread block is not necessarily equal to the number of frames and the thread block
+         * extent is not necessarily equal to the frame extents.
          *
          * @return true if the kernel was launched based on a frame specification, false if a thread specification was
          * used.
@@ -181,8 +181,8 @@ namespace alpaka::onAcc
 
     /** Get block shared dynamic memory.
      *
-     * The available size of the memory can be defined by specializing 'onHost::trait:GetDynSharedMemBytes' or adding a
-     * public member variable 'uint32_t dynSharedMemBytes' for a kernel. The Memory can be accessed by all threads
+     * The available size of the memory can be defined by specializing 'onHost::trait::GetDynSharedMemBytes' or adding
+     * a public member variable 'uint32_t dynSharedMemBytes' for a kernel. The Memory can be accessed by all threads
      * within a block. Access to the memory is not thread safe.
      *
      * \tparam T The element type.

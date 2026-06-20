@@ -35,7 +35,7 @@ namespace alpaka::onAcc
         /** Traversing the index domain with MD-tiles
          *
          * The worker specification is seen as MD-tile and iterating over the index space is done in a tiled strided
-         * way. There are no multiplication required (only additions) and therefore are less computations requred
+         * way. There are no multiplication required (only additions) and therefore are less computations required
          * compared to @see Flat.
          */
         struct Tiled

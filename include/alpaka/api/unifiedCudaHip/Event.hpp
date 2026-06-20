@@ -58,7 +58,7 @@ namespace alpaka::onHost
                 // - cuda/hip-EventBlockingSync : Specifies that event should use blocking synchronization.
                 //   A host thread that uses cuda/hip-EventSynchronize() to wait on an event created with this flag
                 //   will block until the event actually completes. (currently not used, @todo: check if this is
-                //   required, in mainline alpaka this is configuable in the constructor.
+                //   required, in mainline alpaka this is configurable in the constructor.
                 // - cuda/hip-EventDisableTiming : Specifies that the created event does not need to record timing
                 // data.
                 //   Events created with this flag specified and the cuda/hip-EventBlockingSync flag not specified

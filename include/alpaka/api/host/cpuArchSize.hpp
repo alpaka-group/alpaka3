@@ -49,7 +49,7 @@ namespace alpaka::onHost::internal
 // Macro to be define by the user to enable SVE backend and specify SVE size
 #elif defined(SVE_VECTOR_BITS)
             SVE_VECTOR_BITS / 8;
-// If user has specified SVE vector lenght using the flag -msve-vector-bits
+// If user has specified SVE vector length using the flag -msve-vector-bits
 #elif defined(__ARM_FEATURE_SVE_BITS)
             __ARM_FEATURE_SVE_BITS / 8;
 // ARM e.g. nvidia grace hopper
@@ -79,7 +79,7 @@ namespace alpaka::onHost::internal
          * the higher value.
          * ARM SVE can typically issue 4 commands too.
          *
-         * Therefor we use at the moment as default 4.
+         * Therefore we use at the moment as default 4.
          */
         constexpr uint32_t numPipes = 4u;
         return numPipes;

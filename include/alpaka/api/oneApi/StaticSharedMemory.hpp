@@ -24,7 +24,7 @@ namespace alpaka::onAcc
         {
             /** Pointer lookup table
              *
-             * Provides a dynamic lookup table to map an unique id to a pointer.
+             * Provides a dynamic lookup table to map a unique id to a pointer.
              */
             class PtrLookupTable
             {
@@ -32,7 +32,7 @@ namespace alpaka::onAcc
                 {
                     //! pointer to allocated data
                     std::byte* ptr = nullptr;
-                    //! Unique id if the next data chunk.
+                    //! Unique id of the next data chunk.
                     size_t id = std::numeric_limits<size_t>::max();
                 };
 
@@ -95,11 +95,11 @@ namespace alpaka::onAcc
                     return reinterpret_cast<T*>(data);
                 }
 
-                //! Give the pointer to an exiting variable
+                //! Give the pointer to an existing variable
                 //!
                 //! @tparam T type of the variable
                 //! @param id unique id of the variable
-                //! @return nullptr if variable with id not exists
+                //! @return nullptr if variable with id does not exist
                 template<typename T>
                 auto getVarPtr(size_t id) const -> T*
                 {
@@ -117,7 +117,7 @@ namespace alpaka::onAcc
                 }
 
             private:
-                //! Number unqiue meta data entries stored
+                //! Number unique meta data entries stored
                 mutable uint32_t m_numEntries = 0u;
 
                 //! Memory layout
@@ -134,7 +134,7 @@ namespace alpaka::onAcc
         class StaticSharedMemory : private detail::PtrLookupTable
         {
         public:
-            /** number of bytes required for bookkeeping of mayNumberOfAllocations unique allcoations
+            /** number of bytes required for bookkeeping of maxNumberOfAllocations unique allocations
              *
              * @param maxNumUniqueAllocations number of unique allocation a user is allowed to perform
              * @return bytes required to store lookup meta data

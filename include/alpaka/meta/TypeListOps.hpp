@@ -86,7 +86,7 @@ namespace alpaka::meta
         using type = TListType<T, Ts...>;
     };
 
-    //! \brief If T is a single argument and a type list (fullfil alpaka::meta::isList), the return type is T.
+    //! \brief If T is a single argument and a type list (fulfill alpaka::meta::isList), the return type is T.
     //! Otherwise, std::tuple is returned with T types as template parameters.
     template<typename... T>
     using ToTuple = typename ToList<std::tuple, T...>::type;

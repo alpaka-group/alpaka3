@@ -17,7 +17,7 @@ namespace alpaka::onHost
      *
      * @tparam T_DataType Iota type which is used. Type must be convertible to the value type of the output data. Only
      * fundamental types are allowed.
-     * @param queue The queue to execute the the algorithm.
+     * @param queue The queue to execute the algorithm.
      * @param exec The executor to use for the kernel execution.
      * @param initValue Index of the first element.
      * @param out0 Output data to set the iota value. Any kind of alpaka View/MdSpan is supported. The product of the

@@ -131,14 +131,14 @@ namespace alpaka::onAcc::internal
             // we SIMDfy only over the fast moving dimension (columns of memory)
             auto const wSize = workGroup.size(acc).back();
 
-            /* Number of data elements process per functor call. */
+            /* Number of data elements processed per functor call. */
             auto const numElementsPerFnCall = T_simdWidth * T_numSimdPerFnCall;
-            /** To avoid a overflow in the index range we device first by the number of elements per
-             * function call and than by the number of workers.
+            /** To avoid an overflow in the index range we divide first by the number of elements per
+             * function call and then by the number of workers.
              */
             auto const numSimdPackLoops = numElements.back() / numElementsPerFnCall / wSize;
 
-            // number of elments to jump over to start the remainder loop
+            // number of elements to jump over to start the remainder loop
             auto const remainderBegin = numSimdPackLoops * numElementsPerFnCall * wSize;
 
             // we SIMDfy only over the fast moving dimension (columns of memory)
@@ -152,7 +152,7 @@ namespace alpaka::onAcc::internal
                 /* For cases where we traverse with the flat policy, we cannot assume that we can blindly increase the
                  * iterator later N times. This could happen in cases where we have enough concurrency. We evaluate for
                  * SIMD operations only the fast moving dimension but with the flat policy flattening the worker group
-                 * and use all workers on a linear domain. The loop must therefore be splited into iterating over all
+                 * and use all workers on a linear domain. The loop must therefore be split into iterating over all
                  * slow dimensions and an inner loop iterating over the fast moving dimension. For this we need to
                  * build our own groups out of the user-provided workgroup.
                  */

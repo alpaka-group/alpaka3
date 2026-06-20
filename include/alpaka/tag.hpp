@@ -287,7 +287,7 @@ namespace alpaka
         constexpr bool isSeqExecutor_v = trait::IsSeqExecutor<T_Exec>::value;
     } // namespace exec
 
-    /** check if a executor can only be used with a single thred per block
+    /** check if a executor can only be used with a single thread per block
      *
      * @return true if a block can only have a single thread, else false
      */
