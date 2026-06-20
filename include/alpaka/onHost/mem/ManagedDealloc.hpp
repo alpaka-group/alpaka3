@@ -6,6 +6,8 @@
 
 #include <functional>
 #include <memory>
+#include <mutex>
+#include <vector>
 
 namespace alpaka::onHost::internal
 {
