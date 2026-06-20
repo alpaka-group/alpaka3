@@ -195,11 +195,6 @@ namespace alpaka
         constexpr SimdMask& operator=(SimdMask const&) = default;
         constexpr SimdMask& operator=(SimdMask&&) = default;
 
-        constexpr SimdMask operator-() const
-        {
-            return Simd([this](uint32_t const i) constexpr { return -Storage::operator[](i); });
-        }
-
         using Storage::asNativeType;
 
         /** static cast the instance to the storage type
