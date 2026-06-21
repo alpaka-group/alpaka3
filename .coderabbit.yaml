@@ -1,0 +1,8 @@
+language: "en-US"
+early_access: false
+
+reviews:
+  profile: "chill"
+  auto_review:
+    drafts: false
+    auto_incremental_review: true
