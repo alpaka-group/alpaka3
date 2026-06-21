@@ -74,23 +74,7 @@ namespace alpaka
         ALPAKA_SIMD_EXPR_ASSIGN_OP(/=, /)
         ALPAKA_SIMD_EXPR_ASSIGN_OP(*=, *)
 
-
 #undef ALPAKA_SIMD_EXPR_ASSIGN_OP
-
-    private:
-        /** create a SIMD vector where all bits are zero or one depedning on the mask value
-         *
-         * @return per lane: all bits one if mask is true, else all bits zero
-         */
-        static constexpr auto valueMask(concepts::Simd auto const& mask)
-            requires(sizeof(typename T_Simd::type) == 4u || sizeof(typename T_Simd::type) == 8u)
-        {
-            using ValueMaskType = std::conditional_t<sizeof(typename T_Simd::type) == 4u, uint32_t, uint64_t>;
-            Simd<ValueMaskType, T_Simd::width()> result(
-                [&](uint32_t const idx)
-                { return mask[idx] ? std::numeric_limits<ValueMaskType>::max() : ValueMaskType{0u}; });
-            return result;
-        }
     };
 
     /** Conditionally update each component of an SIMD pack
