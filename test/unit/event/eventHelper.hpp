@@ -2,6 +2,8 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
+#pragma once
+
 #include <alpaka/alpaka.hpp>
 
 #include <catch2/catch_test_macros.hpp>

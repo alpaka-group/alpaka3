@@ -2,6 +2,8 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
+#pragma once
+
 /** @file The file is providing some helpers for the HACCmk implementation shared between the original and the alpaka
  * implementation.
  * @attention The license differs compared to other files because it is not containing any parts from the ORNL code

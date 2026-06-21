@@ -7,6 +7,8 @@
  * which is not supported by all backends.
  */
 
+#pragma once
+
 #include <alpaka/onAcc/atomic.hpp>
 
 #include <utility>

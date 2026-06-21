@@ -56,3 +56,10 @@ repos:
       entry: python3 script/gitPreCommit/checkForNonASCII.py
       language: system
       files: \.(c|cc|cpp|cxx|cu|h|hh|hpp|hxx|cuh)$
+- repo: local
+  hooks:
+    - id: pragma-once
+      name: "Check #pragma once"
+      entry: script/gitPreCommit/checkPragmaOnce.sh
+      language: system
+      files: \.hpp$

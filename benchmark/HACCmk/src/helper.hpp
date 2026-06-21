@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#pragma once
 
 /** @file The file is providing some helpers for the HACCmk implementation shared between the original and the alpaka
  * implementation.
