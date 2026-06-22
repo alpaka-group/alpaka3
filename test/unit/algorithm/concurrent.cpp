@@ -120,7 +120,7 @@ template<typename T_DataType>
 void prepareTest(auto cfg, concepts::Vector auto extentMd, auto const& setupTuple)
 {
     using DataType = T_DataType;
-    auto deviceExec = test::getAvailableDeviceExecutor(cfg);
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(cfg);
     onHost::Device computeDev = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
 

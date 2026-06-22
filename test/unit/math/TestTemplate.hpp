@@ -115,7 +115,7 @@ namespace mathtest
             std::random_device rd{};
             auto const seed = rd();
 
-            auto deviceExec = test::getAvailableDeviceExecutor(cfg);
+            auto deviceExec = test::getDeviceExecutorOrSkipTest(cfg);
             onHost::Device device = test::getDevice(deviceExec);
             concepts::Executor auto exec = test::getExecutor(deviceExec);
 

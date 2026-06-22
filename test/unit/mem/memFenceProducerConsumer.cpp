@@ -91,7 +91,7 @@ struct ProducerConsumerKernel
 
 TEMPLATE_LIST_TEST_CASE("memFence producer-consumer publication", "[memFence][producer-consumer]", TestApis)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
     auto queue = device.makeQueue();
@@ -263,7 +263,7 @@ struct BlockSharedMemOrderKernel
 
 TEMPLATE_LIST_TEST_CASE("memFence block shared-memory ordering", "[memFence][block-shared]", TestApis)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
     auto queue = device.makeQueue();

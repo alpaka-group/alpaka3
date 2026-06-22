@@ -28,7 +28,7 @@ namespace alpaka::test
     template<typename T_DataType = alpaka::NotRequired>
     bool executeOnComputeDevice(auto cfg, auto kernelFnObj, auto&&... args)
     {
-        auto deviceExec = test::getAvailableDeviceExecutor(cfg);
+        auto deviceExec = test::getDeviceExecutorOrSkipTest(cfg);
         onHost::Device device = test::getDevice(deviceExec);
         concepts::Executor auto exec = test::getExecutor(deviceExec);
 

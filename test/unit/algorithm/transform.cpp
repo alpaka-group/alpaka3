@@ -131,7 +131,7 @@ template<typename T_DataType>
 void prepareTest(auto cfg, concepts::Vector auto extentMd, auto const& setupTuple)
 {
     using DataType = T_DataType;
-    auto deviceExec = test::getAvailableDeviceExecutor(cfg);
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(cfg);
     onHost::Device computeDev = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
 
@@ -326,7 +326,7 @@ void testStencilTransform(auto cfg, concepts::Vector auto extentMd)
     using DataType = T_DataType;
     using Extent = std::decay_t<decltype(extentMd)>;
 
-    auto deviceExec = test::getAvailableDeviceExecutor(cfg);
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(cfg);
     onHost::Device computeDev = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
     onHost::Queue computeQueue = computeDev.makeQueue();

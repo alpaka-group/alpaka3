@@ -240,7 +240,7 @@ struct TestAtomicOperations
 
 TEMPLATE_LIST_TEST_CASE("atomicOperationsWorking", "[atomic]", TestApis)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
 

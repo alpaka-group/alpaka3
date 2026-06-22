@@ -17,7 +17,7 @@ using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledDevice
  */
 TEMPLATE_LIST_TEST_CASE("deviceProperties", "[device][property]", TestApis)
 {
-    onHost::Device device = test::getAvailableDevice(TestType::makeDict());
+    onHost::Device device = test::getDeviceOrSkipTest(TestType::makeDict());
 
     onHost::DeviceProperties deviceProperties = device.getDeviceProperties();
     INFO(deviceProperties);

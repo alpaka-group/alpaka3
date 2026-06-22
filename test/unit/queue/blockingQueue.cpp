@@ -41,7 +41,7 @@ struct BlockingTestKernel
 
 TEMPLATE_LIST_TEST_CASE("blocking queue memory operations", "[bq][memory]", TestApis)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
 
@@ -112,7 +112,7 @@ struct FillKernel
 // enqueue different steps of a compute chain in independent blocking queues
 TEMPLATE_LIST_TEST_CASE("blocking queue chained operations", "[bq][chain]", TestApis)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
 
@@ -150,7 +150,7 @@ TEMPLATE_LIST_TEST_CASE("blocking queue chained operations", "[bq][chain]", Test
 // Test blocking and non-blocking queue should be usable together
 TEMPLATE_LIST_TEST_CASE("mixed queues independence", "[bq][mixed]", TestApis)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
 
@@ -175,7 +175,7 @@ TEMPLATE_LIST_TEST_CASE("mixed queues independence", "[bq][mixed]", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("blocking queue event semantics", "[bq][event]", TestApis)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
 
@@ -258,7 +258,7 @@ TEMPLATE_LIST_TEST_CASE("blocking queue event semantics", "[bq][event]", TestApi
 // blocking queue event-cache behavior tests
 TEMPLATE_LIST_TEST_CASE("blocking queue event cache functionality", "[event][blocking-queue]", TestApis)
 {
-    onHost::Device device = test::getAvailableDevice(TestType::makeDict());
+    onHost::Device device = test::getDeviceOrSkipTest(TestType::makeDict());
 
     SECTION("Rapid event enqueueing")
     {
@@ -324,7 +324,7 @@ TEMPLATE_LIST_TEST_CASE("blocking queue event cache functionality", "[event][blo
 // Test for race condition in blocking queue event enqueue
 TEMPLATE_LIST_TEST_CASE("blocking queue event race condition", "[bq][event][race]", TestApis)
 {
-    onHost::Device device = test::getAvailableDevice(TestType::makeDict());
+    onHost::Device device = test::getDeviceOrSkipTest(TestType::makeDict());
     auto blockingQueue = device.makeQueue(queueKind::blocking);
 
     // Test concurrent event operations to detect race conditions

@@ -19,10 +19,24 @@ namespace alpaka::test
      *
      * Prints information about the device Spec, API and device.
      *
+     * @attention This function should only be used with the Catch2 macro `TEMPLATE_LIST_TEST_CASE`.
+     * See following code snippet:
+     *
+     * @code
+     * using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs,
+     * exec::enabledExecutors))>;
+     *
+     * TEMPLATE_LIST_TEST_CASE("device analysis", "", TestApis)
+     * {
+     *    onHost::Device device = test::getDeviceOrSkipTest(TestType::makeDict());
+     *    // ...
+     * }
+     * @endcode
+     *
      * @param cfg Test configuration. An entry of the list returned from alpaka::onHost::allBackends().
      * @return The device 0 if available. Otherwise, SKIP() the test.
      */
-    [[nodiscard]] auto getAvailableDevice(auto const& cfg)
+    [[nodiscard]] auto getDeviceOrSkipTest(auto const& cfg)
         -> decltype(onHost::makeDeviceSelector(cfg[object::deviceSpec]).makeDevice(0))
     {
         auto deviceSpec = cfg[object::deviceSpec];
@@ -44,13 +58,29 @@ namespace alpaka::test
      *
      * Prints information about the device Spec, API, device and executor.
      *
+     * @attention This function should only be used with the Catch2 macro `TEMPLATE_LIST_TEST_CASE`.
+     * See following code snippet:
+     *
+     * @code
+     * using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledDeviceSpecs,
+     * exec::enabledExecutors))>;
+     *
+     * TEMPLATE_LIST_TEST_CASE("device analysis", "", TestApis)
+     * {
+     *    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
+     *    onHost::Device device = test::getDevice(deviceExec);
+     *    concepts::Executor auto exec = test::getExecutor(deviceExec);
+     *    // ...
+     * }
+     * @endcode
+     *
      * @param cfg Test configuration. An entry of the list returned from alpaka::onHost::allBackends().
      * @return A std::tuple with the device 0 and an executor. If no device is available, SKIP() the test.
      */
-    [[nodiscard]] auto getAvailableDeviceExecutor(auto const& cfg) -> std::
+    [[nodiscard]] auto getDeviceExecutorOrSkipTest(auto const& cfg) -> std::
         tuple<decltype(onHost::makeDeviceSelector(cfg[object::deviceSpec]).makeDevice(0)), decltype(cfg[object::exec])>
     {
-        auto device = alpaka::test::getAvailableDevice(cfg);
+        auto device = alpaka::test::getDeviceOrSkipTest(cfg);
         concepts::Executor auto executor = cfg[object::exec];
         UNSCOPED_INFO("Executor: " << executor.getName());
 

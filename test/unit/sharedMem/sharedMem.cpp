@@ -43,7 +43,7 @@ struct SharedBlockIotaKernel
 
 TEMPLATE_LIST_TEST_CASE("block shared iota", "[sharedMem]", TestApis)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
     onHost::Queue queue = device.makeQueue();
@@ -168,7 +168,7 @@ namespace alpaka::onHost::trait
 
 TEMPLATE_LIST_TEST_CASE("block shared alias", "[SharedMem]", TestApis)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
 
@@ -232,7 +232,7 @@ void test_index_type(auto& queue, auto const& exec, auto name)
 
 TEMPLATE_LIST_TEST_CASE("test shared memory index type", "[sharedMem]", TestApis)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
     alpaka::onHost::Queue queue = device.makeQueue();

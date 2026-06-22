@@ -100,7 +100,7 @@ namespace
 
 TEMPLATE_LIST_TEST_CASE("warp shflUp shifts toward lower lanes", "[warp][shfl_up]", WarpTestBackends)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
 
