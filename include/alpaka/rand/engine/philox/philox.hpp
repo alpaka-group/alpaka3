@@ -40,7 +40,7 @@ namespace alpaka::rand::engine
          *
          * @param seed Set the Philox generator key
          * @param subsequence Select a subsequence of size 2^64
-         * @param offset Skip \a offset numbers form the start of the subsequence
+         * @param offset Skip \a offset numbers from the start of the subsequence
          */
         constexpr explicit Philox4x32x10(
             std::uint64_t const seed = 0,
@@ -95,7 +95,7 @@ namespace alpaka::rand::engine
          *
          * @param seed Set the Philox generator key
          * @param subsequence Select a subsequence of size 2^64
-         * @param offset Number of numbers to skip form the start of the subsequence.
+         * @param offset Number of numbers to skip from the start of the subsequence.
          */
         constexpr explicit Philox4x32x10Vector(
             std::uint32_t const seed = 0,

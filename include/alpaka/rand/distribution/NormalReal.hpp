@@ -65,7 +65,7 @@ namespace alpaka::rand::distribution
      * Usage is analogous to std::normal_distribution<T_Result> @see
      * https://en.cppreference.com/w/cpp/numeric/random/normal_distribution.html
      * -> Generates N(mean, stddev).
-     * Is using the Box-Muller method of generating normal distributed random numbers from a uniform distribution.
+     * Is using the Box-Muller method of generating normally distributed random numbers from a uniform distribution.
      *
      * @note: currently supports 32 and 64 bit floating point types.
      */

@@ -41,7 +41,7 @@ namespace alpaka
      * @endcode
      *
      * @tparam T_To The target type to which the input is cast.
-     * @param input The input value to be cast. value_type must be cast able to `T_To`.
+     * @param input The input value to be cast. value_type must be castable to `T_To`.
      * @return input with exchanged value_type
      */
     template<typename T_To>
@@ -63,7 +63,7 @@ namespace alpaka
      * @endcode
      *
      * @tparam T_To The target type to which the input is cast.
-     * @param input The input value to be cast. value_type must be cast able to `T_To`.
+     * @param input The input value to be cast. value_type must be castable to `T_To`.
      * @return input with exchanged value_type
      */
     template<typename T_To>

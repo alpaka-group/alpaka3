@@ -57,7 +57,7 @@ namespace alpaka::onHost
     }
 
     /**
-     * A available default executor will be selected automatically. The default executor is a executor with most
+     * An available default executor will be selected automatically. The default executor is an executor with most
      * parallelism/performance.
      */
     template<typename DataType, typename T_Device, alpaka::concepts::QueueKind T_QueueKind>

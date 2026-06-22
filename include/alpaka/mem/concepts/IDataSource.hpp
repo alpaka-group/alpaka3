@@ -45,7 +45,7 @@ namespace alpaka::concepts
             typename T::index_type;
 
             /* Non const data sources must be assignable.
-             * You can NOT assign const data sources to non const dta sources because this will remove the const-ness.
+             * You can NOT assign const data sources to non const data sources because this will remove the const-ness.
              */
             requires concepts::AssignableFrom<std::decay_t<T>, std::decay_t<T>>;
 

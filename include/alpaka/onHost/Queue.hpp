@@ -390,7 +390,7 @@ namespace alpaka::onHost
      * It is allowed to slice the buffer or use the encapsulated pointer for address calculations.
      * In any cases the pointer is not allowed to be dereferenced before the memory allocation is processed in the
      * queue. All tasks performing any memory access must be executed after the memory allocation is processed in the
-     * queue. This can be archived by waiting on the queue or describing queue dependencies via @c waitFor(). The
+     * queue. This can be achieved by waiting on the queue or describing queue dependencies via @c waitFor(). The
      * memory is allowed to be used in other queues too. To avoid that a view to the memory is still in use during the
      * deallocation you can use @see addDestructorAction() and wait for a queue if it **differs** to the queue used for
      * the allocation.
@@ -421,7 +421,7 @@ namespace alpaka::onHost
      *
      * In any cases the pointer is not allowed to be dereferenced before the memory allocation is processed in the
      * queue. All tasks performing any memory access must be executed after the memory allocation is processed in the
-     * queue. This can be archived by waiting on the queue or describing queue dependencies via @c waitFor(). The
+     * queue. This can be achieved by waiting on the queue or describing queue dependencies via @c waitFor(). The
      * memory is allowed to be used in other queues too. To avoid that a view to the memory is still in use during the
      * deallocation you can use @see addDestructorAction() and wait for a queue if it **differs** to the queue used for
      * the allocation.

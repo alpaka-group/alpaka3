@@ -13,9 +13,9 @@
 
 /** @file global device memory implementation for all APIs
  *
- * We need many precompiler macros to handle the device global feature.
+ * We need many preprocessor macros to handle the device global feature.
  * The reason is that we would like to have the possibility to create a variable where the same name can be used on all
- * devices. Each device will have it's own instance of memory and via a global instance GlobalDeviceMemoryWrapper we
+ * devices. Each device will have its own instance of memory and via a global instance GlobalDeviceMemoryWrapper we
  * redirect queries to the corresponding instance of memory based on the alpaka API.
  *
  * OneAPI Sycl is the only API which does not allow querying the device pointer of a global variable from the host.
@@ -76,7 +76,7 @@ namespace alpaka::onHost::internal
 #if ALPAKA_LANG_CUDA || ALPAKA_LANG_HIP
 /* Define the device external symbol only if relocatable device code is enabled. nvcc is changing the keyword 'extern'
  * to static in case rdc is disabled which results into redefinition compile errors. To make HIP and CUDA behave equal
- * we do not expose the symbal for HIP as well in case rdc is disabled.
+ * we do not expose the symbol for HIP as well in case rdc is disabled.
  */
 #    if defined(__CUDACC_RDC__) || defined(__CLANG_RDC__)
 #        define ALPAKA_DEVICE_GLOBAL_DATA_CUDA_HIP_EXTERN(attributes, dataType, name)                                 \

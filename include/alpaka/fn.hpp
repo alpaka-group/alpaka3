@@ -18,7 +18,7 @@
  * provides a way to work natively with alpaka objects while being able to use third party interfaces for functionality
  * not provided in alpaka or in cases where the vendor implementation provides better performance. For each exposed
  * function you can provide a fallback to an alpaka implementation for a device specification or a device specification
- * independent genric implementation. This keeps your code base portable even if you can not dispatch to a third
+ * independent generic implementation. This keeps your code base portable even if you can not dispatch to a third
  * party/vendor library and avoids preprocessor macros around function calls. The preprocessor macro ALPAKA_FN_SYMBOL()
  * should be used to declare a function symbol.
  * A function symbol follows all requirements to be used as kernel within alpaka.
@@ -38,7 +38,7 @@ namespace alpaka::fn
 {
     namespace api
     {
-        /** @prief Api tag for alpaka.
+        /** @brief Api tag for alpaka.
          *
          * @warning This api should be used together with alpaka's function interface, it is not compatible with other
          * alpaka interfaces where api's are required.
@@ -74,12 +74,12 @@ namespace alpaka::fn
      */
     enum class Fallback : int
     {
-        /** The generic implementation is called if no other overload is fits.
+        /** The generic implementation is called if no other overload fits.
          *
          * Should be used to ensure portability between different heterogeneous APIs.
          */
         toGeneric = 1,
-        /** The alpaka implementation is called if no other overload is fits.
+        /** The alpaka implementation is called if no other overload fits.
          *
          * Should be used to ensure portability between different heterogeneous APIs.
          */
@@ -91,7 +91,7 @@ namespace alpaka::fn
         none = 3
     };
 
-    /** @brief Policy to control if a function symbal must be registered.
+    /** @brief Policy to control if a function symbol must be registered.
      */
     enum class Registration : int
     {

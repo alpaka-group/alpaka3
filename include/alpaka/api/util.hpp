@@ -59,7 +59,7 @@ namespace alpaka::api::util
     } // namespace detail
 
     /** adjust the input vector to a given limit by halving all components
-     * until the product of these is is below or equal to the limit */
+     * until the product of these is below or equal to the limit */
     template<std::integral auto T_limit, std::integral auto T_index, std::integral auto T_increment>
     consteval auto adjustToLimit(concepts::CVector auto const input)
     {
@@ -95,7 +95,7 @@ namespace alpaka::api::util
      *
      * @param alignment data alignment in bytes
      * @return tuple with the linearized data blob size in bytes and multi-dimensional pitches,
-     * std::tuple(numBytes,pitcheMD)
+     * std::tuple(numBytes,pitchMD)
      */
     template<typename T_ValueType, alpaka::concepts::Vector T_Extents>
     inline auto emulatedAlignedMemDescription(uint32_t alignmentInByte, T_Extents extents)

@@ -229,7 +229,7 @@ namespace alpaka::onAcc::internalCompute
                 // it.
                 ref.compare_exchange_strong(expected_, desired);
 
-                // If the update succeded, return the previous value of `ref`.
+                // If the update succeeded, return the previous value of `ref`.
                 // Otherwise, return the current value of `ref`.
                 return expected_;
             };

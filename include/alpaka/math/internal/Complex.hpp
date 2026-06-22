@@ -19,7 +19,7 @@ namespace alpaka::math
 {
     namespace internal
     {
-        //! Implementation of a complex number useable on host and device.
+        //! Implementation of a complex number usable on host and device.
         //!
         //! It follows the layout of std::complex and so array-oriented access.
         //! The class template implements all methods and operators as std::complex<T>.

@@ -22,10 +22,10 @@ namespace alpaka::onHost
      * K does not need to match the problem size (P), e.g., the number of elements in a buffer you want to process in a
      * kernel. Often, the best performance of a kernel can be achieved if `K <= P`, and if the
      * kernel uses SIMD operations, `K <= P/(SIMD width)`.
-     * alpaka derives the onHost::ThreadSpec to launch the kernel, based on a hysteric and additional launch
-     * information from the `FrameSpec`. Therefor a kernel enqueued with a frame specification should always be written
-     * to be executable with any onHost::ThreadSpec and should not depend on hard-coded thread numbers, to ensure
-     * portability between devices.
+     * alpaka derives the onHost::ThreadSpec to launch the kernel, based on a heuristic and additional launch
+     * information from the `FrameSpec`. Therefore a kernel enqueued with a frame specification should always be
+     * written to be executable with any onHost::ThreadSpec and should not depend on hard-coded thread numbers, to
+     * ensure portability between devices.
      *
      * A `FrameSpec` is therefore not equivalent to a CUDA-style grid description. It specifies only the maximum
      * parallelism made available to the kernel. It does not guarantee the number of physical thread blocks, nor the

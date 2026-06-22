@@ -19,7 +19,7 @@
  *  Rules:
  *   - gfx9xy (numeric): 9xy -> 90x0y  (e.g., 908->90008, 906->90006, 942->90402)
  *   - gfx10xy / gfx11xy: stxy -> st0x0y (e.g., 1036->100306, 1103->110003)
- *   - Suffix: a == 10 (90a->90010), b == 11, c == 11
+ *   - Suffix: a == 10 (90a->90010), b == 11, c == 12
  *
  * An overview of AMD GPU architectures can be found here:
  * https://llvm.org/docs/AMDGPUUsage.html#processors

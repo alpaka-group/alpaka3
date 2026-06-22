@@ -104,7 +104,7 @@ namespace alpaka
         {
             constexpr uint32_t operator()(api::Cuda const, deviceKind::NvidiaGpu const) const
             {
-                // loading 16 byte per thread will result in optimal memory bandwith
+                // loading 16 byte per thread will result in optimal memory bandwidth
                 return 16u;
             }
         };

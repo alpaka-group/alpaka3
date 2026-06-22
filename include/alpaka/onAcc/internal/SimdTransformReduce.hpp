@@ -373,14 +373,14 @@ namespace alpaka::onAcc::internal
             // we SIMDfy only over the fast moving dimension (columns of memory)
             auto const wSize = workGroup.size(acc).back();
 
-            /* Number of data elements process per functor call. */
+            /* Number of data elements processed per functor call. */
             auto const numElementsPerFnCall = T_simdWidth * T_numSimdPerFnCall;
-            /** To avoid a overflow in the index range we device first by the number of elements per
-             * function call and than by the number of workers.
+            /** To avoid an overflow in the index range we divide first by the number of elements per
+             * function call and then by the number of workers.
              */
             auto const numSimdPackLoops = numElements.back() / numElementsPerFnCall / wSize;
 
-            // number of elments to jump over to start the remainder loop
+            // number of elements to jump over to start the remainder loop
             auto const remainderBegin = numSimdPackLoops * numElementsPerFnCall * wSize;
 
             // we SIMDfy only over the fast moving dimension (columns of memory)
