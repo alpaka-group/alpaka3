@@ -133,7 +133,7 @@ namespace alpaka::onHost
         return static_cast<std::size_t>(sysconf(_SC_PAGESIZE));
 #    else
         // this is legacy and only used as fallback
-        return = static_cast<size_t>(getpagesize());
+        return static_cast<size_t>(getpagesize());
 #    endif
 #else
 #    error "getPageSize not implemented for this system!"
