@@ -75,7 +75,7 @@ namespace
 
 TEMPLATE_LIST_TEST_CASE("warp size trait matches runtime size", "[warp][getSize]", WarpTestBackends)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
 

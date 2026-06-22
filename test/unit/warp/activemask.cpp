@@ -64,7 +64,7 @@ namespace
 
 TEMPLATE_LIST_TEST_CASE("warp activemask reflects participating lanes", "[warp][activemask]", WarpTestBackends)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
 

@@ -25,7 +25,7 @@ struct NoArgumentsKernel
  */
 TEMPLATE_LIST_TEST_CASE("kernel no arguments", "", TestApis)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
 
@@ -52,7 +52,7 @@ struct IotaKernel
 
 TEMPLATE_LIST_TEST_CASE("iota", "", TestApis)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
 
@@ -82,7 +82,7 @@ struct IotaKernelND
 
 TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
     onHost::Queue queue = device.makeQueue();
@@ -102,7 +102,7 @@ TEMPLATE_LIST_TEST_CASE("iota2D", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
     onHost::Queue queue = device.makeQueue();
@@ -122,7 +122,7 @@ TEMPLATE_LIST_TEST_CASE("iota3D", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("iota4D", "", TestApis)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
     onHost::Queue queue = device.makeQueue();
@@ -176,7 +176,7 @@ struct IotaKernelNDSelection
 
 TEMPLATE_LIST_TEST_CASE("iota3D 2D iterate", "", TestApis)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
     onHost::Queue queue = device.makeQueue();
@@ -260,7 +260,7 @@ private:
 /** Test that memcpy and memset can be called with non copy-able and move-able data as lvalue and rvalue. */
 TEMPLATE_LIST_TEST_CASE("memcpy", "", TestApis)
 {
-    onHost::Device device = test::getAvailableDevice(TestType::makeDict());
+    onHost::Device device = test::getDeviceOrSkipTest(TestType::makeDict());
     onHost::Queue queue = device.makeQueue();
     constexpr Vec problemSize = Vec{16u};
 
@@ -317,7 +317,7 @@ TEMPLATE_LIST_TEST_CASE("memcpy", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("host task callback", "", TestApis)
 {
-    onHost::Device device = test::getAvailableDevice(TestType::makeDict());
+    onHost::Device device = test::getDeviceOrSkipTest(TestType::makeDict());
     onHost::Queue queue = device.makeQueue();
 
     std::promise<bool> promise;
@@ -330,7 +330,7 @@ TEMPLATE_LIST_TEST_CASE("host task callback", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("host task", "", TestApis)
 {
-    onHost::Device device = test::getAvailableDevice(TestType::makeDict());
+    onHost::Device device = test::getDeviceOrSkipTest(TestType::makeDict());
     onHost::Queue queue = device.makeQueue();
 
     bool flag = false;
@@ -352,7 +352,7 @@ TEMPLATE_LIST_TEST_CASE("host task", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("queue wait should work", "", TestApis)
 {
-    onHost::Device device = test::getAvailableDevice(TestType::makeDict());
+    onHost::Device device = test::getDeviceOrSkipTest(TestType::makeDict());
     onHost::Queue queue = device.makeQueue();
 
     std::atomic<bool> callbackFinished{false};
@@ -369,7 +369,7 @@ TEMPLATE_LIST_TEST_CASE("queue wait should work", "", TestApis)
 
 TEMPLATE_LIST_TEST_CASE("task is destroyed after execution", "", TestApis)
 {
-    onHost::Device device = test::getAvailableDevice(TestType::makeDict());
+    onHost::Device device = test::getDeviceOrSkipTest(TestType::makeDict());
     onHost::Queue queue = device.makeQueue();
 
     struct Task

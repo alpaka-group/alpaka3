@@ -28,7 +28,7 @@ struct TestKernel
 
 TEMPLATE_LIST_TEST_CASE("popcount", "[intrinsic][popc]", TestBackends)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device devAcc = test::getDevice(deviceExec);
     concepts::Executor auto computeExec = test::getExecutor(deviceExec);
 

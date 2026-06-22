@@ -41,7 +41,7 @@ using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, 
 
 TEMPLATE_LIST_TEST_CASE("fn with alpaka fallback", "", TestApis)
 {
-    onHost::Device device = test::getAvailableDevice(TestType::makeDict());
+    onHost::Device device = test::getDeviceOrSkipTest(TestType::makeDict());
 
     if constexpr(device.getApi() == api::host && device.getDeviceKind() == deviceKind::cpu)
     {
@@ -94,7 +94,7 @@ using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, 
 
 TEMPLATE_LIST_TEST_CASE("fn with generic fallback", "", TestApis)
 {
-    onHost::Device device = test::getAvailableDevice(TestType::makeDict());
+    onHost::Device device = test::getDeviceOrSkipTest(TestType::makeDict());
 
     if constexpr(device.getApi() == api::host && device.getDeviceKind() == deviceKind::cpu)
     {
@@ -159,7 +159,7 @@ using TestApis = std::decay_t<decltype(onHost::allBackends(onHost::enabledApis, 
 
 TEMPLATE_LIST_TEST_CASE("fn without fallback", "", TestApis)
 {
-    onHost::Device device = test::getAvailableDevice(TestType::makeDict());
+    onHost::Device device = test::getDeviceOrSkipTest(TestType::makeDict());
 
     if constexpr(device.getApi() == api::host && device.getDeviceKind() == deviceKind::cpu)
     {

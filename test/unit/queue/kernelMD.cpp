@@ -76,7 +76,7 @@ void validate(auto& queue, auto& device, auto exec, auto testCase)
 
 TEMPLATE_LIST_TEST_CASE("kernelCallMD", "", TestApis)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
     onHost::Queue queue = device.makeQueue();

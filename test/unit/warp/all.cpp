@@ -70,7 +70,7 @@ namespace
 
 TEMPLATE_LIST_TEST_CASE("warp all vote honours only active lanes", "[warp][all]", WarpTestBackends)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
 

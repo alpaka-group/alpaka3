@@ -39,7 +39,7 @@ TEMPLATE_LIST_TEST_CASE("cpu atomic add increments", "[executor][atomic]", TestA
      */
     using namespace alpaka;
 
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
     auto queue = device.makeQueue(queueKind::blocking);

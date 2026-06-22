@@ -23,7 +23,7 @@ TEMPLATE_LIST_TEST_CASE("queue isEmpty", "[queue][isEmpty]", TestSetup)
 {
     using Backend = std::tuple_element_t<0u, TestType>;
     using QueueKind = std::tuple_element_t<1u, TestType>;
-    onHost::Device device = test::getAvailableDevice(Backend::makeDict());
+    onHost::Device device = test::getDeviceOrSkipTest(Backend::makeDict());
 
     INFO("queue kind : " << QueueKind::getName());
 

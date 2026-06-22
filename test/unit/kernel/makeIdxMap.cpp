@@ -84,7 +84,7 @@ void runTest(Queue& queue, Exec exec, Extent const& extentsAndFrameSize, Policy 
  */
 TEMPLATE_LIST_TEST_CASE("makeIdxMap", "[kernel][makeIdxMap]", TestBackends)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device device = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
 

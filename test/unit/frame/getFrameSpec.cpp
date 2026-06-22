@@ -81,7 +81,7 @@ void testVector(auto const& computeDev, alpaka::concepts::Executor auto exec)
 
 TEMPLATE_LIST_TEST_CASE("getFrameSpec scalar", "", TestBackends)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device computeDev = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
 
@@ -90,7 +90,7 @@ TEMPLATE_LIST_TEST_CASE("getFrameSpec scalar", "", TestBackends)
 
 TEMPLATE_LIST_TEST_CASE("getFrameSpec vector", "", TestBackends)
 {
-    auto deviceExec = test::getAvailableDeviceExecutor(TestType::makeDict());
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
     onHost::Device computeDev = test::getDevice(deviceExec);
     concepts::Executor auto exec = test::getExecutor(deviceExec);
 
