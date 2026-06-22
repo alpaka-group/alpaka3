@@ -6,7 +6,6 @@
 #pragma once
 
 #include "alpaka/api/unifiedCudaHip/Device.hpp"
-#include "alpaka/api/unifiedCudaHip/Platform.hpp"
 #include "alpaka/core/UniformCudaHip.hpp"
 #include "alpaka/core/config.hpp"
 #include "alpaka/internal/interface.hpp"
