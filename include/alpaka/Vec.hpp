@@ -754,7 +754,13 @@ namespace alpaka
     template<typename Type, uint32_t T_dim, typename T_Storage>
     std::ostream& operator<<(std::ostream& s, Vec<Type, T_dim, T_Storage> const& vec)
     {
-        return s << vec.toString();
+        /* Usage of a temporary universal vector variable is required as workaround to silent an error with gcc 15
+         * error: 'frameSpec' may be used uninitialized [-Werror=maybe-uninitialized] when compiling with 'ubsan'
+         * enabled. It is a false positive in some cases where a CVec is used. Since this method is not performance
+         * critical this workaround should be acceptable.
+         */
+        typename Vec<Type, T_dim, T_Storage>::UniVec v(vec);
+        return s << v.toString();
     }
 
 #define ALPAKA_VECTOR_BINARY_OP(typenameOrConcept, resultScalarType, op)                                              \
