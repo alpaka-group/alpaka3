@@ -16,14 +16,24 @@ using namespace alpaka;
 // BEGIN-TUTORIAL-warpKernel
 struct WarpSumKernel
 {
+    /** Warp kernel
+     *
+     * This kernel assumes that `in` and `out` are one-dimensional.
+     * The requires clause enforces this constraint.
+     */
     ALPAKA_FN_ACC void operator()(
         onAcc::concepts::Acc auto const& acc,
         concepts::IDataSource auto const& in,
         concepts::IMdSpan auto out) const
+        requires(concepts::Dim<ALPAKA_TYPEOF(in), 1u> && concepts::Dim<ALPAKA_TYPEOF(out), 1u>)
     {
         auto const warpSize = onAcc::warp::getSize(acc);
         auto const idxInWarp = onAcc::warp::getLaneIdx(acc);
         auto const workSize = pCast<uint32_t>(in.getExtents());
+
+        // This example requires that the work size is a multiple of the warp size.
+        ALPAKA_ASSERT_ACC((workSize.x() % warpSize) == 0u);
+
         for(auto [blockBase] :
             onAcc::makeIdxMap(acc, onAcc::worker::linearWarpsInGrid, IdxRange{0u, workSize, warpSize}))
         {
