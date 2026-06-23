@@ -156,11 +156,21 @@ namespace alpaka::onHost
                 else
                     alpaka::unused(deviceIdx);
 
-                prop.maxThreadsPerBlock = std::numeric_limits<uint32_t>::max();
-                prop.fnMaxThreadsPerBlock = [](uint32_t* data, uint32_t numDims)
+                /* For host devices there is no real limit thread limit but using the largest value of uint32_t brings
+                 * some disadvantages. You need to take care about overflows and a kernel assuming no block limit will
+                 * most likely not be portable. 4k is a random chosen limit which fits well with other current
+                 * available hardware limits.
+                 * In principle this limit is saying nothing because currently all host executors limiting the number
+                 * of threads per block to one.
+                 * Note: The executor limit can always be less than the device limit. We do not use the
+                 * multiProcessorCount as maximum to allow thread oversubscription in the future.
+                 */
+                prop.maxThreadsPerBlock = 4u * 1024u;
+                prop.fnMaxThreadsPerBlock
+                    = [maxThreadsPerBlockDim = prop.maxThreadsPerBlock](uint32_t* data, uint32_t numDims)
                 {
                     for(uint32_t d = 0u; d < numDims; ++d)
-                        data[d] = std::numeric_limits<uint32_t>::max();
+                        data[d] = maxThreadsPerBlockDim;
                 };
 
                 prop.maxBlocksPerGrid = std::numeric_limits<uint32_t>::max();
