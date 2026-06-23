@@ -110,11 +110,13 @@ jobs:
               env : {APCI_DEVICE_COMPILER : icpx@2025.2, APCI_CMAKE : 3.28.3} }
           - { compiler: icpx, version: "2025.3", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.3.0-0-devel-ubuntu24.04",
               env : {APCI_DEVICE_COMPILER : icpx@2025.3, APCI_CMAKE : 3.28.3} }
-          - { compiler: icpx, version: "2025.3", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.3.0-0-devel-ubuntu24.04", simd: "EMULATION", hwloc: "no",
-              env : {APCI_DEVICE_COMPILER : icpx@2025.3, APCI_CMAKE : 3.28.3} }
+          - { compiler: icpx, version: "2026.0", cuda: "no", hip: "no", container: "intel/oneapi:2026.0.0-devel-ubuntu24.04",
+              env: { APCI_DEVICE_COMPILER: icpx@2026.0, APCI_CMAKE: 3.28.3} }
+          - { compiler: icpx, version: "2026.0", cuda: "no", hip: "no", container: "intel/oneapi:2026.0.0-devel-ubuntu24.04", simd: "EMULATION", hwloc: "no",
+              env: { APCI_DEVICE_COMPILER: icpx@2026.0, APCI_CMAKE: 3.28.3} }
           # Use/validate oneAPI-provided oneTBB package with the latest icpx toolchain
-          - { compiler: icpx, version: "2025.3", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.3.0-0-devel-ubuntu24.04", tbb: "on",
-              env : {APCI_DEVICE_COMPILER : icpx@2025.3, APCI_CMAKE : 3.28.3} }
+          - { compiler: icpx, version: "2026.0", cuda: "no", hip: "no", container: "intel/oneapi:2026.0.0-devel-ubuntu24.04", tbb: "on",
+              env: { APCI_DEVICE_COMPILER: icpx@2026.0, APCI_CMAKE: 3.28.3} }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "asan",
               env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3} }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "asan" , simd: "EMULATION", hwloc: "no",
@@ -230,7 +232,7 @@ jobs:
       - name: Install oneAPI
         if: matrix.config.compiler == 'icpx'
         run: |
-          echo "test is adding -DCMAKE_CXX_FLAGS='-fsycl -fsycl-targets=spir64_x86_64' to speedup execution"
+          echo "test is adding '-Dalpaka_ONEAPI_IntelGpu=OFF -Dalpaka_EXEC_CpuSerial=OFF -Dalpaka_DEP_OMP=OFF' to speedup execution"
           # for TBB there is nothing to do because TBB is configured in the container correctly
 
       # hwloc (opt out)
@@ -279,7 +281,7 @@ jobs:
                 -DCMAKE_BUILD_TYPE=Release \
                 ${alpaka_cmake_flags} -Dalpaka_DEP_OMP=ON \
                 ${{ matrix.config.hwloc == 'no' && '-Dalpaka_DEP_HWLOC=OFF' || '-Dalpaka_DEP_HWLOC=ON -Dalpaka_HOST_MemPinningCanFail=ON'}} \
-                ${{ matrix.config.compiler == 'icpx' && '-DCMAKE_CXX_COMPILER=icpx -DCMAKE_CXX_FLAGS="-fsycl -fsycl-targets=spir64_x86_64" -Dalpaka_DEP_ONEAPI=ON -Dalpaka_ONEAPI_IntelGpu=OFF -Dalpaka_EXEC_CpuSerial=OFF -Dalpaka_DEP_OMP=OFF' || '' }} \
+                ${{ matrix.config.compiler == 'icpx' && '-DCMAKE_CXX_COMPILER=icpx -Dalpaka_DEP_ONEAPI=ON -Dalpaka_ONEAPI_IntelGpu=OFF -Dalpaka_EXEC_CpuSerial=OFF -Dalpaka_DEP_OMP=OFF' || '' }} \
                 ${{ matrix.config.cuda != 'no' && '-Dalpaka_DEP_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=80' || '' }} \
                 ${{ matrix.config.cuda != 'no' && matrix.config.compiler == 'clang' && '-Dalpaka_DEP_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=80 -DCMAKE_CUDA_COMPILER=$CXX -DCMAKE_CUDA_HOST_COMPILER=$CXX -Dalpaka_SUPPRESS_TARGET_WARNING=ON -Dalpaka_DEP_OMP=OFF' || '' }} \
                 ${{ matrix.config.hip != 'no' && '-DCMAKE_CXX_COMPILER=clang++ -Dalpaka_DEP_HIP=ON -Dalpaka_DEP_OMP=OFF \
