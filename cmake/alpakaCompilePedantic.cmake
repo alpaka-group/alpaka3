@@ -15,11 +15,11 @@ if(TARGET alpaka_target_cuda)
         alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--Werror all-warnings>")
         alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:--Werror default-stream-launch>")
         alpaka_set_compiler_options(
-            DEVICE
-            target
-            alpaka_target_cuda
-            "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-pedantic>"
-            "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler -Wno-pedantic>"
+                DEVICE
+                target
+                alpaka_target_cuda
+                "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-pedantic>"
+                "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler -Wno-pedantic>"
         )
         alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Wall>")
         alpaka_set_compiler_options(DEVICE target alpaka_target_cuda "$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Wextra>")
@@ -48,5 +48,10 @@ if(TARGET alpaka_target_host)
         # error: '*(std::function<bool(char)>*)((char*)&__tmp + offsetof(std::__detail::_StateT, std::__detail::_State<char>::<unnamed>.std::__detail::_State_base::<unnamed>)).std::function<bool(char)>::_M_invoker' may be used uninitialized [-Werror=maybe-uninitialized]
         # see also: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105616
         alpaka_set_compiler_options(HOST target alpaka_target_host "$<$<COMPILE_LANGUAGE:CXX>:SHELL:-Wno-error=maybe-uninitialized>")
+    endif()
+
+    # disable the warning/error: error: '__COUNTER__' is a C2y extension [-Werror,-Wc2y-extensions]
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "2026.0")
+        alpaka_set_compiler_options(HOST target alpaka_target_host "$<$<COMPILE_LANG_AND_ID:CXX,IntelLLVM,Clang>:-Wno-c2y-extensions>")
     endif()
 endif()
