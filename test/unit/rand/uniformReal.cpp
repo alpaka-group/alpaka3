@@ -235,4 +235,8 @@ TEMPLATE_LIST_TEST_CASE("UniformReal on std engines", "", TestBackends)
     {
         testMainDispatch<TestType, T_Engines>();
     }
+    else
+    {
+        SKIP("No supported host executor: " << onHost::getName(exec));
+    }
 }

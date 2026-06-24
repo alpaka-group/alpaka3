@@ -508,7 +508,7 @@ TEST_CASE("sharedBuffer inner const move operator", "[mem][sharedBuffer][correct
     // MutSharedBuffer assign_mut_shared_buffer3 = std::move(assign_const_shared_buffer3);
 
     // check lifetime
-    CHECK_FALSE(assign_mut_shared_buffer2);
+    CHECK_FALSE(assign_mut_shared_buffer);
     CHECK_FALSE(assign_mut_shared_buffer2);
     CHECK_FALSE(assign_const_shared_buffer);
     CHECK(assign_const_shared_buffer2);
