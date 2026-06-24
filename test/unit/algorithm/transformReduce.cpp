@@ -215,7 +215,15 @@ TEMPLATE_LIST_TEST_CASE("transformReduce", "", TestBackends)
             std::make_pair(std::plus{}, std::plus{}),
             std::make_pair(
                 ScalarFunc{[] ALPAKA_FN_ACC(DataType const& a, DataType const& b)
-                           { return math::min(a + DataType{1}, b); }},
+                           {
+                               /* Temporary variable is required to avoid icpx 2026.0 linker issue.
+                                * Running pass
+                                * "function(vpo-cfg-restructuring,replace-with-math-library-functions,inject-tli-mappings,auto-vec-dir-insert,vplan-vec,replace-with-math-library-functions)"
+                                * on module "main" llvm-foreach: Segmentation fault (core dumped)
+                                */
+                               auto lhs = a + DataType{1};
+                               return alpaka::math::min(lhs, b);
+                           }},
                 [](DataType const& a, DataType const& b) { return math::min(a + DataType{1}, b); }),
             TestWithMdSpan{}),
         std::make_tuple(
@@ -343,7 +351,15 @@ TEMPLATE_LIST_TEST_CASE("transformReduce generator", "", TestBackends)
             std::make_pair(std::plus{}, std::plus{}),
             std::make_pair(
                 ScalarFunc{[] ALPAKA_FN_ACC(DataType const& a, DataType const& b)
-                           { return math::min(a + DataType{1}, b); }},
+                           {
+                               /* Temporary variable is required to avoid icpx 2026.0 linker issue.
+                                * Running pass
+                                * "function(vpo-cfg-restructuring,replace-with-math-library-functions,inject-tli-mappings,auto-vec-dir-insert,vplan-vec,replace-with-math-library-functions)"
+                                * on module "main" llvm-foreach: Segmentation fault (core dumped)
+                                */
+                               auto lhs = a + DataType{1};
+                               return math::min(lhs, b);
+                           }},
                 [](DataType const& a, DataType const& b) { return math::min(a + DataType{1}, b); }),
             TestWithGenerator{}),
         std::make_tuple(
@@ -499,7 +515,14 @@ TEMPLATE_LIST_TEST_CASE("onAcc transformReduce", "", TestBackends)
             std::make_pair(std::plus{}, std::plus{}),
             std::make_pair(
                 ScalarFunc{[] ALPAKA_FN_ACC(DataType const& a, DataType const& b)
-                           { return math::min(a + DataType{1}, b); }},
+                           {
+                               /* std::min() instead of alpaka::min() is used to avoid icpx 2026.0 linker issue.
+                                * Running pass
+                                * "function(vpo-cfg-restructuring,replace-with-math-library-functions,inject-tli-mappings,auto-vec-dir-insert,vplan-vec,replace-with-math-library-functions)"
+                                * on module "main" llvm-foreach: Segmentation fault (core dumped)
+                                */
+                               return std::min(a + DataType{1}, b);
+                           }},
                 [](DataType const& a, DataType const& b) { return math::min(a + DataType{1}, b); }),
             TestOnAccWithMdSpan{}),
         std::make_tuple(
