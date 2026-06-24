@@ -3,6 +3,7 @@
 
 [![License](https://img.shields.io/badge/license-MPL--2.0-6c757d.svg)](https://www.mozilla.org/en-US/MPL/2.0/)
 [![CI](https://github.com/alpaka-group/alpaka3/actions/workflows/ci.yml/badge.svg?branch=dev&event=push)](https://github.com/alpaka-group/alpaka3/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/github/alpaka-group/alpaka3/branch/dev/graph/badge.svg)](https://app.codecov.io/github/alpaka-group/alpaka3)
 [![Docs](https://img.shields.io/badge/docs-Read%20the%20Docs-0f766e.svg)](https://alpaka3.readthedocs.io)
 [![User API](https://img.shields.io/badge/User%20API-Doxygen-2563eb.svg)](https://alpaka3.readthedocs.io/en/latest/doxygen/namespaces.html)
 [![Dev API](https://img.shields.io/badge/Dev%20API-Doxygen-7c3aed.svg)](https://alpaka3.readthedocs.io/en/latest/doxygen_dev/namespaces.html)

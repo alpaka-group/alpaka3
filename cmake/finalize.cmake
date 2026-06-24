@@ -235,8 +235,20 @@ function(alpaka_internal_finalize target)
         target_compile_definitions(${target} PRIVATE ALPAKA_CMAKE_TARGET_ALPAKA_FINALIZE_CALLED)
     endif()
 
-    # conditionally add sanitizer if not compiling with cuda/hip/oneapi
+    # conditionally add coverage and sanitizer support if not compiling with cuda/hip/oneapi
     if(index_cuda EQUAL -1 AND index_hip EQUAL -1 AND index_oneapi EQUAL -1)
+        if(alpaka_COVERAGE)
+            if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+                message(STATUS "Enabling coverage instrumentation for ${target}")
+                target_compile_options(${target} PRIVATE --coverage)
+                target_link_options(${target} PRIVATE --coverage)
+            else()
+                message(
+                    WARNING
+                    "Coverage instrumentation requested for '${target}', but compiler '${CMAKE_CXX_COMPILER_ID}' is not supported."
+                )
+            endif()
+        endif()
         if(alpaka_ASAN)
             message(STATUS "Linking ASAN to ${target}")
             target_compile_options(${target} PRIVATE -fsanitize=address)

@@ -6,8 +6,11 @@ on:
   pull_request:
     branches: [ dev ]
 
+# Stop CI for the PR if the PR is updates.
+# Stop CI runs for dev branch if a new PR is merged into the dev branch.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  group: >-
+    ${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('ref-{0}', github.ref) }}
   cancel-in-progress: true
 
 env:
@@ -318,3 +321,64 @@ jobs:
             echo "Matrix CI failed: ${{ needs.ci.result }}"
             exit 1
           fi
+
+  # We use only a single gcc version to check the coverage.
+  # Therefore, the results will be a ruf coverage overview.
+  coverage:
+    name: coverage
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-13 g++-13 ninja-build gcovr libhwloc-dev pkg-config
+
+      - name: Configure CMake
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=gcc-13 \
+            -DCMAKE_CXX_COMPILER=g++-13 \
+            -Dalpaka_TESTS=ON \
+            -Dalpaka_EXAMPLES=OFF \
+            -Dalpaka_BENCHMARKS=OFF \
+            -Dalpaka_DOCS=OFF \
+            -Dalpaka_HEADERCHECKS=OFF \
+            -DBUILD_TESTING=ON \
+            -Dalpaka_DEP_HWLOC=ON \
+            -Dalpaka_DEP_OMP=ON \
+            -Dalpaka_COVERAGE=ON
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Generate coverage report
+        run: |
+          gcovr \
+            --root . \
+            --filter 'include/' \
+            --exclude 'test/' \
+            --exclude 'example/' \
+            --exclude 'benchmark/' \
+            --cobertura-pretty \
+            --output build/coverage.xml \
+            build
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          files: build/coverage.xml
+          disable_search: true
+          fail_ci_if_error: true
+          flags: cpu
+          name: cpu-coverage
+          use_oidc: true

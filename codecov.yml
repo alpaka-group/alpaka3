@@ -1,0 +1,23 @@
+codecov:
+  notify:
+    wait_for_ci: true
+
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+        paths:
+          - "include/"
+    patch:
+      default:
+        informational: true
+        paths:
+          - "include/"
+
+ignore:
+  - "benchmark/**"
+  - "docs/**"
+  - "example/**"
+  - "headerCheck/**"
+  - "test/**"
