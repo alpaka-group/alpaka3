@@ -37,118 +37,118 @@ jobs:
       matrix:
         config:
           - { compiler: gcc, version: "12", cuda: "no", hip: "no", container: "ubuntu:24.04",
-              env : {APCI_DEVICE_COMPILER : gcc@12, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : gcc@12, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: gcc, version: "13", cuda: "no", hip: "no", container: "ubuntu:24.04",
-              env : {APCI_DEVICE_COMPILER : gcc@13, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : gcc@13, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           # tbb backend on
           - { compiler: gcc, version: "13", cuda: "no", hip: "no", container: "ubuntu:24.04", tbb: "on",
-              env : {APCI_DEVICE_COMPILER : gcc@13, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : gcc@13, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: gcc, version: "14", cuda: "no", hip: "no", container: "ubuntu:24.04",
-              env : {APCI_DEVICE_COMPILER: gcc@14, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER: gcc@14, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0",
-              env : {APCI_DEVICE_COMPILER: gcc@15, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER: gcc@15, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0" , simd: "EMULATION", hwloc: "no",
-              env : {APCI_DEVICE_COMPILER: gcc@15, APCI_CMAKE : 3.25.1} }
+              env : {APCI_DEVICE_COMPILER: gcc@15, APCI_CMAKE : 3.25.1, APCI_RUN_CTEST: ON} }
           # clang host compiler
           - { compiler: clang, version: "17", cuda: "no", hip: "no", container: "ubuntu:24.04",
-              env : {APCI_DEVICE_COMPILER : clang@17, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : clang@17, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: clang, version: "18", cuda: "no", hip: "no", container: "ubuntu:24.04",
-              env : {APCI_DEVICE_COMPILER : clang@18, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : clang@18, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: clang, version: "19", cuda: "no", hip: "no", container: "ubuntu:24.04",
-              env : {APCI_DEVICE_COMPILER : clang@19, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : clang@19, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: clang, version: "20", cuda: "no", hip: "no", container: "ubuntu:24.04",
-              env : {APCI_DEVICE_COMPILER : clang@20, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : clang@20, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04",
-              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", simd: "EMULATION", hwloc: "no",
-              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", tbb: "on",
-              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           # nvcc CUDA (nvcc does not contain simd option because nvcc can not use std::simd and is always using simd emulation
           - { compiler: nvcc, version: "", cuda: "12.5", hip: "no", container: "nvidia/cuda:12.5.1-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : nvcc@12.5, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : nvcc@12.5, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: OFF} }
           - { compiler: nvcc, version: "", cuda: "12.6", hip: "no", container: "nvidia/cuda:12.6.3-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : nvcc@12.6, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : nvcc@12.6, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: OFF} }
           - { compiler: nvcc, version: "", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : nvcc@12.8, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : nvcc@12.8, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: OFF} }
           - { compiler: nvcc, version: "", cuda: "12.9", hip: "no", container: "nvidia/cuda:12.9.1-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : nvcc@12.9, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : nvcc@12.9, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: OFF} }
           - { compiler: nvcc, version: "", cuda: "13.0", hip: "no", container: "nvidia/cuda:13.0.0-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : nvcc@13.0, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : nvcc@13.0, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: OFF} }
           - { compiler: nvcc, version: "", cuda: "13.1", hip: "no", container: "nvidia/cuda:13.1.0-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : nvcc@13.1, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : nvcc@13.1, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: OFF} }
           - { compiler: nvcc, version: "", cuda: "13.2", hip: "no", container: "nvidia/cuda:13.2.0-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : nvcc@13.2, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : nvcc@13.2, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: OFF} }
           - { compiler: nvcc, version: "", cuda: "13.3", hip: "no", container: "nvidia/cuda:13.3.0-devel-ubuntu24.04",
-              env: { APCI_DEVICE_COMPILER: nvcc@13.3, APCI_CMAKE : 3.28.3 } }
+              env: { APCI_DEVICE_COMPILER: nvcc@13.3, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: OFF } }
           # clang-cuda (device compile with clang)
           - { compiler: clang, version: "20", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : clang@20, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : clang@20, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: OFF} }
           - { compiler: clang, version: "21", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: OFF} }
           - { compiler: clang, version: "21", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04", simd: "EMULATION", hwloc: "no",
-              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: OFF} }
           # clang with ROCm HIP
           - { compiler: clang, version: "18", cuda: "no", hip: "6.2.4", container: "rocm/dev-ubuntu-24.04:6.2.4",
-              env : {APCI_DEVICE_COMPILER : clang@18, APCI_CMAKE : 3.28.3, APCI_HIP: 6.2.4} }
+              env : {APCI_DEVICE_COMPILER : clang@18, APCI_CMAKE : 3.28.3, APCI_HIP: 6.2.4, APCI_RUN_CTEST: OFF} }
           - { compiler: clang, version: "18", cuda: "no", hip: "6.3.4", container: "rocm/dev-ubuntu-24.04:6.3.4",
-              env : {APCI_DEVICE_COMPILER : clang@18, APCI_CMAKE : 3.28.3, APCI_HIP: 6.3.4} }
+              env : {APCI_DEVICE_COMPILER : clang@18, APCI_CMAKE : 3.28.3, APCI_HIP: 6.3.4, APCI_RUN_CTEST: OFF} }
           - { compiler: clang, version: "19", cuda: "no", hip: "6.4.2", container: "rocm/dev-ubuntu-24.04:6.4.2",
-              env : {APCI_DEVICE_COMPILER : clang@19, APCI_CMAKE : 3.28.3, APCI_HIP: 6.4.2} }
+              env : {APCI_DEVICE_COMPILER : clang@19, APCI_CMAKE : 3.28.3, APCI_HIP: 6.4.2, APCI_RUN_CTEST: OFF} }
           - { compiler: clang, version: "20", cuda: "no", hip: "7.0", container: "rocm/dev-ubuntu-24.04:7.0",
-              env : {APCI_DEVICE_COMPILER : clang@20, APCI_CMAKE : 3.28.3, APCI_HIP: 7.0} }
+              env : {APCI_DEVICE_COMPILER : clang@20, APCI_CMAKE : 3.28.3, APCI_HIP: 7.0, APCI_RUN_CTEST: OFF} }
           - { compiler: clang, version: "20", cuda: "no", hip: "7.1", container: "rocm/dev-ubuntu-24.04:7.1",
-              env : {APCI_DEVICE_COMPILER : clang@20, APCI_CMAKE : 3.28.3, APCI_HIP: 7.1} }
+              env : {APCI_DEVICE_COMPILER : clang@20, APCI_CMAKE : 3.28.3, APCI_HIP: 7.1, APCI_RUN_CTEST: OFF} }
           - { compiler: clang, version: "22", cuda: "no", hip: "7.2", container: "rocm/dev-ubuntu-24.04:7.2",
-              env : {APCI_DEVICE_COMPILER : clang@22, APCI_CMAKE : 3.28.3, APCI_HIP: 7.2} }
+              env : {APCI_DEVICE_COMPILER : clang@22, APCI_CMAKE : 3.28.3, APCI_HIP: 7.2, APCI_RUN_CTEST: OFF} }
           - { compiler: clang, version: "22", cuda: "no", hip: "7.2", container: "rocm/dev-ubuntu-24.04:7.2", simd: "EMULATION", hwloc: "no",
-              env : {APCI_DEVICE_COMPILER : clang@22, APCI_CMAKE : 3.28.3, APCI_HIP: 7.2} }
+              env : {APCI_DEVICE_COMPILER : clang@22, APCI_CMAKE : 3.28.3, APCI_HIP: 7.2, APCI_RUN_CTEST: OFF} }
           # SYCL
           - { compiler: icpx, version: "2025.1", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.1.3-0-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : icpx@2025.1, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : icpx@2025.1, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: OFF} }
           - { compiler: icpx, version: "2025.2", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.2.2-0-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : icpx@2025.2, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : icpx@2025.2, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: OFF} }
           - { compiler: icpx, version: "2025.3", cuda: "no", hip: "no", container: "intel/oneapi-hpckit:2025.3.0-0-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : icpx@2025.3, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : icpx@2025.3, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: OFF} }
           - { compiler: icpx, version: "2026.0", cuda: "no", hip: "no", container: "intel/oneapi:2026.0.0-devel-ubuntu24.04",
-              env: { APCI_DEVICE_COMPILER: icpx@2026.0, APCI_CMAKE: 3.28.3} }
+              env: { APCI_DEVICE_COMPILER: icpx@2026.0, APCI_CMAKE: 3.28.3, APCI_RUN_CTEST: OFF} }
           - { compiler: icpx, version: "2026.0", cuda: "no", hip: "no", container: "intel/oneapi:2026.0.0-devel-ubuntu24.04", simd: "EMULATION", hwloc: "no",
-              env: { APCI_DEVICE_COMPILER: icpx@2026.0, APCI_CMAKE: 3.28.3} }
+              env: { APCI_DEVICE_COMPILER: icpx@2026.0, APCI_CMAKE: 3.28.3, APCI_RUN_CTEST: OFF} }
           # Use/validate oneAPI-provided oneTBB package with the latest icpx toolchain
           - { compiler: icpx, version: "2026.0", cuda: "no", hip: "no", container: "intel/oneapi:2026.0.0-devel-ubuntu24.04", tbb: "on",
-              env: { APCI_DEVICE_COMPILER: icpx@2026.0, APCI_CMAKE: 3.28.3} }
+              env: { APCI_DEVICE_COMPILER: icpx@2026.0, APCI_CMAKE: 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "asan",
-              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "asan" , simd: "EMULATION", hwloc: "no",
-              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "tsan",
-              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "tsan" , simd: "EMULATION", hwloc: "no",
-              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "lsan",
-              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "lsan" , simd: "EMULATION", hwloc: "no",
-              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "ubsan",
-              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: clang, version: "21", cuda: "no", hip: "no", container: "ubuntu:24.04", sanitizer: "ubsan" , simd: "EMULATION", hwloc: "no",
-              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3} }
+              env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "asan",
-              env : {APCI_DEVICE_COMPILER : gcc@15, APCI_CMAKE : 3.25.1} }
+              env : {APCI_DEVICE_COMPILER : gcc@15, APCI_CMAKE : 3.25.1, APCI_RUN_CTEST: ON} }
           - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "asan" , simd: "EMULATION", hwloc: "no",
-              env : {APCI_DEVICE_COMPILER : gcc@15, APCI_CMAKE : 3.25.1} }
+              env : {APCI_DEVICE_COMPILER : gcc@15, APCI_CMAKE : 3.25.1, APCI_RUN_CTEST: ON} }
           - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "tsan",
-              env : {APCI_DEVICE_COMPILER : gcc@15, APCI_CMAKE : 3.25.1} }
+              env : {APCI_DEVICE_COMPILER : gcc@15, APCI_CMAKE : 3.25.1, APCI_RUN_CTEST: ON} }
           - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "tsan" , simd: "EMULATION", hwloc: "no",
-              env : {APCI_DEVICE_COMPILER : gcc@15, APCI_CMAKE : 3.25.1} }
+              env : {APCI_DEVICE_COMPILER : gcc@15, APCI_CMAKE : 3.25.1, APCI_RUN_CTEST: ON} }
           - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "lsan",
-              env : {APCI_DEVICE_COMPILER : gcc@15, APCI_CMAKE : 3.25.1} }
+              env : {APCI_DEVICE_COMPILER : gcc@15, APCI_CMAKE : 3.25.1, APCI_RUN_CTEST: ON} }
           - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "lsan" , simd: "EMULATION", hwloc: "no",
-              env : {APCI_DEVICE_COMPILER : gcc@15, APCI_CMAKE : 3.25.1} }
+              env : {APCI_DEVICE_COMPILER : gcc@15, APCI_CMAKE : 3.25.1, APCI_RUN_CTEST: ON} }
           - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "ubsan",
-              env : {APCI_DEVICE_COMPILER : gcc@15, APCI_CMAKE : 3.25.1} }
+              env : {APCI_DEVICE_COMPILER : gcc@15, APCI_CMAKE : 3.25.1, APCI_RUN_CTEST: ON} }
           - { compiler: gcc, version: "15", cuda: "no", hip: "no", container: "gcc:15.1.0", sanitizer: "ubsan" , simd: "EMULATION", hwloc: "no",
-              env : {APCI_DEVICE_COMPILER : gcc@15, APCI_CMAKE : 3.25.1} }
+              env : {APCI_DEVICE_COMPILER : gcc@15, APCI_CMAKE : 3.25.1, APCI_RUN_CTEST: ON} }
       fail-fast: false
 
     # Specify the container to use based on the matrix configuration
@@ -250,6 +250,9 @@ jobs:
         run: $APCI_ALPAKA_ROOT/script/ci/configure.sh
       - name: Compile Code
         run: $APCI_ALPAKA_ROOT/script/ci/build.sh
+      - name: Run tests
+        if: matrix.config.cuda == 'no' && matrix.config.hip == 'no'
+        run: $APCI_ALPAKA_ROOT/script/ci/test.sh
       - name: Configure CMake (old solution)
         run: |
           mkdir build && cd build
@@ -303,7 +306,7 @@ jobs:
           /opt/cmake/${APCI_CMAKE}/bin/cmake --build . -j
 
       # Run tests (assuming your project has tests)
-      - name: Run Tests
+      - name: Run Tests (old solution)
         if: matrix.config.cuda == 'no' && matrix.config.hip == 'no'
         run: |
           cd build

@@ -35,4 +35,6 @@ echo_yellow "# install all required software, e.g. compiler, GPU SDKs and more
 # run CMake configure
 \$APCI_ALPAKA_ROOT/script/ci/configure.sh
 # compile alpaka
-\$APCI_ALPAKA_ROOT/script/ci/build.sh"
+\$APCI_ALPAKA_ROOT/script/ci/build.sh
+# run tests
+\$APCI_ALPAKA_ROOT/script/ci/test.sh"
