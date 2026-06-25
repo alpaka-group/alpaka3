@@ -73,12 +73,12 @@ void testCombinationOmpParallel(auto queue, auto exec, concepts::Vector auto ext
         auto dBuff = onHost::omp::invokeSingle([&] { return onHost::alloc<uint32_t>(queue.getDevice(), extents); });
 
         auto dBuffCounter = onHost::allocDeferred<uint32_t>(queue, extents);
-        // wait is not required because the queue is blocking but let us test the interface
-        onHost::wait(queue);
 
         onHost::fill(queue, dBuff, 0u);
         onHost::memset(queue, dBuffCounter, 0u);
 
+        // wait is required because memset and fill are non-blocking and concurrent
+        onHost::wait(queue);
         auto numFrames = ALPAKA_TYPEOF(extents)::fill(1);
         /* we need as many blocks as we have numOmpThreads threads to guarantee each thread is executing at least one
          * element. This is required for our validation.
@@ -87,6 +87,9 @@ void testCombinationOmpParallel(auto queue, auto exec, concepts::Vector auto ext
         queue.enqueue(
             onHost::FrameSpec{numFrames, ALPAKA_TYPEOF(extents)::fill(1), exec},
             KernelBundle{KernelND{}, dBuff, dBuffCounter});
+
+        // wait is required because kernel enqueue is non-blocking and concurrent
+        onHost::wait(queue);
 
         onHost::memcpy(queue, hBuff, dBuff);
         onHost::memcpy(queue, hBuffCounter, dBuffCounter);

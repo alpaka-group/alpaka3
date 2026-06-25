@@ -81,6 +81,7 @@ namespace alpaka::onHost
          * same value. The function is a collective functions and must be called by all threads in the parallel scope.
          *
          * If this function is called outside of an OpenMP parallel section the functor is invoked by the caller only.
+         * This operation is synchronizing all threads within a parallel OpenMP region.
          *
          * @return A copy of the return value from the invocation. The return value must be assignable.
          */
@@ -91,7 +92,7 @@ namespace alpaka::onHost
             {
                 using ReturnType = decltype(ALPAKA_FORWARD(fn)());
 
-                // wrap within a optional in cases the return value has no default constructor
+                // wrap within an optional in cases the return value has no default constructor
                 std::optional<ReturnType> returnValue;
 
 #    pragma omp single copyprivate(returnValue)
@@ -139,6 +140,26 @@ namespace alpaka::onHost
                 return !(*this == other);
             }
 
+            /** Wait for all tasks enqueued before the parallel region. */
+            void waitUntilParentQueueIsEmpty()
+            {
+                auto& pQueue = *parentQueue.get();
+                // wait for all tasks enqueued before the parallel region
+                while(internal::IgnoreVisibility::Op<ParentType>::isQueueBlockingTaskExecuted(pQueue) != 0u)
+                    ;
+            }
+
+            void waitForNonOmpParallelOps()
+            {
+                while(m_numCollectiveTasksExecuted != 0u)
+                    ;
+            }
+
+            /* Each thread in a parallel OpenMP section must increase the counter when participating in an operation
+             * even if it is not actively executing something.
+             */
+            std::atomic<uint32_t> m_numCollectiveTasksExecuted = 0;
+
         private:
             using ParentType = Queue<T_Device>;
             std::shared_ptr<ParentType> parentQueue;
@@ -185,6 +206,92 @@ namespace alpaka::onHost
 
     namespace internal
     {
+        template<typename T_Device>
+        struct IgnoreVisibility::Op<cpu::Queue<T_Device>>
+        {
+            [[nodiscard]] static bool isQueueBlockingTaskExecuted(cpu::Queue<T_Device>& queue)
+            {
+                return queue.m_isBlockingTaskExecuted.load();
+            }
+        };
+
+        namespace omp
+        {
+            template<typename T_Device>
+            inline void invokeSingleNowait(cpu::OmpCollectiveQueue<T_Device>& queue, auto&& fn)
+                requires(std::same_as<std::invoke_result_t<ALPAKA_TYPEOF(fn)>, void>)
+            {
+#    if ALPAKA_OMP
+                if(::omp_in_parallel() != 0)
+                {
+                    queue.waitUntilParentQueueIsEmpty();
+                    ++queue.m_numCollectiveTasksExecuted;
+#        pragma omp single nowait
+                    {
+                        ALPAKA_FORWARD(fn)();
+                    }
+                    --queue.m_numCollectiveTasksExecuted;
+                    return;
+                }
+
+                // wait until all threads within the OpenMP parallel region finished there task
+                queue.waitForNonOmpParallelOps();
+#    endif
+                ALPAKA_FORWARD(fn)();
+            }
+
+            template<typename T_Device>
+            inline auto invokeSingleAndWait(cpu::OmpCollectiveQueue<T_Device>& queue, auto&& fn)
+                requires(std::same_as<std::invoke_result_t<ALPAKA_TYPEOF(fn)>, void>)
+            {
+#    if ALPAKA_OMP
+                if(::omp_in_parallel() != 0)
+                {
+#        pragma omp single
+                    {
+                        queue.waitUntilParentQueueIsEmpty();
+                        ++queue.m_numCollectiveTasksExecuted;
+                        ALPAKA_FORWARD(fn)();
+                        --queue.m_numCollectiveTasksExecuted;
+                    }
+                    return;
+                }
+
+                // wait until all threads within the OpenMP parallel region finished there task
+                queue.waitForNonOmpParallelOps();
+#    endif
+                ALPAKA_FORWARD(fn)();
+            }
+
+            template<typename T_Device>
+            inline auto invokeSingleAndWait(cpu::OmpCollectiveQueue<T_Device>& queue, auto&& fn)
+                requires(!std::same_as<std::invoke_result_t<ALPAKA_TYPEOF(fn)>, void>)
+            {
+#    if ALPAKA_OMP
+                if(::omp_in_parallel() != 0)
+                {
+                    using ReturnType = decltype(ALPAKA_FORWARD(fn)());
+
+                    // wrap within an optional in cases the return value has no default constructor
+                    std::optional<ReturnType> returnValue;
+
+#        pragma omp single copyprivate(returnValue)
+                    {
+                        queue.waitUntilParentQueueIsEmpty();
+                        ++queue.m_numCollectiveTasksExecuted;
+                        returnValue = ALPAKA_FORWARD(fn)();
+                        --queue.m_numCollectiveTasksExecuted;
+                    }
+                    return returnValue.value();
+                }
+
+                // wait until all threads within the OpenMP parallel region finished there task
+                queue.waitForNonOmpParallelOps();
+#    endif
+                return ALPAKA_FORWARD(fn)();
+            }
+        } // namespace omp
+
         template<typename T_Platform>
         struct MakeQueue::Op<cpu::Device<T_Platform>, alpaka::queueKind::OmpCollective>
         {
@@ -196,22 +303,30 @@ namespace alpaka::onHost
 
                 auto newQueue = std::make_shared<cpu::OmpCollectiveQueue<cpu::Device<T_Platform>>>(
                     std::move(queueHandle),
-                    device.queues.size(),
+                    device.queueWaitFns.size(),
                     device.m_numaIdx);
 
-                // we store the parent queue because all real queue implementation is located there
-                device.queues.emplace_back(newQueue->parentQueue);
+                std::weak_ptr<cpu::OmpCollectiveQueue<cpu::Device<T_Platform>>> weakPtrToQueue = newQueue;
+                device.queueWaitFns.emplace_back(
+                    [weakPtrToQueue]
+                    {
+                        if(auto queue = weakPtrToQueue.lock())
+                            internal::wait(*queue);
+                    });
+
                 return newQueue;
             }
         };
 
+        /** OpenMP barrier is used. */
         template<typename T_Device, typename T_Event>
         struct WaitFor::Op<cpu::OmpCollectiveQueue<T_Device>, T_Event>
         {
             void operator()(cpu::OmpCollectiveQueue<T_Device>& queue, cpu::Event<T_Device>& event) const
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
-                omp::invokeSingle(
+                omp::invokeSingleAndWait(
+                    queue,
                     [&]
                     {
                         internal::WaitFor::Op<cpu::Queue<T_Device>, ALPAKA_TYPEOF(event)>{}(*queue.parentQueue, event);
@@ -219,27 +334,32 @@ namespace alpaka::onHost
             }
         };
 
+        /** OpenMP barrier is used. */
         template<typename T_Device>
         struct Wait::Op<cpu::OmpCollectiveQueue<T_Device>>
         {
             void operator()(cpu::OmpCollectiveQueue<T_Device>& queue) const
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
-                omp::invokeSingle([&] { internal::Wait::Op<cpu::Queue<T_Device>>{}(*queue.parentQueue); });
+                omp::invokeSingleAndWait(
+                    queue,
+                    [&] { internal::Wait::Op<cpu::Queue<T_Device>>{}(*queue.parentQueue); });
             }
         };
 
+        /** OpenMP barrier is used to guarantee all threads in the parallel region seeing the same status.*/
         template<typename T_Device>
         struct IsQueueEmpty::Op<cpu::OmpCollectiveQueue<T_Device>>
         {
             void operator()(cpu::OmpCollectiveQueue<T_Device>& queue) const
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
-                return omp::invokeSingle([&]
-                                         { internal::IsQueueEmpty::Op<cpu::Queue<T_Device>>{}(*queue.parentQueue); });
+                return omp::invokeSingleAndWait(
+                    [&] { internal::IsQueueEmpty::Op<cpu::Queue<T_Device>>{}(*queue.parentQueue); });
             }
         };
 
+        /** NO OpenMP barrier used. */
         template<typename T_Device, typename T_Task>
         struct internal::Enqueue::HostTaskDeferred<cpu::OmpCollectiveQueue<T_Device>, T_Task>
         {
@@ -247,7 +367,8 @@ namespace alpaka::onHost
             void operator()(cpu::OmpCollectiveQueue<T_Device>& queue, T_Task const& task) const
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
-                omp::invokeSingle(
+                omp::invokeSingleNowait(
+                    queue,
                     [&]
                     {
                         internal::Enqueue::HostTaskDeferred<cpu::Queue<T_Device>, T_Task>{}(*queue.parentQueue, task);
@@ -255,6 +376,7 @@ namespace alpaka::onHost
             }
         };
 
+        /** NO OpenMP barrier used. */
         template<typename T_Device, typename T_Task>
         struct internal::Enqueue::HostTask<cpu::OmpCollectiveQueue<T_Device>, T_Task>
         {
@@ -266,18 +388,21 @@ namespace alpaka::onHost
             void operator()(cpu::OmpCollectiveQueue<T_Device>& queue, T_Task const& task) const
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
-                omp::invokeSingle(
+                omp::invokeSingleNowait(
+                    queue,
                     [&] { internal::Enqueue::HostTask<cpu::Queue<T_Device>, T_Task>{}(*queue.parentQueue, task); });
             }
         };
 
+        /** OpenMP barrier is used. */
         template<typename T_Device, typename T_Event>
         struct Enqueue::Event<cpu::OmpCollectiveQueue<T_Device>, T_Event>
         {
             void operator()(cpu::OmpCollectiveQueue<T_Device>& queue, T_Event& event) const
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
-                omp::invokeSingle(
+                omp::invokeSingleAndWait(
+                    queue,
                     [&] { internal::Enqueue::Event<cpu::Queue<T_Device>, T_Event>{}(*queue.parentQueue, event); });
             }
         };
@@ -308,11 +433,8 @@ namespace alpaka::onHost
 
                 if(::omp_in_parallel() != 0)
                 {
-#    pragma omp master
-                    {
-                        queue.parentQueue->m_mutex.lock();
-                        queue.parentQueue->m_isBlockingTaskExecuted = true;
-                    }
+                    queue.waitUntilParentQueueIsEmpty();
+                    ++queue.m_numCollectiveTasksExecuted;
                     auto deviceKind = alpaka::getDeviceKind(queue.parentQueue->m_device);
 
                     // This queue is not changing the affinity
@@ -324,19 +446,15 @@ namespace alpaka::onHost
                         DictEntry(object::deviceKind, deviceKind),
                         DictEntry(object::exec, threadSpec.getExecutor())};
                     onAcc::Acc acc = makeAcc(threadSpec, queue.parentQueue->m_numaIdx, setThreadAffinity);
-                    // wait that the master thread updated the lock
-#    pragma omp barrier
+
                     acc(kernelBundle, moreLayer);
-                    // wait that all threads finished the execution
-#    pragma omp barrier
-#    pragma omp master
-                    {
-                        queue.parentQueue->m_isBlockingTaskExecuted = false;
-                        queue.parentQueue->m_mutex.unlock();
-                    }
+                    --queue.m_numCollectiveTasksExecuted;
                 }
                 else
                 {
+                    // wait until all threads within the OpenMP parallel region finished there task
+                    while(queue.m_numCollectiveTasksExecuted != 0u)
+                        ;
                     queue.parentQueue->enqueue(threadSpec, kernelBundle);
                 }
             }
@@ -367,11 +485,8 @@ namespace alpaka::onHost
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel + onHost::logger::queue);
                 if(::omp_in_parallel() != 0)
                 {
-#    pragma omp master
-                    {
-                        queue.parentQueue->m_mutex.lock();
-                        queue.parentQueue->m_isBlockingTaskExecuted = true;
-                    }
+                    queue.waitUntilParentQueueIsEmpty();
+                    ++queue.m_numCollectiveTasksExecuted;
 
                     auto adjustedThreadSpec
                         = internal::adjustThreadSpec(*(queue.parentQueue->m_device), frameSpec, kernelBundle);
@@ -386,21 +501,15 @@ namespace alpaka::onHost
                         DictEntry(object::deviceKind, deviceKind),
                         DictEntry(object::exec, adjustedThreadSpec.getExecutor())};
                     onAcc::Acc acc = makeAcc(adjustedThreadSpec, queue.parentQueue->m_numaIdx, setThreadAffinity);
-                    // wait that the master thread updated the lock
-#    pragma omp barrier
+
                     acc(kernelBundle, moreLayer);
-                    /* Wait that all threads finished the execution to avoid that a participating thread in the kernel
-                     * call already performs the next action, assuming the work in the queue is already done.
-                     */
-#    pragma omp barrier
-#    pragma omp master
-                    {
-                        queue.parentQueue->m_isBlockingTaskExecuted = false;
-                        queue.parentQueue->m_mutex.unlock();
-                    }
+                    --queue.m_numCollectiveTasksExecuted;
                 }
                 else
                 {
+                    // wait until all threads within the OpenMP parallel region finished there task
+                    while(queue.m_numCollectiveTasksExecuted != 0u)
+                        ;
                     queue.parentQueue->enqueue(frameSpec, kernelBundle);
                 }
             }
@@ -417,7 +526,8 @@ namespace alpaka::onHost
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
 
-                omp::invokeSingle(
+                omp::invokeSingleNowait(
+                    queue,
                     [&]
                     {
                         Memcpy::Op<cpu::Queue<T_Device>, T_Dest, T_Source, T_Extents>{}(
@@ -440,7 +550,8 @@ namespace alpaka::onHost
                 auto&& source) const
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
-                omp::invokeSingle(
+                omp::invokeSingleNowait(
+                    queue,
                     [&]
                     {
                         MemcpyDeviceGlobal::Op<
@@ -462,7 +573,8 @@ namespace alpaka::onHost
                 onAcc::internal::GlobalDeviceMemoryWrapper<T_Storage, T> source) const
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
-                omp::invokeSingle(
+                omp::invokeSingleNowait(
+                    queue,
                     [&]
                     {
                         internal::MemcpyDeviceGlobal::Op<
@@ -489,7 +601,8 @@ namespace alpaka::onHost
                 T_Extents const& extents) const requires(std::is_same_v<ALPAKA_TYPEOF(dest), T_Dest>)
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
-                omp::invokeSingle(
+                omp::invokeSingleNowait(
+                    queue,
                     [&]
                     {
                         internal::Memset::Op<cpu::Queue<T_Device>, T_Dest, T_Extents>{}(
@@ -512,6 +625,9 @@ namespace alpaka::onHost
                 requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
                          && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
             {
+                /* There is no need to wait for queue tasks before the parallel region or if called from outside for
+                 * tasks within the parallel region, this will be done during the kernel call in the fill function.
+                 */
                 ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
                 if(::omp_in_parallel() != 0)
                 {
@@ -541,9 +657,7 @@ namespace alpaka::onHost
             }
         };
 
-        /** The code is a copy of the Alloc::Op with the difference that the memory is allocated and freed
-         * within a queue
-         */
+        /** OpenMP barrier is used. */
         template<typename T_Type, typename T_Device, alpaka::concepts::Vector T_Extents>
         struct AllocDeferred::Op<T_Type, cpu::OmpCollectiveQueue<T_Device>, T_Extents>
         {
@@ -551,7 +665,8 @@ namespace alpaka::onHost
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
 
-                return omp::invokeSingle(
+                return omp::invokeSingleAndWait(
+                    queue,
                     [&]
                     {
                         return internal::AllocDeferred::Op<T_Type, cpu::Queue<T_Device>, T_Extents>{}(
