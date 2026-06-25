@@ -204,29 +204,8 @@ jobs:
       # ROCm
       - name: Install ROCm
         if: matrix.config.hip != 'no'
-        run: |
-          apt-get update
-          apt-get install -y hiprand-dev rocrand-dev
-
-          export ROCM_PATH=/opt/rocm
-          export CMAKE_PREFIX_PATH=$ROCM_PATH:$CMAKE_PREFIX_PATH
-          export HIP_PLATFORM="amd"
-          export HIP_DEVICE_LIB_PATH=${ROCM_PATH}/amdgcn/bitcode
-          export HSA_PATH=$ROCM_PATH
-          export PATH=${ROCM_PATH}/bin:$PATH
-          export PATH=${ROCM_PATH}/llvm/bin:$PATH
-
-          # Export variables to make them globally visible
-          echo "ROCM_PATH=${ROCM_PATH}" >> $GITHUB_ENV
-          echo "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}" >> $GITHUB_ENV
-          echo "HIP_PLATFORM=${HIP_PLATFORM}" >> $GITHUB_ENV
-          echo "HSA_PATH=${HSA_PATH}" >> $GITHUB_ENV
-          echo "PATH=${PATH}" >> $GITHUB_ENV
-
-          which clang++
-          clang++ --version
-          hipconfig --platform
-          hipconfig -v
+        shell: bash
+        run: $APCI_ALPAKA_ROOT/script/ci/install/rocm.sh
 
       # intel oneAPI ipcx
       - name: Install oneAPI
@@ -271,6 +250,14 @@ jobs:
               export CC=/usr/bin/clang-${{ matrix.config.version }}
               export CXX=/usr/bin/clang++-${{ matrix.config.version }}
             else
+              export ROCM_PATH=/opt/rocm
+              export CMAKE_PREFIX_PATH=$ROCM_PATH:$CMAKE_PREFIX_PATH
+              export HIP_PLATFORM="amd"
+              export HIP_DEVICE_LIB_PATH=${ROCM_PATH}/amdgcn/bitcode
+              export HSA_PATH=$ROCM_PATH
+              export PATH=${ROCM_PATH}/bin:$PATH
+              export PATH=${ROCM_PATH}/llvm/bin:$PATH
+
               echo "set clang as hip compiler"
               export CC=clang
               export CXX=clang++
