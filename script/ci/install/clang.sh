@@ -24,7 +24,8 @@ if [[ -f "/etc/apt/sources.list.d/llvm.list" ]]; then
     sudo rm /etc/apt/sources.list.d/llvm.list
 fi
 
-if [[ "$compiler_name" == "clang" ]]; then
+# If HIP is enabled, the clang compiler is handled by the rocm.sh script
+if [[ "$compiler_name" == "clang" && "$APCI_HIP" == 0 ]]; then
     if agc-manager -e "clang@${compiler_version}"; then
         echo_green "use preinstalled clang@${compiler_version}"
 
@@ -35,8 +36,6 @@ if [[ "$compiler_name" == "clang" ]]; then
     else
         install_msg "Clang $compiler_version"
 
-        lazy_apt_update
-        DEBIAN_FRONTEND=noninteractive apt install -y software-properties-common wget gnupg2
         retry_cmd wget https://apt.llvm.org/llvm-snapshot.gpg.key
         mv ./llvm-snapshot.gpg.key /etc/apt/trusted.gpg.d/apt.llvm.org.asc
         case "${compiler_version}" in

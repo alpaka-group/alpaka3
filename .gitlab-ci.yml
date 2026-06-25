@@ -54,3 +54,27 @@ clang-20-agc:
   variables:
     APCI_DEVICE_COMPILER : clang@20
     APCI_CMAKE: 3.31.4
+
+hipcc-7.0:
+  image: ubuntu:24.04
+  extends: .base
+  variables:
+    APCI_DEVICE_COMPILER : clang@20
+    APCI_CMAKE: 3.31.4
+    APCI_HIP : 7.0
+
+hipcc-7.2-agc:
+  image: registry.hzdr.de/crp/alpaka-group-container/alpaka-ci-ubuntu24.04-gcc:4.0
+  extends: .base
+  variables:
+    APCI_DEVICE_COMPILER : clang@22
+    APCI_CMAKE: 3.28.3
+    APCI_HIP : 7.2
+
+hipcc-6.3-agc:
+  image: registry.hzdr.de/crp/alpaka-group-container/alpaka-ci-ubuntu24.04-rocm6.3:addubuntu2204cudacontainer-4.0
+  extends: .base
+  variables:
+    APCI_DEVICE_COMPILER : clang@21
+    APCI_CMAKE: 3.28.3
+    APCI_HIP : 6.3
