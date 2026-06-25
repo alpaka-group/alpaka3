@@ -39,7 +39,10 @@ namespace vendorTutorial
     // END-TUTORIAL-vendorSymbol
 
     // BEGIN-TUTORIAL-vendorFallback
-    // Genic function dispatch signature which is used if no more specific specification for the symbol is provided.
+    /* Genic function dispatch signature which is used if no more specific specification for the symbol is provided.
+     * `input` and `output` should be one-dimensional, enforced by the required clause, to build a unified interface
+     * because std::transform used in the host CPU overload only supports one dimensional memory.
+     */
     template<typename T_Queue, alpaka::concepts::IMdSpan T_Output, alpaka::concepts::IMdSpan T_Input>
     constexpr void alpakaFnDispatch(
         AffineTransform,
@@ -47,7 +50,7 @@ namespace vendorTutorial
         T_Output&& output,
         float scale,
         float shift,
-        T_Input&& input) requires(ALPAKA_TYPEOF(output)::dim() == 1u && ALPAKA_TYPEOF(input)::dim() == 1u)
+        T_Input&& input) requires(concepts::Dim<ALPAKA_TYPEOF(input), 1u> && concepts::Dim<ALPAKA_TYPEOF(output), 1u>)
     {
         // Forward all arguments because the function signature chosen here matches the alpaka transform interface.
         alpaka::onHost::transform(
@@ -60,7 +63,10 @@ namespace vendorTutorial
     // END-TUTORIAL-vendorFallback
 
     // BEGIN-TUTORIAL-vendorHost
-    // This overload is used if the queue API is `api::Host` and the device kind is `deviceKind::Cpu`.
+    /* This overload is used if the queue API is `api::Host` and the device kind is `deviceKind::Cpu`.
+     * `input` and `output` should be one-dimensional, enforced by the requirement clause, due to the limitations of
+     * std::transform used for the implementation.
+     */
     template<typename T_Queue, alpaka::concepts::IMdSpan T_Output, alpaka::concepts::IMdSpan T_Input>
     constexpr void alpakaFnDispatch(
         AffineTransform::Spec<alpaka::api::Host, alpaka::deviceKind::Cpu>,
@@ -68,7 +74,7 @@ namespace vendorTutorial
         T_Output&& output,
         float scale,
         float shift,
-        T_Input&& input) requires(ALPAKA_TYPEOF(output)::dim() == 1u && ALPAKA_TYPEOF(input)::dim() == 1u)
+        T_Input&& input) requires(concepts::Dim<ALPAKA_TYPEOF(input), 1u> && concepts::Dim<ALPAKA_TYPEOF(output), 1u>)
     {
         /* Enqueue support only const lambdas/functors but the pointer must be writable, therefore create a copy of the
          * pointer before the multidimensional span becomes const due to the lambda. For IMdSpan the constness will be

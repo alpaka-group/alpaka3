@@ -3,12 +3,12 @@ Vendor and Third-Party Interop
 
 At some point you would ask yourself how you can use native vendor implementations e.g. for BLAS, FFT or other functions together with *alpaka*.
 You might want to call ``thrust::transform`` on CUDA, ``rocPRIM`` on HIP, a oneAPI library on SYCL, or even a CPU-side library function on the host backend.
-*alpaka* provides a function-symbol interface for this request, which keeps the code to call vendor functions clean and readable without introducing precompiler macros around the functions calls.
+*alpaka* provides a function-symbol interface for this request, which keeps the code to call vendor functions clean and readable without introducing preprocessor macros around the function calls.
 
 The following steps are required:
 
-- Define a *alpaka* function symbol with ``ALPAKA_FN_SYMBOL(symbolName)``
-- Optional implement a generic *alpaka* fallback, for any device.
+- Define an *alpaka* function symbol with ``ALPAKA_FN_SYMBOL(symbolName)``
+- Optionally implement a generic *alpaka* fallback for any device.
 - Specialize implementations for the backends that have a special vendor path.
 
 Call the symbol via ``symbolName::call(queue, ...)`` or ``symbolName{}(queue, ...)`` and the correct implementation will be dispatched based on the API and device kind derived from the first argument, in this case the queue.
@@ -49,8 +49,8 @@ Registering a Generic Fallback
   This overload is the portable baseline.
   It works on every backend that can run the normal alpaka algorithm path, so it is a good default even when you later add CUDA-, HIP-, or SYCL-specific overloads.
 
-Registering a API-Device-Specific Overload
-------------------------------------------
+Registering an API-Device-Specific Overload
+-------------------------------------------
 
   .. literalinclude:: ../../snippets/example/200_vendorInterop.cpp
     :language: cpp
@@ -84,7 +84,7 @@ Calling the Function
 
 *alpaka*'s function interface is not limited to the usage on the host side only.
 As shown in the :ref:`function kernel tutorial <tutorial-fnkernel>` you can write kernels which are specializable for a device kind and/or API.
-You can also use it to call vendor/third-party functions from within a kernel (``onAcc``), in this case do not forgot to use the function attribute ``ALPAKA_FN_ACC`` or ``constexpr`` else some device compiler can not handle these functions.
+You can also use it to call vendor/third-party functions from within a kernel (``onAcc``); in this case do not forget to mark the function with the attribute ``ALPAKA_FN_ACC`` or ``constexpr``, otherwise some device compilers may fail to compile these functions.
 
 Complete Source File
 --------------------
