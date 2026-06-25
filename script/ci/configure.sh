@@ -15,13 +15,28 @@ parse_compiler_version "$APCI_DEVICE_COMPILER"
 # TODO: remove me, if all install scripts are ported
 if [[ "$compiler_name" == "gcc" || ("$compiler_name" == "clang" && "$APCI_HIP" == 0) ]]; then
     load_variable_if_not_exist APCI_CMAKE_BIN_PATH
-    load_variable_if_not_exist APCI_CC_COMPILER
+    load_variable_if_not_exist APCI_C_COMPILER
     load_variable_if_not_exist APCI_CXX_COMPILER
 
     CMAKE_ARGS=(
-        "-DCMAKE_CC_COMPILER=$APCI_CC_COMPILER"
+        -S "${APCI_ALPAKA_ROOT}"
+        -B "/build"
+        -G Ninja
+        -Dalpaka_COMPILE_PEDANTIC=ON
+        -Dalpaka_DOCS=ON
+        -Dalpaka_TESTS=ON
+        -Dalpaka_BENCHMARKS=ON
+        -Dalpaka_EXAMPLES=ON
+        -DBUILD_TESTING=ON
+        -Dalpaka_HEADERCHECKS=ON
+        -Dalpaka_LOG=dynamic
+        -Dalpaka_FAST_MATH=OFF
+        "-DCMAKE_C_COMPILER=$APCI_C_COMPILER"
         "-DCMAKE_CXX_COMPILER=$APCI_CXX_COMPILER"
     )
 
     echo_green "${APCI_CMAKE_BIN_PATH}/cmake ${CMAKE_ARGS[*]}"
+    if [[ -n ${GITLAB_CI+x} ]]; then
+        "${APCI_CMAKE_BIN_PATH}/cmake" "${CMAKE_ARGS[@]}"
+    fi
 fi

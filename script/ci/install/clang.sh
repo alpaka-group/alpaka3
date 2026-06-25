@@ -50,16 +50,16 @@ if [[ "$compiler_name" == "clang" ]]; then
         DEBIAN_FRONTEND=noninteractive retry_cmd apt update
         DEBIAN_FRONTEND=noninteractive apt install -y "clang-${compiler_version}" "libomp-${compiler_version}-dev"
 
-        export APCI_CC_COMPILER="/usr/bin/clang-${compiler_version}"
+        export APCI_C_COMPILER="/usr/bin/clang-${compiler_version}"
         export APCI_CXX_COMPILER="/usr/bin/clang++-${compiler_version}"
     fi
 
-    echo_green "${APCI_CC_COMPILER} --version"
-    $APCI_CC_COMPILER --version
+    echo_green "${APCI_C_COMPILER} --version"
+    $APCI_C_COMPILER --version
     echo_green "${APCI_CXX_COMPILER} --version"
     $APCI_CXX_COMPILER --version
 
-    store_variable APCI_CC_COMPILER
+    store_variable APCI_C_COMPILER
     store_variable APCI_CXX_COMPILER
 else
     echo_green "Skipped install Clang because it is not required for the job."

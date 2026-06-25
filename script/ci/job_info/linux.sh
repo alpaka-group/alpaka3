@@ -9,11 +9,11 @@
 
 echo_yellow "1. Run the container. There are two options.\n
   1.1 Run the container and clone alpaka from the internet.
-    - docker run -it ${ACPI_IMAGE_NAME} bash
+    - docker run -it ${APCI_IMAGE_NAME} bash
     - apt update && apt install -y git
-    - git clone ${ACPI_GIT_URL} --depth 1 -b ${ACPI_BRANCH_NAME} /alpaka
+    - git clone ${APCI_GIT_URL} --depth 1 -b ${APCI_BRANCH_NAME} /alpaka
   1.2 Run the container and mount locally alpaka project.
-    - docker run -it -v /path/to/local/alpaka:/alpaka ${ACPI_IMAGE_NAME} bash
+    - docker run -it -v /path/to/local/alpaka:/alpaka ${APCI_IMAGE_NAME} bash
 "
 
 echo_yellow "2. Set the environment variables.\n"

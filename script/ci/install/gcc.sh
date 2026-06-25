@@ -24,10 +24,10 @@ if [[ "$compiler_name" == "gcc" ]]; then
         echo_green "use preinstalled gcc@${compiler_version}"
 
         # TODO: because of a bug in agc-manager the gcc/g++ base path is wrong. Search for gcc/g++ instead.
-        # `APCI_CC_COMPILER="$(agc-manager -b gcc@${compiler_version})/gcc-${compiler_version}"`
-        APCI_CC_COMPILER=$(which "gcc-${compiler_version}")
+        # `APCI_C_COMPILER="$(agc-manager -b gcc@${compiler_version})/gcc-${compiler_version}"`
+        APCI_C_COMPILER=$(which "gcc-${compiler_version}")
         APCI_CXX_COMPILER=$(which "g++-${compiler_version}")
-        export APCI_CC_COMPILER
+        export APCI_C_COMPILER
         export APCI_CXX_COMPILER
     else
         # install gcc only if not already available, pre installed gcc can not be called with the version number as postfix
@@ -39,7 +39,7 @@ if [[ "$compiler_name" == "gcc" ]]; then
                 DEBIAN_FRONTEND=noninteractive sudo apt update
                 DEBIAN_FRONTEND=noninteractive sudo apt install -y "gcc-${compiler_version}" "g++-${compiler_version}"
                 # select requested GCC as default
-                # TODO: Remove me, if ACPI_CXX_COMPILER is used in production.
+                # TODO: Remove me, if APCI_CXX_COMPILER is used in production.
                 # Changing the system host compiler is pretty dangerous and error prone.
                 update-alternatives --install /usr/bin/gcc gcc "/usr/bin/gcc-${compiler_version}" 100 \
                     --slave /usr/bin/g++ g++ "/usr/bin/g++-${compiler_version}"
@@ -59,16 +59,16 @@ if [[ "$compiler_name" == "gcc" ]]; then
             unset version_exe_name
         done
 
-        export APCI_CC_COMPILER="${gcc_base_path}/gcc-${compiler_version}"
+        export APCI_C_COMPILER="${gcc_base_path}/gcc-${compiler_version}"
         export APCI_CXX_COMPILER="${gcc_base_path}/g++-${compiler_version}"
     fi
 
-    echo_green "${APCI_CC_COMPILER} --version"
-    $APCI_CC_COMPILER --version
+    echo_green "${APCI_C_COMPILER} --version"
+    $APCI_C_COMPILER --version
     echo_green "${APCI_CXX_COMPILER} --version"
     $APCI_CXX_COMPILER --version
 
-    store_variable APCI_CC_COMPILER
+    store_variable APCI_C_COMPILER
     store_variable APCI_CXX_COMPILER
 
     unset gcc_base_path

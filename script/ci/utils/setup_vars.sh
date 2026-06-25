@@ -39,14 +39,14 @@ if [[ -n ${GITLAB_CI+x} ]]; then
         export APCI_OS_NAME=macOS
     fi
 
-    export ACPI_IMAGE_NAME="$CI_JOB_IMAGE"
+    export APCI_IMAGE_NAME="$CI_JOB_IMAGE"
     if [[ "${CI_COMMIT_REF_NAME}" =~ "pr-" ]]; then
-        IFS='/' read -r _pr_number _repo_owner _repo ACPI_BRANCH_NAME <<<"${CI_COMMIT_REF_NAME}"
-        export ACPI_GIT_URL="https://github.com/${_repo_owner}/${_repo}.git"
-        export ACPI_BRANCH_NAME
+        IFS='/' read -r _pr_number _repo_owner _repo APCI_BRANCH_NAME <<<"${CI_COMMIT_REF_NAME}"
+        export APCI_GIT_URL="https://github.com/${_repo_owner}/${_repo}.git"
+        export APCI_BRANCH_NAME
         unset _pr_number _repo_owner _repo
     else
-        export ACPI_GIT_URL="https://github.com/alpaka-group/alpaka3.git"
-        export ACPI_BRANCH_NAME="${CI_COMMIT_REF_NAME}"
+        export APCI_GIT_URL="https://github.com/alpaka-group/alpaka3.git"
+        export APCI_BRANCH_NAME="${CI_COMMIT_REF_NAME}"
     fi
 fi
