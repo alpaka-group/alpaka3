@@ -18,53 +18,59 @@ using TestBackends = std::decay_t<decltype(onHost::allBackends(onHost::enabledDe
 template<typename T_To, typename T_AnyInput>
 concept IsLpCastCallable = requires(T_AnyInput in) { lpCast<T_To>(in); };
 
+// Test type for user type conversion.
+struct Foo
+{
+};
+
 struct TestKernelLpCast
 {
-    ALPAKA_FN_ACC void operator()(auto const& acc) const
+    /* Vec and Simd have the same required template signature, therefore we can combine the tests.
+     *
+     * Do not move this test implementation into a lambda with templates, nvcc will show unused variable warnings
+     * pointing to the template parameters.
+     */
+    template<uint32_t T_dim, template<typename, uint32_t, typename...> class T_ClassToTest>
+    static constexpr void check()
     {
-        // Test type for user type conversion.
-        struct Foo
-        {
-        };
+        alpaka::unused(T_dim);
+        // integral type identity
+        static_assert(IsLpCastCallable<uint32_t, ALPAKA_TYPEOF(T_ClassToTest<uint32_t, T_dim>{})>);
+        static_assert(IsLpCastCallable<uint64_t, T_ClassToTest<uint64_t, T_dim>>);
+        // down cast is forbidden
+        static_assert(!IsLpCastCallable<uint32_t, T_ClassToTest<uint64_t, T_dim>>);
+        // sign flip is forbidden if the original data is not fully representable
+        static_assert(!IsLpCastCallable<int32_t, T_ClassToTest<uint32_t, T_dim>>);
+        // sign flip is allowed if the original data is fully representable
+        static_assert(IsLpCastCallable<int32_t, T_ClassToTest<uint16_t, T_dim>>);
+        // integral to floating point
+        static_assert(IsLpCastCallable<float, T_ClassToTest<int16_t, T_dim>>);
+        static_assert(!IsLpCastCallable<float, T_ClassToTest<int32_t, T_dim>>);
+        // floating point to integral
+        static_assert(!IsLpCastCallable<int32_t, T_ClassToTest<float, T_dim>>);
+        // floating point type identity
+        static_assert(IsLpCastCallable<float, T_ClassToTest<float, T_dim>>);
+        static_assert(IsLpCastCallable<double, T_ClassToTest<double, T_dim>>);
+        // floating point precision loss is forbidden
+        static_assert(!IsLpCastCallable<float, T_ClassToTest<double, T_dim>>);
+        // floating point up cast kept precision
+        static_assert(IsLpCastCallable<double, T_ClassToTest<float, T_dim>>);
 
-        // Vec and Simd have the same required template signature, therefore we can combine the tests
-        auto testCases = []<uint32_t T_dim, template<typename, uint32_t> class T_ClassToTest>
-        {
-            // integral type identity
-            static_assert(IsLpCastCallable<uint32_t, T_ClassToTest<uint32_t, T_dim>>);
-            static_assert(IsLpCastCallable<uint64_t, T_ClassToTest<uint64_t, T_dim>>);
-            // down cast is forbidden
-            static_assert(!IsLpCastCallable<uint32_t, T_ClassToTest<uint64_t, T_dim>>);
-            // sign flip is forbidden if the original data is not fully representable
-            static_assert(!IsLpCastCallable<int32_t, T_ClassToTest<uint32_t, T_dim>>);
-            // sign flip is allowed if the original data is fully representable
-            static_assert(IsLpCastCallable<int32_t, T_ClassToTest<uint16_t, T_dim>>);
-            // integral to floating point
-            static_assert(IsLpCastCallable<float, T_ClassToTest<int16_t, T_dim>>);
-            static_assert(!IsLpCastCallable<float, T_ClassToTest<int32_t, T_dim>>);
-            // floating point to integral
-            static_assert(!IsLpCastCallable<int32_t, T_ClassToTest<float, T_dim>>);
-            // floating point type identity
-            static_assert(IsLpCastCallable<float, T_ClassToTest<float, T_dim>>);
-            static_assert(IsLpCastCallable<double, T_ClassToTest<double, T_dim>>);
-            // floating point precision loss is forbidden
-            static_assert(!IsLpCastCallable<float, T_ClassToTest<double, T_dim>>);
-            // floating point up cast kept precision
-            static_assert(IsLpCastCallable<double, T_ClassToTest<float, T_dim>>);
+        // custom value type is not castable
+        static_assert(!IsLpCastCallable<uint32_t, T_ClassToTest<Foo, T_dim>>);
+    }
 
-            // custom value type is not castable
-            static_assert(!IsLpCastCallable<uint32_t, T_ClassToTest<Foo, T_dim>>);
-        };
+    ALPAKA_FN_ACC void operator()(auto const&) const
+    {
+        check<1u, Vec>();
+        check<2u, Vec>();
+        check<3u, Vec>();
+        check<4u, Vec>();
 
-        testCases.template operator()<1u, Vec>();
-        testCases.template operator()<2u, Vec>();
-        testCases.template operator()<3u, Vec>();
-        testCases.template operator()<4u, Vec>();
-
-        testCases.template operator()<1u, Simd>();
-        testCases.template operator()<2u, Simd>();
-        testCases.template operator()<3u, Simd>();
-        testCases.template operator()<4u, Simd>();
+        check<1u, Simd>();
+        check<2u, Simd>();
+        check<3u, Simd>();
+        check<4u, Simd>();
     }
 };
 
@@ -86,48 +92,48 @@ concept IsPCastCallable = requires(T_AnyInput in) { pCast<T_To>(in); };
 
 struct TestKernelPCast
 {
-    ALPAKA_FN_ACC void operator()(auto const& acc) const
+    /* Vec and Simd have the same required template signature, therefore we can combine the tests.
+     *
+     * Do not move this test implementation into a lambda with templates, nvcc will show unused variable warnings
+     * pointing to the template parameters.
+     */
+    template<uint32_t T_dim, template<typename, uint32_t, typename...> class T_ClassToTest>
+    static constexpr void check()
     {
-        // Test type for user type conversion.
-        struct Foo
-        {
-        };
+        // integral type identity
+        static_assert(IsPCastCallable<uint32_t, T_ClassToTest<uint32_t, T_dim>>);
+        static_assert(IsPCastCallable<uint64_t, T_ClassToTest<uint64_t, T_dim>>);
+        // down cast
+        static_assert(IsPCastCallable<uint32_t, T_ClassToTest<uint64_t, T_dim>>);
+        // sign flip
+        static_assert(IsPCastCallable<int32_t, T_ClassToTest<uint32_t, T_dim>>);
+        static_assert(IsPCastCallable<int32_t, T_ClassToTest<uint16_t, T_dim>>);
+        // integral and floating point cross casts
+        static_assert(IsPCastCallable<float, T_ClassToTest<int32_t, T_dim>>);
+        static_assert(IsPCastCallable<int32_t, T_ClassToTest<float, T_dim>>);
+        // floating point type identity
+        static_assert(IsPCastCallable<float, T_ClassToTest<float, T_dim>>);
+        static_assert(IsPCastCallable<double, T_ClassToTest<double, T_dim>>);
+        // floating point precision loss
+        static_assert(IsPCastCallable<float, T_ClassToTest<double, T_dim>>);
+        // floating point up cast kept precision
+        static_assert(IsPCastCallable<double, T_ClassToTest<float, T_dim>>);
 
-        // Vec and Simd have the same required template signature, therefore we can combine the tests
-        auto testCases = []<uint32_t T_dim, template<typename, uint32_t> class T_ClassToTest>
-        {
-            // integral type identity
-            static_assert(IsPCastCallable<uint32_t, T_ClassToTest<uint32_t, T_dim>>);
-            static_assert(IsPCastCallable<uint64_t, T_ClassToTest<uint64_t, T_dim>>);
-            // down cast
-            static_assert(IsPCastCallable<uint32_t, T_ClassToTest<uint64_t, T_dim>>);
-            // sign flip
-            static_assert(IsPCastCallable<int32_t, T_ClassToTest<uint32_t, T_dim>>);
-            static_assert(IsPCastCallable<int32_t, T_ClassToTest<uint16_t, T_dim>>);
-            // integral and floating point cross casts
-            static_assert(IsPCastCallable<float, T_ClassToTest<int32_t, T_dim>>);
-            static_assert(IsPCastCallable<int32_t, T_ClassToTest<float, T_dim>>);
-            // floating point type identity
-            static_assert(IsPCastCallable<float, T_ClassToTest<float, T_dim>>);
-            static_assert(IsPCastCallable<double, T_ClassToTest<double, T_dim>>);
-            // floating point precision loss
-            static_assert(IsPCastCallable<float, T_ClassToTest<double, T_dim>>);
-            // floating point up cast kept precision
-            static_assert(IsPCastCallable<double, T_ClassToTest<float, T_dim>>);
+        // custom value type is not castable
+        static_assert(!IsPCastCallable<uint32_t, T_ClassToTest<Foo, T_dim>>);
+    }
 
-            // custom value type is not castable
-            static_assert(!IsPCastCallable<uint32_t, T_ClassToTest<Foo, T_dim>>);
-        };
+    ALPAKA_FN_ACC void operator()(auto const&) const
+    {
+        check<1u, Vec>();
+        check<2u, Vec>();
+        check<3u, Vec>();
+        check<4u, Vec>();
 
-        testCases.template operator()<1u, Vec>();
-        testCases.template operator()<2u, Vec>();
-        testCases.template operator()<3u, Vec>();
-        testCases.template operator()<4u, Vec>();
-
-        testCases.template operator()<1u, Simd>();
-        testCases.template operator()<2u, Simd>();
-        testCases.template operator()<3u, Simd>();
-        testCases.template operator()<4u, Simd>();
+        check<1u, Simd>();
+        check<2u, Simd>();
+        check<3u, Simd>();
+        check<4u, Simd>();
     }
 };
 
