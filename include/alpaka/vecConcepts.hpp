@@ -56,6 +56,6 @@ namespace alpaka
                   || detail::integralFloatLossless<T_From, T_To>);
 
         template<typename T_From, typename T_To>
-        concept Convertible = requires { std::is_convertible_v<T_From, T_To>; };
+        concept Convertible = std::is_convertible_v<T_From, T_To>;
     }; // namespace concepts
 } // namespace alpaka
