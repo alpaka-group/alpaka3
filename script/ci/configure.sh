@@ -36,7 +36,7 @@ if [[ "$compiler_name" == "gcc" || ("$compiler_name" == "clang" && "$APCI_HIP" =
     )
 
     echo_green "${APCI_CMAKE_BIN_PATH}/cmake ${CMAKE_ARGS[*]}"
-    if [[ -n ${GITLAB_CI+x} ]]; then
+    if [[ -z ${GITHUB_ACTIONS+x} ]]; then
         "${APCI_CMAKE_BIN_PATH}/cmake" "${CMAKE_ARGS[@]}"
     fi
 fi

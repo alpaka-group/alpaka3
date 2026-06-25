@@ -248,6 +248,8 @@ jobs:
       # Configure CMake with the selected compiler and options
       - name: Configure CMake
         run: $APCI_ALPAKA_ROOT/script/ci/configure.sh
+      - name: Compile Code
+        run: $APCI_ALPAKA_ROOT/script/ci/build.sh
       - name: Configure CMake (old solution)
         run: |
           mkdir build && cd build
@@ -294,7 +296,7 @@ jobs:
                 ${{ matrix.config.sanitizer == 'ubsan' && '-Dalpaka_UBSAN=ON' || '' }} ..
 
       # Build the project
-      - name: Build
+      - name: Build (old solution)
         run: |
           cd build
           pwd
