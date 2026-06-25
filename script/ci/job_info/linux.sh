@@ -31,10 +31,10 @@ done
 echo_yellow "\n3. Run the following scripts.\n"
 
 echo_yellow "# install all required software, e.g. compiler, GPU SDKs and more
-\$APCI_ALPAKA_ROOT/script/ci/install_dependencies.sh
+\"\$APCI_ALPAKA_ROOT/script/ci/install_dependencies.sh\"
 # run CMake configure
-\$APCI_ALPAKA_ROOT/script/ci/configure.sh
+\"\$APCI_ALPAKA_ROOT/script/ci/configure.sh\"
 # compile alpaka
-\$APCI_ALPAKA_ROOT/script/ci/build.sh
+\"\$APCI_ALPAKA_ROOT/script/ci/build.sh\"
 # run tests
-\$APCI_ALPAKA_ROOT/script/ci/test.sh"
+\"\$APCI_ALPAKA_ROOT/script/ci/test.sh\""
