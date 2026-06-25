@@ -6,6 +6,7 @@
     - $APCI_ALPAKA_ROOT/script/ci/job_info.sh
     - $APCI_ALPAKA_ROOT/script/ci/install_dependencies.sh
     - $APCI_ALPAKA_ROOT/script/ci/configure.sh
+    - $APCI_ALPAKA_ROOT/script/ci/build.sh
   tags:
   - x86_64
   - cpuonly
