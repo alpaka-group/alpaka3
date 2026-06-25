@@ -29,8 +29,8 @@ file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/docs/snippets/fetchContent/)
 # We need to pass through the C++ compiler since the environment isnt shared with the process
 execute_process(
     COMMAND
-        ${CMAKE_COMMAND} -S ${CMAKE_CURRENT_SOURCE_DIR}/fetchContent -DCMAKE_BUILD_TYPE=Release
-        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+        ${CMAKE_COMMAND} -S ${CMAKE_CURRENT_SOURCE_DIR}/fetchContent -DCMAKE_BUILD_TYPE=Release -G ${CMAKE_GENERATOR}
+        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/docs/snippets/fetchContent
     RESULT_VARIABLE SUBPROJECT_CONFIGURE_RESULT
     OUTPUT_VARIABLE SUBPROJECT_CONFIGURE_OUTPUT
