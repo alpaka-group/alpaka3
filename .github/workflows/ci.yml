@@ -172,7 +172,7 @@ jobs:
                 echo "APCI_BRANCH_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
             fi
       - name: job configuration environment variables
-        run: $APCI_ALPAKA_ROOT/script/ci/job_info.sh
+        run: "${APCI_ALPAKA_ROOT}/script/ci/job_info.sh"
       # Install base dependencies
       - name: Install base dependencies
         run: |
@@ -183,10 +183,10 @@ jobs:
           echo "TSAN_OPTIONS=suppressions=${SANITIZERS_DIR}/tsan_suppressions.txt,ignore_noninstrumented_modules=1" >> $GITHUB_ENV
           echo "LSAN_OPTIONS=suppressions=${SANITIZERS_DIR}/lsan_suppressions.txt" >> $GITHUB_ENV
           echo "UBSAN_OPTIONS=suppressions=${SANITIZERS_DIR}/ubsan_suppressions.txt" >> $GITHUB_ENV
-          $APCI_ALPAKA_ROOT/script/ci/utils/install_helper_apps.sh
+          "${APCI_ALPAKA_ROOT}/script/ci/utils/install_helper_apps.sh"
 
       - name: Install CMake
-        run: $APCI_ALPAKA_ROOT/script/ci/install/cmake.sh
+        run: "${APCI_ALPAKA_ROOT}/script/ci/install/cmake.sh"
       - name: Install oneTBB
         if: matrix.config.tbb == 'on' && matrix.config.compiler != 'icpx'
         run: |
@@ -194,18 +194,18 @@ jobs:
           apt-get update
           apt-get install -y libtbb-dev
       - name: Install GCC
-        run: $APCI_ALPAKA_ROOT/script/ci/install/gcc.sh
+        run: "${APCI_ALPAKA_ROOT}/script/ci/install/gcc.sh"
       # Install Clang if specified
       - name: Install Clang
         shell: bash
         if: matrix.config.compiler == 'clang' && matrix.config.hip == 'no'
-        run: $APCI_ALPAKA_ROOT/script/ci/install/clang.sh
+        run: "${APCI_ALPAKA_ROOT}/script/ci/install/clang.sh"
 
       # ROCm
       - name: Install ROCm
         if: matrix.config.hip != 'no'
         shell: bash
-        run: $APCI_ALPAKA_ROOT/script/ci/install/rocm.sh
+        run: "${APCI_ALPAKA_ROOT}/script/ci/install/rocm.sh"
 
       # intel oneAPI ipcx
       - name: Install oneAPI
@@ -226,12 +226,12 @@ jobs:
 
       # Configure CMake with the selected compiler and options
       - name: Configure CMake
-        run: $APCI_ALPAKA_ROOT/script/ci/configure.sh
+        run: "${APCI_ALPAKA_ROOT}/script/ci/configure.sh"
       - name: Compile Code
-        run: $APCI_ALPAKA_ROOT/script/ci/build.sh
+        run: "${APCI_ALPAKA_ROOT}/script/ci/build.sh"
       - name: Run tests
         if: matrix.config.cuda == 'no' && matrix.config.hip == 'no'
-        run: $APCI_ALPAKA_ROOT/script/ci/test.sh
+        run: "${APCI_ALPAKA_ROOT}/script/ci/test.sh"
       - name: Configure CMake (old solution)
         run: |
           mkdir build && cd build

@@ -20,6 +20,10 @@ if [[ -n ${GITHUB_ACTIONS+x} ]]; then
     if [[ -z ${APCI_HIP+x} ]]; then
         export APCI_HIP=0
     fi
+
+    # there are no GPU runner on GitHub, therefore simply choose one architecture
+    APCI_AMD_GPU_ARCH=gfx1030
+    export APCI_AMD_GPU_ARCH
 fi
 
 if [[ -n ${GITLAB_CI+x} ]]; then
@@ -49,4 +53,15 @@ if [[ -n ${GITLAB_CI+x} ]]; then
         export APCI_GIT_URL="https://github.com/alpaka-group/alpaka3.git"
         export APCI_BRANCH_NAME="${CI_COMMIT_REF_NAME}"
     fi
+
+    if [[ "$APCI_HIP" != 0 ]]; then
+        # on the GPU runner, the variable CI_GPU_ARCH is predefined
+        if [[ -n ${CI_GPU_ARCH} ]]; then
+            APCI_AMD_GPU_ARCH=$CI_GPU_ARCH
+        else
+            # in compile only jobs, use simply this architecture
+            APCI_AMD_GPU_ARCH=gfx1030
+        fi
+    fi
+    export APCI_AMD_GPU_ARCH
 fi

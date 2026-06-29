@@ -53,6 +53,17 @@ parse_compiler_version() {
     export compiler_version
 }
 
+# parse a string containing a version number to a format, which can be compare in a if statement
+#
+# e.g.  if [ "$(version "${APCI_ROCM}")" -ge "$(version "6.0.0")" ]; then
+#
+# allowed version numbers:
+# - major: 7
+# - major.minor: 7.1
+# - major-minor.patch: 7.1.2
+# - major-minor.patch.subpatch: 7.1.2.8
+function version { echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'; }
+
 # If an error occurs (command does not return 0), try running the command again.
 # Usage: retry_cmd command arg1 arg2 ...
 #

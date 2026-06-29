@@ -10,7 +10,7 @@
 source "${APCI_ALPAKA_ROOT}/script/ci/utils/default.sh"
 
 if [[ "$APCI_OS_NAME" != "Linux" ]]; then
-    exit_error "Install GCC script does not support Windows or MacOS"
+    exit_error "Install ROCm script does not support Windows or MacOS"
 fi
 
 : "${APCI_HIP?'The rocm version must be specified'}"
@@ -44,8 +44,10 @@ if [[ "$APCI_HIP" != 0 ]]; then
             source /etc/os-release
             echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/${APCI_HIP} ${VERSION_CODENAME} main" |
                 sudo tee -a /etc/apt/sources.list.d/rocm.list
-            echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/graphics/${APCI_HIP}/ubuntu ${VERSION_CODENAME} main" |
-                sudo tee -a /etc/apt/sources.list.d/rocm.list
+            if [ "$(version "${APCI_HIP}")" -ge "$(version "7")" ]; then
+                echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/graphics/${APCI_HIP}/ubuntu ${VERSION_CODENAME} main" |
+                    sudo tee -a /etc/apt/sources.list.d/rocm.list
+            fi
 
             retry_cmd sudo DEBIAN_FRONTEND=noninteractive apt update
 
@@ -66,8 +68,6 @@ if [[ "$APCI_HIP" != 0 ]]; then
                 "rocm-device-libs${APCI_ROCM}" \
                 "rocm-core${APCI_ROCM}" \
                 "rocm-smi-lib${APCI_ROCM}"
-
-            function version { echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'; }
 
             if [ "$(version "${APCI_ROCM}")" -ge "$(version "6.0.0")" ]; then
                 quiet_run sudo DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y \
