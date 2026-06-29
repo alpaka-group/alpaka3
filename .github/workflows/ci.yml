@@ -267,6 +267,9 @@ jobs:
             // Set gcc as fallback, because it is not used and available anywhere
             export CC=$(which gcc)
           fi
+          echo "CC: $CC"
+          $CC --version
+
           if [ "${{ matrix.config.sanitizer}}" == 'tsan' ]; then
             # required to to avoid compile error: 'FATAL: ThreadSanitizer: unexpected memory mapping'
             # see: https://stackoverflow.com/questions/77850769/fatal-threadsanitizer-unexpected-memory-mapping-when-running-on-linux-kernels
