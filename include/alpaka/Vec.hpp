@@ -174,7 +174,7 @@ namespace alpaka
         constexpr bool TemplateSignatureStorage_v = TemplateSignatureStorage<T>::value;
     } // namespace detail
 
-    template<typename T_Type, uint32_t T_dim, typename T_Storage = ArrayStorage<T_Type, T_dim>>
+    template<typename T_Type, uint32_t T_dim, typename T_Storage = alpaka::ArrayStorage<T_Type, T_dim>>
     struct Vec : private T_Storage
     {
         using Storage = T_Storage;

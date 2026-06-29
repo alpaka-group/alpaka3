@@ -58,7 +58,7 @@ namespace alpaka
             /** do not use ALPAKA_TYPEOF(thisApi()) here else nvcc + gcc can trigger a compile error
              * error: use of built-in trait '__remove_cv(alpaka::api::Host)' in function signature;
              */
-        typename trait::GetSimdStorageType<decltype(thisApi()), T_Type, T_width>::type>
+        typename alpaka::trait::GetSimdStorageType<decltype(thisApi()), T_Type, T_width>::type>
     struct Simd;
 
     namespace trait
