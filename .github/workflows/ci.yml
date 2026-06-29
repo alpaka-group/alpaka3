@@ -235,7 +235,7 @@ jobs:
       - name: Configure CMake (old solution)
         run: |
           mkdir build && cd build
-          if [ "${{ matrix.config.compiler }}" = "gcc" ]; then
+          if [ "${{ matrix.config.compiler }}" == "gcc" ]; then
             if [ $(which gcc-${{ matrix.config.version }}) ] ; then
               export CC=gcc-${{ matrix.config.version }}
               export CXX=g++-${{ matrix.config.version }}
@@ -244,8 +244,8 @@ jobs:
               export CC=gcc
               export CXX=g++
             fi
-          elif [ "${{ matrix.config.compiler }}" = "clang" ]; then
-            if [ "${{ matrix.config.hip }}" = "no" ]; then
+          elif [ "${{ matrix.config.compiler }}" == "clang" ]; then
+            if [ "${{ matrix.config.hip }}" == "no" ]; then
               echo "set clang as host compiler"
               export CC=/usr/bin/clang-${{ matrix.config.version }}
               export CXX=/usr/bin/clang++-${{ matrix.config.version }}
@@ -262,6 +262,10 @@ jobs:
               export CC=clang
               export CXX=clang++
             fi
+          else
+            // temporary solution, because C compiler needs to be set until CMake non language PR is merged.
+            // Set gcc as fallback, because it is not used and available anywhere
+            export CC=$(which gcc)
           fi
           if [ "${{ matrix.config.sanitizer}}" == 'tsan' ]; then
             # required to to avoid compile error: 'FATAL: ThreadSanitizer: unexpected memory mapping'
@@ -271,6 +275,7 @@ jobs:
 
           /opt/cmake/${APCI_CMAKE}/bin/cmake -G Ninja \
                 -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_C_COMPILER=$CC \
                 ${alpaka_cmake_flags} -Dalpaka_DEP_OMP=ON \
                 ${{ matrix.config.hwloc == 'no' && '-Dalpaka_DEP_HWLOC=OFF' || '-Dalpaka_DEP_HWLOC=ON -Dalpaka_HOST_MemPinningCanFail=ON'}} \
                 ${{ matrix.config.compiler == 'icpx' && '-DCMAKE_CXX_COMPILER=icpx -Dalpaka_DEP_ONEAPI=ON -Dalpaka_ONEAPI_IntelGpu=OFF -Dalpaka_EXEC_CpuSerial=OFF -Dalpaka_DEP_OMP=OFF' || '' }} \
