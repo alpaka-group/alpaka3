@@ -17,6 +17,11 @@ fi
 
 parse_compiler_version "$APCI_DEVICE_COMPILER"
 
+if [[ "$compiler_name" == "nvcc" ]]; then
+    : "${APCI_HOST_COMPILER?'The device compiler was detected. Therefore the host compiler needs to be set'}"
+    parse_compiler_version "$APCI_HOST_COMPILER"
+fi
+
 script_msg "Install Clang"
 
 #TODO(SimeonEhrig): remove this statement, if ppa's are fixed in alpaka-group-container

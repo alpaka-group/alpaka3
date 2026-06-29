@@ -13,9 +13,10 @@ script_msg "Run CMake configure (configure.sh)"
 parse_compiler_version "$APCI_DEVICE_COMPILER"
 
 CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH:-""}
+LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-""}
 
 # TODO: remove me, if all install scripts are ported
-if [[ "$compiler_name" == "gcc" || "$compiler_name" == "clang" ]]; then
+if [[ "$compiler_name" == "gcc" || "$compiler_name" == "clang" || "$compiler_name" == "nvcc" ]]; then
     load_variable_if_not_exist APCI_CMAKE_BIN_PATH
     load_variable_if_not_exist APCI_C_COMPILER
     load_variable_if_not_exist APCI_CXX_COMPILER
@@ -69,6 +70,22 @@ if [[ "$compiler_name" == "gcc" || "$compiler_name" == "clang" ]]; then
         CMAKE_ARGS+=(
             -DCMAKE_HIP_ARCHITECTURES=gfx906
             -DAMDGPU_TARGETS=gfx906)
+    fi
+
+    if [[ "$APCI_CUDA" != 0 ]]; then
+        load_variable_if_not_exist APCI_CUDA_PATH
+        LD_LIBRARY_PATH=${APCI_CUDA_PATH}:${LD_LIBRARY_PATH}
+        load_variable_if_not_exist CMAKE_CUDA_COMPILER
+
+        CMAKE_ARGS+=(-Dalpaka_DEP_CUDA=ON
+            -DCMAKE_CUDA_COMPILER="${CMAKE_CUDA_COMPILER}"
+            -Dalpaka_SUPPRESS_TARGET_WARNING=ON
+            -DCMAKE_CUDA_ARCHITECTURES="${APCI_CUDA_SM_LEVEL}"
+        )
+
+        if [[ "${CMAKE_CUDA_COMPILER}" =~ "nvcc" ]]; then
+            CMAKE_ARGS+=(-DCMAKE_CUDA_HOST_COMPILER="$APCI_CXX_COMPILER")
+        fi
     fi
 
     for dep in "${!ap_deps[@]}"; do

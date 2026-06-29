@@ -56,6 +56,9 @@ if [[ -n ${GITHUB_ACTIONS+x} ]]; then
         export APCI_HIP=0
     fi
 
+    # GitHub actions has no free GPU runner, therefore choose simply a single SM level
+    export APCI_CUDA_SM_LEVEL=80
+
     max_num_build_threads=$(nproc)
     total_memory_bytes=$(free -b | awk '/Mem:/ { print $2 }')
 fi

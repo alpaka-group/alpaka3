@@ -3,6 +3,7 @@
     APCI_ALPAKA_ROOT: "$CI_PROJECT_DIR"
     APCI_RUN_CTEST: ON
     APCI_HIP : 0
+    APCI_CUDA : 0
   script:
     - $APCI_ALPAKA_ROOT/script/ci/job_info.sh
     - $APCI_ALPAKA_ROOT/script/ci/install_dependencies.sh
@@ -12,6 +13,17 @@
   tags:
   - x86_64
   - cpuonly
+
+.cuda:
+  extends: .base
+  image: ubuntu:24.04
+  variables:
+    APCI_CMAKE: 3.28.3
+    APCI_CUDA_SM_LEVEL: 80
+  tags:
+  - x86_64
+  - cuda
+  - a100
 
 gcc-13:
   image: docker.io/ubuntu:24.04
@@ -78,3 +90,60 @@ hipcc-6.3-agc:
     APCI_DEVICE_COMPILER : clang@21
     APCI_CMAKE: 3.28.3
     APCI_HIP : 6.3
+
+# TODO: remove number jobs after I checked that all CUDA SDK versions can be installed
+cuda-12.5-gcc:
+  extends: .cuda
+  variables:
+    APCI_DEVICE_COMPILER: nvcc@12.5
+    APCI_HOST_COMPILER: gcc@13
+    APCI_CUDA: 12.5
+
+cuda-12.6-gcc:
+  extends: .cuda
+  variables:
+    APCI_DEVICE_COMPILER: nvcc@12.6
+    APCI_HOST_COMPILER: gcc@13
+    APCI_CUDA: 12.6
+
+cuda-12.8-gcc:
+  extends: .cuda
+  variables:
+    APCI_DEVICE_COMPILER: nvcc@12.8
+    APCI_HOST_COMPILER: gcc@13
+    APCI_CUDA: 12.8
+
+cuda-12.9-gcc:
+  extends: .cuda
+  variables:
+    APCI_DEVICE_COMPILER: nvcc@12.9
+    APCI_HOST_COMPILER: gcc@13
+    APCI_CUDA: 12.9
+
+cuda-13.0-gcc:
+  extends: .cuda
+  variables:
+    APCI_DEVICE_COMPILER: nvcc@13.0
+    APCI_HOST_COMPILER: gcc@13
+    APCI_CUDA: 13.0
+
+cuda-13.1-gcc:
+  extends: .cuda
+  variables:
+    APCI_DEVICE_COMPILER: nvcc@13.1
+    APCI_HOST_COMPILER: gcc@13
+    APCI_CUDA: 13.1
+
+cuda-13.2-gcc:
+  extends: .cuda
+  variables:
+    APCI_DEVICE_COMPILER: nvcc@13.2
+    APCI_HOST_COMPILER: gcc@13
+    APCI_CUDA: 13.2
+
+cuda-13.3-gcc:
+  extends: .cuda
+  variables:
+    APCI_DEVICE_COMPILER: nvcc@13.3
+    APCI_HOST_COMPILER: gcc@13
+    APCI_CUDA: 13.3
