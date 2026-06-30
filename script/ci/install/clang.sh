@@ -47,7 +47,7 @@ if [[ "$compiler_name" == "clang" && "$APCI_HIP" == 0 ]]; then
             ;;
         esac
         DEBIAN_FRONTEND=noninteractive retry_cmd apt update
-        DEBIAN_FRONTEND=noninteractive apt install -y "clang-${compiler_version}" "libomp-${compiler_version}-dev"
+        quiet_run sudo DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y "clang-${compiler_version}" "libomp-${compiler_version}-dev"
 
         export APCI_C_COMPILER="/usr/bin/clang-${compiler_version}"
         export APCI_CXX_COMPILER="/usr/bin/clang++-${compiler_version}"

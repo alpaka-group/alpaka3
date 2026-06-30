@@ -27,7 +27,7 @@ if [[ "$APCI_HIP" != 0 ]]; then
 
             lazy_apt_update
             # TODO: CHECK if rand library is still required
-            DEBIAN_FRONTEND=noninteractive apt install -y hiprand-dev rocrand-dev
+            quiet_run sudo DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y hiprand-dev rocrand-dev
         else
             install_msg "ROCm ${APCI_HIP} in default Ubuntu container."
 
@@ -47,7 +47,7 @@ if [[ "$APCI_HIP" != 0 ]]; then
             echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/graphics/${APCI_HIP}/ubuntu ${VERSION_CODENAME} main" |
                 sudo tee -a /etc/apt/sources.list.d/rocm.list
 
-            DEBIAN_FRONTEND=noninteractive retry_cmd apt update
+            retry_cmd sudo DEBIAN_FRONTEND=noninteractive apt update
 
             APCI_ROCM="${APCI_HIP}"
             # append .0 if no patch level is defined
@@ -55,7 +55,7 @@ if [[ "$APCI_HIP" != 0 ]]; then
                 APCI_ROCM="${APCI_ROCM}.0"
             fi
 
-            DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y \
+            quiet_run sudo DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y \
                 "rocm-llvm${APCI_ROCM}" \
                 "hip-runtime-amd${APCI_ROCM}" \
                 "rocm-dev${APCI_ROCM}" \
@@ -70,7 +70,7 @@ if [[ "$APCI_HIP" != 0 ]]; then
             function version { echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'; }
 
             if [ "$(version "${APCI_ROCM}")" -ge "$(version "6.0.0")" ]; then
-                DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y \
+                quiet_run sudo DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y \
                     "hiprand-dev${APCI_ROCM}"
             fi
         fi
