@@ -201,6 +201,12 @@ jobs:
         if: matrix.config.compiler == 'clang' && matrix.config.hip == 'no'
         run: $APCI_ALPAKA_ROOT/script/ci/install/clang.sh
 
+      # CUDA
+      - name: Install CUDA
+        if: matrix.config.cuda != 'no'
+        shell: bash
+        run: $APCI_ALPAKA_ROOT/script/ci/install/cuda.sh
+
       # ROCm
       - name: Install ROCm
         if: matrix.config.hip != 'no'
