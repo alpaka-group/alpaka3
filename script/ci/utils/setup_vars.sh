@@ -56,6 +56,10 @@ if [[ -n ${GITHUB_ACTIONS+x} ]]; then
         export APCI_HIP=0
     fi
 
+    if [[ ! "${APCI_DEVICE_COMPILER}" =~ "nvcc" ]]; then
+        export APCI_CUDA=0
+    fi
+
     # GitHub actions has no free GPU runner, therefore choose simply a single SM level
     export APCI_CUDA_SM_LEVEL=80
 

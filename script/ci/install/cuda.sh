@@ -74,8 +74,20 @@ if [[ "$APCI_CUDA" != 0 ]]; then
                 cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-13-0-local
                 cuda_pkg_file_name="${cuda_pkg_deb_name}"_13.0.2-580.95.05-1_amd64.deb
                 cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/13.0.2/local_installers/${cuda_pkg_file_name}
+            elif [ "${APCI_CUDA}" == "13.1" ]; then
+                cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-13-1-local
+                cuda_pkg_file_name="${cuda_pkg_deb_name}"_13.1.2-590.48.01-1_amd64.deb
+                cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/13.1.2/local_installers/${cuda_pkg_file_name}
+            elif [ "${APCI_CUDA}" == "13.2" ]; then
+                cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-13-2-local
+                cuda_pkg_file_name="${cuda_pkg_deb_name}"_13.2.1-595.58.03-1_amd64.deb
+                cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/13.2.1/local_installers/${cuda_pkg_file_name}
+            elif [ "${APCI_CUDA}" == "13.3" ]; then
+                cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-13-3-local
+                cuda_pkg_file_name="${cuda_pkg_deb_name}"_13.3.0-610.43.02-1_amd64.deb
+                cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/13.3.0/local_installers/${cuda_pkg_file_name}
             else
-                exit_error CUDA versions other than 12.0-13.0 are not currently supported on linux!
+                exit_error "CUDA versions other than 12.0-13.0 are not currently supported on linux!"
             fi
 
             tmp_dir=$(mktemp -d)
@@ -89,17 +101,20 @@ if [[ "$APCI_CUDA" != 0 ]]; then
             # TODO: remove me -> only for debug
             apt search cuda-compiler
 
+            # use dash instead of dot as version delimiter
+            cuda_version_dash=${APCI_CUDA//./-}
+
             # Install CUDA
             # Currently we do not install CUDA fully: sudo apt-get --quiet -y install cuda
             # We only install the minimal packages. Because of our manual partial installation we have to create a symlink at /usr/local/cuda
             DEBIAN_FRONTEND=noninteractive sudo apt -y --no-install-recommends install \
-                cuda-compiler-"${APCI_CUDA}" \
-                cuda-cudart-"${APCI_CUDA}" \
-                cuda-cudart-dev-"${APCI_CUDA}" \
-                libcurand-"${APCI_CUDA}" \
-                libcurand-dev-"${APCI_CUDA}" \
-                libcublas-${APCI_CUDA} \
-                libcublas-dev-${APCI_CUDA}
+                cuda-compiler-"${cuda_version_dash}" \
+                cuda-cudart-"${cuda_version_dash}" \
+                cuda-cudart-dev-"${cuda_version_dash}" \
+                libcurand-"${cuda_version_dash}" \
+                libcurand-dev-"${cuda_version_dash}" \
+                libcublas-"${cuda_version_dash}" \
+                libcublas-dev-"${cuda_version_dash}"
 
             if [[ -n ${APCI_HOST_COMPILER+x} ]]; then
                 parse_compiler_version "$APCI_HOST_COMPILER"

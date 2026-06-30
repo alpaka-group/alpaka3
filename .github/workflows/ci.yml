@@ -66,21 +66,21 @@ jobs:
               env : {APCI_DEVICE_COMPILER : clang@21, APCI_CMAKE : 3.28.3, APCI_RUN_CTEST: ON} }
           # nvcc CUDA (nvcc does not contain simd option because nvcc can not use std::simd and is always using simd emulation
           - { compiler: nvcc, version: "", cuda: "12.5", hip: "no", container: "nvidia/cuda:12.5.1-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : nvcc@12.5, APCI_HOST_COMPILER : 13 ,APCI_CMAKE : 3.28.3, APCI_CUDA: 12.5, APCI_RUN_CTEST: OFF} }
+              env : {APCI_DEVICE_COMPILER : nvcc@12.5, APCI_HOST_COMPILER : gcc@13 ,APCI_CMAKE : 3.28.3, APCI_CUDA: 12.5, APCI_RUN_CTEST: OFF} }
           - { compiler: nvcc, version: "", cuda: "12.6", hip: "no", container: "nvidia/cuda:12.6.3-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : nvcc@12.6, APCI_HOST_COMPILER : 13, APCI_CMAKE : 3.28.3, APCI_CUDA: 12.6, APCI_RUN_CTEST: OFF} }
+              env : {APCI_DEVICE_COMPILER : nvcc@12.6, APCI_HOST_COMPILER : gcc@13, APCI_CMAKE : 3.28.3, APCI_CUDA: 12.6, APCI_RUN_CTEST: OFF} }
           - { compiler: nvcc, version: "", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : nvcc@12.8, APCI_HOST_COMPILER : 13, APCI_CMAKE : 3.28.3, APCI_CUDA: 12.8, APCI_RUN_CTEST: OFF} }
+              env : {APCI_DEVICE_COMPILER : nvcc@12.8, APCI_HOST_COMPILER : gcc@13, APCI_CMAKE : 3.28.3, APCI_CUDA: 12.8, APCI_RUN_CTEST: OFF} }
           - { compiler: nvcc, version: "", cuda: "12.9", hip: "no", container: "nvidia/cuda:12.9.1-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : nvcc@12.9, APCI_HOST_COMPILER : 13, APCI_CMAKE : 3.28.3, APCI_CUDA: 12.9, APCI_RUN_CTEST: OFF} }
+              env : {APCI_DEVICE_COMPILER : nvcc@12.9, APCI_HOST_COMPILER : gcc@13, APCI_CMAKE : 3.28.3, APCI_CUDA: 12.9, APCI_RUN_CTEST: OFF} }
           - { compiler: nvcc, version: "", cuda: "13.0", hip: "no", container: "nvidia/cuda:13.0.0-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : nvcc@13.0, APCI_HOST_COMPILER : 13, APCI_CMAKE : 3.28.3, APCI_CUDA: 13.0, APCI_RUN_CTEST: OFF} }
+              env : {APCI_DEVICE_COMPILER : nvcc@13.0, APCI_HOST_COMPILER : gcc@13, APCI_CMAKE : 3.28.3, APCI_CUDA: 13.0, APCI_RUN_CTEST: OFF} }
           - { compiler: nvcc, version: "", cuda: "13.1", hip: "no", container: "nvidia/cuda:13.1.0-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : nvcc@13.1, APCI_HOST_COMPILER : 13, APCI_CMAKE : 3.28.3, APCI_CUDA: 13.1, APCI_RUN_CTEST: OFF} }
+              env : {APCI_DEVICE_COMPILER : nvcc@13.1, APCI_HOST_COMPILER : gcc@13, APCI_CMAKE : 3.28.3, APCI_CUDA: 13.1, APCI_RUN_CTEST: OFF} }
           - { compiler: nvcc, version: "", cuda: "13.2", hip: "no", container: "nvidia/cuda:13.2.0-devel-ubuntu24.04",
-              env : {APCI_DEVICE_COMPILER : nvcc@13.2, APCI_HOST_COMPILER : 13, APCI_CMAKE : 3.28.3, APCI_CUDA: 13.2, APCI_RUN_CTEST: OFF} }
+              env : {APCI_DEVICE_COMPILER : nvcc@13.2, APCI_HOST_COMPILER : gcc@13, APCI_CMAKE : 3.28.3, APCI_CUDA: 13.2, APCI_RUN_CTEST: OFF} }
           - { compiler: nvcc, version: "", cuda: "13.3", hip: "no", container: "nvidia/cuda:13.3.0-devel-ubuntu24.04",
-              env: { APCI_DEVICE_COMPILER: nvcc@13.3, APCI_HOST_COMPILER : 13, APCI_CMAKE : 3.28.3, APCI_CUDA: 13.3, APCI_RUN_CTEST: OFF } }
+              env: { APCI_DEVICE_COMPILER: nvcc@13.3, APCI_HOST_COMPILER : gcc@13, APCI_CMAKE : 3.28.3, APCI_CUDA: 13.3, APCI_RUN_CTEST: OFF } }
           # clang-cuda (device compile with clang)
           - { compiler: clang, version: "20", cuda: "12.8", hip: "no", container: "nvidia/cuda:12.8.1-devel-ubuntu24.04",
               env : {APCI_DEVICE_COMPILER : clang@20, APCI_CMAKE : 3.28.3, APCI_CUDA: 12.8, APCI_RUN_CTEST: OFF} }
