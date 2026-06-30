@@ -37,6 +37,19 @@ if [[ "$compiler_name" == "gcc" || "$compiler_name" == "clang" ]]; then
         "-DCMAKE_CXX_COMPILER=$APCI_CXX_COMPILER"
     )
 
+    declare -A ap_deps=(
+        ["alpaka_DEP_OMP"]=OFF
+        ["alpaka_DEP_HWLOC"]=OFF
+        ["alpaka_DEP_CUDA"]=OFF
+        ["alpaka_DEP_HIP"]=OFF
+        ["alpaka_DEP_ONEAPI"]=OFF
+    )
+
+    # if no GPU SDK is used
+    if [[ ("$APCI_HIP" == 0) && ("$compiler_name" == "gcc" || "$compiler_name" == "clang") ]]; then
+        ap_deps['alpaka_DEP_OMP']=ON
+    fi
+
     if [[ "$APCI_HIP" != 0 ]]; then
         load_variable_if_not_exist ROCM_PATH
         load_variable_if_not_exist HIP_PLATFORM
@@ -51,11 +64,16 @@ if [[ "$compiler_name" == "gcc" || "$compiler_name" == "clang" ]]; then
         export PATH=${ROCM_PATH}/llvm/bin:$PATH
         export CMAKE_PREFIX_PATH=$ROCM_PATH:$CMAKE_PREFIX_PATH
 
-        CMAKE_ARGS+=(-Dalpaka_DEP_HIP=ON
-            -Dalpaka_DEP_OMP=OFF
+        ap_deps['alpaka_DEP_HIP']=ON
+
+        CMAKE_ARGS+=(
             -DCMAKE_HIP_ARCHITECTURES=gfx906
             -DAMDGPU_TARGETS=gfx906)
     fi
+
+    for dep in "${!ap_deps[@]}"; do
+        CMAKE_ARGS+=("-D${dep}=${ap_deps[$dep]}")
+    done
 
     echo_green "${APCI_CMAKE_BIN_PATH}/cmake ${CMAKE_ARGS[*]}"
     if [[ -z ${GITHUB_ACTIONS+x} ]]; then
