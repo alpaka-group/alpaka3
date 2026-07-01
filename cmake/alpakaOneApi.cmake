@@ -12,7 +12,10 @@ if(NOT DEFINED alpaka_COUNT_API_DEPS)
     message(FATAL_ERROR "internal variable 'alpaka_COUNT_API_DEPS' must be defined.")
 endif()
 
-find_package(IntelSYCL REQUIRED)
+# only search for OneApi if the target is not already available
+if(NOT TARGET IntelSYCL::SYCL_CXX)
+    find_package(IntelSYCL REQUIRED)
+endif()
 
 if(NOT TARGET alpaka::oneapi)
     add_library(alpaka_target_oneapi INTERFACE)
