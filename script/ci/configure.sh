@@ -59,9 +59,11 @@ if [[ "$compiler_name" == "gcc" || "$compiler_name" == "clang" ]]; then
 
         ap_deps['alpaka_DEP_HIP']=ON
 
-        CMAKE_ARGS+=(
-            -DCMAKE_HIP_ARCHITECTURES="${APCI_AMD_GPU_ARCH}"
-            -DGPU_TARGETS="${APCI_AMD_GPU_ARCH}")
+        if [[ -n ${APCI_AMD_GPU_ARCH+x} ]]; then
+            CMAKE_ARGS+=(
+                -DCMAKE_HIP_ARCHITECTURES="${APCI_AMD_GPU_ARCH}"
+                -DGPU_TARGETS="${APCI_AMD_GPU_ARCH}")
+        fi
     fi
 
     for dep in "${!ap_deps[@]}"; do
