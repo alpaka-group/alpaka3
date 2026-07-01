@@ -12,17 +12,17 @@ source "${APCI_ALPAKA_ROOT}/script/ci/utils/color_echo.sh"
 
 # display a install message in green
 install_msg() {
-    echo_green "[INSTALL]: $1"
+    echo_green "[INSTALL]: " "$@"
 }
 
 # display a install message in green
 script_msg() {
-    echo_green "[SCRIPT]: $1"
+    echo_green "[SCRIPT]: " "$@"
 }
 
 # display a error message in red
 error_msg() {
-    echo_red "[ERROR]: $1"
+    echo_red "[ERROR]: " "$@"
 }
 
 exit_error() {
@@ -83,6 +83,47 @@ retry_cmd() {
         done
         exit_error "run '$*' failed" "$result"
     )
+}
+
+# Run a command suppress the output if the error code is 0.
+# If the error code is non 0, display output and run exit_error.
+quiet_run() {
+    if [[ $# -lt 1 ]]; then
+        exit_error "quiet_run requires at least one argument."
+    fi
+
+    echo_green "$*"
+
+    local set_options=$-
+    exit_no_non_zero=$(
+        echo "${set_options}" | grep -q -v 'e'
+        echo "$?"
+    )
+
+    local log_file
+    log_file=$(mktemp)
+
+    # disable temporary exit on non zero, that log can be displayed
+    if [[ ${exit_no_non_zero} -eq 1 ]]; then
+        set +e
+    fi
+
+    "$@" >"${log_file}" 2>&1
+    local exit_code=$?
+
+    if [[ ${exit_no_non_zero} -eq 1 ]]; then
+        set -e
+    fi
+
+    if [[ "${exit_code}" != 0 ]]; then
+        cat "${log_file}"
+    fi
+
+    rm "${log_file}"
+
+    if [[ ${exit_code} -ne 0 ]]; then
+        exit_error "failed cmd: " "$@"
+    fi
 }
 
 # does an 'apt update' only if no 'apt update' was done before

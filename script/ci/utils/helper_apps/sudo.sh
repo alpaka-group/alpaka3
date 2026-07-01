@@ -23,6 +23,6 @@ if ! command -v sudo &>/dev/null; then
         install_msg "sudo"
 
         lazy_apt_update
-        DEBIAN_FRONTEND=noninteractive apt install -y sudo
+        DEBIAN_FRONTEND=noninteractive quiet_run apt install --no-install-recommends -y sudo
     fi
 fi

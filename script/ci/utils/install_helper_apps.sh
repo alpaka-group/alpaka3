@@ -41,6 +41,5 @@ lazy_apt_update
 # calls cmake configure as subprocess and does not respect the generator of the parent cmake
 # ninja for cmake build
 _helper_apps=(software-properties-common wget gnupg2 git ninja-build)
-install_msg "${_helper_apps[*]}"
-DEBIAN_FRONTEND=noninteractive apt install -y "${_helper_apps[@]}"
+quiet_run sudo DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y "${_helper_apps[@]}"
 unset _helper_apps
