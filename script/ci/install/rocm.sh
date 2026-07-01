@@ -78,15 +78,8 @@ if [[ "$APCI_HIP" != 0 ]]; then
     fi
 
     export ROCM_PATH
-    # TODO: CHECK if HIP_PLATFORM, HIP_DEVICE_LIB_PATH and HSA_PATH are still required
-    export HIP_PLATFORM="amd"
-    export HIP_DEVICE_LIB_PATH=${ROCM_PATH}/amdgcn/bitcode
-    export HSA_PATH=$ROCM_PATH
     export APCI_C_COMPILER="${ROCM_PATH}/llvm/bin/clang"
     export APCI_CXX_COMPILER="${ROCM_PATH}/llvm/bin/clang++"
-
-    export PATH=${ROCM_PATH}/bin:$PATH
-    export PATH=${ROCM_PATH}/llvm/bin:$PATH
 
     echo_green "${APCI_C_COMPILER} --version"
     $APCI_C_COMPILER --version
@@ -94,15 +87,12 @@ if [[ "$APCI_HIP" != 0 ]]; then
     $APCI_CXX_COMPILER --version
 
     echo_green "hipconfig --platform"
-    hipconfig --platform
+    "${ROCM_PATH}"/bin/hipconfig --platform
     echo_green "\nhipconfig --v"
-    hipconfig -v
+    "${ROCM_PATH}"/bin/hipconfig -v
     echo
 
     store_variable ROCM_PATH
-    store_variable HIP_PLATFORM
-    store_variable HIP_DEVICE_LIB_PATH
-    store_variable HSA_PATH
     store_variable APCI_C_COMPILER
     store_variable APCI_CXX_COMPILER
 fi

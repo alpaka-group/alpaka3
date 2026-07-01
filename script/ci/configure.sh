@@ -52,14 +52,7 @@ if [[ "$compiler_name" == "gcc" || "$compiler_name" == "clang" ]]; then
 
     if [[ "$APCI_HIP" != 0 ]]; then
         load_variable_if_not_exist ROCM_PATH
-        load_variable_if_not_exist HIP_PLATFORM
-        load_variable_if_not_exist HIP_DEVICE_LIB_PATH
-        load_variable_if_not_exist HSA_PATH
 
-        export ROCM_PATH
-        export HIP_PLATFORM
-        export HIP_DEVICE_LIB_PATH
-        export HSA_PATH
         export PATH=${ROCM_PATH}/bin:$PATH
         export PATH=${ROCM_PATH}/llvm/bin:$PATH
         export CMAKE_PREFIX_PATH=$ROCM_PATH:$CMAKE_PREFIX_PATH
