@@ -485,6 +485,21 @@ namespace alpaka::onHost
             return GetPitches::Op<ALPAKA_TYPEOF(*any.get())>{}(*any.get());
         }
 
+        /** Class to get access even if the visibility is private or protected.
+         *
+         * In the internal implementations of alpaka most classes does not expose their members to avoid that the user
+         * can easily use it in there code. Nevertheless, sometimes it is useful to ignore the visibility to simplify
+         * the implementation of function interfaces. If the class you want to access defines IgnoreVisibility as
+         * friend you can implement any data/function access to the class.
+         *
+         * @attention Do not make strong use of this method!
+         */
+        struct IgnoreVisibility
+        {
+            template<typename T_Any>
+            struct Op;
+        };
+
         /** Provide a frame specification for the given extents
          *
          * @param internalDevice must be an alpaka internal device implementation

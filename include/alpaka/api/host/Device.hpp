@@ -66,18 +66,16 @@ namespace alpaka::onHost
             {
                 ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::device);
                 // Host device synchronization - wait on all queues associated with this device.
-                // IMPORTANT: Do not hold queuesGuard across potentially long waits; copy weak refs first.
-                std::vector<std::weak_ptr<cpu::Queue<Device>>> tmpQueues;
+                // IMPORTANT: Do not hold queuesGuard across potentially long waits; copy the list first to avoid to be
+                // able to work on the list without a guard.
+                std::vector<std::function<void()>> tmpQueues;
                 {
                     std::lock_guard<std::mutex> lk{queuesGuard};
-                    tmpQueues = queues; // copy weak_ptr list
+                    tmpQueues = queueWaitFns; // copy weak_ptr list
                 }
-                for(auto& weakQueue : tmpQueues)
+                for(auto& waitFn : tmpQueues)
                 {
-                    if(auto queue = weakQueue.lock())
-                    {
-                        internal::wait(*queue);
-                    }
+                    waitFn();
                 }
             }
 
@@ -91,7 +89,12 @@ namespace alpaka::onHost
             uint32_t m_idx = 0u;
             uint32_t m_numaIdx = internal::hwloc::allNumaDomains;
             DeviceProperties m_properties;
-            std::vector<std::weak_ptr<cpu::Queue<Device>>> queues;
+            /* Wait function to any created queue
+             * The function should capture the queue only as weak pointer else a queue will never be deleted because
+             * the queue would hold a shared pointer to the device and the device via the wait function a shared
+             * pointer to the queue.
+             */
+            std::vector<std::function<void()>> queueWaitFns;
             std::vector<std::weak_ptr<cpu::Event<Device>>> events;
             std::mutex queuesGuard;
 
@@ -147,11 +150,17 @@ namespace alpaka::onHost
                 constexpr bool isBlocking = kind == queueKind::blocking;
                 auto newQueue = std::make_shared<cpu::Queue<Device>>(
                     std::move(thisHandle),
-                    queues.size(),
+                    queueWaitFns.size(),
                     m_numaIdx,
                     isBlocking);
 
-                queues.emplace_back(newQueue);
+                std::weak_ptr<cpu::Queue<Device>> weakPtrToQueue = newQueue;
+                queueWaitFns.emplace_back(
+                    [weakPtrToQueue]
+                    {
+                        if(auto queue = weakPtrToQueue.lock())
+                            internal::wait(*queue);
+                    });
                 return newQueue;
             }
 
@@ -162,7 +171,7 @@ namespace alpaka::onHost
                 ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::event);
                 auto thisHandle = this->getSharedPtr();
                 std::lock_guard<std::mutex> lk{queuesGuard};
-                auto newEvent = std::make_shared<cpu::Event<Device>>(std::move(thisHandle), queues.size());
+                auto newEvent = std::make_shared<cpu::Event<Device>>(std::move(thisHandle), queueWaitFns.size());
 
                 events.emplace_back(newEvent);
                 return newEvent;
