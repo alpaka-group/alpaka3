@@ -11,6 +11,7 @@
 #include <alpaka/alpaka.hpp>
 #include <alpaka/api/host/OmpCollectiveQueue.hpp>
 
+#include <alpakaTest/deviceHelper.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
@@ -167,22 +168,9 @@ void runTest(Queue& queue, Exec exec, Extent const& bufferExtents)
  */
 TEMPLATE_LIST_TEST_CASE("OmpCollectiveQueue", "[queue][OmpCollectiveQueue]", TestBackends)
 {
-    auto cfg = TestType::makeDict();
-    auto deviceSpec = cfg[object::deviceSpec];
-    auto exec = cfg[object::exec];
-
-    auto devSelector = onHost::makeDeviceSelector(deviceSpec);
-    if(!devSelector.isAvailable())
-    {
-        SUCCEED("No device available for " << deviceSpec.getName());
-        return;
-    }
-
-    onHost::Device device = devSelector.makeDevice(0);
-    INFO("api=" << deviceSpec.getApi().getName());
-    INFO("device=" << device.getName());
-    INFO("executor=" << exec.getName());
-
+    auto deviceExec = test::getDeviceExecutorOrSkipTest(TestType::makeDict());
+    onHost::Device device = test::getDevice(deviceExec);
+    concepts::Executor auto exec = test::getExecutor(deviceExec);
     onHost::Queue queue = device.makeQueue(queueKind::ompCollective);
 
     auto extents = std::make_tuple(
