@@ -107,7 +107,7 @@ if [[ "$APCI_CUDA" != 0 ]]; then
             # Install CUDA
             # Currently we do not install CUDA fully: sudo apt-get --quiet -y install cuda
             # We only install the minimal packages. Because of our manual partial installation we have to create a symlink at /usr/local/cuda
-            DEBIAN_FRONTEND=noninteractive sudo apt -y --no-install-recommends install \
+            quiet_run sudo DEBIAN_FRONTEND=noninteractive apt -y --no-install-recommends install \
                 cuda-compiler-"${cuda_version_dash}" \
                 cuda-cudart-"${cuda_version_dash}" \
                 cuda-cudart-dev-"${cuda_version_dash}" \

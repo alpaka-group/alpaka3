@@ -95,6 +95,17 @@ if [[ -n ${GITLAB_CI+x} ]]; then
         export APCI_BRANCH_NAME="${CI_COMMIT_REF_NAME}"
     fi
 
+    if [[ "$APCI_CUDA" != 0 ]]; then
+        # on the GPU runner, the variable CI_GPU_ARCH is predefined
+        if [[ -n ${CI_GPU_ARCH} ]]; then
+            APCI_CUDA_SM_LEVEL="${CI_GPU_ARCH}"
+        else
+            # in compile only jobs, use simply this architecture
+            APCI_CUDA_SM_LEVEL=80
+        fi
+    fi
+    export APCI_CUDA_SM_LEVEL
+
     # CI_CPU and CI_RAM_BYTES_TOTAL are predefined on the HZDR runner
     max_num_build_threads="${CI_CPUS}"
     total_memory_bytes="${CI_RAM_BYTES_TOTAL}"

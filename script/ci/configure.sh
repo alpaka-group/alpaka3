@@ -77,11 +77,16 @@ if [[ "$compiler_name" == "gcc" || "$compiler_name" == "clang" || "$compiler_nam
         LD_LIBRARY_PATH=${APCI_CUDA_PATH}:${LD_LIBRARY_PATH}
         load_variable_if_not_exist CMAKE_CUDA_COMPILER
 
-        CMAKE_ARGS+=(-Dalpaka_DEP_CUDA=ON
+        ap_deps['alpaka_DEP_CUDA']=ON
+
+        CMAKE_ARGS+=(
             -DCMAKE_CUDA_COMPILER="${CMAKE_CUDA_COMPILER}"
             -Dalpaka_SUPPRESS_TARGET_WARNING=ON
-            -DCMAKE_CUDA_ARCHITECTURES="${APCI_CUDA_SM_LEVEL}"
         )
+
+        if [[ -n ${APCI_CUDA_SM_LEVEL+x} ]]; then
+            CMAKE_ARGS+=(-DCMAKE_CUDA_ARCHITECTURES="${APCI_CUDA_SM_LEVEL}")
+        fi
 
         if [[ "${CMAKE_CUDA_COMPILER}" =~ "nvcc" ]]; then
             CMAKE_ARGS+=(-DCMAKE_CUDA_HOST_COMPILER="$APCI_CXX_COMPILER")

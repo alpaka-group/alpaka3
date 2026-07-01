@@ -19,11 +19,9 @@
   image: ubuntu:24.04
   variables:
     APCI_CMAKE: 3.28.3
-    APCI_CUDA_SM_LEVEL: 80
   tags:
   - x86_64
   - cuda
-  - a100
 
 gcc-13:
   image: docker.io/ubuntu:24.04
@@ -113,6 +111,13 @@ cuda-12.8-gcc:
     APCI_HOST_COMPILER: gcc@13
     APCI_CUDA: 12.8
 
+cuda-12.8-clang:
+  extends: .cuda
+  variables:
+    APCI_DEVICE_COMPILER: nvcc@12.8
+    APCI_HOST_COMPILER: clang@21
+    APCI_CUDA: 12.8
+
 cuda-12.9-gcc:
   extends: .cuda
   variables:
@@ -126,6 +131,10 @@ cuda-13.0-gcc:
     APCI_DEVICE_COMPILER: nvcc@13.0
     APCI_HOST_COMPILER: gcc@13
     APCI_CUDA: 13.0
+  tags:
+  - x86_64
+  - cuda
+  - a100
 
 cuda-13.1-gcc:
   extends: .cuda
@@ -133,6 +142,10 @@ cuda-13.1-gcc:
     APCI_DEVICE_COMPILER: nvcc@13.1
     APCI_HOST_COMPILER: gcc@13
     APCI_CUDA: 13.1
+  tags:
+  - x86_64
+  - cuda
+  - a100
 
 cuda-13.2-gcc:
   extends: .cuda
@@ -140,6 +153,10 @@ cuda-13.2-gcc:
     APCI_DEVICE_COMPILER: nvcc@13.2
     APCI_HOST_COMPILER: gcc@13
     APCI_CUDA: 13.2
+  tags:
+  - x86_64
+  - cuda
+  - a100
 
 cuda-13.3-gcc:
   extends: .cuda
@@ -147,3 +164,7 @@ cuda-13.3-gcc:
     APCI_DEVICE_COMPILER: nvcc@13.3
     APCI_HOST_COMPILER: gcc@13
     APCI_CUDA: 13.3
+  tags:
+  - x86_64
+  - cuda
+  - a100
