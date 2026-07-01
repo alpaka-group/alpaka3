@@ -9,6 +9,7 @@
     - $APCI_ALPAKA_ROOT/script/ci/configure.sh
     - $APCI_ALPAKA_ROOT/script/ci/build.sh
     - $APCI_ALPAKA_ROOT/script/ci/test.sh
+  interruptible: true
   tags:
   - x86_64
   - cpuonly

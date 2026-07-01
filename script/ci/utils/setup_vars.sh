@@ -22,7 +22,7 @@ if [[ -n ${GITHUB_ACTIONS+x} ]]; then
     fi
 
     # there are no GPU runner on GitHub, therefore simply choose one architecture
-    APCI_AMD_GPU_ARCH=gfx1030
+    APCI_AMD_GPU_ARCH=gfx90a
     export APCI_AMD_GPU_ARCH
 fi
 
@@ -60,7 +60,7 @@ if [[ -n ${GITLAB_CI+x} ]]; then
             APCI_AMD_GPU_ARCH=$CI_GPU_ARCH
         else
             # in compile only jobs, use simply this architecture
-            APCI_AMD_GPU_ARCH=gfx1030
+            APCI_AMD_GPU_ARCH=gfx90a
         fi
     fi
     export APCI_AMD_GPU_ARCH
