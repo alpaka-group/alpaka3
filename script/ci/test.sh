@@ -12,7 +12,8 @@ script_msg "Run CTest (test.sh)"
 
 parse_compiler_version "$APCI_DEVICE_COMPILER"
 # TODO: remove me, if all install scripts are ported
-if [[ "$compiler_name" == "gcc" || ("$compiler_name" == "clang" && "$APCI_HIP" == 0) ]]; then
+# HIP jobs will be tested
+if [[ "$compiler_name" == "gcc" || "$compiler_name" == "clang" ]]; then
     if [[ "${APCI_RUN_CTEST}" == "ON" ]]; then
         load_variable_if_not_exist APCI_CMAKE_BIN_PATH
 

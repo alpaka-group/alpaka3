@@ -1,7 +1,7 @@
 .base:
   variables:
     APCI_ALPAKA_ROOT: "$CI_PROJECT_DIR"
-    APCI_RUN_CTEST: ON
+    APCI_RUN_CTEST: "ON"
     APCI_HIP : 0
   script:
     - $APCI_ALPAKA_ROOT/script/ci/job_info.sh
@@ -9,9 +9,16 @@
     - $APCI_ALPAKA_ROOT/script/ci/configure.sh
     - $APCI_ALPAKA_ROOT/script/ci/build.sh
     - $APCI_ALPAKA_ROOT/script/ci/test.sh
+  interruptible: true
   tags:
   - x86_64
   - cpuonly
+
+.hip:
+  extends: .base
+  tags:
+    - x86_64
+    - rocm
 
 gcc-13:
   image: docker.io/ubuntu:24.04
@@ -55,26 +62,50 @@ clang-20-agc:
     APCI_DEVICE_COMPILER : clang@20
     APCI_CMAKE: 3.31.4
 
+hipcc-6.2-agc:
+  image: registry.hzdr.de/crp/alpaka-group-container/alpaka-ci-ubuntu22.04-rocm6.2:4.0
+  extends: .hip
+  variables:
+    APCI_DEVICE_COMPILER : clang@18
+    APCI_CMAKE: 3.31.4
+    APCI_HIP : 6.2
+
+hipcc-6.3-rocm-container:
+  image: rocm/dev-ubuntu-24.04:6.3.4
+  extends: .hip
+  variables:
+    APCI_DEVICE_COMPILER : clang@18
+    APCI_CMAKE: 3.28.3
+    APCI_HIP : 6.3
+
+hipcc-6.4:
+  image: docker.io/ubuntu:24.04
+  extends: .hip
+  variables:
+    APCI_DEVICE_COMPILER : clang@21
+    APCI_CMAKE: 3.28.3
+    APCI_HIP : 6.4.2
+
 hipcc-7.0:
   image: ubuntu:24.04
-  extends: .base
+  extends: .hip
   variables:
     APCI_DEVICE_COMPILER : clang@20
     APCI_CMAKE: 3.31.4
     APCI_HIP : 7.0
 
-hipcc-7.2-agc:
-  image: registry.hzdr.de/crp/alpaka-group-container/alpaka-ci-ubuntu24.04-gcc:4.0
-  extends: .base
+hipcc-7.1:
+  image: docker.io/ubuntu:24.04
+  extends: .hip
+  variables:
+    APCI_DEVICE_COMPILER : clang@20
+    APCI_CMAKE: 3.28.3
+    APCI_HIP : 7.1
+
+hipcc-7.2-rocm-container:
+  image: rocm/dev-ubuntu-24.04:7.2
+  extends: .hip
   variables:
     APCI_DEVICE_COMPILER : clang@22
     APCI_CMAKE: 3.28.3
     APCI_HIP : 7.2
-
-hipcc-6.3-agc:
-  image: registry.hzdr.de/crp/alpaka-group-container/alpaka-ci-ubuntu24.04-rocm6.3:addubuntu2204cudacontainer-4.0
-  extends: .base
-  variables:
-    APCI_DEVICE_COMPILER : clang@21
-    APCI_CMAKE: 3.28.3
-    APCI_HIP : 6.3
