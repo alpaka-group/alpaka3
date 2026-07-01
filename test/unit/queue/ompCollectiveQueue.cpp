@@ -63,8 +63,9 @@ void testCombinationOmpParallel(auto queue, auto exec, concepts::Vector auto ext
     // take care invokeSingle can be called outside of a OpenMP parallel section
     auto hBuffCounter = onHost::omp::invokeSingle([&] { return onHost::allocHostLike(hBuff); });
 
-    // Test as many as possible queue methods within the parallel section, because all of them have a special
-    // implementation.
+    /* Test as many as possible queue methods within the parallel section, because all of them have a special
+     * implementation.
+     */
 #    pragma omp parallel num_threads(numOmpThreads)
     {
         /* Any non queue function can be call as lambda via the invoke helper method.
@@ -80,7 +81,7 @@ void testCombinationOmpParallel(auto queue, auto exec, concepts::Vector auto ext
         // wait is required because memset and fill are non-blocking and concurrent
         onHost::wait(queue);
         auto numFrames = ALPAKA_TYPEOF(extents)::fill(1);
-        /* we need as many blocks as we have numOmpThreads threads to guarantee each thread is executing at least one
+        /* We need as frames blocks as we have numOmpThreads threads to guarantee each thread is executing at least one
          * element. This is required for our validation.
          */
         numFrames.x() = numOmpThreads;
@@ -93,11 +94,13 @@ void testCombinationOmpParallel(auto queue, auto exec, concepts::Vector auto ext
 
         onHost::memcpy(queue, hBuff, dBuff);
         onHost::memcpy(queue, hBuffCounter, dBuffCounter);
-        // no wait is performed because the queue is blocking
     }
+    // we need to wait because memcpy within the parallel region will not block
+    onHost::wait(queue);
 
-    // Use REQUIRE instead of CHECK to avoid spamming the output if the results are wrong.
-    // we create a histogram to check that all threads are used
+    /* Use REQUIRE instead of CHECK to avoid spamming the output if the results are wrong.
+     * we create a histogram to check that all threads are used.
+     */
     std::vector<uint32_t> threadCounter(numOmpThreads, 0u);
     meta::ndLoopIncIdx(
         extents,
