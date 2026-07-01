@@ -115,7 +115,7 @@ cuda-12.8-clang:
   extends: .cuda
   variables:
     APCI_DEVICE_COMPILER: nvcc@12.8
-    APCI_HOST_COMPILER: clang@21
+    APCI_HOST_COMPILER: clang@19
     APCI_CUDA: 12.8
 
 cuda-12.9-gcc:
