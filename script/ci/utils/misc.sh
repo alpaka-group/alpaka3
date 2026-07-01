@@ -12,17 +12,17 @@ source "${APCI_ALPAKA_ROOT}/script/ci/utils/color_echo.sh"
 
 # display a install message in green
 install_msg() {
-    echo_green "[INSTALL]: $*"
+    echo_green "[INSTALL]: " "$@"
 }
 
 # display a install message in green
 script_msg() {
-    echo_green "[SCRIPT]: $*"
+    echo_green "[SCRIPT]: " "$@"
 }
 
 # display a error message in red
 error_msg() {
-    echo_red "[ERROR]: $*"
+    echo_red "[ERROR]: " "$@"
 }
 
 exit_error() {
@@ -122,7 +122,7 @@ quiet_run() {
     rm "${log_file}"
 
     if [[ ${exit_code} -ne 0 ]]; then
-        exit_error "failed cmd: $*"
+        exit_error "failed cmd: " "$@"
     fi
 }
 
