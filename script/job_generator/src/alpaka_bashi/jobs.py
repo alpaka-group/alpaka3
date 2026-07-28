@@ -16,6 +16,7 @@ from typeguard import typechecked
 
 from alpaka_bashi.ci_yaml.names import get_job_name
 from alpaka_bashi.globals import CI_PIPELINE_NAME, get_version_aliases
+from alpaka_bashi.jobs_builder.clang_tidy import get_clang_tidy_job
 from alpaka_bashi.jobs_builder.default import construct_job_yaml
 from alpaka_bashi.jobs_builder.dummy import get_dummy_job
 from alpaka_bashi.jobs_builder.emulated_simd import get_emulated_simd_job
@@ -170,6 +171,13 @@ def get_special_jobs(
             stage_name=stage_name,
             image_check=image_check,
         )
+
+    special_jobs |= get_clang_tidy_job(
+        compiler_version=packaging.version.parse("21"),
+        container_version=container_version,
+        stage_name=stage_name,
+        image_check=image_check,
+    )
 
     if job_filter:
         compiled_regex = re.compile(job_filter)
