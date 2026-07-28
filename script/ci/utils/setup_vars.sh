@@ -74,6 +74,10 @@ if [[ -n ${GITHUB_ACTIONS+x} ]]; then
         export APCI_SIMD=DEFAULT
     fi
 
+    if [[ -z ${APCI_CLANG_TIDY+x} ]]; then
+        export APCI_CLANG_TIDY=OFF
+    fi
+
     if [[ -z ${APCI_OMP+x} ]]; then
         # if no other backend is enabled, use OpenMP
         if [[ "$APCI_HIP" == 0 && "$APCI_ONEAPI" == 0 && "$APCI_CUDA" == 0 && "$APCI_TBB" == "OFF" ]]; then

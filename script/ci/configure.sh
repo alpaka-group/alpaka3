@@ -34,6 +34,7 @@ CMAKE_ARGS=(
     -Dalpaka_FAST_MATH=OFF
     "-DCMAKE_CXX_COMPILER=$APCI_CXX_COMPILER"
     -Dalpaka_SIMD="${APCI_SIMD}"
+    -Dalpaka_CLANG_TIDY="${APCI_CLANG_TIDY}"
 )
 
 declare -A ap_deps=(

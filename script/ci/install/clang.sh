@@ -46,14 +46,22 @@ if [[ "$compiler_name" == "clang" && "$APCI_HIP" == 0 ]]; then
             echo_run add-apt-repository -y "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-21 main"
             ;;
         esac
+
+        clang_apt_package_list=(
+            "clang-${compiler_version}"
+            "libomp-${compiler_version}-dev"
+            "clang-tools-${compiler_version}"
+            "libclang-rt-${compiler_version}-dev"
+        )
+
+        if [[ "${APCI_CLANG_TIDY}" == "ON" ]]; then
+            clang_apt_package_list+=("clang-tidy-${compiler_version}")
+        fi
+
         DEBIAN_FRONTEND=noninteractive retry_cmd apt update
         # clang-tools is required, that CMake can setup clang as CUDA compiler
         # libclang-rt is required for the sanitizer
-        quiet_run sudo DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y \
-            "clang-${compiler_version}" \
-            "libomp-${compiler_version}-dev" \
-            "clang-tools-${compiler_version}" \
-            "libclang-rt-${compiler_version}-dev"
+        quiet_run sudo DEBIAN_FRONTEND=noninteractive apt install --no-install-recommends -y "${clang_apt_package_list[@]}"
 
         export APCI_CXX_COMPILER="/usr/bin/clang++-${compiler_version}"
     fi
