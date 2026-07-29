@@ -1,0 +1,33 @@
+---
+Checks: '-*,clang-analyzer-*,readability-identifier-naming,readability-inconsistent-declaration-parameter-name'
+WarningsAsErrors: '*'
+HeaderFilterRegex: '(^|.*/)include/alpaka/.*'
+SystemHeaders: false
+InheritParentConfig: false
+CheckOptions:
+  readability-identifier-naming.NamespaceCase: camelBack
+  readability-identifier-naming.InlineNamespaceCase: camelBack
+  readability-identifier-naming.ClassCase: CamelCase
+  readability-identifier-naming.StructCase: CamelCase
+  readability-identifier-naming.UnionCase: CamelCase
+  readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.EnumConstantCase: camelBack
+  readability-identifier-naming.TypeAliasCase: CamelCase
+  readability-identifier-naming.TypedefCase: CamelCase
+  readability-identifier-naming.ConceptCase: CamelCase
+  readability-identifier-naming.FunctionCase: camelBack
+  readability-identifier-naming.MethodCase: camelBack
+  readability-identifier-naming.VariableCase: camelBack
+  readability-identifier-naming.ParameterCase: camelBack
+  readability-identifier-naming.MemberCase: camelBack
+  readability-identifier-naming.PrivateMemberCase: camelBack
+  readability-identifier-naming.PrivateMemberPrefix: m_
+  readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+  readability-identifier-naming.TypeTemplateParameterPrefix: T_
+  readability-identifier-naming.TypeTemplateParameterIgnoredRegexp: ^[A-Z]$
+  readability-identifier-naming.TypeTemplateParameterCase: CamelCase
+  readability-identifier-naming.ValueTemplateParameterPrefix: T_
+  readability-identifier-naming.ValueTemplateParameterCase: camelBack
+  readability-identifier-naming.TemplateTemplateParameterPrefix: T_
+  readability-identifier-naming.TemplateTemplateParameterCase: CamelCase
+...
