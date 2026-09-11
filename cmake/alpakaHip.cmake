@@ -29,7 +29,7 @@ if(CMAKE_HIP_COMPILER)
     find_package(hip REQUIRED)
 
     set(_alpaka_HIP_MIN_VER 6.0)
-    set(_alpaka_HIP_MAX_VER 7.14)
+    set(_alpaka_HIP_MAX_VER 10.0)
 
     checkcompilercxxsupport(HIP ${alpaka_CXX_STANDARD})
 
@@ -89,7 +89,7 @@ if(CMAKE_HIP_COMPILER)
     # workaround linker error with ROCm 7.14 due to the change of the ROCM directories, see https://rocm.docs.amd.com/en/latest/about/transition-guide-TheRock.html#paths-and-linking
     # The error is appears with the original AMD container rocm/dev-ubuntu-24.04:7.14.0-full
     # 'error while loading shared libraries: libamdhip64.so.7: cannot open shared object file: No such file or directory'
-    if(_hip_MAJOR_MINOR_VERSION VERSION_EQUAL "7.14")
+    if(_hip_MAJOR_MINOR_VERSION VERSION_GREATER_EQUAL "7.14")
         find_library(
             _alpaka_hip_runtime
             NAMES amdhip64
