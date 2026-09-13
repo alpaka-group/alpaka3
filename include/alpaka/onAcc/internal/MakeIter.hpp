@@ -92,7 +92,7 @@ namespace alpaka::onAcc::internal
                     pCast<IdxType>(threadSpace),
                     adjIdxMapping,
                     iotaCVec<
-                        typename ALPAKA_TYPEOF(idxRange.distance())::type,
+                        typename ALPAKA_TYPEOF(idxRange.distance())::value_type,
                         ALPAKA_TYPEOF(idxRange.distance())::dim()>());
             }
 
@@ -114,7 +114,7 @@ namespace alpaka::onAcc::internal
                     pCast<IdxType>(threadSpace),
                     idxMapping,
                     iotaCVec<
-                        typename ALPAKA_TYPEOF(idxRange.distance())::type,
+                        typename ALPAKA_TYPEOF(idxRange.distance())::value_type,
                         ALPAKA_TYPEOF(idxRange.distance())::dim()>());
             }
         };

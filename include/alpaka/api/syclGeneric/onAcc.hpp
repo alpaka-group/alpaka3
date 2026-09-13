@@ -23,7 +23,7 @@ namespace alpaka::onAcc
         template<auto T_syclDim, typename T_OptimizedThreadSpec>
         class BlockLayer
         {
-            using IdxType = typename T_OptimizedThreadSpec::NumBlocksVecType::type;
+            using IdxType = typename T_OptimizedThreadSpec::NumBlocksVecType::value_type;
 
             sycl::nd_item<T_syclDim> const& m_item;
             T_OptimizedThreadSpec const& m_optimizedThreadSpec;
@@ -84,7 +84,7 @@ namespace alpaka::onAcc
         template<auto T_syclDim, typename T_OptimizedThreadSpec>
         class ThreadLayer
         {
-            using IdxType = typename T_OptimizedThreadSpec::NumThreadsVecType::type;
+            using IdxType = typename T_OptimizedThreadSpec::NumThreadsVecType::value_type;
 
             sycl::nd_item<T_syclDim> const& m_item;
             T_OptimizedThreadSpec const& m_optimizedThreadSpec;

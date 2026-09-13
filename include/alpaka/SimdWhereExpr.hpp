@@ -34,10 +34,10 @@ namespace alpaka
         constexpr SimdWhereExpr& operator=(SimdWhereExpr const&) = delete;
         constexpr SimdWhereExpr& operator=(SimdWhereExpr&&) = delete;
 
-        using value_type = typename T_Simd::type;
+        using value_type = typename T_Simd::value_type;
 
         constexpr void operator=(concepts::Simd auto const& rhs)
-            requires std::same_as<value_type, typename ALPAKA_TYPEOF(rhs)::type>
+            requires std::same_as<value_type, typename ALPAKA_TYPEOF(rhs)::value_type>
         {
             if constexpr(requires { value.where(m_mask); })
                 value.where(m_mask) = rhs.asNativeType();

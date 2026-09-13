@@ -77,8 +77,8 @@ namespace alpaka
     struct Simd : private T_Storage
     {
         using Storage = T_Storage;
-        using type = typename T_Storage::value_type;
-        /** type is an implementation detail, can be a proxy type. */
+        using value_type = T_Type;
+        /** reference can be an implementation-detail proxy type. */
         using reference = typename T_Storage::reference;
 
         using index_type = uint32_t;
@@ -167,7 +167,7 @@ namespace alpaka
          *
          * @attention only available for SIMD with a single lane.
          */
-        constexpr explicit operator type() requires(T_width == 1u)
+        constexpr explicit operator value_type() requires(T_width == 1u)
         {
             return (*this)[0];
         }
@@ -267,7 +267,7 @@ namespace alpaka
          *
          * @return The value type, by copy.
          */
-        constexpr type operator[](std::integral auto const idx) const
+        constexpr value_type operator[](std::integral auto const idx) const
         {
             return asStorage()[idx];
         }
@@ -277,7 +277,7 @@ namespace alpaka
     {                                                                                                                 \
         return (*this)[laneIdx];                                                                                      \
     }                                                                                                                 \
-    constexpr type functionName() const requires(T_width >= laneIdx + 1)                                              \
+    constexpr value_type functionName() const requires(T_width >= laneIdx + 1)                                        \
     {                                                                                                                 \
         return (*this)[laneIdx];                                                                                      \
     }
@@ -368,10 +368,10 @@ namespace alpaka
          *         Indexing will wrapp around when the begin of the origin vector is reached.
          */
         template<uint32_t T_numElements>
-        constexpr Simd<type, T_numElements> rshrink(std::integral auto const startIdx) const
+        constexpr Simd<value_type, T_numElements> rshrink(std::integral auto const startIdx) const
         {
             static_assert(T_numElements <= T_width);
-            Simd<type, T_numElements> result;
+            Simd<value_type, T_numElements> result;
             for(uint32_t i = 0u; i < T_numElements; i++)
                 result[T_numElements - 1u - i] = (*this)[(T_width + startIdx - i) % T_width];
             return result;
@@ -385,9 +385,9 @@ namespace alpaka
          * @return vector with `T_width - 1` elements
          */
         template<std::integral auto laneIdxToRemove>
-        constexpr Simd<type, T_width - 1u> remove() const requires(T_width >= 2u)
+        constexpr Simd<value_type, T_width - 1u> remove() const requires(T_width >= 2u)
         {
-            Simd<type, T_width - 1u> result{};
+            Simd<value_type, T_width - 1u> result{};
             for(int i = 0u; i < static_cast<int>(T_width - 1u); ++i)
             {
                 // skip component which must be deleted
@@ -401,7 +401,7 @@ namespace alpaka
          *
          * @return product of components
          */
-        [[nodiscard]] constexpr type product() const
+        [[nodiscard]] constexpr value_type product() const
         {
             return reduce(std::multiplies{});
         }
@@ -410,7 +410,7 @@ namespace alpaka
          *
          * @return sum of components
          */
-        [[nodiscard]] constexpr type sum() const
+        [[nodiscard]] constexpr value_type sum() const
         {
             return reduce(std::plus{});
         }
@@ -424,7 +424,7 @@ namespace alpaka
          * @return the type of the result depends on the binary functor
          */
         [[nodiscard]] constexpr auto reduce(auto&& reduceFunc) const
-            -> decltype(reduceFunc(std::declval<type>(), std::declval<type>()))
+            -> decltype(reduceFunc(std::declval<value_type>(), std::declval<value_type>()))
         {
             return reduce_range(ALPAKA_FORWARD(reduceFunc));
         }
@@ -489,7 +489,7 @@ namespace alpaka
          */
         template<uint32_t T_start = 0u, uint32_t T_end = width()>
         [[nodiscard]] constexpr auto reduce_range(auto&& reduceFunc) const
-            -> decltype(reduceFunc(std::declval<type>(), std::declval<type>()))
+            -> decltype(reduceFunc(std::declval<value_type>(), std::declval<value_type>()))
         {
             // elements in the range
             constexpr uint32_t size = T_end - T_start;

@@ -21,6 +21,6 @@ namespace alpaka::concepts
     template<typename T, typename T_IndexType, uint32_t T_dim>
     concept IndexVec = requires {
         requires concepts::Vector<T, alpaka::NotRequired, T_dim>;
-        requires isLosslesslyConvertible_v<typename T::type, T_IndexType>;
+        requires isLosslesslyConvertible_v<typename T::value_type, T_IndexType>;
     };
 } // namespace alpaka::concepts

@@ -319,7 +319,7 @@ namespace alpaka::rand::distribution
         constexpr auto engineDispatch(T_Engine& engine) const -> T_Result
         {
             using T_EngineResult = ALPAKA_TYPEOF(engine());
-            using valueType = typename T_EngineResult::type;
+            using valueType = typename T_EngineResult::value_type;
             checkValueConformity<valueType>();
             constexpr auto dim = getDim(T_EngineResult{});
             auto dispatchWrapper = internal::vectorDispatchWrapper<

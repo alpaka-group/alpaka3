@@ -27,7 +27,7 @@ void checkFrameSpec(onHost::concepts::FrameSpec auto const& frameSpec, concepts:
 {
     Vec extentMd = extent;
     using VecType = ALPAKA_TYPEOF(extentMd);
-    using ElemType = VecType::type;
+    using ElemType = VecType::value_type;
     auto const& numFrames = frameSpec.getNumFrames();
     auto const& frameExtents = frameSpec.getFrameExtents();
     CHECK(ALPAKA_TYPEOF(numFrames)::dim() == VecType::dim());

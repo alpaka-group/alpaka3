@@ -45,7 +45,8 @@ namespace alpaka
      * @return input with exchanged value_type
      */
     template<typename T_To>
-    constexpr decltype(auto) pCast(auto&& input) requires(isConvertible_v<typename ALPAKA_TYPEOF(input)::type, T_To>)
+    constexpr decltype(auto) pCast(auto&& input)
+        requires(isConvertible_v<typename ALPAKA_TYPEOF(input)::value_type, T_To>)
     {
         return internal::PCast::Op<T_To, ALPAKA_TYPEOF(input)>{}(input);
     }
@@ -68,7 +69,7 @@ namespace alpaka
      */
     template<typename T_To>
     constexpr decltype(auto) lpCast(auto&& input)
-        requires(isLosslesslyConvertible_v<typename ALPAKA_TYPEOF(input)::type, T_To>)
+        requires(isLosslesslyConvertible_v<typename ALPAKA_TYPEOF(input)::value_type, T_To>)
     {
         return internal::LPCast::Op<T_To, ALPAKA_TYPEOF(input)>{}(input);
     }

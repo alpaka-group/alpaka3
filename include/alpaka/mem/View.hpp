@@ -101,7 +101,7 @@ namespace alpaka
         {
             alpaka::unused(any);
             static_assert(
-                isLosslesslyConvertible_v<typename T_UserPitches::type, typename T_UserExtents::type>,
+                isLosslesslyConvertible_v<typename T_UserPitches::value_type, typename T_UserExtents::value_type>,
                 "extent type and pitch type must be lossless convertible");
         }
 

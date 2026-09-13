@@ -55,7 +55,7 @@ namespace alpaka::onHost
 
                 auto kernel = [&]
                 {
-                    using ThreadIdxType = typename NumThreadsVecType::type;
+                    using ThreadIdxType = typename NumThreadsVecType::value_type;
                     ThreadIdxType const linearNumBlocks = blockCount.product();
 
                     oneapi::tbb::parallel_for(

@@ -323,7 +323,7 @@ namespace alpaka::onHost
 
                 /// @todo add shortcut to create a CVec with equal values
                 auto const allOne = ALPAKA_TYPEOF(
-                    iotaCVec<typename T_FrameExtents::type, T_FrameExtents::dim()>())::template fill<1u>();
+                    iotaCVec<typename T_FrameExtents::value_type, T_FrameExtents::dim()>())::template fill<1u>();
                 return ThreadSpec{allOne, allOne, frameSpec.getExecutor()};
             }
 
@@ -336,7 +336,7 @@ namespace alpaka::onHost
                 ALPAKA_LOG_FUNCTION(onHost::logger::kernel);
                 /// @todo add shortcut to create a CVec with equal values
                 auto const allOne = ALPAKA_TYPEOF(
-                    iotaCVec<typename T_FrameExtents::type, T_FrameExtents::dim()>())::template fill<1u>();
+                    iotaCVec<typename T_FrameExtents::value_type, T_FrameExtents::dim()>())::template fill<1u>();
                 return ThreadSpec{allOne, allOne, frameSpec.getExecutor()};
             }
         };
@@ -376,7 +376,7 @@ namespace alpaka::onHost
 
                 // map the number of frames to thread blocks
                 auto numThreadBlocks = frameSpec.getNumFrames();
-                auto const numThreads = Vec<typename T_FrameExtents::type, T_FrameExtents::dim()>::fill(1);
+                auto const numThreads = Vec<typename T_FrameExtents::value_type, T_FrameExtents::dim()>::fill(1);
                 return ThreadSpec{numThreadBlocks, numThreads, frameSpec.getExecutor()};
             }
         };

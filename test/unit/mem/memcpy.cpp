@@ -187,7 +187,7 @@ void memcpySubViewTest(auto& copyQueue, auto& destDevice, auto& srcDevice, alpak
         auto destQueue = destDevice.makeQueue(queueKind::blocking);
         auto srcQueue = srcDevice.makeQueue(queueKind::blocking);
 
-        using IndexType = ALPAKA_TYPEOF(extents)::type;
+        using IndexType = ALPAKA_TYPEOF(extents)::value_type;
         constexpr uint32_t dim = ALPAKA_TYPEOF(extents)::dim();
 
         auto negGuard = iotaCVec<IndexType, dim>() + IndexType{1u};

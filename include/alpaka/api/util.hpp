@@ -26,16 +26,17 @@ namespace alpaka::api::util
             size_t... T_idx>
         consteval auto adjustToLimit(concepts::CVector auto const input, std::index_sequence<T_idx...>)
         {
-            if constexpr(input.product() <= static_cast<typename ALPAKA_TYPEOF(input)::type>(T_limit))
+            if constexpr(input.product() <= static_cast<typename ALPAKA_TYPEOF(input)::value_type>(T_limit))
                 return input;
             else
             {
                 constexpr uint32_t dim = static_cast<uint32_t>(sizeof...(T_idx));
 
                 constexpr auto newValue = CVec<
-                    typename ALPAKA_TYPEOF(input)::type,
-                    (T_idx == T_index ? divExZero(input[T_idx], static_cast<typename ALPAKA_TYPEOF(input)::type>(2))
-                                      : input[T_idx])...>{};
+                    typename ALPAKA_TYPEOF(input)::value_type,
+                    (T_idx == T_index
+                         ? divExZero(input[T_idx], static_cast<typename ALPAKA_TYPEOF(input)::value_type>(2))
+                         : input[T_idx])...>{};
 
                 constexpr auto nextIncrement = dim == 1u ? 0u : T_increment;
                 constexpr auto nextIdx = T_index + T_increment;
@@ -72,7 +73,7 @@ namespace alpaka::api::util
      * is below or equal to the limit */
     inline auto adjustToLimit(concepts::Vector auto input, std::integral auto const limit)
     {
-        using IdxType = typename ALPAKA_TYPEOF(input)::type;
+        using IdxType = typename ALPAKA_TYPEOF(input)::value_type;
         constexpr uint32_t dim = input.dim();
         IdxType limitValue = static_cast<IdxType>(limit);
 
@@ -111,7 +112,7 @@ namespace alpaka::api::util
         }
         else
         {
-            using IdxType = typename T_Extents::type;
+            using IdxType = typename T_Extents::value_type;
             auto alignment = static_cast<IdxType>(alignmentInByte);
 
             IdxType rowExtentInBytes = extents.x() * static_cast<IdxType>(sizeof(T_ValueType));

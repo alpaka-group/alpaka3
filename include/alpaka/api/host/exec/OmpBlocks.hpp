@@ -104,7 +104,7 @@ namespace alpaka::onHost
                         Dict{blockLayerEntry, threadLayerEntry, blockSharedMemEntry, blockSyncEntry, warpSizeEntry},
                         additionalDict));
 
-                    using ThreadIdxType = typename NumThreadsVecType::type;
+                    using ThreadIdxType = typename NumThreadsVecType::value_type;
 #    pragma omp for nowait
                     for(ThreadIdxType i = 0; i < blockCount.product(); ++i)
                     {

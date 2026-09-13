@@ -209,7 +209,7 @@ struct IndexTypeKernel
         auto a = declareSharedMdArray<float, uniqueId()>(acc, CVec<T_Idx, 2u>{});
         using SharedMdArrayType = decltype(a);
         result[0u] = std::is_same_v<typename SharedMdArrayType::index_type, T_Idx>;
-        result[1u] = std::is_same_v<typename ALPAKA_TYPEOF(a.getExtents())::type, T_Idx>;
+        result[1u] = std::is_same_v<typename ALPAKA_TYPEOF(a.getExtents())::value_type, T_Idx>;
     }
 };
 
@@ -227,7 +227,7 @@ void test_index_type(auto& queue, auto const& exec, auto name)
     onHost::wait(queue);
 
     REQUIRE_MESSAGE(hBuff[0] == true, "SharedMdArrayType::index_type failed with index type: " << name);
-    REQUIRE_MESSAGE(hBuff[1] == true, "getExtents()::type failed with index type: " << name);
+    REQUIRE_MESSAGE(hBuff[1] == true, "getExtents()::value_type failed with index type: " << name);
 }
 
 TEMPLATE_LIST_TEST_CASE("test shared memory index type", "[sharedMem]", TestApis)

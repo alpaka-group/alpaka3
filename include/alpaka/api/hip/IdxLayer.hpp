@@ -18,7 +18,7 @@ namespace alpaka::onAcc
         {
             T_OptimizedThreadSpec const& m_optimizedThreadSpec;
             static constexpr uint32_t dim = T_OptimizedThreadSpec::dim();
-            using IdxType = typename T_OptimizedThreadSpec::NumBlocksVecType::type;
+            using IdxType = typename T_OptimizedThreadSpec::NumBlocksVecType::value_type;
 
             constexpr BlockLayer(T_OptimizedThreadSpec const& optimizedThreadSpec)
                 : m_optimizedThreadSpec(optimizedThreadSpec)
@@ -55,7 +55,7 @@ namespace alpaka::onAcc
         {
             T_OptimizedThreadSpec const& m_optimizedThreadSpec;
             static constexpr uint32_t dim = T_OptimizedThreadSpec::dim();
-            using IdxType = typename T_OptimizedThreadSpec::NumThreadsVecType::type;
+            using IdxType = typename T_OptimizedThreadSpec::NumThreadsVecType::value_type;
 
             constexpr ThreadLayer(T_OptimizedThreadSpec const& optimizedThreadSpec)
                 : m_optimizedThreadSpec(optimizedThreadSpec)

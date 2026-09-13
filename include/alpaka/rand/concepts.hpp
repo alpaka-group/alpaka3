@@ -28,8 +28,8 @@ namespace alpaka::rand
         template<typename T>
         concept UniformVectorEngine
             = std::invocable<T&> && alpaka::concepts::Vector<std::invoke_result_t<T&>> && requires {
-                  { T::min() } -> std::same_as<typename std::invoke_result_t<T&>::type>;
-                  { T::max() } -> std::same_as<typename std::invoke_result_t<T&>::type>;
+                  { T::min() } -> std::same_as<typename std::invoke_result_t<T&>::value_type>;
+                  { T::max() } -> std::same_as<typename std::invoke_result_t<T&>::value_type>;
                   requires std::bool_constant<(T::min() < T::max())>::value;
               };
 

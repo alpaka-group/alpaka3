@@ -97,7 +97,7 @@ namespace alpaka
     template<typename T_Type, uint32_t T_dim>
     struct ArrayStorage : protected std::array<T_Type, T_dim>
     {
-        using type = T_Type;
+        using value_type = T_Type;
         using BaseType = std::array<T_Type, T_dim>;
         using BaseType::operator[];
 
@@ -117,7 +117,7 @@ namespace alpaka
         template<typename T, T... T_values>
         struct CVec
         {
-            using type = T;
+            using value_type = T;
 
             static consteval uint32_t dim()
             {
@@ -178,8 +178,8 @@ namespace alpaka
     struct Vec : private T_Storage
     {
         using Storage = T_Storage;
-        using type = T_Type;
-        using ParamType = type;
+        using value_type = T_Type;
+        using ParamType = value_type;
 
         using index_type = uint32_t;
         using size_type = uint32_t;
@@ -252,7 +252,7 @@ namespace alpaka
 
         /** Allow static_cast / explicit cast to member type for 1D vector */
         template<uint32_t T_deferDim = T_dim, typename = typename std::enable_if<T_deferDim == 1u>::type>
-        constexpr explicit operator type()
+        constexpr explicit operator value_type()
         {
             return (*this)[0];
         }
@@ -442,10 +442,10 @@ namespace alpaka
          *         Indexing will wrapp around when the begin of the origin vector is reached.
          */
         template<uint32_t T_numElements>
-        constexpr Vec<type, T_numElements> rshrink(std::integral auto const startIdx) const
+        constexpr Vec<value_type, T_numElements> rshrink(std::integral auto const startIdx) const
         {
             static_assert(T_numElements <= T_dim);
-            Vec<type, T_numElements> result;
+            Vec<value_type, T_numElements> result;
             for(uint32_t i = 0u; i < T_numElements; i++)
                 result[T_numElements - 1u - i] = (*this)[(T_dim + startIdx - i) % T_dim];
             return result;
@@ -503,9 +503,9 @@ namespace alpaka
          * @return vector with `T_dim - 1` elements
          */
         template<std::integral auto dimToRemove>
-        constexpr Vec<type, T_dim - 1u> remove() const requires(T_dim >= 2u)
+        constexpr Vec<value_type, T_dim - 1u> remove() const requires(T_dim >= 2u)
         {
-            Vec<type, T_dim - 1u> result{};
+            Vec<value_type, T_dim - 1u> result{};
             for(int i = 0u; i < static_cast<int>(T_dim - 1u); ++i)
             {
                 // skip component which must be deleted
@@ -519,9 +519,9 @@ namespace alpaka
          *
          * @return product of components
          */
-        constexpr type product() const
+        constexpr value_type product() const
         {
-            type result = (*this)[0];
+            value_type result = (*this)[0];
             for(uint32_t i = 1u; i < T_dim; i++)
                 result *= (*this)[i];
             return result;
@@ -531,9 +531,9 @@ namespace alpaka
          *
          * @return sum of components
          */
-        constexpr type sum() const
+        constexpr value_type sum() const
         {
-            type result = (*this)[0];
+            value_type result = (*this)[0];
             for(uint32_t i = 1u; i < T_dim; i++)
                 result += (*this)[i];
             return result;
@@ -649,7 +649,7 @@ namespace alpaka
          * @return the type of the result depends on the binary functor
          */
         [[nodiscard]] constexpr auto reduce(auto&& reduceFunc) const
-            -> decltype(reduceFunc(std::declval<type>(), std::declval<type>()))
+            -> decltype(reduceFunc(std::declval<value_type>(), std::declval<value_type>()))
         {
             return reduce_range(ALPAKA_FORWARD(reduceFunc));
         }
@@ -664,7 +664,7 @@ namespace alpaka
          */
         template<uint32_t T_start = 0u, uint32_t T_end = dim()>
         [[nodiscard]] constexpr auto reduce_range(auto&& reduceFunc) const
-            -> decltype(reduceFunc(std::declval<type>(), std::declval<type>()))
+            -> decltype(reduceFunc(std::declval<value_type>(), std::declval<value_type>()))
         {
             // elements in the range
             constexpr uint32_t size = T_end - T_start;
@@ -708,7 +708,7 @@ namespace alpaka
     template<typename Type>
     struct Vec<Type, 0>
     {
-        using type = Type;
+        using value_type = Type;
         static constexpr uint32_t T_dim = 0;
 
         template<typename OtherType>

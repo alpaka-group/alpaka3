@@ -21,7 +21,7 @@ namespace alpaka
         concepts::Vector T_Stride = typename T_End::UniVec>
     struct IdxRange
     {
-        using IdxType = typename T_End::type;
+        using IdxType = typename T_End::value_type;
         using IdxVecType = typename T_End::UniVec;
 
         constexpr IdxRange(T_Begin const& begin, T_End const& end, T_Stride const& stride)
@@ -47,13 +47,13 @@ namespace alpaka
             return IdxVecType::dim();
         }
 
-        template<concepts::TypeOrVector<typename T_End::type> T_OpType>
+        template<concepts::TypeOrVector<typename T_End::value_type> T_OpType>
         ALPAKA_FN_HOST_ACC constexpr auto operator%(T_OpType const& rhs) const
         {
             return IdxRange<T_End, T_Begin, ALPAKA_TYPEOF(m_stride * rhs)>{m_begin, m_end, m_stride * rhs};
         }
 
-        template<concepts::TypeOrVector<typename T_End::type> T_OpType>
+        template<concepts::TypeOrVector<typename T_End::value_type> T_OpType>
         ALPAKA_FN_HOST_ACC constexpr auto operator>>(T_OpType const& rhs) const
         {
             return IdxRange<ALPAKA_TYPEOF(m_end + rhs), ALPAKA_TYPEOF(m_begin + rhs), ALPAKA_TYPEOF(m_stride)>{
@@ -62,7 +62,7 @@ namespace alpaka
                 m_stride};
         }
 
-        template<concepts::TypeOrVector<typename T_End::type> T_OpType>
+        template<concepts::TypeOrVector<typename T_End::value_type> T_OpType>
         ALPAKA_FN_HOST_ACC constexpr auto operator<<(T_OpType const& rhs) const
         {
             return IdxRange<ALPAKA_TYPEOF(m_end - rhs), ALPAKA_TYPEOF(m_begin - rhs), T_Stride>{
@@ -91,7 +91,7 @@ namespace alpaka
                 *this,
                 alpaka::ThreadSpace{T_End::fill(0), T_End::fill(1)},
                 alpaka::onAcc::layout::contiguous,
-                alpaka::iotaCVec<typename ALPAKA_TYPEOF(distance())::type, ALPAKA_TYPEOF(distance())::dim()>()}
+                alpaka::iotaCVec<typename ALPAKA_TYPEOF(distance())::value_type, ALPAKA_TYPEOF(distance())::dim()>()}
                 .begin();
         }
 
@@ -101,7 +101,7 @@ namespace alpaka
                 *this,
                 alpaka::ThreadSpace{T_End::fill(0), T_End::fill(1)},
                 alpaka::onAcc::layout::contiguous,
-                alpaka::iotaCVec<typename ALPAKA_TYPEOF(distance())::type, ALPAKA_TYPEOF(distance())::dim()>()}
+                alpaka::iotaCVec<typename ALPAKA_TYPEOF(distance())::value_type, ALPAKA_TYPEOF(distance())::dim()>()}
                 .end();
         }
 
@@ -129,7 +129,7 @@ namespace alpaka
         T_End m_end;
         T_Stride m_stride;
 
-        using type = typename T_Begin::type;
+        using value_type = typename T_Begin::value_type;
     };
 
     template<uint32_t T_dim, alpaka::concepts::Vector T_LowHaloVec, alpaka::concepts::Vector T_UpHaloVec>
@@ -174,12 +174,14 @@ namespace alpaka
         struct PCast::Op<T_To, IdxRange<T_End, T_Begin, T_Stride>>
         {
             constexpr auto operator()(auto&& input) const
-                requires std::convertible_to<typename T_End::type, T_To> && (!std::same_as<T_To, typename T_End::type>)
+                requires std::convertible_to<typename T_End::value_type, T_To>
+                         && (!std::same_as<T_To, typename T_End::value_type>)
             {
                 return IdxRange{pCast<T_To>(input.m_begin), pCast<T_To>(input.m_end), pCast<T_To>(input.m_stride)};
             }
 
-            constexpr decltype(auto) operator()(auto&& input) const requires std::same_as<T_To, typename T_End::type>
+            constexpr decltype(auto) operator()(auto&& input) const
+                requires std::same_as<T_To, typename T_End::value_type>
             {
                 return std::forward<decltype(input)>(input);
             }

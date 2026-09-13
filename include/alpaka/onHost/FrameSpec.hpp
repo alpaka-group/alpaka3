@@ -40,11 +40,11 @@ namespace alpaka::onHost
      */
     template<
         alpaka::concepts::Vector T_NumFrames,
-        alpaka::concepts::Vector<typename T_NumFrames::type, T_NumFrames::dim()> T_FrameExtents,
+        alpaka::concepts::Vector<typename T_NumFrames::value_type, T_NumFrames::dim()> T_FrameExtents,
         alpaka::concepts::Executor T_Executor = alpaka::exec::AnyExecutor>
     struct FrameSpec
     {
-        using index_type = typename T_NumFrames::type;
+        using index_type = typename T_NumFrames::value_type;
 
         using NumFramesVecType = T_NumFrames;
         using FrameExtentsVecType = T_FrameExtents;

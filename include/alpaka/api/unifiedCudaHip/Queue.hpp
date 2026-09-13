@@ -333,7 +333,7 @@ namespace alpaka::onHost
                 constexpr uint32_t dim = T_NumBlocks::dim();
                 // dimension of the cuda/hip layer
                 constexpr uint32_t layerDim = dim >= 4u ? 1u : dim;
-                using IdxType = typename T_NumBlocks::type;
+                using IdxType = typename T_NumBlocks::value_type;
 
                 Vec<IdxType, layerDim> numBlocks;
                 Vec<IdxType, layerDim> numThreadsPerBlock;

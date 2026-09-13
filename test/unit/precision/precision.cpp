@@ -29,7 +29,7 @@ struct IotaKernelND
 {
     ALPAKA_FN_ACC void operator()(auto const& acc, auto out) const
     {
-        using MemScalarType = typename alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>::type;
+        using MemScalarType = typename alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>::value_type;
 
         // rerun the tests with automatic derived loop index type
         for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{out.getExtents()}))
@@ -45,7 +45,7 @@ void iotaTest(auto& queue, auto exec, auto kernel, auto const extents, auto fram
     auto dBuff = onHost::alloc<Vec<T_MemIdxType, ALPAKA_TYPEOF(extents)::dim()>>(queue.getDevice(), extents);
     auto hBuff = onHost::allocHostLike(dBuff);
 
-    using KenelIdxScalarType = typename ALPAKA_TYPEOF(frameSize)::type;
+    using KenelIdxScalarType = typename ALPAKA_TYPEOF(frameSize)::value_type;
     onHost::wait(queue);
     queue.enqueue(
         FrameSpec{pCast<KenelIdxScalarType>(extents) / frameSize, frameSize, exec},
@@ -201,7 +201,7 @@ struct IotaKernelNDForceCast
 {
     ALPAKA_FN_ACC void operator()(auto const& acc, auto out) const
     {
-        using MemScalarType = typename alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>::type;
+        using MemScalarType = typename alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>::value_type;
         for(auto i : onAcc::makeIdxMap<T_LoopIdxType>(acc, onAcc::worker::threadsInGrid, IdxRange{out.getExtents()}))
         {
             out[i] = pCast<MemScalarType>(i);

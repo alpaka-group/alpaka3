@@ -192,7 +192,7 @@ namespace alpaka::onHost
                 T_Type* ptr = nullptr;
                 auto pitches = typename T_Extents::UniVec{sizeof(T_Type)};
 
-                using Idx = typename T_Extents::type;
+                using Idx = typename T_Extents::value_type;
 
                 constexpr auto dim = T_Extents::dim();
                 if constexpr(dim == 1u)

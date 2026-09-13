@@ -18,7 +18,7 @@ namespace alpaka
     constexpr auto calculatePitchesFromExtents(T_Vec const& extent)
     {
         constexpr auto dim = T_Vec::dim();
-        using type = typename T_Vec::type;
+        using type = typename T_Vec::value_type;
         auto pitchBytes = typename T_Vec::UniVec{};
         if constexpr(dim > 0)
             pitchBytes.back() = static_cast<type>(sizeof(T_Elem));
@@ -31,10 +31,10 @@ namespace alpaka
     //! Calculate the pitches purely from the extents.
     template<typename T_Elem, alpaka::concepts::Vector T_Vec>
     requires(T_Vec::dim() >= 2)
-    constexpr auto calculatePitches(T_Vec const& extent, typename T_Vec::type const& rowPitchBytes)
+    constexpr auto calculatePitches(T_Vec const& extent, typename T_Vec::value_type const& rowPitchBytes)
     {
         constexpr auto dim = T_Vec::dim();
-        using type = typename T_Vec::type;
+        using type = typename T_Vec::value_type;
         auto pitchBytes = typename T_Vec::UniVec{};
         pitchBytes.back() = static_cast<type>(sizeof(T_Elem));
         if constexpr(dim > 1)
@@ -49,7 +49,7 @@ namespace alpaka
     struct DataPitches
     {
         using value_type = T_Type;
-        using index_type = typename T_Pitches::type;
+        using index_type = typename T_Pitches::value_type;
 
         static consteval uint32_t dim()
         {

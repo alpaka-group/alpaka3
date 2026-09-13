@@ -71,11 +71,11 @@ namespace alpaka
         using const_reference = std::add_const_t<value_type>&;
         using pointer = value_type*;
         using const_pointer = std::add_const_t<value_type>*;
-        using index_type = typename T_Pitches::type;
+        using index_type = typename T_Pitches::value_type;
 
         using ConstThis = MdSpan<std::add_const_t<value_type>, T_Extents, T_Pitches, T_MemAlignment>;
 
-        static_assert(std::is_convertible_v<index_type, typename T_Extents::type>);
+        static_assert(std::is_convertible_v<index_type, typename T_Extents::value_type>);
         static_assert(T_Extents::dim() == T_Pitches::dim());
 
         static consteval uint32_t dim()

@@ -64,7 +64,7 @@ namespace alpaka
         {
             alpaka::unused(selection);
 
-            using IdxType = typename T_ThreadIdx::type;
+            using IdxType = typename T_ThreadIdx::value_type;
             constexpr uint32_t dim = T_ThreadIdx::dim();
 
             auto allElements = iotaCVec<IdxType, dim>();
@@ -97,7 +97,7 @@ namespace alpaka
         T_ThreadIdx m_threadIdx;
         T_ThreadCount m_threadCount;
 
-        using type = typename T_ThreadIdx::type;
+        using value_type = typename T_ThreadIdx::value_type;
     };
 
     namespace internal
@@ -106,14 +106,14 @@ namespace alpaka
         struct PCast::Op<T_To, ThreadSpace<T_ThreadIdx, T_ThreadCount>>
         {
             constexpr auto operator()(auto&& input) const
-                requires std::convertible_to<typename T_ThreadIdx::type, T_To>
-                         && (!std::same_as<T_To, typename T_ThreadIdx::type>)
+                requires std::convertible_to<typename T_ThreadIdx::value_type, T_To>
+                         && (!std::same_as<T_To, typename T_ThreadIdx::value_type>)
             {
                 return ThreadSpace{pCast<T_To>(input.m_threadIdx), pCast<T_To>(input.m_threadCount)};
             }
 
             constexpr decltype(auto) operator()(auto&& input) const
-                requires std::same_as<T_To, typename T_ThreadIdx::type>
+                requires std::same_as<T_To, typename T_ThreadIdx::value_type>
             {
                 return std::forward<decltype(input)>(input);
             }

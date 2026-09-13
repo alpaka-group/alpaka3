@@ -27,11 +27,11 @@ namespace alpaka::onHost
      */
     template<
         alpaka::concepts::Vector T_NumBlocks,
-        alpaka::concepts::Vector<typename T_NumBlocks::type, T_NumBlocks::dim()> T_NumThreads,
+        alpaka::concepts::Vector<typename T_NumBlocks::value_type, T_NumBlocks::dim()> T_NumThreads,
         alpaka::concepts::Executor T_Executor = alpaka::exec::AnyExecutor>
     struct ThreadSpec
     {
-        using index_type = typename T_NumBlocks::type;
+        using index_type = typename T_NumBlocks::value_type;
         using NumBlocksVecType = typename T_NumBlocks::UniVec;
         using NumThreadsVecType = T_NumThreads;
 

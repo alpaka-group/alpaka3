@@ -157,7 +157,7 @@ namespace alpaka::onAcc::internal
                  * build our own groups out of the user-provided workgroup.
                  */
                 // build a worker group with slow-moving dimension threads for the outer loop
-                using index_type = typename IdxType::type;
+                using index_type = typename IdxType::value_type;
                 auto wIdx = workGroup.idx(acc).rAssign(index_type{0});
                 auto wSize = workGroup.size(acc).rAssign(index_type{1});
                 auto domSize = domainSize.rAssign(index_type{1});

@@ -76,8 +76,8 @@ namespace alpaka
     struct SimdMask : private T_Storage
     {
         using Storage = T_Storage;
-        using type = bool;
-        /** type is an implementation detail, can be a proxy type. */
+        using value_type = bool;
+        /** reference can be an implementation-detail proxy type. */
         using reference = typename Storage::reference;
 
         using index_type = uint32_t;
@@ -246,9 +246,9 @@ namespace alpaka
             return Storage::operator[](idx);
         }
 
-        constexpr type operator[](std::integral auto const idx) const
+        constexpr value_type operator[](std::integral auto const idx) const
         {
-            return static_cast<type>(Storage::operator[](idx));
+            return static_cast<value_type>(Storage::operator[](idx));
         }
 
         /** @brief named lane access
@@ -272,7 +272,7 @@ namespace alpaka
     {                                                                                                                 \
         return (*this)[laneIdx];                                                                                      \
     }                                                                                                                 \
-    constexpr type functionName() const requires(T_width >= laneIdx + 1)                                              \
+    constexpr value_type functionName() const requires(T_width >= laneIdx + 1)                                        \
     {                                                                                                                 \
         return (*this)[laneIdx];                                                                                      \
     }
@@ -316,7 +316,7 @@ namespace alpaka
          *                  The binary operation must be associative.
          * @return the type of the result depends on the binary functor
          */
-        [[nodiscard]] constexpr type reduce(auto&& reduceFunc) const
+        [[nodiscard]] constexpr value_type reduce(auto&& reduceFunc) const
         {
             return reduce_range(ALPAKA_FORWARD(reduceFunc));
         }
@@ -371,7 +371,7 @@ namespace alpaka
          * @return the type of the result depends on the binary functor
          */
         template<uint32_t T_start = 0u, uint32_t T_end = width()>
-        [[nodiscard]] constexpr type reduce_range(auto&& reduceFunc) const
+        [[nodiscard]] constexpr value_type reduce_range(auto&& reduceFunc) const
         {
             // elements in the range
             constexpr uint32_t size = T_end - T_start;

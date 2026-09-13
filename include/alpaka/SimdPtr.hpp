@@ -87,7 +87,7 @@ namespace alpaka
              * segfaults during compile.
              */
             static_assert(
-                alpaka::concepts::IndexVec<ALPAKA_TYPEOF(idx), typename IdxType::type, T_MdSpan::dim()>,
+                alpaka::concepts::IndexVec<ALPAKA_TYPEOF(idx), typename IdxType::value_type, T_MdSpan::dim()>,
                 "The dimension of idx must match the encapsulated MdSpan dimension and the index type of idx must be "
                 "lossless castable to the MdSpan index type");
             constexpr uint32_t valueAlignment = static_cast<uint32_t>(alignof(value_type));
@@ -105,7 +105,7 @@ namespace alpaka
              * segfaults during compile.
              */
             static_assert(
-                alpaka::concepts::IndexVec<ALPAKA_TYPEOF(idx), typename IdxType::type, T_MdSpan::dim()>,
+                alpaka::concepts::IndexVec<ALPAKA_TYPEOF(idx), typename IdxType::value_type, T_MdSpan::dim()>,
                 "The dimension of idx must match the encapsulated MdSpan dimension and the index type of idx must be "
                 "lossless castable to the MdSpan index type");
             constexpr uint32_t valueAlignment = static_cast<uint32_t>(alignof(value_type));

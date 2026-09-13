@@ -284,7 +284,7 @@ TEST_CASE("test alpaka::MdSpan argument concept access operator - correct dimens
     Vec2D idx_2D{0, 0};
     Vec3D idx_3D{0, 0, 0};
 
-    STATIC_REQUIRE(std::is_same_v<Vec1D::type, int>);
+    STATIC_REQUIRE(std::is_same_v<Vec1D::value_type, int>);
 
     SECTION("1D mdspan")
     {
