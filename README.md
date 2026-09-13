@@ -34,6 +34,18 @@ Host, device, mapped, and managed multi-dimensional views provide a natural way 
 
 This repository separates the development of [mainline alpaka](https://github.com/alpaka-group/alpaka) from the upcoming major release, which introduces breaking changes compared to previous versions.
 
+Performance portability
+-----------------------
+
+The BabelStream benchmark demonstrates that alpaka3 provides competitive memory-bandwidth performance across both CPU and GPU architectures using the same portable programming model.
+
+The following measurements compare alpaka3 with mainline alpaka and NVIDIA's native reference implementations.
+All results use double precision, and higher bandwidth is better.
+
+![BabelStream performance on the NVIDIA GH200 GPU using CUDA 13.3](docs/images/babelstream-gh200-gpu.svg)
+
+![BabelStream performance on the NVIDIA Grace CPU using OpenMP](docs/images/babelstream-grace-cpu.svg)
+
 Software License
 ----------------
 
