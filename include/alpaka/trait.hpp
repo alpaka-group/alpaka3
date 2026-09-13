@@ -61,9 +61,6 @@ namespace alpaka
             using type = typename GetValueType<typename T::element_type>::type;
         };
 
-        template<typename T>
-        using GetValueType_t = typename GetValueType<T>::type;
-
         /** Check if a type used as kernel argument is trivially copyable
          *
          * @attention In case this trait is specialized for a user type, the user should be sure that the result of
@@ -105,6 +102,13 @@ namespace alpaka
         {
         };
     } // namespace trait
+
+    /** Get the storage value type.
+     *
+     * If trait::GetValueType is not specialized for the given type T the trait is checks for the member ::value_type.
+     */
+    template<typename T>
+    using GetValueType_t = typename trait::GetValueType<T>::type;
 
     template<typename T>
     inline constexpr bool isKernelArgumentTriviallyCopyable_v = trait::IsKernelArgumentTriviallyCopyable<T>::value;

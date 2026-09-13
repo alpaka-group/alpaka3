@@ -52,7 +52,7 @@ namespace alpaka
          */
         template<typename T, typename T_ValueType = alpaka::NotRequired, uint32_t T_dim = alpaka::notRequiredDim>
         concept Vector = isVector_v<T>
-                         && (std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
+                         && (std::same_as<T_ValueType, GetValueType_t<std::decay_t<T>>>
                              || std::same_as<T_ValueType, alpaka::NotRequired>)
                          && ((T_dim == alpaka::notRequiredDim) || (T::dim() == T_dim));
 
@@ -63,7 +63,7 @@ namespace alpaka
          */
         template<typename T, typename T_ValueType = alpaka::NotRequired>
         concept VectorOrScalar = (isVector_v<T> || std::integral<T> || std::floating_point<T>)
-                                 && (std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
+                                 && (std::same_as<T_ValueType, GetValueType_t<std::decay_t<T>>>
                                      || std::same_as<T_ValueType, alpaka::NotRequired>);
 
         /** Concept to check if a type is a CVector
@@ -73,7 +73,7 @@ namespace alpaka
          */
         template<typename T, typename T_ValueType = alpaka::NotRequired>
         concept CVector = isCVector_v<T>
-                          && (std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
+                          && (std::same_as<T_ValueType, GetValueType_t<std::decay_t<T>>>
                               || std::same_as<T_ValueType, alpaka::NotRequired>);
 
         /** Concept to check if a type is a vector or a specific other type
@@ -993,19 +993,19 @@ namespace alpaka
      * move this to a better place, e.g. math and expose this for the user too
      */
     template<concepts::Vector T_Vector0, concepts::Vector T_Vector1>
-    requires(std::is_same_v<trait::GetValueType_t<T_Vector0>, trait::GetValueType_t<T_Vector1>>)
+    requires(std::is_same_v<GetValueType_t<T_Vector0>, GetValueType_t<T_Vector1>>)
     [[nodiscard]] ALPAKA_FN_HOST_ACC constexpr concepts::Vector auto divCeil(T_Vector0 a, T_Vector1 b)
     {
         return (a + b - T_Vector0::fill(1)) / b;
     }
 
     template<concepts::Vector T_Vector0, concepts::Vector T_Vector1>
-    requires(std::is_same_v<trait::GetValueType_t<T_Vector0>, trait::GetValueType_t<T_Vector1>>)
+    requires(std::is_same_v<GetValueType_t<T_Vector0>, GetValueType_t<T_Vector1>>)
     [[nodiscard]] ALPAKA_FN_HOST_ACC constexpr concepts::Vector auto divExZero(T_Vector0 a, T_Vector1 b)
     {
         auto tmp = a / b;
 
-        using ValueType = alpaka::trait::GetValueType_t<T_Vector0>;
+        using ValueType = alpaka::GetValueType_t<T_Vector0>;
         for(uint32_t d = 0u; d < a.dim(); ++d)
             tmp[d] = std::max(tmp[d], ValueType{1u});
         return tmp;

@@ -66,6 +66,6 @@ namespace alpaka::concepts
             std::remove_reference_t<T>,
             std::remove_const_t<std::remove_reference_t<T>>,
             std::add_const_t<std::remove_reference_t<T>>>;
-        requires ExpectedValueType<trait::GetValueType_t<std::decay_t<T>>, T_ValueType>;
+        requires ExpectedValueType<GetValueType_t<std::decay_t<T>>, T_ValueType>;
     };
 } // namespace alpaka::concepts

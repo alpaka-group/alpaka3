@@ -32,7 +32,7 @@ namespace alpaka::onHost
         DataType const& neutralElement,
         alpaka::concepts::IMdSpan auto out,
         auto&& binaryReduceFn,
-        auto&& in) requires(std::same_as<DataType, alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>>)
+        auto&& in) requires(std::same_as<DataType, alpaka::GetValueType_t<ALPAKA_TYPEOF(out)>>)
     {
         if constexpr(exec == alpaka::exec::anyExecutor)
         {
@@ -67,7 +67,7 @@ namespace alpaka::onHost
         alpaka::concepts::IMdSpan auto out,
         auto&& binaryReduceFn,
         alpaka::concepts::IDataSource auto&& in)
-        requires(std::same_as<DataType, alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>>)
+        requires(std::same_as<DataType, alpaka::GetValueType_t<ALPAKA_TYPEOF(out)>>)
     {
         reduce(
             queue,

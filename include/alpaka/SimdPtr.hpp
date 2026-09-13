@@ -39,7 +39,7 @@ namespace alpaka
          */
         template<typename T, typename T_ValueType = alpaka::NotRequired, uint32_t T_width = alpaka::notRequiredWidth>
         concept SimdPtr = isSimdPtr_v<T>
-                          && (std::same_as<T_ValueType, trait::GetValueType_t<std::decay_t<T>>>
+                          && (std::same_as<T_ValueType, GetValueType_t<std::decay_t<T>>>
                               || std::same_as<T_ValueType, alpaka::NotRequired>)
                           && ((T_width == alpaka::notRequiredWidth) || (T::width() == T_width));
     } // namespace concepts

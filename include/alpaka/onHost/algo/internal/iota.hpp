@@ -42,8 +42,8 @@ namespace alpaka::onHost::internal
                         = SimdType([&](auto const& laneId) constexpr
                                    { return linearBaseOffset + static_cast<T_DataType>(laneId); });
                     // write output
-                    in0 = pCast<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(in0)>>(result);
-                    ((inOther = pCast<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(inOther)>>(result)), ...);
+                    in0 = pCast<alpaka::GetValueType_t<ALPAKA_TYPEOF(in0)>>(result);
+                    ((inOther = pCast<alpaka::GetValueType_t<ALPAKA_TYPEOF(inOther)>>(result)), ...);
                 },
                 ALPAKA_FORWARD(inputs)...);
         }

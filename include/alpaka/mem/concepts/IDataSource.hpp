@@ -87,6 +87,6 @@ namespace alpaka::concepts
     template<typename T, typename T_ValueType = alpaka::NotRequired>
     concept IDataSource = requires {
         requires impl::IDataSource<std::remove_reference_t<T>>;
-        requires ExpectedValueType<trait::GetValueType_t<std::decay_t<T>>, T_ValueType>;
+        requires ExpectedValueType<GetValueType_t<std::decay_t<T>>, T_ValueType>;
     };
 } // namespace alpaka::concepts

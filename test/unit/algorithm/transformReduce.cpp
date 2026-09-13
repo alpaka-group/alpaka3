@@ -57,7 +57,7 @@ struct ScalarOpWithAcc
 {
     constexpr auto operator()(onAcc::concepts::Acc auto const&, auto const& a, auto const& b) const
     {
-        using ValueType = trait::GetValueType_t<ALPAKA_TYPEOF(a)>;
+        using ValueType = GetValueType_t<ALPAKA_TYPEOF(a)>;
         return a * ValueType{2} + b;
     }
 };

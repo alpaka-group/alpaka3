@@ -573,7 +573,7 @@ namespace alpaka::onHost
                         ApiInterface::memcpyAsync(
                             destPtr,
                             srcPtr,
-                            extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                            extentMd.x() * sizeof(alpaka::GetValueType_t<T_Dest>),
                             copyKind,
                             internal::getNativeHandle(queue)));
                 }
@@ -586,7 +586,7 @@ namespace alpaka::onHost
                             destPitch.y(),
                             srcPtr,
                             srcPitch.y(),
-                            extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                            extentMd.x() * sizeof(alpaka::GetValueType_t<T_Dest>),
                             extentMd.y(),
                             copyKind,
                             internal::getNativeHandle(queue)));
@@ -595,7 +595,7 @@ namespace alpaka::onHost
                 {
                     using VecIdxType = ALPAKA_TYPEOF(extentMd);
 
-                    memcopy3D<alpaka::trait::GetValueType_t<T_Dest>, ApiInterface>(
+                    memcopy3D<alpaka::GetValueType_t<T_Dest>, ApiInterface>(
                         queue,
                         copyKind,
                         // 3D is nativ supported therefore we can handle the memcpy with a single call
@@ -634,7 +634,7 @@ namespace alpaka::onHost
                         mappedExtentMd.z() = extentMd.template rshrink<dim - 2u>(dim - 3u).product();
                         using VecIdxType = ALPAKA_TYPEOF(mappedExtentMd);
 
-                        memcopy3D<alpaka::trait::GetValueType_t<T_Dest>, ApiInterface>(
+                        memcopy3D<alpaka::GetValueType_t<T_Dest>, ApiInterface>(
                             queue,
                             copyKind,
                             // 3D is nativ supported therefore we can handle the memcpy with a single call
@@ -654,7 +654,7 @@ namespace alpaka::onHost
                         auto srcPitchJump = srcPitch.template rshrink<dim - 3u>(dim - 4u);
                         auto destPitchJump = destPitch.template rshrink<dim - 3u>(dim - 4u);
 
-                        memcopy3D<alpaka::trait::GetValueType_t<T_Dest>, ApiInterface>(
+                        memcopy3D<alpaka::GetValueType_t<T_Dest>, ApiInterface>(
                             queue,
                             copyKind,
                             repetitions,
@@ -863,7 +863,7 @@ namespace alpaka::onHost
                         ApiInterface::memsetAsync(
                             destPtr,
                             static_cast<int>(byteValue),
-                            extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                            extentMd.x() * sizeof(alpaka::GetValueType_t<T_Dest>),
                             internal::getNativeHandle(queue)));
                 }
                 else if constexpr(dim == 2u)
@@ -874,7 +874,7 @@ namespace alpaka::onHost
                             destPtr,
                             destPitch.y(),
                             static_cast<int>(byteValue),
-                            extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                            extentMd.x() * sizeof(alpaka::GetValueType_t<T_Dest>),
                             extentMd.y(),
                             internal::getNativeHandle(queue)));
                 }
@@ -882,7 +882,7 @@ namespace alpaka::onHost
                 {
                     using VecIdxType = ALPAKA_TYPEOF(extentMd);
 
-                    memset3D<alpaka::trait::GetValueType_t<T_Dest>, ApiInterface>(
+                    memset3D<alpaka::GetValueType_t<T_Dest>, ApiInterface>(
                         queue,
                         byteValue,
                         // 3D is nativ supported therefore we can handle the memset with a single call
@@ -914,7 +914,7 @@ namespace alpaka::onHost
                         mappedExtentMd.z() = extentMd.template rshrink<dim - 2u>(dim - 3u).product();
                         using VecIdxType = ALPAKA_TYPEOF(mappedExtentMd);
 
-                        memset3D<alpaka::trait::GetValueType_t<T_Dest>, ApiInterface>(
+                        memset3D<alpaka::GetValueType_t<T_Dest>, ApiInterface>(
                             queue,
                             byteValue,
                             // 3D is nativ supported therefore we can handle the memset with a single call
@@ -929,7 +929,7 @@ namespace alpaka::onHost
                         auto repetitions = extentMd.template rshrink<dim - 3u>(dim - 4u);
                         auto destPitchJump = destPitch.template rshrink<dim - 3u>(dim - 4u);
 
-                        memset3D<alpaka::trait::GetValueType_t<T_Dest>, ApiInterface>(
+                        memset3D<alpaka::GetValueType_t<T_Dest>, ApiInterface>(
                             queue,
                             byteValue,
                             repetitions,
@@ -1008,7 +1008,7 @@ namespace alpaka::onHost
                 T_Value elementValue,
                 T_Extents const& extents) const
                 requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
-                         && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
+                         && std::same_as<alpaka::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
                 // avoid that we pass a SharedBuffer and convert non alpaka data views

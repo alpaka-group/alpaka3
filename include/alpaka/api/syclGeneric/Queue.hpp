@@ -464,7 +464,7 @@ namespace alpaka::onHost
             sycl::event ev = sycl_queue.memset(
                 internal::Data::data(dest),
                 byteValue,
-                extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
+                extents.x() * sizeof(alpaka::GetValueType_t<T_Dest>));
             queue.setLastEvent(ev);
         }
     };
@@ -485,7 +485,7 @@ namespace alpaka::onHost
             sycl::event ev = sycl_queue.memcpy(
                 toVoidPtr(internal::Data::data(dest)),
                 toVoidPtr(internal::Data::data(source)),
-                extents.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
+                extents.x() * sizeof(alpaka::GetValueType_t<T_Dest>));
             queue.setLastEvent(ev);
         }
     };
@@ -500,7 +500,7 @@ namespace alpaka::onHost
             T_Value elementValue,
             T_Extents const& extents) const
             requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
-                     && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
+                     && std::same_as<alpaka::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
         {
             ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
             sycl::queue sycl_queue = queue.getNativeHandle();

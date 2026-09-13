@@ -102,7 +102,7 @@ namespace alpaka
 
     template<concepts::VectorOrScalar T_Extents>
     ALPAKA_FN_DG LinearizedIdxGenerator(T_Extents const&)
-        -> LinearizedIdxGenerator<trait::GetValueType_t<T_Extents>, trait::getDim_v<T_Extents>>;
+        -> LinearizedIdxGenerator<GetValueType_t<T_Extents>, trait::getDim_v<T_Extents>>;
 
     namespace internal
     {

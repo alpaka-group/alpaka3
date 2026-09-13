@@ -439,12 +439,7 @@ namespace alpaka::onHost
                 {
                     queue.submit(
                         [numElementsInX = extentMd.x(), destPtr, srcPtr]()
-                        {
-                            std::memcpy(
-                                destPtr,
-                                srcPtr,
-                                numElementsInX * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
-                        });
+                        { std::memcpy(destPtr, srcPtr, numElementsInX * sizeof(alpaka::GetValueType_t<T_Dest>)); });
                 }
                 else
                 {
@@ -467,8 +462,7 @@ namespace alpaka::onHost
                                             + (idx * destPitchBytesWithoutColumn).sum(),
                                         reinterpret_cast<std::uint8_t const*>(srcPtr)
                                             + (idx * sourcePitchBytesWithoutColumn).sum(),
-                                        static_cast<size_t>(extentMd.back())
-                                            * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
+                                        static_cast<size_t>(extentMd.back()) * sizeof(alpaka::GetValueType_t<T_Dest>));
                                 });
                         });
                 }
@@ -540,12 +534,7 @@ namespace alpaka::onHost
                 {
                     queue.submit(
                         [numElementsInX = extentMd.x(), destPtr, byteValue]()
-                        {
-                            std::memset(
-                                destPtr,
-                                byteValue,
-                                numElementsInX * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
-                        });
+                        { std::memset(destPtr, byteValue, numElementsInX * sizeof(alpaka::GetValueType_t<T_Dest>)); });
                 }
                 else
                 {
@@ -563,7 +552,7 @@ namespace alpaka::onHost
                                         reinterpret_cast<std::uint8_t*>(destPtr)
                                             + (idx * destPitchBytesWithoutColumn).sum(),
                                         byteValue,
-                                        extentMd.back() * sizeof(alpaka::trait::GetValueType_t<T_Dest>));
+                                        extentMd.back() * sizeof(alpaka::GetValueType_t<T_Dest>));
                                 });
                         });
                 }
@@ -575,7 +564,7 @@ namespace alpaka::onHost
         {
             void operator()(cpu::Queue<T_Device>& queue, auto&& dest, T_Value elementValue, T_Extents const& extents)
                 const requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
-                               && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
+                               && std::same_as<alpaka::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::memory + onHost::logger::queue);
                 // avoid that we pass a SharedBuffer and convert non alpaka data views

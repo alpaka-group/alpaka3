@@ -98,7 +98,7 @@ struct SimdMultOp
 {
     constexpr void operator()(auto const&, auto b, auto const c) const
     {
-        using T = trait::GetValueType_t<ALPAKA_TYPEOF(b)>;
+        using T = GetValueType_t<ALPAKA_TYPEOF(b)>;
         T const scalar = static_cast<T>(scalarVal);
         b = scalar * c.load();
     }
@@ -116,7 +116,7 @@ struct SimdTriadOp
 {
     constexpr void operator()(auto const&, auto a, auto const b, auto const c) const
     {
-        using T = trait::GetValueType_t<ALPAKA_TYPEOF(a)>;
+        using T = GetValueType_t<ALPAKA_TYPEOF(a)>;
         T const scalar = static_cast<T>(scalarVal);
         a = b.load() + scalar * c.load();
     }
@@ -126,7 +126,7 @@ struct SimdNStreamOp
 {
     constexpr void operator()(auto const&, auto a, auto const b, auto const c) const
     {
-        using T = trait::GetValueType_t<ALPAKA_TYPEOF(a)>;
+        using T = GetValueType_t<ALPAKA_TYPEOF(a)>;
         T const scalar = static_cast<T>(scalarVal);
         a = a.load() + b.load() + scalar * c.load();
     }

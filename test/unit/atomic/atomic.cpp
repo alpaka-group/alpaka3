@@ -203,7 +203,7 @@ struct TestAtomicOperations
 #if ALPAKA_LANG_ONEAPI
         // support for double precision is not guaranteed for sycl devices such as Intel GPUs
         if constexpr(
-            std::is_same_v<trait::GetValueType_t<T>, double> && ALPAKA_TYPEOF(alpaka::getApi(device)){} == api::oneApi)
+            std::is_same_v<GetValueType_t<T>, double> && ALPAKA_TYPEOF(alpaka::getApi(device)){} == api::oneApi)
         {
             if(device.getNativeHandle().first.template get_info<sycl::info::device::double_fp_config>().size() == 0)
             {

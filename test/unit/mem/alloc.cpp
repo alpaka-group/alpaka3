@@ -154,7 +154,7 @@ TEMPLATE_LIST_TEST_CASE("alloc zero bytes", "", TestDeviceSpecs)
  */
 void validateAlignment(alpaka::concepts::IMdSpan auto data)
 {
-    using DataType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data)>;
+    using DataType = alpaka::GetValueType_t<ALPAKA_TYPEOF(data)>;
     constexpr uint32_t alignment = alpaka::getAlignment(data).template get<DataType>();
     alpaka::concepts::Vector auto extents = alpaka::onHost::getExtents(data);
     // set the number of columns to 1 to evaluate only the rows

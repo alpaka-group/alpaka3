@@ -35,9 +35,9 @@ namespace alpaka::onHost
         alpaka::concepts::IMdSpan auto&& out0,
         alpaka::concepts::IMdSpan auto&&... outOther)
         requires(
-            std::is_convertible_v<T_DataType, alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out0)>>
+            std::is_convertible_v<T_DataType, alpaka::GetValueType_t<ALPAKA_TYPEOF(out0)>>
             && std::conjunction_v<
-                std::is_convertible<T_DataType, typename alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(outOther)>>...>)
+                std::is_convertible<T_DataType, typename alpaka::GetValueType_t<ALPAKA_TYPEOF(outOther)>>...>)
     {
         if constexpr(exec == alpaka::exec::anyExecutor)
         {
@@ -71,9 +71,9 @@ namespace alpaka::onHost
         alpaka::concepts::IMdSpan auto&& out0,
         alpaka::concepts::IMdSpan auto&&... outOther)
         requires(
-            std::is_convertible_v<T_DataType, alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out0)>>
+            std::is_convertible_v<T_DataType, alpaka::GetValueType_t<ALPAKA_TYPEOF(out0)>>
             && std::conjunction_v<
-                std::is_convertible<T_DataType, typename alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(outOther)>>...>)
+                std::is_convertible<T_DataType, typename alpaka::GetValueType_t<ALPAKA_TYPEOF(outOther)>>...>)
     {
         internal::iota<T_DataType>(
             queue,

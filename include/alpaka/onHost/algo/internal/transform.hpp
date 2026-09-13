@@ -88,7 +88,7 @@ namespace alpaka::onHost::internal
         alpaka::concepts::IDataSource auto&&... in)
     {
         auto extentMd = onHost::getExtents(out);
-        using DataType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>;
+        using DataType = alpaka::GetValueType_t<ALPAKA_TYPEOF(out)>;
         auto frameSpec = getSimdFrameSpec<DataType>(queue.getDevice(), exec, extentMd);
 
         ALPAKA_LOG_INFO(

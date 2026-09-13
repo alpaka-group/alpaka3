@@ -35,7 +35,7 @@ namespace alpaka::onAcc::internal
             alpaka::concepts::IDataSource auto&&... dataN) const
         {
             auto numElements = typename ALPAKA_TYPEOF(extents)::UniVec{extents};
-            using ValueType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data0)>;
+            using ValueType = alpaka::GetValueType_t<ALPAKA_TYPEOF(data0)>;
 
             constexpr auto simdCfg = T_Parent::template calcSimdPackConfig<ValueType>(
                 ALPAKA_TYPEOF(acc.getApi()){},

@@ -53,7 +53,7 @@ namespace alpaka::onHost::internal
                     destPtr,
                     destPitch.y(),
                     byteValue,
-                    extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                    extentMd.x() * sizeof(alpaka::GetValueType_t<T_Dest>),
                     extentMd.y());
             }
             else if constexpr(dim >= 3u)
@@ -78,7 +78,7 @@ namespace alpaka::onHost::internal
                     // remove x dimension, fuse all other dimensions into the y component
                     mappedExtentMd.y() = extentMd.eraseBack().product();
 
-                    ev = memset2D<alpaka::trait::GetValueType_t<T_Dest>>(
+                    ev = memset2D<alpaka::GetValueType_t<T_Dest>>(
                         sycl_queue,
                         byteValue,
                         // 2D is nativ supported therefore we can handle the memset with a single call
@@ -94,7 +94,7 @@ namespace alpaka::onHost::internal
                     auto repetitions = extentMd.template rshrink<dim - 2u>(dim - 3u);
                     auto destPitchJump = destPitch.template rshrink<dim - 2u>(dim - 3u);
 
-                    ev = memset2D<alpaka::trait::GetValueType_t<T_Dest>>(
+                    ev = memset2D<alpaka::GetValueType_t<T_Dest>>(
                         sycl_queue,
                         byteValue,
                         repetitions,
@@ -202,7 +202,7 @@ namespace alpaka::onHost::internal
                     destPitch.y(),
                     srcPtr,
                     srcPitch.y(),
-                    extentMd.x() * sizeof(alpaka::trait::GetValueType_t<T_Dest>),
+                    extentMd.x() * sizeof(alpaka::GetValueType_t<T_Dest>),
                     extentMd.y());
             }
             else if constexpr(dim >= 3u)
@@ -231,7 +231,7 @@ namespace alpaka::onHost::internal
                     mappedExtentMd.y() = extentMd.eraseBack().product();
                     using VecIdxType = ALPAKA_TYPEOF(mappedExtentMd);
 
-                    ev = memcopy2D<alpaka::trait::GetValueType_t<T_Dest>>(
+                    ev = memcopy2D<alpaka::GetValueType_t<T_Dest>>(
                         sycl_queue,
                         // 2D is nativ supported therefore we can handle the memcpy with a single call
                         VecIdxType::fill(1u),
@@ -250,7 +250,7 @@ namespace alpaka::onHost::internal
                     auto srcPitchJump = srcPitch.template rshrink<dim - 2u>(dim - 3u);
                     auto destPitchJump = destPitch.template rshrink<dim - 2u>(dim - 3u);
 
-                    ev = memcopy2D<alpaka::trait::GetValueType_t<T_Dest>>(
+                    ev = memcopy2D<alpaka::GetValueType_t<T_Dest>>(
                         sycl_queue,
                         repetitions,
                         destPitchJump,
@@ -389,7 +389,7 @@ namespace alpaka::onHost::internal
             T_Value elementValue,
             T_Extents const& extents) const
             requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
-                     && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
+                     && std::same_as<alpaka::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
         {
             // avoid that we pass a SharedBuffer and convert non alpaka data views
             auto dataView = makeView(dest);

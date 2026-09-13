@@ -89,7 +89,7 @@ namespace alpaka::onAcc
             alpaka::concepts::IDataSource auto&& data0,
             alpaka::concepts::IDataSource auto&&... dataN) const
         {
-            using ValueType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data0)>;
+            using ValueType = alpaka::GetValueType_t<ALPAKA_TYPEOF(data0)>;
             concurrent<
                 alpaka::getNumElemPerThread<ValueType>(
                     ALPAKA_TYPEOF(acc.getApi()){},
@@ -211,7 +211,7 @@ namespace alpaka::onAcc
             alpaka::concepts::IDataSource auto&& data0,
             alpaka::concepts::IDataSource auto&&... dataN) const
         {
-            using ValueType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(data0)>;
+            using ValueType = alpaka::GetValueType_t<ALPAKA_TYPEOF(data0)>;
             return transformReduce<
                 alpaka::getNumElemPerThread<ValueType>(
                     ALPAKA_TYPEOF(acc.getApi()){},

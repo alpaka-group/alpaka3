@@ -550,7 +550,7 @@ namespace alpaka::onHost
             using ExtentVecType = ALPAKA_TYPEOF(extentMd);
             // check that all extent dimensions are greater than zero
             ALPAKA_ASSERT((extentMd > ExtentVecType::fill(0u)).reduce(std::logical_and{}));
-            using IndexType = alpaka::trait::GetValueType_t<ExtentVecType>;
+            using IndexType = alpaka::GetValueType_t<ExtentVecType>;
             auto props = internal::GetDeviceProperties::Op<ALPAKA_TYPEOF(internalDevice)>{}(internalDevice);
             IndexType warpSize = static_cast<IndexType>(props.warpSize);
             // try to create a specification with a frame size of 512 elements
@@ -607,7 +607,7 @@ namespace alpaka::onHost
             using ExtentVecType = ALPAKA_TYPEOF(extentMd);
             // check that all extent dimensions are greater than zero
             ALPAKA_ASSERT((extentMd > ExtentVecType::fill(0u)).reduce(std::logical_and{}));
-            using IndexType = alpaka::trait::GetValueType_t<ExtentVecType>;
+            using IndexType = alpaka::GetValueType_t<ExtentVecType>;
 
             ExtentVecType frameExtents = getFrameSpec(internalDevice, executor, extents).getFrameExtents();
 

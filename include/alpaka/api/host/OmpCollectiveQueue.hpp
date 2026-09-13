@@ -664,7 +664,7 @@ namespace alpaka::onHost
                 T_Value elementValue,
                 T_Extents const& extents) const
                 requires std::same_as<ALPAKA_TYPEOF(dest), T_Dest>
-                         && std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
+                         && std::same_as<alpaka::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
             {
                 /* There is no need to wait for queue tasks before the parallel region or if called from outside for
                  * tasks within the parallel region, this will be done during the kernel call in the fill function.

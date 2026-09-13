@@ -29,7 +29,7 @@ struct IotaKernelND
 {
     ALPAKA_FN_ACC void operator()(auto const& acc, auto out) const
     {
-        using MemScalarType = typename alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>::value_type;
+        using MemScalarType = typename alpaka::GetValueType_t<ALPAKA_TYPEOF(out)>::value_type;
 
         // rerun the tests with automatic derived loop index type
         for(auto i : onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRange{out.getExtents()}))
@@ -201,7 +201,7 @@ struct IotaKernelNDForceCast
 {
     ALPAKA_FN_ACC void operator()(auto const& acc, auto out) const
     {
-        using MemScalarType = typename alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(out)>::value_type;
+        using MemScalarType = typename alpaka::GetValueType_t<ALPAKA_TYPEOF(out)>::value_type;
         for(auto i : onAcc::makeIdxMap<T_LoopIdxType>(acc, onAcc::worker::threadsInGrid, IdxRange{out.getExtents()}))
         {
             out[i] = pCast<MemScalarType>(i);

@@ -149,7 +149,7 @@ namespace alpaka::onAcc
             {
                 std::integral auto linearThreadsInBlock
                     = acc.getExtentsOf(onAcc::origin::block, onAcc::unit::threads).product();
-                using IndexType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(linearThreadsInBlock)>;
+                using IndexType = alpaka::GetValueType_t<ALPAKA_TYPEOF(linearThreadsInBlock)>;
                 return Vec{divCeil(linearThreadsInBlock, static_cast<IndexType>(T_Acc::getWarpSize()))};
             }
         };

@@ -37,7 +37,7 @@ namespace alpaka::onHost::internal
             alpaka::concepts::IDataSource auto&&... inputs) const
         {
             static_assert(
-                std::is_same_v<ALPAKA_TYPEOF(neutralElement), alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(output)>>,
+                std::is_same_v<ALPAKA_TYPEOF(neutralElement), alpaka::GetValueType_t<ALPAKA_TYPEOF(output)>>,
                 "The neutral element type must match the data output type.");
 
 
@@ -141,7 +141,7 @@ namespace alpaka::onHost::internal
         alpaka::concepts::IDataSource auto&&... in)
     {
         auto extentMd = onHost::getExtents(in0);
-        using IndexType = alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(extentMd)>;
+        using IndexType = alpaka::GetValueType_t<ALPAKA_TYPEOF(extentMd)>;
         auto frameSpec = getSimdFrameSpec<T_DataType>(queue.getDevice(), exec, extentMd);
 
         /* Adjust the launch parameters to not oversubscribe a device too much.

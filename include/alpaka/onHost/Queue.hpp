@@ -409,7 +409,7 @@ namespace alpaka::onHost
      */
     template<typename T_Value, typename T_Device, alpaka::concepts::QueuePolicyList T_Policies>
     inline void fill(Queue<T_Device, T_Policies> const& queue, auto&& dest, T_Value elementValue) requires(
-        std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
+        std::same_as<alpaka::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
         && std::same_as<ALPAKA_TYPEOF(alpaka::internal::getApi(queue)), ALPAKA_TYPEOF(alpaka::internal::getApi(dest))>)
     {
         fill(queue, ALPAKA_FORWARD(dest), elementValue, internal::getExtents(dest));
@@ -432,7 +432,7 @@ namespace alpaka::onHost
         T_Value elementValue,
         alpaka::concepts::VectorOrScalar auto const& extents)
         requires(
-            std::same_as<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
+            std::same_as<alpaka::GetValueType_t<ALPAKA_TYPEOF(dest)>, T_Value>
             && std::
                 same_as<ALPAKA_TYPEOF(alpaka::internal::getApi(queue)), ALPAKA_TYPEOF(alpaka::internal::getApi(dest))>)
     {
@@ -504,7 +504,7 @@ namespace alpaka::onHost
     template<typename T_Device, alpaka::concepts::QueuePolicyList T_Policies>
     inline auto allocLikeDeferred(Queue<T_Device, T_Policies> const& queue, auto const& view)
     {
-        return allocDeferred<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(queue, internal::getExtents(view));
+        return allocDeferred<alpaka::GetValueType_t<ALPAKA_TYPEOF(view)>>(queue, internal::getExtents(view));
     }
 
     /** @} */

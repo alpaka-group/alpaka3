@@ -208,7 +208,7 @@ namespace alpaka::onHost
     inline auto allocHostLike(auto const& view)
     {
         auto device = makeHostDevice<ALPAKA_TYPEOF(view)>();
-        return alloc<alpaka::trait::GetValueType_t<ALPAKA_TYPEOF(view)>>(device, internal::getExtents(view));
+        return alloc<alpaka::GetValueType_t<ALPAKA_TYPEOF(view)>>(device, internal::getExtents(view));
     }
 
     /** @} */
