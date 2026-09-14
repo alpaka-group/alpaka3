@@ -32,7 +32,31 @@ Explicit caching of data within a frame via shared memory allows developers to f
 Additionally, alpaka offers primitive functions such as iota, transform, transform-reduce, reduce, and concurrent, simplifying the development of portable high-performance applications.
 Host, device, mapped, and managed multi-dimensional views provide a natural way to operate on data.
 
-This repository separates the development of [mainline alpaka](https://github.com/alpaka-group/alpaka) from the upcoming major release, which introduces breaking changes compared to previous versions.
+A dot product in one line
+-----------------------
+
+```c++
+using namespace alpaka;
+
+// Select the CPU device and the corresponding asynchronious queue.
+auto device = onHost::DeviceSelector(api::host, deviceKind::cpu).makeDevice(0);
+auto queue = device.makeQueue();
+
+uint32_t const numElements = 128u;
+
+// Allocate and initialize the input buffers and a single-element result buffer for the selected device.
+concepts::IBuffer auto resultBuffer = onHost::allocUnified<double>(device, 1u);
+concepts::IBuffer auto bufferLhs = onHost::alloc<double>(device, numElements);
+onHost::iota(queue, 1.0, bufferLhs);
+concepts::IBuffer auto bufferRhs = onHost::allocLike(device, bufferLhs);
+onHost::fill(queue, bufferRhs, 42.0);
+
+onHost::transformReduce(queue, 0.0, resultBuffer, std::plus{}, std::multiplies{}, bufferLhs, bufferRhs);
+onHost::wait(queue);
+std::cout<<"Result="<<resultBuffer[0]<<std::endl;
+```
+
+Test the example on [Godbolt](https://godbolt.org/z/naavGMnhY).
 
 Performance portability
 -----------------------
