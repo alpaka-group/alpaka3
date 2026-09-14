@@ -30,76 +30,74 @@ if [[ "$APCI_CUDA" != 0 ]]; then
         else
             install_msg "CUDA ${APCI_CUDA} via apt"
 
-            if [[ "$(cat /etc/os-release)" == *"24.04"* ]]; then
+            os_release=$(</etc/os-release)
+
+            if [[ "${os_release}" == *"24.04"* ]]; then
                 cuda_ubuntu_distro=ubuntu2404
-            elif [[ "$(cat /etc/os-release)" == *"26.04"* ]]; then
+            elif [[ "${os_release}" == *"26.04"* ]]; then
                 cuda_ubuntu_distro=ubuntu2604
             else
-                exit_error "Install CUDA: unknown os-release: $(cat /etc/os-release)"
+                exit_error "Install CUDA: unknown os-release: ${os_release}"
             fi
 
-            if [ "${APCI_CUDA}" == "12.0" ]; then
-                cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-12-0-local
-                cuda_pkg_file_name="${cuda_pkg_deb_name}"_12.0.1-525.85.12-1_amd64.deb
-                cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/12.0.1/local_installers/${cuda_pkg_file_name}
-            elif [ "${APCI_CUDA}" == "12.1" ]; then
-                cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-12-1-local
-                cuda_pkg_file_name="${cuda_pkg_deb_name}"_12.1.1-530.30.02-1_amd64.deb
-                cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/12.1.1/local_installers/${cuda_pkg_file_name}
-            elif [ "${APCI_CUDA}" == "12.2" ]; then
-                cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-12-2-local
-                cuda_pkg_file_name="${cuda_pkg_deb_name}"_12.2.2-535.104.05-1_amd64.deb
-                cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/12.2.2/local_installers/${cuda_pkg_file_name}
-            elif [ "${APCI_CUDA}" == "12.3" ]; then
-                cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-12-3-local
-                cuda_pkg_file_name="${cuda_pkg_deb_name}"_12.3.2-545.23.08-1_amd64.deb
-                cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/12.3.2/local_installers/${cuda_pkg_file_name}
-            elif [ "${APCI_CUDA}" == "12.4" ]; then
-                cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-12-4-local
-                cuda_pkg_file_name="${cuda_pkg_deb_name}"_12.4.1-550.54.15-1_amd64.deb
-                cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/12.4.1/local_installers/${cuda_pkg_file_name}
-            elif [ "${APCI_CUDA}" == "12.5" ]; then
-                cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-12-5-local
-                cuda_pkg_file_name="${cuda_pkg_deb_name}"_12.5.1-555.42.06-1_amd64.deb
-                cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/12.5.1/local_installers/${cuda_pkg_file_name}
-            elif [ "${APCI_CUDA}" == "12.6" ]; then
-                cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-12-6-local
-                cuda_pkg_file_name="${cuda_pkg_deb_name}"_12.6.3-560.35.05-1_amd64.deb
-                cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/12.6.3/local_installers/${cuda_pkg_file_name}
-            elif [ "${APCI_CUDA}" == "12.8" ]; then
-                cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-12-8-local
-                cuda_pkg_file_name="${cuda_pkg_deb_name}"_12.8.1-570.124.06-1_amd64.deb
-                cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/12.8.1/local_installers/${cuda_pkg_file_name}
-            elif [ "${APCI_CUDA}" == "12.9" ]; then
-                cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-12-9-local
-                cuda_pkg_file_name="${cuda_pkg_deb_name}"_12.9.1-575.57.08-1_amd64.deb
-                cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/12.9.1/local_installers/${cuda_pkg_file_name}
-            elif [ "${APCI_CUDA}" == "13.0" ]; then
-                cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-13-0-local
-                cuda_pkg_file_name="${cuda_pkg_deb_name}"_13.0.2-580.95.05-1_amd64.deb
-                cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/13.0.2/local_installers/${cuda_pkg_file_name}
-            elif [ "${APCI_CUDA}" == "13.1" ]; then
-                cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-13-1-local
-                cuda_pkg_file_name="${cuda_pkg_deb_name}"_13.1.2-590.48.01-1_amd64.deb
-                cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/13.1.2/local_installers/${cuda_pkg_file_name}
-            elif [ "${APCI_CUDA}" == "13.2" ]; then
-                cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-13-2-local
-                cuda_pkg_file_name="${cuda_pkg_deb_name}"_13.2.1-595.58.03-1_amd64.deb
-                cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/13.2.1/local_installers/${cuda_pkg_file_name}
-            elif [ "${APCI_CUDA}" == "13.3" ]; then
-                cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-13-3-local
-                cuda_pkg_file_name="${cuda_pkg_deb_name}"_13.3.0-610.43.02-1_amd64.deb
-                cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/13.3.0/local_installers/${cuda_pkg_file_name}
-            elif [ "${APCI_CUDA}" == "13.4" ]; then
-                cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-13-4-local
-                cuda_pkg_file_name="${cuda_pkg_deb_name}"_13.4.1-1_amd64.deb
-                cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/13.4.1/local_installers/${cuda_pkg_file_name}
-            else
-                exit_error "CUDA versions other than 12.0-13.4 are not currently supported on linux!"
+            # Map the requested CUDA version to the variable portion of the
+            # corresponding NVIDIA installer package name:
+            #
+            #   <full CUDA version>-<package version suffix>
+            #
+            # For example:
+            #
+            #   13.3 -> 13.3.0-610.43.02-1
+            declare -Ar cuda_installer_packages=(
+                ["12.0"]="12.0.1-525.85.12-1"
+                ["12.1"]="12.1.1-530.30.02-1"
+                ["12.2"]="12.2.2-535.104.05-1"
+                ["12.3"]="12.3.2-545.23.08-1"
+                ["12.4"]="12.4.1-550.54.15-1"
+                ["12.5"]="12.5.1-555.42.06-1"
+                ["12.6"]="12.6.3-560.35.05-1"
+                ["12.8"]="12.8.1-570.124.06-1"
+                ["12.9"]="12.9.1-575.57.08-1"
+                ["13.0"]="13.0.2-580.95.05-1"
+                ["13.1"]="13.1.2-590.48.01-1"
+                ["13.2"]="13.2.1-595.58.03-1"
+                ["13.3"]="13.3.0-610.43.02-1"
+                ["13.4"]="13.4.1-1"
+            )
+
+            cuda_installer_package=${cuda_installer_packages["${APCI_CUDA}"]-}
+
+            if [[ -z "${cuda_installer_package}" ]]; then
+                lowest_supported_cuda_key=$(
+                    printf '%s\n' "${!cuda_installer_packages[@]}" |
+                        sort --version-sort |
+                        head --lines=1
+                )
+
+                highest_supported_cuda_key=$(
+                    printf '%s\n' "${!cuda_installer_packages[@]}" |
+                        sort --version-sort |
+                        tail --lines=1
+                )
+
+                # Remove the package suffix so that the error message contains
+                # only versions such as 12.0.1 and 13.4.1.
+                lowest_supported_cuda=${cuda_installer_packages["${lowest_supported_cuda_key}"]%%-*}
+                highest_supported_cuda=${cuda_installer_packages["${highest_supported_cuda_key}"]%%-*}
+
+                exit_error \
+                    "CUDA versions other than ${lowest_supported_cuda}-${highest_supported_cuda} are not currently supported on Linux!"
             fi
 
-            # use dash instead of dot as version delimiter
+            # Extract, for example, 13.3.0 from 13.3.0-610.43.02-1.
+            cuda_full_version=${cuda_installer_package%%-*}
+
+            # Use a dash instead of a dot as the version delimiter.
             cuda_version_dash=${APCI_CUDA//./-}
+
+            cuda_pkg_deb_name="cuda-repo-${cuda_ubuntu_distro}-${cuda_version_dash}-local"
+            cuda_pkg_file_name="${cuda_pkg_deb_name}_${cuda_installer_package}_amd64.deb"
+            cuda_pkg_file_file_path="https://developer.download.nvidia.com/compute/cuda/${cuda_full_version}/local_installers/${cuda_pkg_file_name}"
 
             cuda_apt_package_list=(cuda-compiler-"${cuda_version_dash}"
                 cuda-cudart-"${cuda_version_dash}"
