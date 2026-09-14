@@ -90,8 +90,12 @@ if [[ "$APCI_CUDA" != 0 ]]; then
                 cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-13-3-local
                 cuda_pkg_file_name="${cuda_pkg_deb_name}"_13.3.0-610.43.02-1_amd64.deb
                 cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/13.3.0/local_installers/${cuda_pkg_file_name}
+            elif [ "${APCI_CUDA}" == "13.4" ]; then
+                cuda_pkg_deb_name=cuda-repo-"${cuda_ubuntu_distro}"-13-4-local
+                cuda_pkg_file_name="${cuda_pkg_deb_name}"_13.4.1-1_amd64.deb
+                cuda_pkg_file_file_path=https://developer.download.nvidia.com/compute/cuda/13.4.1/local_installers/${cuda_pkg_file_name}
             else
-                exit_error "CUDA versions other than 12.0-13.3 are not currently supported on linux!"
+                exit_error "CUDA versions other than 12.0-13.4 are not currently supported on linux!"
             fi
 
             # use dash instead of dot as version delimiter

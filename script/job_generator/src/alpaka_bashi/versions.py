@@ -38,7 +38,7 @@ from alpaka_bashi.globals import BUILD_TYPE, BUILD_TYPES, HWLOC
 ALPAKA_VERSIONS: dict[str, list[str | int | float]] = {
     GCC: [12, 13, 14, 15],
     CLANG: [17, 18, 19, 20, 21],
-    NVCC: [12.5, 12.6, 12.8, 12.9, 13.0, 13.1, 13.2, 13.3],
+    NVCC: [12.5, 12.6, 12.8, 12.9, 13.0, 13.1, 13.2, 13.3, 13.4],
     HIPCC: [6.3, 6.4, 7.0, 7.1, 7.2, 7.14],
     ICPX: ["2025.1", "2025.2", "2025.3", "2026.0"],
     UBUNTU: ["24.04"],
