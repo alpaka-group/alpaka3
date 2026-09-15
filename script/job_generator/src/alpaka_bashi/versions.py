@@ -31,6 +31,7 @@ from bashi.globals import (
 )
 from bashi.version.dependencies.base_version_support import ClangBase
 from bashi.version.dependencies.clang_cuda import CLANG_CUDA_MAX_CUDA_VERSION, ClangCudaSDKSupport
+from bashi.version.dependencies.nvcc import NvccHostSupport, NVCC_GCC_MAX_VERSION
 from bashi.version.dependencies.hipcc import HIPCC_CLANG_VERSION
 
 from alpaka_bashi.globals import BUILD_TYPE, BUILD_TYPES, HWLOC
@@ -161,6 +162,13 @@ def get_alpaka_version_relation() -> bashi.VersionRelation:
         ClangCudaSDKSupport("20", "12.8"),
         ClangCudaSDKSupport("22", "13.0"),
     ]
+
+    # Supported compilers:
+    # https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#host-compiler-support-policy
+    nvcc_gcc_max_version = NVCC_GCC_MAX_VERSION + [
+        NvccHostSupport("13.4", "16"),
+    ]
+
     hipcc_clang_version = HIPCC_CLANG_VERSION + [
         ClangBase("7.14", "23"),
     ]
@@ -168,4 +176,5 @@ def get_alpaka_version_relation() -> bashi.VersionRelation:
     return bashi.VersionRelation(
         clang_cuda_max_cuda_version=clang_cuda_max_cuda_version,
         hipcc_clang_version=hipcc_clang_version,
+        nvcc_gcc_max_version=nvcc_gcc_max_version,
     )
