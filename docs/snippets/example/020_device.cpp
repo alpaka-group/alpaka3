@@ -17,7 +17,7 @@ TEST_CASE("show host devices", "[docs]")
      * host+cpu, cuda+nvidiaGpu, hip+amdGpu, oneApi+intelGpu, oneApi+cpu,
      * oneApi+amdGpu, oneApi+nvidiaGpu
      */
-    auto computeDevSelector = alpaka::onHost::makeDeviceSelector(api::host, deviceKind::cpu);
+    auto computeDevSelector = api::host + deviceKind::cpu;
     // END-TUTORIAL-devSelect
 
     // BEGIN-TUTORIAL-devCount

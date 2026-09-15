@@ -116,7 +116,7 @@ int exampleDispatch(auto const cfg, uint32_t numElements, auto const& mean, auto
 
 
     // Use the single host device
-    auto hostSelector = onHost::makeDeviceSelector(api::host, deviceKind::cpu);
+    auto hostSelector = api::host + deviceKind::cpu;
     onHost::Device host = hostSelector.makeDevice(0);
     std::cout << "\n Host:   " << getName(host) << "\n";
 

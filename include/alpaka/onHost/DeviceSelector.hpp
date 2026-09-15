@@ -26,7 +26,7 @@ namespace alpaka::onHost
         {
         }
 
-        constexpr DeviceSelector(T_Api api, T_DeviceKind devType) : DeviceSelector(DeviceSpec{api, devType})
+        constexpr DeviceSelector(T_Api api, T_DeviceKind deviceKind) : DeviceSelector(DeviceSpec{api, deviceKind})
         {
         }
 
@@ -73,16 +73,17 @@ namespace alpaka::onHost
     DeviceSelector(T_DeviceSpec const& deviceSpec)
         -> DeviceSelector<ALPAKA_TYPEOF(getApi(deviceSpec)), ALPAKA_TYPEOF(getDeviceKind(deviceSpec))>;
 
-    /** create an object to get access to devices */
+    /** create DeviceSelector to get access to devices */
     template<alpaka::concepts::DeviceSpec T_DeviceSpec>
     inline auto makeDeviceSelector(T_DeviceSpec deviceSpec)
     {
         return DeviceSelector{deviceSpec};
     }
 
-    inline auto makeDeviceSelector(alpaka::concepts::Api auto api, alpaka::concepts::DeviceKind auto deviceTag)
+    /** create a DeviceSelector to get access to devices */
+    inline auto makeDeviceSelector(alpaka::concepts::Api auto api, alpaka::concepts::DeviceKind auto deviceKind)
     {
-        return DeviceSelector{api, deviceTag};
+        return DeviceSelector{api, deviceKind};
     }
 
     template<typename deferEvaluation = void>
@@ -94,3 +95,26 @@ namespace alpaka::onHost
             .makeDevice(0);
     }
 } // namespace alpaka::onHost
+
+namespace alpaka::api
+{
+    /** Shorthand operator to create a DeviceSelector.
+     *
+     * Using this operator is equal to call onHost::makeDeviceSelector(api, deviceKind);
+     */
+    inline auto operator+(alpaka::concepts::Api auto api, alpaka::concepts::DeviceKind auto deviceKind)
+        -> onHost::DeviceSelector<ALPAKA_TYPEOF(api), ALPAKA_TYPEOF(deviceKind)>
+    {
+        return onHost::DeviceSelector{api, deviceKind};
+    }
+
+    /** Shorthand operator to create a DeviceSelector.
+     *
+     * Using this operator is equal to call onHost::makeDeviceSelector(api, deviceKind);
+     */
+    inline auto operator+(alpaka::concepts::DeviceKind auto deviceKind, alpaka::concepts::Api auto api)
+        -> onHost::DeviceSelector<ALPAKA_TYPEOF(api), ALPAKA_TYPEOF(deviceKind)>
+    {
+        return onHost::DeviceSelector{api, deviceKind};
+    }
+} // namespace alpaka::api

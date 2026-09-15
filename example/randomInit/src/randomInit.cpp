@@ -311,7 +311,7 @@ int exampleUniformDist(auto const cfg, size_t numElements)
 
 
     // Use the single host device
-    auto hostSelector = alpaka::onHost::makeDeviceSelector(api::host, deviceKind::cpu);
+    auto hostSelector = api::host + deviceKind::cpu;
     onHost::Device host = hostSelector.makeDevice(0);
     std::cout << "\n Host:   " << getName(host) << "\n";
 

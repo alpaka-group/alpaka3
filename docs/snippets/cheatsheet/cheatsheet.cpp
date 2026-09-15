@@ -198,15 +198,15 @@ auto main() -> int
         unused(idxMd);
     }
 
-    concepts::Api auto const api = api::host;
-    concepts::DeviceKind auto const deviceKind = deviceKind::cpu;
     uint32_t index = 0;
 
     auto task = []() {};
     try
     {
         // BEGIN-CHEATSHEET-makeDevice
-        auto devSelector = onHost::makeDeviceSelector(api, deviceKind);
+        concepts::Api auto const api = api::host;
+        concepts::DeviceKind auto const deviceKind = deviceKind::cpu;
+        auto devSelector = api + deviceKind;
         if(devSelector.getDeviceCount() == 0)
             throw std::runtime_error("No device found!");
         auto device = devSelector.makeDevice(index);

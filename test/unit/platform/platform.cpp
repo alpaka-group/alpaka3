@@ -12,14 +12,20 @@ using namespace alpaka::onHost;
 
 TEST_CASE("host api creation", "")
 {
-    auto hostSelector = onHost::makeDeviceSelector(api::host, deviceKind::cpu);
-    CHECK(hostSelector.getDeviceCount() == 1u);
+    auto hostSelector0 = api::host + deviceKind::cpu;
+    auto hostSelector1 = deviceKind::cpu + api::host;
+    auto hostSelector2 = onHost::makeDeviceSelector(api::host, deviceKind::cpu);
+    CHECK(hostSelector0.getDeviceCount() == 1u);
+    CHECK(hostSelector1.getDeviceCount() == 1u);
+    CHECK(hostSelector2.getDeviceCount() == 1u);
 
-    Device device = hostSelector.makeDevice(0);
-    Device device2 = hostSelector.makeDevice(0);
-    INFO(device.getName() << " == " << device2.getName());
+    Device device0 = hostSelector0.makeDevice(0);
+    Device device1 = hostSelector1.makeDevice(0);
+    Device device2 = hostSelector2.makeDevice(0);
+    INFO(device0.getName() << " == " << device1.getName());
     // api::host has only one device therefore the device must be equal
-    CHECK(device.getNativeHandle() == device2.getNativeHandle());
+    CHECK(device0.getNativeHandle() == device1.getNativeHandle());
+    CHECK(device0.getNativeHandle() == device2.getNativeHandle());
 }
 
 TEST_CASE("api creation", "")

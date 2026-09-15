@@ -15,7 +15,7 @@ auto main() -> int
      * host+cpu, host+numaCpu, cuda+nvidiaGpu, hip+amdGpu, oneApi+intelGpu, oneApi+cpu,
      * oneApi+amdGpu, oneApi+nvidiaGpu
      */
-    auto devSelector = ap::onHost::makeDeviceSelector(ap::api::host, ap::deviceKind::cpu);
+    auto devSelector = ap::api::host + ap::deviceKind::cpu;
     ap::onHost::Device devAcc = devSelector.makeDevice(0);
     printf("Using alpaka device: %s\n", devAcc.getName().c_str());
 
