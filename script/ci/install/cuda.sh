@@ -30,14 +30,14 @@ if [[ "$APCI_CUDA" != 0 ]]; then
         else
             install_msg "CUDA ${APCI_CUDA} via apt"
 
-            os_release=$(</etc/os-release)
+            source /etc/os-release
 
-            if [[ "${os_release}" == *"24.04"* ]]; then
+            if [[ "${VERSION_ID}" == "24.04" ]]; then
                 cuda_ubuntu_distro=ubuntu2404
-            elif [[ "${os_release}" == *"26.04"* ]]; then
+            elif [[ "${VERSION_ID}" == "26.04" ]]; then
                 cuda_ubuntu_distro=ubuntu2604
             else
-                exit_error "Install CUDA: unknown os-release: ${os_release}"
+                exit_error "Install CUDA: unknown os-release: ${VERSION_ID}"
             fi
 
             # Map the requested CUDA version to the variable portion of the
@@ -67,6 +67,7 @@ if [[ "$APCI_CUDA" != 0 ]]; then
 
             cuda_installer_package=${cuda_installer_packages["${APCI_CUDA}"]-}
 
+            # handle case if CUDA version is not in cuda_installer_packages
             if [[ -z "${cuda_installer_package}" ]]; then
                 lowest_supported_cuda_key=$(
                     printf '%s\n' "${!cuda_installer_packages[@]}" |
@@ -82,6 +83,7 @@ if [[ "$APCI_CUDA" != 0 ]]; then
 
                 # Remove the package suffix so that the error message contains
                 # only versions such as 12.0.1 and 13.4.1.
+                # the regex remove everything after the first dash (-) include the dash itself
                 lowest_supported_cuda=${cuda_installer_packages["${lowest_supported_cuda_key}"]%%-*}
                 highest_supported_cuda=${cuda_installer_packages["${highest_supported_cuda_key}"]%%-*}
 
