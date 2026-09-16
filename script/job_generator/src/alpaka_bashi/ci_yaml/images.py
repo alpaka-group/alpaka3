@@ -13,11 +13,11 @@ from bashi.globals import (
     ALPAKA_ACC_GPU_HIP_ENABLE,
     DEVICE_COMPILER,
     GCC,
+    HIPCC,
     HOST_COMPILER,
     OFF_VER,
     UBUNTU,
 )
-
 from packaging.version import Version
 from typeguard import typechecked
 
@@ -33,7 +33,7 @@ image_warning_cache: list[str] = []
 def get_custom_image_name(combination: bashi.Combination) -> str:
     """Return a custom CI image for combinations not covered by the alpaka CI registry."""
 
-    if combination[ALPAKA_ACC_GPU_HIP_ENABLE].version == Version("10.0"):
+    if combination[DEVICE_COMPILER].name == HIPCC and combination[DEVICE_COMPILER].version == Version("10.0"):
         return "rocm/dev-ubuntu-24.04:10.0.0-full"
 
     return ""
