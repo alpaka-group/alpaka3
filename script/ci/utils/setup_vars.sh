@@ -90,6 +90,11 @@ if [[ -n ${GITLAB_CI+x} ]]; then
     export TERM=xterm-256color
     export _APCI_FORCE_COLOR_OUTPUT=1
 
+    # workaround github clone issues: https://github.com/orgs/community/discussions/206581
+    export GIT_CONFIG_COUNT=1
+    export GIT_CONFIG_KEY_0="http.https://github.com.version"
+    export GIT_CONFIG_VALUE_0="HTTP/1.1"
+
     if echo "${CI_RUNNER_EXECUTABLE_ARCH}" | grep -q -i "linux"; then
         export APCI_OS_NAME=Linux
     fi
