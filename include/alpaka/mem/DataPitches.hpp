@@ -18,12 +18,12 @@ namespace alpaka
     constexpr auto calculatePitchesFromExtents(T_Vec const& extent)
     {
         constexpr auto dim = T_Vec::dim();
-        using type = typename T_Vec::value_type;
+        using Type = typename T_Vec::value_type;
         auto pitchBytes = typename T_Vec::UniVec{};
         if constexpr(dim > 0)
-            pitchBytes.back() = static_cast<type>(sizeof(T_Elem));
+            pitchBytes.back() = static_cast<Type>(sizeof(T_Elem));
         if constexpr(dim > 1)
-            for(type i = dim - 1; i > 0; i--)
+            for(Type i = dim - 1; i > 0; i--)
                 pitchBytes[i - 1] = extent[i] * pitchBytes[i];
         return pitchBytes;
     }
@@ -34,13 +34,13 @@ namespace alpaka
     constexpr auto calculatePitches(T_Vec const& extent, typename T_Vec::value_type const& rowPitchBytes)
     {
         constexpr auto dim = T_Vec::dim();
-        using type = typename T_Vec::value_type;
+        using Type = typename T_Vec::value_type;
         auto pitchBytes = typename T_Vec::UniVec{};
-        pitchBytes.back() = static_cast<type>(sizeof(T_Elem));
+        pitchBytes.back() = static_cast<Type>(sizeof(T_Elem));
         if constexpr(dim > 1)
             pitchBytes[dim - 2u] = rowPitchBytes;
         if constexpr(dim > 2)
-            for(type i = dim - 2; i > 0; i--)
+            for(Type i = dim - 2; i > 0; i--)
                 pitchBytes[i - 1] = extent[i] * pitchBytes[i];
         return pitchBytes;
     }

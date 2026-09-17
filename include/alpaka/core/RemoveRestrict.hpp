@@ -10,7 +10,7 @@ namespace alpaka
 {
     //! Removes __restrict__ from a type
     template<typename T>
-    struct remove_restrict
+    struct RemoveRestrict
     {
         using type = T;
     };
@@ -23,7 +23,7 @@ namespace alpaka
     };
 #else
     template<typename T>
-    struct remove_restrict<T* __restrict__>
+    struct RemoveRestrict<T* __restrict__>
     {
         using type = T*;
     };
@@ -31,5 +31,5 @@ namespace alpaka
 
     //! Helper to remove __restrict__ from a type
     template<typename T>
-    using remove_restrict_t = typename remove_restrict<T>::type;
+    using RemoveRestrict_t = typename RemoveRestrict<T>::type;
 } // namespace alpaka

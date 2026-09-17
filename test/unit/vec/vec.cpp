@@ -42,24 +42,24 @@ struct CompileTimeKernel1D
 
         constexpr auto typeLambda = [](auto const typeDummy) constexpr
         {
-            using type = std::decay_t<decltype(typeDummy)>;
+            using Type = std::decay_t<decltype(typeDummy)>;
 
             constexpr auto inputData = std::make_tuple(
-                std::make_tuple(std::plus{}, Vec(type{3}), Vec(type{7}), Vec(type{10})),
-                std::make_tuple(std::plus{}, Vec(type{3}), type{7}, Vec(type{10})),
-                std::make_tuple(std::plus{}, type{3}, Vec(type{7}), Vec(type{10})),
+                std::make_tuple(std::plus{}, Vec(Type{3}), Vec(Type{7}), Vec(Type{10})),
+                std::make_tuple(std::plus{}, Vec(Type{3}), Type{7}, Vec(Type{10})),
+                std::make_tuple(std::plus{}, Type{3}, Vec(Type{7}), Vec(Type{10})),
 
-                std::make_tuple(std::minus{}, Vec(type{17}), Vec(type{7}), Vec(type{10})),
-                std::make_tuple(std::minus{}, Vec(type{17}), type{7}, Vec(type{10})),
-                std::make_tuple(std::minus{}, type{17}, Vec(type{7}), Vec(type{10})),
+                std::make_tuple(std::minus{}, Vec(Type{17}), Vec(Type{7}), Vec(Type{10})),
+                std::make_tuple(std::minus{}, Vec(Type{17}), Type{7}, Vec(Type{10})),
+                std::make_tuple(std::minus{}, Type{17}, Vec(Type{7}), Vec(Type{10})),
 
-                std::make_tuple(std::multiplies{}, Vec(type{3}), Vec(type{7}), Vec(type{21})),
-                std::make_tuple(std::multiplies{}, Vec(type{3}), type{7}, Vec(type{21})),
-                std::make_tuple(std::multiplies{}, type{3}, Vec(type{7}), Vec(type{21})),
+                std::make_tuple(std::multiplies{}, Vec(Type{3}), Vec(Type{7}), Vec(Type{21})),
+                std::make_tuple(std::multiplies{}, Vec(Type{3}), Type{7}, Vec(Type{21})),
+                std::make_tuple(std::multiplies{}, Type{3}, Vec(Type{7}), Vec(Type{21})),
 
-                std::make_tuple(std::divides{}, Vec(type{21}), Vec(type{7}), Vec(type{3})),
-                std::make_tuple(std::divides{}, Vec(type{21}), type{7}, Vec(type{3})),
-                std::make_tuple(std::divides{}, type{21}, Vec(type{7}), Vec(type{3})));
+                std::make_tuple(std::divides{}, Vec(Type{21}), Vec(Type{7}), Vec(Type{3})),
+                std::make_tuple(std::divides{}, Vec(Type{21}), Type{7}, Vec(Type{3})),
+                std::make_tuple(std::divides{}, Type{21}, Vec(Type{7}), Vec(Type{3})));
             constexpr bool x = std::apply(
                 [&](auto... args) constexpr
                 { return ((std::get<0>(args)(std::get<1>(args), std::get<2>(args)) == std::get<3>(args)) && ...); },
@@ -131,28 +131,28 @@ struct CompileTimeKernel2D
 
         constexpr auto typeLambda = [](auto const typeDummy) constexpr
         {
-            using type = std::decay_t<decltype(typeDummy)>;
+            using Type = std::decay_t<decltype(typeDummy)>;
 
             constexpr auto inputData = std::make_tuple(
-                std::make_tuple(std::plus{}, Vec(type{3}, type{7}), Vec(type{7}, type{9}), Vec(type{10}, type{16})),
-                std::make_tuple(std::plus{}, Vec(type{3}, type{9}), type{7}, Vec(type{10}, type{16})),
-                std::make_tuple(std::plus{}, type{3}, Vec(type{7}, type{9}), Vec(type{10}, type{12})),
+                std::make_tuple(std::plus{}, Vec(Type{3}, Type{7}), Vec(Type{7}, Type{9}), Vec(Type{10}, Type{16})),
+                std::make_tuple(std::plus{}, Vec(Type{3}, Type{9}), Type{7}, Vec(Type{10}, Type{16})),
+                std::make_tuple(std::plus{}, Type{3}, Vec(Type{7}, Type{9}), Vec(Type{10}, Type{12})),
 
-                std::make_tuple(std::minus{}, Vec(type{17}, type{7}), Vec(type{7}, type{3}), Vec(type{10}, type{4})),
-                std::make_tuple(std::minus{}, Vec(type{17}, type{7}), type{7}, Vec(type{10}, type{0})),
-                std::make_tuple(std::minus{}, type{17}, Vec(type{7}, type{3}), Vec(type{10}, type{14})),
+                std::make_tuple(std::minus{}, Vec(Type{17}, Type{7}), Vec(Type{7}, Type{3}), Vec(Type{10}, Type{4})),
+                std::make_tuple(std::minus{}, Vec(Type{17}, Type{7}), Type{7}, Vec(Type{10}, Type{0})),
+                std::make_tuple(std::minus{}, Type{17}, Vec(Type{7}, Type{3}), Vec(Type{10}, Type{14})),
 
                 std::make_tuple(
                     std::multiplies{},
-                    Vec(type{3}, type{7}),
-                    Vec(type{7}, type{11}),
-                    Vec(type{21}, type{77})),
-                std::make_tuple(std::multiplies{}, Vec(type{3}, type{7}), type{7}, Vec(type{21}, type{49})),
-                std::make_tuple(std::multiplies{}, type{3}, Vec(type{7}, type{3}), Vec(type{21}, type{9})),
+                    Vec(Type{3}, Type{7}),
+                    Vec(Type{7}, Type{11}),
+                    Vec(Type{21}, Type{77})),
+                std::make_tuple(std::multiplies{}, Vec(Type{3}, Type{7}), Type{7}, Vec(Type{21}, Type{49})),
+                std::make_tuple(std::multiplies{}, Type{3}, Vec(Type{7}, Type{3}), Vec(Type{21}, Type{9})),
 
-                std::make_tuple(std::divides{}, Vec(type{21}, type{3}), Vec(type{7}, type{3}), Vec(type{3}, type{1})),
-                std::make_tuple(std::divides{}, Vec(type{21}, type{14}), type{7}, Vec(type{3}, type{2})),
-                std::make_tuple(std::divides{}, type{21}, Vec(type{7}, type{3}), Vec(type{3}, type{7})));
+                std::make_tuple(std::divides{}, Vec(Type{21}, Type{3}), Vec(Type{7}, Type{3}), Vec(Type{3}, Type{1})),
+                std::make_tuple(std::divides{}, Vec(Type{21}, Type{14}), Type{7}, Vec(Type{3}, Type{2})),
+                std::make_tuple(std::divides{}, Type{21}, Vec(Type{7}, Type{3}), Vec(Type{3}, Type{7})));
             constexpr bool x = std::apply(
                 [&](auto... args) constexpr
                 { return ((std::get<0>(args)(std::get<1>(args), std::get<2>(args)) == std::get<3>(args)) && ...); },
@@ -251,24 +251,24 @@ struct CompileTimeKernelCompare2D
 
         constexpr auto typeLambda = [](auto const typeDummy) constexpr
         {
-            using type = std::decay_t<decltype(typeDummy)>;
+            using Type = std::decay_t<decltype(typeDummy)>;
 
             constexpr auto inputData = std::make_tuple(
-                std::make_tuple(std::greater{}, Vec(type{3}, type{7}), Vec(type{7}, type{9}), Vec(false, false)),
-                std::make_tuple(std::greater{}, Vec(type{3}, type{9}), type{7}, Vec(false, true)),
-                std::make_tuple(std::greater{}, type{3}, Vec(type{7}, type{9}), Vec(false, false)),
+                std::make_tuple(std::greater{}, Vec(Type{3}, Type{7}), Vec(Type{7}, Type{9}), Vec(false, false)),
+                std::make_tuple(std::greater{}, Vec(Type{3}, Type{9}), Type{7}, Vec(false, true)),
+                std::make_tuple(std::greater{}, Type{3}, Vec(Type{7}, Type{9}), Vec(false, false)),
 
-                std::make_tuple(std::greater_equal{}, Vec(type{3}, type{7}), Vec(type{3}, type{9}), Vec(true, false)),
-                std::make_tuple(std::greater_equal{}, Vec(type{3}, type{9}), type{3}, Vec(true, true)),
-                std::make_tuple(std::greater_equal{}, type{3}, Vec(type{7}, type{9}), Vec(false, false)),
+                std::make_tuple(std::greater_equal{}, Vec(Type{3}, Type{7}), Vec(Type{3}, Type{9}), Vec(true, false)),
+                std::make_tuple(std::greater_equal{}, Vec(Type{3}, Type{9}), Type{3}, Vec(true, true)),
+                std::make_tuple(std::greater_equal{}, Type{3}, Vec(Type{7}, Type{9}), Vec(false, false)),
 
-                std::make_tuple(std::less{}, Vec(type{3}, type{7}), Vec(type{7}, type{9}), Vec(true, true)),
-                std::make_tuple(std::less{}, Vec(type{3}, type{9}), type{7}, Vec(true, false)),
-                std::make_tuple(std::less{}, type{3}, Vec(type{7}, type{9}), Vec(true, true)),
+                std::make_tuple(std::less{}, Vec(Type{3}, Type{7}), Vec(Type{7}, Type{9}), Vec(true, true)),
+                std::make_tuple(std::less{}, Vec(Type{3}, Type{9}), Type{7}, Vec(true, false)),
+                std::make_tuple(std::less{}, Type{3}, Vec(Type{7}, Type{9}), Vec(true, true)),
 
-                std::make_tuple(std::less_equal{}, Vec(type{3}, type{7}), Vec(type{3}, type{9}), Vec(true, true)),
-                std::make_tuple(std::less_equal{}, Vec(type{3}, type{9}), type{3}, Vec(true, false)),
-                std::make_tuple(std::less_equal{}, type{3}, Vec(type{7}, type{9}), Vec(true, true))
+                std::make_tuple(std::less_equal{}, Vec(Type{3}, Type{7}), Vec(Type{3}, Type{9}), Vec(true, true)),
+                std::make_tuple(std::less_equal{}, Vec(Type{3}, Type{9}), Type{3}, Vec(true, false)),
+                std::make_tuple(std::less_equal{}, Type{3}, Vec(Type{7}, Type{9}), Vec(true, true))
 
             );
             constexpr bool x = std::apply(

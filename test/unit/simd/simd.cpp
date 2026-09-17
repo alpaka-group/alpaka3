@@ -31,24 +31,24 @@ TEST_CASE("simd 1D", "[simd vector]")
 
     auto typeLambda = [](auto const typeDummy)
     {
-        using type = std::decay_t<decltype(typeDummy)>;
+        using Type = std::decay_t<decltype(typeDummy)>;
 
         auto inputData = std::make_tuple(
-            std::make_tuple(std::plus{}, Simd(type{3}), Simd(type{7}), Simd(type{10})),
-            std::make_tuple(std::plus{}, Simd(type{3}), type{7}, Simd(type{10})),
-            std::make_tuple(std::plus{}, type{3}, Simd(type{7}), Simd(type{10})),
+            std::make_tuple(std::plus{}, Simd(Type{3}), Simd(Type{7}), Simd(Type{10})),
+            std::make_tuple(std::plus{}, Simd(Type{3}), Type{7}, Simd(Type{10})),
+            std::make_tuple(std::plus{}, Type{3}, Simd(Type{7}), Simd(Type{10})),
 
-            std::make_tuple(std::minus{}, Simd(type{17}), Simd(type{7}), Simd(type{10})),
-            std::make_tuple(std::minus{}, Simd(type{17}), type{7}, Simd(type{10})),
-            std::make_tuple(std::minus{}, type{17}, Simd(type{7}), Simd(type{10})),
+            std::make_tuple(std::minus{}, Simd(Type{17}), Simd(Type{7}), Simd(Type{10})),
+            std::make_tuple(std::minus{}, Simd(Type{17}), Type{7}, Simd(Type{10})),
+            std::make_tuple(std::minus{}, Type{17}, Simd(Type{7}), Simd(Type{10})),
 
-            std::make_tuple(std::multiplies{}, Simd(type{3}), Simd(type{7}), Simd(type{21})),
-            std::make_tuple(std::multiplies{}, Simd(type{3}), type{7}, Simd(type{21})),
-            std::make_tuple(std::multiplies{}, type{3}, Simd(type{7}), Simd(type{21})),
+            std::make_tuple(std::multiplies{}, Simd(Type{3}), Simd(Type{7}), Simd(Type{21})),
+            std::make_tuple(std::multiplies{}, Simd(Type{3}), Type{7}, Simd(Type{21})),
+            std::make_tuple(std::multiplies{}, Type{3}, Simd(Type{7}), Simd(Type{21})),
 
-            std::make_tuple(std::divides{}, Simd(type{21}), Simd(type{7}), Simd(type{3})),
-            std::make_tuple(std::divides{}, Simd(type{21}), type{7}, Simd(type{3})),
-            std::make_tuple(std::divides{}, type{21}, Simd(type{7}), Simd(type{3})));
+            std::make_tuple(std::divides{}, Simd(Type{21}), Simd(Type{7}), Simd(Type{3})),
+            std::make_tuple(std::divides{}, Simd(Type{21}), Type{7}, Simd(Type{3})),
+            std::make_tuple(std::divides{}, Type{21}, Simd(Type{7}), Simd(Type{3})));
         bool x = std::apply(
             [&](auto... args)
             {
@@ -96,28 +96,28 @@ TEST_CASE("simd 2D", "[simd vector]")
 
     auto typeLambda = [](auto const typeDummy)
     {
-        using type = std::decay_t<decltype(typeDummy)>;
+        using Type = std::decay_t<decltype(typeDummy)>;
 
         auto inputData = std::make_tuple(
-            std::make_tuple(std::plus{}, Simd(type{3}, type{7}), Simd(type{7}, type{9}), Simd(type{10}, type{16})),
-            std::make_tuple(std::plus{}, Simd(type{3}, type{9}), type{7}, Simd(type{10}, type{16})),
-            std::make_tuple(std::plus{}, type{3}, Simd(type{7}, type{9}), Simd(type{10}, type{12})),
+            std::make_tuple(std::plus{}, Simd(Type{3}, Type{7}), Simd(Type{7}, Type{9}), Simd(Type{10}, Type{16})),
+            std::make_tuple(std::plus{}, Simd(Type{3}, Type{9}), Type{7}, Simd(Type{10}, Type{16})),
+            std::make_tuple(std::plus{}, Type{3}, Simd(Type{7}, Type{9}), Simd(Type{10}, Type{12})),
 
-            std::make_tuple(std::minus{}, Simd(type{17}, type{7}), Simd(type{7}, type{3}), Simd(type{10}, type{4})),
-            std::make_tuple(std::minus{}, Simd(type{17}, type{7}), type{7}, Simd(type{10}, type{0})),
-            std::make_tuple(std::minus{}, type{17}, Simd(type{7}, type{3}), Simd(type{10}, type{14})),
+            std::make_tuple(std::minus{}, Simd(Type{17}, Type{7}), Simd(Type{7}, Type{3}), Simd(Type{10}, Type{4})),
+            std::make_tuple(std::minus{}, Simd(Type{17}, Type{7}), Type{7}, Simd(Type{10}, Type{0})),
+            std::make_tuple(std::minus{}, Type{17}, Simd(Type{7}, Type{3}), Simd(Type{10}, Type{14})),
 
             std::make_tuple(
                 std::multiplies{},
-                Simd(type{3}, type{7}),
-                Simd(type{7}, type{11}),
-                Simd(type{21}, type{77})),
-            std::make_tuple(std::multiplies{}, Simd(type{3}, type{7}), type{7}, Simd(type{21}, type{49})),
-            std::make_tuple(std::multiplies{}, type{3}, Simd(type{7}, type{3}), Simd(type{21}, type{9})),
+                Simd(Type{3}, Type{7}),
+                Simd(Type{7}, Type{11}),
+                Simd(Type{21}, Type{77})),
+            std::make_tuple(std::multiplies{}, Simd(Type{3}, Type{7}), Type{7}, Simd(Type{21}, Type{49})),
+            std::make_tuple(std::multiplies{}, Type{3}, Simd(Type{7}, Type{3}), Simd(Type{21}, Type{9})),
 
-            std::make_tuple(std::divides{}, Simd(type{21}, type{3}), Simd(type{7}, type{3}), Simd(type{3}, type{1})),
-            std::make_tuple(std::divides{}, Simd(type{21}, type{14}), type{7}, Simd(type{3}, type{2})),
-            std::make_tuple(std::divides{}, type{21}, Simd(type{7}, type{3}), Simd(type{3}, type{7})));
+            std::make_tuple(std::divides{}, Simd(Type{21}, Type{3}), Simd(Type{7}, Type{3}), Simd(Type{3}, Type{1})),
+            std::make_tuple(std::divides{}, Simd(Type{21}, Type{14}), Type{7}, Simd(Type{3}, Type{2})),
+            std::make_tuple(std::divides{}, Type{21}, Simd(Type{7}, Type{3}), Simd(Type{3}, Type{7})));
         bool x = std::apply(
             [&](auto... args)
             {
@@ -144,14 +144,14 @@ TEST_CASE("simd 3D", "[simd vector]")
 
     auto typeLambda = [](auto const typeDummy)
     {
-        using type = std::decay_t<decltype(typeDummy)>;
+        using Type = std::decay_t<decltype(typeDummy)>;
 
         auto inputData = std::make_tuple(
             std::make_tuple(
                 std::greater{},
-                Simd(type{3}, type{7}),
-                Simd(type{7}, type{9}),
-                makeSimdMask<type>(false, false))
+                Simd(Type{3}, Type{7}),
+                Simd(Type{7}, Type{9}),
+                makeSimdMask<Type>(false, false))
 
         );
         bool x = std::apply(
