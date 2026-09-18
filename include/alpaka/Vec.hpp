@@ -171,7 +171,7 @@ namespace alpaka
         };
 
         template<typename T>
-        constexpr bool TemplateSignatureStorage_v = TemplateSignatureStorage<T>::value;
+        constexpr bool templateSignatureStorage_v = TemplateSignatureStorage<T>::value;
     } // namespace detail
 
     template<typename T_Type, uint32_t T_dim, typename T_Storage = alpaka::ArrayStorage<T_Type, T_dim>>
@@ -270,7 +270,7 @@ namespace alpaka
          */
         static constexpr auto fill(concepts::Convertible<T_Type> auto const& value)
         {
-            if constexpr(requires { detail::TemplateSignatureStorage_v<T_Storage>; })
+            if constexpr(requires { detail::templateSignatureStorage_v<T_Storage>; })
             {
                 return UniVec([=](uint32_t const) { return static_cast<T_Type>(value); });
             }
@@ -499,17 +499,17 @@ namespace alpaka
          *
          * It is not allowed to call this method on a vector with the dimensionality of one.
          *
-         * @tparam dimToRemove index which shall be removed; range: [ 0; T_dim - 1 ]
+         * @tparam T_dimToRemove index which shall be removed; range: [ 0; T_dim - 1 ]
          * @return vector with `T_dim - 1` elements
          */
-        template<std::integral auto dimToRemove>
+        template<std::integral auto T_dimToRemove>
         constexpr Vec<value_type, T_dim - 1u> remove() const requires(T_dim >= 2u)
         {
             Vec<value_type, T_dim - 1u> result{};
             for(int i = 0u; i < static_cast<int>(T_dim - 1u); ++i)
             {
                 // skip component which must be deleted
-                int const sourceIdx = i >= static_cast<int>(dimToRemove) ? i + 1 : i;
+                int const sourceIdx = i >= static_cast<int>(T_dimToRemove) ? i + 1 : i;
                 result[i] = (*this)[sourceIdx];
             }
             return result;
@@ -594,23 +594,23 @@ namespace alpaka
          */
         std::string toString(std::string const separator = ",", std::string const enclosings = "{}") const
         {
-            std::string locale_enclosing_begin;
-            std::string locale_enclosing_end;
-            size_t enclosing_dim = enclosings.size();
+            std::string localeEnclosingBegin;
+            std::string localeEnclosingEnd;
+            size_t enclosingDim = enclosings.size();
 
-            if(enclosing_dim > 0)
+            if(enclosingDim > 0)
             {
                 /* % avoid out of memory access */
-                locale_enclosing_begin = enclosings[0 % enclosing_dim];
-                locale_enclosing_end = enclosings[1 % enclosing_dim];
+                localeEnclosingBegin = enclosings[0 % enclosingDim];
+                localeEnclosingEnd = enclosings[1 % enclosingDim];
             }
 
             std::stringstream stream;
-            stream << locale_enclosing_begin << (*this)[0];
+            stream << localeEnclosingBegin << (*this)[0];
 
             for(uint32_t i = 1u; i < T_dim; ++i)
                 stream << separator << (*this)[i];
-            stream << locale_enclosing_end;
+            stream << localeEnclosingEnd;
             return stream.str();
         }
 
@@ -651,7 +651,7 @@ namespace alpaka
         [[nodiscard]] constexpr auto reduce(auto&& reduceFunc) const
             -> decltype(reduceFunc(std::declval<value_type>(), std::declval<value_type>()))
         {
-            return reduce_range(ALPAKA_FORWARD(reduceFunc));
+            return reduceRange(ALPAKA_FORWARD(reduceFunc));
         }
 
     private:
@@ -663,7 +663,7 @@ namespace alpaka
          * @return the type of the result depends on the binary functor
          */
         template<uint32_t T_start = 0u, uint32_t T_end = dim()>
-        [[nodiscard]] constexpr auto reduce_range(auto&& reduceFunc) const
+        [[nodiscard]] constexpr auto reduceRange(auto&& reduceFunc) const
             -> decltype(reduceFunc(std::declval<value_type>(), std::declval<value_type>()))
         {
             // elements in the range
@@ -687,8 +687,8 @@ namespace alpaka
 
             // recursively reduce both halves and combine
             return reduceFunc(
-                reduce_range<T_start, mid>(ALPAKA_FORWARD(reduceFunc)),
-                reduce_range<mid, T_end>(ALPAKA_FORWARD(reduceFunc)));
+                reduceRange<T_start, mid>(ALPAKA_FORWARD(reduceFunc)),
+                reduceRange<mid, T_end>(ALPAKA_FORWARD(reduceFunc)));
 #endif
         }
     };
@@ -705,10 +705,10 @@ namespace alpaka
         return v[I];
     }
 
-    template<typename Type>
-    struct Vec<Type, 0>
+    template<typename T_Type>
+    struct Vec<T_Type, 0>
     {
-        using value_type = Type;
+        using value_type = T_Type;
         static constexpr uint32_t T_dim = 0;
 
         template<typename OtherType>
@@ -737,12 +737,12 @@ namespace alpaka
             return false;
         }
 
-        static constexpr Vec create(Type)
+        static constexpr Vec create(T_Type)
         {
             /* this method should never be actually called,
              * it exists only for Visual Studio to handle alpaka::Size_t< 0 >
              */
-            static_assert(sizeof(Type) != 0 && false);
+            static_assert(sizeof(T_Type) != 0 && false);
         }
     };
 

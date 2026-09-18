@@ -13,26 +13,26 @@ namespace alpaka::onAcc::internalCompute
 {
     struct MemOrderHost
     {
-        template<concepts::MemoryOrder TMemOrder>
-        static constexpr auto get(TMemOrder const)
+        template<concepts::MemoryOrder T_MemOrder>
+        static constexpr auto get(T_MemOrder const)
         {
-            if constexpr(std::same_as<TMemOrder, order::SeqCst>)
+            if constexpr(std::same_as<T_MemOrder, order::SeqCst>)
             {
                 return std::memory_order::seq_cst;
             }
-            if constexpr(std::same_as<TMemOrder, order::AcqRel>)
+            if constexpr(std::same_as<T_MemOrder, order::AcqRel>)
             {
                 return std::memory_order::acq_rel;
             }
-            if constexpr(std::same_as<TMemOrder, order::Release>)
+            if constexpr(std::same_as<T_MemOrder, order::Release>)
             {
                 return std::memory_order::release;
             }
-            if constexpr(std::same_as<TMemOrder, order::Acquire>)
+            if constexpr(std::same_as<T_MemOrder, order::Acquire>)
             {
                 return std::memory_order::acquire;
             }
-            if constexpr(std::same_as<TMemOrder, order::Relaxed>)
+            if constexpr(std::same_as<T_MemOrder, order::Relaxed>)
             {
                 return std::memory_order::relaxed;
             }

@@ -44,17 +44,17 @@ namespace alpaka::meta
 
     namespace detail
     {
-        template<typename TList>
+        template<typename T_List>
         struct IsSetImpl;
 
-        template<template<typename...> class TList, typename... Ts>
-        struct IsSetImpl<TList<Ts...>>
+        template<template<typename...> class T_List, typename... Ts>
+        struct IsSetImpl<T_List<Ts...>>
         {
             static constexpr bool value = IsParameterPackSet<Ts...>::value;
         };
     } // namespace detail
 
     //! Trait that tells if the template contains only unique (no equal) types.
-    template<typename TList>
-    using IsSet = detail::IsSetImpl<TList>;
+    template<typename T_List>
+    using IsSet = detail::IsSetImpl<T_List>;
 } // namespace alpaka::meta

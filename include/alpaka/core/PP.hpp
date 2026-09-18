@@ -13,8 +13,8 @@
  */
 #define ALPAKA_PP_REMOVE_BRACKETS_DO(X) ALPAKAESC(ISHALPAKA X)
 #define ISHALPAKA(...) ISHALPAKA __VA_ARGS__
-#define ALPAKAESC(...) ALPAKAESC_(__VA_ARGS__)
-#define ALPAKAESC_(...) VAN##__VA_ARGS__
+#define ALPAKAESC(...) ALPAKAESC2(__VA_ARGS__)
+#define ALPAKAESC2(...) VAN##__VA_ARGS__
 #define VANISHALPAKA
 /** @} */
 

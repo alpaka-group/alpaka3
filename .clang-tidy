@@ -1,0 +1,42 @@
+---
+Checks: '-*,clang-analyzer-*,readability-identifier-naming,readability-inconsistent-declaration-parameter-name'
+WarningsAsErrors: '*'
+HeaderFilterRegex: '(^|.*/)include/alpaka/.*'
+SystemHeaders: false
+InheritParentConfig: false
+CheckOptions:
+  readability-identifier-naming.NamespaceCase: camelBack
+  readability-identifier-naming.InlineNamespaceCase: camelBack
+  readability-identifier-naming.ClassCase: CamelCase
+  readability-identifier-naming.StructCase: CamelCase
+  readability-identifier-naming.UnionCase: CamelCase
+  readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.EnumConstantCase: camelBack
+  readability-identifier-naming.TypeAliasCase: CamelCase
+  # ignore class member types to be compatible to the standard library
+  # the last case allows CamelCase with _t suffix
+  readability-identifier-naming.TypeAliasIgnoredRegexp: '^(type|value_type|index_type|element_type|size_type|difference_type|rank_type|reference|pointer|const_reference|const_pointer|[A-Z][A-Za-z0-9]*_t)$'
+  readability-identifier-naming.TypedefCase: CamelCase
+  readability-identifier-naming.ConceptCase: CamelCase
+  readability-identifier-naming.FunctionCase: camelBack
+  readability-identifier-naming.MethodCase: camelBack
+  readability-identifier-naming.VariableCase: camelBack
+  # the suffix _v is allowed, for example: constexpr auto foo_v = Foo::value;
+  readability-identifier-naming.VariableIgnoredRegexp: ^[a-z][a-zA-Z0-9]*(_v)?$
+  readability-identifier-naming.ParameterCase: camelBack
+  readability-identifier-naming.MemberCase: camelBack
+  readability-identifier-naming.PrivateMemberCase: camelBack
+  readability-identifier-naming.PrivateMemberPrefix: m_
+  readability-identifier-naming.ProtectedMemberPrefix: m_
+  readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+  readability-identifier-naming.TypeTemplateParameterPrefix: T_
+  # single chars are allowed for template parameter names. Also single characters following the character s: I, Is, Us
+  readability-identifier-naming.TypeTemplateParameterIgnoredRegexp: ^[A-Z]s?$
+  readability-identifier-naming.TemplateTemplateParameterIgnoredRegexp: ^[A-Z]s?$
+  readability-identifier-naming.TypeTemplateParameterCase: CamelCase
+  readability-identifier-naming.ValueTemplateParameterPrefix: T_
+  readability-identifier-naming.ValueTemplateParameterCase: camelBack
+  readability-identifier-naming.ValueTemplateParameterIgnoredRegexp: ^[A-Z]s?$
+  readability-identifier-naming.TemplateTemplateParameterPrefix: T_
+  readability-identifier-naming.TemplateTemplateParameterCase: CamelCase
+...

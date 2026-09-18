@@ -56,11 +56,12 @@ option(alpaka_DOCS "Enable/Disable documentation code snippet testing" OFF)
 option(alpaka_BENCHMARKS "Enable/Disable benchmarks" OFF)
 option(alpaka_EXAMPLES "Enable/Disable examples" OFF)
 option(alpaka_HEADERCHECKS "Enable/Disable header check tests" OFF)
+option(alpaka_CLANG_TIDY "Enable/Disable clang-tidy tests" OFF)
 
 # only check for compiler support if this cmake is called with add_subdirectory or examples, benchmarks, ... should be compiled too
 if(
     NOT PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME
-    OR (alpaka_TESTS OR alpaka_DOCS OR alpaka_BENCHMARKS OR alpaka_EXAMPLES OR alpaka_HEADERCHECKS)
+    OR (alpaka_TESTS OR alpaka_DOCS OR alpaka_BENCHMARKS OR alpaka_EXAMPLES OR alpaka_HEADERCHECKS OR alpaka_CLANG_TIDY)
 )
     include(${_alpaka_CMAKE_DIR}/alpakaCommon.cmake)
 endif()
@@ -90,6 +91,11 @@ endif()
 if(alpaka_HEADERCHECKS)
     enable_testing()
     add_subdirectory("${_alpaka_ROOT_DIR}/headerCheck")
+endif()
+
+if(alpaka_CLANG_TIDY)
+    enable_testing()
+    add_subdirectory("${_alpaka_ROOT_DIR}/clangTidy")
 endif()
 
 # Installation and config

@@ -76,6 +76,7 @@ def set_generic_variables(variables: dict[str, Any], combination: bashi.Combinat
     variables["APCI_ALPAKA_ROOT"] = "$CI_PROJECT_DIR"
     variables["APCI_ONEAPI_TARGET"] = "none"
     variables["APCI_SIMD"] = "DEFAULT"
+    variables["APCI_CLANG_TIDY"] = "OFF"
 
     dependencies = ["APCI_OMP", "APCI_TBB"]
     gpu_dependencies = ["APCI_CUDA", "APCI_HIP", "APCI_ONEAPI"]

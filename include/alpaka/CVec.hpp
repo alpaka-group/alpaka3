@@ -96,7 +96,7 @@ namespace alpaka
         template<typename T, template<typename, T...> typename T_Seq, T... T_values>
         struct Contains<T_Seq<T, T_values...>>
         {
-            using argument_type = T;
+            using ArgumentType = T;
 
             constexpr bool operator()(T value) const
             {
@@ -112,7 +112,7 @@ namespace alpaka
         template<typename T, T... T_values>
         struct Contains<std::integer_sequence<T, T_values...>>
         {
-            using argument_type = T;
+            using ArgumentType = T;
 
             constexpr bool operator()(T value) const
             {

@@ -51,20 +51,20 @@ namespace alpaka
     //! \brief The class used to bind kernel function object and arguments together. Once an instance of this class
     //! is created, arguments are not needed to be separately given to functions who need kernel function and
     //! arguments.
-    //! \tparam TKernelFn The kernel function object type.
-    //! \tparam TArgs Kernel function object
+    //! \tparam T_KernelFn The kernel function object type.
+    //! \tparam T_Args Kernel function object
     //! invocation argument types as a parameter pack.
-    template<typename TKernelFn, typename... TArgs>
+    template<typename T_KernelFn, typename... T_Args>
     class KernelBundle
     {
     public:
         //! The function object type
-        using KernelFn = std::decay_t<TKernelFn>;
+        using KernelFn = std::decay_t<T_KernelFn>;
         //! Tuple type to encapsulate kernel function argument types and argument values
         using ArgTuple = std::conditional_t<
-            sizeof...(TArgs) == 0,
+            sizeof...(T_Args) == 0,
             std::tuple<>,
-            alpaka::Tuple<remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>...>>;
+            alpaka::Tuple<RemoveRestrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<T_Args>()))>...>>;
 
         // Constructor
         constexpr KernelBundle(KernelFn const& kernelFn) : m_kernelFn{kernelFn}, m_args(std::tuple<>{})
@@ -84,7 +84,7 @@ namespace alpaka
                 "Kernel functor must be trivially copyable or specialize trait::IsKernelTriviallyCopyable<>!");
             static_assert(
                 (alpaka::concepts::KernelArg<
-                     remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>>
+                     RemoveRestrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<T_Args>()))>>
                  && ...),
                 "All kernel arguments must be trivially copyable or specialize "
                 "trait::IsKernelArgumentTriviallyCopyable<>!");
@@ -105,28 +105,28 @@ namespace alpaka
 
         /** @} */
 
-        template<typename TAcc>
+        template<typename T_Acc>
         requires(
             alpaka::concepts::KernelFn<KernelFn>
             && std::is_invocable_v<
                 std::remove_const_t<KernelFn>,
-                TAcc,
-                remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>...>)
-        constexpr auto operator()(TAcc const& acc) const
+                T_Acc,
+                RemoveRestrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<T_Args>()))>...>)
+        constexpr auto operator()(T_Acc const& acc) const
         {
             static_assert(
                 std::is_invocable_v<
                     std::add_const_t<KernelFn>,
-                    TAcc,
-                    remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>...>,
+                    T_Acc,
+                    RemoveRestrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<T_Args>()))>...>,
                 "the operator() function of a kernel must be marked const");
             static_assert(
                 std::same_as<
                     void,
                     std::invoke_result_t<
                         std::add_const_t<KernelFn>,
-                        TAcc,
-                        remove_restrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<TArgs>()))>...>>,
+                        T_Acc,
+                        RemoveRestrict_t<ALPAKA_TYPEOF(onHost::makeAccessibleOnAcc(std::declval<T_Args>()))>...>>,
                 "the return type of the operator() function of a kernel must be void");
             alpaka::apply(
                 /* It is required to take the arguments as const reference.
@@ -155,15 +155,15 @@ namespace alpaka
     };
 
     //! \brief User defined deduction guide with trailing return type. For CTAD during the construction.
-    //! \tparam TKernelFn The kernel function object type.
-    //! \tparam TArgs Kernel function object argument types as a parameter pack.
+    //! \tparam T_KernelFn The kernel function object type.
+    //! \tparam T_Args Kernel function object argument types as a parameter pack.
     //! \param kernelFn The kernel object
     //! \param args The kernel invocation arguments.
 
     //! \return Kernel function bundle. An instance of KernelBundle which consists the kernel function object and its
     //! arguments.
-    template<typename TKernelFn, typename... TArgs>
-    ALPAKA_FN_DG KernelBundle(TKernelFn const&, TArgs&&...) -> KernelBundle<TKernelFn, TArgs...>;
+    template<typename T_KernelFn, typename... T_Args>
+    ALPAKA_FN_DG KernelBundle(T_KernelFn const&, T_Args&&...) -> KernelBundle<T_KernelFn, T_Args...>;
 
     namespace trait
     {
