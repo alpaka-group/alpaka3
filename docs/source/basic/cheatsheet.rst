@@ -7,7 +7,7 @@ Cheatsheet
 
 .. only:: html
 
-   Download pdf version :download:`here <../../cheatsheet/cheatsheet.pdf>`
+   Download pdf version `here <../cheatsheet.pdf>`_
 
 General
 -------

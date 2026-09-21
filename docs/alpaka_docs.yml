@@ -28,7 +28,6 @@ dependencies:
   # ---------------------------------------------------------
   - sphinx
   - sphinx_rtd_theme
-  - breathe
   - sphinxcontrib-programoutput
   - sphinxcontrib-doxylink
 

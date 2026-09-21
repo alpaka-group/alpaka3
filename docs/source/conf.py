@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "sphi
 
 # allows to import module `build_helper`
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+from sphinx_helper.cheatsheet import generate_cheatsheet
 from sphinx_helper.single_header import generate_single_header
 from sphinx_helper.utils import on_rtd
 from sphinx_helper.doxygen import generate_doxygen
@@ -17,6 +18,7 @@ from sphinx_helper.math_function_families import generate_math_function_families
 
 def setup(app):
     # Doxygen XML must exist before Sphinx/Breathe reads the documents.
+    app.connect("builder-inited", generate_cheatsheet)
     app.connect("builder-inited", generate_doxygen)
     app.connect("builder-inited", generate_math_function_families)
     app.connect("build-finished", generate_single_header)
@@ -47,7 +49,6 @@ show_authors = True
 extensions = [
     "sphinx.ext.mathjax",
     #    'sphinx.ext.napoleon',
-    "breathe",
     "filtered_literalinclude",
     "sphinx_rtd_theme",
     "sphinxcontrib.programoutput",
@@ -88,6 +89,9 @@ html_theme = "sphinx_rtd_theme"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
+
+# The cheatsheet PDF is generated directly into the HTML output directory by
+# sphinx_helper/cheatsheet.py (basic/cheatsheet.html links to ../cheatsheet.pdf).
 
 # modifies the HTML Sphinx Doc layout
 html_css_files = ["custom.css"]
@@ -166,30 +170,10 @@ epub_exclude_files = ["search.html"]
 
 # -- Extension configuration -------------------------------------------------
 
-breathe_projects = {"alpaka": "../doxygen/xml"}
-breathe_default_project = "alpaka"
-
-breathe_domain_by_extension = {"cpp": "cpp", "h": "cpp", "hpp": "cpp", "tpp": "cpp"}
-
-# define alpaka attributes
-# breath has problems to parse C++ attributes
-cpp_id_attributes = [
-    "ALPAKA_FN_ACC",
-    "ALPAKA_FN_HOST",
-    "ALPAKA_FN_HOST_ACC",
-    "ALPAKA_FN_INLINE",
-    "ALPAKA_NO_HOST_ACC_WARNING",
-    "ALPAKA_FORWARD",
-    "ALPAKA_TYPEOF",
-]
-
 # -- processing --
 
 if on_rtd():
     pass
-    # subprocess.call(
-    #    "cd ../cheatsheet; rst2pdf -s cheatsheet.style ../source/basic/cheatsheet.rst -o cheatsheet.pdf", shell=True
-    # )
 else:
     from sphinx.util import logging
 
@@ -199,4 +183,7 @@ else:
     )
     logger.info(
         "doxygen build can be force build or skipped with the environment variable 'ALPAKA_DOC_DOXYGEN=0|OFF|1|ON'"
+    )
+    logger.info(
+        "cheatsheet.pdf build can be force build or skipped with the environment variable 'ALPAKA_DOC_CHEATSHEET=0|OFF|1|ON'"
     )

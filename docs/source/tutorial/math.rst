@@ -32,7 +32,7 @@ Reciprocal square root is another common operation in physics, graphics, and geo
 Available Function Families
 ---------------------------
 
-.. include:: ../_generated/math_function_families.rst
+.. include:: ../../build/math_function_families.rst
 
 Complete Source File
 --------------------

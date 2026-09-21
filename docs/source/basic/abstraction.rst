@@ -243,7 +243,6 @@ Summary
 
 This abstraction is called *Redundant Hierarchical Parallelism*.
 This term is inspired by the paper *The Future of Accelerator Programming: Abstraction, Performance or Can We Have Both?*
-`PDF <http://olab.is.s.u-tokyo.ac.jp/~kamil.rocki/rocki_burtscher_sac14.pdf>`_
 `DOI <https://dx.doi.org/10.1109/ICPADS.2013.76>`_
 It investigates a similar *concept of copious parallel programming* reaching 80%-90% of the native performance while comparing CPU and GPU centric versions of an *OpenCL* n-body simulation with a general version utilizing parallelism on multiple hierarchy levels.
 

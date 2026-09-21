@@ -32,9 +32,9 @@ Individual chapters are based on the information of the chapters before.
 
 .. note::
 
-   Are you looking for our latest Doxygen docs for the API?
+   Are you looking for our latest user Doxygen docs for the API?
 
-   - See https://alpaka-group.github.io/alpaka3/
+   - See https://alpaka3.readthedocs.io/en/latest/doxygen/namespaces.html
 
 .. toctree::
    :caption: Basic
