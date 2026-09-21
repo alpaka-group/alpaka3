@@ -173,11 +173,12 @@ auto main() -> int
 
     {
         // BEGIN-CHEATSHEET-vectorAccess
-        auto extentX = extent3D[0];
+        auto extentZ = extent3D[0];
+        auto extentX = extent3D[2];
         auto [z, y, x] = extent3D;
         // END-CHEATSHEET-vectorAccess
 
-        unused(extentX, x, y, z);
+        unused(extentZ, extentX, x, y, z);
     }
 
     {
