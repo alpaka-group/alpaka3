@@ -56,7 +56,7 @@ The function call ``onAcc::makeIdxMap(acc, onAcc::worker::threadsInGrid, IdxRang
   Resulting in a contiguous, chunked access pattern on the CPU and a strided access pattern on GPU-like devices.
 
 ``onAcc::makeIdxMap`` offers many more features needed for performance optimization.
-Once you've finished the tutorial, check out the :doc:`chunked` section to discover the full potential of this function.
+Once you've finished the tutorial, check out the :doc:`kernelParallelism` section to discover the full potential of this function.
 
 .. [#f2] The total number of threads is calculated by multiplying the number of threads by the number of blocks in a :ref:`thread_spec`.
 .. [#f3] It is also possible to configure a :ref:`FrameSpec <frame>` with the values `{1,1}`, which means that all elements in ``onAcc::makeIdxMap`` are processed sequentially.
@@ -90,7 +90,7 @@ This function assumes that you are using the ``onAcc::makeIdxMap`` function in y
   :end-before: END-TUTORIAL-kernelLaunch
   :dedent:
 
-In the advanced area, section :doc:`chunked`, you'll learn how ``onAcc::makeIdxMap`` works in detail.
+In the advanced area, section :doc:`kernelParallelism`, you'll learn how ``onAcc::makeIdxMap`` works in detail.
 Once you understand this, you can manually set a :ref:`FrameSpec <frame>` that might work better than the :ref:`FrameSpec <frame>` returned by ``onHost::getFrameSpec``.
 
 Typical Beginner Mistakes

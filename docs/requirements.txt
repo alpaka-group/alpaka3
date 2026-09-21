@@ -3,7 +3,6 @@ markupsafe
 myst-parser
 pygments
 sphinx_rtd_theme
-breathe
 sphinx
 sphinxcontrib.programoutput
 sphinxcontrib-napoleon
@@ -13,3 +12,5 @@ typeguard
 matplotlib
 scipy
 numpy
+# generate cheatsheet.pdf
+rst2pdf

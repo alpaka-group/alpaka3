@@ -43,9 +43,9 @@ def _group_functions(function_data: dict[str, tuple[str, int]]) -> dict[str, lis
 def generate_math_function_families(app) -> None:
     """Create the generated RST snippet referenced by the math tutorial."""
 
-    output_path = pathlib.Path(app.srcdir, "_generated", "math_function_families.rst")
+    output_path = pathlib.Path(app.builder.outdir).parent / "math_function_families.rst"
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    xml_file_path = pathlib.Path(app.confdir).parent / pathlib.Path("doxygen", "xml", "namespacealpaka_1_1math.xml")
+    xml_file_path = pathlib.Path(app.builder.outdir) / "doxygen" / "xml" / "namespacealpaka_1_1math.xml"
 
     function_data = _load_function_data(xml_file_path)
     grouped_functions = _group_functions(function_data)
