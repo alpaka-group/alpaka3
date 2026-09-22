@@ -160,6 +160,7 @@ def get_alpaka_version_relation() -> bashi.VersionRelation:
         # Clang 20 + CUDA 12.8 is not official supported but alpaka 3.x is working with it
         ClangCudaSDKSupport("20", "12.8"),
         ClangCudaSDKSupport("22", "13.0"),
+        ClangCudaSDKSupport("23", "13.2"),
     ]
 
     # Supported compilers:
