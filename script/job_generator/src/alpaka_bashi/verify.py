@@ -12,6 +12,8 @@ from bashi.globals import (
     ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLE,
     ALPAKA_ACC_GPU_CUDA_ENABLE,
     CLANG,
+    CLANG_CUDA,
+    CMAKE,
     DEVICE_COMPILER,
     GCC,
     HOST_COMPILER,
@@ -86,6 +88,24 @@ def remove_unsupported_cuda_sdk_for_clang_host_compiler(
     )
 
 
+def remove_unsupported_cmake_versions_for_clang_host_compiler(
+    parameter_value_pairs: list[bashi.ParameterValuePair],
+    removed_parameter_value_pairs: list[bashi.ParameterValuePair],
+):
+    """CMake 3.30 and older does not support Clang-CUDA 23."""
+    for compiler_type in (HOST_COMPILER, DEVICE_COMPILER):
+        bashi.remove_parameter_value_pairs_ranges(
+            parameter_value_pairs,
+            removed_parameter_value_pairs,
+            parameter1=CMAKE,
+            value_max_version1=3.31,
+            value_max_version1_inclusive=False,
+            parameter2=compiler_type,
+            value_name2=CLANG_CUDA,
+            value_min_version2=23,
+        )
+
+
 def verify(
     combination_list: bashi.CombinationList,
     param_value_matrix: bashi.ParameterValueMatrix,
@@ -124,6 +144,7 @@ def verify(
     remove_disabled_serial_backend_for_gcc_and_clang(expected_param_val_tuple, unexpected_param_val_tuple)
     remove_disabled_serial_and_openmp_backend(expected_param_val_tuple, unexpected_param_val_tuple)
     remove_unsupported_cuda_sdk_for_clang_host_compiler(expected_param_val_tuple, unexpected_param_val_tuple)
+    remove_unsupported_cmake_versions_for_clang_host_compiler(expected_param_val_tuple, unexpected_param_val_tuple)
 
     expected_param_val_okay = bashi.check_parameter_value_pair_in_combination_list(
         combination_list, expected_param_val_tuple

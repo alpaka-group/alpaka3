@@ -6,7 +6,7 @@ Custom filter for alpaka specific filter rules.
 
 import bashi
 import packaging.version
-from bashi.globals import ALPAKA_ACC_GPU_CUDA_ENABLE, CLANG, DEVICE_COMPILER, HOST_COMPILER, NVCC
+from bashi.globals import ALPAKA_ACC_GPU_CUDA_ENABLE, CLANG, CLANG_CUDA, CMAKE, DEVICE_COMPILER, HOST_COMPILER, NVCC
 from bashi.results import OFF_VER
 
 from alpaka_bashi.versions import get_allowed_backend_combinations, get_used_backends
@@ -76,6 +76,48 @@ def check_clang_host_compiler_supported_nvcc_a3(row: bashi.BashiRow, alpaka_filt
     return True
 
 
+def _pretty_name_compiler(constant: str) -> str:
+    """Returns the string representation of the constants HOST_COMPILER and DEVICE_COMPILER in a
+    human-readable version.
+
+    Args:
+        constant (str): Ether HOST_COMPILER or DEVICE_COMPILER
+
+    Returns:
+        str: human-readable string representation of HOST_COMPILER or DEVICE_COMPILER
+    """
+    if constant == HOST_COMPILER:
+        return "host compiler"
+    if constant == DEVICE_COMPILER:
+        return "device compiler"
+    return "unknown compiler type"
+
+
+def check_clang_cuda_cmake_support_a4(row: bashi.BashiRow, alpaka_filter: "AlpakaFilter") -> bool:
+    """
+    Clang-CUDA requires at least CMake 3.31
+
+    Args:
+        row (bashi.BashiRow): parameter-value-tuple to verify.
+        alpaka_filter (AlpakaFilter): alpaka filter
+
+    Returns:
+        bool: True if passed.
+    """
+    for compiler_type in (HOST_COMPILER, DEVICE_COMPILER):
+        if (
+            row[compiler_type].name == CLANG_CUDA
+            and row[compiler_type].version >= packaging.version.parse("23")
+            and row[CMAKE].version < packaging.version.parse("3.31")
+        ):
+            alpaka_filter.reason(
+                f"CMAKE {row[CMAKE].version} does not support "
+                f"{_pretty_name_compiler(compiler_type)} Clang-Cuda {row[compiler_type].version}",
+            )
+            return False
+    return True
+
+
 # pylint: disable=too-few-public-methods
 class AlpakaFilter(bashi.FilterBase):
     """Alpaka specific filter rules."""
@@ -97,4 +139,5 @@ class AlpakaFilter(bashi.FilterBase):
             check_only_valid_backend_combinations_a1(row, self)
             and check_clang_host_compiler_supported_cuda_sdk_a2(row, self)
             and check_clang_host_compiler_supported_nvcc_a3(row, self)
+            and check_clang_cuda_cmake_support_a4(row, self)
         )
