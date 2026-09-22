@@ -52,7 +52,11 @@ def execution_type_device_compiler_gcc_and_clang(
 
 @typechecked
 def execution_type_hipcc(combination_list: bashi.CombinationList) -> bashi.CombinationList:
-    """Annotate for each hipcc version one job as runtime. The rest is compile time."""
+    """Annotate for each hipcc version >= 7.0 one job as runtime. The rest is compile time."""
+
+    # The minimum version, which should be runtime tested, and all older versions will be compiled only.
+    hip_minimum_runtime_test_version = packaging.version.parse("7.0")
+
     combination_list_copy = deepcopy(combination_list)
 
     hipcc_versions = [
@@ -64,7 +68,10 @@ def execution_type_hipcc(combination_list: bashi.CombinationList) -> bashi.Combi
                 raise RecursionError(
                     f"JOB_EXECUTION_TYPE is already defined in the combinations: {bashi.get_str_row_nice(comb)}"
                 )
-            if comb[DEVICE_COMPILER].version in hipcc_versions:
+            if (
+                comb[DEVICE_COMPILER].version in hipcc_versions
+                and comb[DEVICE_COMPILER].version >= hip_minimum_runtime_test_version
+            ):
                 comb[JOB_EXECUTION_TYPE] = bashi.ParameterValue(JOB_EXECUTION_TYPE, JOB_EXECUTION_RUNTIME_VER)
                 hipcc_versions.remove(comb[DEVICE_COMPILER].version)
             else:
