@@ -119,9 +119,9 @@ namespace alpaka::fn
          * defined for the given device specification or function symbol and if it can be called with the given
          * arguments.
          */
-        template<typename T_FnSpec, typename... Args>
+        template<typename T_FnSpec, typename... T_Args>
         concept DispatchedFnInvocable
-            = requires(T_FnSpec fnSpec, Args&&... args) { alpakaFnDispatch(fnSpec, std::forward<Args>(args)...); };
+            = requires(T_FnSpec fnSpec, T_Args&&... args) { alpakaFnDispatch(fnSpec, std::forward<T_Args>(args)...); };
 
         /** @brief Concept to check if a function symbol is registered.
          *
@@ -226,14 +226,14 @@ namespace alpaka::fn
         }
 
         /** Call function overload if defined for the given device specification. */
-        template<alpaka::concepts::DeviceSpec T_Any, typename... Args>
-        requires concepts::DispatchedFnInvocable<ALPAKA_TYPEOF(spec(std::declval<T_Any>())), T_Any, Args...>
-        constexpr decltype(auto) operator()(T_Any&& any, Args&&... args) const
+        template<alpaka::concepts::DeviceSpec T_Any, typename... T_Args>
+        requires concepts::DispatchedFnInvocable<ALPAKA_TYPEOF(spec(std::declval<T_Any>())), T_Any, T_Args...>
+        constexpr decltype(auto) operator()(T_Any&& any, T_Args&&... args) const
         {
             static_assert(
                 T_registrationPolicy != Registration::enforced || concepts::FnRegistered<ALPAKA_TYPEOF(spec(any))>,
                 "Function dispatch for the given function symbol, API and device kind is not registered.");
-            return alpakaFnDispatch(spec(any), std::forward<T_Any>(any), std::forward<Args>(args)...);
+            return alpakaFnDispatch(spec(any), std::forward<T_Any>(any), std::forward<T_Args>(args)...);
         }
 
         /** Fallback operator() to alpaka implementation if the function is not dispatchable for the given device
@@ -242,11 +242,11 @@ namespace alpaka::fn
          * This operator() is only enabled if T_fallbackPolicy is set to toAlpaka and function is
          * dispatchable for the given device specification.
          */
-        template<alpaka::concepts::DeviceSpec T_Any, typename... Args>
+        template<alpaka::concepts::DeviceSpec T_Any, typename... T_Args>
         requires(
-            !concepts::DispatchedFnInvocable<ALPAKA_TYPEOF(spec(std::declval<T_Any>())), T_Any, Args...>
+            !concepts::DispatchedFnInvocable<ALPAKA_TYPEOF(spec(std::declval<T_Any>())), T_Any, T_Args...>
             && (T_fallbackPolicy == Fallback::toAlpaka))
-        constexpr decltype(auto) operator()(T_Any&& any, Args&&... args) const
+        constexpr decltype(auto) operator()(T_Any&& any, T_Args&&... args) const
         {
             static_assert(
                 T_registrationPolicy != Registration::enforced
@@ -255,7 +255,7 @@ namespace alpaka::fn
             return alpakaFnDispatch(
                 spec(api::Alpaka{}, getDeviceKind(any)),
                 std::forward<T_Any>(any),
-                std::forward<Args>(args)...);
+                std::forward<T_Args>(args)...);
         }
 
         /** Fallback operator() to generic function if not dispatchable for the given device
@@ -264,18 +264,18 @@ namespace alpaka::fn
          * This operator() is only enabled if T_fallbackPolicy is set toGeneric and function is
          * dispatchable without a device specification.
          */
-        template<alpaka::concepts::DeviceSpec T_Any, typename... Args>
+        template<alpaka::concepts::DeviceSpec T_Any, typename... T_Args>
         requires(
             // no dispatch with device specification
-            !concepts::DispatchedFnInvocable<ALPAKA_TYPEOF(spec(std::declval<T_Any>())), T_Any, Args...> &&
+            !concepts::DispatchedFnInvocable<ALPAKA_TYPEOF(spec(std::declval<T_Any>())), T_Any, T_Args...> &&
             // generic function dispatchable
-            concepts::DispatchedFnInvocable<T_FnClass, T_Any, Args...> && (T_fallbackPolicy == Fallback::toGeneric))
-        constexpr decltype(auto) operator()(T_Any&& any, Args&&... args) const
+            concepts::DispatchedFnInvocable<T_FnClass, T_Any, T_Args...> && (T_fallbackPolicy == Fallback::toGeneric))
+        constexpr decltype(auto) operator()(T_Any&& any, T_Args&&... args) const
         {
             static_assert(
                 T_registrationPolicy != Registration::enforced || concepts::FnRegistered<T_FnClass>,
                 "Function dispatch for the given function symbol, is not registered.");
-            return alpakaFnDispatch(T_FnClass{}, std::forward<T_Any>(any), std::forward<Args>(args)...);
+            return alpakaFnDispatch(T_FnClass{}, std::forward<T_Any>(any), std::forward<T_Args>(args)...);
         }
 
         /** Call the function overload for the given device specification.

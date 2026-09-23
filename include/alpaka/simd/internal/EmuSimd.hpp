@@ -128,7 +128,7 @@ namespace alpaka
                 }
             }
 
-            template<alpaka::concepts::SimdMask Mask, alpaka::concepts::Simd T_Simd>
+            template<alpaka::concepts::SimdMask T_Mask, alpaka::concepts::Simd T_Simd>
             friend struct SimdWhereExpr;
 
             /** element wise conditional value update where t is a scalar */

@@ -18,16 +18,16 @@ namespace alpaka::onAcc
 {
     //! Executes the given operation atomically.
     //!
-    //! \tparam TOp The operation type.
+    //! \tparam T_Op The operation type.
     //! \tparam T The value type.
     //! \param addr The value to change atomically.
     //! \param value The value used in the atomic operation.
-    template<typename TOp, typename T, typename T_Scope = scope::Device>
+    template<typename T_Op, typename T, typename T_Scope = scope::Device>
     constexpr auto atomicOp(auto const& acc, T* const addr, T const& value, T_Scope const scope = T_Scope()) -> T
     {
         static_assert(!std::is_same_v<T_Scope, scope::System>, "System scope is currently not supported.");
         auto atomicImpl = trait::getAtomicImpl(acc[object::exec], scope);
-        return internalCompute::Atomic::Op<TOp, ALPAKA_TYPEOF(atomicImpl), T, T_Scope>::atomicOp(
+        return internalCompute::Atomic::Op<T_Op, ALPAKA_TYPEOF(atomicImpl), T, T_Scope>::atomicOp(
             atomicImpl,
             addr,
             value);
@@ -35,12 +35,12 @@ namespace alpaka::onAcc
 
     //! Executes the given operation atomically.
     //!
-    //! \tparam TOp The operation type.
+    //! \tparam T_Op The operation type.
     //! \tparam T The value type.
     //! \param addr The value to change atomically.
     //! \param compare The comparison value used in the atomic operation.
     //! \param value The value used in the atomic operation.
-    template<typename TOp, typename T, typename T_Scope = scope::Device>
+    template<typename T_Op, typename T, typename T_Scope = scope::Device>
     constexpr auto atomicOp(
         auto const& acc,
         T* const addr,
@@ -50,7 +50,7 @@ namespace alpaka::onAcc
     {
         static_assert(!std::is_same_v<T_Scope, scope::System>, "System scope is currently not supported.");
         auto atomicImpl = trait::getAtomicImpl(acc[object::exec], scope);
-        return internalCompute::Atomic::Op<TOp, ALPAKA_TYPEOF(atomicImpl), T, T_Scope>::atomicOp(
+        return internalCompute::Atomic::Op<T_Op, ALPAKA_TYPEOF(atomicImpl), T, T_Scope>::atomicOp(
             atomicImpl,
             addr,
             compare,

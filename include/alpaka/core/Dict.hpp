@@ -27,30 +27,30 @@ namespace alpaka
         template<typename X, template<typename...> typename T_Tuple, typename... T>
         struct KeyIdx<X, T_Tuple<T...>>
         {
-            template<std::size_t... idx>
-            static constexpr ssize_t find_idx(std::index_sequence<idx...>)
+            template<std::size_t... T_idx>
+            static constexpr ssize_t findIdx(std::index_sequence<T_idx...>)
             {
-                ssize_t found_idx = -1;
+                ssize_t foundIdx = -1;
                 // notUsed is required to avoid warning that the expression is not used
                 [[maybe_unused]] bool notUsed
-                    = ((std::is_same_v<X, typename T::KeyType> && (found_idx = idx, true)) || ...);
-                return found_idx;
+                    = ((std::is_same_v<X, typename T::KeyType> && (foundIdx = T_idx, true)) || ...);
+                return foundIdx;
             }
 
         public:
-            static constexpr ssize_t value = find_idx(std::index_sequence_for<T...>{});
+            static constexpr ssize_t value = findIdx(std::index_sequence_for<T...>{});
         };
 
         template<typename X, template<typename...> typename T_Tuple>
         class KeyIdx<X, T_Tuple<>>
         {
-            static constexpr ssize_t find_idx(std::index_sequence<>)
+            static constexpr ssize_t findIdx(std::index_sequence<>)
             {
                 return -1;
             }
 
         public:
-            static constexpr ssize_t value = find_idx(std::index_sequence_for<>{});
+            static constexpr ssize_t value = findIdx(std::index_sequence_for<>{});
         };
     } // namespace internal
 
@@ -190,14 +190,14 @@ namespace std
 namespace alpaka
 {
 
-    template<std::size_t... idx0, std::size_t... idx1, typename T_Dict0, typename T_Dict1>
+    template<std::size_t... T_idx0, std::size_t... T_idx1, typename T_Dict0, typename T_Dict1>
     constexpr auto joinDictHelper(
-        std::index_sequence<idx0...>,
-        std::index_sequence<idx1...>,
+        std::index_sequence<T_idx0...>,
+        std::index_sequence<T_idx1...>,
         T_Dict0 dict0,
         T_Dict1 dict1)
     {
-        return Dict{get<idx0>(dict0)..., get<idx1>(dict1)...};
+        return Dict{get<T_idx0>(dict0)..., get<T_idx1>(dict1)...};
     }
 
     template<typename... T_Entries0, typename... T_Entries1>
@@ -210,8 +210,8 @@ namespace alpaka
             dict1);
     }
 
-    template<bool condition, typename... T_Entries0, typename... T_Entries1>
-    requires(condition == true)
+    template<bool T_condition, typename... T_Entries0, typename... T_Entries1>
+    requires(T_condition == true)
     constexpr auto conditionalAppendDict(Dict<T_Entries0...> const& dict0, Dict<T_Entries1...> const& dict1)
     {
         return joinDictHelper(
@@ -221,8 +221,8 @@ namespace alpaka
             dict1);
     }
 
-    template<bool condition, typename... T_Entries0, typename... T_Entries1>
-    requires(condition == false)
+    template<bool T_condition, typename... T_Entries0, typename... T_Entries1>
+    requires(T_condition == false)
     constexpr auto conditionalAppendDict(Dict<T_Entries0...> const& dict0, Dict<T_Entries1...> const& dict1)
     {
         alpaka::unused(dict1);

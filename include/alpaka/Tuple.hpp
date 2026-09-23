@@ -25,7 +25,7 @@ namespace alpaka
             T value;
         };
 
-        template<typename IndexSequence, typename... T_Args>
+        template<typename T_IndexSequence, typename... T_Args>
         struct TupleImpl;
 
         template<std::size_t... Is, typename... T_Args>

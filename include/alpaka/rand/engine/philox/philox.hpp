@@ -46,32 +46,32 @@ namespace alpaka::rand::engine
             std::uint64_t const seed = 0,
             std::uint64_t const subsequence = 0,
             std::uint64_t const offset = 0)
-            : engineVariant(seed, subsequence, offset)
+            : m_engineVariant(seed, subsequence, offset)
         {
         }
 
         // STL UniformRandomBitGenerator concept
         // See the functions min and max for the range of the generated numbers
         // https://en.cppreference.com/w/cpp/named_req/UniformRandomBitGenerator
-        using result_type = std::uint32_t;
+        using ResultType = std::uint32_t;
 
-        static constexpr auto min() -> result_type
+        static constexpr auto min() -> ResultType
         {
             return 0;
         }
 
-        static constexpr auto max() -> result_type
+        static constexpr auto max() -> ResultType
         {
-            return std::numeric_limits<result_type>::max();
+            return std::numeric_limits<ResultType>::max();
         }
 
-        constexpr auto operator()() -> result_type
+        constexpr auto operator()() -> ResultType
         {
-            return engineVariant();
+            return m_engineVariant();
         }
 
     private:
-        EngineVariant engineVariant;
+        EngineVariant m_engineVariant;
     };
 
     /** Most common Philox engine variant, outputs a 4-vector of floats
@@ -101,12 +101,12 @@ namespace alpaka::rand::engine
             std::uint32_t const seed = 0,
             std::uint32_t const subsequence = 0,
             std::uint32_t const offset = 0)
-            : engineVariant(seed, subsequence, offset)
+            : m_engineVariant(seed, subsequence, offset)
         {
         }
 
-        template<typename TScalar>
-        using ResultContainer = EngineVariant::ResultContainer<TScalar>;
+        template<typename T_Scalar>
+        using ResultContainer = EngineVariant::ResultContainer<T_Scalar>;
 
         using ResultInt = std::uint32_t;
         using ResultVec = decltype(std::declval<EngineVariant>()());
@@ -123,11 +123,11 @@ namespace alpaka::rand::engine
 
         constexpr auto operator()() -> ResultVec
         {
-            return engineVariant();
+            return m_engineVariant();
         }
 
     private:
-        EngineVariant engineVariant;
+        EngineVariant m_engineVariant;
     };
 
 

@@ -91,9 +91,9 @@ namespace alpaka::onHost
                 "extent type and pitch type must be lossless convertible");
         }
 
-        template<typename T_Type_Other>
-        requires alpaka::internal::concepts::InnerTypeAllowedCast<T_Type, T_Type_Other>
-        SharedBuffer(SharedBuffer<T_Api, T_Type_Other, T_Extents, T_MemAlignment> const& other)
+        template<typename T_TypeOther>
+        requires alpaka::internal::concepts::InnerTypeAllowedCast<T_Type, T_TypeOther>
+        SharedBuffer(SharedBuffer<T_Api, T_TypeOther, T_Extents, T_MemAlignment> const& other)
             : BaseView{static_cast<BaseView>(other)}
             , m_deleter(other.m_deleter)
         {
@@ -107,9 +107,9 @@ namespace alpaka::onHost
          */
         SharedBuffer& operator=(SharedBuffer const& otherSharedBuffer) = default;
 
-        template<typename T_Type_Other>
-        requires alpaka::internal::concepts::InnerTypeAllowedCast<T_Type, T_Type_Other>
-        SharedBuffer(SharedBuffer<T_Api, T_Type_Other, T_Extents, T_MemAlignment>&& other)
+        template<typename T_TypeOther>
+        requires alpaka::internal::concepts::InnerTypeAllowedCast<T_Type, T_TypeOther>
+        SharedBuffer(SharedBuffer<T_Api, T_TypeOther, T_Extents, T_MemAlignment>&& other)
             : BaseView{std::move(static_cast<BaseView>(other))}
             , m_deleter(std::move(other.m_deleter))
 

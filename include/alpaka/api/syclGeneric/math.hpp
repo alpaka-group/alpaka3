@@ -153,9 +153,9 @@ namespace alpaka::math::internal
     template<std::floating_point T_Arg>
     struct SinCos::Op<SyclMath, T_Arg>
     {
-        constexpr auto operator()(SyclMath, T_Arg const& arg, T_Arg& result_sin, T_Arg& result_cos) const
+        constexpr auto operator()(SyclMath, T_Arg const& arg, T_Arg& resultSin, T_Arg& resultCos) const
         {
-            result_sin = sycl::sincos(arg, &result_cos);
+            resultSin = sycl::sincos(arg, &resultCos);
         }
     };
 

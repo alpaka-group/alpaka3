@@ -17,10 +17,10 @@ namespace alpaka::meta
             using type = T;
         };
 
-        template<template<typename...> class TList, typename... As, typename... Bs, typename... TRest>
-        struct ConcatenateImpl<TList<As...>, TList<Bs...>, TRest...>
+        template<template<typename...> class T_List, typename... As, typename... Bs, typename... T_Rest>
+        struct ConcatenateImpl<T_List<As...>, T_List<Bs...>, T_Rest...>
         {
-            using type = typename ConcatenateImpl<TList<As..., Bs...>, TRest...>::type;
+            using type = typename ConcatenateImpl<T_List<As..., Bs...>, T_Rest...>::type;
         };
     } // namespace detail
 

@@ -137,7 +137,7 @@ namespace alpaka::onHost
                 uint32_t const idx,
                 uint32_t numIdx,
                 alpaka::concepts::QueuePolicyList auto const policies)
-                : parentQueue(std::make_shared<Queue<T_Device>>(std::move(device), idx, numIdx, policies))
+                : m_parentQueue(std::make_shared<Queue<T_Device>>(std::move(device), idx, numIdx, policies))
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
             }
@@ -155,7 +155,7 @@ namespace alpaka::onHost
 
             bool operator==(OmpCollectiveQueue const& other) const
             {
-                return parentQueue == other.parentQueue;
+                return m_parentQueue == other.m_parentQueue;
             }
 
             bool operator!=(OmpCollectiveQueue const& other) const
@@ -166,7 +166,7 @@ namespace alpaka::onHost
             /** Wait for all tasks enqueued before the parallel region. */
             void waitUntilParentQueueIsEmpty()
             {
-                auto& pQueue = *parentQueue.get();
+                auto& pQueue = *m_parentQueue.get();
                 // wait for all tasks enqueued before the parallel region
                 while(internal::IgnoreVisibility::Op<ParentType>::isQueueBlockingTaskExecuted(pQueue) != 0u)
                     ;
@@ -174,36 +174,36 @@ namespace alpaka::onHost
 
             void waitForNonOmpParallelOps()
             {
-                while(m_numCollectiveTasksExecuted != 0u)
+                while(numCollectiveTasksExecuted != 0u)
                     ;
             }
 
             /* Each thread in a parallel OpenMP section must increase the counter when participating in an operation
              * even if it is not actively executing something.
              */
-            std::atomic<uint32_t> m_numCollectiveTasksExecuted = 0;
+            std::atomic<uint32_t> numCollectiveTasksExecuted = 0;
 
         private:
             using ParentType = Queue<T_Device>;
-            std::shared_ptr<ParentType> parentQueue;
+            std::shared_ptr<ParentType> m_parentQueue;
 
             friend struct alpaka::internal::GetName;
 
             std::string getName() const
             {
-                return std::string("host::OmpCollectiveQueue id=") + std::to_string(parentQueue->m_idx);
+                return std::string("host::OmpCollectiveQueue id=") + std::to_string(m_parentQueue->m_idx);
             }
 
             friend struct alpaka::internal::GetDeviceType;
 
             auto getDeviceKind() const
             {
-                return alpaka::internal::getDeviceKind(*parentQueue);
+                return alpaka::internal::getDeviceKind(*m_parentQueue);
             }
 
             auto getDevice() const
             {
-                return internal::getDevice(*parentQueue);
+                return internal::getDevice(*m_parentQueue);
             }
 
             std::shared_ptr<OmpCollectiveQueue> getSharedPtr()
@@ -251,12 +251,12 @@ namespace alpaka::onHost
                 if(::omp_in_parallel() != 0)
                 {
                     queue.waitUntilParentQueueIsEmpty();
-                    ++queue.m_numCollectiveTasksExecuted;
+                    ++queue.numCollectiveTasksExecuted;
 #    pragma omp single nowait
                     {
                         ALPAKA_FORWARD(fn)();
                     }
-                    --queue.m_numCollectiveTasksExecuted;
+                    --queue.numCollectiveTasksExecuted;
                     return;
                 }
 
@@ -280,9 +280,9 @@ namespace alpaka::onHost
 #    pragma omp single
                     {
                         queue.waitUntilParentQueueIsEmpty();
-                        ++queue.m_numCollectiveTasksExecuted;
+                        ++queue.numCollectiveTasksExecuted;
                         ALPAKA_FORWARD(fn)();
-                        --queue.m_numCollectiveTasksExecuted;
+                        --queue.numCollectiveTasksExecuted;
                     }
                     return;
                 }
@@ -306,9 +306,9 @@ namespace alpaka::onHost
 #    pragma omp single copyprivate(returnValue)
                     {
                         queue.waitUntilParentQueueIsEmpty();
-                        ++queue.m_numCollectiveTasksExecuted;
+                        ++queue.numCollectiveTasksExecuted;
                         returnValue = ALPAKA_FORWARD(fn)();
-                        --queue.m_numCollectiveTasksExecuted;
+                        --queue.numCollectiveTasksExecuted;
                     }
                     return returnValue.value();
                 }
@@ -329,16 +329,16 @@ namespace alpaka::onHost
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 auto queueHandle = device.getSharedPtr();
-                std::lock_guard<std::mutex> lk{device.queuesGuard};
+                std::lock_guard<std::mutex> lk{device.m_queuesGuard};
 
                 auto newQueue = std::make_shared<cpu::OmpCollectiveQueue<cpu::Device<T_Platform>>>(
                     std::move(queueHandle),
-                    device.queueWaitFns.size(),
+                    device.m_queueWaitFns.size(),
                     device.m_cpuGroupIdx,
                     queuePolicies);
 
                 std::weak_ptr<cpu::OmpCollectiveQueue<cpu::Device<T_Platform>>> weakPtrToQueue = newQueue;
-                device.queueWaitFns.emplace_back(
+                device.m_queueWaitFns.emplace_back(
                     [weakPtrToQueue]
                     {
                         if(auto queue = weakPtrToQueue.lock())
@@ -360,7 +360,9 @@ namespace alpaka::onHost
                     queue,
                     [&]
                     {
-                        internal::WaitFor::Op<cpu::Queue<T_Device>, ALPAKA_TYPEOF(event)>{}(*queue.parentQueue, event);
+                        internal::WaitFor::Op<cpu::Queue<T_Device>, ALPAKA_TYPEOF(event)>{}(
+                            *queue.m_parentQueue,
+                            event);
                     });
             }
         };
@@ -374,7 +376,7 @@ namespace alpaka::onHost
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 internal::omp::invokeSingleAndWait(
                     queue,
-                    [&] { internal::Wait::Op<cpu::Queue<T_Device>>{}(*queue.parentQueue); });
+                    [&] { internal::Wait::Op<cpu::Queue<T_Device>>{}(*queue.m_parentQueue); });
             }
         };
 
@@ -386,7 +388,7 @@ namespace alpaka::onHost
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 return internal::omp::invokeSingleAndWait(
-                    [&] { internal::IsQueueEmpty::Op<cpu::Queue<T_Device>>{}(*queue.parentQueue); });
+                    [&] { internal::IsQueueEmpty::Op<cpu::Queue<T_Device>>{}(*queue.m_parentQueue); });
             }
         };
 
@@ -408,7 +410,9 @@ namespace alpaka::onHost
                     queue,
                     [&]
                     {
-                        internal::Enqueue::HostTaskDeferred<cpu::Queue<T_Device>, T_Task>{}(*queue.parentQueue, task);
+                        internal::Enqueue::HostTaskDeferred<cpu::Queue<T_Device>, T_Task>{}(
+                            *queue.m_parentQueue,
+                            task);
                     });
             }
         };
@@ -427,7 +431,7 @@ namespace alpaka::onHost
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 internal::omp::invokeSingleNowait(
                     queue,
-                    [&] { internal::Enqueue::HostTask<cpu::Queue<T_Device>, T_Task>{}(*queue.parentQueue, task); });
+                    [&] { internal::Enqueue::HostTask<cpu::Queue<T_Device>, T_Task>{}(*queue.m_parentQueue, task); });
             }
         };
 
@@ -445,7 +449,7 @@ namespace alpaka::onHost
                 }
                 internal::omp::invokeSingleNowait(
                     queue,
-                    [&] { internal::Enqueue::Event<cpu::Queue<T_Device>, T_Event>{}(*queue.parentQueue, event); });
+                    [&] { internal::Enqueue::Event<cpu::Queue<T_Device>, T_Event>{}(*queue.m_parentQueue, event); });
             }
         };
 
@@ -474,8 +478,8 @@ namespace alpaka::onHost
                 if(::omp_in_parallel() != 0)
                 {
                     queue.waitUntilParentQueueIsEmpty();
-                    ++queue.m_numCollectiveTasksExecuted;
-                    auto deviceKind = alpaka::getDeviceKind(queue.parentQueue->m_device);
+                    ++queue.numCollectiveTasksExecuted;
+                    auto deviceKind = alpaka::getDeviceKind(queue.m_parentQueue->m_device);
 
                     // This queue is not changing the affinity
                     bool setThreadAffinity = false;
@@ -485,17 +489,17 @@ namespace alpaka::onHost
                         DictEntry(object::api, api::host),
                         DictEntry(object::deviceKind, deviceKind),
                         DictEntry(object::exec, threadSpec.getExecutor())};
-                    onAcc::Acc acc = makeAcc(threadSpec, queue.parentQueue->m_numaIdx, setThreadAffinity);
+                    onAcc::Acc acc = makeAcc(threadSpec, queue.m_parentQueue->m_numaIdx, setThreadAffinity);
 
                     acc(kernelBundle, moreLayer);
-                    --queue.m_numCollectiveTasksExecuted;
+                    --queue.numCollectiveTasksExecuted;
                 }
                 else
                 {
                     // wait until all threads within the OpenMP parallel region finished there task
-                    while(queue.m_numCollectiveTasksExecuted != 0u)
+                    while(queue.numCollectiveTasksExecuted != 0u)
                         ;
-                    queue.parentQueue->enqueue(threadSpec, kernelBundle);
+                    queue.m_parentQueue->enqueue(threadSpec, kernelBundle);
                 }
             }
         };
@@ -524,11 +528,11 @@ namespace alpaka::onHost
                 if(::omp_in_parallel() != 0)
                 {
                     queue.waitUntilParentQueueIsEmpty();
-                    ++queue.m_numCollectiveTasksExecuted;
+                    ++queue.numCollectiveTasksExecuted;
 
                     auto adjustedThreadSpec
-                        = internal::adjustThreadSpec(*(queue.parentQueue->m_device), frameSpec, kernelBundle);
-                    auto deviceKind = alpaka::getDeviceKind(queue.parentQueue->m_device);
+                        = internal::adjustThreadSpec(*(queue.m_parentQueue->m_device), frameSpec, kernelBundle);
+                    auto deviceKind = alpaka::getDeviceKind(queue.m_parentQueue->m_device);
 
                     // This queue is not changing the affinity
                     bool setThreadAffinity = false;
@@ -538,17 +542,17 @@ namespace alpaka::onHost
                         DictEntry(object::api, api::host),
                         DictEntry(object::deviceKind, deviceKind),
                         DictEntry(object::exec, adjustedThreadSpec.getExecutor())};
-                    onAcc::Acc acc = makeAcc(adjustedThreadSpec, queue.parentQueue->m_numaIdx, setThreadAffinity);
+                    onAcc::Acc acc = makeAcc(adjustedThreadSpec, queue.m_parentQueue->m_numaIdx, setThreadAffinity);
 
                     acc(kernelBundle, moreLayer);
-                    --queue.m_numCollectiveTasksExecuted;
+                    --queue.numCollectiveTasksExecuted;
                 }
                 else
                 {
                     // wait until all threads within the OpenMP parallel region finished there task
-                    while(queue.m_numCollectiveTasksExecuted != 0u)
+                    while(queue.numCollectiveTasksExecuted != 0u)
                         ;
-                    queue.parentQueue->enqueue(frameSpec, kernelBundle);
+                    queue.m_parentQueue->enqueue(frameSpec, kernelBundle);
                 }
             }
         };
@@ -570,7 +574,7 @@ namespace alpaka::onHost
                     [&]
                     {
                         Memcpy::Op<cpu::Queue<T_Device>, T_Dest, T_Source, T_Extents>{}(
-                            *queue.parentQueue,
+                            *queue.m_parentQueue,
                             dest,
                             source,
                             extents);
@@ -596,7 +600,7 @@ namespace alpaka::onHost
                         MemcpyDeviceGlobal::Op<
                             cpu::Queue<T_Device>,
                             onAcc::internal::GlobalDeviceMemoryWrapper<T_Storage, T>,
-                            T_Source>{}(*queue.parentQueue, dest, source);
+                            T_Source>{}(*queue.m_parentQueue, dest, source);
                     });
             }
         };
@@ -620,7 +624,7 @@ namespace alpaka::onHost
                             cpu::Queue<T_Device>,
                             T_Dest,
                             onAcc::internal::GlobalDeviceMemoryWrapper<T_Storage, T>>{}(
-                            *queue.parentQueue,
+                            *queue.m_parentQueue,
                             dest,
                             source);
                     });
@@ -646,7 +650,7 @@ namespace alpaka::onHost
                     [&]
                     {
                         internal::Memset::Op<cpu::Queue<T_Device>, T_Dest, T_Extents>{}(
-                            *queue.parentQueue,
+                            *queue.m_parentQueue,
                             dest,
                             byteValue,
                             extents);
@@ -690,7 +694,7 @@ namespace alpaka::onHost
                 else
                 {
                     internal::Fill::Op<cpu::Queue<T_Device>, T_Dest, T_Value, T_Extents>{}(
-                        *queue.parentQueue,
+                        *queue.m_parentQueue,
                         dest,
                         elementValue,
                         extents);
@@ -711,7 +715,7 @@ namespace alpaka::onHost
                     [&]
                     {
                         return internal::AllocDeferred::Op<T_Type, cpu::Queue<T_Device>, T_Extents>{}(
-                            *queue.parentQueue,
+                            *queue.m_parentQueue,
                             extents);
                     });
             }
@@ -726,7 +730,7 @@ namespace alpaka::internal
     {
         inline constexpr auto operator()(auto&& queue) const
         {
-            return alpaka::getApi(queue.parentQueue->m_device);
+            return alpaka::getApi(queue.m_parentQueue->m_device);
         }
     };
 #endif

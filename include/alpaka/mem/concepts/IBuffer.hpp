@@ -17,7 +17,7 @@ namespace alpaka::concepts
      * Represent a callable without arguments and return value void. Required because nvcc could not handle empty
      * lambdas in concepts.
      */
-    inline void empty_callable()
+    inline void emptyCallable()
     {
     }
 
@@ -45,8 +45,8 @@ namespace alpaka::concepts
         template<typename T, typename T_Mut, typename T_Const>
         concept IBuffer = requires(T t) {
             requires IView<T, T_Mut, T_Const>;
-            t.addDestructorAction(alpaka::concepts::empty_callable);
-            t.destructorWaitFor(alpaka::concepts::empty_callable);
+            t.addDestructorAction(alpaka::concepts::emptyCallable);
+            t.destructorWaitFor(alpaka::concepts::emptyCallable);
         };
     } // namespace impl
 

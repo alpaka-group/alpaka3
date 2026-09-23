@@ -26,7 +26,7 @@ namespace alpaka::onHost
         {
             auto operator()(api::Hip, T_DeviceKind) const
             {
-                return onHost::make_sharedSingleton<unifiedCudaHip::Platform<ApiHipRt, T_DeviceKind>>();
+                return onHost::makeSharedSingleton<unifiedCudaHip::Platform<ApiHipRt, T_DeviceKind>>();
             }
         };
     } // namespace internal

@@ -29,37 +29,37 @@ namespace alpaka::rand::engine::internal
     {
     public:
         /// First Weyl sequence parameter: the golden ratio
-        static consteval std::uint64_t WEYL_64_0()
+        static consteval std::uint64_t weyl64p0()
         {
             return 0x9E37'79B9'7F4A'7C15;
         }
 
         /// Second Weyl sequence parameter: \f$ \sqrt{3}-1 \f$
-        static consteval std::uint64_t WEYL_64_1()
+        static consteval std::uint64_t weyl64p1()
         {
             return 0xBB67'AE85'84CA'A73B;
         }
 
         /// 1st Weyl sequence parameter, 32 bits
-        static consteval std::uint32_t WEYL_32_0()
+        static consteval std::uint32_t weyl32p0()
         {
-            return high32Bits(WEYL_64_0());
+            return high32Bits(weyl64p0());
         }
 
         /// 2nd Weyl sequence parameter, 32 bits
-        static consteval std::uint32_t WEYL_32_1()
+        static consteval std::uint32_t weyl32p1()
         {
-            return high32Bits(WEYL_64_1());
+            return high32Bits(weyl64p1());
         }
 
         /// First Philox S-box multiplier
-        static consteval std::uint32_t MULTIPLITER_4x32_0()
+        static consteval std::uint32_t multipliter4x32p0()
         {
             return 0xCD9E'8D57;
         }
 
         /// Second Philox S-box multiplier
-        static consteval std::uint32_t MULTIPLITER_4x32_1()
+        static consteval std::uint32_t multipliter4x32p1()
         {
             return 0xD251'1F53;
         }

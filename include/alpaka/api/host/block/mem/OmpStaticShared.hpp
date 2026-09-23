@@ -12,13 +12,13 @@ namespace alpaka::onAcc
 {
     namespace cpu
     {
-        template<std::size_t TDataAlignBytes>
-        struct OmpStaticShared : private detail::SharedStorage<TDataAlignBytes>
+        template<std::size_t T_dataAlignBytes>
+        struct OmpStaticShared : private detail::SharedStorage<T_dataAlignBytes>
         {
             template<typename T, size_t T_unique>
             T& allocVar()
             {
-                using Base = detail::SharedStorage<TDataAlignBytes>;
+                using Base = detail::SharedStorage<T_dataAlignBytes>;
 
                 auto* data = Base::template getVarPtr<T>(T_unique);
 
@@ -43,7 +43,7 @@ namespace alpaka::onAcc
             template<typename T, size_t T_unique>
             T* allocDynamic(uint32_t numBytes)
             {
-                using Base = detail::SharedStorage<TDataAlignBytes>;
+                using Base = detail::SharedStorage<T_dataAlignBytes>;
 
                 auto* data = Base::template getVarPtr<T>(T_unique);
 

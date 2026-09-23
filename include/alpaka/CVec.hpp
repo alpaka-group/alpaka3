@@ -44,26 +44,28 @@ namespace alpaka
             return std::integer_sequence<T, T_values...>{};
         }
 
-        template<typename Int, Int... Is1, Int... Is2>
-        [[nodiscard]] constexpr auto combine(std::integer_sequence<Int, Is1...>, std::integer_sequence<Int, Is2...>)
+        template<typename T_Int, T_Int... T_is1, T_Int... T_is2>
+        [[nodiscard]] constexpr auto combine(
+            std::integer_sequence<T_Int, T_is1...>,
+            std::integer_sequence<T_Int, T_is2...>)
         {
-            return std::integer_sequence<Int, Is1..., Is2...>{};
+            return std::integer_sequence<T_Int, T_is1..., T_is2...>{};
         }
 
-        template<typename Last>
-        [[nodiscard]] constexpr auto concatenate(Last last)
+        template<typename T_Last>
+        [[nodiscard]] constexpr auto concatenate(T_Last last)
         {
             return last;
         }
 
-        template<typename First, typename... Rest>
-        [[nodiscard]] constexpr auto concatenate(First first, Rest... rest)
+        template<typename T_First, typename... T_Rest>
+        [[nodiscard]] constexpr auto concatenate(T_First first, T_Rest... rest)
         {
             return combine(first, concatenate(rest...));
         }
 
-        template<bool pred, typename T, T T_v>
-        using selectValue = std::conditional_t<pred, std::integer_sequence<T>, std::integer_sequence<T, T_v>>;
+        template<bool T_pred, typename T, T T_v>
+        using SelectValue = std::conditional_t<T_pred, std::integer_sequence<T>, std::integer_sequence<T, T_v>>;
 
         /** @brief Return all values of an integer sequence for which a filter returns true
          *
@@ -79,7 +81,7 @@ namespace alpaka
         [[nodiscard]] constexpr auto filterValues(T_UnaryOp const op, std::integer_sequence<T, T_values...> _)
         {
             alpaka::unused(_);
-            return concatenate(selectValue<op(T_values), T, T_values>{}...);
+            return concatenate(SelectValue<op(T_values), T, T_values>{}...);
         }
 
         /** A functor that can check for any of the contained values
@@ -96,7 +98,7 @@ namespace alpaka
         template<typename T, template<typename, T...> typename T_Seq, T... T_values>
         struct Contains<T_Seq<T, T_values...>>
         {
-            using argument_type = T;
+            using ArgumentType = T;
 
             constexpr bool operator()(T value) const
             {
@@ -112,7 +114,7 @@ namespace alpaka
         template<typename T, T... T_values>
         struct Contains<std::integer_sequence<T, T_values...>>
         {
-            using argument_type = T;
+            using ArgumentType = T;
 
             constexpr bool operator()(T value) const
             {

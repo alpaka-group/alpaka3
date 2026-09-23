@@ -338,7 +338,7 @@ namespace alpaka::onHost
                         {
                             if(event.m_timingEnabled)
                                 event.m_timestamp = std::chrono::steady_clock::now();
-                            event.m_LastReadyEnqueueCount = std::max(enqueueCount, event.m_LastReadyEnqueueCount);
+                            event.m_lastReadyEnqueueCount = std::max(enqueueCount, event.m_lastReadyEnqueueCount);
                         }
                         // apply a fulfilled future
                         std::promise<void> p;
@@ -360,8 +360,8 @@ namespace alpaka::onHost
                                 {
                                     if(sharedEvent->m_timingEnabled)
                                         sharedEvent->m_timestamp = timestamp;
-                                    sharedEvent->m_LastReadyEnqueueCount
-                                        = std::max(enqueueCount, sharedEvent->m_LastReadyEnqueueCount);
+                                    sharedEvent->m_lastReadyEnqueueCount
+                                        = std::max(enqueueCount, sharedEvent->m_lastReadyEnqueueCount);
                                 }
                             });
                     }

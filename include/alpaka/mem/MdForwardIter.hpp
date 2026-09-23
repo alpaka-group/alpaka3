@@ -19,10 +19,10 @@ namespace alpaka
      * Only a scalar value must be stored which reduce the register footprint.
      * The definition of end is that the index is behind or equal to the extent of the slowest moving dimension.
      */
-    template<typename T_idxType>
+    template<typename T_IdxType>
     class MdForwardIterEnd
     {
-        using index_type = T_idxType;
+        using index_type = T_IdxType;
 
         void _()
         {

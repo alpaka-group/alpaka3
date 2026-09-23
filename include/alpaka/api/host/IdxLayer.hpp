@@ -15,29 +15,29 @@ namespace alpaka::onAcc
 {
     namespace cpu
     {
-        template<typename IndexVecType>
+        template<typename T_IndexVecType>
         struct OneLayer
         {
             constexpr OneLayer() = default;
 
             constexpr auto idx() const
             {
-                return IndexVecType::fill(0);
+                return T_IndexVecType::fill(0);
             }
 
-            constexpr auto idx() const requires alpaka::concepts::CVector<IndexVecType>
+            constexpr auto idx() const requires alpaka::concepts::CVector<T_IndexVecType>
             {
-                return IndexVecType::template fill<0>();
+                return T_IndexVecType::template fill<0>();
             }
 
             constexpr auto count() const
             {
-                return IndexVecType::fill(1);
+                return T_IndexVecType::fill(1);
             }
 
-            constexpr auto count() const requires alpaka::concepts::CVector<IndexVecType>
+            constexpr auto count() const requires alpaka::concepts::CVector<T_IndexVecType>
             {
-                return IndexVecType::template fill<1u>();
+                return T_IndexVecType::template fill<1u>();
             }
         };
 
@@ -58,6 +58,7 @@ namespace alpaka::onAcc
                 return unWrapp(m_count);
             }
 
+        private:
             T_Idx m_idx;
             T_Count m_count;
         };

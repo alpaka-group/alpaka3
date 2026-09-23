@@ -25,18 +25,18 @@ namespace alpaka::onHost::internal
          * @param freeOp Function to be called when the shared_ptr is destroyed after all actions are executed.
          *               All dependencies required to deallocate the memory must be holed by freeOp.
          */
-        ManagedDealloc(std::function<void()> freeOp) : freeOp{std::move(freeOp)}
+        ManagedDealloc(std::function<void()> freeOp) : m_freeOp{std::move(freeOp)}
         {
         }
 
         ~ManagedDealloc()
         {
             // Execute all actions before freeing the memory
-            for(auto& action : actions)
+            for(auto& action : m_actions)
             {
                 action();
             }
-            freeOp();
+            m_freeOp();
         }
 
         /** Add an action to be executed when the shared_ptr is destroyed.
@@ -45,8 +45,8 @@ namespace alpaka::onHost::internal
          */
         void addAction(std::function<void()> action)
         {
-            std::lock_guard<std::mutex> lock{actionGuard};
-            actions.emplace_back(std::move(action));
+            std::lock_guard<std::mutex> lock{m_actionGuard};
+            m_actions.emplace_back(std::move(action));
         }
 
         std::shared_ptr<ManagedDealloc> getSharedPtr()
@@ -55,8 +55,8 @@ namespace alpaka::onHost::internal
         }
 
     private:
-        std::function<void()> freeOp;
-        std::mutex actionGuard;
-        std::vector<std::function<void()>> actions;
+        std::function<void()> m_freeOp;
+        std::mutex m_actionGuard;
+        std::vector<std::function<void()>> m_actions;
     };
 } // namespace alpaka::onHost::internal

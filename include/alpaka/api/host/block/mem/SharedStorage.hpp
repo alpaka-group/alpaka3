@@ -22,10 +22,10 @@ namespace alpaka::onAcc::cpu::detail
     //! Implementation of static block shared memory provider.
     //!
     //! externally allocated fixed-size memory, likely provided by BlockSharedMemDynMember.
-    template<std::size_t TMinDataAlignBytes>
+    template<std::size_t T_minDataAlignBytes>
     class SharedStorage
     {
-        struct alignas(TMinDataAlignBytes) MetaData
+        struct alignas(T_minDataAlignBytes) MetaData
         {
             //! Unique id if the next data chunk.
             size_t id = 0u;
@@ -130,7 +130,7 @@ namespace alpaka::onAcc::cpu::detail
         auto varChunkEnd(uint32_t byteOffset, uint32_t numBytes) const -> std::uint32_t
         {
             auto const ptr = reinterpret_cast<std::size_t>(data() + byteOffset);
-            constexpr size_t align = std::max(TMinDataAlignBytes, alignof(T));
+            constexpr size_t align = std::max(T_minDataAlignBytes, alignof(T));
             std::size_t const newPtrAdress = ((ptr + align - 1u) / align) * align + numBytes;
             return static_cast<uint32_t>(newPtrAdress - reinterpret_cast<std::size_t>(data()));
         }

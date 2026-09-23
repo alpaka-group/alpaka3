@@ -56,16 +56,16 @@ namespace alpaka::onHost
      *
      * @{
      */
-    template<typename DataType, typename T_Device, alpaka::concepts::QueuePolicyList T_Policies>
+    template<typename T_DataType, typename T_Device, alpaka::concepts::QueuePolicyList T_Policies>
     inline void transformReduce(
         Queue<T_Device, T_Policies> const& queue,
         alpaka::concepts::Executor auto const exec,
-        DataType const& neutralElement,
+        T_DataType const& neutralElement,
         alpaka::concepts::IMdSpan auto out,
         auto&& binaryReduceFn,
         auto&& transformFn,
         alpaka::concepts::IDataSource auto&&... in)
-        requires(std::same_as<DataType, alpaka::GetValueType_t<ALPAKA_TYPEOF(out)>>)
+        requires(std::same_as<T_DataType, alpaka::GetValueType_t<ALPAKA_TYPEOF(out)>>)
     {
         if constexpr(exec == alpaka::exec::anyExecutor)
         {
@@ -93,15 +93,15 @@ namespace alpaka::onHost
      * An available default executor will be selected automatically. The default executor is the executor with the most
      * parallelism/performance.
      */
-    template<typename DataType, typename T_Device, alpaka::concepts::QueuePolicyList T_Policies>
+    template<typename T_DataType, typename T_Device, alpaka::concepts::QueuePolicyList T_Policies>
     inline void transformReduce(
         Queue<T_Device, T_Policies> const& queue,
-        DataType const& neutralElement,
+        T_DataType const& neutralElement,
         alpaka::concepts::IMdSpan auto out,
         auto&& binaryReduceFn,
         auto&& transformFn,
         alpaka::concepts::IDataSource auto&&... in)
-        requires(std::same_as<DataType, alpaka::GetValueType_t<ALPAKA_TYPEOF(out)>>)
+        requires(std::same_as<T_DataType, alpaka::GetValueType_t<ALPAKA_TYPEOF(out)>>)
     {
         transformReduce(
             queue,

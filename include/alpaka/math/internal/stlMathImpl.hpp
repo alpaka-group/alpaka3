@@ -31,8 +31,8 @@ namespace alpaka::math::internal
                 return min(a, b);
             }
             else if constexpr(
-                is_decayed_v<T_A, float> || is_decayed_v<T_B, float> || is_decayed_v<T_A, double>
-                || is_decayed_v<T_B, double>)
+                isDecayed_v<T_A, float> || isDecayed_v<T_B, float> || isDecayed_v<T_A, double>
+                || isDecayed_v<T_B, double>)
             {
                 using std::fmin;
                 return fmin(a, b);
@@ -56,8 +56,8 @@ namespace alpaka::math::internal
                 return max(a, b);
             }
             else if constexpr(
-                is_decayed_v<T_A, float> || is_decayed_v<T_B, float> || is_decayed_v<T_A, double>
-                || is_decayed_v<T_B, double>)
+                isDecayed_v<T_A, float> || isDecayed_v<T_B, float> || isDecayed_v<T_A, double>
+                || isDecayed_v<T_B, double>)
             {
                 using std::fmax;
                 return fmax(a, b);

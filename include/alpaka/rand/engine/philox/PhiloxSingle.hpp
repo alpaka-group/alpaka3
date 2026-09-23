@@ -20,19 +20,19 @@ namespace alpaka::rand::engine::internal
      * operator(). Additionally a pointer has to be stored indicating which part of the result array is to be
      * returned next.
      *
-     * @tparam TParams Basic parameters for the Philox algorithm
+     * @tparam T_Params Basic parameters for the Philox algorithm
      */
-    template<typename TParams>
-    class PhiloxSingle : public PhiloxBaseCommon<TParams, PhiloxSingle<TParams>>
+    template<typename T_Params>
+    class PhiloxSingle : public PhiloxBaseCommon<T_Params, PhiloxSingle<T_Params>>
     {
     public:
-        using Base = PhiloxBaseCommon<TParams, PhiloxSingle<TParams>>;
+        using Base = PhiloxBaseCommon<T_Params, PhiloxSingle<T_Params>>;
 
         /// Counter type
         using Counter = typename Base::Counter;
         /// Key type
         using Key = typename Base::Key;
-        using State = PhiloxState<Counter, Key, PhiloxSingle<TParams>>;
+        using State = PhiloxState<Counter, Key, PhiloxSingle<T_Params>>;
 
 
     protected:
@@ -61,7 +61,7 @@ namespace alpaka::rand::engine::internal
             // Element zero will always contain the next valid random number.
             auto result = this->state.result[0];
             ++this->state.position;
-            if(this->state.position == TParams::counterSize)
+            if(this->state.position == T_Params::counterSize)
             {
                 advanceState();
             }
@@ -83,7 +83,7 @@ namespace alpaka::rand::engine::internal
         /// Skips the next \a offset numbers
         constexpr void skip(uint64_t offset)
         {
-            static_assert(TParams::counterSize == 4, "Only counterSize is supported.");
+            static_assert(T_Params::counterSize == 4, "Only counterSize is supported.");
             this->state.position = static_cast<decltype(this->state.position)>(this->state.position + (offset & 3));
             offset += this->state.position < 4 ? 0 : 4;
             this->state.position -= this->state.position < 4 ? 0 : 4u;

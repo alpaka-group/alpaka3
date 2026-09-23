@@ -25,12 +25,12 @@ namespace alpaka::onAcc
     {
 #if defined(ALPAKA_DISABLE_STD_ATOMIC_REF)
         template<typename T>
-        using atomic_ref = boost::atomic_ref<T>;
-        constexpr auto memory_order_relaxed = boost::memory_order_relaxed;
+        using AtomicRef = boost::atomic_ref<T>;
+        constexpr auto memoryOrderRelaxed = boost::memory_order_relaxed;
 #else
         template<typename T>
-        using atomic_ref = std::atomic_ref<T>;
-        constexpr auto memory_order_relaxed = std::memory_order_relaxed;
+        using AtomicRef = std::atomic_ref<T>;
+        constexpr auto memoryOrderRelaxed = std::memory_order_relaxed;
 #endif
     } // namespace detail
 
@@ -47,7 +47,7 @@ namespace alpaka::onAcc
     void isSupportedByAtomicAtomicRef()
     {
         static_assert(
-            std::is_trivially_copyable_v<T> && detail::atomic_ref<T>::required_alignment <= alignof(T),
+            std::is_trivially_copyable_v<T> && detail::AtomicRef<T>::required_alignment <= alignof(T),
             "Type not supported by AtomicAtomicRef, please recompile defining "
             "ALPAKA_DISABLE_ATOMIC_ATOMICREF.");
     }
@@ -61,8 +61,8 @@ namespace alpaka::onAcc
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
                 isSupportedByAtomicAtomicRef<T>();
-                detail::atomic_ref<T> ref(*addr);
-                return ref.fetch_add(value, detail::memory_order_relaxed);
+                detail::AtomicRef<T> ref(*addr);
+                return ref.fetch_add(value, detail::memoryOrderRelaxed);
             }
         };
 
@@ -73,8 +73,8 @@ namespace alpaka::onAcc
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
                 isSupportedByAtomicAtomicRef<T>();
-                detail::atomic_ref<T> ref(*addr);
-                return ref.fetch_sub(value, detail::memory_order_relaxed);
+                detail::AtomicRef<T> ref(*addr);
+                return ref.fetch_sub(value, detail::memoryOrderRelaxed);
             }
         };
 
@@ -85,11 +85,11 @@ namespace alpaka::onAcc
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
                 isSupportedByAtomicAtomicRef<T>();
-                detail::atomic_ref<T> ref(*addr);
+                detail::AtomicRef<T> ref(*addr);
                 T old = ref;
                 T result = old;
                 result = std::min(result, value);
-                while(!ref.compare_exchange_weak(old, result, detail::memory_order_relaxed))
+                while(!ref.compare_exchange_weak(old, result, detail::memoryOrderRelaxed))
                 {
                     result = old;
                     result = std::min(result, value);
@@ -105,11 +105,11 @@ namespace alpaka::onAcc
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
                 isSupportedByAtomicAtomicRef<T>();
-                detail::atomic_ref<T> ref(*addr);
+                detail::AtomicRef<T> ref(*addr);
                 T old = ref;
                 T result = old;
                 result = std::max(result, value);
-                while(!ref.compare_exchange_weak(old, result, detail::memory_order_relaxed))
+                while(!ref.compare_exchange_weak(old, result, detail::memoryOrderRelaxed))
                 {
                     result = old;
                     result = std::max(result, value);
@@ -125,10 +125,10 @@ namespace alpaka::onAcc
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
                 isSupportedByAtomicAtomicRef<T>();
-                detail::atomic_ref<T> ref(*addr);
+                detail::AtomicRef<T> ref(*addr);
                 T old = ref;
                 T result = value;
-                while(!ref.compare_exchange_weak(old, result, detail::memory_order_relaxed))
+                while(!ref.compare_exchange_weak(old, result, detail::memoryOrderRelaxed))
                 {
                     result = value;
                 }
@@ -143,13 +143,13 @@ namespace alpaka::onAcc
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
                 isSupportedByAtomicAtomicRef<T>();
-                detail::atomic_ref<T> ref(*addr);
+                detail::AtomicRef<T> ref(*addr);
                 T old = ref;
                 T result;
                 do
                 {
                     result = ((old >= value) ? T{0} : old + T{1});
-                } while(!ref.compare_exchange_weak(old, result, detail::memory_order_relaxed));
+                } while(!ref.compare_exchange_weak(old, result, detail::memoryOrderRelaxed));
                 return old;
             }
         };
@@ -161,13 +161,13 @@ namespace alpaka::onAcc
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
                 isSupportedByAtomicAtomicRef<T>();
-                detail::atomic_ref<T> ref(*addr);
+                detail::AtomicRef<T> ref(*addr);
                 T old = ref;
                 T result;
                 do
                 {
                     result = (old == T{0} || old > value) ? value : (old - T{1});
-                } while(!ref.compare_exchange_weak(old, result, detail::memory_order_relaxed));
+                } while(!ref.compare_exchange_weak(old, result, detail::memoryOrderRelaxed));
                 return old;
             }
         };
@@ -179,8 +179,8 @@ namespace alpaka::onAcc
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
                 isSupportedByAtomicAtomicRef<T>();
-                detail::atomic_ref<T> ref(*addr);
-                return ref.fetch_and(value, detail::memory_order_relaxed);
+                detail::AtomicRef<T> ref(*addr);
+                return ref.fetch_and(value, detail::memoryOrderRelaxed);
             }
         };
 
@@ -191,8 +191,8 @@ namespace alpaka::onAcc
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
                 isSupportedByAtomicAtomicRef<T>();
-                detail::atomic_ref<T> ref(*addr);
-                return ref.fetch_or(value, detail::memory_order_relaxed);
+                detail::AtomicRef<T> ref(*addr);
+                return ref.fetch_or(value, detail::memoryOrderRelaxed);
             }
         };
 
@@ -203,8 +203,8 @@ namespace alpaka::onAcc
             ALPAKA_FN_HOST static auto atomicOp(internal::StlAtomic const&, T* const addr, T const& value) -> T
             {
                 isSupportedByAtomicAtomicRef<T>();
-                detail::atomic_ref<T> ref(*addr);
-                return ref.fetch_xor(value, detail::memory_order_relaxed);
+                detail::AtomicRef<T> ref(*addr);
+                return ref.fetch_xor(value, detail::memoryOrderRelaxed);
             }
         };
 
@@ -219,7 +219,7 @@ namespace alpaka::onAcc
                 T const& value) -> T
             {
                 isSupportedByAtomicAtomicRef<T>();
-                detail::atomic_ref<T> ref(*addr);
+                detail::AtomicRef<T> ref(*addr);
                 T old = ref;
                 T result;
                 do
@@ -232,7 +232,7 @@ namespace alpaka::onAcc
 #if ALPAKA_COMP_GNUC || ALPAKA_COMP_CLANG
 #    pragma GCC diagnostic pop
 #endif
-                } while(!ref.compare_exchange_weak(old, result, detail::memory_order_relaxed));
+                } while(!ref.compare_exchange_weak(old, result, detail::memoryOrderRelaxed));
                 return old;
             }
         };

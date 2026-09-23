@@ -282,12 +282,13 @@ namespace alpaka::onAcc::internal
         }
 
         template<onAcc::concepts::Acc T_Acc, typename T_ReduceOp>
-        struct ScalarReducer
+        class ScalarReducer
         {
             // using a const reference here is fine because we control the lifetime
             T_Acc const& m_acc;
             T_ReduceOp const& m_reduceOp;
 
+        public:
             constexpr ScalarReducer(T_Acc const& acc, auto&& func) : m_acc(acc), m_reduceOp{ALPAKA_FORWARD(func)}
             {
             }
@@ -409,10 +410,10 @@ namespace alpaka::onAcc::internal
                  * build our own groups out of the user-provided workgroup.
                  */
                 // build a worker group with slow-moving dimension threads for the outer loop
-                using index_type = typename IdxType::value_type;
-                auto wIdx = workGroup.getThreadIdx(acc).rAssign(index_type{0});
-                auto wSize = workGroup.getThreadCount(acc).rAssign(index_type{1});
-                auto domSize = domainSize.rAssign(index_type{1});
+                using IndexType = typename IdxType::value_type;
+                auto wIdx = workGroup.getThreadIdx(acc).rAssign(IndexType{0});
+                auto wSize = workGroup.getThreadCount(acc).rAssign(IndexType{1});
+                auto domSize = domainSize.rAssign(IndexType{1});
 
                 auto wOuter = WorkerGroup{wIdx, wSize};
 

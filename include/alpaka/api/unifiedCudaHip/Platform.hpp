@@ -140,8 +140,8 @@ namespace alpaka::onHost
                     devProp.maxThreadsDim[0u],
                     devProp.maxThreadsDim[1u],
                     devProp.maxThreadsDim[2u]};
-                prop.fnMaxThreadsPerBlock = [maxThreadsPerBlock = prop.maxThreadsPerBlock,
-                                             cudaMaxThreadsPerBlock](uint32_t* data, uint32_t numDims)
+                prop.m_fnMaxThreadsPerBlock = [maxThreadsPerBlock = prop.maxThreadsPerBlock,
+                                               cudaMaxThreadsPerBlock](uint32_t* data, uint32_t numDims)
                 {
                     if(numDims <= 3u)
                     {
@@ -163,7 +163,7 @@ namespace alpaka::onHost
                     devProp.maxGridSize[0u],
                     devProp.maxGridSize[1u],
                     devProp.maxGridSize[2u]};
-                prop.fnMaxBlocksPerGrid =
+                prop.m_fnMaxBlocksPerGrid =
                     [maxBlocksPerGrid = prop.maxBlocksPerGrid, cudaMaxBlocksPerGrid](uint32_t* data, uint32_t numDims)
                 {
                     if(numDims <= 3u)

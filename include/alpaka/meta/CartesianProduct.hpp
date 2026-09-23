@@ -17,66 +17,70 @@ namespace alpaka::meta
         struct CartesianProductImplHelper;
 
         // Stop condition.
-        template<template<typename...> class TList, typename... Ts>
-        struct CartesianProductImplHelper<TList<Ts...>>
+        template<template<typename...> class T_List, typename... Ts>
+        struct CartesianProductImplHelper<T_List<Ts...>>
         {
-            using type = TList<Ts...>;
+            using type = T_List<Ts...>;
         };
 
         // Catches first empty tuple.
-        template<template<typename...> class TList, typename... Ts>
-        struct CartesianProductImplHelper<TList<TList<>>, Ts...>
+        template<template<typename...> class T_List, typename... Ts>
+        struct CartesianProductImplHelper<T_List<T_List<>>, Ts...>
         {
-            using type = TList<>;
+            using type = T_List<>;
         };
 
         // Catches any empty tuple except first.
-        template<template<typename...> class TList, typename... Ts, typename... Rests>
-        struct CartesianProductImplHelper<TList<Ts...>, TList<>, Rests...>
+        template<template<typename...> class T_List, typename... Ts, typename... T_Rests>
+        struct CartesianProductImplHelper<T_List<Ts...>, T_List<>, T_Rests...>
         {
-            using type = TList<>;
+            using type = T_List<>;
         };
 
-        template<template<typename...> class TList, typename... X, typename H, typename... Rests>
-        struct CartesianProductImplHelper<TList<X...>, TList<H>, Rests...>
+        template<template<typename...> class T_List, typename... X, typename H, typename... T_Rests>
+        struct CartesianProductImplHelper<T_List<X...>, T_List<H>, T_Rests...>
         {
-            using type1 = TList<Concatenate<X, TList<H>>...>;
-            using type = typename CartesianProductImplHelper<type1, Rests...>::type;
+            using Type1 = T_List<Concatenate<X, T_List<H>>...>;
+            using type = typename CartesianProductImplHelper<Type1, T_Rests...>::type;
         };
 
         template<
-            template<typename...> class TList,
+            template<typename...> class T_List,
             typename... X,
-            template<typename...> class Head,
+            template<typename...> class T_Head,
             typename T,
             typename... Ts,
-            typename... Rests>
-        struct CartesianProductImplHelper<TList<X...>, Head<T, Ts...>, Rests...>
+            typename... T_Rests>
+        struct CartesianProductImplHelper<T_List<X...>, T_Head<T, Ts...>, T_Rests...>
         {
-            using type1 = TList<Concatenate<X, TList<T>>...>;
-            using type2 = typename CartesianProductImplHelper<TList<X...>, TList<Ts...>>::type;
-            using type3 = Concatenate<type1, type2>;
-            using type = typename CartesianProductImplHelper<type3, Rests...>::type;
+            using Type1 = T_List<Concatenate<X, T_List<T>>...>;
+            using Type2 = typename CartesianProductImplHelper<T_List<X...>, T_List<Ts...>>::type;
+            using Type3 = Concatenate<Type1, Type2>;
+            using type = typename CartesianProductImplHelper<Type3, T_Rests...>::type;
         };
 
-        template<template<typename...> class TList, typename... Ts>
+        template<template<typename...> class T_List, typename... Ts>
         struct CartesianProductImpl;
 
         // The base case for no input returns an empty sequence.
-        template<template<typename...> class TList>
-        struct CartesianProductImpl<TList>
+        template<template<typename...> class T_List>
+        struct CartesianProductImpl<T_List>
         {
-            using type = TList<>;
+            using type = T_List<>;
         };
 
         // R is the return type, Head<A...> is the first input list
-        template<template<typename...> class TList, template<typename...> class Head, typename... Ts, typename... Tail>
-        struct CartesianProductImpl<TList, Head<Ts...>, Tail...>
+        template<
+            template<typename...> class T_List,
+            template<typename...> class T_Head,
+            typename... Ts,
+            typename... T_Tail>
+        struct CartesianProductImpl<T_List, T_Head<Ts...>, T_Tail...>
         {
-            using type = typename detail::CartesianProductImplHelper<TList<TList<Ts>...>, Tail...>::type;
+            using type = typename detail::CartesianProductImplHelper<T_List<T_List<Ts>...>, T_Tail...>::type;
         };
     } // namespace detail
 
-    template<template<typename...> class TList, typename... Ts>
-    using CartesianProduct = typename detail::CartesianProductImpl<TList, Ts...>::type;
+    template<template<typename...> class T_List, typename... Ts>
+    using CartesianProduct = typename detail::CartesianProductImpl<T_List, Ts...>::type;
 } // namespace alpaka::meta

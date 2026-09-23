@@ -18,13 +18,13 @@
 
 namespace alpaka
 {
-    template<concepts::SimdMask Mask, concepts::Simd T_Simd>
+    template<concepts::SimdMask T_Mask, concepts::Simd T_Simd>
     struct SimdWhereExpr
     {
-        Mask const& m_mask;
+        T_Mask const& m_mask;
         T_Simd& value;
 
-        constexpr SimdWhereExpr(Mask const& m, T_Simd& v) : m_mask(m), value(v)
+        constexpr SimdWhereExpr(T_Mask const& m, T_Simd& v) : m_mask(m), value(v)
         {
         }
 

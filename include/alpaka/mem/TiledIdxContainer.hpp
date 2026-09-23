@@ -92,23 +92,23 @@ namespace alpaka::onAcc
         constexpr TiledIdxContainer(TiledIdxContainer const&) = default;
         constexpr TiledIdxContainer(TiledIdxContainer&&) = default;
 
-        class const_iterator;
+        class ConstIterator;
 
         /** special implementation to define the end
          *
          * Only a scalar value must be stored which reduce the register footprint.
          * The definition of end is that the index is behind or equal to the extent of the slowest moving dimension.
          */
-        class const_iterator_end
+        class ConstIteratorEnd
         {
             friend class TiledIdxContainer;
 
             void _()
             {
-                static_assert(std::forward_iterator<const_iterator_end>);
+                static_assert(std::forward_iterator<ConstIteratorEnd>);
             }
 
-            ALPAKA_FN_ACC constexpr const_iterator_end(alpaka::concepts::Vector auto const& extent)
+            ALPAKA_FN_ACC constexpr ConstIteratorEnd(alpaka::concepts::Vector auto const& extent)
                 : m_extentSlowDim{extent[T_CSelect{}][0]}
             {
             }
@@ -119,22 +119,22 @@ namespace alpaka::onAcc
             }
 
         public:
-            constexpr bool operator==(const_iterator_end const& other) const
+            constexpr bool operator==(ConstIteratorEnd const& other) const
             {
                 return (m_extentSlowDim == other.m_extentSlowDim);
             }
 
-            constexpr bool operator!=(const_iterator_end const& other) const
+            constexpr bool operator!=(ConstIteratorEnd const& other) const
             {
                 return !(*this == other);
             }
 
-            constexpr bool operator==(const_iterator const& other) const
+            constexpr bool operator==(ConstIterator const& other) const
             {
                 return (m_extentSlowDim <= other.slowCurrent);
             }
 
-            constexpr bool operator!=(const_iterator const& other) const
+            constexpr bool operator!=(ConstIterator const& other) const
             {
                 return !(*this == other);
             }
@@ -143,21 +143,21 @@ namespace alpaka::onAcc
             IdxType m_extentSlowDim;
         };
 
-        class const_iterator
+        class ConstIterator
         {
             friend class TiledIdxContainer;
-            friend class const_iterator_end;
+            friend class ConstIteratorEnd;
 
             static constexpr uint32_t iterDim = T_CSelect::dim();
             using IterIdxVecType = Vec<IdxType, iterDim>;
 
             void _()
             {
-                static_assert(std::forward_iterator<const_iterator>);
-                static_assert(std::input_iterator<const_iterator>);
+                static_assert(std::forward_iterator<ConstIterator>);
+                static_assert(std::input_iterator<ConstIterator>);
             }
 
-            constexpr const_iterator(
+            constexpr ConstIterator(
                 alpaka::concepts::Vector auto const offset,
                 alpaka::concepts::Vector auto const first,
                 alpaka::concepts::Vector auto const extent,
@@ -193,7 +193,7 @@ namespace alpaka::onAcc
             }
 
             // pre-increment the iterator
-            ALPAKA_FN_ACC constexpr const_iterator& operator++()
+            ALPAKA_FN_ACC constexpr ConstIterator& operator++()
             {
                 for(uint32_t d = 0; d < iterDim; ++d)
                 {
@@ -213,29 +213,29 @@ namespace alpaka::onAcc
             }
 
             // post-increment the iterator
-            ALPAKA_FN_ACC constexpr const_iterator operator++(int)
+            ALPAKA_FN_ACC constexpr ConstIterator operator++(int)
             {
-                const_iterator old = *this;
+                ConstIterator old = *this;
                 ++(*this);
                 return old;
             }
 
-            constexpr bool operator==(const_iterator const& other) const
+            constexpr bool operator==(ConstIterator const& other) const
             {
                 return (m_current == other.m_current);
             }
 
-            constexpr bool operator!=(const_iterator const& other) const
+            constexpr bool operator!=(ConstIterator const& other) const
             {
                 return !(*this == other);
             }
 
-            constexpr bool operator==(const_iterator_end const& other) const
+            constexpr bool operator==(ConstIteratorEnd const& other) const
             {
                 return (slowCurrent() >= *other);
             }
 
-            constexpr bool operator!=(const_iterator_end const& other) const
+            constexpr bool operator!=(ConstIteratorEnd const& other) const
             {
                 return !(*this == other);
             }
@@ -249,14 +249,14 @@ namespace alpaka::onAcc
             detail::ReducedVector<IdxType, iterDim> m_first;
         };
 
-        ALPAKA_FN_ACC constexpr const_iterator begin() const
+        ALPAKA_FN_ACC constexpr ConstIterator begin() const
         {
             constexpr auto selectedDims = T_CSelect{};
             auto [threadIdx, numThreads] = m_threadSpace.mapTo(selectedDims);
 
             if constexpr(std::is_same_v<T_IdxMapperFn, layout::Strided>)
             {
-                return const_iterator(
+                return ConstIterator(
                     m_idxRange.getBeginMd(),
                     threadIdx * m_idxRange.getStrideMd(),
                     m_idxRange.distance(),
@@ -280,18 +280,18 @@ namespace alpaka::onAcc
                 // crop to the end of the index range
                 IdxVecType end = extent.min(endLogical * m_idxRange.getStrideMd());
 
-                return const_iterator(m_idxRange.getBeginMd(), first, end, m_idxRange.getStrideMd());
+                return ConstIterator(m_idxRange.getBeginMd(), first, end, m_idxRange.getStrideMd());
             }
         }
 
-        ALPAKA_FN_ACC constexpr const_iterator_end end() const
+        ALPAKA_FN_ACC constexpr ConstIteratorEnd end() const
         {
             constexpr auto selectedDims = T_CSelect{};
             auto [threadIdx, numThreads] = m_threadSpace.mapTo(selectedDims);
 
             if constexpr(std::is_same_v<T_IdxMapperFn, layout::Strided>)
             {
-                return const_iterator_end(m_idxRange.getBeginMd() + m_idxRange.distance());
+                return ConstIteratorEnd(m_idxRange.getBeginMd() + m_idxRange.distance());
             }
             else if constexpr(std::is_same_v<T_IdxMapperFn, layout::Contiguous>)
             {
@@ -308,7 +308,7 @@ namespace alpaka::onAcc
                 // crop to the end of the index range
                 IdxVecType end = extent.min(endLogical * m_idxRange.getStrideMd());
 
-                return const_iterator_end(m_idxRange.getBeginMd() + end);
+                return ConstIteratorEnd(m_idxRange.getBeginMd() + end);
             }
         }
 

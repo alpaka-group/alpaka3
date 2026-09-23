@@ -74,7 +74,7 @@ namespace alpaka::onHost
             //!< Ready means that the event was not waiting within a queue
             //!< (not enqueued or already completed). If m_enqueueCount ==
             //!< m_LastReadyEnqueueCount, the event is currently not enqueued
-            std::size_t m_LastReadyEnqueueCount = 0u;
+            std::size_t m_lastReadyEnqueueCount = 0u;
             bool m_timingEnabled = false;
             std::chrono::steady_clock::time_point m_timestamp;
 
@@ -117,7 +117,7 @@ namespace alpaka::onHost
             bool isReady() noexcept
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::event);
-                return (m_LastReadyEnqueueCount == m_enqueueCount);
+                return (m_lastReadyEnqueueCount == m_enqueueCount);
             }
 
             /** Check if the event is complete.
@@ -144,7 +144,7 @@ namespace alpaka::onHost
                 std::unique_lock<std::mutex> lk(m_mutex);
                 size_t enqueueCount = m_enqueueCount;
 
-                while(enqueueCount > m_LastReadyEnqueueCount)
+                while(enqueueCount > m_lastReadyEnqueueCount)
                 {
                     auto future = m_future;
                     lk.unlock();

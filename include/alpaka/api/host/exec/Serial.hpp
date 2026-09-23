@@ -83,6 +83,7 @@ namespace alpaka::onHost
                     });
             }
 
+        private:
             T_ThreadSpec m_threadBlocking;
             uint32_t m_numaIdx;
             bool m_setThreadAffinity;

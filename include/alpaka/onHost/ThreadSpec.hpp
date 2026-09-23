@@ -73,14 +73,14 @@ namespace alpaka::onHost
 
     template<alpaka::concepts::VectorOrScalar T_NumBlocks, alpaka::concepts::VectorOrScalar T_NumThreads>
     ThreadSpec(T_NumBlocks const&, T_NumThreads const&)
-        -> ThreadSpec<alpaka::trait::getVec_t<T_NumBlocks>, alpaka::trait::getVec_t<T_NumThreads>>;
+        -> ThreadSpec<alpaka::trait::GetVec_t<T_NumBlocks>, alpaka::trait::GetVec_t<T_NumThreads>>;
 
     template<
         alpaka::concepts::VectorOrScalar T_NumBlocks,
         alpaka::concepts::VectorOrScalar T_NumThreads,
         alpaka::concepts::Executor T_Executor>
     ThreadSpec(T_NumBlocks const&, T_NumThreads const&, T_Executor)
-        -> ThreadSpec<alpaka::trait::getVec_t<T_NumBlocks>, alpaka::trait::getVec_t<T_NumThreads>, T_Executor>;
+        -> ThreadSpec<alpaka::trait::GetVec_t<T_NumBlocks>, alpaka::trait::GetVec_t<T_NumThreads>, T_Executor>;
 
     namespace trait
     {

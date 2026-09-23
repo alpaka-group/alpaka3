@@ -72,8 +72,8 @@ namespace alpaka::onHost
                 // able to work on the list without a guard.
                 std::vector<std::function<void()>> tmpQueues;
                 {
-                    std::lock_guard<std::mutex> lk{queuesGuard};
-                    tmpQueues = queueWaitFns; // copy weak_ptr list
+                    std::lock_guard<std::mutex> lk{m_queuesGuard};
+                    tmpQueues = m_queueWaitFns; // copy weak_ptr list
                 }
                 for(auto& waitFn : tmpQueues)
                 {
@@ -96,9 +96,9 @@ namespace alpaka::onHost
              * the queue would hold a shared pointer to the device and the device via the wait function a shared
              * pointer to the queue.
              */
-            std::vector<std::function<void()>> queueWaitFns;
-            std::vector<std::weak_ptr<cpu::Event<Device>>> events;
-            std::mutex queuesGuard;
+            std::vector<std::function<void()>> m_queueWaitFns;
+            std::vector<std::weak_ptr<cpu::Event<Device>>> m_events;
+            std::mutex m_queuesGuard;
 
             std::shared_ptr<Device> getSharedPtr()
             {
@@ -144,16 +144,16 @@ namespace alpaka::onHost
             {
                 ALPAKA_LOG_FUNCTION(onHost::logger::queue);
                 auto thisHandle = this->getSharedPtr();
-                std::lock_guard<std::mutex> lk{queuesGuard};
+                std::lock_guard<std::mutex> lk{m_queuesGuard};
 
                 auto newQueue = std::make_shared<cpu::Queue<Device>>(
                     std::move(thisHandle),
-                    queueWaitFns.size(),
+                    m_queueWaitFns.size(),
                     m_cpuGroupIdx,
                     policies);
 
                 std::weak_ptr<cpu::Queue<Device>> weakPtrToQueue = newQueue;
-                queueWaitFns.emplace_back(
+                m_queueWaitFns.emplace_back(
                     [weakPtrToQueue]
                     {
                         if(auto queue = weakPtrToQueue.lock())
@@ -168,10 +168,10 @@ namespace alpaka::onHost
             {
                 ALPAKA_LOG_FUNCTION(alpaka::onHost::logger::event);
                 auto thisHandle = this->getSharedPtr();
-                std::lock_guard<std::mutex> lk{queuesGuard};
-                auto newEvent = std::make_shared<cpu::Event<Device>>(std::move(thisHandle), events.size(), policies);
+                std::lock_guard<std::mutex> lk{m_queuesGuard};
+                auto newEvent = std::make_shared<cpu::Event<Device>>(std::move(thisHandle), m_events.size(), policies);
 
-                events.emplace_back(newEvent);
+                m_events.emplace_back(newEvent);
                 return newEvent;
             }
 

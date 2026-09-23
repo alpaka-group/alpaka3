@@ -107,21 +107,21 @@ namespace alpaka
 
         std::string toString(std::string const separator = ",", std::string const enclosings = "{}") const
         {
-            std::string locale_enclosing_begin;
-            std::string locale_enclosing_end;
-            size_t enclosing_dim = enclosings.size();
+            std::string localeEnclosingBegin;
+            std::string localeEnclosingEnd;
+            size_t enclosingDim = enclosings.size();
 
-            if(enclosing_dim > 0)
+            if(enclosingDim > 0)
             {
                 /* % avoid out of memory access */
-                locale_enclosing_begin = enclosings[0 % enclosing_dim];
-                locale_enclosing_end = enclosings[1 % enclosing_dim];
+                localeEnclosingBegin = enclosings[0 % enclosingDim];
+                localeEnclosingEnd = enclosings[1 % enclosingDim];
             }
 
             std::stringstream stream;
-            stream << locale_enclosing_begin;
+            stream << localeEnclosingBegin;
             stream << m_begin << separator << m_end << separator << m_stride;
-            stream << locale_enclosing_end;
+            stream << localeEnclosingEnd;
             return stream.str();
         }
 
@@ -158,31 +158,31 @@ namespace alpaka
         auto const range,
         alpaka::BoundaryDirection<T_dim, T_LowHaloVec, T_UpHaloVec> const& boundaryDir)
     {
-        auto m_begin = Vec<uint32_t, T_dim>::fill(0u);
-        auto m_end = Vec<uint32_t, T_dim>::fill(0u);
+        auto begin = Vec<uint32_t, T_dim>::fill(0u);
+        auto end = Vec<uint32_t, T_dim>::fill(0u);
         for(uint32_t i = 0; i < T_dim; ++i)
         {
             switch(boundaryDir.data[i])
             {
-            case BoundaryType::LOWER:
-                m_begin[i] = range.getBeginMd()[i];
-                m_end[i] = range.getBeginMd()[i] + boundaryDir.lowerHaloSize[i];
+            case BoundaryType::lower:
+                begin[i] = range.getBeginMd()[i];
+                end[i] = range.getBeginMd()[i] + boundaryDir.lowerHaloSize[i];
                 break;
-            case BoundaryType::UPPER:
-                m_begin[i] = range.getEndMd()[i] - boundaryDir.upperHaloSize[i];
-                m_end[i] = range.getEndMd()[i];
+            case BoundaryType::upper:
+                begin[i] = range.getEndMd()[i] - boundaryDir.upperHaloSize[i];
+                end[i] = range.getEndMd()[i];
                 break;
-            case BoundaryType::MIDDLE:
-                m_begin[i] = range.getBeginMd()[i] + boundaryDir.lowerHaloSize[i];
-                m_end[i] = range.getEndMd()[i] - boundaryDir.upperHaloSize[i];
+            case BoundaryType::middle:
+                begin[i] = range.getBeginMd()[i] + boundaryDir.lowerHaloSize[i];
+                end[i] = range.getEndMd()[i] - boundaryDir.upperHaloSize[i];
                 break;
-            case BoundaryType::OOB:
+            case BoundaryType::oob:
                 [[fallthrough]];
             default:
                 ALPAKA_ASSERT_ACC(false);
             }
         }
-        return IdxRange{m_begin, m_end, range.getStrideMd()};
+        return IdxRange{begin, end, range.getStrideMd()};
     }
 
     namespace internal
@@ -214,19 +214,19 @@ namespace alpaka
     } // namespace internal
 
     template<concepts::VectorOrScalar T_Extents>
-    ALPAKA_FN_DG IdxRange(T_Extents const&) -> IdxRange<typename trait::getVec_t<T_Extents>::UniVec>;
+    ALPAKA_FN_DG IdxRange(T_Extents const&) -> IdxRange<typename trait::GetVec_t<T_Extents>::UniVec>;
 
     template<concepts::VectorOrScalar T_Begin, concepts::VectorOrScalar T_End>
     ALPAKA_FN_DG IdxRange(T_Begin const&, T_End const&) -> IdxRange<
-        typename trait::getVec_t<T_Begin>::UniVec,
-        typename trait::getVec_t<T_End>::UniVec,
-        typename trait::getVec_t<T_End>::UniVec>;
+        typename trait::GetVec_t<T_Begin>::UniVec,
+        typename trait::GetVec_t<T_End>::UniVec,
+        typename trait::GetVec_t<T_End>::UniVec>;
 
     template<concepts::VectorOrScalar T_Begin, concepts::VectorOrScalar T_End, concepts::VectorOrScalar T_Stride>
     ALPAKA_FN_DG IdxRange(T_Begin const&, T_End const&, T_Stride const&) -> IdxRange<
-        typename trait::getVec_t<T_Begin>::UniVec,
-        typename trait::getVec_t<T_End>::UniVec,
-        typename trait::getVec_t<T_Stride>::UniVec>;
+        typename trait::GetVec_t<T_Begin>::UniVec,
+        typename trait::GetVec_t<T_End>::UniVec,
+        typename trait::GetVec_t<T_Stride>::UniVec>;
 
     namespace trait
     {

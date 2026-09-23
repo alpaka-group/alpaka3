@@ -24,14 +24,14 @@ TEST_CASE(
         STATIC_REQUIRE(std::is_same_v<typename internal::GetElementType<int (&)[2][2]>::type, int>);
         STATIC_REQUIRE(std::is_same_v<typename internal::GetElementType<int const(&)[2][2]>::type, int>);
 
-        STATIC_REQUIRE_FALSE(internal::GetElementType<int>::is_const);
-        STATIC_REQUIRE(internal::GetElementType<int const>::is_const);
-        STATIC_REQUIRE_FALSE(internal::GetElementType<int&>::is_const);
-        STATIC_REQUIRE(internal::GetElementType<int const&>::is_const);
-        STATIC_REQUIRE_FALSE(internal::GetElementType<int[2][2]>::is_const);
-        STATIC_REQUIRE(internal::GetElementType<int const[2][2]>::is_const);
-        STATIC_REQUIRE_FALSE(internal::GetElementType<int (&)[2][2]>::is_const);
-        STATIC_REQUIRE(internal::GetElementType<int const(&)[2][2]>::is_const);
+        STATIC_REQUIRE_FALSE(internal::GetElementType<int>::isConst);
+        STATIC_REQUIRE(internal::GetElementType<int const>::isConst);
+        STATIC_REQUIRE_FALSE(internal::GetElementType<int&>::isConst);
+        STATIC_REQUIRE(internal::GetElementType<int const&>::isConst);
+        STATIC_REQUIRE_FALSE(internal::GetElementType<int[2][2]>::isConst);
+        STATIC_REQUIRE(internal::GetElementType<int const[2][2]>::isConst);
+        STATIC_REQUIRE_FALSE(internal::GetElementType<int (&)[2][2]>::isConst);
+        STATIC_REQUIRE(internal::GetElementType<int const(&)[2][2]>::isConst);
     }
 
     STATIC_REQUIRE(internal::concepts::InnerTypeAllowedCast<int, int>);

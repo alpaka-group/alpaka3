@@ -27,15 +27,15 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::fabsf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::fabs(arg);
-            else if constexpr(is_decayed_v<T_Arg, int>)
+            else if constexpr(isDecayed_v<T_Arg, int>)
                 return ::abs(arg);
-            else if constexpr(is_decayed_v<T_Arg, long int>)
+            else if constexpr(isDecayed_v<T_Arg, long int>)
                 return ::labs(arg);
-            else if constexpr(is_decayed_v<T_Arg, long long int>)
+            else if constexpr(isDecayed_v<T_Arg, long long int>)
                 return ::llabs(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -49,9 +49,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::sinf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::sin(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -65,9 +65,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::acoshf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::acosh(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -81,9 +81,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::asinhf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::asinh(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -97,9 +97,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::sinhf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::sinh(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -113,9 +113,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::atanf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::atan(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -129,9 +129,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::atanhf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::atanh(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -145,9 +145,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::tanhf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::tanh(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -162,9 +162,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::cbrtf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double> || std::is_integral_v<T_Arg>)
+            else if constexpr(isDecayed_v<T_Arg, double> || std::is_integral_v<T_Arg>)
                 return ::cbrt(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -178,9 +178,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::ceilf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::ceil(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -194,9 +194,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::roundf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::round(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -210,9 +210,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::lroundf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::lround(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -226,9 +226,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::llroundf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::llround(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -242,9 +242,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg, T_Arg& result_sin, T_Arg& result_cos) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 ::sincosf(arg, &result_sin, &result_cos);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 ::sincos(arg, &result_sin, &result_cos);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -256,9 +256,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::expf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::exp(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -273,9 +273,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::sqrtf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double> || std::is_integral_v<T_Arg>)
+            else if constexpr(isDecayed_v<T_Arg, double> || std::is_integral_v<T_Arg>)
                 return ::sqrt(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -290,9 +290,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::rsqrtf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double> || std::is_integral_v<T_Arg>)
+            else if constexpr(isDecayed_v<T_Arg, double> || std::is_integral_v<T_Arg>)
                 return ::rsqrt(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -306,9 +306,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::truncf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::trunc(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -322,9 +322,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::cosf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::cos(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -338,9 +338,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::coshf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::cosh(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -354,9 +354,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::erff(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::erf(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -370,9 +370,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::floorf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::floor(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -386,9 +386,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::logf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::log(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -402,9 +402,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::log2f(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::log2(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -418,9 +418,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::log10f(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::log10(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -434,9 +434,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::tanf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::tan(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -450,9 +450,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Y const& y, T_X const& x) const
         {
-            if constexpr(is_decayed_v<T_Y, float> && is_decayed_v<T_X, float>)
+            if constexpr(isDecayed_v<T_Y, float> && isDecayed_v<T_X, float>)
                 return ::atan2f(y, x);
-            else if constexpr(is_decayed_v<T_Y, double> || is_decayed_v<T_X, double>)
+            else if constexpr(isDecayed_v<T_Y, double> || isDecayed_v<T_X, double>)
                 return ::atan2(y, x);
             else
                 static_assert(!sizeof(T_Y), "Unsupported data type");
@@ -476,9 +476,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::asinf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::asin(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -492,9 +492,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Arg const& arg) const
         {
-            if constexpr(is_decayed_v<T_Arg, float>)
+            if constexpr(isDecayed_v<T_Arg, float>)
                 return ::acosf(arg);
-            else if constexpr(is_decayed_v<T_Arg, double>)
+            else if constexpr(isDecayed_v<T_Arg, double>)
                 return ::acos(arg);
             else
                 static_assert(!sizeof(T_Arg), "Unsupported data type");
@@ -545,9 +545,9 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Mag const& mag, T_Sgn const& sgn) const
         {
-            if constexpr(is_decayed_v<T_Mag, float> && is_decayed_v<T_Sgn, float>)
+            if constexpr(isDecayed_v<T_Mag, float> && isDecayed_v<T_Sgn, float>)
                 return ::copysignf(mag, sgn);
-            else if constexpr(is_decayed_v<T_Mag, double> || is_decayed_v<T_Sgn, double>)
+            else if constexpr(isDecayed_v<T_Mag, double> || isDecayed_v<T_Sgn, double>)
                 return ::copysign(mag, sgn);
             else
                 static_assert(!sizeof(T_Mag), "Unsupported data type");
@@ -563,12 +563,12 @@ namespace alpaka::math::internal
         {
             if constexpr(std::is_integral_v<T_A> && std::is_integral_v<T_B>)
                 return ::min(a, b);
-            else if constexpr(is_decayed_v<T_A, float> && is_decayed_v<T_B, float>)
+            else if constexpr(isDecayed_v<T_A, float> && isDecayed_v<T_B, float>)
                 return ::fminf(a, b);
             else if constexpr(
-                is_decayed_v<T_A, double> || is_decayed_v<T_B, double>
-                || (is_decayed_v<T_A, float> && std::is_integral_v<T_B>)
-                || (std::is_integral_v<T_A> && is_decayed_v<T_B, float>) )
+                isDecayed_v<T_A, double> || isDecayed_v<T_B, double>
+                || (isDecayed_v<T_A, float> && std::is_integral_v<T_B>)
+                || (std::is_integral_v<T_A> && isDecayed_v<T_B, float>) )
                 return ::fmin(a, b);
             else
                 static_assert(!sizeof(T_A), "Unsupported data type");
@@ -576,7 +576,7 @@ namespace alpaka::math::internal
             using Ret [[maybe_unused]] = std::conditional_t<
                 std::is_integral_v<T_A> && std::is_integral_v<T_B>,
                 decltype(::min(a, b)),
-                std::conditional_t<is_decayed_v<T_A, float> && is_decayed_v<T_B, float>, float, double>>;
+                std::conditional_t<isDecayed_v<T_A, float> && isDecayed_v<T_B, float>, float, double>>;
             ALPAKA_UNREACHABLE(Ret{});
         }
     };
@@ -589,12 +589,12 @@ namespace alpaka::math::internal
         {
             if constexpr(std::is_integral_v<T_A> && std::is_integral_v<T_B>)
                 return ::max(a, b);
-            else if constexpr(is_decayed_v<T_A, float> && is_decayed_v<T_B, float>)
+            else if constexpr(isDecayed_v<T_A, float> && isDecayed_v<T_B, float>)
                 return ::fmaxf(a, b);
             else if constexpr(
-                is_decayed_v<T_A, double> || is_decayed_v<T_B, double>
-                || (is_decayed_v<T_A, float> && std::is_integral_v<T_B>)
-                || (std::is_integral_v<T_A> && is_decayed_v<T_B, float>) )
+                isDecayed_v<T_A, double> || isDecayed_v<T_B, double>
+                || (isDecayed_v<T_A, float> && std::is_integral_v<T_B>)
+                || (std::is_integral_v<T_A> && isDecayed_v<T_B, float>) )
                 return ::fmax(a, b);
             else
                 static_assert(!sizeof(T_A), "Unsupported data type");
@@ -602,7 +602,7 @@ namespace alpaka::math::internal
             using Ret [[maybe_unused]] = std::conditional_t<
                 std::is_integral_v<T_A> && std::is_integral_v<T_B>,
                 decltype(::max(a, b)),
-                std::conditional_t<is_decayed_v<T_A, float> && is_decayed_v<T_B, float>, float, double>>;
+                std::conditional_t<isDecayed_v<T_A, float> && isDecayed_v<T_B, float>, float, double>>;
             ALPAKA_UNREACHABLE(Ret{});
         }
     };
@@ -612,15 +612,15 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_Base const& base, T_Exp const& exp) const
         {
-            if constexpr(is_decayed_v<T_Base, float> && is_decayed_v<T_Exp, float>)
+            if constexpr(isDecayed_v<T_Base, float> && isDecayed_v<T_Exp, float>)
                 return ::powf(base, exp);
-            else if constexpr(is_decayed_v<T_Base, double> || is_decayed_v<T_Exp, double>)
+            else if constexpr(isDecayed_v<T_Base, double> || isDecayed_v<T_Exp, double>)
                 return ::pow(static_cast<double>(base), static_cast<double>(exp));
             else
                 static_assert(!sizeof(T_Base), "Unsupported data type");
 
             using Ret [[maybe_unused]]
-            = std::conditional_t<is_decayed_v<T_Base, float> && is_decayed_v<T_Exp, float>, float, double>;
+            = std::conditional_t<isDecayed_v<T_Base, float> && isDecayed_v<T_Exp, float>, float, double>;
             ALPAKA_UNREACHABLE(Ret{});
         }
     };
@@ -630,15 +630,15 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_X const& x, T_Y const& y) const
         {
-            if constexpr(is_decayed_v<T_X, float> && is_decayed_v<T_Y, float>)
+            if constexpr(isDecayed_v<T_X, float> && isDecayed_v<T_Y, float>)
                 return ::fmodf(x, y);
-            else if constexpr(is_decayed_v<T_X, double> || is_decayed_v<T_Y, double>)
+            else if constexpr(isDecayed_v<T_X, double> || isDecayed_v<T_Y, double>)
                 return ::fmod(x, y);
             else
                 static_assert(!sizeof(T_X), "Unsupported data type");
 
             using Ret [[maybe_unused]]
-            = std::conditional_t<is_decayed_v<T_X, float> && is_decayed_v<T_Y, float>, float, double>;
+            = std::conditional_t<isDecayed_v<T_X, float> && isDecayed_v<T_Y, float>, float, double>;
             ALPAKA_UNREACHABLE(Ret{});
         }
     };
@@ -648,15 +648,15 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_X const& x, T_Y const& y) const
         {
-            if constexpr(is_decayed_v<T_X, float> && is_decayed_v<T_Y, float>)
+            if constexpr(isDecayed_v<T_X, float> && isDecayed_v<T_Y, float>)
                 return ::remainderf(x, y);
-            else if constexpr(is_decayed_v<T_X, double> || is_decayed_v<T_Y, double>)
+            else if constexpr(isDecayed_v<T_X, double> || isDecayed_v<T_Y, double>)
                 return ::remainder(x, y);
             else
                 static_assert(!sizeof(T_X), "Unsupported data type");
 
             using Ret [[maybe_unused]]
-            = std::conditional_t<is_decayed_v<T_X, float> && is_decayed_v<T_Y, float>, float, double>;
+            = std::conditional_t<isDecayed_v<T_X, float> && isDecayed_v<T_Y, float>, float, double>;
             ALPAKA_UNREACHABLE(Ret{});
         }
     };
@@ -666,15 +666,15 @@ namespace alpaka::math::internal
     {
         constexpr auto operator()(CudaHipMath, T_X const& x, T_Y const& y, T_Z const& z) const
         {
-            if constexpr(is_decayed_v<T_X, float> && is_decayed_v<T_Y, float> && is_decayed_v<T_Z, float>)
+            if constexpr(isDecayed_v<T_X, float> && isDecayed_v<T_Y, float> && isDecayed_v<T_Z, float>)
                 return ::fmaf(x, y, z);
-            else if constexpr(is_decayed_v<T_X, double> || is_decayed_v<T_Y, double> || is_decayed_v<T_Z, double>)
+            else if constexpr(isDecayed_v<T_X, double> || isDecayed_v<T_Y, double> || isDecayed_v<T_Z, double>)
                 return ::fma(x, y, z);
             else
                 static_assert(!sizeof(T_X), "Unsupported data type");
 
             using Ret [[maybe_unused]] = std::conditional_t<
-                is_decayed_v<T_X, float> && is_decayed_v<T_Y, float> && is_decayed_v<T_Z, float>,
+                isDecayed_v<T_X, float> && isDecayed_v<T_Y, float> && isDecayed_v<T_Z, float>,
                 float,
                 double>;
             ALPAKA_UNREACHABLE(Ret{});

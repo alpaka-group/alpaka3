@@ -84,7 +84,7 @@ namespace alpaka::onHost
         template<concepts::ThreadSpec T_Spec, typename T_KernelFn, typename... T_Args>
         requires requires() { std::declval<T_KernelFn>().dynSharedMemBytes; } || requires() {
             BlockDynSharedMemBytes<T_KernelFn, T_Spec>{std::declval<T_KernelFn>(), std::declval<T_Spec>()}(
-                std::declval<remove_restrict_t<std::decay_t<T_Args>>>()...);
+                std::declval<RemoveRestrict_t<std::decay_t<T_Args>>>()...);
         }
         struct GetDynSharedMemBytes<T_Spec, KernelBundle<T_KernelFn, T_Args...>>
         {
@@ -94,7 +94,7 @@ namespace alpaka::onHost
             {
                 if constexpr(requires {
                                  BlockDynSharedMemBytes<T_KernelFn, T_Spec>{kernelBundle.getKernelFn(), spec}(
-                                     std::declval<remove_restrict_t<std::decay_t<T_Args>>>()...);
+                                     std::declval<RemoveRestrict_t<std::decay_t<T_Args>>>()...);
                              })
                 {
                     return alpaka::apply(

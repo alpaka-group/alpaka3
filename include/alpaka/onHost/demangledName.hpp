@@ -23,7 +23,7 @@ namespace alpaka::onHost
     /// https://www.reddit.com/r/cpp/comments/lfi6jt/finally_a_possibly_portable_way_to_convert_types/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
 
     template<typename T>
-    constexpr auto EmbedTypeIntoSignature()
+    constexpr auto embedTypeIntoSignature()
     {
         return std::string_view{std::source_location::current().function_name()};
     }
@@ -34,14 +34,14 @@ namespace alpaka::onHost
         static constexpr auto name()
         {
             constexpr size_t testSignatureLength = sizeof("AlpakaDemangleReferenceType") - 1;
-            auto const DummySignature = EmbedTypeIntoSignature<AlpakaDemangleReferenceType>();
+            auto const dummySignature = embedTypeIntoSignature<AlpakaDemangleReferenceType>();
             // count char's until the type name starts
-            auto const startPosition = DummySignature.find("AlpakaDemangleReferenceType");
+            auto const startPosition = dummySignature.find("AlpakaDemangleReferenceType");
             // count char's after the type information by removing type name information and pre information
-            auto const tailLength = DummySignature.size() - startPosition - testSignatureLength;
-            auto const EmbeddingSignature = EmbedTypeIntoSignature<T>();
-            auto const typeLength = EmbeddingSignature.size() - startPosition - tailLength;
-            return EmbeddingSignature.substr(startPosition, typeLength);
+            auto const tailLength = dummySignature.size() - startPosition - testSignatureLength;
+            auto const embeddingSignature = embedTypeIntoSignature<T>();
+            auto const typeLength = embeddingSignature.size() - startPosition - tailLength;
+            return embeddingSignature.substr(startPosition, typeLength);
         }
     };
 

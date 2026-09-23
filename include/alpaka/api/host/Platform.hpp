@@ -40,8 +40,8 @@ namespace alpaka::onHost
                 static_assert(internal::concepts::Platform<Platform>);
             }
 
-            std::vector<std::weak_ptr<cpu::Device<Platform>>> devices;
-            std::mutex deviceGuard;
+            std::vector<std::weak_ptr<cpu::Device<Platform>>> m_devices;
+            std::mutex m_deviceGuard;
 
             std::shared_ptr<Platform> getSharedPtr()
             {
@@ -71,10 +71,10 @@ namespace alpaka::onHost
                     else
                         devCount = 1;
 
-                    if(devices.size() < static_cast<size_t>(devCount))
+                    if(m_devices.size() < static_cast<size_t>(devCount))
                     {
-                        std::lock_guard<std::mutex> lk{deviceGuard};
-                        devices.resize(devCount);
+                        std::lock_guard<std::mutex> lk{m_deviceGuard};
+                        m_devices.resize(devCount);
                     }
                 }
                 return devCount;
@@ -94,9 +94,9 @@ namespace alpaka::onHost
                           << "' !";
                     throw std::runtime_error(ssErr.str());
                 }
-                std::lock_guard<std::mutex> lk{deviceGuard};
+                std::lock_guard<std::mutex> lk{m_deviceGuard};
 
-                if(auto sharedPtr = devices[idx].lock())
+                if(auto sharedPtr = m_devices[idx].lock())
                 {
                     return sharedPtr;
                 }
@@ -107,7 +107,7 @@ namespace alpaka::onHost
                     cpuGroupIdx = idx;
                 }
                 auto newDevice = std::make_shared<cpu::Device<Platform>>(std::move(thisHandle), idx, cpuGroupIdx);
-                devices[idx] = newDevice;
+                m_devices[idx] = newDevice;
                 return newDevice;
             }
 
@@ -129,7 +129,7 @@ namespace alpaka::onHost
         {
             auto operator()(api::Host, T_DeviceKind) const
             {
-                return make_sharedSingleton<cpu::Platform<T_DeviceKind>>();
+                return makeSharedSingleton<cpu::Platform<T_DeviceKind>>();
             }
         };
 
@@ -166,7 +166,7 @@ namespace alpaka::onHost
                  * multiProcessorCount as maximum to allow thread oversubscription in the future.
                  */
                 prop.maxThreadsPerBlock = 4u * 1024u;
-                prop.fnMaxThreadsPerBlock
+                prop.m_fnMaxThreadsPerBlock
                     = [maxThreadsPerBlockDim = prop.maxThreadsPerBlock](uint32_t* data, uint32_t numDims)
                 {
                     for(uint32_t d = 0u; d < numDims; ++d)
@@ -174,7 +174,7 @@ namespace alpaka::onHost
                 };
 
                 prop.maxBlocksPerGrid = std::numeric_limits<uint32_t>::max();
-                prop.fnMaxBlocksPerGrid = [](uint32_t* data, uint32_t numDims)
+                prop.m_fnMaxBlocksPerGrid = [](uint32_t* data, uint32_t numDims)
                 {
                     for(uint32_t d = 0u; d < numDims; ++d)
                         data[d] = std::numeric_limits<uint32_t>::max();

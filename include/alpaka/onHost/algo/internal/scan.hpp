@@ -26,20 +26,20 @@ namespace alpaka::onHost::internal
 {
     enum ScanType
     {
-        EXCLUSIVE_SCAN,
-        INCLUSIVE_SCAN
+        exclusiveScan,
+        inclusiveScan
     };
 
     constexpr std::size_t chunkSize = 2048u;
 
-    template<alpaka::concepts::DeviceKind TDeviceKind, typename T_Idx, typename T_Data>
+    template<alpaka::concepts::DeviceKind T_DeviceKind, typename T_Idx, typename T_Data>
     consteval T_Idx maximumMiniBlockSize()
     {
-        if constexpr(TDeviceKind{} == deviceKind::nvidiaGpu)
+        if constexpr(T_DeviceKind{} == deviceKind::nvidiaGpu)
             return static_cast<T_Idx>(8);
-        else if constexpr(TDeviceKind{} == deviceKind::amdGpu)
+        else if constexpr(T_DeviceKind{} == deviceKind::amdGpu)
             return static_cast<T_Idx>(8);
-        else if constexpr(TDeviceKind{} == deviceKind::intelGpu)
+        else if constexpr(T_DeviceKind{} == deviceKind::intelGpu)
             return static_cast<T_Idx>(8);
         else
             return static_cast<T_Idx>(32768) / sizeof(T_Data);
@@ -111,8 +111,8 @@ namespace alpaka::onHost::internal
      * the improvement from Lichterman, written up in the CUDA blog (see 39.2.5):
      * https://developer.nvidia.com/gpugems/gpugems3/part-vi-gpu-computing/chapter-39-parallel-prefix-sum-scan-cuda
      */
-    template<ScanType SCAN_TYPE, typename T_Idx, typename T_Data>
-    class Scan_ScanBlocksKernel
+    template<ScanType T_scanType, typename T_Idx, typename T_Data>
+    class ScanBlocksKernel
     {
     public:
         ALPAKA_FN_ACC void operator()(
@@ -136,8 +136,8 @@ namespace alpaka::onHost::internal
             constexpr std::integral auto miniBlocksPerThread = elsPerThread / miniBlockSize;
             constexpr std::integral auto miniBlocksPerChunk = chunkExtent.x() / miniBlockSize;
 
-            constexpr auto LocalArrayLength = miniBlocksPerThread * miniBlockSize;
-            using LocalArray = T_Data[LocalArrayLength];
+            constexpr auto lLocalArrayLength = miniBlocksPerThread * miniBlockSize;
+            using LocalArray = T_Data[lLocalArrayLength];
 
             auto const validElementsInLastFrame = (numElements - T_Idx{1}) % chunkExtent + T_Idx{1};
 
@@ -230,8 +230,8 @@ namespace alpaka::onHost::internal
                     // -- SAVE BLOCK SUMS --
                     if constexpr(sizeof...(blockSums))
                     {
-                        auto _blockSums = std::get<0>(std::make_tuple(blockSums...));
-                        _blockSums[chunkIdx] = tmp[conflictFreeAccess<AccType>(miniBlocksPerChunk - T_Idx{1})];
+                        auto blockSums0 = std::get<0>(std::make_tuple(blockSums...));
+                        blockSums0[chunkIdx] = tmp[conflictFreeAccess<AccType>(miniBlocksPerChunk - T_Idx{1})];
                     }
 
                     // -- SET 0 --
@@ -287,9 +287,9 @@ namespace alpaka::onHost::internal
                         {
                             if(frameOffset + frameElem + i < numElements)
                             {
-                                if constexpr(SCAN_TYPE == EXCLUSIVE_SCAN)
+                                if constexpr(T_scanType == exclusiveScan)
                                     outputVec[frameOffset + frameElem + i] = regMem[i];
-                                else if constexpr(SCAN_TYPE == INCLUSIVE_SCAN)
+                                else if constexpr(T_scanType == inclusiveScan)
                                     outputVec[frameOffset + frameElem + i]
                                         = inputVec[frameOffset + frameElem + i] + regMem[i];
                             }
@@ -307,9 +307,9 @@ namespace alpaka::onHost::internal
                                 Alignment<16>{},
                                 CVec<T_Idx, 4>{}};
                             auto regView = SimdPtr{regMemMd, Vec{i}, Alignment<16>{}, CVec<T_Idx, 4>{}};
-                            if constexpr(SCAN_TYPE == EXCLUSIVE_SCAN)
+                            if constexpr(T_scanType == exclusiveScan)
                                 outputVecView = regView.load();
-                            else if constexpr(SCAN_TYPE == INCLUSIVE_SCAN)
+                            else if constexpr(T_scanType == inclusiveScan)
                             {
                                 auto inputVecView = SimdPtr{
                                     inputVec,
@@ -329,7 +329,7 @@ namespace alpaka::onHost::internal
     /* Add prefix sum from previous blocks (blockSums) to all elements in each block.
      */
     template<typename T_Idx>
-    class Scan_AddIncrementsKernel
+    class ScanAddIncrementsKernel
     {
     public:
         ALPAKA_FN_ACC void operator()(
@@ -356,17 +356,17 @@ namespace alpaka::onHost::internal
     template<typename T_Data>
     auto scanBufferSize(std::integral auto const& extent)
     {
-        using T_Idx = ALPAKA_TYPEOF(extent);
-        auto elements = divCeil(extent, T_Idx{chunkSize});
+        using Idx = ALPAKA_TYPEOF(extent);
+        auto elements = divCeil(extent, Idx{chunkSize});
 
-        auto bufSize = T_Idx{0};
-        while(elements > T_Idx{1})
+        auto bufSize = Idx{0};
+        while(elements > Idx{1})
         {
             bufSize += elements;
-            elements = divCeil(elements, T_Idx{chunkSize});
+            elements = divCeil(elements, Idx{chunkSize});
         }
 
-        return bufSize * T_Idx{sizeof(T_Data)};
+        return bufSize * Idx{sizeof(T_Data)};
     }
 
     template<typename T_Data>
@@ -376,7 +376,7 @@ namespace alpaka::onHost::internal
         return Vec{scanBufferSize<T_Data>(extents.x())};
     }
 
-    template<ScanType SCAN_TYPE>
+    template<ScanType T_scanType>
     void scan(
         auto& queue,
         alpaka::onHost::concepts::Device auto& devAcc,
@@ -385,20 +385,20 @@ namespace alpaka::onHost::internal
         alpaka::concepts::IMdSpan auto& outputVec,
         alpaka::concepts::IDataSource auto& inputVec)
     {
-        using T_Data = typename ALPAKA_TYPEOF(inputVec)::value_type;
-        using T_Idx = typename ALPAKA_TYPEOF(inputVec)::index_type;
+        using Data = typename ALPAKA_TYPEOF(inputVec)::value_type;
+        using Idx = typename ALPAKA_TYPEOF(inputVec)::index_type;
 
         static_assert(
-            std::is_same_v<T_Data, typename ALPAKA_TYPEOF(outputVec)::value_type>,
+            std::is_same_v<Data, typename ALPAKA_TYPEOF(outputVec)::value_type>,
             "output vector must have the same data type as input vector");
 
         // Instantiate the kernel function object with the given scan type
-        Scan_ScanBlocksKernel<SCAN_TYPE, T_Idx, T_Data> scanBlocks;
+        ScanBlocksKernel<T_scanType, Idx, Data> scanBlocks;
 
         // Define chunkExtent
-        constexpr auto chunkExtent = CVec<T_Idx, chunkSize>{};
+        constexpr auto chunkExtent = CVec<Idx, chunkSize>{};
         alpaka::Vec numChunks = divCeil(inputVec.getExtents(), chunkExtent);
-        auto const frameSpec = onHost::FrameSpec{numChunks, CVec<T_Idx, 256u>{}};
+        auto const frameSpec = onHost::FrameSpec{numChunks, CVec<Idx, 256u>{}};
 
         ALPAKA_LOG_INFO(
             onHost::logger::memory,
@@ -406,31 +406,29 @@ namespace alpaka::onHost::internal
             {
                 std::stringstream ss;
                 ss << "scan: {";
-                if(SCAN_TYPE == INCLUSIVE_SCAN)
+                if(T_scanType == inclusiveScan)
                     ss << ", scanType= INCLUSIVE_SCAN";
-                else if(SCAN_TYPE == EXCLUSIVE_SCAN)
+                else if(T_scanType == exclusiveScan)
                     ss << ", scanType= EXCLUSIVE_SCAN";
                 ss << ", numFrames= " << numChunks;
                 ss << ", chunkExtent= " << chunkExtent;
-                ss << ", value_type=" << onHost::demangledName<T_Data>();
+                ss << ", value_type=" << onHost::demangledName<Data>();
                 ss << "}";
                 return ss.str();
             });
 
-        if(frameSpec.getNumFrames() > T_Idx{1})
+        if(frameSpec.getNumFrames() > Idx{1})
         {
             // problem does not fit in 1 frame, recurse
-            Scan_AddIncrementsKernel<T_Idx> addIncrements;
+            ScanAddIncrementsKernel<Idx> addIncrements;
 
-            auto bufSizeBytes = frameSpec.getNumFrames() * T_Idx{sizeof(T_Data)};
-            assert(buffer.getExtents() * T_Idx{sizeof(typename ALPAKA_TYPEOF(buffer)::value_type)} >= bufSizeBytes);
+            auto bufSizeBytes = frameSpec.getNumFrames() * Idx{sizeof(Data)};
+            assert(buffer.getExtents() * Idx{sizeof(typename ALPAKA_TYPEOF(buffer)::value_type)} >= bufSizeBytes);
 
             // get the view to the necessary elements in the buffer for increments
             auto subBuf = buffer.getSubView(bufSizeBytes);
-            auto increments = MdSpan{
-                reinterpret_cast<T_Data*>(subBuf.data()),
-                frameSpec.getNumFrames(),
-                Vec<T_Idx, 1>{sizeof(T_Data)}};
+            auto increments
+                = MdSpan{reinterpret_cast<Data*>(subBuf.data()), frameSpec.getNumFrames(), Vec<Idx, 1>{sizeof(Data)}};
 
             // the unused elements in the buffer are used for recursion to the next scan call
             auto bufferNext = buffer.getSubView(bufSizeBytes, buffer.getExtents() - bufSizeBytes);
@@ -441,7 +439,7 @@ namespace alpaka::onHost::internal
                 KernelBundle{scanBlocks, numChunks, chunkExtent, inputVec, outputVec, increments});
 
             // always recurse into exclusive scan
-            scan<EXCLUSIVE_SCAN>(queue, devAcc, exec, bufferNext, increments, increments);
+            scan<exclusiveScan>(queue, devAcc, exec, bufferNext, increments, increments);
             queue.enqueue(frameSpec, KernelBundle{addIncrements, chunkExtent, increments, outputVec});
         }
         else
@@ -451,7 +449,7 @@ namespace alpaka::onHost::internal
         }
     }
 
-    template<ScanType SCAN_TYPE>
+    template<ScanType T_scanType>
     void scan(
         auto& queue,
         alpaka::onHost::concepts::Device auto& devAcc,
@@ -459,14 +457,14 @@ namespace alpaka::onHost::internal
         alpaka::concepts::IMdSpan auto& outputVec,
         alpaka::concepts::IDataSource auto const& inputVec)
     {
-        using T_Data = ALPAKA_TYPEOF(inputVec)::value_type;
+        using Data = ALPAKA_TYPEOF(inputVec)::value_type;
 
         /* We do not use allocDeferred here since we measured up to a factor 40 higher latency compared to alloc for
          * CUDA 12.8 on an A30 for the first call. The reason is the cuda per stream caching pool setup time.
          */
-        auto buf = onHost::alloc<char>(devAcc, scanBufferSize<T_Data>(inputVec.getExtents()));
+        auto buf = onHost::alloc<char>(devAcc, scanBufferSize<Data>(inputVec.getExtents()));
 
-        scan<SCAN_TYPE>(queue, devAcc, exec, buf, outputVec, inputVec);
+        scan<T_scanType>(queue, devAcc, exec, buf, outputVec, inputVec);
 
         buf.keepAlive(queue);
     }

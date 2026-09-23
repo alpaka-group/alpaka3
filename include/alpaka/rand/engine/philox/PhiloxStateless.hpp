@@ -15,16 +15,16 @@ namespace alpaka::rand::engine::internal
 {
     /** Philox algorithm parameters
      *
-     * @tparam TCounterSize number of elements in the counter
-     * @tparam TWidth width of one counter element (in bits)
-     * @tparam TRounds number of S-box rounds
+     * @tparam T_counterSize number of elements in the counter
+     * @tparam T_width width of one counter element (in bits)
+     * @tparam T_rounds number of S-box rounds
      */
-    template<unsigned TCounterSize, unsigned TWidth, unsigned TRounds>
+    template<unsigned T_counterSize, unsigned T_width, unsigned T_rounds>
     struct PhiloxParams
     {
-        static constexpr unsigned counterSize = TCounterSize;
-        static constexpr unsigned width = TWidth;
-        static constexpr unsigned rounds = TRounds;
+        static constexpr unsigned counterSize = T_counterSize;
+        static constexpr unsigned width = T_width;
+        static constexpr unsigned rounds = T_rounds;
     };
 
     /** Class basic Philox family counter-based PRNG
@@ -72,10 +72,10 @@ namespace alpaka::rand::engine::internal
          */
         static constexpr auto singleRound(Counter const& counter, Key const& key)
         {
-            std::uint32_t H0, L0, H1, L1;
-            multiplyAndSplit64to32(counter[0], PhiloxConstants::MULTIPLITER_4x32_0(), H0, L0);
-            multiplyAndSplit64to32(counter[2], PhiloxConstants::MULTIPLITER_4x32_1(), H1, L1);
-            return Counter{H1 ^ counter[1] ^ key[0], L1, H0 ^ counter[3] ^ key[1], L0};
+            std::uint32_t h0, l0, h1, l1;
+            multiplyAndSplit64to32(counter[0], PhiloxConstants::multipliter4x32p0(), h0, l0);
+            multiplyAndSplit64to32(counter[2], PhiloxConstants::multipliter4x32p1(), h1, l1);
+            return Counter{h1 ^ counter[1] ^ key[0], l1, h0 ^ counter[3] ^ key[1], l0};
         }
 
         /** Bump the \a key by the Weyl sequence step parameter
@@ -85,19 +85,19 @@ namespace alpaka::rand::engine::internal
          */
         static constexpr auto bumpKey(Key const& key)
         {
-            return Key{key[0] + PhiloxConstants::WEYL_32_0(), key[1] + PhiloxConstants::WEYL_32_1()};
+            return Key{key[0] + PhiloxConstants::weyl32p0(), key[1] + PhiloxConstants::weyl32p1()};
         }
 
         /** Performs N rounds of the Philox shuffle
          *
-         * @param counter_in initial state of the counter
-         * @param key_in initial state of the key
+         * @param counterIn initial state of the counter
+         * @param keyIn initial state of the key
          * @return result of the PRNG shuffle; has the same size as the counter
          */
-        static constexpr auto nRounds(Counter const& counter_in, Key const& key_in) -> Counter
+        static constexpr auto nRounds(Counter const& counterIn, Key const& keyIn) -> Counter
         {
-            Key key{key_in};
-            Counter counter = singleRound(counter_in, key);
+            Key key{keyIn};
+            Counter counter = singleRound(counterIn, key);
 
             // Use a constexpr variable to ensure the unroll factor is a compile-time constant
             constexpr unsigned rounds = numRounds();

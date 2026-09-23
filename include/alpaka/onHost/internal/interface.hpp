@@ -258,13 +258,13 @@ namespace alpaka::onHost
             Enqueue::HostTaskDeferred<ALPAKA_TYPEOF(queue), ALPAKA_TYPEOF(task)>{}(queue, task);
         }
 
-        template<typename TKernelFn, typename... TArgs>
+        template<typename T_KernelFn, typename... T_Args>
         inline void enqueue(
             auto& queue,
             onHost::concepts::ThreadOrFrameSpec auto const& launchCfg,
-            KernelBundle<TKernelFn, TArgs...> const& kernelBundle)
+            KernelBundle<T_KernelFn, T_Args...> const& kernelBundle)
         {
-            Enqueue::Kernel<ALPAKA_TYPEOF(queue), ALPAKA_TYPEOF(launchCfg), KernelBundle<TKernelFn, TArgs...>>{}(
+            Enqueue::Kernel<ALPAKA_TYPEOF(queue), ALPAKA_TYPEOF(launchCfg), KernelBundle<T_KernelFn, T_Args...>>{}(
                 queue,
                 launchCfg,
                 kernelBundle);
@@ -307,14 +307,14 @@ namespace alpaka::onHost
             };
         };
 
-        template<typename TKernelFn, typename... TArgs>
+        template<typename T_KernelFn, typename... T_Args>
         static auto adjustThreadSpec(
             auto const& device,
             onHost::concepts::FrameSpec auto const& frameSpec,
-            KernelBundle<TKernelFn, TArgs...> const& kernelBundle)
+            KernelBundle<T_KernelFn, T_Args...> const& kernelBundle)
         {
             return AdjustThreadSpec::
-                Op<ALPAKA_TYPEOF(device), ALPAKA_TYPEOF(frameSpec), KernelBundle<TKernelFn, TArgs...>>{}(
+                Op<ALPAKA_TYPEOF(device), ALPAKA_TYPEOF(frameSpec), KernelBundle<T_KernelFn, T_Args...>>{}(
                     device,
                     frameSpec,
                     kernelBundle);

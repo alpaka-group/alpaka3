@@ -162,18 +162,18 @@ namespace alpaka
         {
         }
 
-        template<typename T_Type_Other>
-        requires internal::concepts::InnerTypeAllowedCast<T_Type, T_Type_Other>
-        constexpr MdSpan(MdSpan<T_Type_Other, T_Extents, T_Pitches, T_MemAlignment> const& other)
+        template<typename T_TypeOther>
+        requires internal::concepts::InnerTypeAllowedCast<T_Type, T_TypeOther>
+        constexpr MdSpan(MdSpan<T_TypeOther, T_Extents, T_Pitches, T_MemAlignment> const& other)
             : m_ptr(other.data())
             , m_extent(other.getExtents())
             , m_pitch(other.getPitches())
         {
         }
 
-        template<typename T_Type_Other>
-        requires alpaka::internal::concepts::InnerTypeAllowedCast<T_Type, T_Type_Other>
-        constexpr MdSpan(MdSpan<T_Type_Other, T_Extents, T_Pitches, T_MemAlignment>&& other)
+        template<typename T_TypeOther>
+        requires alpaka::internal::concepts::InnerTypeAllowedCast<T_Type, T_TypeOther>
+        constexpr MdSpan(MdSpan<T_TypeOther, T_Extents, T_Pitches, T_MemAlignment>&& other)
             : m_ptr(std::move(other.data()))
             , m_extent(std::move(other.getExtents()))
             , m_pitch(std::move(other.getPitches()))

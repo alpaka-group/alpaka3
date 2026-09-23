@@ -23,10 +23,10 @@ namespace alpaka
      */
     enum class BoundaryType : uint32_t
     {
-        LOWER,
-        MIDDLE,
-        UPPER,
-        OOB
+        lower,
+        middle,
+        upper,
+        oob
     };
 
     /**
@@ -42,19 +42,19 @@ namespace alpaka
     template<uint32_t T_dim, concepts::Vector T_LowHaloVec, concepts::Vector T_UpHaloVec>
     struct BoundaryDirection
     {
-        using T_BoundaryVec = Vec<BoundaryType, T_dim>;
+        using BoundaryVec = Vec<BoundaryType, T_dim>;
 
-        T_BoundaryVec data;
+        BoundaryVec data;
         T_LowHaloVec lowerHaloSize;
         T_UpHaloVec upperHaloSize;
 
         constexpr BoundaryDirection(
             concepts::Vector auto const& boundaries,
-            T_LowHaloVec const& lower_halo_sizes,
-            T_UpHaloVec const& upper_halo_sizes)
+            T_LowHaloVec const& lowerHaloSizes,
+            T_UpHaloVec const& upperHaloSizes)
             : data(boundaries)
-            , lowerHaloSize(lower_halo_sizes)
-            , upperHaloSize(upper_halo_sizes)
+            , lowerHaloSize(lowerHaloSizes)
+            , upperHaloSize(upperHaloSizes)
         {
         }
 
@@ -74,7 +74,7 @@ namespace alpaka
             uint32_t c = 0;
             for(uint32_t i = 0; i < T_dim; ++i)
             {
-                if(data[i] == BoundaryType::MIDDLE)
+                if(data[i] == BoundaryType::middle)
                     ++c;
             }
             return c;
@@ -130,7 +130,7 @@ namespace alpaka
     template<uint32_t T_dim, concepts::Vector T_LowHaloVec, concepts::Vector T_UpHaloVec>
     struct BoundaryDirectionIter
     {
-        using T_BoundaryVec = Vec<BoundaryType, T_dim>;
+        using BoundaryVec = Vec<BoundaryType, T_dim>;
 
         using difference_type = std::ptrdiff_t;
         using value_type = BoundaryDirection<T_dim, T_LowHaloVec, T_UpHaloVec>;
@@ -140,23 +140,23 @@ namespace alpaka
         using const_pointer = value_type const*;
 
         constexpr BoundaryDirectionIter(
-            T_BoundaryVec const& boundaries,
-            T_LowHaloVec const& lower_halo_sizes,
-            T_UpHaloVec const& upper_halo_sizes)
-            : boundaries(boundaries, lower_halo_sizes, upper_halo_sizes)
-            , lowerHaloSizes(lower_halo_sizes)
-            , upperHaloSizes(upper_halo_sizes)
+            BoundaryVec const& boundaries,
+            T_LowHaloVec const& lowerHaloSizes,
+            T_UpHaloVec const& upperHaloSizes)
+            : m_boundaries(boundaries, lowerHaloSizes, upperHaloSizes)
+            , m_lowerHaloSizes(lowerHaloSizes)
+            , m_upperHaloSizes(upperHaloSizes)
         {
         }
 
         [[nodiscard]] constexpr const_reference& operator*() const
         {
-            return boundaries;
+            return m_boundaries;
         }
 
         [[nodiscard]] constexpr reference& operator*()
         {
-            return boundaries;
+            return m_boundaries;
         }
 
         constexpr auto& operator++()
@@ -165,23 +165,23 @@ namespace alpaka
             bool oob = true;
             while(i != static_cast<uint32_t>(-1))
             {
-                switch(boundaries.data[i])
+                switch(m_boundaries.data[i])
                 {
-                case BoundaryType::LOWER:
-                    boundaries.data[i] = BoundaryType::MIDDLE;
+                case BoundaryType::lower:
+                    m_boundaries.data[i] = BoundaryType::middle;
                     i = static_cast<uint32_t>(-1);
                     oob = false;
                     break;
-                case BoundaryType::MIDDLE:
-                    boundaries.data[i] = BoundaryType::UPPER;
+                case BoundaryType::middle:
+                    m_boundaries.data[i] = BoundaryType::upper;
                     i = static_cast<uint32_t>(-1);
                     oob = false;
                     break;
-                case BoundaryType::UPPER:
-                    boundaries.data[i] = BoundaryType::LOWER;
+                case BoundaryType::upper:
+                    m_boundaries.data[i] = BoundaryType::lower;
                     --i;
                     break;
-                case BoundaryType::OOB:
+                case BoundaryType::oob:
                     [[fallthrough]];
                 default:
                     constexpr bool onHost = std::is_same_v<api::Host, ALPAKA_TYPEOF(thisApi())>;
@@ -193,10 +193,10 @@ namespace alpaka
             }
             if(oob)
             {
-                boundaries
-                    = {Vec<BoundaryType, T_dim>([](int) { return BoundaryType::OOB; }),
-                       lowerHaloSizes,
-                       upperHaloSizes};
+                m_boundaries
+                    = {Vec<BoundaryType, T_dim>([](int) { return BoundaryType::oob; }),
+                       m_lowerHaloSizes,
+                       m_upperHaloSizes};
             }
             return *this;
         }
@@ -209,10 +209,10 @@ namespace alpaka
         [[nodiscard]] constexpr auto operator<=>(BoundaryDirectionIter const&) const = default;
 
     private:
-        BoundaryDirection<T_dim, T_LowHaloVec, T_UpHaloVec> boundaries;
+        BoundaryDirection<T_dim, T_LowHaloVec, T_UpHaloVec> m_boundaries;
 
-        T_LowHaloVec lowerHaloSizes;
-        T_UpHaloVec upperHaloSizes;
+        T_LowHaloVec m_lowerHaloSizes;
+        T_UpHaloVec m_upperHaloSizes;
     };
 
     /**
@@ -246,7 +246,7 @@ namespace alpaka
         [[nodiscard]] constexpr BoundaryDirectionIter<T_dim, T_LowHaloVec, T_UpHaloVec> begin() const
         {
             return BoundaryDirectionIter<T_dim, T_LowHaloVec, T_UpHaloVec>{
-                Vec<BoundaryType, T_dim>([](int) { return BoundaryType::LOWER; }),
+                Vec<BoundaryType, T_dim>([](int) { return BoundaryType::lower; }),
                 m_lowerHaloSizes,
                 m_upperHaloSizes};
         }
@@ -254,7 +254,7 @@ namespace alpaka
         [[nodiscard]] constexpr BoundaryDirectionIter<T_dim, T_LowHaloVec, T_UpHaloVec> end() const
         {
             return BoundaryDirectionIter<T_dim, T_LowHaloVec, T_UpHaloVec>{
-                Vec<BoundaryType, T_dim>([](int) { return BoundaryType::OOB; }),
+                Vec<BoundaryType, T_dim>([](int) { return BoundaryType::oob; }),
                 m_lowerHaloSizes,
                 m_upperHaloSizes};
         }
@@ -274,9 +274,9 @@ namespace alpaka
         T_UpHaloVec const m_upperHaloSizes;
     };
 
-    template<concepts::Vector LowHaloVecType, concepts::Vector UpHaloVecType>
-    BoundaryDirectionsContainer(LowHaloVecType const& lowerHalos, UpHaloVecType const& upperHalos)
-        -> BoundaryDirectionsContainer<LowHaloVecType::dim(), LowHaloVecType, UpHaloVecType>;
+    template<concepts::Vector T_LowHaloVecType, concepts::Vector T_UpHaloVecType>
+    BoundaryDirectionsContainer(T_LowHaloVecType const& lowerHalos, T_UpHaloVecType const& upperHalos)
+        -> BoundaryDirectionsContainer<T_LowHaloVecType::dim(), T_LowHaloVecType, T_UpHaloVecType>;
 
     /** @brief Construct and return a single @ref BoundaryDirection specifying the middle of a volume.
      */
@@ -286,7 +286,7 @@ namespace alpaka
         concepts::Vector auto const& upperHalos)
     {
         return BoundaryDirection<T_dim, ALPAKA_TYPEOF(lowerHalos), ALPAKA_TYPEOF(upperHalos)>{
-            fillCVec<BoundaryType, T_dim, BoundaryType::MIDDLE>(),
+            fillCVec<BoundaryType, T_dim, BoundaryType::middle>(),
             lowerHalos,
             upperHalos};
     }
@@ -298,7 +298,7 @@ namespace alpaka
     [[nodiscard]] constexpr auto makeCoreBoundaryDirection(concepts::Vector auto const& halos)
     {
         return BoundaryDirection<T_dim, ALPAKA_TYPEOF(halos), ALPAKA_TYPEOF(halos)>{
-            fillCVec<BoundaryType, T_dim, BoundaryType::MIDDLE>(),
+            fillCVec<BoundaryType, T_dim, BoundaryType::middle>(),
             halos,
             halos};
     }
@@ -398,16 +398,16 @@ namespace alpaka
         {
             switch(bd.data[i])
             {
-            case BoundaryType::LOWER:
+            case BoundaryType::lower:
                 os << 'v';
                 break;
-            case BoundaryType::MIDDLE:
+            case BoundaryType::middle:
                 os << '-';
                 break;
-            case BoundaryType::UPPER:
+            case BoundaryType::upper:
                 os << '^';
                 break;
-            case BoundaryType::OOB:
+            case BoundaryType::oob:
                 [[fallthrough]];
             default:
                 os << 'x';

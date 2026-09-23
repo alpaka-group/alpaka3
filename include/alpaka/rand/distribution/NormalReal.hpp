@@ -25,7 +25,7 @@ namespace alpaka::rand::distribution
         template<std::floating_point T_Fp>
         struct BoxMuller
         {
-            using result_type = T_Fp;
+            using ResultType = T_Fp;
 
             template<concepts::UniformStdEngine T_Rng>
             constexpr T_Fp operator()(T_Rng& rng)
@@ -72,7 +72,7 @@ namespace alpaka::rand::distribution
     template<std::floating_point T_Result>
     struct NormalReal
     {
-        using result_type = T_Result;
+        using ResultType = T_Result;
 
         /**
          * @brief Constructs normal(-/gaussian) distribution with given parameters.
@@ -102,18 +102,18 @@ namespace alpaka::rand::distribution
          * @return a floating-point value sampled from the configured distribution.
          */
         template<concepts::UniformStdEngine T_Engine>
-        constexpr result_type operator()(T_Engine& engine)
+        constexpr ResultType operator()(T_Engine& engine)
         {
             return m_impl(engine) * m_stdDev + m_mean;
         }
 
     private:
         // current implementation
-        using T_Impl = internal::BoxMuller<T_Result>;
+        using Impl = internal::BoxMuller<T_Result>;
         // box muller has a state and must therefore be an accessible field.
-        T_Impl m_impl;
-        result_type const m_mean;
-        result_type const m_stdDev;
+        Impl m_impl;
+        ResultType const m_mean;
+        ResultType const m_stdDev;
     };
 
 } // namespace alpaka::rand::distribution

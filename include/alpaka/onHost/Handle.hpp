@@ -11,7 +11,7 @@
 namespace alpaka::onHost
 {
     template<typename T_Object, typename... T_Args>
-    inline auto make_sharedSingleton(T_Args&&... args)
+    inline auto makeSharedSingleton(T_Args&&... args)
     {
         static std::mutex mutex;
         static std::weak_ptr<T_Object> platform;
@@ -21,9 +21,9 @@ namespace alpaka::onHost
         {
             return sharedPtr;
         }
-        auto new_platform = std::make_shared<T_Object>(std::forward<T_Args>(args)...);
-        platform = new_platform;
-        return new_platform;
+        auto newPlatform = std::make_shared<T_Object>(std::forward<T_Args>(args)...);
+        platform = newPlatform;
+        return newPlatform;
     }
 
     template<typename T>

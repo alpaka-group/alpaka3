@@ -46,7 +46,7 @@ namespace alpaka::onAcc
             }
         };
 
-        inline constexpr SeqCst seq_cst{};
+        inline constexpr SeqCst seqCst{};
 
         /**
          * @brief Acquire-release memory ordering.
@@ -62,7 +62,7 @@ namespace alpaka::onAcc
             }
         };
 
-        inline constexpr AcqRel acq_rel{};
+        inline constexpr AcqRel acqRel{};
 
         /**
          * @brief Release memory ordering.

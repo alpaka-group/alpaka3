@@ -37,10 +37,10 @@ int validateResult(
 
     switch(scanType)
     {
-    case onHost::internal::EXCLUSIVE_SCAN:
+    case onHost::internal::exclusiveScan:
         std::exclusive_scan(inputData.data(), inputData.data() + numElements, groundtruth.data(), 0);
         break;
-    case onHost::internal::INCLUSIVE_SCAN:
+    case onHost::internal::inclusiveScan:
         std::inclusive_scan(inputData.data(), inputData.data() + numElements, groundtruth.data());
         break;
     }
@@ -84,13 +84,13 @@ void testExclusiveScan(
     INFO("exclusive scan, no buffer");
     onHost::memcpy(computeQueue, inBuf, hostIn);
     onHost::exclusiveScan(computeQueue, exec, outBuf, inBuf);
-    auto res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::EXCLUSIVE_SCAN);
+    auto res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::exclusiveScan);
     CHECK(res == EXIT_SUCCESS);
 
     // exclusive scan, in-place
     INFO("exclusive scan, no buffer, in-place");
     onHost::exclusiveScanInPlace(computeQueue, exec, inBuf);
-    res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::EXCLUSIVE_SCAN);
+    res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::exclusiveScan);
     CHECK(res == EXIT_SUCCESS);
 
 
@@ -101,13 +101,13 @@ void testExclusiveScan(
     INFO("exclusive scan, with buffer");
     onHost::memcpy(computeQueue, inBuf, hostIn);
     onHost::exclusiveScan(computeQueue, exec, intermediateBuffer, outBuf, inBuf);
-    res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::EXCLUSIVE_SCAN);
+    res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::exclusiveScan);
     CHECK(res == EXIT_SUCCESS);
 
     // exclusive scan, in-place with buffer
     INFO("exclusive scan, with buffer, in-place");
     onHost::exclusiveScanInPlace(computeQueue, exec, intermediateBuffer, inBuf);
-    res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::EXCLUSIVE_SCAN);
+    res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::exclusiveScan);
     CHECK(res == EXIT_SUCCESS);
 }
 
@@ -126,13 +126,13 @@ void testInclusiveScan(
     INFO("inclusive scan, no buffer");
     onHost::memcpy(computeQueue, inBuf, hostIn);
     onHost::inclusiveScan(computeQueue, exec, outBuf, inBuf);
-    auto res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::INCLUSIVE_SCAN);
+    auto res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::inclusiveScan);
     CHECK(res == EXIT_SUCCESS);
 
     // inclusive scan, in-place
     INFO("inclusive scan, no buffer, in-place");
     onHost::inclusiveScanInPlace(computeQueue, exec, inBuf);
-    res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::INCLUSIVE_SCAN);
+    res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::inclusiveScan);
     CHECK(res == EXIT_SUCCESS);
 
 
@@ -143,13 +143,13 @@ void testInclusiveScan(
     INFO("inclusive scan, with buffer");
     onHost::memcpy(computeQueue, inBuf, hostIn);
     onHost::inclusiveScan(computeQueue, exec, intermediateBuffer, outBuf, inBuf);
-    res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::INCLUSIVE_SCAN);
+    res = validateResult<T_Data>(computeQueue, hostIn, outBuf, numEl, onHost::internal::inclusiveScan);
     CHECK(res == EXIT_SUCCESS);
 
     // inclusive scan, in-place with buffer
     INFO("inclusive scan, with buffer, in-place");
     onHost::inclusiveScanInPlace(computeQueue, exec, intermediateBuffer, inBuf);
-    res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::INCLUSIVE_SCAN);
+    res = validateResult<T_Data>(computeQueue, hostIn, inBuf, numEl, onHost::internal::inclusiveScan);
     CHECK(res == EXIT_SUCCESS);
 }
 

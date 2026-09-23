@@ -45,9 +45,12 @@
 
 namespace alpaka::onHost
 {
-    constexpr int NO_CPUID = 0;
-    constexpr int UNKNOWN_CPU = 0;
-    constexpr int UNKNOWN_COMPILER = 1;
+    namespace internal
+    {
+        constexpr int noCpuid = 0;
+        constexpr int unknownCpu = 0;
+        constexpr int unknownCompiler = 1;
+    } // namespace internal
 #if ALPAKA_ARCH_X86
 #    if ALPAKA_COMP_GNUC || ALPAKA_COMP_CLANG || ALPAKA_COMP_PGI
     inline auto cpuid(std::uint32_t level, std::uint32_t subfunction, std::uint32_t ex[4]) -> void
@@ -63,15 +66,15 @@ namespace alpaka::onHost
 #    else
     inline auto cpuid(std::uint32_t, std::uint32_t, std::uint32_t ex[4]) -> void
     {
-        ex[0] = ex[2] = ex[3] = NO_CPUID;
-        ex[1] = UNKNOWN_COMPILER;
+        ex[0] = ex[2] = ex[3] = internal::noCpuid;
+        ex[1] = internal::unknownCompiler;
     }
 #    endif
 #else
     inline auto cpuid(std::uint32_t, std::uint32_t, std::uint32_t ex[4]) -> void
     {
-        ex[0] = ex[2] = ex[3] = NO_CPUID;
-        ex[1] = UNKNOWN_CPU;
+        ex[0] = ex[2] = ex[3] = internal::noCpuid;
+        ex[1] = internal::unknownCpu;
     }
 #endif
     //! \return The name of the CPU the code is running on.
@@ -86,9 +89,9 @@ namespace alpaka::onHost
         {
             switch(ex[1])
             {
-            case UNKNOWN_COMPILER:
+            case internal::unknownCompiler:
                 return "<unknown: compiler>";
-            case UNKNOWN_CPU:
+            case internal::unknownCpu:
                 return "<unknown: CPU>";
             default:
                 return "<unknown>";

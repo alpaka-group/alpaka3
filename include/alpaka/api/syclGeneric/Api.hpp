@@ -13,19 +13,19 @@ namespace alpaka
 {
     namespace api
     {
-        template<typename TApiInterface>
+        template<typename T_ApiInterface>
         struct GenericSycl : detail::ApiBase
         {
-            using element_type = TApiInterface;
+            using element_type = T_ApiInterface;
 
             auto get() const
             {
-                return static_cast<TApiInterface const*>(this);
+                return static_cast<T_ApiInterface const*>(this);
             }
 
             void _()
             {
-                static_assert(concepts::Api<GenericSycl<TApiInterface>>);
+                static_assert(concepts::Api<GenericSycl<T_ApiInterface>>);
             }
 
             static std::string getName()

@@ -381,17 +381,17 @@ namespace alpaka
          *
          * It is not allowed to call this method on a vector with the width of one.
          *
-         * @tparam laneIdxToRemove index which shall be removed; range: [ 0; T_width - 1 ]
+         * @tparam T_laneIdxToRemove index which shall be removed; range: [ 0; T_width - 1 ]
          * @return vector with `T_width - 1` elements
          */
-        template<std::integral auto laneIdxToRemove>
+        template<std::integral auto T_laneIdxToRemove>
         constexpr Simd<value_type, T_width - 1u> remove() const requires(T_width >= 2u)
         {
             Simd<value_type, T_width - 1u> result{};
             for(int i = 0u; i < static_cast<int>(T_width - 1u); ++i)
             {
                 // skip component which must be deleted
-                int const sourceIdx = i >= static_cast<int>(laneIdxToRemove) ? i + 1 : i;
+                int const sourceIdx = i >= static_cast<int>(T_laneIdxToRemove) ? i + 1 : i;
                 result[i] = (*this)[sourceIdx];
             }
             return result;
@@ -426,7 +426,7 @@ namespace alpaka
         [[nodiscard]] constexpr auto reduce(auto&& reduceFunc) const
             -> decltype(reduceFunc(std::declval<value_type>(), std::declval<value_type>()))
         {
-            return reduce_range(ALPAKA_FORWARD(reduceFunc));
+            return reduceRange(ALPAKA_FORWARD(reduceFunc));
         }
 
         template<typename T_OtherStorage>
@@ -453,23 +453,23 @@ namespace alpaka
          */
         std::string toString(std::string const separator = ",", std::string const enclosings = "{}") const
         {
-            std::string locale_enclosing_begin;
-            std::string locale_enclosing_end;
+            std::string localeEnclosingBegin;
+            std::string localeEnclosingEnd;
             size_t enclosingLaneIdx = enclosings.size();
 
             if(enclosingLaneIdx > 0)
             {
                 /* % avoid out of memory access */
-                locale_enclosing_begin = enclosings[0 % enclosingLaneIdx];
-                locale_enclosing_end = enclosings[1 % enclosingLaneIdx];
+                localeEnclosingBegin = enclosings[0 % enclosingLaneIdx];
+                localeEnclosingEnd = enclosings[1 % enclosingLaneIdx];
             }
 
             std::stringstream stream;
-            stream << locale_enclosing_begin << (*this)[0];
+            stream << localeEnclosingBegin << (*this)[0];
 
             for(uint32_t i = 1u; i < T_width; ++i)
                 stream << separator << (*this)[i];
-            stream << locale_enclosing_end;
+            stream << localeEnclosingEnd;
             return stream.str();
         }
 
@@ -488,7 +488,7 @@ namespace alpaka
          * @return the type of the result depends on the binary functor
          */
         template<uint32_t T_start = 0u, uint32_t T_end = width()>
-        [[nodiscard]] constexpr auto reduce_range(auto&& reduceFunc) const
+        [[nodiscard]] constexpr auto reduceRange(auto&& reduceFunc) const
             -> decltype(reduceFunc(std::declval<value_type>(), std::declval<value_type>()))
         {
             // elements in the range
@@ -512,12 +512,12 @@ namespace alpaka
 
             // recursively reduce both halves and combine
             return reduceFunc(
-                reduce_range<T_start, mid>(ALPAKA_FORWARD(reduceFunc)),
-                reduce_range<mid, T_end>(ALPAKA_FORWARD(reduceFunc)));
+                reduceRange<T_start, mid>(ALPAKA_FORWARD(reduceFunc)),
+                reduceRange<mid, T_end>(ALPAKA_FORWARD(reduceFunc)));
 #endif
         }
 
-        template<concepts::SimdMask Mask, concepts::Simd T_Simd>
+        template<concepts::SimdMask T_Mask, concepts::Simd T_Simd>
         friend struct SimdWhereExpr;
     };
 
@@ -533,8 +533,8 @@ namespace alpaka
         return v[I];
     }
 
-    template<typename Type, uint32_t T_width, typename T_Storage>
-    std::ostream& operator<<(std::ostream& s, Simd<Type, T_width, T_Storage> const& vec)
+    template<typename T_Type, uint32_t T_width, typename T_Storage>
+    std::ostream& operator<<(std::ostream& s, Simd<T_Type, T_width, T_Storage> const& vec)
     {
         return s << vec.toString();
     }

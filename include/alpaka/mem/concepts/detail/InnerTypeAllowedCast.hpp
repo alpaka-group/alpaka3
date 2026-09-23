@@ -38,7 +38,7 @@ namespace alpaka::internal
         };
 
         using type = typename NonRefType<std::remove_reference_t<T>>::type;
-        static constexpr bool is_const = std::is_const_v<std::remove_reference_t<T>>;
+        static constexpr bool isConst = std::is_const_v<std::remove_reference_t<T>>;
     };
 
     template<typename T>
@@ -50,7 +50,7 @@ namespace alpaka::internal
          * inner type.
          *
          * @tparam T_Type element type of the new object
-         * @tparam T_Type_Other element type of the object which is copied or moved
+         * @tparam T_TypeOther element type of the object which is copied or moved
          *
          * @details
          * Needs to fulfill the following requirements
@@ -60,12 +60,12 @@ namespace alpaka::internal
          *      - const -> const
          *      - mutable -> const
          */
-        template<typename T_Type, typename T_Type_Other>
+        template<typename T_Type, typename T_TypeOther>
         concept InnerTypeAllowedCast = requires {
             /// the value type without cv-qualifier needs to be the same
-            requires std::same_as<GetElementType_t<T_Type>, GetElementType_t<T_Type_Other>>;
+            requires std::same_as<GetElementType_t<T_Type>, GetElementType_t<T_TypeOther>>;
             /// check the correct cast of a const/mutable inner type to another const/mutable inner type
-            requires !(GetElementType<T_Type_Other>::is_const && !GetElementType<T_Type>::is_const);
+            requires !(GetElementType<T_TypeOther>::isConst && !GetElementType<T_Type>::isConst);
         };
     } // namespace concepts
 } // namespace alpaka::internal

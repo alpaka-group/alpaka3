@@ -73,7 +73,7 @@ namespace alpaka
             {
                 auto operator()(api::OneApi const&, T_DeviceKind) const
                 {
-                    return onHost::make_sharedSingleton<syclGeneric::Platform<api::OneApi, T_DeviceKind>>();
+                    return onHost::makeSharedSingleton<syclGeneric::Platform<api::OneApi, T_DeviceKind>>();
                 }
             };
         } // namespace internal
@@ -113,7 +113,7 @@ namespace alpaka::onHost::internal
             try
             {
                 auto platform
-                    = onHost::make_sharedSingleton<syclGeneric::Platform<api::OneApi, ALPAKA_TYPEOF(deviceKind)>>();
+                    = onHost::makeSharedSingleton<syclGeneric::Platform<api::OneApi, ALPAKA_TYPEOF(deviceKind)>>();
                 auto sycl_context = platform->getContext();
                 auto sycl_alloc_type = get_pointer_type(Data::data(view), sycl_context);
 

@@ -147,7 +147,7 @@ namespace alpaka
                 }
 
             public:
-                Platform() : contextManager{make_sharedSingleton<detail::Context>()}
+                Platform() : contextManager{makeSharedSingleton<detail::Context>()}
                 {
                     try
                     {
@@ -312,8 +312,8 @@ namespace alpaka
                     // will be copied into the lampda
                     auto syclMaxThreadsPerBlock = dev.get_info<sycl::info::device::max_work_item_sizes<3>>();
                     // in sycl index order == alpaka index order
-                    prop.fnMaxThreadsPerBlock = [maxThreadsPerBlock = prop.maxThreadsPerBlock,
-                                                 syclMaxThreadsPerBlock](uint32_t* data, uint32_t numDims)
+                    prop.m_fnMaxThreadsPerBlock = [maxThreadsPerBlock = prop.maxThreadsPerBlock,
+                                                   syclMaxThreadsPerBlock](uint32_t* data, uint32_t numDims)
                     {
                         if(numDims <= 3u)
                         {
@@ -330,7 +330,7 @@ namespace alpaka
                     };
 
                     prop.maxBlocksPerGrid = std::numeric_limits<uint32_t>::max();
-                    prop.fnMaxBlocksPerGrid = [](uint32_t* data, uint32_t numDims)
+                    prop.m_fnMaxBlocksPerGrid = [](uint32_t* data, uint32_t numDims)
                     {
                         for(uint32_t d = 0u; d < numDims; ++d)
                             data[d] = std::numeric_limits<uint32_t>::max();

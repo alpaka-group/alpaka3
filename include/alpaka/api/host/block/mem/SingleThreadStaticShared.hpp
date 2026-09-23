@@ -13,10 +13,10 @@ namespace alpaka::onAcc
 {
     namespace cpu
     {
-        template<std::size_t TDataAlignBytes>
-        struct SingleThreadStaticShared : private detail::SharedStorage<TDataAlignBytes>
+        template<std::size_t T_dataAlignBytes>
+        struct SingleThreadStaticShared : private detail::SharedStorage<T_dataAlignBytes>
         {
-            using Base = detail::SharedStorage<TDataAlignBytes>;
+            using Base = detail::SharedStorage<T_dataAlignBytes>;
 
             template<typename T, size_t T_unique>
             T& allocVar()

@@ -136,7 +136,7 @@ struct MemoryFenceKernel
         // Scopes: All threads of the block, the device and the system(host and peer devices)
         onAcc::memFence(acc, onAcc::scope::block, onAcc::order::acquire);
         onAcc::memFence(acc, onAcc::scope::device, onAcc::order::release);
-        onAcc::memFence(acc, onAcc::scope::system, onAcc::order::acq_rel);
+        onAcc::memFence(acc, onAcc::scope::system, onAcc::order::acqRel);
         // END-CHEATSHEET-memFence
     }
 };

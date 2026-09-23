@@ -34,8 +34,8 @@ namespace alpaka::rand::engine::internal
         /// Internal engine state
         State state;
         /// Distribution container type
-        template<typename TDistributionResultScalar>
-        using ResultContainer = Vec<TDistributionResultScalar, T_Params::counterSize>;
+        template<typename T_DistributionResultScalar>
+        using ResultContainer = Vec<T_DistributionResultScalar, T_Params::counterSize>;
 
         constexpr explicit PhiloxBaseCommon(State&& state) : state(std::move(state))
         {

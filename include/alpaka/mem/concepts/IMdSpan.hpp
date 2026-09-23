@@ -51,7 +51,7 @@ namespace alpaka::concepts
          **/
         template<typename T, typename T_Mut, typename T_Const>
         concept IMdSpan
-            = requires(T t, T_Mut mut_t, T_Const const_t, alpaka::Vec<typename T::index_type, T::dim()> vec) {
+            = requires(T t, T_Mut mutT, T_Const constT, alpaka::Vec<typename T::index_type, T::dim()> vec) {
                   requires IDataSource<T>;
 
                   typename T::reference;
@@ -59,19 +59,19 @@ namespace alpaka::concepts
                   typename T::pointer;
                   typename T::const_pointer;
 
-                  { *mut_t } -> std::same_as<typename T::reference>;
-                  { *const_t } -> std::same_as<typename T::const_reference>;
-                  { mut_t.data() } -> std::same_as<typename T::pointer>;
-                  { const_t.data() } -> std::same_as<typename T::const_pointer>;
+                  { *mutT } -> std::same_as<typename T::reference>;
+                  { *constT } -> std::same_as<typename T::const_reference>;
+                  { mutT.data() } -> std::same_as<typename T::pointer>;
+                  { constT.data() } -> std::same_as<typename T::const_pointer>;
 
-                  { mut_t[vec] } -> std::same_as<typename T::reference>;
-                  { const_t[vec] } -> std::same_as<typename T::const_reference>;
+                  { mutT[vec] } -> std::same_as<typename T::reference>;
+                  { constT[vec] } -> std::same_as<typename T::const_reference>;
                   // only if MdSpan like object is 1D, the access operator with an integral is available
                   requires(T::dim() != 1u) || (T::dim() == 1u && requires {
-                              { mut_t[typename T::index_type{0}] } -> std::same_as<typename T::reference>;
+                              { mutT[typename T::index_type{0}] } -> std::same_as<typename T::reference>;
                           });
                   requires(T::dim() != 1u) || (T::dim() == 1u && requires {
-                              { const_t[typename T::index_type{0}] } -> std::same_as<typename T::const_reference>;
+                              { constT[typename T::index_type{0}] } -> std::same_as<typename T::const_reference>;
                           });
                   /// @todo add getSlice, getConstSlice and getView, getConstView functions
               };

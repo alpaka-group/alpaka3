@@ -26,17 +26,17 @@ using CountHandle = Handle<Count>;
 TEST_CASE("singelton handle", "")
 {
     {
-        auto singleton = make_sharedSingleton<Count>(42);
+        auto singleton = makeSharedSingleton<Count>(42);
         CHECK(singleton->m_count == 42);
         /* We have already a valid handle therefore the old should be returned.
          * This handle is only an alias.
          */
-        auto singleton2 = make_sharedSingleton<Count>(43);
+        auto singleton2 = makeSharedSingleton<Count>(43);
         CHECK(singleton->m_count == 42);
         singleton2->m_count = 1;
         CHECK(singleton->m_count == 1);
     }
     // old handles should be deleted
-    auto singleton = make_sharedSingleton<Count>(23);
+    auto singleton = makeSharedSingleton<Count>(23);
     CHECK(singleton->m_count == 23);
 }

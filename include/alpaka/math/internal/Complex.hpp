@@ -340,16 +340,16 @@ namespace alpaka::math
         //! @}
 
         //! Host-only output of a complex number
-        template<typename T, typename TChar, typename TTraits>
-        std::basic_ostream<TChar, TTraits>& operator<<(std::basic_ostream<TChar, TTraits>& os, Complex<T> const& x)
+        template<typename T, typename T_Char, typename T_Traits>
+        std::basic_ostream<T_Char, T_Traits>& operator<<(std::basic_ostream<T_Char, T_Traits>& os, Complex<T> const& x)
         {
             os << x.operator std::complex<T>();
             return os;
         }
 
         //! Host-only input of a complex number
-        template<typename T, typename TChar, typename TTraits>
-        std::basic_istream<TChar, TTraits>& operator>>(std::basic_istream<TChar, TTraits>& is, Complex<T> const& x)
+        template<typename T, typename T_Char, typename T_Traits>
+        std::basic_istream<T_Char, T_Traits>& operator>>(std::basic_istream<T_Char, T_Traits>& is, Complex<T> const& x)
         {
             std::complex<T> z;
             is >> z;
@@ -745,7 +745,7 @@ namespace alpaka::math
                 // Type promotion matching rules of complex std::pow but simplified given our math only supports float
                 // and double, no long double.
                 using Promoted
-                    = Complex<std::conditional_t<is_decayed_v<T, float> && is_decayed_v<U, float>, float, double>>;
+                    = Complex<std::conditional_t<isDecayed_v<T, float> && isDecayed_v<U, float>, float, double>>;
                 // pow(z1, z2) = e^(z2 * log(z1))
                 return math::exp(Promoted{exponent} * math::log(Promoted{base}));
             }

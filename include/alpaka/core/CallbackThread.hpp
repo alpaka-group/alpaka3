@@ -41,20 +41,20 @@ namespace alpaka::core
             virtual void run() = 0;
         };
 
-        template<typename Function>
+        template<typename T_Function>
         struct FunctionHolder : Task
         {
-            Function m_func;
+            T_Function func;
 
-            template<typename FunctionFwd>
-            explicit FunctionHolder(FunctionFwd&& func) : m_func{std::forward<FunctionFwd>(func)}
+            template<typename T_FunctionFwd>
+            explicit FunctionHolder(T_FunctionFwd&& funcFwd) : func{std::forward<T_FunctionFwd>(funcFwd)}
             {
             }
 
             void run() override
             {
                 // if m_func throws, let it propagate
-                m_func();
+                func();
             }
         };
 
@@ -62,9 +62,9 @@ namespace alpaka::core
 
         struct State
         {
-            std::queue<TaskPackage> m_tasks;
-            std::mutex m_mutex;
-            std::condition_variable m_cond;
+            std::queue<TaskPackage> tasks;
+            std::mutex mutex;
+            std::condition_variable cond;
         };
 
     public:
@@ -79,10 +79,10 @@ namespace alpaka::core
         ~CallbackThread()
         {
             {
-                std::unique_lock<std::mutex> lock{m_state->m_mutex};
+                std::unique_lock<std::mutex> lock{m_state->mutex};
                 m_thread.request_stop();
                 // wakeup the thread in case it is waiting
-                m_state->m_cond.notify_one();
+                m_state->cond.notify_one();
             }
 
             if(m_thread.joinable())
@@ -101,10 +101,10 @@ namespace alpaka::core
         }
 
         //! It is guaranteed that the task is fully destroyed before the future's result is set.
-        template<typename NullaryFunction>
-        auto submit(NullaryFunction&& nf) -> std::future<void>
+        template<typename T_NullaryFunction>
+        auto submit(T_NullaryFunction&& nf) -> std::future<void>
         {
-            using DecayedFunction = std::decay_t<NullaryFunction>;
+            using DecayedFunction = std::decay_t<T_NullaryFunction>;
             static_assert(
                 std::is_void_v<std::invoke_result_t<DecayedFunction>>,
                 "Submitted function must not have any arguments and return void.");
@@ -112,15 +112,15 @@ namespace alpaka::core
             // FunctionHolder stores a copy of the user's task, but may be constructed from an expiring value to avoid
             // the copy. We do NOT store a reference to the users task, which could dangle if the user isn't careful.
             auto tp = std::pair(
-                std::make_unique<FunctionHolder<DecayedFunction>>(std::forward<NullaryFunction>(nf)),
+                std::make_unique<FunctionHolder<DecayedFunction>>(std::forward<T_NullaryFunction>(nf)),
                 std::promise<void>{});
             auto f = tp.second.get_future();
             {
-                std::unique_lock<std::mutex> lock{m_state->m_mutex};
-                m_state->m_tasks.emplace(std::move(tp));
+                std::unique_lock<std::mutex> lock{m_state->mutex};
+                m_state->tasks.emplace(std::move(tp));
                 if(!m_thread.joinable())
                     startWorkerThread();
-                m_state->m_cond.notify_one();
+                m_state->cond.notify_one();
             }
 
             return f;
@@ -128,8 +128,8 @@ namespace alpaka::core
 
         bool isEmpty() const
         {
-            std::unique_lock lock{m_state->m_mutex};
-            return m_state->m_tasks.empty();
+            std::unique_lock lock{m_state->mutex};
+            return m_state->tasks.empty();
         }
 
     private:
@@ -154,16 +154,16 @@ namespace alpaka::core
                             // Task is destroyed before promise is updated but after the queue state is up to date.
                             std::unique_ptr<Task> task = nullptr;
                             {
-                                std::unique_lock<std::mutex> lock{state->m_mutex};
-                                state->m_cond.wait(
+                                std::unique_lock<std::mutex> lock{state->mutex};
+                                state->cond.wait(
                                     lock,
-                                    [&state, &st] { return st.stop_requested() || !state->m_tasks.empty(); });
+                                    [&state, &st] { return st.stop_requested() || !state->tasks.empty(); });
 
-                                if(st.stop_requested() && state->m_tasks.empty())
+                                if(st.stop_requested() && state->tasks.empty())
                                     break;
 
-                                task = std::move(state->m_tasks.front().first);
-                                taskPromise = std::move(state->m_tasks.front().second);
+                                task = std::move(state->tasks.front().first);
+                                taskPromise = std::move(state->tasks.front().second);
                             }
                             assert(task);
                             try
@@ -175,10 +175,10 @@ namespace alpaka::core
                                 eptr = std::current_exception();
                             }
                             {
-                                std::unique_lock<std::mutex> lock{state->m_mutex};
+                                std::unique_lock<std::mutex> lock{state->mutex};
                                 // Pop empty data from the queue, task and promise will be destroyed later in a
                                 // well-defined order.
-                                state->m_tasks.pop();
+                                state->tasks.pop();
                             }
                             // Task will be destroyed here, the queue status is already updated.
                         }

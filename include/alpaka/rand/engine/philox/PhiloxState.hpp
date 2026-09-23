@@ -18,7 +18,7 @@ namespace alpaka::rand::engine::internal
      * @tparam T_Counter Type of the Counter array
      * @tparam T_Key Type of the Key array
      */
-    template<typename T_Counter, typename T_Key, typename Impl>
+    template<typename T_Counter, typename T_Key, typename T_Impl>
     struct PhiloxState;
 
     /** Philox state specialization for vector engine

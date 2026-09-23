@@ -134,13 +134,13 @@ namespace alpaka::math::internal
     {
         //! Fallback implementation when no better ADL match was found
         template<typename T_Arg>
-        constexpr auto sincos(T_Arg const& arg, T_Arg& result_sin, T_Arg& result_cos)
+        constexpr auto sincos(T_Arg const& arg, T_Arg& resultSin, T_Arg& resultCos)
         {
             // Still use ADL to try find sin(arg) and cos(arg)
             using std::sin;
-            result_sin = sin(arg);
+            resultSin = sin(arg);
             using std::cos;
-            result_cos = cos(arg);
+            resultCos = cos(arg);
         }
     } // namespace detail
 
@@ -150,16 +150,16 @@ namespace alpaka::math::internal
         template<typename T_MathImpl, typename T_Arg>
         struct Op
         {
-            constexpr auto operator()(T_MathImpl, T_Arg const& arg, T_Arg& result_sin, T_Arg& result_cos) const
+            constexpr auto operator()(T_MathImpl, T_Arg const& arg, T_Arg& resultSin, T_Arg& resultCos) const
             {
                 if constexpr(std::same_as<T_MathImpl, StlMath>)
                 {
                     // use for ADL lookup namespace std only if StlMath is used
                     using detail::sincos;
-                    return sincos(arg, result_sin, result_cos);
+                    return sincos(arg, resultSin, resultCos);
                 }
                 else
-                    return sincos(arg, result_sin, result_cos);
+                    return sincos(arg, resultSin, resultCos);
             }
         };
     };

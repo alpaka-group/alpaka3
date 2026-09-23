@@ -105,18 +105,18 @@ namespace alpaka
                 "extent type and pitch type must be lossless convertible");
         }
 
-        template<typename T_Type_Other>
-        requires alpaka::internal::concepts::InnerTypeAllowedCast<T_Type, T_Type_Other>
-        constexpr View(View<T_Api, T_Type_Other, T_Extents, T_MemAlignment> const& other)
+        template<typename T_TypeOther>
+        requires alpaka::internal::concepts::InnerTypeAllowedCast<T_Type, T_TypeOther>
+        constexpr View(View<T_Api, T_TypeOther, T_Extents, T_MemAlignment> const& other)
             : BaseMdSpan{static_cast<BaseMdSpan>(other)}
         {
         }
 
         constexpr View(View const&) = default;
 
-        template<typename T_Type_Other>
-        requires alpaka::internal::concepts::InnerTypeAllowedCast<T_Type, T_Type_Other>
-        constexpr View(View<T_Api, T_Type_Other, T_Extents, T_MemAlignment>&& other)
+        template<typename T_TypeOther>
+        requires alpaka::internal::concepts::InnerTypeAllowedCast<T_Type, T_TypeOther>
+        constexpr View(View<T_Api, T_TypeOther, T_Extents, T_MemAlignment>&& other)
             : BaseMdSpan{std::move(static_cast<BaseMdSpan>(other))}
         {
         }
@@ -229,9 +229,9 @@ namespace alpaka
 
         /** @} */
 
-        template<alpaka::concepts::Vector LowHaloVecType, alpaka::concepts::Vector UpHaloVecType>
+        template<alpaka::concepts::Vector T_LowHaloVecType, alpaka::concepts::Vector T_UpHaloVecType>
         constexpr auto getSubView(
-            alpaka::BoundaryDirection<View::dim(), LowHaloVecType, UpHaloVecType> boundaryDir) const
+            alpaka::BoundaryDirection<View::dim(), T_LowHaloVecType, T_UpHaloVecType> boundaryDir) const
         {
             constexpr uint32_t dim = View::dim();
             auto offset = alpaka::Vec<uint32_t, dim>{};
@@ -241,15 +241,15 @@ namespace alpaka
             {
                 switch(boundaryDir.data[i])
                 {
-                case BoundaryType::LOWER:
+                case BoundaryType::lower:
                     offset[i] = 0;
                     extents[i] = boundaryDir.lowerHaloSize[i];
                     break;
-                case BoundaryType::UPPER:
+                case BoundaryType::upper:
                     offset[i] = this->getExtents()[i] - boundaryDir.upperHaloSize[i];
                     extents[i] = boundaryDir.upperHaloSize[i];
                     break;
-                case BoundaryType::MIDDLE:
+                case BoundaryType::middle:
                     offset[i] = boundaryDir.lowerHaloSize[i];
                     extents[i] = this->getExtents()[i] - boundaryDir.lowerHaloSize[i] - boundaryDir.upperHaloSize[i];
                     break;

@@ -318,7 +318,7 @@ namespace alpaka
          */
         [[nodiscard]] constexpr value_type reduce(auto&& reduceFunc) const
         {
-            return reduce_range(ALPAKA_FORWARD(reduceFunc));
+            return reduceRange(ALPAKA_FORWARD(reduceFunc));
         }
 
         /** create string out of the SIMD pack
@@ -336,23 +336,23 @@ namespace alpaka
          */
         std::string toString(std::string const separator = ",", std::string const enclosings = "{}") const
         {
-            std::string locale_enclosing_begin;
-            std::string locale_enclosing_end;
+            std::string localeEnclosingBegin;
+            std::string localeEnclosingEnd;
             size_t enclosingLaneIdx = enclosings.size();
 
             if(enclosingLaneIdx > 0)
             {
                 /* % avoid out of memory access */
-                locale_enclosing_begin = enclosings[0 % enclosingLaneIdx];
-                locale_enclosing_end = enclosings[1 % enclosingLaneIdx];
+                localeEnclosingBegin = enclosings[0 % enclosingLaneIdx];
+                localeEnclosingEnd = enclosings[1 % enclosingLaneIdx];
             }
 
             std::stringstream stream;
-            stream << locale_enclosing_begin << Storage::operator[](0);
+            stream << localeEnclosingBegin << Storage::operator[](0);
 
             for(uint32_t i = 1u; i < T_width; ++i)
                 stream << separator << Storage::operator[](i);
-            stream << locale_enclosing_end;
+            stream << localeEnclosingEnd;
             return stream.str();
         }
 
@@ -371,7 +371,7 @@ namespace alpaka
          * @return the type of the result depends on the binary functor
          */
         template<uint32_t T_start = 0u, uint32_t T_end = width()>
-        [[nodiscard]] constexpr value_type reduce_range(auto&& reduceFunc) const
+        [[nodiscard]] constexpr value_type reduceRange(auto&& reduceFunc) const
         {
             // elements in the range
             constexpr uint32_t size = T_end - T_start;
@@ -394,12 +394,12 @@ namespace alpaka
 
             // recursively reduce both halves and combine
             return reduceFunc(
-                reduce_range<T_start, mid>(ALPAKA_FORWARD(reduceFunc)),
-                reduce_range<mid, T_end>(ALPAKA_FORWARD(reduceFunc)));
+                reduceRange<T_start, mid>(ALPAKA_FORWARD(reduceFunc)),
+                reduceRange<mid, T_end>(ALPAKA_FORWARD(reduceFunc)));
 #endif
         }
 
-        template<concepts::SimdMask Mask, concepts::Simd T_Simd>
+        template<concepts::SimdMask T_Mask, concepts::Simd T_Simd>
         friend struct SimdWhereExpr;
     };
 
@@ -415,8 +415,8 @@ namespace alpaka
         return v[I];
     }
 
-    template<typename Type, uint32_t T_width, typename T_Storage>
-    std::ostream& operator<<(std::ostream& s, SimdMask<Type, T_width, T_Storage> const& vec)
+    template<typename T_Type, uint32_t T_width, typename T_Storage>
+    std::ostream& operator<<(std::ostream& s, SimdMask<T_Type, T_width, T_Storage> const& vec)
     {
         return s << vec.toString();
     }

@@ -87,8 +87,8 @@ namespace alpaka::onHost
 
     template<alpaka::concepts::VectorOrScalar T_NumFrames, alpaka::concepts::VectorOrScalar T_FrameExtents>
     FrameSpec(T_NumFrames const&, T_FrameExtents const&) -> FrameSpec<
-        alpaka::trait::getVec_t<T_NumFrames>,
-        alpaka::trait::getVec_t<T_FrameExtents>,
+        alpaka::trait::GetVec_t<T_NumFrames>,
+        alpaka::trait::GetVec_t<T_FrameExtents>,
         alpaka::exec::AnyExecutor>;
 
     template<
@@ -96,7 +96,7 @@ namespace alpaka::onHost
         alpaka::concepts::VectorOrScalar T_FrameExtents,
         alpaka::concepts::Executor T_Executor>
     FrameSpec(T_NumFrames const&, T_FrameExtents const&, T_Executor)
-        -> FrameSpec<alpaka::trait::getVec_t<T_NumFrames>, alpaka::trait::getVec_t<T_FrameExtents>, T_Executor>;
+        -> FrameSpec<alpaka::trait::GetVec_t<T_NumFrames>, alpaka::trait::GetVec_t<T_FrameExtents>, T_Executor>;
 
     namespace trait
     {

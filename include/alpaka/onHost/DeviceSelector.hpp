@@ -86,11 +86,11 @@ namespace alpaka::onHost
         return DeviceSelector{api, deviceKind};
     }
 
-    template<typename deferEvaluation = void>
+    template<typename T_DeferEvaluation = void>
     inline auto makeHostDevice()
     {
         return DeviceSelector{
-            std::conditional_t<std::is_same_v<deferEvaluation, bool>, api::Host, api::Host>{},
+            std::conditional_t<std::is_same_v<T_DeferEvaluation, bool>, api::Host, api::Host>{},
             deviceKind::cpu}
             .makeDevice(0);
     }

@@ -127,14 +127,14 @@ namespace alpaka::math
             sgn);
     }
 
-    constexpr auto sincos(auto const& arg, auto& result_sin, auto& result_cos)
+    constexpr auto sincos(auto const& arg, auto& resultSin, auto& resultCos)
     {
         auto const mathImpl = trait::getMathImpl(thisApi());
         return internal::SinCos::Op<ALPAKA_TYPEOF(mathImpl), ALPAKA_TYPEOF(arg)>{}(
             mathImpl,
             arg,
-            result_sin,
-            result_cos);
+            resultSin,
+            resultCos);
     }
 
     constexpr auto exp(auto const& arg)

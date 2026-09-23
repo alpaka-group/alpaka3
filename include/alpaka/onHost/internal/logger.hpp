@@ -46,7 +46,7 @@ namespace alpaka::onHost::logger::internal
          */
         int enter()
         {
-            return indentLvl++;
+            return m_indentLvl++;
         }
 
         /** decrease the indention level
@@ -55,7 +55,7 @@ namespace alpaka::onHost::logger::internal
          */
         int leave()
         {
-            return --indentLvl;
+            return --m_indentLvl;
         }
 
         /** current indention level
@@ -64,11 +64,11 @@ namespace alpaka::onHost::logger::internal
          */
         int current()
         {
-            return indentLvl.load();
+            return m_indentLvl.load();
         }
 
     private:
-        std::atomic<int> indentLvl = 1;
+        std::atomic<int> m_indentLvl = 1;
     };
 
     /** Indent the message if needed and forward it to the output writer

@@ -28,8 +28,8 @@ namespace alpaka::rand::engine::internal
         /// Key type
         using Key = typename Base::Key;
         using State = PhiloxState<Counter, Key, PhiloxVector<T_Params>>;
-        template<typename TDistributionResultScalar>
-        using ResultContainer = typename Base::template ResultContainer<TDistributionResultScalar>;
+        template<typename T_DistributionResultScalar>
+        using ResultContainer = typename Base::template ResultContainer<T_DistributionResultScalar>;
 
     protected:
         /** Get the next array of random numbers and advance internal state

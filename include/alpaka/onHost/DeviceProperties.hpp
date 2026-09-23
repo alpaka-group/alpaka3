@@ -68,7 +68,7 @@ namespace alpaka::onHost
         Vec<uint32_t, T_dim> getMaxThreadsPerBlock() const
         {
             std::array<uint32_t, T_dim> res;
-            fnMaxThreadsPerBlock(res.data(), T_dim);
+            m_fnMaxThreadsPerBlock(res.data(), T_dim);
             return {res};
         }
 
@@ -88,7 +88,7 @@ namespace alpaka::onHost
         Vec<uint32_t, T_dim> getMaxBlocksPerGrid() const
         {
             std::array<uint32_t, T_dim> res;
-            fnMaxBlocksPerGrid(res.data(), T_dim);
+            m_fnMaxBlocksPerGrid(res.data(), T_dim);
             return {res};
         }
 
@@ -100,14 +100,14 @@ namespace alpaka::onHost
          * result: pointer to vector data, follows alpaka index order
          * numDims: number of dimensions of the result, elements in result
          */
-        std::function<void(uint32_t* result, uint32_t numDims)> fnMaxThreadsPerBlock;
+        std::function<void(uint32_t* result, uint32_t numDims)> m_fnMaxThreadsPerBlock;
 
         /** function to fill maximum number of blocks within a grid per dimension
          *
          * result: pointer to vector data, follows alpaka index order
          * numDims: number of dimensions of the result, elements in result
          */
-        std::function<void(uint32_t* result, uint32_t numDims)> fnMaxBlocksPerGrid;
+        std::function<void(uint32_t* result, uint32_t numDims)> m_fnMaxBlocksPerGrid;
     };
 
     inline std::ostream& operator<<(std::ostream& s, DeviceProperties const& p)

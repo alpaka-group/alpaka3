@@ -23,21 +23,21 @@ namespace alpaka
 
         std::string toString(std::string const separator = ",", std::string const enclosings = "{}") const
         {
-            std::string locale_enclosing_begin;
-            std::string locale_enclosing_end;
-            size_t enclosing_dim = enclosings.size();
+            std::string localeEnclosingBegin;
+            std::string localeEnclosingEnd;
+            size_t enclosingDim = enclosings.size();
 
-            if(enclosing_dim > 0)
+            if(enclosingDim > 0)
             {
                 /* % avoid out of memory access */
-                locale_enclosing_begin = enclosings[0 % enclosing_dim];
-                locale_enclosing_end = enclosings[1 % enclosing_dim];
+                localeEnclosingBegin = enclosings[0 % enclosingDim];
+                localeEnclosingEnd = enclosings[1 % enclosingDim];
             }
 
             std::stringstream stream;
-            stream << locale_enclosing_begin;
+            stream << localeEnclosingBegin;
             stream << m_threadIdx << separator << m_threadCount;
-            stream << locale_enclosing_end;
+            stream << localeEnclosingEnd;
             return stream.str();
         }
 

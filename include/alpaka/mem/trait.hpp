@@ -45,7 +45,7 @@ namespace alpaka
     {
         /** Specialize the trait for DataSource class if the object is copyable.
          *
-         * @tparam TDataSource The DataSource class.
+         * @tparam T_DataSource The DataSource class.
          *
          * @details
          *
@@ -62,7 +62,7 @@ namespace alpaka
          * };
          * @endcode
          */
-        template<typename TDataSource>
+        template<typename T_DataSource>
         struct CopyConstructableDataSource : std::false_type
         {
         };

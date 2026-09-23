@@ -119,19 +119,19 @@ namespace alpaka::rand::distribution::internal
     /** Adapt the bit length of the engine output to match the target type.
      * This is the default case where the engine result type already matches and thus the engine is simply invoked.
      */
-    template<typename T_Engine, uint32_t byteLengthEngineResult, uint32_t byteLengthRealType>
+    template<typename T_Engine, uint32_t T_byteLengthEngineResult, uint32_t T_byteLengthRealType>
     struct BitLengthConformityAdapter
     {
         static_assert(
-            (byteLengthEngineResult == 4u || byteLengthRealType == 8u),
+            (T_byteLengthEngineResult == 4u || T_byteLengthRealType == 8u),
             "Result returned by the randomBitGenerator does not have a length that is accepted by the uniformReal "
             "distribution!");
         static_assert(
-            (byteLengthEngineResult == 8u || byteLengthRealType == 4u),
+            (T_byteLengthEngineResult == 8u || T_byteLengthRealType == 4u),
             "The requested floating point type does not have a length that is accepted by the uniformReal "
             "distribution!");
         static_assert(
-            byteLengthEngineResult == byteLengthRealType,
+            T_byteLengthEngineResult == T_byteLengthRealType,
             "By logic this should never fail in case the compiler accepts the specialization of the adapter!");
 
         constexpr auto operator()(T_Engine& engine)
@@ -167,23 +167,23 @@ namespace alpaka::rand::distribution::internal
     template<concepts::Interval T_Interval, std::floating_point T_Result, typename T_Engine>
     constexpr auto getNormalizedUniformReal(T_Engine& engine) -> T_Result
     {
-        using T_EngineResult = std::remove_cvref_t<decltype(engine())>;
+        using EngineResult = std::remove_cvref_t<decltype(engine())>;
         // generates an integer the length of the size T_Result
         auto adaptedBits = BitLengthConformityAdapter<
             T_Engine,
-            static_cast<uint32_t>(sizeof(T_EngineResult)),
+            static_cast<uint32_t>(sizeof(EngineResult)),
             static_cast<uint32_t>(sizeof(T_Result))>{}(engine);
         // convert randomBits into the required floating-point type, while respecting the requested bounds criteria
         return IntervalAwareConversion<T_Engine, T_Interval, ALPAKA_TYPEOF(adaptedBits), T_Result>{}(adaptedBits);
     }
-    template<concepts::UniformVectorEngine T_Engine, uint32_t TResultSize, uint32_t TElemSize, uint32_t TElems>
+    template<concepts::UniformVectorEngine T_Engine, uint32_t T_resultSize, uint32_t T_elemSize, uint32_t T_elems>
     struct vectorDispatchWrapper;
 
-    template<concepts::UniformVectorEngine T_Engine, uint32_t TElemSize, uint32_t TElems>
-    struct vectorDispatchWrapper<T_Engine, 4u, TElemSize, TElems>
+    template<concepts::UniformVectorEngine T_Engine, uint32_t T_elemSize, uint32_t T_elems>
+    struct vectorDispatchWrapper<T_Engine, 4u, T_elemSize, T_elems>
     {
         T_Engine& ph;
-        static_assert(TElems > 0, "RandomEngine did not return any elements!");
+        static_assert(T_elems > 0, "RandomEngine did not return any elements!");
 
         constexpr explicit vectorDispatchWrapper(T_Engine& eng) : ph(eng)
         {
@@ -198,13 +198,13 @@ namespace alpaka::rand::distribution::internal
 
     /// **Wrapper specialization enabling efficient generation of 64-bit values from vectorized engines without
     /// requiring two engine calls.**
-    template<concepts::UniformVectorEngine T_Engine, uint32_t TElems>
-    struct vectorDispatchWrapper<T_Engine, 8u, 4u, TElems>
+    template<concepts::UniformVectorEngine T_Engine, uint32_t T_elems>
+    struct vectorDispatchWrapper<T_Engine, 8u, 4u, T_elems>
     {
         T_Engine& ph;
         using TResult = decltype(ph());
         static constexpr auto dim = TResult::dim();
-        static_assert(TElems >= 2, "Engine result dimension must be >= 2, to be usable in UniformReal<double>");
+        static_assert(T_elems >= 2, "Engine result dimension must be >= 2, to be usable in UniformReal<double>");
 
         constexpr explicit vectorDispatchWrapper(T_Engine& eng) : ph(eng)
         {
@@ -221,9 +221,9 @@ namespace alpaka::rand::distribution::internal
     class UniformRealBase
     {
     public:
-        using result_type = T_Floating;
+        using ResultType = T_Floating;
 
-        using Interval_type = T_Interval;
+        using IntervalType = T_Interval;
 
         constexpr explicit UniformRealBase(T_Floating min, T_Floating max, [[maybe_unused]] T_Interval)
             : m_min(min)
@@ -305,8 +305,8 @@ namespace alpaka::rand::distribution
         template<concepts::UniformStdEngine T_Engine>
         constexpr auto engineDispatch(T_Engine& engine) const -> T_Result
         {
-            using T_EngineResult = ALPAKA_TYPEOF(engine());
-            checkValueConformity<T_EngineResult>();
+            using EngineResult = ALPAKA_TYPEOF(engine());
+            checkValueConformity<EngineResult>();
             T_Result res = internal::getNormalizedUniformReal<T_Interval, T_Result, T_Engine>(engine);
             // @TODO potentially add underflow protection as suggested by https://doi.org/10.1145/3503512
             return scaleInterval(res);
@@ -318,18 +318,17 @@ namespace alpaka::rand::distribution
         template<concepts::UniformVectorEngine T_Engine>
         constexpr auto engineDispatch(T_Engine& engine) const -> T_Result
         {
-            using T_EngineResult = ALPAKA_TYPEOF(engine());
-            using valueType = typename T_EngineResult::value_type;
-            checkValueConformity<valueType>();
-            constexpr auto dim = getDim(T_EngineResult{});
+            using EngineResult = ALPAKA_TYPEOF(engine());
+            using ValueType = typename EngineResult::value_type;
+            checkValueConformity<ValueType>();
+            constexpr auto dim = getDim(EngineResult{});
             auto dispatchWrapper = internal::vectorDispatchWrapper<
                 T_Engine,
                 static_cast<uint32_t>(sizeof(T_Result)),
-                static_cast<uint32_t>(sizeof(valueType)),
+                static_cast<uint32_t>(sizeof(ValueType)),
                 dim>(engine);
-            using T_DispatchWrapper = decltype(dispatchWrapper);
-            T_Result res
-                = internal::getNormalizedUniformReal<T_Interval, T_Result, T_DispatchWrapper>(dispatchWrapper);
+            using DispatchWrapper = decltype(dispatchWrapper);
+            T_Result res = internal::getNormalizedUniformReal<T_Interval, T_Result, DispatchWrapper>(dispatchWrapper);
             return scaleInterval(res);
         }
 
