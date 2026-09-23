@@ -142,7 +142,7 @@ if(NOT TARGET alpaka)
 
     # the alpaka library itself
     # SYSTEM voids showing warnings produced by alpaka when used in user applications.
-    if(BUILD_TESTING)
+    if(alpaka_TESTS)
         target_include_directories(
             alpaka
             INTERFACE $<BUILD_INTERFACE:${_alpaka_INCLUDE_DIRECTORY}> $<INSTALL_INTERFACE:include>

@@ -28,7 +28,6 @@ CMAKE_ARGS=(
     -Dalpaka_TESTS=ON
     -Dalpaka_BENCHMARKS=ON
     -Dalpaka_EXAMPLES=ON
-    -DBUILD_TESTING=ON
     -Dalpaka_HEADERCHECKS=ON
     -Dalpaka_LOG=dynamic
     -Dalpaka_FAST_MATH=OFF

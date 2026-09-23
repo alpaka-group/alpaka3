@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  alpaka_cmake_flags: "-Dalpaka_COMPILE_PEDANTIC=ON -Dalpaka_DOCS=ON -Dalpaka_TESTS=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -DBUILD_TESTING=ON -Dalpaka_HEADERCHECKS=ON -Dalpaka_LOG=dynamic -Dalpaka_FAST_MATH=OFF"
+  alpaka_cmake_flags: "-Dalpaka_COMPILE_PEDANTIC=ON -Dalpaka_DOCS=ON -Dalpaka_TESTS=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -Dalpaka_HEADERCHECKS=ON -Dalpaka_LOG=dynamic -Dalpaka_FAST_MATH=OFF"
   APCI_ALPAKA_ROOT: ${{ github.workspace }}
 
 jobs:
@@ -253,7 +253,6 @@ jobs:
             -Dalpaka_BENCHMARKS=OFF \
             -Dalpaka_DOCS=OFF \
             -Dalpaka_HEADERCHECKS=OFF \
-            -DBUILD_TESTING=ON \
             -Dalpaka_DEP_HWLOC=ON \
             -Dalpaka_DEP_OMP=ON \
             -Dalpaka_COVERAGE=ON

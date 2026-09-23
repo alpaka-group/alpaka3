@@ -543,6 +543,26 @@
       "cacheVariables": {
         "CMAKE_CXX_COMPILER": "clang++"
       }
+    },
+    {
+      "name": "rel-clang-tidy",
+      "inherits": [
+        "rel-host-cpu-clang"
+      ],
+      "cacheVariables": {
+        "alpaka_COMPILE_PEDANTIC": "ON",
+        "alpaka_CLANG_TIDY": "ON"
+      }
+    },
+    {
+        "name": "dbg-clang-tidy",
+        "inherits": [
+          "dbg-host-cpu-clang"
+        ],
+        "cacheVariables": {
+          "alpaka_COMPILE_PEDANTIC": "ON",
+          "alpaka_CLANG_TIDY": "ON"
+        }
     }
   ],
   "buildPresets": [
@@ -697,6 +717,14 @@
     {
       "name": "dbg-host-numacpu-clang-ubsan",
       "configurePreset": "dbg-host-numacpu-clang-ubsan"
+    },
+    {
+      "name": "rel-clang-tidy",
+      "configurePreset": "rel-clang-tidy"
+    },
+    {
+      "name": "dbg-clang-tidy",
+      "configurePreset": "dbg-clang-tidy"
     }
   ],
   "testPresets": [
@@ -851,6 +879,14 @@
     {
       "name": "dbg-host-numacpu-clang-ubsan",
       "configurePreset": "dbg-host-numacpu-clang-ubsan"
+    },
+    {
+      "name": "rel-clang-tidy",
+      "configurePreset": "rel-clang-tidy"
+    },
+    {
+      "name": "dbg-clang-tidy",
+      "configurePreset": "dbg-clang-tidy"
     }
   ]
 }

@@ -250,7 +250,7 @@ This allows the usage of the coresponding executor e.g. `gpuCuda`, `gpuHip` or `
   # -Dalpaka_DEP_OMP=ON is implicitly set, if the compiler not support OpenMP only serial code will be generated
   # Assuming alpaka source is in ../alpaka3 with respect to the current directory
   #
-  cmake ../alpaka3 -Dalpaka_TESTS=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON -DBUILD_TESTING=ON
+  cmake ../alpaka3 -Dalpaka_TESTS=ON -Dalpaka_BENCHMARKS=ON -Dalpaka_EXAMPLES=ON
   cmake --build . --parallel
   ctest --output-on-failure
 
