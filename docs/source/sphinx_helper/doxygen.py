@@ -2,7 +2,6 @@
 
 import os
 import pathlib
-import re
 import shutil
 import subprocess
 import sys
@@ -115,13 +114,6 @@ def build_doxygen(app):
         # subdirectory below the destination.
         configuration = (docs_dir / doxyfile).read_text(encoding="utf-8")
 
-        # LIGHT is a value for HTML_COLORSTYLE, while HTML_COLORSTYLE_HUE must
-        # be a number between 0 and 359.
-        configuration = re.sub(
-            r"(?m)^(\s*)HTML_COLORSTYLE_HUE\s*=\s*LIGHT\s*$",
-            r"\1HTML_COLORSTYLE = LIGHT",
-            configuration,
-        )
         configuration += f'\nOUTPUT_DIRECTORY = "{dest}"\nHTML_OUTPUT = .\n'
 
         doxygen_process = subprocess.run(

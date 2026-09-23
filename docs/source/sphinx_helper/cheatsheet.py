@@ -110,6 +110,8 @@ def expand_source(source: pathlib.Path) -> str:
             )
             continue
 
+        # Remove the html code block only from the rst file.
+        # This is not handled correctly by all versions of rst2pdf.
         if stripped.startswith(".. only::"):
             block_indent = len(line) - len(line.lstrip())
             index += 1
@@ -129,9 +131,6 @@ def expand_source(source: pathlib.Path) -> str:
 
             continue
 
-        # Remove inline Sphinx download roles.
-        line = re.sub(r":download:`[^`]*`", "", line)
-
         result.append(line)
         index += 1
 
@@ -139,13 +138,17 @@ def expand_source(source: pathlib.Path) -> str:
 
 
 def generate_cheatsheet(app) -> None:
-    """Generate cheatsheet.pdf when necessary."""
+    """Generate cheatsheet.pdf when necessary.
+    - Based on source cheatsheet.rst a temporary file where all literal include are resolved is created,
+      because those are not supported by rst2pdf.
+    - The pdf is rendered with the style template "basics/cheatsheet.style" into the sphinx html root directory.
+    """
     if not should_generate(app):
         return
 
     rst2pdf = shutil.which("rst2pdf")
     if rst2pdf is None:
-        return
+        raise RuntimeError("Cheatsheet: 'rst2pdf' not found; cannot generate cheatsheet.pdf")
 
     source = pathlib.Path(app.srcdir) / "basic" / "cheatsheet.rst"
     output = pathlib.Path(app.builder.outdir) / "cheatsheet.pdf"
