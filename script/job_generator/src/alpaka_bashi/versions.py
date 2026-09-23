@@ -32,7 +32,7 @@ from bashi.globals import (
 from bashi.version.dependencies.base_version_support import ClangBase
 from bashi.version.dependencies.clang_cuda import CLANG_CUDA_MAX_CUDA_VERSION, ClangCudaSDKSupport
 from bashi.version.dependencies.hipcc import HIPCC_CLANG_VERSION
-from bashi.version.dependencies.nvcc import NVCC_GCC_MAX_VERSION, NvccHostSupport
+from bashi.version.dependencies.nvcc import NVCC_GCC_MAX_VERSION, NVCC_CLANG_MAX_VERSION, NvccHostSupport
 
 from alpaka_bashi.globals import BUILD_TYPE, BUILD_TYPES, HWLOC
 
@@ -169,6 +169,10 @@ def get_alpaka_version_relation() -> bashi.VersionRelation:
         NvccHostSupport("13.4", "16"),
     ]
 
+    nvcc_clang_max_version = NVCC_CLANG_MAX_VERSION + [
+        NvccHostSupport("13.4", "22"),
+    ]
+
     hipcc_clang_version = HIPCC_CLANG_VERSION + [
         ClangBase("7.14", "23"),
         ClangBase("10.0", "23"),
@@ -178,4 +182,5 @@ def get_alpaka_version_relation() -> bashi.VersionRelation:
         clang_cuda_max_cuda_version=clang_cuda_max_cuda_version,
         hipcc_clang_version=hipcc_clang_version,
         nvcc_gcc_max_version=nvcc_gcc_max_version,
+        nvcc_clang_max_version=nvcc_clang_max_version,
     )
