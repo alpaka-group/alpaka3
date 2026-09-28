@@ -119,7 +119,7 @@ namespace alpaka::onAcc
         constexpr auto linearWarpsInBlock = WorkerGroup{origin::block, unit::warps};
         /** Representation of all warps in the grid as a linearized worker group
          *
-         * @attention Since a thread block is not required to have as many threads a warp has, you can not assume that
+         * @attention Since a thread block is not required to have as many threads as a warp has, you can not assume that
          * number of warps * warp size is the total number of threads.
          */
         constexpr auto linearWarpsInGrid = WorkerGroup{origin::grid, unit::warps};
