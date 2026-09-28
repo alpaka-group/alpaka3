@@ -12,9 +12,9 @@ namespace alpaka::onHost
 {
     /** Transform the input data with the given function and write the result to the output data.
      *
-     * fn can be a lambda function if all arguments are specialized. This fully specialized functor must mostly be wrapped
-     * by @see ScalarFunc. Generic lambdas are for some backends e.g. CUDA/HIP not supported. A lambda must be of the
-     * following form and should capture arguments only by copy.
+     * fn can be a lambda function if all arguments are specialized. This fully specialized functor must mostly be
+     * wrapped by @see ScalarFunc. Generic lambdas are for some backends e.g. CUDA/HIP not supported. A lambda must be
+     * of the following form and should capture arguments only by copy.
      *
      * @code{.cpp}
      *   [] ALPAKA_FN_ACC(){};
