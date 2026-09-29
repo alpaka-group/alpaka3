@@ -41,6 +41,31 @@ def remove_disabled_serial_backend_for_gcc_and_clang(
         )
 
 
+def serial_backend_is_always_on_for_unsupported_nvcc_host_compiler(
+    parameter_value_pairs: list[bashi.ParameterValuePair],
+    removed_parameter_value_pairs: list[bashi.ParameterValuePair],
+    version_relation: bashi.VersionRelation,
+):
+    """If there is no nvcc version, which supports specific GCC and Clang version remove all pairs
+    of the host compiler version with an disable serial cpu backend. The serial backend can be
+    never disabled, because the host compiler is used as CPU backend compiler all the time."""
+    for compiler_name, max_host_compiler_version in (
+        (GCC, version_relation.get_nvcc_gcc_max_supported_host_compiler_version()),
+        (CLANG, version_relation.get_nvcc_clang_max_supported_host_compiler_version()),
+    ):
+        bashi.remove_parameter_value_pairs_ranges(
+            parameter_value_pairs,
+            removed_parameter_value_pairs,
+            parameter1=HOST_COMPILER,
+            value_name1=compiler_name,
+            value_min_version1=str(max_host_compiler_version),
+            value_min_version1_inclusive=False,
+            parameter2=ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLE,
+            value_min_version2=OFF,
+            value_max_version2=OFF,
+        )
+
+
 def remove_disabled_serial_and_openmp_backend(
     parameter_value_pairs: list[bashi.ParameterValuePair],
     removed_parameter_value_pairs: list[bashi.ParameterValuePair],
@@ -142,6 +167,9 @@ def verify(
     )
 
     remove_disabled_serial_backend_for_gcc_and_clang(expected_param_val_tuple, unexpected_param_val_tuple)
+    serial_backend_is_always_on_for_unsupported_nvcc_host_compiler(
+        expected_param_val_tuple, unexpected_param_val_tuple, version_relation
+    )
     remove_disabled_serial_and_openmp_backend(expected_param_val_tuple, unexpected_param_val_tuple)
     remove_unsupported_cuda_sdk_for_clang_host_compiler(expected_param_val_tuple, unexpected_param_val_tuple)
     remove_unsupported_cmake_versions_for_clang_host_compiler(expected_param_val_tuple, unexpected_param_val_tuple)

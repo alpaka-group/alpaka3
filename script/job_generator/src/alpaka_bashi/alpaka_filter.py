@@ -6,7 +6,16 @@ Custom filter for alpaka specific filter rules.
 
 import bashi
 import packaging.version
-from bashi.globals import ALPAKA_ACC_GPU_CUDA_ENABLE, CLANG, CLANG_CUDA, CMAKE, DEVICE_COMPILER, HOST_COMPILER, NVCC
+from bashi.globals import (
+    ALPAKA_ACC_GPU_CUDA_ENABLE,
+    CLANG,
+    CLANG_CUDA,
+    CMAKE,
+    DEVICE_COMPILER,
+    GCC,
+    HOST_COMPILER,
+    NVCC,
+)
 from bashi.results import OFF_VER
 
 from alpaka_bashi.versions import get_allowed_backend_combinations, get_used_backends
@@ -118,6 +127,41 @@ def check_clang_cuda_cmake_support_a4(row: bashi.BashiRow, alpaka_filter: "Alpak
     return True
 
 
+def check_if_nvcc_supports_the_host_compiler_a5(row: bashi.BashiRow, alpaka_filter: "AlpakaFilter"):
+    """
+    If GCC or Clang is a host compiler but not supported by any available nvcc version, disallow
+    the combination if there is no possibility to use the GCC or Clang as CPU compiler.
+
+    Args:
+        row (bashi.BashiRow): parameter-value-tuple to verify.
+        alpaka_filter (AlpakaFilter): alpaka filter
+
+    Returns:
+        bool: True if passed.
+    """
+    for host_compiler, max_host_compiler_version in (
+        (GCC, alpaka_filter.version.get_nvcc_gcc_max_supported_host_compiler_version()),
+        (CLANG, alpaka_filter.version.get_nvcc_clang_max_supported_host_compiler_version()),
+    ):
+        if row[HOST_COMPILER].name == host_compiler:
+            # Rule a1 checks before, that the list can be never empty. Therefore gcc/clang is not used as
+            # device compiler, it can be only used as host compiler for nvcc.
+            compiler_as_device_compiler = [
+                compier_backend
+                for compier_backend in bashi.get_valid_compiler_backend_combinations(
+                    row, get_allowed_backend_combinations(), get_used_backends()
+                )
+                if compier_backend.device == host_compiler
+            ]
+            if len(compiler_as_device_compiler) == 0 and row[HOST_COMPILER].version > max_host_compiler_version:
+                alpaka_filter.reason(
+                    f"There is nvcc which supports {host_compiler} {row[HOST_COMPILER].version} as host compiler"
+                )
+                return False
+
+    return True
+
+
 # pylint: disable=too-few-public-methods
 class AlpakaFilter(bashi.FilterBase):
     """Alpaka specific filter rules."""
@@ -140,4 +184,5 @@ class AlpakaFilter(bashi.FilterBase):
             and check_clang_host_compiler_supported_cuda_sdk_a2(row, self)
             and check_clang_host_compiler_supported_nvcc_a3(row, self)
             and check_clang_cuda_cmake_support_a4(row, self)
+            and check_if_nvcc_supports_the_host_compiler_a5(row, self)
         )
