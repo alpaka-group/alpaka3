@@ -8,70 +8,106 @@
 #  the ordering is mainly random
 #  the python generator can schedule some jobs on specific positions
 
+# stages:
+#   - generator
+#   - run-test-jobs
+
+# variables:
+#   # container version of the generated jobs
+#   ALPAKA_GITLAB_CI_GENERATOR_CONTAINER_VERSION: "4.1"
+
+# generate:
+#   stage: generator
+#   # update alpine version to use newer python version
+#   image: python:3.14-alpine
+#   script:
+#     - pip3 install script/job_generator
+#     - job-generator ${ALPAKA_GITLAB_CI_GENERATOR_CONTAINER_VERSION}
+#       --split-pipeline
+#       --pipeline-out-compile_only compile_only.yml
+#       --pipeline-out-runtime_job_cpu runtime_cpu.yml
+#       --pipeline-out-runtime_job_gpu runtime_gpu.yml
+#       --pipeline-out-special_job special.yml
+#     - cat compile_only.yml
+#     - cat runtime_cpu.yml
+#     - cat runtime_gpu.yml
+#     - cat special.yml
+#   artifacts:
+#     paths:
+#       - compile_only.yml
+#       - runtime_cpu.yml
+#       - runtime_gpu.yml
+#       - special.yml
+#     expire_in: 1 week
+#   interruptible: true
+#   tags:
+#   - x86_64
+#   - cpuonly
+
+# run-compile-only-test:
+#   stage: run-test-jobs
+#   trigger:
+#     include:
+#       - artifact: compile_only.yml
+#         job: generate
+#     strategy: depend
+
+# run-runtime-cpu-test:
+#   stage: run-test-jobs
+#   trigger:
+#     include:
+#       - artifact: runtime_cpu.yml
+#         job: generate
+#     strategy: depend
+
+# run-runtime-gpu-test:
+#   stage: run-test-jobs
+#   trigger:
+#     include:
+#       - artifact: runtime_gpu.yml
+#         job: generate
+#     strategy: depend
+
+# run-special-test:
+#   stage: run-test-jobs
+#   trigger:
+#     include:
+#       - artifact: special.yml
+#         job: generate
+#     strategy: depend
+
 stages:
-  - generator
-  - run-test-jobs
+  - runtime_job_cpu_stage2
 
-variables:
-  # container version of the generated jobs
-  ALPAKA_GITLAB_CI_GENERATOR_CONTAINER_VERSION: "4.1"
-
-generate:
-  stage: generator
-  # update alpine version to use newer python version
-  image: python:3.14-alpine
-  script:
-    - pip3 install script/job_generator
-    - job-generator ${ALPAKA_GITLAB_CI_GENERATOR_CONTAINER_VERSION}
-      --split-pipeline
-      --pipeline-out-compile_only compile_only.yml
-      --pipeline-out-runtime_job_cpu runtime_cpu.yml
-      --pipeline-out-runtime_job_gpu runtime_gpu.yml
-      --pipeline-out-special_job special.yml
-    - cat compile_only.yml
-    - cat runtime_cpu.yml
-    - cat runtime_gpu.yml
-    - cat special.yml
-  artifacts:
-    paths:
-      - compile_only.yml
-      - runtime_cpu.yml
-      - runtime_gpu.yml
-      - special.yml
-    expire_in: 1 week
+linux_gcc15_cmake3.31.12_ubuntu24.04_cxx20_tbb:
+  image: registry.hzdr.de/crp/alpaka-group-container/alpaka-ci-ubuntu24.04-gcc:4.1
   interruptible: true
+  script:
+  - $APCI_ALPAKA_ROOT/script/ci/info.sh
+  - $APCI_ALPAKA_ROOT/script/ci/install.sh
+  - $APCI_ALPAKA_ROOT/script/ci/configure.sh
+  - $APCI_ALPAKA_ROOT/script/ci/build.sh
+  - $APCI_ALPAKA_ROOT/script/ci/test.sh
+  stage: runtime_job_cpu_stage2
   tags:
   - x86_64
   - cpuonly
-
-run-compile-only-test:
-  stage: run-test-jobs
-  trigger:
-    include:
-      - artifact: compile_only.yml
-        job: generate
-    strategy: depend
-
-run-runtime-cpu-test:
-  stage: run-test-jobs
-  trigger:
-    include:
-      - artifact: runtime_cpu.yml
-        job: generate
-    strategy: depend
-
-run-runtime-gpu-test:
-  stage: run-test-jobs
-  trigger:
-    include:
-      - artifact: runtime_gpu.yml
-        job: generate
-    strategy: depend
-
-run-special-test:
-  stage: run-test-jobs
-  trigger:
-    include:
-      - artifact: special.yml
-        job: generate
-    strategy: depend
+  variables:
+    APCI_ALPAKA_ROOT: $CI_PROJECT_DIR
+    APCI_CLANG_TIDY: 'OFF'
+    APCI_CMAKE: 3.31.12
+    APCI_CUDA: 0
+    APCI_DEVICE_COMPILER: gcc@15
+    APCI_EXEC_CPU_SERIAL: 'ON'
+    APCI_HIP: 0
+    APCI_HWLOC: 'OFF'
+    APCI_OMP: 'OFF'
+    APCI_ONEAPI: 0
+    APCI_ONEAPI_TARGET: none
+    APCI_RUN_CTEST: 'ON'
+    APCI_SANITIZER_ASAN: 'OFF'
+    APCI_SANITIZER_LSAN: 'OFF'
+    APCI_SANITIZER_TSAN: 'OFF'
+    APCI_SANITIZER_UBSAN: 'OFF'
+    APCI_SIMD: DEFAULT
+    APCI_TBB: 'ON'

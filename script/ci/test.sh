@@ -10,6 +10,16 @@ source "${APCI_ALPAKA_ROOT}/script/ci/utils/default.sh"
 
 script_msg "Run CTest (test.sh)"
 
+if ! command -v spack; then
+    # shellcheck source=/dev/null
+    . /spack/share/spack/setup-env.sh
+fi
+
+if [ -z ${_spack_loaded+x} ]; then
+    spack load "${compiler_name}@${compiler_version}"
+    spack load "cmake@${APCI_CMAKE}"
+fi
+
 LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-""}
 
 if [[ "$APCI_ONEAPI" != 0 ]]; then

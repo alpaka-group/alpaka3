@@ -10,6 +10,16 @@ source "${APCI_ALPAKA_ROOT}/script/ci/utils/default.sh"
 
 script_msg "Run CMake build (build.sh)"
 
+if ! command -v spack; then
+    # shellcheck source=/dev/null
+    . /spack/share/spack/setup-env.sh
+fi
+
+if [ -z ${_spack_loaded+x} ]; then
+    spack load "${compiler_name}@${compiler_version}"
+    spack load "cmake@${APCI_CMAKE}"
+fi
+
 # Return the number of build threads depending on the
 # - maximum number of available threads (first parameter)
 # - available memory (second parameter)
