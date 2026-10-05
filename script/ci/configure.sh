@@ -56,10 +56,14 @@ fi
 
 if [[ "$APCI_HIP" != 0 ]]; then
     load_variable_if_not_exist ROCM_PATH
+    load_variable_if_not_exist HSA_ENABLE_SDMA
+    load_variable_if_not_exist HSA_XNACK
 
     export PATH=${ROCM_PATH}/bin:$PATH
     export PATH=${ROCM_PATH}/llvm/bin:$PATH
     export CMAKE_PREFIX_PATH=$ROCM_PATH:$CMAKE_PREFIX_PATH
+
+    echo_run "${ROCM_PATH}"/bin/hipconfig
 
     ap_deps['HIP']=ON
 

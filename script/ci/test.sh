@@ -34,6 +34,8 @@ done
 
 parse_compiler_version "$APCI_DEVICE_COMPILER"
 
+echo_run hipconfig
+
 if [[ "${APCI_RUN_CTEST}" == "ON" ]]; then
     load_variable_if_not_exist APCI_CMAKE_BIN_PATH
 

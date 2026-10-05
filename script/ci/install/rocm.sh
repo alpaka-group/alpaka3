@@ -41,6 +41,11 @@ if [[ "$APCI_HIP" != 0 ]]; then
     export ROCM_PATH
     export APCI_CXX_COMPILER="${ROCM_PATH}/llvm/bin/clang++"
 
+    # Disable SDMA to avoid an issues causing ROCm stuck because of a data race
+    # https://github.com/ROCm/ROCm/issues/6527
+    export HSA_ENABLE_SDMA=0
+    export HSA_XNACK=1
+
     echo_run "${APCI_CXX_COMPILER}" --version
 
     echo_run "${ROCM_PATH}"/bin/hipconfig
@@ -48,6 +53,8 @@ if [[ "$APCI_HIP" != 0 ]]; then
 
     store_variable ROCM_PATH
     store_variable APCI_CXX_COMPILER
+    store_variable HSA_ENABLE_SDMA
+    store_variable HSA_XNACK
 else
     echo_green "Skipped install ROCm because it is not required for the job."
 fi
