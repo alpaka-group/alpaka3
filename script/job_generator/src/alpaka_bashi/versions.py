@@ -43,7 +43,7 @@ ALPAKA_VERSIONS: dict[str, list[str | int | float]] = {
     HIPCC: [6.3, 6.4, 7.0, 7.1, 7.2, 7.14, 10.0],
     ICPX: ["2025.1", "2025.2", "2025.3", "2026.0", "2026.1"],
     UBUNTU: ["24.04"],
-    CMAKE: ["3.25.3", "3.28.6", "3.31.12", "4.0.7", "4.4.0"],
+    CMAKE: ["3.25", "3.28", "3.31", "4.0", "4.4"],
     CXX_STANDARD: ["20"],
     BUILD_TYPE: BUILD_TYPES,
     HWLOC: [ON, OFF],

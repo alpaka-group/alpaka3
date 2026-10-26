@@ -10,6 +10,14 @@ source "${APCI_ALPAKA_ROOT}/script/ci/utils/default.sh"
 
 script_msg "Run CMake build (build.sh)"
 
+if [[ -z ${_spack_loaded+x} ]]; then
+    load_required_spack_pkg
+    if [[ "${#APCI_SPACK_PKGS[@]}" -gt 0 ]]; then
+        echo_run spack load ${APCI_SPACK_PKGS[@]}
+    fi
+    _spack_loaded=1
+fi
+
 # Return the number of build threads depending on the
 # - maximum number of available threads (first parameter)
 # - available memory (second parameter)
@@ -37,6 +45,10 @@ function get_build_threads() {
 }
 
 LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-""}
+if exist_variable APCI_LD_LIBRARY_PATH; then
+    load_variable APCI_LD_LIBRARY_PATH
+    LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${APCI_LD_LIBRARY_PATH}"
+fi
 
 if [[ "$APCI_ONEAPI" != 0 ]]; then
     if [[ ! "${APCI_IMAGE_NAME}" =~ "intel/oneapi" ]]; then
@@ -93,6 +105,10 @@ done
 
 parse_compiler_version "$APCI_DEVICE_COMPILER"
 load_variable_if_not_exist APCI_CMAKE_BIN_PATH
+
+if [[ "${LD_LIBRARY_PATH}" != "" ]]; then
+    export LD_LIBRARY_PATH
+fi
 
 echo_green \
     "$(echo_if_not_empty LD_LIBRARY_PATH)" \

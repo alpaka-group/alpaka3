@@ -14,6 +14,18 @@ parse_compiler_version "$APCI_DEVICE_COMPILER"
 
 CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH:-""}
 LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-""}
+if exist_variable APCI_LD_LIBRARY_PATH; then
+    load_variable APCI_LD_LIBRARY_PATH
+    LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${APCI_LD_LIBRARY_PATH}"
+fi
+
+if [[ -z ${_spack_loaded+x} ]]; then
+    load_required_spack_pkg
+    if [[ "${#APCI_SPACK_PKGS[@]}" -gt 0 ]]; then
+        echo_run spack load ${APCI_SPACK_PKGS[@]}
+    fi
+    _spack_loaded=1
+fi
 
 load_variable_if_not_exist APCI_CMAKE_BIN_PATH
 load_variable_if_not_exist APCI_CXX_COMPILER
@@ -57,9 +69,12 @@ fi
 if [[ "$APCI_HIP" != 0 ]]; then
     load_variable_if_not_exist ROCM_PATH
 
-    export PATH=${ROCM_PATH}/bin:$PATH
-    export PATH=${ROCM_PATH}/llvm/bin:$PATH
-    export CMAKE_PREFIX_PATH=$ROCM_PATH:$CMAKE_PREFIX_PATH
+    # spack automatically set the paths
+    if echo "${APCI_SPACK_PKGS[@]}" | grep -v 'hip@'; then
+        export PATH=${ROCM_PATH}/bin:$PATH
+        export PATH=${ROCM_PATH}/llvm/bin:$PATH
+        export CMAKE_PREFIX_PATH=$ROCM_PATH:$CMAKE_PREFIX_PATH
+    fi
 
     ap_deps['HIP']=ON
 
@@ -153,6 +168,10 @@ done
 for dep in "${!ap_deps[@]}"; do
     CMAKE_ARGS+=("-Dalpaka_DEP_${dep}=${ap_deps[$dep]}")
 done
+
+if [[ "${LD_LIBRARY_PATH}" != "" ]]; then
+    export LD_LIBRARY_PATH
+fi
 
 # enable executor
 CMAKE_ARGS+=(

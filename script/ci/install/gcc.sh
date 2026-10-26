@@ -25,11 +25,24 @@ fi
 script_msg "Install GCC"
 
 if [[ "$compiler_name" == "gcc" ]]; then
-    if agc-manager -e "gcc@${compiler_version}"; then
-        echo_green "use preinstalled gcc@${compiler_version}"
+    if spack_exist "gcc@${compiler_version}"; then
+        load_required_spack_pkg
+        if [[ ${APCI_SPACK_PKGS[*]} =~ "gcc@${compiler_version}" ]]; then
+            echo_green "spack package gcc@${compiler_version} is already installed"
+            load_variable APCI_CXX_COMPILER
+        else
+            echo_run spack install --use-buildcache only "${compiler_name}@${compiler_version}" arch="linux-$(spack arch -o)-x86_64_v3"
 
-        APCI_CXX_COMPILER=$(agc-manager -b "gcc@${compiler_version}")"/g++-${compiler_version}"
-        export APCI_CXX_COMPILER
+            spack load "gcc@${compiler_version}"
+
+            APCI_CXX_COMPILER=$(which g++)
+            export APCI_CXX_COMPILER
+
+            spack unload "gcc@${compiler_version}"
+
+            APCI_SPACK_PKGS+=(gcc@${compiler_version})
+            store_required_spack_pkg
+        fi
     else
         # install gcc only if not already available, pre installed gcc can not be called with the version number as postfix
         if [[ ! $(command -v gcc) || "$(gcc --version | awk '{print($3)}' | head -n 1 | cut -d"." -f1)" -ne "${compiler_version}" ]]; then

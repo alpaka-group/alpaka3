@@ -20,9 +20,23 @@ script_msg "Install CUDA"
 if [[ "$APCI_CUDA" != 0 ]]; then
     # To simplify the script, we assume that the host compiler is already installed
     load_variable APCI_CXX_COMPILER
-    if agc-manager -e "cuda@${APCI_CUDA}"; then
-        echo_green "cuda@${APCI_CUDA}"
-        APCI_CUDA_PATH=$(agc-manager -b "cuda@${APCI_CUDA}")
+    if spack_exist "cuda@${APCI_CUDA}"; then
+        if [[ ${APCI_SPACK_PKGS[*]} =~ cuda@${APCI_CUDA} ]]; then
+            echo_green "spack package cuda@${APCI_CUDA} is already installed"
+            load_variable APCI_CUDA_PATH
+        else
+            echo_run spack install --use-buildcache only "cuda@${APCI_CUDA}" \
+                arch="linux-$(spack arch -o)-x86_64_v3"
+
+            spack load "cuda@${APCI_CUDA}"
+            APCI_CUDA_PATH="$(realpath "$(dirname "$(which nvcc)")/..")"
+            echo_run "$APCI_CUDA_PATH/bin/nvcc" --version
+            spack unload "cuda@${APCI_CUDA}"
+
+            APCI_SPACK_PKGS+=("cuda@${APCI_CUDA}")
+            store_variable APCI_CUDA_PATH
+            store_required_spack_pkg
+        fi
     else
         if [[ "${APCI_IMAGE_NAME}" =~ "nvidia/cuda" ]]; then
             echo_green "use preinstalled cuda from official cuda container"

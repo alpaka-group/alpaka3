@@ -19,3 +19,5 @@ source "${APCI_ALPAKA_ROOT}/script/ci/utils/color_echo.sh"
 source "${APCI_ALPAKA_ROOT}/script/ci/utils/misc.sh"
 # shellcheck source=script/ci/utils/var_storage.sh
 source "${APCI_ALPAKA_ROOT}/script/ci/utils/var_storage.sh"
+# shellcheck source=script/ci/utils/enable_spack.sh
+source "${APCI_ALPAKA_ROOT}/script/ci/utils/enable_spack.sh"

@@ -10,6 +10,31 @@
 # shellcheck source=script/ci/utils/misc.sh
 source "${APCI_ALPAKA_ROOT}/script/ci/utils/misc.sh"
 
+# return the folder, where all variables are stored
+_var_storage_tmp_dir() {
+    if [[ -n ${TMPDIR+x} ]]; then
+        echo "${TMPDIR}/var_storage"
+    elif [[ -n ${TMP+x} ]]; then
+        echo "${TMP}/var_storage"
+    else
+        echo /tmp/var_storage
+    fi
+}
+
+# check if a variables was stored
+# set variable name as first argument
+exist_variable() {
+    if [[ $# -lt 1 ]]; then
+        exit_error "store_variable(): variable name is not set" 2
+    fi
+
+    local tmp_dir=$(_var_storage_tmp_dir)
+
+    local var_name="$1"
+    local variable_path="${tmp_dir}/${var_name}"
+    [[ -f "${variable_path}" ]]
+}
+
 # store a variable in a file, which can be loaded later
 # set variable name as first argument
 store_variable() {
@@ -21,13 +46,7 @@ store_variable() {
         exit_error "store_variable(): variable '$1' does not exist" 1
     fi
 
-    if [[ -n ${TMPDIR+x} ]]; then
-        local tmp_dir="${TMPDIR}/var_storage"
-    elif [[ -n ${TMP+x} ]]; then
-        local tmp_dir="${TMP}/var_storage"
-    else
-        local tmp_dir=/tmp/var_storage
-    fi
+    local tmp_dir=$(_var_storage_tmp_dir)
 
     mkdir -p "${tmp_dir}"
     local var_name="$1"
@@ -45,13 +64,7 @@ load_variable() {
         exit_error "load_variable(): variable name is not set"
     fi
 
-    if [[ -n ${TMPDIR+x} ]]; then
-        local tmp_dir="${TMPDIR}/var_storage"
-    elif [[ -n ${TMP+x} ]]; then
-        local tmp_dir="${TMP}/var_storage"
-    else
-        local tmp_dir=/tmp/var_storage
-    fi
+    local tmp_dir=$(_var_storage_tmp_dir)
 
     if [[ ! -d "${tmp_dir}" ]]; then
         exit_error "${tmp_dir} does not exist"

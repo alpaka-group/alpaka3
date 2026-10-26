@@ -144,3 +144,9 @@ if [[ -n ${GITLAB_CI+x} ]]; then
     fi
     export APCI_CUDA_SM_LEVEL
 fi
+
+# In each case, we assume the user wants to use spack to install packages.
+# Therefore an explicit disabling is required.
+if [[ -z ${APCI_FAKE_SPACK+x} ]]; then
+    export APCI_FAKE_SPACK=OFF
+fi
